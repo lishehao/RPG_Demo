@@ -1,0 +1,243 @@
+# RPG_Demo Story Runtime Architecture (v3)
+
+This document defines the current “north star” architecture for an **8–12 minute, accept-all** interactive narrative RPG runtime.
+
+## 1. Goals
+
+### Product goals
+- **8–12 minutes per playthrough** (target **14–16 steps**).
+- **Accept-All**: any player input (button or free-text) results in an **executed action** and **world feedback**.
+- **Multiple NPCs**: 3–5 NPCs per story; each appears at least twice.
+
+### Engineering goals
+- **Deterministic state transitions** (LLM does not decide success/failure or next node).
+- **Schema-first** story format with **lint + auto-repair** loops for one-click generation.
+- Runtime safety: no dead-ends, no infinite reroute loops, no “invalid input” stalls.
+
+---
+
+## 2. Core Model: Beat → Scene → Move → Outcome
+
+### 2.1 Beat (macro structure)
+**Purpose:** stabilize one-click generation and control pacing.
+
+**Fields (conceptual):**
+- `beat_id`, `title`
+- `step_budget` (typically 3–4 steps)
+- `required_events[]` (tags that must occur in this beat)
+- `npc_quota` (min appearances / key interactions per NPC)
+- `entry_scene_id`
+
+**Constraints:**
+- 3–5 beats total.
+- Sum of beat `step_budget` ≈ 14–16 steps.
+
+---
+
+### 2.2 Scene (micro node)
+**Purpose:** the player is “in” a scene; scenes form the playable graph.
+
+**Fields (conceptual):**
+- `scene_id`, `beat_id`
+- `scene_seed` (short: situation + objective + conflict hook; not long prose)
+- `present_npcs[]` (typically 1–2 primary NPCs in-scene)
+- `enabled_moves[]` (3–5 visible moves; **never > 6**)
+- `always_available_moves[]` (2–3 global moves; see below)
+- `exit_conditions` (usually based on progress/event tags)
+
+**Constraints:**
+- Branching must **reconverge within 1–2 scenes** to prevent content explosion.
+- Every scene must include **2–3 global moves** so the player can always proceed.
+
+---
+
+### 2.3 Move (action interface)
+**Purpose:** the unit of intent and execution. **Moves are the executable interface**, not “choices”.
+
+Moves are **parameterizable** and reusable across stories.
+
+**Fields (conceptual):**
+- `move_id`, `label`
+- `intents/synonyms[]` (free-text routing surface)
+- `args_schema` (optional; e.g., `target_npc_id`, `tone`, `goal_tag`)
+- `resolution_policy` (deterministic rule for outcome selection)
+- `outcomes` (see below)
+
+**Constraints:**
+- Every move must have at least:
+  - `success`
+  - `fail_forward` (**required**)
+- `partial_success` is strongly recommended for richer gameplay.
+
+---
+
+### 2.4 Outcome (fail-forward execution)
+**Purpose:** make every input “count”. Preconditions do not block execution; they **select a different outcome**.
+
+**Fields (conceptual):**
+- `result`: `success | partial | fail_forward`
+- `effects`: deterministic deltas (state updates, relation shifts, flags)
+- `next_scene_id`: may equal success target to reconverge
+- `narration_slots`: structured beats for narration:
+  - `npc_reaction`
+  - `world_shift`
+  - `clue_delta`
+  - `cost_delta`
+  - `next_hook`
+
+**Constraints:**
+- **No refusal**: unmet conditions → `fail_forward`, not “locked/invalid”.
+- **Fail-forward must still progress**:
+  - advance `beat_progress/scene_progress`, or
+  - trigger required event tags, or
+  - create a meaningful state change + move to a resolving scene.
+
+---
+
+## 3. Global Moves (Accept-All Backbone)
+
+Each scene must include 2–3 global moves. Minimum set:
+- `global.clarify`: low-confidence input → NPC asks/forces clarification **while advancing tension/progress**
+- `global.look`: observation/scan → reveals a clue or changes situation slightly
+- `global.help_me_progress`: “I don’t know what to do” → offers concrete next options + small progress
+
+**Rule:** even nonsense/empty inputs route to a global move and still produce an outcome.
+
+---
+
+## 4. Runtime Pipeline (Two-Pass)
+
+### Pass A — Intent Routing
+Input → `MoveInvocation`
+- Button input: directly creates `MoveInvocation(move_id, args={})`.
+- Free-text input: LLM (or heuristic) outputs structured JSON:
+  - `move_id`
+  - `args` (optional)
+  - `confidence`
+  - `interpreted_intent` (one sentence)
+
+**Low confidence policy:**
+- If confidence < threshold (or parse fails): route to `global.clarify` (or `help_me_progress`), never “no-op”.
+
+### Pass B — Outcome Resolution (Deterministic)
+`MoveInvocation + scene + state` → choose an `Outcome`
+- Evaluate preconditions (if any) **only to select outcome**, not to reject.
+- If unmet: choose `fail_forward`.
+- Otherwise: choose `success` or `partial` according to `resolution_policy`.
+- Apply `effects`, update progress, transition to `next_scene_id`.
+
+### Narration (LLM or template)
+Narration renders `narration_slots` into player-facing text using a strict template:
+- **Echo**: restate interpreted intent (paraphrase)
+- **Commit**: state the consequence (NPC reaction + cost)
+- **Hook**: present the next actionable direction
+
+**Safety:** narration must not leak internal fields/ids/markers; enforce a denylist + final guard.
+
+---
+
+## 5. Pacing Rules (8–12 minutes)
+
+### Defaults
+- **14–16 steps** to reach an ending.
+- Per step target reading time: ~25–40 seconds (short text, concrete options).
+
+### Story authoring invariants
+- Each step produces at least one player-visible change:
+  - state delta (time/heat/resource), or
+  - relation change (NPC trust/affection), or
+  - progress/event tag, or
+  - scene transition.
+- Branch depth ≤ 2 scenes before reconvergence.
+
+---
+
+## 6. API Surface (v3 recommendation)
+
+### Stories
+- `POST /stories` — create draft with raw `pack_json`
+- `POST /stories/{story_id}/publish` — publish a version (store raw `pack_json`)
+- `GET /stories/{story_id}?version=...` — returns wrapper with `pack` = raw `pack_json`
+
+### Sessions
+- `POST /sessions` — create session bound to `{story_id, version}`, initialize `state`, set `current_scene_id`
+- `GET /sessions/{session_id}` — fetch current status (optionally `dev_mode` for full state)
+
+### Step (player action)
+- `POST /sessions/{session_id}/step`
+  - Request:
+    - `client_action_id` (idempotency)
+    - `input`: `{type:"button"|"text", move_id?, text?}`
+    - `dev_mode?`
+  - Response (minimum):
+    - `scene_id`, `narration_text`
+    - `recognized`: `{interpreted_intent, move_id, confidence}`
+    - `resolution`: `{result, costs_summary, consequences_summary}`
+    - `ui`: `{moves:[{move_id,label,risk_hint?}], input_hint}`
+    - `debug` (dev only): resolution trace, applied deltas, selected outcome id
+
+**Accept-All contract:** no user input should trigger 4xx except session inactive / CAS / hard system errors.
+
+### One-click generation (author tooling)
+- `POST /stories/generate`
+  - Request: `{seed_text, target_minutes, npc_count, style?, publish?}`
+  - Output: `{story_id, version?, pack, lint_report, attempts}`
+
+---
+
+## 7. Linter & Auto-Repair
+
+### Linter checks
+- Schema validity
+- Reference validity: `next_scene_id`, `move_id`, `outcome_id` exist
+- Every move has `fail_forward`
+- Every scene includes required global moves (2–3)
+- Reachability: entry → all required scenes reachable
+- Existence of at least one ending path within 14–16 steps
+- Basic cycle risk: ensure there is a terminating route
+- Text leak guard: denylist scan on narration seeds (ids, debug markers)
+
+### Auto-repair loop (max 2 attempts)
+- Add missing `fail_forward` (template)
+- Add missing global moves to scenes
+- Fix broken references (redirect to nearest reconverging scene)
+- Repair dead-ends by attaching to a reconverge/ending scene
+- Re-run linter; stop when clean or attempts exhausted
+
+---
+
+## 8. One-click Generation Pipeline (recommended)
+
+1. **Seed → Beat Plan**  
+2. **Beat Plan → Scenes graph** (14–16 scenes, reconverging)
+3. **Scenes → Moves/Intents** (3–5 visible + 2–3 global per scene)
+4. **Outcomes fill** (success/partial/fail_forward; deterministic policies)
+5. **Lint + Auto-repair** (≤ 2 cycles)
+6. **Publish + Playtest** (simulate one run; export transcript)
+
+---
+
+## 9. Observability & Testing
+
+### Runtime telemetry (minimum)
+- Route result: `move_id`, confidence, fallback/global routing
+- Resolution result: success/partial/fail_forward, applied deltas
+- Progress: beat/scene progress increments
+- Acceptance metrics:
+  - meaningful_accept_rate (state/progress changed)
+  - fallback_with_progress_rate
+
+### Canary tests (must remain green)
+- Any text input produces 200 and advances or changes state (except inactive session)
+- Preconditions unmet → `fail_forward` outcome
+- Low confidence inputs → global move and still progress
+- Sample story completes within 14–16 steps
+
+---
+
+## 10. Notes on Extensibility
+
+Move templates do not limit the game if treated as **interfaces**:
+- Add story-specific moves for unique mechanics (e.g., `hack_terminal`, `cross_examine`)
+- Keep global moves small and stable
+- Prefer parameterization over move explosion to maintain routing accuracy

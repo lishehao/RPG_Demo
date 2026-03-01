@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+accept_all_rpg.egg-info/
+app.db
+*.sqlite3
+output/playwright/
+.DS_Store

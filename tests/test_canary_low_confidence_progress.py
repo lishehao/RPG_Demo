@@ -1,0 +1,36 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+PACK_PATH = Path("sample_data/story_pack_v1.json")
+
+
+def _bootstrap_session(client) -> str:
+    pack = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    story_resp = client.post("/stories", json={"title": "LowConfidence Story", "pack_json": pack})
+    story_id = story_resp.json()["story_id"]
+    publish_resp = client.post(f"/stories/{story_id}/publish", json={})
+    version = publish_resp.json()["version"]
+    session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
+    return session_resp.json()["session_id"]
+
+
+def test_three_low_confidence_inputs_still_advance_progress(client) -> None:
+    session_id = _bootstrap_session(client)
+    start = client.get(f"/sessions/{session_id}").json()
+    start_progress = sum(int(v) for v in start["beat_progress"].values())
+
+    for idx in range(1, 4):
+        response = client.post(
+            f"/sessions/{session_id}/step",
+            json={
+                "client_action_id": f"low-confidence-{idx}",
+                "input": {"type": "text", "text": "@@@ ??? !!!"},
+            },
+        )
+        assert response.status_code == 200
+
+    end = client.get(f"/sessions/{session_id}").json()
+    end_progress = sum(int(v) for v in end["beat_progress"].values())
+    assert end_progress > start_progress

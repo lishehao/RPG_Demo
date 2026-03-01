@@ -1,0 +1,895 @@
+{
+  "story_id": "city_signal_v1",
+  "title": "City Signal: Last Dawn",
+  "description": "Trace a rogue signal through a collapsing city and keep everyone moving forward.",
+  "npcs": ["Mara", "Jex", "Ivo", "Director Vale"],
+  "input_hint": "Type anything you want to do, or choose a move.",
+  "style_guard": "Use crisp present-tense narration. Keep momentum and consequences visible.",
+  "beats": [
+    {
+      "id": "b1",
+      "title": "Signal Emerges",
+      "step_budget": 4,
+      "required_events": [],
+      "npc_quota": 2,
+      "entry_scene_id": "sc1"
+    },
+    {
+      "id": "b2",
+      "title": "Cross The Facility",
+      "step_budget": 3,
+      "required_events": [],
+      "npc_quota": 2,
+      "entry_scene_id": "sc5"
+    },
+    {
+      "id": "b3",
+      "title": "Reach The Core",
+      "step_budget": 4,
+      "required_events": [],
+      "npc_quota": 2,
+      "entry_scene_id": "sc8"
+    },
+    {
+      "id": "b4",
+      "title": "Stabilize Dawn",
+      "step_budget": 4,
+      "required_events": [],
+      "npc_quota": 2,
+      "entry_scene_id": "sc12"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "sc1",
+      "beat_id": "b1",
+      "scene_seed": "Dockside static floods every comm line.",
+      "present_npcs": ["Mara", "Jex"],
+      "enabled_moves": ["scan_signal", "convince_guard", "sneak_route"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc2",
+          "condition_kind": "always",
+          "next_scene_id": "sc2",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc2",
+      "beat_id": "b1",
+      "scene_seed": "A checkpoint locks down the old market road.",
+      "present_npcs": ["Jex", "Ivo"],
+      "enabled_moves": ["scan_signal", "convince_guard", "sneak_route"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "branch_sneak",
+          "condition_kind": "state_equals",
+          "key": "last_move",
+          "value": "sneak_route",
+          "next_scene_id": "sc4",
+          "end_story": false
+        },
+        {
+          "id": "branch_default",
+          "condition_kind": "always",
+          "next_scene_id": "sc3",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc3",
+      "beat_id": "b1",
+      "scene_seed": "You climb a relay tower above the blackout district.",
+      "present_npcs": ["Mara", "Ivo"],
+      "enabled_moves": ["scan_signal", "decode_core", "aid_citizen"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc5_from_sc3",
+          "condition_kind": "always",
+          "next_scene_id": "sc5",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc4",
+      "beat_id": "b1",
+      "scene_seed": "A maintenance tunnel bypasses the checkpoint but collapses behind you.",
+      "present_npcs": ["Jex", "Ivo"],
+      "enabled_moves": ["sneak_route", "aid_citizen", "global.look"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc5_from_sc4",
+          "condition_kind": "always",
+          "next_scene_id": "sc5",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc5",
+      "beat_id": "b2",
+      "scene_seed": "The archive gate hums with emergency seals.",
+      "present_npcs": ["Ivo", "Director Vale"],
+      "enabled_moves": ["decode_core", "convince_guard", "aid_citizen"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc6",
+          "condition_kind": "always",
+          "next_scene_id": "sc6",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc6",
+      "beat_id": "b2",
+      "scene_seed": "Cooling halls rattle while evacuation alarms stutter.",
+      "present_npcs": ["Mara", "Director Vale"],
+      "enabled_moves": ["aid_citizen", "decode_core", "scan_signal"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc7",
+          "condition_kind": "always",
+          "next_scene_id": "sc7",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc7",
+      "beat_id": "b2",
+      "scene_seed": "A broken freight lift hangs over a dark shaft.",
+      "present_npcs": ["Jex", "Director Vale"],
+      "enabled_moves": ["sneak_route", "convince_guard", "global.look"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc8",
+          "condition_kind": "always",
+          "next_scene_id": "sc8",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc8",
+      "beat_id": "b3",
+      "scene_seed": "Catwalks ring the reactor throat like ribs.",
+      "present_npcs": ["Ivo", "Director Vale"],
+      "enabled_moves": ["decode_core", "scan_signal", "aid_citizen"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc9",
+          "condition_kind": "always",
+          "next_scene_id": "sc9",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc9",
+      "beat_id": "b3",
+      "scene_seed": "A ritual console still runs Director Vale's override code.",
+      "present_npcs": ["Mara", "Director Vale"],
+      "enabled_moves": ["confront_director", "decode_core", "global.look"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc10",
+          "condition_kind": "always",
+          "next_scene_id": "sc10",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc10",
+      "beat_id": "b3",
+      "scene_seed": "The balcony shakes as the core drifts toward breach.",
+      "present_npcs": ["Ivo", "Director Vale"],
+      "enabled_moves": ["stabilize_reactor", "decode_core", "aid_citizen"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc11",
+          "condition_kind": "always",
+          "next_scene_id": "sc11",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc11",
+      "beat_id": "b3",
+      "scene_seed": "Inner ring shutters grind open one by one.",
+      "present_npcs": ["Mara", "Ivo"],
+      "enabled_moves": ["scan_signal", "stabilize_reactor", "confront_director"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc12",
+          "condition_kind": "always",
+          "next_scene_id": "sc12",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc12",
+      "beat_id": "b4",
+      "scene_seed": "Core vestibule doors open onto white-hot machinery.",
+      "present_npcs": ["Director Vale", "Ivo"],
+      "enabled_moves": ["decode_core", "confront_director", "stabilize_reactor"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc13",
+          "condition_kind": "always",
+          "next_scene_id": "sc13",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc13",
+      "beat_id": "b4",
+      "scene_seed": "Sparks arc across the failing core chamber.",
+      "present_npcs": ["Mara", "Director Vale"],
+      "enabled_moves": ["stabilize_reactor", "aid_citizen", "confront_director"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc14",
+          "condition_kind": "always",
+          "next_scene_id": "sc14",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc14",
+      "beat_id": "b4",
+      "scene_seed": "The evacuation route floods with displaced civilians.",
+      "present_npcs": ["Jex", "Ivo"],
+      "enabled_moves": ["aid_citizen", "convince_guard", "stabilize_reactor"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "to_sc15",
+          "condition_kind": "always",
+          "next_scene_id": "sc15",
+          "end_story": false
+        }
+      ],
+      "is_terminal": false
+    },
+    {
+      "id": "sc15",
+      "beat_id": "b4",
+      "scene_seed": "Dawn breaks over a city that stayed standing.",
+      "present_npcs": ["Mara", "Jex"],
+      "enabled_moves": ["global.look", "global.clarify", "global.help_me_progress"],
+      "always_available_moves": ["global.clarify", "global.look", "global.help_me_progress"],
+      "exit_conditions": [
+        {
+          "id": "ending",
+          "condition_kind": "always",
+          "end_story": true
+        }
+      ],
+      "is_terminal": true
+    }
+  ],
+  "moves": [
+    {
+      "id": "global.clarify",
+      "label": "Clarify Intent",
+      "intents": ["global.clarify", "explain", "ask"],
+      "synonyms": ["what", "how", "help"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "clarify_success",
+          "result": "success",
+          "preconditions": [],
+          "effects": [
+            {"type": "add_event", "key": "clarify_success"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Mara narrows the objective into one clean step.",
+            "world_shift": "The noise in your plan drops.",
+            "clue_delta": "A practical path becomes visible.",
+            "cost_delta": "You spend a moment but gain direction.",
+            "next_hook": "Pick one concrete action and commit."
+          }
+        },
+        {
+          "id": "clarify_partial",
+          "result": "partial",
+          "preconditions": [],
+          "effects": [
+            {"type": "add_event", "key": "clarify_partial"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Jex gives you half an answer under pressure.",
+            "world_shift": "The route is clearer but time tightens.",
+            "clue_delta": "You get enough context to move.",
+            "cost_delta": "Delay adds strain to the team.",
+            "next_hook": "Move now before conditions worsen."
+          }
+        },
+        {
+          "id": "clarify_fail_forward",
+          "result": "fail_forward",
+          "preconditions": [],
+          "effects": [
+            {"type": "add_event", "key": "clarify_forced"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "No one has time for a full briefing.",
+            "world_shift": "The situation keeps moving without perfect clarity.",
+            "clue_delta": "You still catch one usable signal.",
+            "cost_delta": "You pay with uncertainty.",
+            "next_hook": "Act on the strongest clue immediately."
+          }
+        }
+      ]
+    },
+    {
+      "id": "global.look",
+      "label": "Survey Scene",
+      "intents": ["global.look", "inspect", "observe"],
+      "synonyms": ["check", "scan", "watch"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "look_success",
+          "result": "success",
+          "effects": [
+            {"type": "add_event", "key": "look_success"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Ivo points out structural weak points.",
+            "world_shift": "Hidden details surface.",
+            "clue_delta": "You identify the safest immediate line.",
+            "cost_delta": "No major cost beyond focus.",
+            "next_hook": "Choose whether to push fast or stabilize first."
+          }
+        },
+        {
+          "id": "look_partial",
+          "result": "partial",
+          "effects": [
+            {"type": "add_event", "key": "look_partial"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Your scan catches only part of the picture.",
+            "world_shift": "Some blind spots remain.",
+            "clue_delta": "You still get one dependable cue.",
+            "cost_delta": "Delay increases ambient risk.",
+            "next_hook": "Move before the scene shifts again."
+          }
+        },
+        {
+          "id": "look_fail_forward",
+          "result": "fail_forward",
+          "effects": [
+            {"type": "add_event", "key": "look_forced"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Dust and alarms ruin a clean read.",
+            "world_shift": "You must infer from fragments.",
+            "clue_delta": "A rough direction is still actionable.",
+            "cost_delta": "You commit with higher uncertainty.",
+            "next_hook": "Take the workable option and keep moving."
+          }
+        }
+      ]
+    },
+    {
+      "id": "global.help_me_progress",
+      "label": "Help Me Progress",
+      "intents": ["progress", "advance", "keep going"],
+      "synonyms": ["idk", "whatever", "random"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "help_progress_success",
+          "result": "success",
+          "effects": [
+            {"type": "add_event", "key": "help_progress_success"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "set_state", "key": "assisted", "value": true}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Mara pushes you toward the highest-impact move.",
+            "world_shift": "Decision paralysis breaks.",
+            "clue_delta": "A concrete next objective appears.",
+            "cost_delta": "You trade autonomy for speed.",
+            "next_hook": "Execute the suggested move now."
+          }
+        },
+        {
+          "id": "help_progress_partial",
+          "result": "partial",
+          "effects": [
+            {"type": "add_event", "key": "help_progress_partial"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "You get a rough push in the right direction.",
+            "world_shift": "Momentum returns unevenly.",
+            "clue_delta": "The next action is viable, not ideal.",
+            "cost_delta": "The team absorbs a small inefficiency.",
+            "next_hook": "Commit before hesitation returns."
+          }
+        },
+        {
+          "id": "help_progress_fail_forward",
+          "result": "fail_forward",
+          "effects": [
+            {"type": "add_event", "key": "help_progress_forced"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 2}
+          ],
+          "narration_slots": {
+            "npc_reaction": "No perfect guidance arrives in time.",
+            "world_shift": "The crisis chooses for you.",
+            "clue_delta": "A forced route still opens.",
+            "cost_delta": "You pay in fatigue and resources.",
+            "next_hook": "Work the forced route to your advantage."
+          }
+        }
+      ]
+    },
+    {
+      "id": "scan_signal",
+      "label": "Scan The Signal",
+      "intents": ["scan", "trace", "analyze signal"],
+      "synonyms": ["radio", "frequency", "ping"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "scan_success",
+          "result": "success",
+          "effects": [
+            {"type": "add_event", "key": "signal_traced"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Ivo confirms your reading with a sharp nod.",
+            "world_shift": "A hidden channel lines up with your map.",
+            "clue_delta": "You gain a stable route marker.",
+            "cost_delta": "Minimal resource drain.",
+            "next_hook": "Use the marker before the signal hops."
+          }
+        },
+        {
+          "id": "scan_partial",
+          "result": "partial",
+          "effects": [
+            {"type": "add_event", "key": "signal_partial"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Jex catches only fragments.",
+            "world_shift": "Interference keeps shifting the band.",
+            "clue_delta": "You still lock one probable direction.",
+            "cost_delta": "Power cells drain faster than planned.",
+            "next_hook": "Move while the partial lock holds."
+          }
+        },
+        {
+          "id": "scan_fail_forward",
+          "result": "fail_forward",
+          "effects": [
+            {"type": "add_event", "key": "signal_forced"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 2}
+          ],
+          "narration_slots": {
+            "npc_reaction": "The scanner blows a fuse mid-read.",
+            "world_shift": "You pivot to manual tracking.",
+            "clue_delta": "A rough but actionable path remains.",
+            "cost_delta": "You lose gear reliability.",
+            "next_hook": "Press forward before the trail cools."
+          }
+        }
+      ]
+    },
+    {
+      "id": "convince_guard",
+      "label": "Convince The Guard",
+      "intents": ["convince", "persuade", "talk through"],
+      "synonyms": ["negotiate", "plead", "argue"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "convince_success",
+          "result": "success",
+          "effects": [
+            {"type": "add_event", "key": "guard_aligned"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "The guard steps aside and shares access notes.",
+            "world_shift": "A social barrier opens cleanly.",
+            "clue_delta": "You gain trusted corridor intel.",
+            "cost_delta": "No major cost beyond urgency.",
+            "next_hook": "Take the opening before command rescinds it."
+          }
+        },
+        {
+          "id": "convince_partial",
+          "result": "partial",
+          "effects": [
+            {"type": "add_event", "key": "guard_uncertain"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "The guard allows passage but logs your team.",
+            "world_shift": "You pass with scrutiny.",
+            "clue_delta": "You get in with a narrow time window.",
+            "cost_delta": "Future checkpoints may tighten.",
+            "next_hook": "Move quickly before the alert propagates."
+          }
+        },
+        {
+          "id": "convince_fail_forward",
+          "result": "fail_forward",
+          "effects": [
+            {"type": "add_event", "key": "guard_refused"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 2}
+          ],
+          "narration_slots": {
+            "npc_reaction": "The guard refuses, but chaos opens a side lane.",
+            "world_shift": "Diplomacy fails, improvisation takes over.",
+            "clue_delta": "A risky route appears anyway.",
+            "cost_delta": "Trust drops and risk rises.",
+            "next_hook": "Take the side lane before it collapses."
+          }
+        }
+      ]
+    },
+    {
+      "id": "sneak_route",
+      "label": "Take A Sneak Route",
+      "intents": ["sneak", "bypass", "slip through"],
+      "synonyms": ["stealth", "quiet", "crawl"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "sneak_success",
+          "result": "success",
+          "effects": [
+            {"type": "add_event", "key": "sneak_success"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Jex grins as you vanish past patrol lights.",
+            "world_shift": "The route shifts to hidden infrastructure.",
+            "clue_delta": "You discover a maintenance vector.",
+            "cost_delta": "Low immediate cost.",
+            "next_hook": "Exploit the hidden vector while unseen."
+          }
+        },
+        {
+          "id": "sneak_partial",
+          "result": "partial",
+          "effects": [
+            {"type": "add_event", "key": "sneak_partial"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "You pass, but sensors catch a heat trace.",
+            "world_shift": "Stealth works with residue.",
+            "clue_delta": "You keep the route but lose anonymity.",
+            "cost_delta": "Threat level ticks upward.",
+            "next_hook": "Stay mobile before response teams converge."
+          }
+        },
+        {
+          "id": "sneak_fail_forward",
+          "result": "fail_forward",
+          "effects": [
+            {"type": "add_event", "key": "sneak_forced"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 2}
+          ],
+          "narration_slots": {
+            "npc_reaction": "A panel collapses and gives your position away.",
+            "world_shift": "You push through a loud detour.",
+            "clue_delta": "The detour still reaches your objective.",
+            "cost_delta": "You lose stealth and time.",
+            "next_hook": "Turn noise into momentum before pursuers align."
+          }
+        }
+      ]
+    },
+    {
+      "id": "decode_core",
+      "label": "Decode Core Patterns",
+      "intents": ["decode", "decrypt", "read core"],
+      "synonyms": ["cipher", "terminal", "protocol"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "decode_success",
+          "result": "success",
+          "preconditions": [
+            {"kind": "event_present", "key": "signal_traced"}
+          ],
+          "effects": [
+            {"type": "add_event", "key": "core_decoded"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Ivo syncs with your logic and confirms the key.",
+            "world_shift": "The core's behavior becomes legible.",
+            "clue_delta": "You isolate the failure pattern.",
+            "cost_delta": "You spend concentration, not resources.",
+            "next_hook": "Use the decoded pattern to control the next hazard."
+          }
+        },
+        {
+          "id": "decode_partial",
+          "result": "partial",
+          "preconditions": [
+            {"kind": "event_present", "key": "guard_aligned"}
+          ],
+          "effects": [
+            {"type": "add_event", "key": "core_partial"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "You decode only the safety layer.",
+            "world_shift": "The core calms briefly.",
+            "clue_delta": "Partial insight is enough to proceed.",
+            "cost_delta": "System stress still rises slowly.",
+            "next_hook": "Act before partial control expires."
+          }
+        },
+        {
+          "id": "decode_fail_forward",
+          "result": "fail_forward",
+          "preconditions": [],
+          "effects": [
+            {"type": "add_event", "key": "core_forced"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 2}
+          ],
+          "narration_slots": {
+            "npc_reaction": "The interface rejects your first pass.",
+            "world_shift": "You brute-force a narrower fallback route.",
+            "clue_delta": "A degraded command channel opens.",
+            "cost_delta": "Heat and fatigue spike.",
+            "next_hook": "Use the fallback route before it burns out."
+          }
+        }
+      ]
+    },
+    {
+      "id": "aid_citizen",
+      "label": "Aid Civilians",
+      "intents": ["rescue", "aid", "help people"],
+      "synonyms": ["save", "evacuate", "protect"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "aid_success",
+          "result": "success",
+          "effects": [
+            {"type": "add_event", "key": "citizens_safe"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Families follow your route markers.",
+            "world_shift": "Panic converts to movement.",
+            "clue_delta": "Evac lanes become usable for your team too.",
+            "cost_delta": "You spend time but gain civilian support.",
+            "next_hook": "Leverage the opened lanes for your next push."
+          }
+        },
+        {
+          "id": "aid_partial",
+          "result": "partial",
+          "effects": [
+            {"type": "add_event", "key": "citizens_moved"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "You move part of the crowd to shelter.",
+            "world_shift": "Pressure eases but does not clear.",
+            "clue_delta": "You gain one safe pocket.",
+            "cost_delta": "The team loses pace.",
+            "next_hook": "Decide whether to secure more people or press ahead."
+          }
+        },
+        {
+          "id": "aid_fail_forward",
+          "result": "fail_forward",
+          "effects": [
+            {"type": "add_event", "key": "aid_forced"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 2}
+          ],
+          "narration_slots": {
+            "npc_reaction": "A surge breaks your formation.",
+            "world_shift": "You redirect survivors through a harsher route.",
+            "clue_delta": "The new path still carries people out.",
+            "cost_delta": "You pay in stamina and supplies.",
+            "next_hook": "Hold the new route until flow stabilizes."
+          }
+        }
+      ]
+    },
+    {
+      "id": "confront_director",
+      "label": "Confront Director Vale",
+      "intents": ["confront", "challenge", "call out"],
+      "synonyms": ["accuse", "threaten", "pressure"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "confront_success",
+          "result": "success",
+          "effects": [
+            {"type": "add_event", "key": "director_yielded"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Director Vale drops the pretense and yields access.",
+            "world_shift": "Command hierarchy cracks.",
+            "clue_delta": "You gain privileged control codes.",
+            "cost_delta": "Political fallout is deferred.",
+            "next_hook": "Use the codes before Vale regroups."
+          }
+        },
+        {
+          "id": "confront_partial",
+          "result": "partial",
+          "effects": [
+            {"type": "add_event", "key": "director_stalled"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Vale bargains for leverage while buying seconds.",
+            "world_shift": "Power remains contested.",
+            "clue_delta": "You extract one critical override phrase.",
+            "cost_delta": "You lose precious time in the exchange.",
+            "next_hook": "Exploit the phrase before it is revoked."
+          }
+        },
+        {
+          "id": "confront_fail_forward",
+          "result": "fail_forward",
+          "effects": [
+            {"type": "add_event", "key": "director_resisted"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 2}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Vale refuses and triggers emergency locks.",
+            "world_shift": "Negotiation collapses into forceful adaptation.",
+            "clue_delta": "The lock cycle exposes a short exploit window.",
+            "cost_delta": "You absorb political and tactical damage.",
+            "next_hook": "Push through the exploit window immediately."
+          }
+        }
+      ]
+    },
+    {
+      "id": "stabilize_reactor",
+      "label": "Stabilize Reactor",
+      "intents": ["stabilize", "contain", "balance core"],
+      "synonyms": ["cool", "anchor", "patch"],
+      "args_schema": {},
+      "resolution_policy": "prefer_success",
+      "outcomes": [
+        {
+          "id": "stabilize_success",
+          "result": "success",
+          "preconditions": [
+            {"kind": "event_present", "key": "core_decoded"}
+          ],
+          "effects": [
+            {"type": "add_event", "key": "reactor_stable"},
+            {"type": "advance_beat_progress", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Mara calls out a clean rhythm and you match it.",
+            "world_shift": "The reactor settles into a survivable band.",
+            "clue_delta": "You confirm a stable output envelope.",
+            "cost_delta": "Major catastrophe is averted for now.",
+            "next_hook": "Transition from containment to recovery."
+          }
+        },
+        {
+          "id": "stabilize_partial",
+          "result": "partial",
+          "preconditions": [
+            {"kind": "event_present", "key": "core_partial"}
+          ],
+          "effects": [
+            {"type": "add_event", "key": "reactor_partial"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 1}
+          ],
+          "narration_slots": {
+            "npc_reaction": "Containment holds in pulses, not fully.",
+            "world_shift": "Instability drops but does not vanish.",
+            "clue_delta": "You gain a narrow operating window.",
+            "cost_delta": "Maintenance burden rises.",
+            "next_hook": "Use the window to secure evacuation and shutdown."
+          }
+        },
+        {
+          "id": "stabilize_fail_forward",
+          "result": "fail_forward",
+          "effects": [
+            {"type": "add_event", "key": "reactor_forced"},
+            {"type": "advance_beat_progress", "value": 1},
+            {"type": "cost", "value": 2}
+          ],
+          "narration_slots": {
+            "npc_reaction": "The core bucks against your controls.",
+            "world_shift": "You shift from stabilization to managed collapse.",
+            "clue_delta": "A controlled fallback path still saves the city.",
+            "cost_delta": "Infrastructure damage becomes unavoidable.",
+            "next_hook": "Execute the fallback protocol without delay."
+          }
+        }
+      ]
+    }
+  ]
+}

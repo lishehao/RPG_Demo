@@ -1,0 +1,67 @@
+from __future__ import annotations
+
+from typing import Any
+
+from app.config.settings import get_settings
+from app.domain.constants import GLOBAL_CLARIFY_MOVE_ID, GLOBAL_HELP_ME_PROGRESS_MOVE_ID
+from app.domain.pack_schema import Move, Scene
+from app.llm.base import LLMProvider
+
+
+def route_player_action(
+    provider: LLMProvider,
+    scene: Scene,
+    move_map: dict[str, Move],
+    action_input: dict[str, Any],
+) -> dict[str, Any]:
+    settings = get_settings()
+    threshold = settings.routing_confidence_threshold
+
+    available = list(dict.fromkeys(scene.enabled_moves + scene.always_available_moves))
+    fallback_move = (
+        GLOBAL_HELP_ME_PROGRESS_MOVE_ID if GLOBAL_HELP_ME_PROGRESS_MOVE_ID in available else GLOBAL_CLARIFY_MOVE_ID
+    )
+    if fallback_move not in available and available:
+        fallback_move = available[0]
+
+    if action_input.get("type") == "button":
+        requested = action_input.get("move_id")
+        if requested in available:
+            return {
+                "interpreted_intent": f"button:{requested}",
+                "move_id": requested,
+                "confidence": 1.0,
+            }
+        return {
+            "interpreted_intent": f"button:{requested or 'invalid'}",
+            "move_id": fallback_move,
+            "confidence": 0.25,
+        }
+
+    text = action_input.get("text") or ""
+    scene_context = {
+        "moves": [
+            {
+                "id": move_id,
+                "label": move_map[move_id].label,
+                "intents": move_map[move_id].intents,
+                "synonyms": move_map[move_id].synonyms,
+            }
+            for move_id in available
+            if move_id in move_map
+        ],
+        "fallback_move": fallback_move,
+        "scene_seed": scene.scene_seed,
+    }
+    routed = provider.route_intent(scene_context, text)
+
+    chosen_move = routed.move_id
+    confidence = routed.confidence
+    if chosen_move not in available or confidence < threshold:
+        chosen_move = fallback_move
+
+    return {
+        "interpreted_intent": routed.interpreted_intent,
+        "move_id": chosen_move,
+        "confidence": float(confidence),
+    }
