@@ -7,7 +7,6 @@ This document defines the current “north star” architecture for an **8–12 
 ### Product goals
 - **8–12 minutes per playthrough** (target **14–16 steps**).
 - Provider policy:
-  - `fake`: Accept-All behavior for local baseline and offline simulation.
   - `openai`: quality-first failfast for route/narration failures.
 - **Multiple NPCs**: 3–5 NPCs per story; each appears at least twice.
 
@@ -96,14 +95,14 @@ Moves are **parameterizable** and reusable across stories.
 
 ---
 
-## 3. Global Moves (Fallback Backbone for Non-Strict Providers)
+## 3. Global Moves (Gameplay Backbone)
 
 Each scene must include 2–3 global moves. Minimum set:
 - `global.clarify`: low-confidence input → NPC asks/forces clarification **while advancing tension/progress**
 - `global.look`: observation/scan → reveals a clue or changes situation slightly
 - `global.help_me_progress`: “I don’t know what to do” → offers concrete next options + small progress
 
-**Rule:** for non-strict providers (for example `fake`), nonsense/empty inputs route to a global move and still produce an outcome.
+**Rule:** global moves remain available choices and button fallback targets, but text-routing failures in strict mode failfast.
 
 ---
 
@@ -119,7 +118,6 @@ Input → `MoveInvocation`
   - `interpreted_intent` (one sentence)
 
 **Low confidence policy:**
-- `fake`: if confidence < threshold (or parse fails), route to `global.clarify` (or `help_me_progress`), never “no-op”.
 - `openai`: if confidence < threshold, parse fails, or move is invalid, failfast this step with `503`.
 
 ### Pass B — Outcome Resolution (Deterministic)
@@ -179,7 +177,7 @@ Narration renders `narration_slots` into player-facing text using a strict templ
     - `ui`: `{moves:[{move_id,label,risk_hint?}], input_hint}`
     - `debug` (dev only): resolution trace, applied deltas, selected outcome id
 
-**Step contract:** `POST /sessions/{session_id}/step` may return `503` on strict-provider LLM failures (route error, low confidence, invalid move, narration failure). Non-strict providers preserve Accept-All fallback.
+**Step contract:** `POST /sessions/{session_id}/step` may return `503` on LLM failures (route error, low confidence, invalid move, narration failure).
 
 ### Admin Diagnostics (no-auth in current phase)
 - `GET /admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed`)
@@ -238,10 +236,9 @@ Narration renders `narration_slots` into player-facing text using a strict templ
   - fallback_with_progress_rate
 
 ### Canary tests (must remain green)
-- Non-strict provider: any text input produces 200 and advances or changes state (except inactive session)
-- Strict provider: LLM route/narration failures produce 503 with structured error detail
+- Healthy-path provider behavior: valid text/button inputs produce 200 and advance or change state (except inactive session)
+- LLM route/narration failures produce 503 with structured error detail
 - Preconditions unmet → `fail_forward` outcome
-- Non-strict low confidence inputs → global move and still progress
 - Sample story completes within 14–16 steps
 
 ---

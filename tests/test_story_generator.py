@@ -10,8 +10,22 @@ from app.generator.prompt_compiler import PromptCompileError, PromptCompileResul
 from app.generator.spec_schema import StorySpec
 from app.generator.service import GeneratorBuildError, GeneratorService
 from app.generator.versioning import GENERATOR_VERSION
-from app.llm.fake_provider import FakeProvider
+from app.llm.base import LLMProvider, RouteIntentResult
 from app.runtime.service import RuntimeService
+
+
+class _DeterministicProvider(LLMProvider):
+    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
+        fallback = scene_context.get("fallback_move", "global.help_me_progress")
+        return RouteIntentResult(
+            move_id=fallback,
+            args={},
+            confidence=0.9,
+            interpreted_intent=(text or "").strip() or "help me progress",
+        )
+
+    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
+        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
 
 
 def _sample_story_spec() -> StorySpec:
@@ -103,7 +117,7 @@ def test_generate_pack_pacing_reaches_terminal_14_16() -> None:
         npc_count=4,
     )
     pack = StoryPack.model_validate(generated.pack)
-    runtime = RuntimeService(FakeProvider())
+    runtime = RuntimeService(_DeterministicProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     steps = 0
@@ -256,7 +270,7 @@ def test_same_seed_10_generations_quality_target() -> None:
                     palette_ids.add(parts[-1])
 
         pack = StoryPack.model_validate(generated.pack)
-        runtime = RuntimeService(FakeProvider())
+        runtime = RuntimeService(_DeterministicProvider())
         scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
         ended = False
         step_count = 0
@@ -380,7 +394,7 @@ def test_prompt_mode_pacing_reaches_terminal_14_16(monkeypatch) -> None:
         npc_count=4,
     )
     pack = StoryPack.model_validate(generated.pack)
-    runtime = RuntimeService(FakeProvider())
+    runtime = RuntimeService(_DeterministicProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     steps = 0

@@ -118,12 +118,14 @@ def simulate_pack_playthrough(
     pack_json: dict[str, Any],
     *,
     strategy: str = "text_help",
-    provider_name: str = "fake",
+    provider_name: str = "openai",
     max_steps: int = 20,
     strategy_seed: int | None = None,
     metadata: dict[str, Any] | None = None,
     rng: random.Random | None = None,
 ) -> dict[str, Any]:
+    if provider_name != "openai":
+        raise RuntimeError(f"unsupported provider for local simulation: {provider_name}")
     working_rng = rng or random.Random(strategy_seed)
     metadata_payload = metadata or {}
     pack_hash = metadata_payload.get("pack_hash") or compute_pack_hash(pack_json)
@@ -132,7 +134,7 @@ def simulate_pack_playthrough(
 
     pack = StoryPack.model_validate(pack_json)
     try:
-        runtime = RuntimeService(get_llm_provider(provider_name))
+        runtime = RuntimeService(get_llm_provider())
     except LLMProviderConfigError as exc:
         raise RuntimeError(f"failed to initialize provider '{provider_name}': {exc}") from exc
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
@@ -360,8 +362,8 @@ def main() -> int:
     parser.add_argument("--strategy-seed", type=int, help="Optional fixed seed for strategy randomness")
     parser.add_argument(
         "--provider",
-        default="fake",
-        choices=["fake", "openai"],
+        default="openai",
+        choices=["openai"],
         help="Provider for local pack simulation mode",
     )
     parser.add_argument("--dev-mode", action="store_true", help="Send dev_mode=true on each /step")

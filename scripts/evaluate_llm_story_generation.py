@@ -568,7 +568,7 @@ def evaluate_llm_story_generation(
                     play_report = simulate_pack_playthrough(
                         generated.pack,
                         strategy=strategy,
-                        provider_name="fake",
+                        provider_name="openai",
                         max_steps=max_steps,
                         strategy_seed=strategy_seed,
                         metadata={

@@ -1,6 +1,7 @@
+import os
+
 from app.config.settings import get_settings
 from app.llm.base import LLMProvider, LLMProviderConfigError
-from app.llm.fake_provider import FakeProvider
 from app.llm.openai_provider import OpenAIProvider
 
 
@@ -17,42 +18,39 @@ def resolve_openai_models(
     return effective_route, effective_narration
 
 
-def get_llm_provider(provider_override: str | None = None) -> LLMProvider:
+def get_llm_provider() -> LLMProvider:
     settings = get_settings()
-    provider = (provider_override or settings.llm_provider).lower()
-
-    if provider == "fake":
-        return FakeProvider()
-    if provider == "openai":
-        missing: list[str] = []
-        if not (settings.llm_openai_base_url or "").strip():
-            missing.append("APP_LLM_OPENAI_BASE_URL")
-        if not (settings.llm_openai_api_key or "").strip():
-            missing.append("APP_LLM_OPENAI_API_KEY")
-        route_model, narration_model = resolve_openai_models(
-            settings.llm_openai_route_model,
-            settings.llm_openai_narration_model,
-            settings.llm_openai_model,
-        )
-        if not route_model and not narration_model:
-            missing.append(
-                "one of APP_LLM_OPENAI_ROUTE_MODEL / APP_LLM_OPENAI_NARRATION_MODEL / APP_LLM_OPENAI_MODEL"
-            )
-        if missing:
-            joined = ", ".join(missing)
-            raise LLMProviderConfigError(f"openai provider misconfigured; missing: {joined}")
-
-        return OpenAIProvider(
-            base_url=settings.llm_openai_base_url or "",
-            api_key=settings.llm_openai_api_key or "",
-            model=settings.llm_openai_model,
-            route_model=route_model,
-            narration_model=narration_model,
-            timeout_seconds=settings.llm_openai_timeout_seconds,
-            route_max_retries=settings.llm_openai_route_max_retries,
-            narration_max_retries=settings.llm_openai_narration_max_retries,
-            route_temperature=settings.llm_openai_temperature_route,
-            narration_temperature=settings.llm_openai_temperature_narration,
+    legacy_provider = (os.getenv("APP_LLM_PROVIDER") or "").strip().lower()
+    if legacy_provider and legacy_provider != "openai":
+        raise LLMProviderConfigError(
+            f"openai provider misconfigured; APP_LLM_PROVIDER must be 'openai' when set (got: {legacy_provider})"
         )
 
-    raise LLMProviderConfigError(f"unsupported llm provider: {provider}")
+    missing: list[str] = []
+    if not (settings.llm_openai_base_url or "").strip():
+        missing.append("APP_LLM_OPENAI_BASE_URL")
+    if not (settings.llm_openai_api_key or "").strip():
+        missing.append("APP_LLM_OPENAI_API_KEY")
+    route_model, narration_model = resolve_openai_models(
+        settings.llm_openai_route_model,
+        settings.llm_openai_narration_model,
+        settings.llm_openai_model,
+    )
+    if not route_model and not narration_model:
+        missing.append("one of APP_LLM_OPENAI_ROUTE_MODEL / APP_LLM_OPENAI_NARRATION_MODEL / APP_LLM_OPENAI_MODEL")
+    if missing:
+        joined = ", ".join(missing)
+        raise LLMProviderConfigError(f"openai provider misconfigured; missing: {joined}")
+
+    return OpenAIProvider(
+        base_url=settings.llm_openai_base_url or "",
+        api_key=settings.llm_openai_api_key or "",
+        model=settings.llm_openai_model,
+        route_model=route_model,
+        narration_model=narration_model,
+        timeout_seconds=settings.llm_openai_timeout_seconds,
+        route_max_retries=settings.llm_openai_route_max_retries,
+        narration_max_retries=settings.llm_openai_narration_max_retries,
+        route_temperature=settings.llm_openai_temperature_route,
+        narration_temperature=settings.llm_openai_temperature_narration,
+    )

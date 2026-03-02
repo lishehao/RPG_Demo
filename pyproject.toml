@@ -27,5 +27,8 @@ where = ["."]
 include = ["app*"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q -m 'not live_openai_critical'"
 testpaths = ["tests"]
+markers = [
+  "live_openai_critical: real OpenAI integration checks for runtime critical paths",
+]

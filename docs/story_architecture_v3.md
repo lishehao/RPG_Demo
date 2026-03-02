@@ -6,7 +6,6 @@ This document is the canonical specification for the interactive narrative runti
 - 8-12 minutes per playthrough.
 - 14-16 turns as runtime pacing target.
 - Input handling policy:
-  - `fake` provider keeps Accept-All for local baseline and offline simulation.
   - `openai` provider uses quality-first failfast for route/narration failures.
 
 ## Core Structure
@@ -62,9 +61,8 @@ Story packs follow:
 ### Pass A: Intent Routing
 - Button: direct move invocation.
 - Free-text: provider route result with `move_id`, `args`, `confidence`, `interpreted_intent`.
-- Provider-aware handling:
-  - `fake`: low confidence or invalid routing falls back to global moves.
-  - `openai`: low confidence/invalid move/route exception failfasts the step.
+- OpenAI-only handling:
+  - low confidence/invalid move/route exception failfasts the step.
 
 ### Pass B: Outcome Resolution
 - Deterministic outcome selection.
@@ -75,9 +73,8 @@ Story packs follow:
 ### Narration
 - Provider only renders text from slots.
 - Enforce `Echo + Commit + Hook` shape.
-- Provider-aware handling:
-  - `fake`: narration failure falls back to deterministic `Echo + Commit + Hook`.
-  - `openai`: narration failure failfasts the step.
+- OpenAI-only handling:
+  - narration failure failfasts the step.
 - Never leak internal fields, IDs, or debug markers.
 
 ## Story Generator Pipeline

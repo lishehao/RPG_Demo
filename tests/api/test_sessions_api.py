@@ -24,7 +24,24 @@ def _get_timeline_events(client, session_id: str) -> list[dict]:
     return response.json()["events"]
 
 
-def test_session_create_and_get(client) -> None:
+class _DeterministicProvider(LLMProvider):
+    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
+        fallback = scene_context.get("fallback_move", "global.help_me_progress")
+        return RouteIntentResult(
+            move_id=fallback,
+            args={},
+            confidence=0.95,
+            interpreted_intent=(text or "").strip() or "help me progress",
+        )
+
+    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
+        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
+
+
+def test_session_create_and_get(client, monkeypatch) -> None:
+    from app.api import sessions as sessions_api
+
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     story_id, version = _bootstrap_story(client)
 
     created = client.post("/sessions", json={"story_id": story_id, "version": version})
@@ -40,7 +57,10 @@ def test_session_create_and_get(client) -> None:
     assert "state" in fetched_body
 
 
-def test_step_is_idempotent_by_client_action_id(client) -> None:
+def test_step_is_idempotent_by_client_action_id(client, monkeypatch) -> None:
+    from app.api import sessions as sessions_api
+
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
@@ -64,7 +84,10 @@ def test_step_is_idempotent_by_client_action_id(client) -> None:
     assert "step_replayed" in event_types
 
 
-def test_step_tolerates_button_without_move_id(client) -> None:
+def test_step_tolerates_button_without_move_id(client, monkeypatch) -> None:
+    from app.api import sessions as sessions_api
+
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
@@ -79,7 +102,10 @@ def test_step_tolerates_button_without_move_id(client) -> None:
     assert body["recognized"]["move_id"] == "global.help_me_progress"
 
 
-def test_step_tolerates_missing_or_invalid_input_shape(client) -> None:
+def test_step_tolerates_missing_or_invalid_input_shape(client, monkeypatch) -> None:
+    from app.api import sessions as sessions_api
+
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
@@ -116,6 +142,20 @@ def test_session_create_returns_503_when_openai_provider_misconfigured(client, m
     response = client.post("/sessions", json={"story_id": story_id, "version": version})
     assert response.status_code == 503
     assert "llm provider misconfigured" in response.json()["detail"]
+    get_settings.cache_clear()
+
+
+def test_session_create_returns_503_when_legacy_provider_not_openai(client, monkeypatch) -> None:
+    story_id, version = _bootstrap_story(client)
+    monkeypatch.setenv("APP_LLM_PROVIDER", "fake")
+    monkeypatch.setenv("APP_LLM_OPENAI_BASE_URL", "https://example.com/compatible-mode")
+    monkeypatch.setenv("APP_LLM_OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "route-model")
+    get_settings.cache_clear()
+
+    response = client.post("/sessions", json={"story_id": story_id, "version": version})
+    assert response.status_code == 503
+    assert "APP_LLM_PROVIDER must be 'openai'" in response.json()["detail"]
     get_settings.cache_clear()
 
 

@@ -1,7 +1,6 @@
 # Accept-All Narrative RPG (Backend-First)
 
-Backend-first interactive narrative RPG service with provider-aware runtime behavior:
-- `fake` provider keeps strict Accept-All behavior.
+Backend-first interactive narrative RPG service with OpenAI-only runtime behavior:
 - `openai` provider uses quality-first failfast for LLM route/narration failures.
 - Preconditions never hard-block progression.
 - When success/partial cannot apply, runtime must execute `fail_forward`.
@@ -17,7 +16,7 @@ Code is split by responsibilities:
 - `app/domain`: Story Pack DSL schema + linter
 - `app/generator`: deterministic story generator (`planner/builder/prompt_compiler/service`)
 - `app/runtime`: Pass A routing + Pass B deterministic resolution + narration composition
-- `app/llm`: provider abstraction (`FakeProvider` baseline, `OpenAIProvider` strict failfast)
+- `app/llm`: OpenAI provider abstraction (`OpenAIProvider`)
 - `app/storage`: SQLModel entities + repositories
 - `app/api`: REST API (stories/sessions)
 
@@ -48,10 +47,9 @@ curl http://127.0.0.1:8000/health
 Environment variables use `APP_` prefix.
 
 - `APP_DATABASE_URL` default: `sqlite:///./app.db`
-- `APP_LLM_PROVIDER` default: `fake` (`fake|openai`)
 - `APP_ROUTING_CONFIDENCE_THRESHOLD` default: `0.55`
-- `APP_LLM_OPENAI_BASE_URL` required when `APP_LLM_PROVIDER=openai`
-- `APP_LLM_OPENAI_API_KEY` required when `APP_LLM_PROVIDER=openai`
+- `APP_LLM_OPENAI_BASE_URL` required
+- `APP_LLM_OPENAI_API_KEY` required
 - `APP_LLM_OPENAI_MODEL` optional legacy fallback model
 - `APP_LLM_OPENAI_ROUTE_MODEL` optional selection model (fallback chain: `NARRATION -> MODEL`)
 - `APP_LLM_OPENAI_NARRATION_MODEL` optional narration model (fallback chain: `ROUTE -> MODEL`)
@@ -100,10 +98,10 @@ curl -sS "${APP_LLM_OPENAI_BASE_URL%/}/v1/chat/completions" \
 ```
 
 Failure modes are gate-controlled:
-- if provider config is invalid and `APP_LLM_PROVIDER=openai`, session create/step returns `503`.
+- if provider config is invalid, session create/step returns `503`.
 - if OpenAI route fails (including low confidence or invalid move), step returns `503` with structured detail.
 - if OpenAI narration fails, step returns `503` with structured detail.
-- each successful step includes `recognized.route_source` (`llm`, `fallback_error`, `fallback_low_confidence`, `fallback_invalid_move`, `button`, `button_fallback`) for observability. Fallback sources primarily apply to non-strict providers like `fake`.
+- each successful step includes `recognized.route_source` (`llm`, `button`, `button_fallback`) for observability.
 
 ## Story Pack and Linter
 Global move IDs (required in every scene):
@@ -236,7 +234,7 @@ curl -sS "http://127.0.0.1:8000/sessions/{session_id}?dev_mode=true"
 
 ```bash
 python scripts/simulate_playthrough.py \
-  --provider fake \
+  --provider openai \
   --base-url http://127.0.0.1:8000 \
   --story-id {story_id} \
   --version 1 \
@@ -290,7 +288,7 @@ For replay:
 - each run stores pack snapshots under `reports/packs/{pack_hash}.json`
 - report includes `pack_hash`, `generator_version`, `variant_seed`, `strategy_seed`, `transcript_digest`
 
-### 10) LLM gate evaluation (fake vs openai, same pack)
+### 10) LLM gate evaluation (openai-only, strict)
 
 ```bash
 python scripts/evaluate_llm_gate.py \
@@ -301,11 +299,10 @@ python scripts/evaluate_llm_gate.py \
 ```
 
 Gate expectations:
-- `fake.completion_rate == 1.0`
-- `openai.completion_rate == 1.0`
-- `openai.meaningful_accept_rate >= fake.meaningful_accept_rate`
-- `openai.llm_route_success_rate >= 0.80`
-- `openai.step_error_rate == 0.0`
+- `completion_rate == 1.0`
+- `meaningful_accept_rate >= 0.90`
+- `llm_route_success_rate >= 0.80`
+- `step_error_rate == 0.0`
 
 Additional observability metrics:
 - `llm_route_success_rate`
@@ -357,7 +354,7 @@ python scripts/evaluate_llm_story_generation.py \
 
 What it evaluates:
 - prompt mode generation only (`GeneratorService.generate_pack(prompt_text=...)`)
-- playability replay using `provider=fake` to isolate generation quality
+- playability replay using `provider=openai` (strict runtime behavior)
 - subjective quality via LLM Judge (chat completions JSON mode)
 
 Hard gate thresholds:
@@ -440,10 +437,16 @@ curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback?limit=50"
 This lets you attach "not fun" cases directly to session traces for later analysis.
 
 ## Tests
-Run all tests:
+Default low-cost test set (no live OpenAI critical tests):
 
 ```bash
-pytest -q
+pytest -q -m "not live_openai_critical"
+```
+
+Live OpenAI critical validation (sessions runtime + gate precheck):
+
+```bash
+pytest -q -m live_openai_critical -o addopts='-q'
 ```
 
 Canary tests included:

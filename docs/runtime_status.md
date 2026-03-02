@@ -5,8 +5,7 @@ This file maps `docs/architecture.md` sections to current implementation status.
 ## Implemented
 - Accept-All runtime loop (Pass A + Pass B) with deterministic outcome resolution.
 - `fail_forward` mandatory linter validation.
-- Provider-aware routing policy:
-  - `fake`: fallback routing via `global.help_me_progress`/`global.clarify`
+- OpenAI-only routing policy:
   - `openai`: quality-first failfast on route error/invalid move/low confidence
 - Session idempotency by `client_action_id` replay.
 - Story draft/publish/get APIs.

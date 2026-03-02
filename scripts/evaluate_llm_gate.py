@@ -22,8 +22,9 @@ except ModuleNotFoundError:
 
 MEDIUM_GATE_THRESHOLDS: dict[str, float] = {
     "completion_rate_required": 1.0,
+    "meaningful_accept_rate_min": 0.90,
     "llm_route_success_rate_min": 0.80,
-    "openai_step_error_rate_required": 0.0,
+    "step_error_rate_required": 0.0,
 }
 
 
@@ -93,7 +94,7 @@ def _run_openai_precheck() -> dict[str, Any]:
         }
 
     try:
-        provider = get_llm_provider("openai")
+        provider = get_llm_provider()
         routed = provider.route_intent(
             scene_context={
                 "moves": [
@@ -136,23 +137,19 @@ def _run_openai_precheck() -> dict[str, Any]:
         }
 
 
-def _compute_gate(metrics: dict[str, dict[str, float]]) -> dict[str, Any]:
+def _compute_gate(metrics: dict[str, float]) -> dict[str, Any]:
     gate = {
         "thresholds": dict(MEDIUM_GATE_THRESHOLDS),
-        "openai_completion_rate": metrics["openai"]["completion_rate"],
-        "fake_completion_rate": metrics["fake"]["completion_rate"],
-        "openai_meaningful_accept_rate": metrics["openai"]["meaningful_accept_rate"],
-        "fake_meaningful_accept_rate": metrics["fake"]["meaningful_accept_rate"],
-        "openai_llm_route_success_rate": metrics["openai"]["llm_route_success_rate"],
-        "openai_step_error_rate": metrics["openai"]["step_error_rate"],
-        "openai_fallback_error_rate": metrics["openai"]["fallback_error_rate"],
+        "completion_rate": metrics["completion_rate"],
+        "meaningful_accept_rate": metrics["meaningful_accept_rate"],
+        "llm_route_success_rate": metrics["llm_route_success_rate"],
+        "step_error_rate": metrics["step_error_rate"],
     }
     gate["passed"] = (
-        gate["openai_completion_rate"] == MEDIUM_GATE_THRESHOLDS["completion_rate_required"]
-        and gate["fake_completion_rate"] == MEDIUM_GATE_THRESHOLDS["completion_rate_required"]
-        and gate["openai_meaningful_accept_rate"] >= gate["fake_meaningful_accept_rate"]
-        and gate["openai_llm_route_success_rate"] >= MEDIUM_GATE_THRESHOLDS["llm_route_success_rate_min"]
-        and gate["openai_step_error_rate"] <= MEDIUM_GATE_THRESHOLDS["openai_step_error_rate_required"]
+        gate["completion_rate"] == MEDIUM_GATE_THRESHOLDS["completion_rate_required"]
+        and gate["meaningful_accept_rate"] >= MEDIUM_GATE_THRESHOLDS["meaningful_accept_rate_min"]
+        and gate["llm_route_success_rate"] >= MEDIUM_GATE_THRESHOLDS["llm_route_success_rate_min"]
+        and gate["step_error_rate"] <= MEDIUM_GATE_THRESHOLDS["step_error_rate_required"]
     )
     gate["evaluation_status"] = "passed" if gate["passed"] else "failed"
     return gate
@@ -209,7 +206,7 @@ def evaluate_llm_gate(
 ) -> dict[str, Any]:
     precheck = _run_openai_precheck()
     if precheck["status"] != "ok":
-        metrics = {"fake": _aggregate_provider_metrics([]), "openai": _aggregate_provider_metrics([])}
+        metrics = _aggregate_provider_metrics([])
         gate = _compute_gate(metrics)
         gate["passed"] = False
         gate["precheck_required"] = True
@@ -227,42 +224,40 @@ def evaluate_llm_gate(
             "runs_detail": [],
         }
 
-    provider_names = ("fake", "openai")
-    provider_reports: dict[str, list[dict[str, Any]]] = {name: [] for name in provider_names}
+    provider_reports: list[dict[str, Any]] = []
     runs_detail: list[dict[str, Any]] = []
 
     for run_index in range(1, runs + 1):
         strategy_seed = 10_000 + run_index
         run_entry: dict[str, Any] = {"run": run_index, "strategy_seed": strategy_seed, "providers": {}}
 
-        for provider_name in provider_names:
-            report = simulate_pack_playthrough(
-                pack_json,
-                strategy=strategy,
-                provider_name=provider_name,
-                max_steps=max_steps,
-                strategy_seed=strategy_seed,
-            )
-            provider_reports[provider_name].append(report)
-            run_entry["providers"][provider_name] = {
-                "ended": report["ended"],
-                "steps": report["steps"],
-                "meaningful_steps": report["meaningful_steps"],
-                "fallback_steps": report["fallback_steps"],
-                "fallback_with_progress_steps": report["fallback_with_progress_steps"],
-                "text_input_steps": report.get("text_input_steps", 0),
-                "llm_route_steps": report.get("llm_route_steps", 0),
-                "fallback_error_steps": report.get("fallback_error_steps", 0),
-                "fallback_low_confidence_steps": report.get("fallback_low_confidence_steps", 0),
-                "runtime_error": bool(report.get("runtime_error", False)),
-                "runtime_error_code": report.get("runtime_error_code"),
-                "runtime_error_stage": report.get("runtime_error_stage"),
-                "runtime_error_message": report.get("runtime_error_message"),
-            }
+        report = simulate_pack_playthrough(
+            pack_json,
+            strategy=strategy,
+            provider_name="openai",
+            max_steps=max_steps,
+            strategy_seed=strategy_seed,
+        )
+        provider_reports.append(report)
+        run_entry["providers"]["openai"] = {
+            "ended": report["ended"],
+            "steps": report["steps"],
+            "meaningful_steps": report["meaningful_steps"],
+            "fallback_steps": report["fallback_steps"],
+            "fallback_with_progress_steps": report["fallback_with_progress_steps"],
+            "text_input_steps": report.get("text_input_steps", 0),
+            "llm_route_steps": report.get("llm_route_steps", 0),
+            "fallback_error_steps": report.get("fallback_error_steps", 0),
+            "fallback_low_confidence_steps": report.get("fallback_low_confidence_steps", 0),
+            "runtime_error": bool(report.get("runtime_error", False)),
+            "runtime_error_code": report.get("runtime_error_code"),
+            "runtime_error_stage": report.get("runtime_error_stage"),
+            "runtime_error_message": report.get("runtime_error_message"),
+        }
 
         runs_detail.append(run_entry)
 
-    metrics = {provider_name: _aggregate_provider_metrics(reports) for provider_name, reports in provider_reports.items()}
+    metrics = _aggregate_provider_metrics(provider_reports)
     gate = _compute_gate(metrics)
 
     return {
@@ -279,7 +274,7 @@ def evaluate_llm_gate(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Evaluate fake/openai provider gate metrics on the same pack.")
+    parser = argparse.ArgumentParser(description="Evaluate OpenAI runtime gate metrics on the same pack.")
     parser.add_argument("--pack-file", required=True, help="Path to a raw pack JSON file")
     parser.add_argument("--runs", type=int, default=50, help="Number of repeated runs per provider")
     parser.add_argument(

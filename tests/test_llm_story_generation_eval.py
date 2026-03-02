@@ -202,7 +202,7 @@ def test_eval_report_shape_with_mocks(tmp_path, monkeypatch) -> None:
     def _simulate(_pack, **_kwargs):  # noqa: ANN001
         return {
             "strategy": _kwargs["strategy"],
-            "provider": "fake",
+            "provider": "openai",
             "steps": 14,
             "ended": True,
             "meaningful_steps": 14,
@@ -371,7 +371,7 @@ def test_eval_collects_generation_failure_breakdown_and_prompt_fields(tmp_path, 
         "simulate_pack_playthrough",
         lambda _pack, **_kwargs: {
             "strategy": _kwargs["strategy"],
-            "provider": "fake",
+            "provider": "openai",
             "steps": 14,
             "ended": True,
             "meaningful_steps": 14,

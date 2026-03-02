@@ -79,13 +79,8 @@ def _llm_runtime_failure_detail(exc: RuntimeRouteError | RuntimeNarrationError) 
     }
 
 
-def _provider_name(provider) -> str:  # noqa: ANN001
-    if (
-        getattr(provider, "runtime_failfast_on_route_error", False)
-        or getattr(provider, "runtime_failfast_on_narration_error", False)
-    ):
-        return "openai"
-    return "fake"
+def _provider_name() -> str:
+    return "openai"
 
 
 @router.post("", response_model=SessionCreateResponse)
@@ -180,7 +175,7 @@ def step_session_endpoint(
     pack = StoryPack.model_validate(story_version.pack_json)
     runtime = _build_runtime_or_503()
     provider = runtime.provider
-    provider_name = _provider_name(provider)
+    provider_name = _provider_name()
     route_model = getattr(provider, "route_model", None)
     narration_model = getattr(provider, "narration_model", None)
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.llm.base import LLMProvider
+from app.llm.base import LLMProvider, RouteIntentResult
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -25,10 +25,6 @@ def _create_session(client) -> str:
 
 
 class _RouteFailureProvider(LLMProvider):
-    @property
-    def runtime_failfast_on_route_error(self) -> bool:
-        return True
-
     def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
         raise RuntimeError("route failed")
 
@@ -36,7 +32,24 @@ class _RouteFailureProvider(LLMProvider):
         return f"{slots['echo']} {slots['commit']} {slots['hook']}"
 
 
-def test_admin_timeline_contains_started_and_succeeded_events(client) -> None:
+class _DeterministicProvider(LLMProvider):
+    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
+        fallback = scene_context.get("fallback_move", "global.help_me_progress")
+        return RouteIntentResult(
+            move_id=fallback,
+            args={},
+            confidence=0.95,
+            interpreted_intent=(text or "").strip() or "help me progress",
+        )
+
+    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
+        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
+
+
+def test_admin_timeline_contains_started_and_succeeded_events(client, monkeypatch) -> None:
+    from app.api import sessions as sessions_api
+
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     session_id = _create_session(client)
     step = client.post(
         f"/sessions/{session_id}/step",
@@ -79,7 +92,10 @@ def test_admin_timeline_contains_step_failed_on_openai_strict_error(client, monk
     assert failed_events[-1]["payload"]["error_code"] == "llm_route_failed"
 
 
-def test_admin_timeline_contains_step_replayed_for_idempotent_call(client) -> None:
+def test_admin_timeline_contains_step_replayed_for_idempotent_call(client, monkeypatch) -> None:
+    from app.api import sessions as sessions_api
+
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     session_id = _create_session(client)
     payload = {
         "client_action_id": "admin-replay-1",

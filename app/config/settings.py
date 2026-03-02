@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     app_env: str = "dev"
     debug: bool = False
     database_url: str = "sqlite:///./app.db"
-    llm_provider: str = "fake"
     routing_confidence_threshold: float = 0.55
     llm_openai_base_url: str | None = None
     llm_openai_api_key: str | None = None

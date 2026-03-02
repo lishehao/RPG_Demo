@@ -3,12 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from app.llm.base import LLMProvider, RouteIntentResult
+
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
 
 def _bootstrap_session(client) -> str:
     pack = json.loads(PACK_PATH.read_text(encoding="utf-8"))
-    story_resp = client.post("/stories", json={"title": "LowConfidence Story", "pack_json": pack})
+    story_resp = client.post("/stories", json={"title": "HealthyPath Story", "pack_json": pack})
     story_id = story_resp.json()["story_id"]
     publish_resp = client.post(f"/stories/{story_id}/publish", json={})
     version = publish_resp.json()["version"]
@@ -16,7 +18,24 @@ def _bootstrap_session(client) -> str:
     return session_resp.json()["session_id"]
 
 
-def test_three_low_confidence_inputs_still_advance_progress(client) -> None:
+class _DeterministicProvider(LLMProvider):
+    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
+        fallback = scene_context.get("fallback_move", "global.help_me_progress")
+        return RouteIntentResult(
+            move_id=fallback,
+            args={},
+            confidence=0.95,
+            interpreted_intent=(text or "").strip() or "help me progress",
+        )
+
+    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
+        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
+
+
+def test_three_text_inputs_advance_progress_on_healthy_path(client, monkeypatch) -> None:
+    from app.api import sessions as sessions_api
+
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     session_id = _bootstrap_session(client)
     start = client.get(f"/sessions/{session_id}").json()
     start_progress = sum(int(v) for v in start["beat_progress"].values())
@@ -25,8 +44,8 @@ def test_three_low_confidence_inputs_still_advance_progress(client) -> None:
         response = client.post(
             f"/sessions/{session_id}/step",
             json={
-                "client_action_id": f"low-confidence-{idx}",
-                "input": {"type": "text", "text": "@@@ ??? !!!"},
+                "client_action_id": f"healthy-text-{idx}",
+                "input": {"type": "text", "text": "help me progress"},
             },
         )
         assert response.status_code == 200

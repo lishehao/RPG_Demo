@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from app.llm.base import LLMProvider, RouteIntentResult
+
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
 
@@ -16,7 +18,24 @@ def _bootstrap_session(client) -> str:
     return session_resp.json()["session_id"]
 
 
-def test_sample_story_finishes_in_14_to_16_steps(client) -> None:
+class _DeterministicProvider(LLMProvider):
+    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
+        fallback = scene_context.get("fallback_move", "global.help_me_progress")
+        return RouteIntentResult(
+            move_id=fallback,
+            args={},
+            confidence=0.95,
+            interpreted_intent=(text or "").strip() or "keep moving",
+        )
+
+    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
+        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
+
+
+def test_sample_story_finishes_in_14_to_16_steps(client, monkeypatch) -> None:
+    from app.api import sessions as sessions_api
+
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     session_id = _bootstrap_session(client)
     ended = False
     steps = 0
