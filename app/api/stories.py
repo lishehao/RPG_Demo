@@ -9,8 +9,8 @@ from app.api.schemas import (
     StoryGetResponse,
     StoryPublishResponse,
 )
+from app.generator import GeneratorBuildError, GeneratorService
 from app.domain.linter import lint_story_pack
-from app.domain.repair import repair_story_pack
 from app.storage.engine import get_session
 from app.storage.repositories.stories import (
     create_story,
@@ -43,18 +43,60 @@ def publish_story_endpoint(story_id: str, db: Session = Depends(get_session)) ->
     return StoryPublishResponse(story_id=story_id, version=version.version, published_at=version.created_at)
 
 
-@router.post("/generate", response_model=StoryGenerateResponse, status_code=501)
-def generate_story_endpoint(payload: StoryGenerateRequest) -> StoryGenerateResponse:
-    repair_result = repair_story_pack(pack_json={}, max_attempts=2)
-    lint_report = {"errors": ["generator placeholder: not implemented"], "warnings": []}
+@router.post("/generate", response_model=StoryGenerateResponse)
+def generate_story_endpoint(payload: StoryGenerateRequest, db: Session = Depends(get_session)) -> StoryGenerateResponse:
+    service = GeneratorService()
+    try:
+        result = service.generate_pack(
+            seed_text=payload.seed_text,
+            prompt_text=payload.prompt_text,
+            target_minutes=payload.target_minutes,
+            npc_count=payload.npc_count,
+            style=payload.style,
+            variant_seed=payload.variant_seed,
+            generator_version=payload.generator_version,
+            palette_policy=payload.palette_policy,
+        )
+    except GeneratorBuildError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": exc.error_code or "generation_failed_after_regenerates",
+                "errors": exc.lint_report.errors,
+                "warnings": exc.lint_report.warnings,
+                "generation_attempts": exc.generation_attempts,
+                "regenerate_count": exc.regenerate_count,
+                "notes": exc.notes,
+                "generator_version": exc.generator_version,
+                "variant_seed": exc.variant_seed,
+                "palette_policy": exc.palette_policy,
+            },
+        ) from exc
+
+    fallback_title_source = (payload.seed_text or payload.prompt_text or "generated story").strip()
+    title = result.pack.get("title") or f"Generated: {fallback_title_source[:48]}"
+    story = create_story(db, title=title, pack_json=result.pack)
+    version: int | None = None
+    if payload.publish:
+        published = publish_story_version(db, story)
+        version = published.version
+
     return StoryGenerateResponse(
-        status="placeholder",
-        story_id=None,
-        version=None,
-        pack=repair_result.pack_json,
-        lint_report=lint_report,
-        attempts=repair_result.attempts,
-        notes=repair_result.notes,
+        status="ok",
+        story_id=story.id,
+        version=version,
+        generation_mode=result.generation_mode,
+        pack=result.pack,
+        pack_hash=result.pack_hash,
+        generator_version=result.generator_version,
+        variant_seed=result.variant_seed,
+        palette_policy=result.palette_policy,
+        spec_hash=result.spec_hash,
+        spec_summary=result.spec_summary,
+        lint_report={"errors": result.lint_report.errors, "warnings": result.lint_report.warnings},
+        generation_attempts=result.generation_attempts,
+        regenerate_count=result.regenerate_count,
+        notes=result.notes,
     )
 
 

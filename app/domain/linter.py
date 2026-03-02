@@ -18,6 +18,36 @@ class LintReport:
         return not self.errors
 
 
+def classify_lint_errors(errors: list[str]) -> dict[str, list[str]]:
+    buckets: dict[str, list[str]] = {
+        "schema": [],
+        "references": [],
+        "fail_forward": [],
+        "global_moves": [],
+        "reachability": [],
+        "terminal": [],
+        "other": [],
+    }
+
+    for err in errors:
+        if "schema validation failed" in err:
+            buckets["schema"].append(err)
+        elif "missing fail_forward" in err:
+            buckets["fail_forward"].append(err)
+        elif "global moves" in err or "always_available_moves" in err:
+            buckets["global_moves"].append(err)
+        elif "missing move" in err or "missing scene" in err or "references unknown" in err or "points to missing" in err:
+            buckets["references"].append(err)
+        elif "unreachable scenes" in err:
+            buckets["reachability"].append(err)
+        elif "terminal scene" in err or "reach any terminal scene" in err:
+            buckets["terminal"].append(err)
+        else:
+            buckets["other"].append(err)
+
+    return buckets
+
+
 def _check_condition(scene_id: str, cond, report: LintReport) -> None:
     if cond.condition_kind == "always":
         return
