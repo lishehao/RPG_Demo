@@ -401,6 +401,44 @@ Step input tolerance contract:
   - `provider`: `openai`
 - invalid JSON syntax can still return framework-level parse errors.
 
+## Admin Diagnostics (Session Trace + Feedback)
+Admin diagnostics endpoints are exposed under `/admin` with no auth in this phase.
+Use only in local/internal environments.
+
+### 1) Timeline replay
+
+```bash
+curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/timeline?limit=200&order=asc"
+```
+
+Optional query:
+- `event_type=step_started|step_succeeded|step_failed|step_replayed`
+
+Event payload shape:
+- `step_started`: `client_action_id`, `turn_index_expected`, normalized `input`, `scene_id_before`, `beat_index_before`, provider/model hints
+- `step_succeeded`: `recognized`, `resolution`, `narration_text`, scene/beat transition, `duration_ms`
+- `step_failed`: strict failfast diagnostics (`error_code`, `stage`, `message`, `provider`, `duration_ms`)
+- `step_replayed`: idempotency replay marker with `session_action_id`
+
+### 2) Feedback marker (good/bad)
+
+```bash
+curl -sS -X POST "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "verdict":"bad",
+    "reason_tags":["pacing","choice_clarity"],
+    "note":"midgame feels flat",
+    "turn_index":6
+  }'
+```
+
+```bash
+curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback?limit=50"
+```
+
+This lets you attach "not fun" cases directly to session traces for later analysis.
+
 ## Tests
 Run all tests:
 

@@ -18,6 +18,12 @@ def _bootstrap_story(client):
     return story_id, version
 
 
+def _get_timeline_events(client, session_id: str) -> list[dict]:
+    response = client.get(f"/admin/sessions/{session_id}/timeline")
+    assert response.status_code == 200
+    return response.json()["events"]
+
+
 def test_session_create_and_get(client) -> None:
     story_id, version = _bootstrap_story(client)
 
@@ -50,6 +56,12 @@ def test_step_is_idempotent_by_client_action_id(client) -> None:
     assert first.status_code == 200
     assert second.status_code == 200
     assert first.json() == second.json()
+
+    events = _get_timeline_events(client, session_id)
+    event_types = [event["event_type"] for event in events]
+    assert "step_started" in event_types
+    assert "step_succeeded" in event_types
+    assert "step_replayed" in event_types
 
 
 def test_step_tolerates_button_without_move_id(client) -> None:
@@ -235,6 +247,11 @@ def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> Non
     assert after["scene_id"] == before["scene_id"]
     assert after["beat_progress"] == before["beat_progress"]
     assert after["state"] == before["state"]
+
+    events = _get_timeline_events(client, session_id)
+    failed = [event for event in events if event["event_type"] == "step_failed"]
+    assert failed
+    assert failed[-1]["payload"]["error_code"] == "llm_route_failed"
 
 
 def test_step_returns_503_on_low_confidence_for_openai_strict(client, monkeypatch) -> None:

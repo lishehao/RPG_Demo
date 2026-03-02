@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
@@ -19,6 +20,7 @@ from app.llm.factory import get_llm_provider
 from app.runtime.errors import RuntimeNarrationError, RuntimeRouteError
 from app.runtime.service import RuntimeService
 from app.storage.engine import get_session
+from app.storage.repositories.runtime_events import save_runtime_event
 from app.storage.repositories.sessions import (
     create_session,
     get_session as get_session_record,
@@ -75,6 +77,15 @@ def _llm_runtime_failure_detail(exc: RuntimeRouteError | RuntimeNarrationError) 
         "message": exc.message,
         "provider": exc.provider,
     }
+
+
+def _provider_name(provider) -> str:  # noqa: ANN001
+    if (
+        getattr(provider, "runtime_failfast_on_route_error", False)
+        or getattr(provider, "runtime_failfast_on_narration_error", False)
+    ):
+        return "openai"
+    return "fake"
 
 
 @router.post("", response_model=SessionCreateResponse)
@@ -142,8 +153,24 @@ def step_session_endpoint(
     if session.ended:
         raise HTTPException(status_code=409, detail="inactive session")
 
+    normalized_input = _normalize_step_input(payload.input)
+    turn_index_expected = session.turn_count + 1
+    scene_id_before = session.current_scene_id
+    beat_index_before = session.beat_index
+
     existing = get_session_action(db, session_id, payload.client_action_id)
     if existing is not None:
+        save_runtime_event(
+            db,
+            session_id=session.id,
+            turn_index=session.turn_count,
+            event_type="step_replayed",
+            payload_json={
+                "client_action_id": payload.client_action_id,
+                "session_action_id": existing.id,
+                "note": "idempotency_replay",
+            },
+        )
         return SessionStepResponse.model_validate(existing.response_json)
 
     story_version = get_story_version(db, session.story_id, session.version)
@@ -152,8 +179,31 @@ def step_session_endpoint(
 
     pack = StoryPack.model_validate(story_version.pack_json)
     runtime = _build_runtime_or_503()
+    provider = runtime.provider
+    provider_name = _provider_name(provider)
+    route_model = getattr(provider, "route_model", None)
+    narration_model = getattr(provider, "narration_model", None)
+
+    save_runtime_event(
+        db,
+        session_id=session.id,
+        turn_index=turn_index_expected,
+        event_type="step_started",
+        payload_json={
+            "client_action_id": payload.client_action_id,
+            "turn_index_expected": turn_index_expected,
+            "input": normalized_input,
+            "scene_id_before": scene_id_before,
+            "beat_index_before": beat_index_before,
+            "provider": provider_name,
+            "route_model": route_model,
+            "narration_model": narration_model,
+        },
+    )
+
     working_state = json.loads(json.dumps(session.state_json))
     working_beat_progress = json.loads(json.dumps(session.beat_progress_json))
+    started_at = time.perf_counter()
 
     try:
         result = runtime.process_step(
@@ -162,11 +212,31 @@ def step_session_endpoint(
             beat_index=session.beat_index,
             state=working_state,
             beat_progress=working_beat_progress,
-            action_input=_normalize_step_input(payload.input),
+            action_input=normalized_input,
             dev_mode=payload.dev_mode,
         )
     except (RuntimeRouteError, RuntimeNarrationError) as exc:
+        duration_ms = int((time.perf_counter() - started_at) * 1000)
+        save_runtime_event(
+            db,
+            session_id=session.id,
+            turn_index=turn_index_expected,
+            event_type="step_failed",
+            payload_json={
+                "client_action_id": payload.client_action_id,
+                "turn_index_expected": turn_index_expected,
+                "scene_id_before": scene_id_before,
+                "beat_index_before": beat_index_before,
+                "error_code": exc.error_code,
+                "stage": exc.stage,
+                "message": exc.message,
+                "provider": exc.provider,
+                "duration_ms": duration_ms,
+            },
+        )
         raise HTTPException(status_code=503, detail=_llm_runtime_failure_detail(exc)) from exc
+
+    duration_ms = int((time.perf_counter() - started_at) * 1000)
 
     session.current_scene_id = result["scene_id"]
     session.beat_index = result["beat_index"]
@@ -193,6 +263,26 @@ def step_session_endpoint(
         client_action_id=payload.client_action_id,
         request_json=payload.model_dump(),
         response_json=response_payload,
+    )
+
+    save_runtime_event(
+        db,
+        session_id=session.id,
+        turn_index=turn_index_expected,
+        event_type="step_succeeded",
+        payload_json={
+            "client_action_id": payload.client_action_id,
+            "turn_index": turn_index_expected,
+            "scene_id_before": scene_id_before,
+            "scene_id_after": result["scene_id"],
+            "beat_index_before": beat_index_before,
+            "beat_index_after": result["beat_index"],
+            "ended": bool(result["ended"]),
+            "recognized": result["recognized"],
+            "resolution": result["resolution"],
+            "narration_text": result["narration_text"],
+            "duration_ms": duration_ms,
+        },
     )
 
     return SessionStepResponse.model_validate(response_payload)

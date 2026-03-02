@@ -181,6 +181,11 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 
 **Step contract:** `POST /sessions/{session_id}/step` may return `503` on strict-provider LLM failures (route error, low confidence, invalid move, narration failure). Non-strict providers preserve Accept-All fallback.
 
+### Admin Diagnostics (no-auth in current phase)
+- `GET /admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed`)
+- `POST /admin/sessions/{session_id}/feedback` — attach `good|bad` verdict and tags/notes to a session
+- `GET /admin/sessions/{session_id}/feedback` — list feedback markers for a session
+
 ### One-click generation (author tooling)
 - `POST /stories/generate`
   - Request: `{prompt_text?, seed_text?, target_minutes, npc_count, style?, publish?}`
@@ -226,6 +231,8 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 - Route result: `move_id`, confidence, fallback/global routing
 - Resolution result: success/partial/fail_forward, applied deltas
 - Progress: beat/scene progress increments
+- Session timeline events persisted for replay and diagnostics
+- User-side quality markers (`good|bad`) linked to session and turn index
 - Acceptance metrics:
   - meaningful_accept_rate (state/progress changed)
   - fallback_with_progress_rate

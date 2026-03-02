@@ -117,3 +117,54 @@ class SessionGetResponse(BaseModel):
     ended: bool
     state_summary: dict[str, Any]
     state: dict[str, Any] | None = None
+
+
+class AdminSessionTimelineEvent(BaseModel):
+    event_id: str
+    turn_index: int
+    event_type: Literal["step_started", "step_succeeded", "step_failed", "step_replayed"]
+    payload: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+
+
+class AdminSessionTimelineResponse(BaseModel):
+    session_id: str
+    events: list[AdminSessionTimelineEvent] = Field(default_factory=list)
+
+
+class SessionFeedbackCreateRequest(BaseModel):
+    verdict: Literal["good", "bad"]
+    reason_tags: list[str] = Field(default_factory=list, max_length=8)
+    note: str | None = Field(default=None, max_length=2000)
+    turn_index: int | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def normalize_fields(self) -> "SessionFeedbackCreateRequest":
+        tags: list[str] = []
+        for raw in self.reason_tags:
+            normalized = raw.strip()
+            if normalized:
+                tags.append(normalized)
+        self.reason_tags = tags
+
+        if self.note is not None:
+            trimmed = self.note.strip()
+            self.note = trimmed or None
+        return self
+
+
+class SessionFeedbackItem(BaseModel):
+    feedback_id: str
+    session_id: str
+    story_id: str
+    version: int
+    verdict: Literal["good", "bad"]
+    reason_tags: list[str] = Field(default_factory=list)
+    note: str | None = None
+    turn_index: int | None = None
+    created_at: datetime
+
+
+class SessionFeedbackListResponse(BaseModel):
+    session_id: str
+    items: list[SessionFeedbackItem] = Field(default_factory=list)

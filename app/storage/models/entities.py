@@ -62,3 +62,15 @@ class RuntimeEvent(SQLModel, table=True):
     event_type: str
     payload_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
+
+
+class SessionFeedback(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
+    session_id: str = Field(index=True, foreign_key="session.id")
+    story_id: str = Field(index=True, foreign_key="story.id")
+    version: int = Field(index=True)
+    turn_index: int | None = None
+    verdict: str
+    reason_tags_json: list[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+    note: str | None = None
+    created_at: datetime = Field(default_factory=utc_now, nullable=False)
