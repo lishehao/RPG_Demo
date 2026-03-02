@@ -7,3 +7,5 @@ app.db
 *.sqlite3
 output/playwright/
 .DS_Store
+.env
+reports/
