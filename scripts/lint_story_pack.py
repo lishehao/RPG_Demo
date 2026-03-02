@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from app.domain.linter import lint_story_pack
+from rpg_backend.domain.linter import lint_story_pack
 
 
 def main() -> int:

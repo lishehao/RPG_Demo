@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "accept-all-rpg"
+name = "rpg-backend"
 version = "0.1.0"
-description = "Backend-first Accept-All interactive narrative RPG"
+description = "Backend-first strict quality-first interactive narrative RPG"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -24,7 +24,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["app*"]
+include = ["rpg_backend*"]
 
 [tool.pytest.ini_options]
 addopts = "-q -m 'not live_openai_critical'"
