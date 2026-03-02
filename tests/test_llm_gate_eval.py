@@ -31,10 +31,7 @@ def test_compute_gate_fails_when_route_success_too_low() -> None:
         "completion_rate": 1.0,
         "avg_steps": 14.0,
         "meaningful_accept_rate": 1.0,
-        "fallback_with_progress_rate": 1.0,
         "llm_route_success_rate": 0.0,
-        "fallback_error_rate": 1.0,
-        "fallback_low_confidence_rate": 0.0,
         "step_error_rate": 0.0,
     }
     gate = gate_eval._compute_gate(metrics)
@@ -48,10 +45,7 @@ def test_compute_gate_passes_when_medium_thresholds_met() -> None:
         "completion_rate": 1.0,
         "avg_steps": 14.0,
         "meaningful_accept_rate": 0.95,
-        "fallback_with_progress_rate": 1.0,
         "llm_route_success_rate": 0.85,
-        "fallback_error_rate": 0.10,
-        "fallback_low_confidence_rate": 0.05,
         "step_error_rate": 0.0,
     }
     gate = gate_eval._compute_gate(metrics)
@@ -67,10 +61,7 @@ def test_compute_gate_fails_when_openai_has_runtime_step_errors() -> None:
         "completion_rate": 1.0,
         "avg_steps": 14.0,
         "meaningful_accept_rate": 0.95,
-        "fallback_with_progress_rate": 1.0,
         "llm_route_success_rate": 0.95,
-        "fallback_error_rate": 0.0,
-        "fallback_low_confidence_rate": 0.0,
         "step_error_rate": 0.1,
     }
     gate = gate_eval._compute_gate(metrics)
@@ -221,12 +212,8 @@ def test_evaluate_llm_gate_status_passed_when_metrics_meet_threshold(monkeypatch
             "ended": True,
             "steps": 14,
             "meaningful_steps": 13,
-            "fallback_steps": 0,
-            "fallback_with_progress_steps": 0,
             "text_input_steps": 10,
             "llm_route_steps": 9,
-            "fallback_error_steps": 0,
-            "fallback_low_confidence_steps": 0,
             "runtime_error_steps": 0,
         },
     )
@@ -251,12 +238,8 @@ def test_evaluate_llm_gate_status_failed_when_metrics_below_threshold(monkeypatc
             "ended": False,
             "steps": 14,
             "meaningful_steps": 5,
-            "fallback_steps": 0,
-            "fallback_with_progress_steps": 0,
             "text_input_steps": 10,
             "llm_route_steps": 8,
-            "fallback_error_steps": 0,
-            "fallback_low_confidence_steps": 0,
             "runtime_error_steps": 1,
             "runtime_error": True,
             "runtime_error_code": "llm_narration_failed",

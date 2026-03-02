@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.generator.prompt_compiler import PromptCompileError, PromptCompiler
+from rpg_backend.generator.prompt_compiler import PromptCompileError, PromptCompiler
 
 
 def _settings_stub(*, max_retries: int = 3) -> SimpleNamespace:
@@ -68,7 +68,7 @@ def _chat_payload(content: str) -> dict[str, object]:
 
 
 def test_compile_succeeds_after_validation_feedback(monkeypatch) -> None:
-    import app.generator.prompt_compiler as prompt_module
+    import rpg_backend.generator.prompt_compiler as prompt_module
 
     monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
 
@@ -99,7 +99,7 @@ def test_compile_succeeds_after_validation_feedback(monkeypatch) -> None:
 
 
 def test_compile_fails_after_three_invalid_attempts(monkeypatch) -> None:
-    import app.generator.prompt_compiler as prompt_module
+    import rpg_backend.generator.prompt_compiler as prompt_module
 
     monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
     invalid = _spec_payload(premise="y" * 450)
@@ -126,7 +126,7 @@ def test_compile_fails_after_three_invalid_attempts(monkeypatch) -> None:
 
 
 def test_compile_does_not_truncate_fields_locally(monkeypatch) -> None:
-    import app.generator.prompt_compiler as prompt_module
+    import rpg_backend.generator.prompt_compiler as prompt_module
 
     monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=1))
     invalid = _spec_payload(premise="z" * 430)

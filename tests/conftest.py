@@ -4,9 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel
 
-from app.main import app
-from app.storage import models  # noqa: F401
-from app.storage.engine import engine
+from rpg_backend.main import app
+from rpg_backend.storage import models  # noqa: F401
+from rpg_backend.storage.engine import engine
 
 
 @pytest.fixture(autouse=True)

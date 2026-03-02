@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from app.domain.pack_schema import StoryPack
-from app.llm.base import LLMProvider, RouteIntentResult
-from app.runtime.errors import RuntimeNarrationError, RuntimeRouteError
-from app.runtime.service import RuntimeService
+from rpg_backend.domain.pack_schema import StoryPack
+from rpg_backend.llm.base import LLMProvider, RouteIntentResult
+from rpg_backend.runtime.errors import RuntimeNarrationError, RuntimeRouteError
+from rpg_backend.runtime.service import RuntimeService
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 

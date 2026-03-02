@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
+from rpg_backend.main import app
 
 
 def test_health() -> None:

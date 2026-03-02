@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.domain.pack_schema import StoryPack
-from app.llm.base import LLMProvider, RouteIntentResult
-from app.runtime.service import RuntimeService
+from rpg_backend.domain.pack_schema import StoryPack
+from rpg_backend.llm.base import LLMProvider, RouteIntentResult
+from rpg_backend.runtime.service import RuntimeService
 
 PACK_PATH = Path("tests/fixtures/story_pack_v1.json")
 

@@ -1,7 +1,7 @@
 from sqlmodel import Session
 
-from app.storage.engine import engine
-from app.storage.repositories.stories import (
+from rpg_backend.storage.engine import engine
+from rpg_backend.storage.repositories.stories import (
     create_story,
     get_latest_story_version,
     publish_story_version,

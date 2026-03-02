@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.llm.base import LLMProvider, RouteIntentResult
+from rpg_backend.llm.base import LLMProvider, RouteIntentResult
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -47,7 +47,7 @@ class _DeterministicProvider(LLMProvider):
 
 
 def test_admin_timeline_contains_started_and_succeeded_events(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     session_id = _create_session(client)
@@ -70,7 +70,7 @@ def test_admin_timeline_contains_started_and_succeeded_events(client, monkeypatc
 
 
 def test_admin_timeline_contains_step_failed_on_openai_strict_error(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     session_id = _create_session(client)
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _RouteFailureProvider())
@@ -93,7 +93,7 @@ def test_admin_timeline_contains_step_failed_on_openai_strict_error(client, monk
 
 
 def test_admin_timeline_contains_step_replayed_for_idempotent_call(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     session_id = _create_session(client)

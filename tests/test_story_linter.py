@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.domain.linter import lint_story_pack
+from rpg_backend.domain.linter import lint_story_pack
 
 
 FIXTURE = Path("sample_data/story_pack_v1.json")

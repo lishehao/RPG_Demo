@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import pytest
 
-from app.domain.constants import GLOBAL_MOVE_IDS
-from app.domain.linter import LintReport, lint_story_pack
-from app.domain.move_library import MOVE_LIBRARY
-from app.domain.pack_schema import StoryPack
-from app.generator.prompt_compiler import PromptCompileError, PromptCompileResult
-from app.generator.spec_schema import StorySpec
-from app.generator.service import GeneratorBuildError, GeneratorService
-from app.generator.versioning import GENERATOR_VERSION
-from app.llm.base import LLMProvider, RouteIntentResult
-from app.runtime.service import RuntimeService
+from rpg_backend.domain.constants import GLOBAL_MOVE_IDS
+from rpg_backend.domain.linter import LintReport, lint_story_pack
+from rpg_backend.domain.move_library import MOVE_LIBRARY
+from rpg_backend.domain.pack_schema import StoryPack
+from rpg_backend.generator.prompt_compiler import PromptCompileError, PromptCompileResult
+from rpg_backend.generator.spec_schema import StorySpec
+from rpg_backend.generator.service import GeneratorBuildError, GeneratorService
+from rpg_backend.generator.versioning import GENERATOR_VERSION
+from rpg_backend.llm.base import LLMProvider, RouteIntentResult
+from rpg_backend.runtime.service import RuntimeService
 
 
 class _DeterministicProvider(LLMProvider):
@@ -156,7 +156,7 @@ def test_lint_first_pass_success_has_no_regenerate() -> None:
 
 
 def test_first_lint_fail_then_second_attempt_succeeds(monkeypatch) -> None:
-    import app.generator.service as service_module
+    import rpg_backend.generator.service as service_module
 
     original_lint = service_module.lint_story_pack
     calls = {"count": 0}
@@ -183,7 +183,7 @@ def test_first_lint_fail_then_second_attempt_succeeds(monkeypatch) -> None:
 
 
 def test_all_regenerates_fail_returns_last_lint_report(monkeypatch) -> None:
-    import app.generator.service as service_module
+    import rpg_backend.generator.service as service_module
 
     monkeypatch.setattr(
         service_module,
@@ -207,7 +207,7 @@ def test_all_regenerates_fail_returns_last_lint_report(monkeypatch) -> None:
 
 
 def test_prompt_mode_lint_fail_recompiles_each_attempt_with_derived_seed(monkeypatch) -> None:
-    import app.generator.service as service_module
+    import rpg_backend.generator.service as service_module
 
     sample_spec = _sample_story_spec()
     seen: list[tuple[int, str | None]] = []
@@ -223,7 +223,7 @@ def test_prompt_mode_lint_fail_recompiles_each_attempt_with_derived_seed(monkeyp
             notes=["prompt compiler mocked"],
         )
 
-    monkeypatch.setattr("app.generator.service.PromptCompiler.compile", _fake_compile)
+    monkeypatch.setattr("rpg_backend.generator.service.PromptCompiler.compile", _fake_compile)
     monkeypatch.setattr(
         service_module,
         "lint_story_pack",
@@ -353,7 +353,7 @@ def test_palette_policy_fixed_vs_balanced_changes_distribution() -> None:
 def test_prompt_mode_generates_lint_ok_pack(monkeypatch) -> None:
     sample_spec = _sample_story_spec()
     monkeypatch.setattr(
-        "app.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.service.PromptCompiler.compile",
         lambda *args, **kwargs: PromptCompileResult(
             spec=sample_spec,
             spec_hash="abc123" * 10 + "abcd",
@@ -378,7 +378,7 @@ def test_prompt_mode_generates_lint_ok_pack(monkeypatch) -> None:
 def test_prompt_mode_pacing_reaches_terminal_14_16(monkeypatch) -> None:
     sample_spec = _sample_story_spec()
     monkeypatch.setattr(
-        "app.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.service.PromptCompiler.compile",
         lambda *args, **kwargs: PromptCompileResult(
             spec=sample_spec,
             spec_hash="def456" * 10 + "def4",
@@ -421,7 +421,7 @@ def test_prompt_mode_pacing_reaches_terminal_14_16(monkeypatch) -> None:
 
 def test_prompt_compile_failure_returns_generator_error(monkeypatch) -> None:
     monkeypatch.setattr(
-        "app.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.service.PromptCompiler.compile",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             PromptCompileError(
                 error_code="prompt_compile_failed",
@@ -446,7 +446,7 @@ def test_prompt_compile_failure_returns_generator_error(monkeypatch) -> None:
 
 def test_prompt_compile_failure_does_not_fallback_to_seed_planner(monkeypatch) -> None:
     monkeypatch.setattr(
-        "app.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.service.PromptCompiler.compile",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             PromptCompileError(
                 error_code="prompt_compile_failed",
@@ -456,7 +456,7 @@ def test_prompt_compile_failure_does_not_fallback_to_seed_planner(monkeypatch) -
         ),
     )
     monkeypatch.setattr(
-        "app.generator.service.plan_beats",
+        "rpg_backend.generator.service.plan_beats",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             AssertionError("seed planner should not be used when prompt compile fails")
         ),
@@ -473,7 +473,7 @@ def test_prompt_compile_failure_does_not_fallback_to_seed_planner(monkeypatch) -
 
 def test_prompt_spec_invalid_returns_generator_error(monkeypatch) -> None:
     monkeypatch.setattr(
-        "app.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.service.PromptCompiler.compile",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             PromptCompileError(
                 error_code="prompt_spec_invalid",

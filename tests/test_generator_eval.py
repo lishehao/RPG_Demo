@@ -26,7 +26,6 @@ def test_generator_eval_report_shape() -> None:
     assert 0.0 <= metrics["completion_rate"] <= 1.0
     assert 14 <= metrics["avg_steps"] <= 16
     assert 0.0 <= metrics["meaningful_accept_rate"] <= 1.0
-    assert 0.0 <= metrics["fallback_with_progress_rate"] <= 1.0
     assert metrics["palette_diversity"]["unique_palette_count"] >= 5
 
     run_entry = report["runs_detail"][0]
@@ -47,7 +46,7 @@ def test_generator_eval_report_shape() -> None:
 def test_replay_matches_digest(tmp_path: Path) -> None:
     from scripts.evaluate_generator import evaluate_generator
     from scripts.simulate_playthrough import simulate_pack_playthrough
-    from app.generator.versioning import compute_transcript_digest
+    from rpg_backend.generator.versioning import compute_transcript_digest
 
     report = evaluate_generator(
         seed_text="eval replay gate",

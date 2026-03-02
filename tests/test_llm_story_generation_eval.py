@@ -9,9 +9,9 @@ from types import SimpleNamespace
 
 import httpx
 
-from app.domain.linter import LintReport
-from app.eval.story_quality_schema import StoryQualityJudgeResult
-from app.generator.service import GeneratorBuildError
+from rpg_backend.domain.linter import LintReport
+from rpg_backend.eval.story_quality_schema import StoryQualityJudgeResult
+from rpg_backend.generator.service import GeneratorBuildError
 
 
 def _load_eval_module():
@@ -38,9 +38,8 @@ def test_gate_pass_when_all_thresholds_met() -> None:
         "completion_rate": 1.0,
         "avg_steps": 14.5,
         "meaningful_accept_rate": 0.95,
-        "fallback_with_progress_rate": 1.0,
-        "fallback_error_rate": 0.01,
-        "fallback_low_confidence_rate": 0.04,
+        "llm_route_success_rate": 0.92,
+        "step_error_rate": 0.0,
         "judge_overall_avg": 8.0,
         "judge_prompt_fidelity_avg": 7.8,
         "case_overall_score_min": 6.2,
@@ -60,9 +59,8 @@ def test_gate_fail_when_generation_success_rate_below_1() -> None:
         "completion_rate": 1.0,
         "avg_steps": 15.0,
         "meaningful_accept_rate": 0.95,
-        "fallback_with_progress_rate": 1.0,
-        "fallback_error_rate": 0.01,
-        "fallback_low_confidence_rate": 0.02,
+        "llm_route_success_rate": 0.95,
+        "step_error_rate": 0.0,
         "judge_overall_avg": 8.1,
         "judge_prompt_fidelity_avg": 7.7,
         "case_overall_score_min": 6.5,
@@ -82,9 +80,8 @@ def test_gate_fail_when_judge_score_below_threshold() -> None:
         "completion_rate": 1.0,
         "avg_steps": 15.0,
         "meaningful_accept_rate": 0.95,
-        "fallback_with_progress_rate": 1.0,
-        "fallback_error_rate": 0.01,
-        "fallback_low_confidence_rate": 0.02,
+        "llm_route_success_rate": 0.95,
+        "step_error_rate": 0.0,
         "judge_overall_avg": 7.1,
         "judge_prompt_fidelity_avg": 6.8,
         "case_overall_score_min": 5.9,
@@ -206,32 +203,31 @@ def test_eval_report_shape_with_mocks(tmp_path, monkeypatch) -> None:
             "steps": 14,
             "ended": True,
             "meaningful_steps": 14,
-            "fallback_steps": 1,
-            "fallback_with_progress_steps": 1,
             "text_input_steps": 10,
-            "llm_route_steps": 0,
-            "fallback_error_steps": 0,
-            "fallback_low_confidence_steps": 1,
+            "llm_route_steps": 10,
+            "runtime_error_steps": 0,
+            "runtime_error": False,
+            "runtime_error_code": None,
+            "runtime_error_stage": None,
+            "runtime_error_message": None,
             "transcript": [
                 {
                     "step": 1,
                     "action_input": {"type": "text"},
-                    "route_source": "fallback_low_confidence",
+                    "route_source": "llm",
                     "scene_id": "sc1",
                     "recognized": {"move_id": "global.help_me_progress"},
                     "resolution": {"result": "partial"},
                     "meaningful_change": True,
-                    "fallback_with_progress": True,
                 },
                 {
                     "step": 14,
                     "action_input": {"type": "text"},
-                    "route_source": "fallback_low_confidence",
+                    "route_source": "llm",
                     "scene_id": "sc15",
                     "recognized": {"move_id": "global.help_me_progress"},
                     "resolution": {"result": "success"},
                     "meaningful_change": True,
-                    "fallback_with_progress": True,
                 },
             ],
         }
@@ -375,12 +371,13 @@ def test_eval_collects_generation_failure_breakdown_and_prompt_fields(tmp_path, 
             "steps": 14,
             "ended": True,
             "meaningful_steps": 14,
-            "fallback_steps": 0,
-            "fallback_with_progress_steps": 0,
             "text_input_steps": 10,
-            "llm_route_steps": 0,
-            "fallback_error_steps": 0,
-            "fallback_low_confidence_steps": 0,
+            "llm_route_steps": 10,
+            "runtime_error_steps": 0,
+            "runtime_error": False,
+            "runtime_error_code": None,
+            "runtime_error_stage": None,
+            "runtime_error_message": None,
             "transcript": [{"step": 1, "action_input": {"type": "text"}}],
         },
     )

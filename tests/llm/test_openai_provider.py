@@ -3,8 +3,8 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from app.llm.base import LLMNarrationError, LLMRouteError
-from app.llm.openai_provider import OpenAIProvider
+from rpg_backend.llm.base import LLMNarrationError, LLMRouteError
+from rpg_backend.llm.openai_provider import OpenAIProvider
 
 
 def _chat_payload(content: str) -> dict:

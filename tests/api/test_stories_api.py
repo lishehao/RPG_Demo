@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.domain.linter import lint_story_pack
-from app.generator.prompt_compiler import PromptCompileError, PromptCompileResult
-from app.generator.spec_schema import StorySpec
-from app.generator.service import GeneratorBuildError
-from app.generator.versioning import GENERATOR_VERSION
+from rpg_backend.domain.linter import lint_story_pack
+from rpg_backend.generator.prompt_compiler import PromptCompileError, PromptCompileResult
+from rpg_backend.generator.spec_schema import StorySpec
+from rpg_backend.generator.service import GeneratorBuildError
+from rpg_backend.generator.versioning import GENERATOR_VERSION
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -211,8 +211,8 @@ def test_generate_rejects_unsupported_generator_version(client) -> None:
 
 
 def test_generate_story_unrepairable_returns_422(client, monkeypatch) -> None:
-    from app.api import stories as stories_api
-    from app.domain.linter import LintReport
+    from rpg_backend.api import stories as stories_api
+    from rpg_backend.domain.linter import LintReport
 
     def _always_fail(*args, **kwargs):
         raise GeneratorBuildError(
@@ -253,7 +253,7 @@ def test_generate_story_unrepairable_returns_422(client, monkeypatch) -> None:
 def test_generate_story_prompt_mode_success_without_publish(client, monkeypatch) -> None:
     sample_spec = _sample_story_spec()
     monkeypatch.setattr(
-        "app.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.service.PromptCompiler.compile",
         lambda *args, **kwargs: PromptCompileResult(
             spec=sample_spec,
             spec_hash="a" * 64,
@@ -286,7 +286,7 @@ def test_generate_story_prompt_mode_success_without_publish(client, monkeypatch)
 def test_generate_story_prompt_mode_success_with_publish(client, monkeypatch) -> None:
     sample_spec = _sample_story_spec()
     monkeypatch.setattr(
-        "app.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.service.PromptCompiler.compile",
         lambda *args, **kwargs: PromptCompileResult(
             spec=sample_spec,
             spec_hash="b" * 64,
@@ -329,7 +329,7 @@ def test_generate_story_rejects_empty_prompt_and_seed(client) -> None:
 
 def test_generate_story_prompt_compile_failure_422(client, monkeypatch) -> None:
     monkeypatch.setattr(
-        "app.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.service.PromptCompiler.compile",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             PromptCompileError(
                 error_code="prompt_compile_failed",

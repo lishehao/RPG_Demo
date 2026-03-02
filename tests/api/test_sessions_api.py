@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.config.settings import get_settings
-from app.llm.base import LLMProvider, RouteIntentResult
+from rpg_backend.config.settings import get_settings
+from rpg_backend.llm.base import LLMProvider, RouteIntentResult
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -39,7 +39,7 @@ class _DeterministicProvider(LLMProvider):
 
 
 def test_session_create_and_get(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     story_id, version = _bootstrap_story(client)
@@ -58,7 +58,7 @@ def test_session_create_and_get(client, monkeypatch) -> None:
 
 
 def test_step_is_idempotent_by_client_action_id(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     story_id, version = _bootstrap_story(client)
@@ -85,7 +85,7 @@ def test_step_is_idempotent_by_client_action_id(client, monkeypatch) -> None:
 
 
 def test_step_tolerates_button_without_move_id(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     story_id, version = _bootstrap_story(client)
@@ -103,7 +103,7 @@ def test_step_tolerates_button_without_move_id(client, monkeypatch) -> None:
 
 
 def test_step_tolerates_missing_or_invalid_input_shape(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     story_id, version = _bootstrap_story(client)
@@ -133,10 +133,11 @@ def test_step_tolerates_missing_or_invalid_input_shape(client, monkeypatch) -> N
 
 def test_session_create_returns_503_when_openai_provider_misconfigured(client, monkeypatch) -> None:
     story_id, version = _bootstrap_story(client)
-    monkeypatch.setenv("APP_LLM_PROVIDER", "openai")
     monkeypatch.setenv("APP_LLM_OPENAI_BASE_URL", "")
     monkeypatch.setenv("APP_LLM_OPENAI_API_KEY", "")
     monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
+    monkeypatch.setenv("APP_LLM_OPENAI_ROUTE_MODEL", "")
+    monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "")
     get_settings.cache_clear()
 
     response = client.post("/sessions", json={"story_id": story_id, "version": version})
@@ -145,23 +146,8 @@ def test_session_create_returns_503_when_openai_provider_misconfigured(client, m
     get_settings.cache_clear()
 
 
-def test_session_create_returns_503_when_legacy_provider_not_openai(client, monkeypatch) -> None:
-    story_id, version = _bootstrap_story(client)
-    monkeypatch.setenv("APP_LLM_PROVIDER", "fake")
-    monkeypatch.setenv("APP_LLM_OPENAI_BASE_URL", "https://example.com/compatible-mode")
-    monkeypatch.setenv("APP_LLM_OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "route-model")
-    get_settings.cache_clear()
-
-    response = client.post("/sessions", json={"story_id": story_id, "version": version})
-    assert response.status_code == 503
-    assert "APP_LLM_PROVIDER must be 'openai'" in response.json()["detail"]
-    get_settings.cache_clear()
-
-
 def test_session_create_succeeds_when_only_route_model_configured(client, monkeypatch) -> None:
     story_id, version = _bootstrap_story(client)
-    monkeypatch.setenv("APP_LLM_PROVIDER", "openai")
     monkeypatch.setenv("APP_LLM_OPENAI_BASE_URL", "https://example.com/compatible-mode")
     monkeypatch.setenv("APP_LLM_OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
@@ -179,7 +165,6 @@ def test_session_create_succeeds_when_only_route_model_configured(client, monkey
 
 def test_session_create_succeeds_when_only_narration_model_configured(client, monkeypatch) -> None:
     story_id, version = _bootstrap_story(client)
-    monkeypatch.setenv("APP_LLM_PROVIDER", "openai")
     monkeypatch.setenv("APP_LLM_OPENAI_BASE_URL", "https://example.com/compatible-mode")
     monkeypatch.setenv("APP_LLM_OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
@@ -196,10 +181,6 @@ def test_session_create_succeeds_when_only_narration_model_configured(client, mo
 
 
 class _RouteFailureProvider(LLMProvider):
-    @property
-    def runtime_failfast_on_route_error(self) -> bool:
-        return True
-
     def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
         raise RuntimeError("route failed")
 
@@ -208,10 +189,6 @@ class _RouteFailureProvider(LLMProvider):
 
 
 class _LowConfidenceProvider(LLMProvider):
-    @property
-    def runtime_failfast_on_route_error(self) -> bool:
-        return True
-
     def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
         fallback = scene_context.get("fallback_move", "global.help_me_progress")
         return RouteIntentResult(
@@ -226,10 +203,6 @@ class _LowConfidenceProvider(LLMProvider):
 
 
 class _NarrationFailureProvider(LLMProvider):
-    @property
-    def runtime_failfast_on_narration_error(self) -> bool:
-        return True
-
     def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
         fallback = scene_context.get("fallback_move", "global.help_me_progress")
         return RouteIntentResult(
@@ -244,10 +217,6 @@ class _NarrationFailureProvider(LLMProvider):
 
 
 class _InvalidMoveProvider(LLMProvider):
-    @property
-    def runtime_failfast_on_route_error(self) -> bool:
-        return True
-
     def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
         return RouteIntentResult(
             move_id="move.not.available",
@@ -261,7 +230,7 @@ class _InvalidMoveProvider(LLMProvider):
 
 
 def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
@@ -295,7 +264,7 @@ def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> Non
 
 
 def test_step_returns_503_on_low_confidence_for_openai_strict(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
@@ -318,7 +287,7 @@ def test_step_returns_503_on_low_confidence_for_openai_strict(client, monkeypatc
 
 
 def test_step_returns_503_on_invalid_move_for_openai_strict(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
@@ -341,7 +310,7 @@ def test_step_returns_503_on_invalid_move_for_openai_strict(client, monkeypatch)
 
 
 def test_step_returns_503_when_narration_fails_for_openai_strict(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})

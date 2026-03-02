@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.llm.base import LLMProvider, RouteIntentResult
+from rpg_backend.llm.base import LLMProvider, RouteIntentResult
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -33,7 +33,7 @@ class _DeterministicProvider(LLMProvider):
 
 
 def test_fail_forward_triggers_when_preconditions_not_met(client, monkeypatch) -> None:
-    from app.api import sessions as sessions_api
+    from rpg_backend.api import sessions as sessions_api
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
     session_id = _bootstrap_session(client)

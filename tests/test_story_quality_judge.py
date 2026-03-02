@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.eval.story_quality_judge import StoryQualityJudge, StoryQualityJudgeError
+from rpg_backend.eval.story_quality_judge import StoryQualityJudge, StoryQualityJudgeError
 
 
 def _valid_payload() -> dict[str, object]:
