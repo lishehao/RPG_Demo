@@ -14,11 +14,11 @@ from urllib.parse import urlparse
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from app.config.settings import get_settings
-from app.eval.story_quality_judge import StoryQualityJudge, StoryQualityJudgeError
-from app.generator.prompt_compiler import PromptCompileError, PromptCompiler
-from app.generator.service import GeneratorBuildError, GeneratorService
-from app.generator.versioning import compute_transcript_digest
+from rpg_backend.config.settings import get_settings
+from rpg_backend.eval.story_quality_judge import StoryQualityJudge, StoryQualityJudgeError
+from rpg_backend.generator.prompt_compiler import PromptCompileError, PromptCompiler
+from rpg_backend.generator.service import GeneratorBuildError, GeneratorService
+from rpg_backend.generator.versioning import compute_transcript_digest
 
 try:
     from scripts.simulate_playthrough import DEFAULT_STRATEGIES, simulate_pack_playthrough
@@ -41,7 +41,8 @@ FULL_GATE_THRESHOLDS: dict[str, float] = {
     "avg_steps_min": 14.0,
     "avg_steps_max": 16.0,
     "meaningful_accept_rate_min": 0.90,
-    "fallback_error_rate_max": 0.05,
+    "llm_route_success_rate_min": 0.80,
+    "step_error_rate_required": 0.0,
     "judge_overall_avg_min": 7.5,
     "judge_prompt_fidelity_avg_min": 7.0,
     "case_overall_score_min": 6.0,
@@ -166,32 +167,24 @@ def _aggregate_playthrough_metrics(reports: list[dict[str, Any]]) -> dict[str, f
             "completion_rate": 0.0,
             "avg_steps": 0.0,
             "meaningful_accept_rate": 0.0,
-            "fallback_with_progress_rate": 1.0,
-            "fallback_error_rate": 0.0,
-            "fallback_low_confidence_rate": 0.0,
+            "llm_route_success_rate": 0.0,
+            "step_error_rate": 0.0,
         }
 
     completion_count = sum(1 for report in reports if report.get("ended"))
     completed_steps = [int(report.get("steps", 0)) for report in reports if report.get("ended")]
     total_steps = sum(int(report.get("steps", 0)) for report in reports)
     meaningful_steps = sum(int(report.get("meaningful_steps", 0)) for report in reports)
-    fallback_steps = sum(int(report.get("fallback_steps", 0)) for report in reports)
-    fallback_with_progress_steps = sum(int(report.get("fallback_with_progress_steps", 0)) for report in reports)
     text_input_steps = sum(int(report.get("text_input_steps", 0)) for report in reports)
-    fallback_error_steps = sum(int(report.get("fallback_error_steps", 0)) for report in reports)
-    fallback_low_confidence_steps = sum(int(report.get("fallback_low_confidence_steps", 0)) for report in reports)
+    llm_route_steps = sum(int(report.get("llm_route_steps", 0)) for report in reports)
+    runtime_error_steps = sum(int(report.get("runtime_error_steps", 0)) for report in reports)
 
     return {
         "completion_rate": completion_count / len(reports),
         "avg_steps": _safe_mean(completed_steps),
         "meaningful_accept_rate": meaningful_steps / total_steps if total_steps else 0.0,
-        "fallback_with_progress_rate": (
-            fallback_with_progress_steps / fallback_steps if fallback_steps else 1.0
-        ),
-        "fallback_error_rate": fallback_error_steps / text_input_steps if text_input_steps else 0.0,
-        "fallback_low_confidence_rate": (
-            fallback_low_confidence_steps / text_input_steps if text_input_steps else 0.0
-        ),
+        "llm_route_success_rate": llm_route_steps / text_input_steps if text_input_steps else 0.0,
+        "step_error_rate": runtime_error_steps / len(reports),
     }
 
 
@@ -263,7 +256,6 @@ def _summarize_transcript(report: dict[str, Any]) -> dict[str, Any]:
                     "recognized_move_id": recognized.get("move_id"),
                     "resolution_result": resolution.get("result"),
                     "meaningful_change": entry.get("meaningful_change"),
-                    "fallback_with_progress": entry.get("fallback_with_progress"),
                 }
             )
 
@@ -273,10 +265,11 @@ def _summarize_transcript(report: dict[str, Any]) -> dict[str, Any]:
         "ended": bool(report.get("ended")),
         "steps": int(report.get("steps", 0)),
         "meaningful_steps": int(report.get("meaningful_steps", 0)),
-        "fallback_steps": int(report.get("fallback_steps", 0)),
-        "fallback_with_progress_steps": int(report.get("fallback_with_progress_steps", 0)),
-        "fallback_error_steps": int(report.get("fallback_error_steps", 0)),
-        "fallback_low_confidence_steps": int(report.get("fallback_low_confidence_steps", 0)),
+        "text_input_steps": int(report.get("text_input_steps", 0)),
+        "llm_route_steps": int(report.get("llm_route_steps", 0)),
+        "runtime_error": bool(report.get("runtime_error", False)),
+        "runtime_error_code": report.get("runtime_error_code"),
+        "runtime_error_stage": report.get("runtime_error_stage"),
         "highlights": highlights,
     }
 
@@ -362,10 +355,15 @@ def _compute_gate(metrics: dict[str, Any]) -> dict[str, Any]:
             f"meaningful_accept_rate={metrics['meaningful_accept_rate']:.4f} "
             f"< {FULL_GATE_THRESHOLDS['meaningful_accept_rate_min']:.4f}"
         )
-    if metrics["fallback_error_rate"] > FULL_GATE_THRESHOLDS["fallback_error_rate_max"]:
+    if metrics["llm_route_success_rate"] < FULL_GATE_THRESHOLDS["llm_route_success_rate_min"]:
         fail_reasons.append(
-            f"fallback_error_rate={metrics['fallback_error_rate']:.4f} "
-            f"> {FULL_GATE_THRESHOLDS['fallback_error_rate_max']:.4f}"
+            f"llm_route_success_rate={metrics['llm_route_success_rate']:.4f} "
+            f"< {FULL_GATE_THRESHOLDS['llm_route_success_rate_min']:.4f}"
+        )
+    if metrics["step_error_rate"] != FULL_GATE_THRESHOLDS["step_error_rate_required"]:
+        fail_reasons.append(
+            f"step_error_rate={metrics['step_error_rate']:.4f} "
+            f"!= {FULL_GATE_THRESHOLDS['step_error_rate_required']:.4f}"
         )
     if metrics["judge_overall_avg"] < FULL_GATE_THRESHOLDS["judge_overall_avg_min"]:
         fail_reasons.append(
@@ -404,9 +402,8 @@ def _empty_metrics() -> dict[str, Any]:
         "completion_rate": 0.0,
         "avg_steps": 0.0,
         "meaningful_accept_rate": 0.0,
-        "fallback_with_progress_rate": 1.0,
-        "fallback_error_rate": 0.0,
-        "fallback_low_confidence_rate": 0.0,
+        "llm_route_success_rate": 0.0,
+        "step_error_rate": 0.0,
         "judge_overall_avg": 0.0,
         "judge_prompt_fidelity_avg": 0.0,
         "case_overall_score_min": 0.0,
@@ -616,10 +613,11 @@ def evaluate_llm_story_generation(
                         "ended": bool(play_report["ended"]),
                         "steps": int(play_report["steps"]),
                         "meaningful_steps": int(play_report["meaningful_steps"]),
-                        "fallback_steps": int(play_report["fallback_steps"]),
-                        "fallback_with_progress_steps": int(play_report["fallback_with_progress_steps"]),
-                        "fallback_error_steps": int(play_report["fallback_error_steps"]),
-                        "fallback_low_confidence_steps": int(play_report["fallback_low_confidence_steps"]),
+                        "text_input_steps": int(play_report["text_input_steps"]),
+                        "llm_route_steps": int(play_report["llm_route_steps"]),
+                        "runtime_error": bool(play_report["runtime_error"]),
+                        "runtime_error_code": play_report["runtime_error_code"],
+                        "runtime_error_stage": play_report["runtime_error_stage"],
                         "strategy_seed": strategy_seed,
                         "artifact_path": str(artifact_path),
                         "transcript_digest": transcript_digest,

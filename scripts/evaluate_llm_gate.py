@@ -11,9 +11,9 @@ from urllib.parse import urlparse
 
 import httpx
 
-from app.config.settings import get_settings
-from app.llm.base import LLMNarrationError, LLMProviderConfigError, LLMRouteError
-from app.llm.factory import get_llm_provider, resolve_openai_models
+from rpg_backend.config.settings import get_settings
+from rpg_backend.llm.base import LLMNarrationError, LLMProviderConfigError, LLMRouteError
+from rpg_backend.llm.factory import get_llm_provider, resolve_openai_models
 
 try:
     from scripts.simulate_playthrough import simulate_pack_playthrough
@@ -161,10 +161,7 @@ def _aggregate_provider_metrics(reports: list[dict[str, Any]]) -> dict[str, floa
             "completion_rate": 0.0,
             "avg_steps": 0.0,
             "meaningful_accept_rate": 0.0,
-            "fallback_with_progress_rate": 1.0,
             "llm_route_success_rate": 0.0,
-            "fallback_error_rate": 0.0,
-            "fallback_low_confidence_rate": 0.0,
             "step_error_rate": 0.0,
         }
 
@@ -172,26 +169,15 @@ def _aggregate_provider_metrics(reports: list[dict[str, Any]]) -> dict[str, floa
     completed_steps = [report["steps"] for report in reports if report["ended"]]
     total_steps = sum(report["steps"] for report in reports)
     meaningful_steps = sum(report["meaningful_steps"] for report in reports)
-    fallback_steps = sum(report["fallback_steps"] for report in reports)
-    fallback_progress_steps = sum(report["fallback_with_progress_steps"] for report in reports)
     text_input_steps = sum(report.get("text_input_steps", 0) for report in reports)
     llm_route_steps = sum(report.get("llm_route_steps", 0) for report in reports)
-    fallback_error_steps = sum(report.get("fallback_error_steps", 0) for report in reports)
-    fallback_low_confidence_steps = sum(report.get("fallback_low_confidence_steps", 0) for report in reports)
     runtime_error_steps = sum(report.get("runtime_error_steps", 0) for report in reports)
 
     return {
         "completion_rate": completion_count / len(reports),
         "avg_steps": (sum(completed_steps) / len(completed_steps)) if completed_steps else 0.0,
         "meaningful_accept_rate": (meaningful_steps / total_steps) if total_steps else 0.0,
-        "fallback_with_progress_rate": (
-            fallback_progress_steps / fallback_steps if fallback_steps else 1.0
-        ),
         "llm_route_success_rate": (llm_route_steps / text_input_steps) if text_input_steps else 0.0,
-        "fallback_error_rate": (fallback_error_steps / text_input_steps) if text_input_steps else 0.0,
-        "fallback_low_confidence_rate": (
-            fallback_low_confidence_steps / text_input_steps if text_input_steps else 0.0
-        ),
         "step_error_rate": runtime_error_steps / len(reports),
     }
 
@@ -229,7 +215,7 @@ def evaluate_llm_gate(
 
     for run_index in range(1, runs + 1):
         strategy_seed = 10_000 + run_index
-        run_entry: dict[str, Any] = {"run": run_index, "strategy_seed": strategy_seed, "providers": {}}
+        run_entry: dict[str, Any] = {"run": run_index, "strategy_seed": strategy_seed}
 
         report = simulate_pack_playthrough(
             pack_json,
@@ -239,16 +225,12 @@ def evaluate_llm_gate(
             strategy_seed=strategy_seed,
         )
         provider_reports.append(report)
-        run_entry["providers"]["openai"] = {
+        run_entry["openai"] = {
             "ended": report["ended"],
             "steps": report["steps"],
             "meaningful_steps": report["meaningful_steps"],
-            "fallback_steps": report["fallback_steps"],
-            "fallback_with_progress_steps": report["fallback_with_progress_steps"],
             "text_input_steps": report.get("text_input_steps", 0),
             "llm_route_steps": report.get("llm_route_steps", 0),
-            "fallback_error_steps": report.get("fallback_error_steps", 0),
-            "fallback_low_confidence_steps": report.get("fallback_low_confidence_steps", 0),
             "runtime_error": bool(report.get("runtime_error", False)),
             "runtime_error_code": report.get("runtime_error_code"),
             "runtime_error_stage": report.get("runtime_error_stage"),
@@ -276,7 +258,7 @@ def evaluate_llm_gate(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Evaluate OpenAI runtime gate metrics on the same pack.")
     parser.add_argument("--pack-file", required=True, help="Path to a raw pack JSON file")
-    parser.add_argument("--runs", type=int, default=50, help="Number of repeated runs per provider")
+    parser.add_argument("--runs", type=int, default=50, help="Number of repeated runs")
     parser.add_argument(
         "--strategy",
         default="mixed",

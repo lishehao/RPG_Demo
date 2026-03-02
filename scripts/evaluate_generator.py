@@ -10,8 +10,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from app.generator.service import GeneratorService
-from app.generator.versioning import PalettePolicy, compute_transcript_digest
+from rpg_backend.generator.service import GeneratorService
+from rpg_backend.generator.versioning import PalettePolicy, compute_transcript_digest
 
 try:
     from scripts.simulate_playthrough import DEFAULT_STRATEGIES, simulate_pack_playthrough
@@ -51,8 +51,6 @@ def evaluate_generator(
     completed_steps: list[int] = []
     total_steps = 0
     meaningful_steps = 0
-    fallback_steps = 0
-    fallback_with_progress_steps = 0
     palette_distribution: dict[str, int] = {}
     run_summaries: list[dict[str, Any]] = []
 
@@ -94,8 +92,6 @@ def evaluate_generator(
             total_playthroughs += 1
             total_steps += report["steps"]
             meaningful_steps += report["meaningful_steps"]
-            fallback_steps += report["fallback_steps"]
-            fallback_with_progress_steps += report["fallback_with_progress_steps"]
 
             if report["ended"]:
                 completion_count += 1
@@ -107,8 +103,6 @@ def evaluate_generator(
                     "ended": report["ended"],
                     "steps": report["steps"],
                     "meaningful_steps": report["meaningful_steps"],
-                    "fallback_steps": report["fallback_steps"],
-                    "fallback_with_progress_steps": report["fallback_with_progress_steps"],
                     "pack_hash": generated.pack_hash,
                     "generator_version": generated.generator_version,
                     "variant_seed": generated.variant_seed,
@@ -138,9 +132,6 @@ def evaluate_generator(
     completion_rate = completion_count / total_playthroughs if total_playthroughs else 0.0
     avg_steps = sum(completed_steps) / len(completed_steps) if completed_steps else 0.0
     meaningful_accept_rate = meaningful_steps / total_steps if total_steps else 0.0
-    fallback_with_progress_rate = (
-        fallback_with_progress_steps / fallback_steps if fallback_steps else 1.0
-    )
 
     return {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -153,7 +144,6 @@ def evaluate_generator(
             "completion_rate": completion_rate,
             "avg_steps": avg_steps,
             "meaningful_accept_rate": meaningful_accept_rate,
-            "fallback_with_progress_rate": fallback_with_progress_rate,
             "palette_diversity": {
                 "unique_palette_count": len(palette_distribution),
                 "palette_distribution": palette_distribution,
@@ -164,8 +154,6 @@ def evaluate_generator(
             "completion_count": completion_count,
             "total_steps": total_steps,
             "meaningful_steps": meaningful_steps,
-            "fallback_steps": fallback_steps,
-            "fallback_with_progress_steps": fallback_with_progress_steps,
         },
         "runs_detail": run_summaries,
     }

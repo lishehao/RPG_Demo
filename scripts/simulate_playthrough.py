@@ -10,14 +10,12 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from app.config.settings import get_settings
-from app.domain.constants import GLOBAL_MOVE_IDS
-from app.domain.pack_schema import StoryPack
-from app.generator.versioning import compute_pack_hash
-from app.llm.base import LLMProviderConfigError
-from app.llm.factory import get_llm_provider
-from app.runtime.errors import RuntimeLLMError
-from app.runtime.service import RuntimeService
+from rpg_backend.domain.pack_schema import StoryPack
+from rpg_backend.generator.versioning import compute_pack_hash
+from rpg_backend.llm.base import LLMProviderConfigError
+from rpg_backend.llm.factory import get_llm_provider
+from rpg_backend.runtime.errors import RuntimeLLMError
+from rpg_backend.runtime.service import RuntimeService
 
 DEFAULT_STRATEGIES = (
     "text_help",
@@ -139,16 +137,11 @@ def simulate_pack_playthrough(
         raise RuntimeError(f"failed to initialize provider '{provider_name}': {exc}") from exc
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
     ui_moves = runtime.list_ui_moves(pack, scene_id)
-    threshold = get_settings().routing_confidence_threshold
 
     transcript: list[dict[str, Any]] = []
     meaningful_steps = 0
-    fallback_steps = 0
-    fallback_with_progress_steps = 0
     text_input_steps = 0
     llm_route_steps = 0
-    fallback_error_steps = 0
-    fallback_low_confidence_steps = 0
     runtime_error = False
     runtime_error_code: str | None = None
     runtime_error_stage: str | None = None
@@ -218,22 +211,8 @@ def simulate_pack_playthrough(
 
         recognized = result["recognized"]
         route_source = recognized.get("route_source", "unknown")
-        if is_text_input:
-            if route_source == "llm":
-                llm_route_steps += 1
-            elif route_source == "fallback_error":
-                fallback_error_steps += 1
-            elif route_source in {"fallback_low_confidence", "fallback_invalid_move"}:
-                fallback_low_confidence_steps += 1
-        fallback = (
-            action_input.get("type") == "text"
-            and recognized.get("move_id") in GLOBAL_MOVE_IDS
-            and float(recognized.get("confidence", 0.0)) < threshold
-        )
-        if fallback:
-            fallback_steps += 1
-            if meaningful:
-                fallback_with_progress_steps += 1
+        if is_text_input and route_source == "llm":
+            llm_route_steps += 1
 
         transcript.append(
             {
@@ -252,7 +231,6 @@ def simulate_pack_playthrough(
                 "ended": ended,
                 "beat_progress": dict(beat_progress),
                 "meaningful_change": meaningful,
-                "fallback_with_progress": fallback and meaningful,
             }
         )
 
@@ -270,12 +248,8 @@ def simulate_pack_playthrough(
         "steps": len(transcript),
         "ended": ended,
         "meaningful_steps": meaningful_steps,
-        "fallback_steps": fallback_steps,
-        "fallback_with_progress_steps": fallback_with_progress_steps,
         "text_input_steps": text_input_steps,
         "llm_route_steps": llm_route_steps,
-        "fallback_error_steps": fallback_error_steps,
-        "fallback_low_confidence_steps": fallback_low_confidence_steps,
         "runtime_error": runtime_error,
         "runtime_error_steps": 1 if runtime_error else 0,
         "runtime_error_code": runtime_error_code,
