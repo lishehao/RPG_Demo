@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session as DBSession
 from sqlmodel import select
 
@@ -42,14 +45,6 @@ def get_session(db: DBSession, session_id: str) -> Session | None:
     return db.get(Session, session_id)
 
 
-def save_session(db: DBSession, session: Session) -> Session:
-    session.updated_at = utc_now()
-    db.add(session)
-    db.commit()
-    db.refresh(session)
-    return session
-
-
 def get_session_action(db: DBSession, session_id: str, client_action_id: str) -> SessionAction | None:
     stmt = select(SessionAction).where(
         SessionAction.session_id == session_id,
@@ -58,21 +53,75 @@ def get_session_action(db: DBSession, session_id: str, client_action_id: str) ->
     return db.exec(stmt).first()
 
 
-def save_session_action(
+@dataclass(frozen=True)
+class StepCommitResult:
+    applied: bool
+    actual_turn_count: int
+
+
+def commit_step_transition_if_turn_matches(
     db: DBSession,
     *,
     session_id: str,
+    expected_turn_count: int,
+    new_scene_id: str,
+    new_beat_index: int,
+    new_state_json: dict,
+    new_beat_progress_json: dict,
+    new_ended: bool,
     client_action_id: str,
     request_json: dict,
     response_json: dict,
-) -> SessionAction:
-    action = SessionAction(
-        session_id=session_id,
-        client_action_id=client_action_id,
-        request_json=request_json,
-        response_json=response_json,
+) -> StepCommitResult:
+    next_turn_count = expected_turn_count + 1
+    now = utc_now()
+    update_stmt = (
+        update(Session)
+        .where(
+            Session.id == session_id,
+            Session.turn_count == expected_turn_count,
+            Session.ended.is_(False),
+        )
+        .values(
+            current_scene_id=new_scene_id,
+            beat_index=new_beat_index,
+            state_json=new_state_json,
+            beat_progress_json=new_beat_progress_json,
+            ended=new_ended,
+            turn_count=next_turn_count,
+            updated_at=now,
+        )
     )
-    db.add(action)
-    db.commit()
-    db.refresh(action)
-    return action
+
+    try:
+        update_result = db.exec(update_stmt)
+        if update_result.rowcount != 1:
+            db.rollback()
+            return StepCommitResult(
+                applied=False,
+                actual_turn_count=_read_turn_count(db, session_id, fallback=expected_turn_count),
+            )
+
+        db.add(
+            SessionAction(
+                session_id=session_id,
+                client_action_id=client_action_id,
+                request_json=request_json,
+                response_json=response_json,
+            )
+        )
+        db.commit()
+        return StepCommitResult(applied=True, actual_turn_count=next_turn_count)
+    except IntegrityError:
+        db.rollback()
+        return StepCommitResult(
+            applied=False,
+            actual_turn_count=_read_turn_count(db, session_id, fallback=expected_turn_count),
+        )
+
+
+def _read_turn_count(db: DBSession, session_id: str, *, fallback: int) -> int:
+    session = db.get(Session, session_id)
+    if session is None:
+        return fallback
+    return int(session.turn_count)

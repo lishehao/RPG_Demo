@@ -1,10 +1,26 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
+from threading import Barrier
+
+from fastapi.testclient import TestClient
+from sqlmodel import Session as DBSession
+from sqlmodel import select
 
 from rpg_backend.config.settings import get_settings
-from rpg_backend.llm.base import LLMProvider, RouteIntentResult
+from rpg_backend.main import app
+from rpg_backend.storage.engine import engine
+from rpg_backend.storage.models import SessionAction
+from tests.helpers.providers import (
+    BarrierDeterministicProvider,
+    DeterministicProvider,
+    InvalidMoveProvider,
+    LowConfidenceProvider,
+    NarrationFailureProvider,
+    RouteFailureProvider,
+)
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -30,24 +46,16 @@ def _get_last_event(events: list[dict], event_type: str) -> dict:
     return filtered[-1]
 
 
-class _DeterministicProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.95,
-            interpreted_intent=(text or "").strip() or "help me progress",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
+def _count_session_actions(session_id: str) -> int:
+    with DBSession(engine) as db:
+        stmt = select(SessionAction).where(SessionAction.session_id == session_id)
+        return len(list(db.exec(stmt).all()))
 
 
 def test_session_create_and_get(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
 
     created = client.post("/sessions", json={"story_id": story_id, "version": version})
@@ -66,7 +74,7 @@ def test_session_create_and_get(client, monkeypatch) -> None:
 def test_step_is_idempotent_by_client_action_id(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
@@ -100,10 +108,94 @@ def test_step_is_idempotent_by_client_action_id(client, monkeypatch) -> None:
     assert replayed["payload"]["request_id"]
 
 
+def test_step_conflict_returns_409_and_preserves_single_commit(client, monkeypatch) -> None:
+    from rpg_backend.api import sessions as sessions_api
+
+    barrier = Barrier(2)
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: BarrierDeterministicProvider(barrier))
+    story_id, version = _bootstrap_story(client)
+    session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
+    session_id = session_resp.json()["session_id"]
+
+    request_url = f"/sessions/{session_id}/step"
+    payloads = [
+        {
+            "client_action_id": "concurrent-a",
+            "input": {"type": "text", "text": "route A"},
+            "dev_mode": False,
+        },
+        {
+            "client_action_id": "concurrent-b",
+            "input": {"type": "text", "text": "route B"},
+            "dev_mode": False,
+        },
+    ]
+
+    def _post(payload: dict) -> tuple[int, dict]:
+        with TestClient(app) as local_client:
+            response = local_client.post(request_url, json=payload)
+        return response.status_code, response.json()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = [future.result() for future in [pool.submit(_post, payload) for payload in payloads]]
+
+    status_codes = sorted([status_code for status_code, _ in results])
+    assert status_codes == [200, 409]
+
+    conflict_detail = next(body["detail"] for status_code, body in results if status_code == 409)
+    assert conflict_detail["error_code"] == "session_conflict_retry"
+    assert conflict_detail["session_id"] == session_id
+    assert conflict_detail["retryable"] is True
+    assert conflict_detail["actual_turn_index"] > conflict_detail["expected_turn_index"]
+
+    assert _count_session_actions(session_id) == 1
+    events = _get_timeline_events(client, session_id)
+    assert len([event for event in events if event["event_type"] == "step_succeeded"]) == 1
+    conflicted = _get_last_event(events, "step_conflicted")
+    assert conflicted["payload"]["note"] == "optimistic_write_conflict"
+    assert conflicted["payload"]["request_id"]
+
+
+def test_step_same_action_concurrent_requests_replay_without_500(client, monkeypatch) -> None:
+    from rpg_backend.api import sessions as sessions_api
+
+    barrier = Barrier(2)
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: BarrierDeterministicProvider(barrier))
+    story_id, version = _bootstrap_story(client)
+    session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
+    session_id = session_resp.json()["session_id"]
+    request_url = f"/sessions/{session_id}/step"
+    payload = {
+        "client_action_id": "same-action-race",
+        "input": {"type": "text", "text": "same action"},
+        "dev_mode": False,
+    }
+
+    def _post() -> tuple[int, dict]:
+        with TestClient(app) as local_client:
+            response = local_client.post(request_url, json=payload)
+        return response.status_code, response.json()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first_future = pool.submit(_post)
+        second_future = pool.submit(_post)
+        first = first_future.result()
+        second = second_future.result()
+
+    assert first[0] == 200
+    assert second[0] == 200
+    assert first[1] == second[1]
+
+    assert _count_session_actions(session_id) == 1
+    events = _get_timeline_events(client, session_id)
+    assert len([event for event in events if event["event_type"] == "step_succeeded"]) == 1
+    assert len([event for event in events if event["event_type"] == "step_replayed"]) >= 1
+
+
 def test_step_tolerates_button_without_move_id(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
@@ -121,7 +213,7 @@ def test_step_tolerates_button_without_move_id(client, monkeypatch) -> None:
 def test_step_tolerates_missing_or_invalid_input_shape(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
@@ -196,55 +288,6 @@ def test_session_create_succeeds_when_only_narration_model_configured(client, mo
     get_settings.cache_clear()
 
 
-class _RouteFailureProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        raise RuntimeError("route failed")
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
-class _LowConfidenceProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.1,
-            interpreted_intent=text or "unclear intent",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
-class _NarrationFailureProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.9,
-            interpreted_intent=text or "unclear intent",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        raise RuntimeError("narration failed")
-
-
-class _InvalidMoveProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        return RouteIntentResult(
-            move_id="move.not.available",
-            args={},
-            confidence=0.95,
-            interpreted_intent=text or "invalid move intent",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
 def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
@@ -253,7 +296,7 @@ def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> Non
     session_id = session_resp.json()["session_id"]
     before = client.get(f"/sessions/{session_id}?dev_mode=true").json()
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _RouteFailureProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: RouteFailureProvider())
     response = client.post(
         f"/sessions/{session_id}/step",
         json={
@@ -290,7 +333,7 @@ def test_step_returns_503_on_low_confidence_for_openai_strict(client, monkeypatc
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _LowConfidenceProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: LowConfidenceProvider())
     response = client.post(
         f"/sessions/{session_id}/step",
         json={
@@ -313,7 +356,7 @@ def test_step_returns_503_on_invalid_move_for_openai_strict(client, monkeypatch)
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _InvalidMoveProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: InvalidMoveProvider())
     response = client.post(
         f"/sessions/{session_id}/step",
         json={
@@ -336,7 +379,7 @@ def test_step_returns_503_when_narration_fails_for_openai_strict(client, monkeyp
     session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _NarrationFailureProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: NarrationFailureProvider())
     response = client.post(
         f"/sessions/{session_id}/step",
         json={

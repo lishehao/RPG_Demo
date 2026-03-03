@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
+from threading import Barrier
 
-from rpg_backend.llm.base import LLMProvider, RouteIntentResult
+from fastapi.testclient import TestClient
+
+from rpg_backend.main import app
+from tests.helpers.providers import BarrierDeterministicProvider, DeterministicProvider, RouteFailureProvider
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -24,32 +29,10 @@ def _create_session(client) -> str:
     return session_resp.json()["session_id"]
 
 
-class _RouteFailureProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        raise RuntimeError("route failed")
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
-class _DeterministicProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.95,
-            interpreted_intent=(text or "").strip() or "help me progress",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
 def test_admin_timeline_contains_started_and_succeeded_events(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     session_id = _create_session(client)
     step = client.post(
         f"/sessions/{session_id}/step",
@@ -73,7 +56,7 @@ def test_admin_timeline_contains_step_failed_on_openai_strict_error(client, monk
     from rpg_backend.api import sessions as sessions_api
 
     session_id = _create_session(client)
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _RouteFailureProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: RouteFailureProvider())
 
     step = client.post(
         f"/sessions/{session_id}/step",
@@ -98,7 +81,7 @@ def test_admin_timeline_contains_step_failed_on_openai_strict_error(client, monk
 def test_admin_timeline_contains_step_replayed_for_idempotent_call(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     session_id = _create_session(client)
     payload = {
         "client_action_id": "admin-replay-1",
@@ -114,6 +97,49 @@ def test_admin_timeline_contains_step_replayed_for_idempotent_call(client, monke
     assert timeline.status_code == 200
     event_types = [event["event_type"] for event in timeline.json()["events"]]
     assert "step_replayed" in event_types
+
+
+def test_admin_timeline_contains_step_conflicted_event(client, monkeypatch) -> None:
+    from rpg_backend.api import sessions as sessions_api
+
+    barrier = Barrier(2)
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: BarrierDeterministicProvider(barrier))
+    session_id = _create_session(client)
+    request_url = f"/sessions/{session_id}/step"
+    payloads = [
+        {
+            "client_action_id": "admin-conflict-a",
+            "input": {"type": "text", "text": "advance A"},
+            "dev_mode": False,
+        },
+        {
+            "client_action_id": "admin-conflict-b",
+            "input": {"type": "text", "text": "advance B"},
+            "dev_mode": False,
+        },
+    ]
+
+    def _post(payload: dict) -> int:
+        with TestClient(app) as local_client:
+            response = local_client.post(request_url, json=payload)
+        return response.status_code
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        status_codes = sorted([future.result() for future in [pool.submit(_post, payload) for payload in payloads]])
+
+    assert status_codes == [200, 409]
+    timeline = client.get(f"/admin/sessions/{session_id}/timeline")
+    assert timeline.status_code == 200
+    conflicted_events = [event for event in timeline.json()["events"] if event["event_type"] == "step_conflicted"]
+    assert conflicted_events
+    assert conflicted_events[-1]["payload"]["note"] == "optimistic_write_conflict"
+    assert conflicted_events[-1]["payload"]["request_id"]
+
+    aggregated = client.get("/admin/observability/runtime-errors?window_seconds=300&limit=20")
+    assert aggregated.status_code == 200
+    body = aggregated.json()
+    assert body["failed_total"] == 0
+    assert body["buckets"] == []
 
 
 def test_admin_feedback_create_and_list(client) -> None:
@@ -160,7 +186,7 @@ def test_admin_runtime_errors_aggregate_endpoint(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
     session_id = _create_session(client)
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _RouteFailureProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: RouteFailureProvider())
 
     collected_request_ids: list[str] = []
     for index in range(1, 4):

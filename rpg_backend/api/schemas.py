@@ -122,7 +122,7 @@ class SessionGetResponse(BaseModel):
 class AdminSessionTimelineEvent(BaseModel):
     event_id: str
     turn_index: int
-    event_type: Literal["step_started", "step_succeeded", "step_failed", "step_replayed"]
+    event_type: Literal["step_started", "step_succeeded", "step_failed", "step_replayed", "step_conflicted"]
     payload: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
 
@@ -188,3 +188,24 @@ class RuntimeErrorsAggregateResponse(BaseModel):
     failed_total: int = Field(ge=0)
     step_error_rate: float = Field(ge=0.0, le=1.0)
     buckets: list[RuntimeErrorBucketPayload] = Field(default_factory=list)
+
+
+class ReadinessCheckPayload(BaseModel):
+    ok: bool
+    latency_ms: int | None = None
+    checked_at: datetime | None = None
+    error_code: str | None = None
+    message: str | None = None
+    meta: dict[str, Any] = Field(default_factory=dict)
+
+
+class ReadinessChecksPayload(BaseModel):
+    db: ReadinessCheckPayload
+    llm_config: ReadinessCheckPayload
+    llm_probe: ReadinessCheckPayload
+
+
+class ReadinessResponse(BaseModel):
+    status: Literal["ready", "not_ready"]
+    checked_at: datetime
+    checks: ReadinessChecksPayload
