@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from rpg_backend.llm.base import LLMProvider, RouteIntentResult
+from tests.helpers.providers import DeterministicProvider
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -18,24 +18,10 @@ def _bootstrap_session(client) -> str:
     return session_resp.json()["session_id"]
 
 
-class _DeterministicProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.95,
-            interpreted_intent=(text or "").strip() or "help me progress",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
 def test_three_text_inputs_advance_progress_on_healthy_path(client, monkeypatch) -> None:
     from rpg_backend.api import sessions as sessions_api
 
-    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: _DeterministicProvider())
+    monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     session_id = _bootstrap_session(client)
     start = client.get(f"/sessions/{session_id}").json()
     start_progress = sum(int(v) for v in start["beat_progress"].values())

@@ -6,9 +6,16 @@ from pathlib import Path
 import pytest
 
 from rpg_backend.domain.pack_schema import StoryPack
-from rpg_backend.llm.base import LLMProvider, RouteIntentResult
 from rpg_backend.runtime.errors import RuntimeNarrationError, RuntimeRouteError
 from rpg_backend.runtime.service import RuntimeService
+from tests.helpers.providers import (
+    AlwaysGlobalHelpProvider,
+    DeterministicProvider,
+    InvalidMoveProvider,
+    LowConfidenceProvider,
+    NarrationFailureProvider,
+    RouteFailureProvider,
+)
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -17,91 +24,29 @@ def _load_pack() -> StoryPack:
     return StoryPack.model_validate(json.loads(PACK_PATH.read_text(encoding="utf-8")))
 
 
-class _DeterministicProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.95,
-            interpreted_intent=(text or "").strip() or "help me progress",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
-class _RouteFailProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        raise RuntimeError("route failed")
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
-class _LowConfidenceProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.1,
-            interpreted_intent=text or "unclear intent",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
-class _InvalidMoveProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        return RouteIntentResult(
-            move_id="move.not.available",
-            args={},
-            confidence=0.95,
-            interpreted_intent=text or "invalid move intent",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
-class _NarrationFailProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.9,
-            interpreted_intent=text or "unclear intent",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        raise RuntimeError("narration failed")
-
-
-def test_fail_forward_on_unmet_precondition() -> None:
+def test_fail_forward_for_always_fail_forward_move() -> None:
     pack = _load_pack()
-    runtime = RuntimeService(_DeterministicProvider())
-    _, _, state, beat_progress = runtime.initialize_session_state(pack)
+    runtime = RuntimeService(DeterministicProvider())
+    scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     result = runtime.process_step(
         pack,
-        current_scene_id="sc5",
-        beat_index=1,
+        current_scene_id=scene_id,
+        beat_index=beat_index,
         state=state,
         beat_progress=beat_progress,
-        action_input={"type": "button", "move_id": "decode_core"},
+        action_input={"type": "button", "move_id": "global.help_me_progress"},
         dev_mode=True,
     )
 
+    assert result["recognized"]["move_id"] == "global.help_me_progress"
     assert result["resolution"]["result"] == "fail_forward"
     assert result["resolution"]["consequences_summary"] != "none"
 
 
 def test_empty_text_can_progress_when_route_returns_confident_move() -> None:
     pack = _load_pack()
-    runtime = RuntimeService(_DeterministicProvider())
+    runtime = RuntimeService(DeterministicProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     result = runtime.process_step(
@@ -120,7 +65,7 @@ def test_empty_text_can_progress_when_route_returns_confident_move() -> None:
 
 def test_route_failure_raises_runtime_route_error() -> None:
     pack = _load_pack()
-    runtime = RuntimeService(_RouteFailProvider())
+    runtime = RuntimeService(RouteFailureProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     with pytest.raises(RuntimeRouteError) as exc_info:
@@ -139,7 +84,7 @@ def test_route_failure_raises_runtime_route_error() -> None:
 
 def test_low_confidence_raises_runtime_route_error() -> None:
     pack = _load_pack()
-    runtime = RuntimeService(_LowConfidenceProvider())
+    runtime = RuntimeService(LowConfidenceProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     with pytest.raises(RuntimeRouteError) as exc_info:
@@ -158,7 +103,7 @@ def test_low_confidence_raises_runtime_route_error() -> None:
 
 def test_narration_failure_raises_runtime_narration_error() -> None:
     pack = _load_pack()
-    runtime = RuntimeService(_NarrationFailProvider())
+    runtime = RuntimeService(NarrationFailureProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     with pytest.raises(RuntimeNarrationError) as exc_info:
@@ -177,7 +122,7 @@ def test_narration_failure_raises_runtime_narration_error() -> None:
 
 def test_invalid_move_raises_runtime_route_error() -> None:
     pack = _load_pack()
-    runtime = RuntimeService(_InvalidMoveProvider())
+    runtime = RuntimeService(InvalidMoveProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     with pytest.raises(RuntimeRouteError) as exc_info:
@@ -192,3 +137,83 @@ def test_invalid_move_raises_runtime_route_error() -> None:
 
     assert exc_info.value.error_code == "llm_route_invalid_move"
     assert exc_info.value.stage == "route"
+
+
+def test_non_help_text_disallows_global_help_route() -> None:
+    pack = _load_pack()
+    runtime = RuntimeService(AlwaysGlobalHelpProvider())
+    scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
+
+    with pytest.raises(RuntimeRouteError) as exc_info:
+        runtime.process_step(
+            pack,
+            current_scene_id=scene_id,
+            beat_index=beat_index,
+            state=state,
+            beat_progress=beat_progress,
+            action_input={"type": "text", "text": "stabilize corridor and keep trust high"},
+        )
+
+    assert exc_info.value.error_code == "llm_route_invalid_move"
+    assert exc_info.value.stage == "route"
+
+
+def test_explicit_help_text_allows_global_help_route() -> None:
+    pack = _load_pack()
+    runtime = RuntimeService(AlwaysGlobalHelpProvider())
+    scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
+
+    result = runtime.process_step(
+        pack,
+        current_scene_id=scene_id,
+        beat_index=beat_index,
+        state=state,
+        beat_progress=beat_progress,
+        action_input={"type": "text", "text": "help, I am stuck and need the next step"},
+    )
+
+    assert result["recognized"]["move_id"] == "global.help_me_progress"
+    assert result["recognized"]["route_source"] == "llm"
+
+
+def test_pressure_recoil_and_stance_summary_visible_in_late_beats() -> None:
+    pack = _load_pack()
+    runtime = RuntimeService(DeterministicProvider())
+    move_style = {move.id: move.strategy_style for move in pack.moves}
+    scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
+
+    pressure_recoil_seen = False
+    stance_line_seen = False
+
+    for _ in range(16):
+        ui_moves = runtime.list_ui_moves(pack, scene_id)
+        chosen_move_id = ui_moves[0]["move_id"] if ui_moves else "global.clarify"
+        for ui_move in ui_moves:
+            move_id = ui_move["move_id"]
+            if move_style.get(move_id) == "fast_dirty":
+                chosen_move_id = move_id
+                break
+
+        result = runtime.process_step(
+            pack,
+            current_scene_id=scene_id,
+            beat_index=beat_index,
+            state=state,
+            beat_progress=beat_progress,
+            action_input={"type": "button", "move_id": chosen_move_id},
+            dev_mode=True,
+        )
+        scene_id = result["scene_id"]
+        beat_index = result["beat_index"]
+
+        if result.get("debug", {}).get("pressure_recoil_triggered"):
+            pressure_recoil_seen = True
+            assert "Pressure recoil:" in result["resolution"]["consequences_summary"]
+        if "Stance update:" in result["narration_text"]:
+            stance_line_seen = True
+
+        if result["ended"]:
+            break
+
+    assert pressure_recoil_seen is True
+    assert stance_line_seen is True

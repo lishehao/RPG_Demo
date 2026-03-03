@@ -10,22 +10,8 @@ from rpg_backend.generator.prompt_compiler import PromptCompileError, PromptComp
 from rpg_backend.generator.spec_schema import StorySpec
 from rpg_backend.generator.service import GeneratorBuildError, GeneratorService
 from rpg_backend.generator.versioning import GENERATOR_VERSION
-from rpg_backend.llm.base import LLMProvider, RouteIntentResult
 from rpg_backend.runtime.service import RuntimeService
-
-
-class _DeterministicProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.9,
-            interpreted_intent=(text or "").strip() or "help me progress",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
+from tests.helpers.providers import DeterministicProvider
 
 
 def _sample_story_spec() -> StorySpec:
@@ -62,10 +48,30 @@ def _sample_story_spec() -> StorySpec:
                 },
             ],
             "npcs": [
-                {"name": "Mara", "role": "field engineer", "motivation": "prevent systemic collapse"},
-                {"name": "Rook", "role": "security lead", "motivation": "protect civilians"},
-                {"name": "Sera", "role": "operations analyst", "motivation": "preserve evidence"},
-                {"name": "Director Vale", "role": "command authority", "motivation": "retain control"},
+                {
+                    "name": "Mara",
+                    "role": "field engineer",
+                    "motivation": "prevent systemic collapse",
+                    "red_line": "Never cut power to hospitals to protect industrial sectors.",
+                },
+                {
+                    "name": "Rook",
+                    "role": "security lead",
+                    "motivation": "protect civilians",
+                    "red_line": "No plan may strand evacuees behind checkpoints.",
+                },
+                {
+                    "name": "Sera",
+                    "role": "operations analyst",
+                    "motivation": "preserve evidence",
+                    "red_line": "No destruction of telemetry logs under political pressure.",
+                },
+                {
+                    "name": "Director Vale",
+                    "role": "command authority",
+                    "motivation": "retain control",
+                    "red_line": "Public command legitimacy cannot collapse on my watch.",
+                },
             ],
             "scene_constraints": [
                 "Open with concrete damage and immediate objective framing.",
@@ -90,12 +96,33 @@ def test_generate_pack_passes_linter() -> None:
     pack = result.pack
     assert 14 <= len(pack["scenes"]) <= 16
     for scene in pack["scenes"]:
-        assert 3 <= len(scene["enabled_moves"]) <= 5
+        assert 4 <= len(scene["enabled_moves"]) <= 5
         assert 2 <= len(scene["always_available_moves"]) <= 3
         assert set(scene["always_available_moves"]).issubset(GLOBAL_MOVE_IDS)
+        move_style_map = {move["id"]: move["strategy_style"] for move in pack["moves"]}
+        scene_styles = {
+            move_style_map[move_id]
+            for move_id in scene["enabled_moves"]
+            if move_id in move_style_map and not move_id.startswith("global.")
+        }
+        assert {
+            "fast_dirty",
+            "steady_slow",
+            "political_safe_resource_heavy",
+        }.issubset(scene_styles)
 
     for move in pack["moves"]:
         assert any(outcome["result"] == "fail_forward" for outcome in move["outcomes"])
+        assert move["strategy_style"] in {
+            "fast_dirty",
+            "steady_slow",
+            "political_safe_resource_heavy",
+        }
+    assert len(pack["npc_profiles"]) == len(pack["npcs"])
+    for profile in pack["npc_profiles"]:
+        assert profile["name"] in pack["npcs"]
+        assert isinstance(profile["red_line"], str)
+        assert profile["red_line"].strip()
     assert result.pack_hash
     assert result.generator_version == GENERATOR_VERSION
     assert result.variant_seed
@@ -117,7 +144,7 @@ def test_generate_pack_pacing_reaches_terminal_14_16() -> None:
         npc_count=4,
     )
     pack = StoryPack.model_validate(generated.pack)
-    runtime = RuntimeService(_DeterministicProvider())
+    runtime = RuntimeService(DeterministicProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     steps = 0
@@ -270,7 +297,7 @@ def test_same_seed_10_generations_quality_target() -> None:
                     palette_ids.add(parts[-1])
 
         pack = StoryPack.model_validate(generated.pack)
-        runtime = RuntimeService(_DeterministicProvider())
+        runtime = RuntimeService(DeterministicProvider())
         scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
         ended = False
         step_count = 0
@@ -394,7 +421,7 @@ def test_prompt_mode_pacing_reaches_terminal_14_16(monkeypatch) -> None:
         npc_count=4,
     )
     pack = StoryPack.model_validate(generated.pack)
-    runtime = RuntimeService(_DeterministicProvider())
+    runtime = RuntimeService(DeterministicProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     steps = 0

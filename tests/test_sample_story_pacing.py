@@ -4,29 +4,15 @@ import json
 from pathlib import Path
 
 from rpg_backend.domain.pack_schema import StoryPack
-from rpg_backend.llm.base import LLMProvider, RouteIntentResult
 from rpg_backend.runtime.service import RuntimeService
+from tests.helpers.providers import DeterministicProvider
 
 PACK_PATH = Path("tests/fixtures/story_pack_v1.json")
 
 
-class _DeterministicProvider(LLMProvider):
-    def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        fallback = scene_context.get("fallback_move", "global.help_me_progress")
-        return RouteIntentResult(
-            move_id=fallback,
-            args={},
-            confidence=0.9,
-            interpreted_intent=(text or "").strip() or "forward",
-        )
-
-    def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
-
-
 def test_runtime_simulation_reaches_terminal_within_expected_steps() -> None:
     pack = StoryPack.model_validate(json.loads(PACK_PATH.read_text(encoding="utf-8")))
-    runtime = RuntimeService(_DeterministicProvider())
+    runtime = RuntimeService(DeterministicProvider())
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     steps = 0
