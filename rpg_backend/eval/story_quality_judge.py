@@ -11,6 +11,14 @@ from pydantic import ValidationError
 from rpg_backend.config.settings import get_settings
 from rpg_backend.eval.story_quality_schema import StoryQualityJudgeResult
 from rpg_backend.llm.factory import resolve_openai_models
+from rpg_backend.llm.openai_compat import (
+    build_auth_headers,
+    build_json_mode_body,
+    extract_chat_content,
+    normalize_chat_completions_url,
+    parse_json_object,
+)
+from rpg_backend.llm.retry_policy import is_retriable_llm_error, retry_delay_seconds
 
 
 @dataclass
@@ -39,7 +47,7 @@ class StoryQualityJudge:
         self.timeout_seconds = settings.llm_openai_timeout_seconds
         self.temperature = 0.1
         self.max_retries = max(1, min(settings.llm_openai_generator_max_retries, 3))
-        self.chat_completions_url = self._normalize_chat_completions_url(self.base_url)
+        self.chat_completions_url = normalize_chat_completions_url(self.base_url)
 
         if not self.base_url or not self.api_key or not self.model:
             raise StoryQualityJudgeError(
@@ -66,41 +74,6 @@ class StoryQualityJudge:
         return route_model
 
     @staticmethod
-    def _normalize_chat_completions_url(base_url: str) -> str:
-        normalized = (base_url or "").strip().rstrip("/")
-        if normalized.endswith("/chat/completions"):
-            return normalized
-        if normalized.endswith("/responses"):
-            return f"{normalized[:-len('/responses')]}/chat/completions"
-        if normalized.endswith("/v1"):
-            return f"{normalized}/chat/completions"
-        return f"{normalized}/v1/chat/completions"
-
-    @staticmethod
-    def _extract_chat_content(payload: dict[str, Any]) -> str:
-        choices = payload.get("choices")
-        if not isinstance(choices, list) or not choices:
-            raise ValueError("chat completions payload missing choices")
-        first = choices[0]
-        if not isinstance(first, dict):
-            raise ValueError("chat completions payload missing first choice object")
-        message = first.get("message")
-        if not isinstance(message, dict):
-            raise ValueError("chat completions payload missing message")
-        content = message.get("content")
-        if isinstance(content, str) and content.strip():
-            return content
-        if isinstance(content, list):
-            fragments: list[str] = []
-            for part in content:
-                if isinstance(part, dict) and isinstance(part.get("text"), str):
-                    fragments.append(part["text"])
-            joined = "".join(fragments).strip()
-            if joined:
-                return joined
-        raise ValueError("chat completions payload missing message content")
-
-    @staticmethod
     def parse_result_payload(payload: dict[str, Any]) -> StoryQualityJudgeResult:
         try:
             return StoryQualityJudgeResult.model_validate(payload)
@@ -111,47 +84,14 @@ class StoryQualityJudge:
                 notes=["judge response does not match StoryQualityJudgeResult schema"],
             ) from exc
 
-    @staticmethod
-    def _is_retriable(exc: Exception) -> bool:
-        if isinstance(exc, (json.JSONDecodeError, ValidationError, ValueError)):
-            return True
-        if isinstance(
-            exc,
-            (
-                httpx.ConnectError,
-                httpx.ReadTimeout,
-                httpx.WriteTimeout,
-                httpx.PoolTimeout,
-                httpx.RemoteProtocolError,
-            ),
-        ):
-            return True
-        if isinstance(exc, httpx.HTTPStatusError):
-            return exc.response.status_code in {408, 409, 425, 429, 500, 502, 503, 504}
-        return False
-
-    @staticmethod
-    def _retry_delay_seconds(attempt: int, exc: Exception) -> float:
-        if isinstance(exc, (json.JSONDecodeError, ValidationError, ValueError)):
-            return 0.0
-        schedule = (0.25, 0.8, 1.5)
-        idx = min(max(attempt - 1, 0), len(schedule) - 1)
-        return schedule[idx]
-
     def _call_chat_completions(self, *, system_prompt: str, user_prompt: str) -> dict[str, Any]:
-        body = {
-            "model": self.model,
-            "temperature": self.temperature,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            "response_format": {"type": "json_object"},
-        }
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        body = build_json_mode_body(
+            model=self.model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=self.temperature,
+        )
+        headers = build_auth_headers(self.api_key)
         with httpx.Client(timeout=self.timeout_seconds) as client:
             response = client.post(self.chat_completions_url, headers=headers, json=body)
             response.raise_for_status()
@@ -198,10 +138,7 @@ class StoryQualityJudge:
         for attempt in range(1, self.max_retries + 1):
             try:
                 payload = self._call_chat_completions(system_prompt=system_prompt, user_prompt=user_prompt)
-                content = self._extract_chat_content(payload)
-                parsed = json.loads(content)
-                if not isinstance(parsed, dict):
-                    raise ValueError("judge output is not a JSON object")
+                parsed = parse_json_object(extract_chat_content(payload))
                 validated = self.parse_result_payload(parsed)
                 return StoryQualityJudgeDecision(
                     result=validated,
@@ -213,9 +150,9 @@ class StoryQualityJudge:
                 raise
             except Exception as exc:  # noqa: BLE001
                 last_error = exc
-                if not self._is_retriable(exc) or attempt >= self.max_retries:
+                if not is_retriable_llm_error(exc) or attempt >= self.max_retries:
                     break
-                delay = self._retry_delay_seconds(attempt, exc)
+                delay = retry_delay_seconds(attempt, exc)
                 if delay > 0:
                     time.sleep(delay)
 
@@ -224,4 +161,3 @@ class StoryQualityJudge:
             message=str(last_error) if last_error else "story quality judge failed",
             notes=[f"judge failed after {self.max_retries} attempts"],
         ) from last_error
-
