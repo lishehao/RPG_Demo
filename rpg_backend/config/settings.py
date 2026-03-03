@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     obs_alert_bucket_min_share: float = Field(default=0.10, ge=0.0, le=1.0)
     obs_alert_global_error_rate: float = Field(default=0.05, ge=0.0, le=1.0)
     obs_alert_cooldown_seconds: int = Field(default=900, ge=60, le=86400)
+    ready_llm_probe_enabled: bool = True
+    ready_llm_probe_cache_ttl_seconds: int = Field(default=30, ge=1, le=300)
+    ready_llm_probe_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
 
     model_config = SettingsConfigDict(
         env_prefix="APP_",

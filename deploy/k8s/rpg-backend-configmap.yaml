@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rpg-backend-config
+  labels:
+    app: rpg-backend
+data:
+  APP_ENV: "prod"
+  APP_DATABASE_URL: "sqlite:////data/app.db"
+
+  # Optional explicit model split; at least one of these three must be set.
+  APP_LLM_OPENAI_MODEL: "qwen-flash-us"
+  APP_LLM_OPENAI_ROUTE_MODEL: ""
+  APP_LLM_OPENAI_NARRATION_MODEL: ""
+  APP_LLM_OPENAI_GENERATOR_MODEL: ""
+
+  APP_LLM_OPENAI_TIMEOUT_SECONDS: "20"
+  APP_LLM_OPENAI_ROUTE_MAX_RETRIES: "3"
+  APP_LLM_OPENAI_NARRATION_MAX_RETRIES: "1"
+
+  APP_OBS_LOG_LEVEL: "INFO"
+  APP_OBS_REQUEST_ID_HEADER: "X-Request-ID"
+  APP_OBS_REDACT_INPUT_TEXT: "true"
+
+  # /ready probe behavior
+  APP_READY_LLM_PROBE_ENABLED: "true"
+  APP_READY_LLM_PROBE_CACHE_TTL_SECONDS: "30"
+  APP_READY_LLM_PROBE_TIMEOUT_SECONDS: "5"
