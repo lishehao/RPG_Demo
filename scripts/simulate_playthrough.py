@@ -31,6 +31,14 @@ NOISE_TEXTS = (
     "### random input ###",
     "nonsense token stream",
 )
+CONTEXT_TEXTS = (
+    "stabilize the corridor while preserving trust",
+    "what is the safest next operational move",
+    "push fast and accept some political cost",
+    "secure evidence before command pressure escalates",
+    "reduce coordination noise and keep the team aligned",
+    "protect civilians even if resources get tighter",
+)
 
 
 def _request_json(method: str, url: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -86,8 +94,10 @@ def _build_action_input(
             return {"type": "button", "move_id": ui_moves[rng.randrange(0, len(ui_moves))]["move_id"]}
         return {"type": "text", "text": "help me progress"}
     if strategy == "mixed":
-        if step_index % 2 == 1:
+        if step_index % 3 == 1:
             return {"type": "text", "text": "help me progress"}
+        if step_index % 3 == 2:
+            return {"type": "text", "text": CONTEXT_TEXTS[rng.randrange(0, len(CONTEXT_TEXTS))]}
         if ui_moves:
             return {"type": "button", "move_id": ui_moves[rng.randrange(0, len(ui_moves))]["move_id"]}
         return {"type": "text", "text": NOISE_TEXTS[rng.randrange(0, len(NOISE_TEXTS))]}
@@ -142,6 +152,9 @@ def simulate_pack_playthrough(
     meaningful_steps = 0
     text_input_steps = 0
     llm_route_steps = 0
+    global_help_route_steps = 0
+    pressure_recoil_steps = 0
+    npc_stance_mentions = 0
     runtime_error = False
     runtime_error_code: str | None = None
     runtime_error_stage: str | None = None
@@ -213,6 +226,13 @@ def simulate_pack_playthrough(
         route_source = recognized.get("route_source", "unknown")
         if is_text_input and route_source == "llm":
             llm_route_steps += 1
+            if recognized.get("move_id") == "global.help_me_progress":
+                global_help_route_steps += 1
+
+        if "Pressure recoil:" in str(result["resolution"].get("consequences_summary", "")):
+            pressure_recoil_steps += 1
+        if "Stance update:" in (result.get("narration_text") or ""):
+            npc_stance_mentions += 1
 
         transcript.append(
             {
@@ -250,6 +270,9 @@ def simulate_pack_playthrough(
         "meaningful_steps": meaningful_steps,
         "text_input_steps": text_input_steps,
         "llm_route_steps": llm_route_steps,
+        "global_help_route_steps": global_help_route_steps,
+        "pressure_recoil_steps": pressure_recoil_steps,
+        "npc_stance_mentions": npc_stance_mentions,
         "runtime_error": runtime_error,
         "runtime_error_steps": 1 if runtime_error else 0,
         "runtime_error_code": runtime_error_code,

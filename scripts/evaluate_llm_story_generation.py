@@ -28,11 +28,23 @@ except ModuleNotFoundError:
 EVAL_VERSION = "llm_story_generation_eval.v1"
 GLOBAL_EVAL_SEED = "llm_story_eval_seed_v1"
 DEFAULT_SUITE_FILE = "eval_data/prompt_suite_v1.json"
+DEFAULT_FUN_FOCUS_SUITE_FILE = "eval_data/prompt_suite_fun_v1.json"
 DEFAULT_OUTPUT = "reports/llm_story_generation_eval.json"
 DEFAULT_PACKS_DIR = "reports/packs_llm"
 DEFAULT_ARTIFACTS_DIR = "reports/llm_story_eval_artifacts"
 DEFAULT_STRATEGY_SET = ("mixed", "text_noise", "button_random")
+DEFAULT_FUN_FOCUS_STRATEGY_SET = ("mixed",)
 PROMPT_SPEC_TRACKED_FIELDS = ("premise", "stakes", "tone", "title")
+FUN_SCORE_WEIGHTS: dict[str, float] = {
+    "overall": 0.40,
+    "playability": 0.25,
+    "choice_impact": 0.25,
+    "tension_curve": 0.10,
+}
+FUN_FOCUS_THRESHOLD_HINTS: dict[str, float] = {
+    "fun_score_avg_min": 7.5,
+    "fun_score_case_min": 6.5,
+}
 
 FULL_GATE_THRESHOLDS: dict[str, float] = {
     "generation_success_rate_required": 1.0,
@@ -86,6 +98,108 @@ def _parse_bool(value: str | bool) -> bool:
 
 def _safe_mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
+
+
+def _to_score(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _compute_fun_score(judge_result_dict: dict[str, Any]) -> float:
+    overall = _to_score(judge_result_dict.get("overall_score"))
+    playability = _to_score(judge_result_dict.get("playability_score"))
+    choice_impact = _to_score(judge_result_dict.get("choice_impact_score"))
+    tension_curve = _to_score(judge_result_dict.get("tension_curve_score"))
+    return (
+        FUN_SCORE_WEIGHTS["overall"] * overall
+        + FUN_SCORE_WEIGHTS["playability"] * playability
+        + FUN_SCORE_WEIGHTS["choice_impact"] * choice_impact
+        + FUN_SCORE_WEIGHTS["tension_curve"] * tension_curve
+    )
+
+
+def _aggregate_fun_metrics(judge_results: list[dict[str, Any]]) -> dict[str, float]:
+    if not judge_results:
+        return {
+            "fun_score_avg": 0.0,
+            "judge_playability_avg": 0.0,
+            "judge_choice_impact_avg": 0.0,
+            "judge_tension_curve_avg": 0.0,
+        }
+
+    fun_scores = [_compute_fun_score(result) for result in judge_results]
+    playability_scores = [_to_score(result.get("playability_score")) for result in judge_results]
+    choice_impact_scores = [_to_score(result.get("choice_impact_score")) for result in judge_results]
+    tension_curve_scores = [_to_score(result.get("tension_curve_score")) for result in judge_results]
+    return {
+        "fun_score_avg": _safe_mean(fun_scores),
+        "judge_playability_avg": _safe_mean(playability_scores),
+        "judge_choice_impact_avg": _safe_mean(choice_impact_scores),
+        "judge_tension_curve_avg": _safe_mean(tension_curve_scores),
+    }
+
+
+def _build_fun_focus_report(metrics: dict[str, Any]) -> dict[str, Any]:
+    warnings: list[str] = []
+    fun_score_avg = _to_score(metrics.get("fun_score_avg"))
+    fun_score_case_min = _to_score(metrics.get("fun_score_case_min"))
+    if fun_score_avg < FUN_FOCUS_THRESHOLD_HINTS["fun_score_avg_min"]:
+        warnings.append(
+            f"fun_score_avg={fun_score_avg:.4f} < hint {FUN_FOCUS_THRESHOLD_HINTS['fun_score_avg_min']:.4f}"
+        )
+    if fun_score_case_min < FUN_FOCUS_THRESHOLD_HINTS["fun_score_case_min"]:
+        warnings.append(
+            f"fun_score_case_min={fun_score_case_min:.4f} < hint {FUN_FOCUS_THRESHOLD_HINTS['fun_score_case_min']:.4f}"
+        )
+    return {
+        "formula": {
+            "expression": "0.40*overall + 0.25*playability + 0.25*choice_impact + 0.10*tension_curve",
+            "weights": dict(FUN_SCORE_WEIGHTS),
+        },
+        "threshold_hints": {
+            "fun_score_avg_min": FUN_FOCUS_THRESHOLD_HINTS["fun_score_avg_min"],
+            "fun_score_case_min": FUN_FOCUS_THRESHOLD_HINTS["fun_score_case_min"],
+            "diagnostic_only": True,
+        },
+        "warnings": warnings,
+    }
+
+
+def _resolve_profile_config(
+    *,
+    profile: str,
+    suite_file: str | None,
+    runs_per_prompt: int | None,
+    strategies: str | None,
+    max_steps: int | None,
+    strict: bool | None,
+) -> dict[str, Any]:
+    if profile == "fun_focus":
+        defaults = {
+            "suite_file": DEFAULT_FUN_FOCUS_SUITE_FILE,
+            "runs_per_prompt": 2,
+            "strategies": ",".join(DEFAULT_FUN_FOCUS_STRATEGY_SET),
+            "max_steps": 20,
+            "strict": True,
+        }
+    else:
+        defaults = {
+            "suite_file": DEFAULT_SUITE_FILE,
+            "runs_per_prompt": 3,
+            "strategies": ",".join(DEFAULT_STRATEGY_SET),
+            "max_steps": 20,
+            "strict": True,
+        }
+
+    return {
+        "suite_file": suite_file if suite_file is not None else defaults["suite_file"],
+        "runs_per_prompt": runs_per_prompt if runs_per_prompt is not None else defaults["runs_per_prompt"],
+        "strategies": strategies if strategies is not None else defaults["strategies"],
+        "max_steps": max_steps if max_steps is not None else defaults["max_steps"],
+        "strict": strict if strict is not None else defaults["strict"],
+    }
 
 
 def _unwrap_exception_chain(exc: BaseException) -> list[BaseException]:
@@ -168,6 +282,10 @@ def _aggregate_playthrough_metrics(reports: list[dict[str, Any]]) -> dict[str, f
             "avg_steps": 0.0,
             "meaningful_accept_rate": 0.0,
             "llm_route_success_rate": 0.0,
+            "global_help_route_rate": 0.0,
+            "non_global_text_route_rate": 0.0,
+            "pressure_recoil_trigger_rate": 0.0,
+            "npc_stance_mentions_per_run_avg": 0.0,
             "step_error_rate": 0.0,
         }
 
@@ -177,15 +295,76 @@ def _aggregate_playthrough_metrics(reports: list[dict[str, Any]]) -> dict[str, f
     meaningful_steps = sum(int(report.get("meaningful_steps", 0)) for report in reports)
     text_input_steps = sum(int(report.get("text_input_steps", 0)) for report in reports)
     llm_route_steps = sum(int(report.get("llm_route_steps", 0)) for report in reports)
+    global_help_route_steps = sum(int(report.get("global_help_route_steps", 0)) for report in reports)
+    pressure_recoil_steps = sum(int(report.get("pressure_recoil_steps", 0)) for report in reports)
+    npc_stance_mentions = sum(int(report.get("npc_stance_mentions", 0)) for report in reports)
     runtime_error_steps = sum(int(report.get("runtime_error_steps", 0)) for report in reports)
+
+    non_global_text_routes = max(llm_route_steps - global_help_route_steps, 0)
 
     return {
         "completion_rate": completion_count / len(reports),
         "avg_steps": _safe_mean(completed_steps),
         "meaningful_accept_rate": meaningful_steps / total_steps if total_steps else 0.0,
         "llm_route_success_rate": llm_route_steps / text_input_steps if text_input_steps else 0.0,
+        "global_help_route_rate": global_help_route_steps / text_input_steps if text_input_steps else 0.0,
+        "non_global_text_route_rate": non_global_text_routes / text_input_steps if text_input_steps else 0.0,
+        "pressure_recoil_trigger_rate": pressure_recoil_steps / len(reports),
+        "npc_stance_mentions_per_run_avg": npc_stance_mentions / len(reports),
         "step_error_rate": runtime_error_steps / len(reports),
     }
+
+
+def _count_duplicate_beat_titles(pack_json: dict[str, Any]) -> int:
+    beats = pack_json.get("beats", [])
+    titles = []
+    for beat in beats:
+        if not isinstance(beat, dict):
+            continue
+        title = beat.get("title")
+        if isinstance(title, str):
+            titles.append(title.strip().casefold())
+    return 1 if len(set(titles)) != len(titles) else 0
+
+
+def _count_banned_moves(pack_json: dict[str, Any]) -> int:
+    count = 0
+    for move in pack_json.get("moves", []):
+        if isinstance(move, dict) and move.get("id") == "inspect_relic":
+            count += 1
+    return count
+
+
+def _strategy_triangle_coverage_rate(pack_json: dict[str, Any]) -> float:
+    moves = pack_json.get("moves", [])
+    scenes = pack_json.get("scenes", [])
+    if not isinstance(moves, list) or not isinstance(scenes, list) or not scenes:
+        return 0.0
+    move_style_map: dict[str, str] = {}
+    for move in moves:
+        if not isinstance(move, dict):
+            continue
+        move_id = move.get("id")
+        strategy_style = move.get("strategy_style")
+        if isinstance(move_id, str) and isinstance(strategy_style, str):
+            move_style_map[move_id] = strategy_style
+
+    required_styles = {"fast_dirty", "steady_slow", "political_safe_resource_heavy"}
+    covered = 0
+    for scene in scenes:
+        if not isinstance(scene, dict):
+            continue
+        enabled = scene.get("enabled_moves", [])
+        if not isinstance(enabled, list):
+            continue
+        styles = {
+            move_style_map.get(move_id)
+            for move_id in enabled
+            if isinstance(move_id, str) and not move_id.startswith("global.")
+        }
+        if required_styles.issubset(styles):
+            covered += 1
+    return covered / len(scenes)
 
 
 def _build_pack_summary(pack_json: dict[str, Any]) -> dict[str, Any]:
@@ -403,8 +582,20 @@ def _empty_metrics() -> dict[str, Any]:
         "avg_steps": 0.0,
         "meaningful_accept_rate": 0.0,
         "llm_route_success_rate": 0.0,
+        "global_help_route_rate": 0.0,
+        "non_global_text_route_rate": 0.0,
+        "strategy_triangle_coverage_rate": 0.0,
+        "pressure_recoil_trigger_rate": 0.0,
+        "npc_stance_mentions_per_run_avg": 0.0,
+        "duplicate_beat_title_run_count": 0.0,
+        "banned_move_hit_count": 0.0,
         "step_error_rate": 0.0,
         "judge_overall_avg": 0.0,
+        "fun_score_avg": 0.0,
+        "fun_score_case_min": 0.0,
+        "judge_playability_avg": 0.0,
+        "judge_choice_impact_avg": 0.0,
+        "judge_tension_curve_avg": 0.0,
         "judge_prompt_fidelity_avg": 0.0,
         "case_overall_score_min": 0.0,
         "judge_sample_count": 0.0,
@@ -450,6 +641,7 @@ def evaluate_llm_story_generation(
             "config": config,
             "precheck": precheck,
             "metrics": metrics,
+            "fun_focus": _build_fun_focus_report(metrics),
             "gate": gate,
             "cases": [],
         }
@@ -462,10 +654,18 @@ def evaluate_llm_story_generation(
     pack_lint_success_count = 0
     global_play_reports: list[dict[str, Any]] = []
     global_judge_overall_scores: list[float] = []
+    global_judge_results: list[dict[str, Any]] = []
     global_judge_fidelity_scores: list[float] = []
     case_level_overall: dict[str, list[float]] = {}
+    case_level_fun: dict[str, list[float]] = {}
+    case_level_playability: dict[str, list[float]] = {}
+    case_level_choice_impact: dict[str, list[float]] = {}
+    case_level_tension_curve: dict[str, list[float]] = {}
     generation_failure_breakdown: dict[str, int] = {}
     prompt_spec_invalid_field_counts: dict[str, int] = {}
+    duplicate_beat_title_run_count = 0
+    banned_move_hit_count = 0
+    strategy_triangle_coverage_accumulator = 0.0
     case_reports: list[dict[str, Any]] = []
 
     packs_dir.mkdir(parents=True, exist_ok=True)
@@ -476,6 +676,10 @@ def evaluate_llm_story_generation(
         case_runs: list[dict[str, Any]] = []
         case_play_reports: list[dict[str, Any]] = []
         case_level_overall.setdefault(case.id, [])
+        case_level_fun.setdefault(case.id, [])
+        case_level_playability.setdefault(case.id, [])
+        case_level_choice_impact.setdefault(case.id, [])
+        case_level_tension_curve.setdefault(case.id, [])
 
         for run_index in range(1, runs_per_prompt + 1):
             run_seed = f"{case_seed}:run{run_index}"
@@ -532,6 +736,9 @@ def evaluate_llm_story_generation(
             generation_success_count += 1
             if generated.lint_report.ok:
                 pack_lint_success_count += 1
+            duplicate_beat_title_run_count += _count_duplicate_beat_titles(generated.pack)
+            banned_move_hit_count += _count_banned_moves(generated.pack)
+            strategy_triangle_coverage_accumulator += _strategy_triangle_coverage_rate(generated.pack)
 
             pack_path = packs_dir / f"{generated.pack_hash}.json"
             if not pack_path.exists():
@@ -615,6 +822,9 @@ def evaluate_llm_story_generation(
                         "meaningful_steps": int(play_report["meaningful_steps"]),
                         "text_input_steps": int(play_report["text_input_steps"]),
                         "llm_route_steps": int(play_report["llm_route_steps"]),
+                        "global_help_route_steps": int(play_report.get("global_help_route_steps", 0)),
+                        "pressure_recoil_steps": int(play_report.get("pressure_recoil_steps", 0)),
+                        "npc_stance_mentions": int(play_report.get("npc_stance_mentions", 0)),
                         "runtime_error": bool(play_report["runtime_error"]),
                         "runtime_error_code": play_report["runtime_error_code"],
                         "runtime_error_stage": play_report["runtime_error_stage"],
@@ -638,13 +848,20 @@ def evaluate_llm_story_generation(
                         metrics=run_metrics,
                     )
                     judge_payload = decision.result.model_dump()
+                    fun_score = _compute_fun_score(judge_payload)
                     global_judge_overall_scores.append(float(decision.result.overall_score))
                     global_judge_fidelity_scores.append(float(decision.result.prompt_fidelity_score))
+                    global_judge_results.append(judge_payload)
                     case_level_overall[case.id].append(float(decision.result.overall_score))
+                    case_level_fun[case.id].append(fun_score)
+                    case_level_playability[case.id].append(float(decision.result.playability_score))
+                    case_level_choice_impact[case.id].append(float(decision.result.choice_impact_score))
+                    case_level_tension_curve[case.id].append(float(decision.result.tension_curve_score))
                     run_entry["judge"] = {
                         "status": "ok",
                         "model": decision.model,
                         "attempts": decision.attempts,
+                        "fun_score": fun_score,
                         **judge_payload,
                     }
                 except Exception as exc:  # noqa: BLE001
@@ -669,6 +886,10 @@ def evaluate_llm_story_generation(
                     case_generation_success_count / runs_per_prompt if runs_per_prompt else 0.0
                 ),
                 "judge_overall_avg": _safe_mean(case_level_overall.get(case.id, [])),
+                "fun_score_avg": _safe_mean(case_level_fun.get(case.id, [])),
+                "playability_avg": _safe_mean(case_level_playability.get(case.id, [])),
+                "choice_impact_avg": _safe_mean(case_level_choice_impact.get(case.id, [])),
+                "tension_curve_avg": _safe_mean(case_level_tension_curve.get(case.id, [])),
                 "judge_sample_count": len(case_level_overall.get(case.id, [])),
             }
         )
@@ -687,7 +908,13 @@ def evaluate_llm_story_generation(
         case.id: _safe_mean(case_level_overall.get(case.id, []))
         for case in suite.cases
     }
+    per_case_fun_avg = {
+        case.id: _safe_mean(case_level_fun.get(case.id, []))
+        for case in suite.cases
+    }
     min_case_overall_score = min(per_case_overall_avg.values()) if per_case_overall_avg else 0.0
+    min_case_fun_score = min(per_case_fun_avg.values()) if per_case_fun_avg else 0.0
+    global_fun_metrics = _aggregate_fun_metrics(global_judge_results)
 
     metrics = {
         "generation_success_rate": generation_success_count / total_runs if total_runs else 0.0,
@@ -695,7 +922,17 @@ def evaluate_llm_story_generation(
             pack_lint_success_count / generation_success_count if generation_success_count else 0.0
         ),
         **global_play_metrics,
+        "strategy_triangle_coverage_rate": (
+            strategy_triangle_coverage_accumulator / generation_success_count if generation_success_count else 0.0
+        ),
+        "duplicate_beat_title_run_count": float(duplicate_beat_title_run_count),
+        "banned_move_hit_count": float(banned_move_hit_count),
         "judge_overall_avg": _safe_mean(global_judge_overall_scores),
+        "fun_score_avg": global_fun_metrics["fun_score_avg"],
+        "fun_score_case_min": min_case_fun_score,
+        "judge_playability_avg": global_fun_metrics["judge_playability_avg"],
+        "judge_choice_impact_avg": global_fun_metrics["judge_choice_impact_avg"],
+        "judge_tension_curve_avg": global_fun_metrics["judge_tension_curve_avg"],
         "judge_prompt_fidelity_avg": _safe_mean(global_judge_fidelity_scores),
         "case_overall_score_min": min_case_overall_score,
         "judge_sample_count": float(len(global_judge_overall_scores)),
@@ -712,6 +949,7 @@ def evaluate_llm_story_generation(
         "config": config,
         "precheck": precheck,
         "metrics": metrics,
+        "fun_focus": _build_fun_focus_report(metrics),
         "gate": gate,
         "cases": case_reports,
     }
@@ -725,14 +963,15 @@ def _determine_exit_code(*, strict: bool, gate: dict[str, Any]) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Full eval for LLM prompt-to-story generation quality.")
-    parser.add_argument("--suite-file", default=DEFAULT_SUITE_FILE, help="Prompt suite JSON file")
-    parser.add_argument("--runs-per-prompt", type=int, default=3, help="Generation runs per prompt case")
+    parser.add_argument("--profile", choices=("full", "fun_focus"), default="full", help="Eval profile preset")
+    parser.add_argument("--suite-file", default=None, help="Prompt suite JSON file")
+    parser.add_argument("--runs-per-prompt", type=int, default=None, help="Generation runs per prompt case")
     parser.add_argument(
         "--strategies",
-        default=",".join(DEFAULT_STRATEGY_SET),
+        default=None,
         help="Comma-separated simulation strategies",
     )
-    parser.add_argument("--max-steps", type=int, default=20, help="Maximum simulation steps per playthrough")
+    parser.add_argument("--max-steps", type=int, default=None, help="Maximum simulation steps per playthrough")
     parser.add_argument("--output", default=DEFAULT_OUTPUT, help="Output report path")
     parser.add_argument("--packs-dir", default=DEFAULT_PACKS_DIR, help="Directory to persist generated pack files")
     parser.add_argument(
@@ -744,15 +983,24 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         type=_parse_bool,
-        default=True,
+        default=None,
         help="Hard gate mode: true exits non-zero on failed gate",
     )
     args = parser.parse_args()
 
-    suite_path = Path(args.suite_file)
+    profile_config = _resolve_profile_config(
+        profile=args.profile,
+        suite_file=args.suite_file,
+        runs_per_prompt=args.runs_per_prompt,
+        strategies=args.strategies,
+        max_steps=args.max_steps,
+        strict=args.strict,
+    )
+
+    suite_path = Path(str(profile_config["suite_file"]))
     suite = _load_prompt_suite(suite_path)
 
-    strategies = [item.strip() for item in str(args.strategies).split(",") if item.strip()]
+    strategies = [item.strip() for item in str(profile_config["strategies"]).split(",") if item.strip()]
     if not strategies:
         raise RuntimeError("at least one strategy must be provided")
     unknown = sorted(set(strategies) - set(DEFAULT_STRATEGIES))
@@ -761,19 +1009,35 @@ def main() -> int:
 
     report = evaluate_llm_story_generation(
         suite=suite,
-        runs_per_prompt=max(1, args.runs_per_prompt),
+        runs_per_prompt=max(1, int(profile_config["runs_per_prompt"])),
         strategies=strategies,
-        max_steps=max(1, args.max_steps),
+        max_steps=max(1, int(profile_config["max_steps"])),
         packs_dir=Path(args.packs_dir),
         artifacts_dir=Path(args.artifacts_dir),
         judge_model=args.judge_model,
     )
 
+    report["config"]["profile"] = args.profile
+
     output_path = Path(args.output)
     _write_json(output_path, report)
     print(str(output_path))
+    metrics = report.get("metrics") or {}
+    fun_focus = report.get("fun_focus") or {}
+    warnings = fun_focus.get("warnings") or []
+    print(
+        "fun summary: "
+        f"fun_score_avg={_to_score(metrics.get('fun_score_avg')):.4f}, "
+        f"fun_score_case_min={_to_score(metrics.get('fun_score_case_min')):.4f}, "
+        f"judge_playability_avg={_to_score(metrics.get('judge_playability_avg')):.4f}, "
+        f"judge_choice_impact_avg={_to_score(metrics.get('judge_choice_impact_avg')):.4f}, "
+        f"judge_tension_curve_avg={_to_score(metrics.get('judge_tension_curve_avg')):.4f}, "
+        f"fun_warnings={len(warnings)}"
+    )
+    for warning in warnings:
+        print(f"fun warning: {warning}")
 
-    exit_code = _determine_exit_code(strict=bool(args.strict), gate=report.get("gate") or {})
+    exit_code = _determine_exit_code(strict=bool(profile_config["strict"]), gate=report.get("gate") or {})
     if exit_code != 0:
         gate = report.get("gate") or {}
         fail_reasons = gate.get("fail_reasons") or []

@@ -205,6 +205,9 @@ def test_eval_report_shape_with_mocks(tmp_path, monkeypatch) -> None:
             "meaningful_steps": 14,
             "text_input_steps": 10,
             "llm_route_steps": 10,
+            "global_help_route_steps": 6,
+            "pressure_recoil_steps": 1,
+            "npc_stance_mentions": 3,
             "runtime_error_steps": 0,
             "runtime_error": False,
             "runtime_error_code": None,
@@ -249,11 +252,30 @@ def test_eval_report_shape_with_mocks(tmp_path, monkeypatch) -> None:
     assert report["gate"]["passed"] is True
     assert report["metrics"]["generation_success_rate"] == 1.0
     assert report["metrics"]["completion_rate"] == 1.0
+    assert report["metrics"]["global_help_route_rate"] == 0.6
+    assert report["metrics"]["non_global_text_route_rate"] == 0.4
+    assert report["metrics"]["strategy_triangle_coverage_rate"] > 0.0
+    assert report["metrics"]["pressure_recoil_trigger_rate"] == 1.0
+    assert report["metrics"]["npc_stance_mentions_per_run_avg"] == 3.0
+    assert report["metrics"]["fun_score_avg"] > 0.0
+    assert report["metrics"]["fun_score_case_min"] > 0.0
+    assert report["metrics"]["judge_playability_avg"] > 0.0
+    assert report["metrics"]["judge_choice_impact_avg"] > 0.0
+    assert report["metrics"]["judge_tension_curve_avg"] > 0.0
+    assert report["metrics"]["duplicate_beat_title_run_count"] == 0.0
+    assert report["metrics"]["banned_move_hit_count"] == 0.0
     assert report["metrics"]["generation_failure_breakdown"] == {}
     assert report["metrics"]["prompt_spec_invalid_field_counts"] == {}
+    assert report["fun_focus"]["formula"]["weights"] == eval_story.FUN_SCORE_WEIGHTS
+    assert isinstance(report["fun_focus"]["warnings"], list)
     run_entry = report["cases"][0]["runs"][0]
     assert Path(run_entry["pack_path"]).exists()
     assert run_entry["judge"]["status"] == "ok"
+    assert run_entry["judge"]["fun_score"] > 0.0
+    assert report["cases"][0]["metrics"]["fun_score_avg"] > 0.0
+    assert report["cases"][0]["metrics"]["playability_avg"] > 0.0
+    assert report["cases"][0]["metrics"]["choice_impact_avg"] > 0.0
+    assert report["cases"][0]["metrics"]["tension_curve_avg"] > 0.0
     first_play = run_entry["playthroughs"][0]
     assert Path(first_play["artifact_path"]).exists()
     assert eval_story._determine_exit_code(strict=True, gate=report["gate"]) == 0
@@ -398,3 +420,86 @@ def test_eval_collects_generation_failure_breakdown_and_prompt_fields(tmp_path, 
     assert report["metrics"]["prompt_spec_invalid_field_counts"]["premise"] >= 1
     assert any("generation_success_rate" in reason for reason in report["gate"]["fail_reasons"])
     assert any("top_generation_failure=prompt_spec_invalid:1" in reason for reason in report["gate"]["fail_reasons"])
+
+
+def test_compute_fun_score_weighted_formula() -> None:
+    judge_payload = {
+        "overall_score": 8.0,
+        "playability_score": 7.0,
+        "choice_impact_score": 9.0,
+        "tension_curve_score": 6.0,
+    }
+    score = eval_story._compute_fun_score(judge_payload)
+    assert abs(score - 7.8) < 1e-9
+
+
+def test_gate_unchanged_with_low_fun_fields() -> None:
+    metrics = {
+        "generation_success_rate": 1.0,
+        "pack_lint_success_rate": 1.0,
+        "completion_rate": 1.0,
+        "avg_steps": 15.0,
+        "meaningful_accept_rate": 0.95,
+        "llm_route_success_rate": 0.9,
+        "step_error_rate": 0.0,
+        "judge_overall_avg": 8.0,
+        "fun_score_avg": 2.0,
+        "fun_score_case_min": 1.0,
+        "judge_playability_avg": 2.0,
+        "judge_choice_impact_avg": 2.0,
+        "judge_tension_curve_avg": 2.0,
+        "judge_prompt_fidelity_avg": 7.5,
+        "case_overall_score_min": 6.3,
+        "judge_sample_count": 24.0,
+        "expected_judge_sample_count": 24.0,
+    }
+    gate = eval_story._compute_gate(metrics)
+    assert gate["passed"] is True
+
+
+def test_profile_fun_focus_defaults_applied() -> None:
+    resolved = eval_story._resolve_profile_config(
+        profile="fun_focus",
+        suite_file=None,
+        runs_per_prompt=None,
+        strategies=None,
+        max_steps=None,
+        strict=None,
+    )
+    assert resolved["suite_file"] == eval_story.DEFAULT_FUN_FOCUS_SUITE_FILE
+    assert resolved["runs_per_prompt"] == 2
+    assert resolved["strategies"] == "mixed"
+    assert resolved["max_steps"] == 20
+    assert resolved["strict"] is True
+
+
+def test_profile_fun_focus_respects_explicit_overrides() -> None:
+    resolved = eval_story._resolve_profile_config(
+        profile="fun_focus",
+        suite_file="custom_suite.json",
+        runs_per_prompt=3,
+        strategies="mixed,text_noise",
+        max_steps=30,
+        strict=False,
+    )
+    assert resolved["suite_file"] == "custom_suite.json"
+    assert resolved["runs_per_prompt"] == 3
+    assert resolved["strategies"] == "mixed,text_noise"
+    assert resolved["max_steps"] == 30
+    assert resolved["strict"] is False
+
+
+def test_fun_suite_file_has_12_cases_and_valid_case_ids() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    full_payload = json.loads((repo_root / "eval_data/prompt_suite_v1.json").read_text(encoding="utf-8"))
+    fun_payload = json.loads((repo_root / "eval_data/prompt_suite_fun_v1.json").read_text(encoding="utf-8"))
+
+    full_suite = eval_story.PromptSuite.model_validate(full_payload)
+    fun_suite = eval_story.PromptSuite.model_validate(fun_payload)
+
+    assert fun_suite.id == "prompt_suite_fun_v1"
+    assert len(fun_suite.cases) == 12
+    full_ids = {case.id for case in full_suite.cases}
+    fun_ids = [case.id for case in fun_suite.cases]
+    assert len(set(fun_ids)) == 12
+    assert set(fun_ids).issubset(full_ids)
