@@ -42,7 +42,7 @@ This document defines the current “north star” architecture for an **8–12 
 - `scene_id`, `beat_id`
 - `scene_seed` (short: situation + objective + conflict hook; not long prose)
 - `present_npcs[]` (typically 1–2 primary NPCs in-scene)
-- `enabled_moves[]` (3–5 visible moves; **never > 6**)
+- `enabled_moves[]` (4–5 visible moves; **never > 6**)
 - `always_available_moves[]` (2–3 global moves; see below)
 - `exit_conditions` (usually based on progress/event tags)
 
@@ -59,6 +59,7 @@ Moves are **parameterizable** and reusable across stories.
 
 **Fields (conceptual):**
 - `move_id`, `label`
+- `strategy_style`: `fast_dirty | steady_slow | political_safe_resource_heavy`
 - `intents/synonyms[]` (free-text routing surface)
 - `args_schema` (optional; e.g., `target_npc_id`, `tone`, `goal_tag`)
 - `resolution_policy` (deterministic rule for outcome selection)
@@ -69,6 +70,12 @@ Moves are **parameterizable** and reusable across stories.
   - `success`
   - `fail_forward` (**required**)
 - `partial_success` is strongly recommended for richer gameplay.
+- In each scene, non-global `enabled_moves` must cover all three strategy styles (hard lint error otherwise).
+
+### 2.5 NPC Profiles
+StoryPack includes explicit NPC profile metadata:
+- `npc_profiles[]`: `{name, red_line}`
+- `red_line` is the NPC's non-negotiable constraint and must exist for every listed NPC.
 
 ---
 
@@ -102,7 +109,7 @@ Each scene must include 2–3 global moves. Minimum set:
 - `global.look`: observation/scan → reveals a clue or changes situation slightly
 - `global.help_me_progress`: “I don’t know what to do” → offers concrete next options + small progress
 
-**Rule:** global moves remain available choices and button fallback targets, but text-routing failures in strict mode failfast.
+**Rule:** global moves remain available choices and button fallback targets, but text routing to `global.help_me_progress` is only allowed for explicit help/stuck intent.
 
 ---
 
@@ -119,6 +126,7 @@ Input → `MoveInvocation`
 
 **Low confidence policy:**
 - `openai`: if confidence < threshold, parse fails, or move is invalid, failfast this step with `503`.
+- for non-help text, router excludes `global.help_me_progress` from LLM candidate moves.
 
 ### Pass B — Outcome Resolution (Deterministic)
 `MoveInvocation + scene + state` → choose an `Outcome`
@@ -126,6 +134,12 @@ Input → `MoveInvocation`
 - If unmet: choose `fail_forward`.
 - Otherwise: choose `success` or `partial` according to `resolution_policy`.
 - Apply `effects`, update progress, transition to `next_scene_id`.
+- Runtime tracks fixed pressure debt:
+  - `public_trust`
+  - `resource_stress`
+  - `coordination_noise`
+- In the final two beats, pressure recoil can trigger extra costs/consequences based on these tracks.
+- Runtime maintains `npc_trust::<name>` and derives stance buckets (`support|contested|oppose`) from red-line alignment.
 
 ### Narration (LLM or template)
 Narration renders `narration_slots` into player-facing text using a strict template:
@@ -134,6 +148,7 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 - **Hook**: present the next actionable direction
 
 **Safety:** narration must not leak internal fields/ids/markers; enforce a denylist + final guard. In strict providers, narration errors failfast instead of template fallback.
+- Narration commit layer periodically surfaces stance state (who supports, who opposes, whose red line was hit).
 
 ---
 
@@ -177,10 +192,12 @@ Narration renders `narration_slots` into player-facing text using a strict templ
     - `ui`: `{moves:[{move_id,label,risk_hint?}], input_hint}`
     - `debug` (dev only): resolution trace, applied deltas, selected outcome id
 
-**Step contract:** `POST /sessions/{session_id}/step` may return `503` on LLM failures (route error, low confidence, invalid move, narration failure).
+**Step contract:** `POST /sessions/{session_id}/step` may return:
+- `503` on strict LLM failures (route error, low confidence, invalid move, narration failure)
+- `409` with `error_code=session_conflict_retry` when optimistic CAS detects a concurrent turn advance
 
 ### Admin Diagnostics (no-auth in current phase)
-- `GET /admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed`)
+- `GET /admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed|step_conflicted`)
 - `POST /admin/sessions/{session_id}/feedback` — attach `good|bad` verdict and tags/notes to a session
 - `GET /admin/sessions/{session_id}/feedback` — list feedback markers for a session
 - `GET /admin/observability/runtime-errors` — rolling window 503 aggregation by `error_code|stage|model`
@@ -199,6 +216,9 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 - Reference validity: `next_scene_id`, `move_id`, `outcome_id` exist
 - Every move has `fail_forward`
 - Every scene includes required global moves (2–3)
+- Every scene includes full strategy triangle coverage (excluding `global.*`)
+- `npc_profiles` fully match `npcs` (no missing/extra/duplicate names)
+- Banned move IDs (e.g. `inspect_relic`) fail lint
 - Reachability: entry → all required scenes reachable
 - Existence of at least one ending path within 14–16 steps
 - Basic cycle risk: ensure there is a terminating route
@@ -215,9 +235,9 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 
 ## 8. One-click Generation Pipeline (recommended)
 
-1. **Prompt/Seed → Beat Plan**  
+1. **Prompt/Seed → Beat Plan** (prompt mode uses two-stage compile: outline -> full spec, strict max 3 calls)  
 2. **Beat Plan → Scenes graph** (14–16 scenes, reconverging)
-3. **Scenes → Moves/Intents** (3–5 visible + 2–3 global per scene)
+3. **Scenes → Moves/Intents** (4–5 visible + 2–3 global per scene)
 4. **Outcomes fill** (success/partial/fail_forward; deterministic policies)
 5. **Lint + Regenerate** (up to 3 retries)
 6. **Publish + Playtest** (simulate one run; export transcript)
@@ -232,13 +252,18 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 - Route result: `move_id`, confidence, route source
 - Resolution result: success/partial/fail_forward, applied deltas
 - Progress: beat/scene progress increments
-- Session timeline events persisted for replay and diagnostics (`step_started|step_succeeded|step_failed|step_replayed`)
+- Session timeline events persisted for replay and diagnostics (`step_started|step_succeeded|step_failed|step_replayed|step_conflicted`)
 - User-side quality markers (`good|bad`) linked to session and turn index
 - Runtime 503 aggregation: 5-minute rolling buckets keyed by `error_code|stage|model`, with sample `session_id/request_id`
 - Alerting: cron-driven webhook emitter (`scripts/emit_runtime_alerts.py`) with cooldown dedupe via dispatch table
 - Acceptance metrics:
   - meaningful_accept_rate (state/progress changed)
   - llm_route_success_rate
+  - global_help_route_rate (phase-A diagnostic KPI)
+  - non_global_text_route_rate (phase-A diagnostic KPI)
+  - strategy_triangle_coverage_rate
+  - pressure_recoil_trigger_rate
+  - npc_stance_mentions_per_run_avg
   - step_error_rate
 
 ### Canary tests (must remain green)

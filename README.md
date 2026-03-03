@@ -4,6 +4,10 @@ Backend-first interactive narrative RPG service with OpenAI-only runtime behavio
 - `openai` provider uses quality-first failfast for LLM route/narration failures.
 - Preconditions never hard-block progression.
 - When success/partial cannot apply, runtime must execute `fail_forward`.
+- Story DSL is strategy-aware:
+  - every scene enforces a strategy triangle (`fast_dirty`, `steady_slow`, `political_safe_resource_heavy`)
+  - fixed pressure tracks (`public_trust`, `resource_stress`, `coordination_noise`) are repaid in late beats
+  - NPC red lines are explicit and surfaced as stance updates during play.
 
 ## Stack
 - Python 3.11+
@@ -43,6 +47,18 @@ Health check:
 curl http://127.0.0.1:8000/health
 ```
 
+Readiness check (DB + LLM config + cached LLM probe):
+
+```bash
+curl http://127.0.0.1:8000/ready
+```
+
+Force-refresh the LLM readiness probe (bypass cache):
+
+```bash
+curl "http://127.0.0.1:8000/ready?refresh=true"
+```
+
 ## Configuration
 Environment variables use `APP_` prefix.
 
@@ -70,6 +86,9 @@ Environment variables use `APP_` prefix.
 - `APP_OBS_ALERT_BUCKET_MIN_SHARE` default: `0.10`
 - `APP_OBS_ALERT_GLOBAL_ERROR_RATE` default: `0.05`
 - `APP_OBS_ALERT_COOLDOWN_SECONDS` default: `900`
+- `APP_READY_LLM_PROBE_ENABLED` default: `true`
+- `APP_READY_LLM_PROBE_CACHE_TTL_SECONDS` default: `30`
+- `APP_READY_LLM_PROBE_TIMEOUT_SECONDS` default: `5`
 
 OpenAI model resolution:
 - `route_model = APP_LLM_OPENAI_ROUTE_MODEL or APP_LLM_OPENAI_NARRATION_MODEL or APP_LLM_OPENAI_MODEL`
@@ -111,12 +130,40 @@ Failure modes are gate-controlled:
 - if OpenAI route fails (including low confidence or invalid move), step returns `503` with structured detail.
 - if OpenAI narration fails, step returns `503` with structured detail.
 - each successful step includes `recognized.route_source` (`llm`, `button`, `button_fallback`) for observability.
+- text routing suppresses `global.help_me_progress` unless player intent is explicit help/stuck language.
+
+Readiness endpoint contract:
+- `/health` is a lightweight liveness probe and always returns `200 {"status":"ok"}` when process is up.
+- `/ready` is a strict readiness probe:
+  - checks DB connectivity (`SELECT 1`)
+  - checks LLM config completeness
+  - runs a minimal OpenAI-compatible `who are you` probe (JSON mode)
+- `/ready` returns:
+  - `200` with `status=ready` when all checks pass
+  - `503` with `status=not_ready` and detailed check diagnostics when any critical check fails
+- LLM readiness probe is cached in-process by TTL (`APP_READY_LLM_PROBE_CACHE_TTL_SECONDS`) to control token/latency overhead.
+- Deployment probe templates (Kubernetes + systemd process manager):
+  - [docs/deployment_probes.md](/Users/lishehao/Desktop/Project/RPG_Demo/docs/deployment_probes.md)
+  - Kubernetes manifests:
+    - `deploy/k8s/rpg-backend-deployment.yaml`
+    - `deploy/k8s/rpg-backend-configmap.yaml`
+    - `deploy/k8s/rpg-backend-secret.example.yaml`
+  - systemd units:
+    - `deploy/systemd/rpg-backend.service`
+    - `deploy/systemd/rpg-backend-readiness.service`
+    - `deploy/systemd/rpg-backend-readiness.timer`
 
 ## Story Pack and Linter
 Global move IDs (required in every scene):
 - `global.clarify`
 - `global.look`
 - `global.help_me_progress`
+
+StoryPack DSL (hard break, no backward compatibility):
+- each move must include `strategy_style`.
+- each pack must include `npc_profiles[]` with `{name, red_line}`.
+- each scene must include at least one move from each strategy style (triangle hard constraint).
+- `inspect_relic` is banned and fails lint.
 
 Sample pack:
 - `sample_data/story_pack_v1.json`
@@ -171,7 +218,7 @@ curl -sS -X POST http://127.0.0.1:8000/stories/generate \
     "target_minutes":10,
     "npc_count":4,
     "variant_seed":"demo-seed-001",
-    "generator_version":"v3.1",
+    "generator_version":"v3.2",
     "palette_policy":"random",
     "publish":false
   }'
@@ -183,9 +230,12 @@ Generation mode selection:
 - if `prompt_text` is provided (non-empty), generator runs in `prompt` mode.
 - otherwise it runs in `seed` mode.
 Prompt compile behavior (strict):
-- Prompt mode enforces explicit StorySpec field limits (`title<=120`, `premise<=400`, `tone<=120`, `stakes<=300`, etc).
-- On schema validation failures, PromptCompiler retries with validation feedback (up to 3 attempts).
-- No local truncation is applied; if compile still fails, request returns `422` with `prompt_spec_invalid`.
+- Prompt mode uses a two-stage compile contract:
+  - stage 1: outline (`StorySpecOutline`) with strict compact limits and unique beat titles
+  - stage 2: full `StorySpec`
+  - stage 3: one feedback-guided regeneration if stage 2 validation fails
+- total compile budget is max 3 calls.
+- no local truncation is applied; failures remain strict (`prompt_outline_invalid` / `prompt_spec_invalid`).
 Generator output now includes:
 - `lint_report`
 - `generation_attempts`
@@ -267,7 +317,7 @@ python scripts/simulate_playthrough.py \
   --strategy mixed \
   --strategy-seed 12345 \
   --pack-hash local-pack-hash \
-  --generator-version v3.1 \
+  --generator-version v3.2 \
   --variant-seed replay-seed-1 \
   --max-steps 20
 ```
@@ -375,6 +425,20 @@ Hard gate thresholds:
 - `judge_prompt_fidelity_avg >= 7.0`
 - `case_overall_score_min >= 6.0`
 
+Additional diagnostics (phase-A observe/alert, not hard gate yet):
+- `global_help_route_rate`
+- `non_global_text_route_rate`
+- `strategy_triangle_coverage_rate`
+- `pressure_recoil_trigger_rate`
+- `npc_stance_mentions_per_run_avg`
+- `duplicate_beat_title_run_count`
+- `banned_move_hit_count`
+- `fun_score_avg`
+- `fun_score_case_min`
+- `judge_playability_avg`
+- `judge_choice_impact_avg`
+- `judge_tension_curve_avg`
+
 Outputs:
 - report: `reports/llm_story_generation_eval.json`
 - generated packs: `reports/packs_llm/{pack_hash}.json`
@@ -388,6 +452,40 @@ Precheck behavior:
 - precheck failure marks gate failed and (under `--strict true`) returns non-zero exit code
 - if `prompt_spec_invalid` appears frequently, inspect `prompt_spec_invalid_field_counts` first.
 
+### 12) Fun Focus Eval (12x2, gate unchanged)
+
+Run fun-priority readout while keeping the same full hard gate:
+
+```bash
+python scripts/evaluate_llm_story_generation.py \
+  --profile fun_focus \
+  --output reports/llm_story_generation_eval_fun_12x2.json
+```
+
+`fun_focus` profile defaults:
+- `suite_file=eval_data/prompt_suite_fun_v1.json` (fixed 12 prompts)
+- `runs_per_prompt=2`
+- `strategies=mixed`
+- `max_steps=20`
+- `strict=true`
+
+Fun score formula:
+- `fun_score = 0.40*overall + 0.25*playability + 0.25*choice_impact + 0.10*tension_curve`
+
+Report additions:
+- `metrics.fun_score_avg`
+- `metrics.fun_score_case_min`
+- `metrics.judge_playability_avg`
+- `metrics.judge_choice_impact_avg`
+- `metrics.judge_tension_curve_avg`
+- `fun_focus.formula`
+- `fun_focus.threshold_hints` (diagnostic only)
+- `fun_focus.warnings`
+
+Important:
+- this profile changes reading focus, not pass/fail semantics.
+- full gate and exit-code behavior remain unchanged.
+
 ## Idempotency Contract
 `POST /sessions/{session_id}/step` uses `client_action_id`.
 
@@ -398,6 +496,11 @@ If the same `client_action_id` is submitted again for the same session:
 Step input tolerance contract:
 - malformed action shape in valid JSON (missing `input`, missing `move_id`, invalid `input.type`) is normalized and executed with global fallback moves.
 - invalid session state still returns system errors (`404`/`409`).
+- concurrent write conflict (different action racing on stale turn) returns `409` with retry detail:
+  - `error_code`: `session_conflict_retry`
+  - `message`: `session advanced by another action; retry with new client_action_id`
+  - `expected_turn_index` / `actual_turn_index`
+  - `retryable`: `true`
 - strict provider (`openai`) may return `503` on LLM runtime failures with detail:
   - `error_code`: `llm_route_failed | llm_route_low_confidence | llm_route_invalid_move | llm_narration_failed`
   - `stage`: `route | narration`
@@ -417,13 +520,14 @@ curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/timeline?limit=200&o
 ```
 
 Optional query:
-- `event_type=step_started|step_succeeded|step_failed|step_replayed`
+- `event_type=step_started|step_succeeded|step_failed|step_replayed|step_conflicted`
 
 Event payload shape:
 - `step_started`: `client_action_id`, `turn_index_expected`, normalized `input`, `scene_id_before`, `beat_index_before`, provider/model hints, `request_id`
 - `step_succeeded`: `recognized`, `resolution`, `narration_text`, scene/beat transition, `duration_ms`, `request_id`
 - `step_failed`: strict failfast diagnostics (`error_code`, `stage`, `message`, `provider`, `duration_ms`, `request_id`)
 - `step_replayed`: idempotency replay marker with `session_action_id`
+- `step_conflicted`: optimistic CAS write conflict marker (`expected_turn_index`, `actual_turn_index`, `request_id`)
 
 ### 2) Feedback marker (good/bad)
 
