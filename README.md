@@ -33,7 +33,8 @@ Route path policy:
 - tests/scripts should import the same constants/helpers (no ad-hoc hardcoded route literals).
 
 Runtime architecture source of truth:
-- `docs/story_architecture_v3.md`
+- `docs/architecture.md`
+- `docs/runtime_status.md`
 - Prompt authoring review baseline:
   - `docs/prompt_authoring_structure.md`
 
@@ -77,7 +78,7 @@ Environment variables use `APP_` prefix.
 - `APP_ROUTING_CONFIDENCE_THRESHOLD` default: `0.55`
 - `APP_LLM_OPENAI_BASE_URL` required
 - `APP_LLM_OPENAI_API_KEY` required
-- `APP_LLM_OPENAI_MODEL` optional legacy fallback model
+- `APP_LLM_OPENAI_MODEL` optional default fallback model
 - `APP_LLM_OPENAI_ROUTE_MODEL` optional selection model (fallback chain: `NARRATION -> MODEL`)
 - `APP_LLM_OPENAI_NARRATION_MODEL` optional narration model (fallback chain: `ROUTE -> MODEL`)
 - `APP_LLM_OPENAI_GENERATOR_MODEL` optional prompt-compiler model (falls back to effective route model)
@@ -531,7 +532,7 @@ Hard gate thresholds:
 - `judge_prompt_fidelity_avg >= 7.0`
 - `case_overall_score_min >= 6.0`
 
-Additional diagnostics (phase-A observe/alert, not hard gate yet):
+Additional diagnostics (observe/alert, not hard gate yet):
 - `global_help_route_rate`
 - `non_global_text_route_rate`
 - `strategy_triangle_coverage_rate`
