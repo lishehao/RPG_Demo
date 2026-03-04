@@ -18,6 +18,7 @@ from rpg_backend.api.schemas import (
     ReadinessHealthAggregateResponse,
 )
 from rpg_backend.storage.engine import get_session
+from rpg_backend.security.deps import require_admin
 from rpg_backend.storage.repositories.observability import (
     aggregate_http_health,
     aggregate_llm_call_health,
@@ -25,7 +26,11 @@ from rpg_backend.storage.repositories.observability import (
     aggregate_runtime_error_buckets,
 )
 
-router = APIRouter(prefix=API_ADMIN_OBSERVABILITY_PREFIX, tags=["admin"])
+router = APIRouter(
+    prefix=API_ADMIN_OBSERVABILITY_PREFIX,
+    tags=["admin"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 def _empty_llm_group() -> LLMCallGroupHealthPayload:

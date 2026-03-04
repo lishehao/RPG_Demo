@@ -16,12 +16,17 @@ from rpg_backend.api.schemas import (
 )
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import log_event
+from rpg_backend.security.deps import require_admin
 from rpg_backend.storage.engine import get_session
 from rpg_backend.storage.repositories.runtime_events import list_runtime_events
 from rpg_backend.storage.repositories.session_feedback import create_session_feedback, list_session_feedback
 from rpg_backend.storage.repositories.sessions import get_session as get_session_record
 
-router = APIRouter(prefix=API_ADMIN_SESSIONS_PREFIX, tags=["admin"])
+router = APIRouter(
+    prefix=API_ADMIN_SESSIONS_PREFIX,
+    tags=["admin"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 def _require_session(db: Session, session_id: str):

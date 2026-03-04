@@ -18,13 +18,18 @@ from rpg_backend.domain.pack_schema import StoryPack
 from rpg_backend.llm.base import LLMProviderConfigError
 from rpg_backend.llm.factory import get_llm_provider
 from rpg_backend.observability.context import get_request_id
+from rpg_backend.security.deps import require_current_user
 from rpg_backend.runtime.service import RuntimeService
 from rpg_backend.runtime.session_step.orchestrator import process_step_request
 from rpg_backend.storage.engine import get_session
 from rpg_backend.storage.repositories.sessions import create_session, get_session as get_session_record
 from rpg_backend.storage.repositories.stories import get_story, get_story_version
 
-router = APIRouter(prefix=API_SESSIONS_PREFIX, tags=["sessions"])
+router = APIRouter(
+    prefix=API_SESSIONS_PREFIX,
+    tags=["sessions"],
+    dependencies=[Depends(require_current_user)],
+)
 
 
 def _state_summary(state: dict) -> dict[str, int]:

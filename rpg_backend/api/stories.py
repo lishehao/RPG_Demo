@@ -13,6 +13,7 @@ from rpg_backend.api.schemas import (
 )
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import log_event
+from rpg_backend.security.deps import require_current_user
 from rpg_backend.domain.linter import lint_story_pack
 from rpg_backend.generator.errors import GeneratorBuildError
 from rpg_backend.generator.pipeline import GeneratorPipeline
@@ -25,7 +26,11 @@ from rpg_backend.storage.repositories.stories import (
     publish_story_version,
 )
 
-router = APIRouter(prefix=API_STORIES_PREFIX, tags=["stories"])
+router = APIRouter(
+    prefix=API_STORIES_PREFIX,
+    tags=["stories"],
+    dependencies=[Depends(require_current_user)],
+)
 
 
 @router.post("", response_model=StoryCreateResponse)
