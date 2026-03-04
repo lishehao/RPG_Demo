@@ -1,16 +1,28 @@
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
 
 from rpg_backend.config.settings import get_settings
 
 settings = get_settings()
-engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
+
+
+def _engine_connect_args(database_url: str) -> dict:
+    if database_url.startswith("sqlite"):
+        return {"check_same_thread": False}
+    return {}
+
+
+_connect_args = _engine_connect_args(settings.database_url)
+_engine_kwargs = {"pool_pre_ping": True}
+if _connect_args:
+    _engine_kwargs["connect_args"] = _connect_args
+engine = create_engine(settings.database_url, **_engine_kwargs)
 
 
 def init_db() -> None:
-    # Ensure SQLModel metadata includes all table models before create_all.
-    from rpg_backend.storage import models  # noqa: F401
+    # Startup is strict: schema must already be migrated to current head.
+    from rpg_backend.storage.migrations import assert_schema_current
 
-    SQLModel.metadata.create_all(engine)
+    assert_schema_current()
 
 
 def get_session():

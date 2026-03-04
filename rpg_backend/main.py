@@ -6,13 +6,13 @@ from rpg_backend.api.errors import register_error_handlers
 from rpg_backend.api.router_registry import register_routers
 from rpg_backend.observability.logging import configure_logging
 from rpg_backend.observability.middleware import RequestIdMiddleware
-from rpg_backend.storage.engine import init_db
+from rpg_backend.storage.migrations import assert_schema_current
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging()
-    init_db()
+    assert_schema_current()
     yield
 
 

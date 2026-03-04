@@ -27,7 +27,8 @@ from rpg_backend.llm_worker.service import LLMWorkerService
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import configure_logging, log_event
 from rpg_backend.observability.middleware import RequestIdMiddleware
-from rpg_backend.storage.engine import engine, init_db
+from rpg_backend.storage.engine import engine
+from rpg_backend.storage.migrations import assert_schema_current
 from rpg_backend.storage.repositories.observability import save_readiness_probe_event
 
 service = LLMWorkerService()
@@ -57,7 +58,7 @@ def _save_worker_readiness_probe(
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging()
-    init_db()
+    assert_schema_current()
     await service.startup()
     yield
     await service.shutdown()
