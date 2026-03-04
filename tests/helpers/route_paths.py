@@ -1,0 +1,44 @@
+from __future__ import annotations
+
+from rpg_backend.api.route_paths import (
+    HEALTH_PATH,
+    LEGACY_ADMIN_PREFIX,
+    LEGACY_SESSIONS_PREFIX,
+    LEGACY_STORIES_PREFIX,
+    READY_PATH,
+    admin_http_health_path,
+    admin_llm_call_health_path,
+    admin_readiness_health_path,
+    admin_runtime_errors_path,
+    admin_session_feedback_path,
+    admin_session_timeline_path,
+    session_path,
+    session_step_path,
+    sessions_path,
+    story_path,
+    story_publish_path,
+    stories_generate_path,
+    stories_path,
+)
+
+__all__ = [
+    "HEALTH_PATH",
+    "LEGACY_ADMIN_PREFIX",
+    "LEGACY_SESSIONS_PREFIX",
+    "LEGACY_STORIES_PREFIX",
+    "READY_PATH",
+    "admin_http_health_path",
+    "admin_llm_call_health_path",
+    "admin_readiness_health_path",
+    "admin_runtime_errors_path",
+    "admin_session_feedback_path",
+    "admin_session_timeline_path",
+    "session_path",
+    "session_step_path",
+    "sessions_path",
+    "story_path",
+    "story_publish_path",
+    "stories_generate_path",
+    "stories_path",
+]
+

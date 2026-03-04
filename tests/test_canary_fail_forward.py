@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests.helpers.route_paths import session_step_path, sessions_path, story_publish_path, stories_path
 from tests.helpers.providers import DeterministicProvider
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
@@ -10,11 +11,11 @@ PACK_PATH = Path("sample_data/story_pack_v1.json")
 
 def _bootstrap_session(client) -> str:
     pack = json.loads(PACK_PATH.read_text(encoding="utf-8"))
-    story_resp = client.post("/v2/stories", json={"title": "FailForward Story", "pack_json": pack})
+    story_resp = client.post(stories_path(), json={"title": "FailForward Story", "pack_json": pack})
     story_id = story_resp.json()["story_id"]
-    publish_resp = client.post(f"/v2/stories/{story_id}/publish", json={})
+    publish_resp = client.post(story_publish_path(story_id), json={})
     version = publish_resp.json()["version"]
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     return session_resp.json()["session_id"]
 
 
@@ -25,7 +26,7 @@ def test_fail_forward_triggers_for_always_fail_forward_move(client, monkeypatch)
     session_id = _bootstrap_session(client)
 
     response = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "help-attempt",
             "input": {"type": "button", "move_id": "global.help_me_progress"},

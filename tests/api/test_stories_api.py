@@ -8,6 +8,7 @@ from rpg_backend.generator.prompt_compiler import PromptCompileError, PromptComp
 from rpg_backend.generator.spec_schema import StorySpec
 from rpg_backend.generator.errors import GeneratorBuildError
 from rpg_backend.generator.versioning import GENERATOR_VERSION
+from tests.helpers.route_paths import story_path, story_publish_path, stories_generate_path, stories_path
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -98,18 +99,18 @@ def _error_payload(response) -> dict:
 def test_story_create_publish_get_flow(client) -> None:
     pack = _sample_pack()
 
-    created = client.post("/v2/stories", json={"title": "Demo", "pack_json": pack})
+    created = client.post(stories_path(), json={"title": "Demo", "pack_json": pack})
     assert created.status_code == 200
     body = created.json()
     story_id = body["story_id"]
     assert body["status"] == "draft"
 
-    published = client.post(f"/v2/stories/{story_id}/publish", json={})
+    published = client.post(story_publish_path(story_id), json={})
     assert published.status_code == 200
     pub_body = published.json()
     assert pub_body["version"] == 1
 
-    fetched = client.get(f"/v2/stories/{story_id}?version=1")
+    fetched = client.get(f"{story_path(story_id)}?version=1")
     assert fetched.status_code == 200
     get_body = fetched.json()
     assert get_body["story_id"] == story_id
@@ -123,16 +124,16 @@ def test_publish_rejects_invalid_pack(client) -> None:
         out for out in invalid_pack["moves"][0]["outcomes"] if out["result"] != "fail_forward"
     ]
 
-    created = client.post("/v2/stories", json={"title": "Invalid", "pack_json": invalid_pack})
+    created = client.post(stories_path(), json={"title": "Invalid", "pack_json": invalid_pack})
     story_id = created.json()["story_id"]
 
-    published = client.post(f"/v2/stories/{story_id}/publish", json={})
+    published = client.post(story_publish_path(story_id), json={})
     assert published.status_code == 422
 
 
 def test_generate_story_success_without_publish(client) -> None:
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "seed_text": "Signal collapse in a city reactor.",
             "target_minutes": 10,
@@ -162,7 +163,7 @@ def test_generate_story_success_without_publish(client) -> None:
 
 def test_generate_story_success_with_publish(client) -> None:
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "seed_text": "Contain the reactor signal.",
             "target_minutes": 10,
@@ -191,8 +192,8 @@ def test_generate_with_variant_seed_is_reproducible(client) -> None:
         "palette_policy": "random",
         "publish": False,
     }
-    first = client.post("/v2/stories/generate", json=payload)
-    second = client.post("/v2/stories/generate", json=payload)
+    first = client.post(stories_generate_path(), json=payload)
+    second = client.post(stories_generate_path(), json=payload)
     assert first.status_code == 200
     assert second.status_code == 200
 
@@ -205,7 +206,7 @@ def test_generate_with_variant_seed_is_reproducible(client) -> None:
 
 def test_generate_without_variant_seed_returns_actual_seed(client) -> None:
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "seed_text": "No explicit variant",
             "target_minutes": 10,
@@ -223,7 +224,7 @@ def test_generate_without_variant_seed_returns_actual_seed(client) -> None:
 
 def test_generate_rejects_unsupported_generator_version(client) -> None:
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "seed_text": "version mismatch",
             "target_minutes": 10,
@@ -257,7 +258,7 @@ def test_generate_story_unrepairable_returns_422(client, monkeypatch) -> None:
 
     monkeypatch.setattr(stories_api.GeneratorPipeline, "run", _always_fail)
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "seed_text": "broken seed",
             "target_minutes": 10,
@@ -291,7 +292,7 @@ def test_generate_story_prompt_mode_success_without_publish(client, monkeypatch)
     )
 
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "prompt_text": "Generate a reactor crisis story with a pyrrhic ending.",
             "target_minutes": 10,
@@ -325,7 +326,7 @@ def test_generate_story_prompt_mode_success_with_publish(client, monkeypatch) ->
     )
 
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "prompt_text": "Generate a fast, high-pressure containment story.",
             "target_minutes": 10,
@@ -344,7 +345,7 @@ def test_generate_story_prompt_mode_success_with_publish(client, monkeypatch) ->
 
 def test_generate_story_rejects_empty_prompt_and_seed(client) -> None:
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "seed_text": "   ",
             "prompt_text": "   ",
@@ -368,7 +369,7 @@ def test_generate_story_prompt_compile_failure_422(client, monkeypatch) -> None:
         ),
     )
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "prompt_text": "generate from prompt",
             "target_minutes": 10,
@@ -411,7 +412,7 @@ def test_generate_story_forwards_candidate_parallelism(client, monkeypatch) -> N
     monkeypatch.setattr(stories_api.GeneratorPipeline, "run", _fake_generate_pack)
 
     response = client.post(
-        "/v2/stories/generate",
+        stories_generate_path(),
         json={
             "seed_text": "forward candidate_parallelism",
             "target_minutes": 10,

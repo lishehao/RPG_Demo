@@ -8,6 +8,19 @@ from threading import Barrier
 from fastapi.testclient import TestClient
 
 from rpg_backend.main import app
+from tests.helpers.route_paths import (
+    READY_PATH,
+    admin_http_health_path,
+    admin_llm_call_health_path,
+    admin_readiness_health_path,
+    admin_runtime_errors_path,
+    admin_session_feedback_path,
+    admin_session_timeline_path,
+    session_step_path,
+    sessions_path,
+    story_publish_path,
+    stories_path,
+)
 from tests.helpers.providers import BarrierDeterministicProvider, DeterministicProvider, RouteFailureProvider
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
@@ -15,9 +28,9 @@ PACK_PATH = Path("sample_data/story_pack_v1.json")
 
 def _bootstrap_story(client):
     pack = json.loads(PACK_PATH.read_text(encoding="utf-8"))
-    created = client.post("/v2/stories", json={"title": "Admin Session Story", "pack_json": pack})
+    created = client.post(stories_path(), json={"title": "Admin Session Story", "pack_json": pack})
     story_id = created.json()["story_id"]
-    published = client.post(f"/v2/stories/{story_id}/publish", json={})
+    published = client.post(story_publish_path(story_id), json={})
     version = published.json()["version"]
     return story_id, version
 
@@ -27,7 +40,7 @@ def _create_session(client, monkeypatch) -> str:
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     assert session_resp.status_code == 200
     return session_resp.json()["session_id"]
 
@@ -38,7 +51,7 @@ def test_admin_timeline_contains_started_and_succeeded_events(client, monkeypatc
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     session_id = _create_session(client, monkeypatch)
     step = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "admin-step-1",
             "input": {"type": "text", "text": "help me progress"},
@@ -47,7 +60,7 @@ def test_admin_timeline_contains_started_and_succeeded_events(client, monkeypatc
     )
     assert step.status_code == 200
 
-    timeline = client.get(f"/v2/admin/sessions/{session_id}/timeline")
+    timeline = client.get(admin_session_timeline_path(session_id))
     assert timeline.status_code == 200
     body = timeline.json()
     event_types = [event["event_type"] for event in body["events"]]
@@ -62,7 +75,7 @@ def test_admin_timeline_contains_step_failed_on_openai_strict_error(client, monk
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: RouteFailureProvider())
 
     step = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "admin-step-fail-1",
             "input": {"type": "text", "text": "nonsense"},
@@ -71,7 +84,7 @@ def test_admin_timeline_contains_step_failed_on_openai_strict_error(client, monk
     )
     assert step.status_code == 503
 
-    timeline = client.get(f"/v2/admin/sessions/{session_id}/timeline")
+    timeline = client.get(admin_session_timeline_path(session_id))
     assert timeline.status_code == 200
     failed_events = [event for event in timeline.json()["events"] if event["event_type"] == "step_failed"]
     assert failed_events
@@ -91,12 +104,12 @@ def test_admin_timeline_contains_step_replayed_for_idempotent_call(client, monke
         "input": {"type": "text", "text": "help me progress"},
         "dev_mode": False,
     }
-    first = client.post(f"/v2/sessions/{session_id}/step", json=payload)
-    second = client.post(f"/v2/sessions/{session_id}/step", json=payload)
+    first = client.post(session_step_path(session_id), json=payload)
+    second = client.post(session_step_path(session_id), json=payload)
     assert first.status_code == 200
     assert second.status_code == 200
 
-    timeline = client.get(f"/v2/admin/sessions/{session_id}/timeline")
+    timeline = client.get(admin_session_timeline_path(session_id))
     assert timeline.status_code == 200
     event_types = [event["event_type"] for event in timeline.json()["events"]]
     assert "step_replayed" in event_types
@@ -108,7 +121,7 @@ def test_admin_timeline_contains_step_conflicted_event(client, monkeypatch) -> N
     barrier = Barrier(2)
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: BarrierDeterministicProvider(barrier))
     session_id = _create_session(client, monkeypatch)
-    request_url = f"/v2/sessions/{session_id}/step"
+    request_url = session_step_path(session_id)
     payloads = [
         {
             "client_action_id": "admin-conflict-a",
@@ -131,14 +144,14 @@ def test_admin_timeline_contains_step_conflicted_event(client, monkeypatch) -> N
         status_codes = sorted([future.result() for future in [pool.submit(_post, payload) for payload in payloads]])
 
     assert status_codes == [200, 409]
-    timeline = client.get(f"/v2/admin/sessions/{session_id}/timeline")
+    timeline = client.get(admin_session_timeline_path(session_id))
     assert timeline.status_code == 200
     conflicted_events = [event for event in timeline.json()["events"] if event["event_type"] == "step_conflicted"]
     assert conflicted_events
     assert conflicted_events[-1]["payload"]["note"] == "optimistic_write_conflict"
     assert conflicted_events[-1]["payload"]["request_id"]
 
-    aggregated = client.get("/v2/admin/observability/runtime-errors?window_seconds=300&limit=20")
+    aggregated = client.get(f"{admin_runtime_errors_path()}?window_seconds=300&limit=20")
     assert aggregated.status_code == 200
     body = aggregated.json()
     assert body["failed_total"] == 0
@@ -148,7 +161,7 @@ def test_admin_timeline_contains_step_conflicted_event(client, monkeypatch) -> N
 def test_admin_feedback_create_and_list(client, monkeypatch) -> None:
     session_id = _create_session(client, monkeypatch)
     created = client.post(
-        f"/v2/admin/sessions/{session_id}/feedback",
+        admin_session_feedback_path(session_id),
         json={
             "verdict": "bad",
             "reason_tags": ["pacing", "choice_clarity"],
@@ -163,7 +176,7 @@ def test_admin_feedback_create_and_list(client, monkeypatch) -> None:
     assert body["reason_tags"] == ["pacing", "choice_clarity"]
     assert body["turn_index"] == 6
 
-    listed = client.get(f"/v2/admin/sessions/{session_id}/feedback")
+    listed = client.get(admin_session_feedback_path(session_id))
     assert listed.status_code == 200
     items = listed.json()["items"]
     assert items
@@ -172,16 +185,16 @@ def test_admin_feedback_create_and_list(client, monkeypatch) -> None:
 
 def test_admin_endpoints_return_404_for_missing_session(client) -> None:
     missing = "00000000-0000-0000-0000-000000000000"
-    timeline = client.get(f"/v2/admin/sessions/{missing}/timeline")
+    timeline = client.get(admin_session_timeline_path(missing))
     assert timeline.status_code == 404
 
     create_feedback = client.post(
-        f"/v2/admin/sessions/{missing}/feedback",
+        admin_session_feedback_path(missing),
         json={"verdict": "bad", "reason_tags": [], "note": "n/a"},
     )
     assert create_feedback.status_code == 404
 
-    list_feedback = client.get(f"/v2/admin/sessions/{missing}/feedback")
+    list_feedback = client.get(admin_session_feedback_path(missing))
     assert list_feedback.status_code == 404
 
 
@@ -194,7 +207,7 @@ def test_admin_runtime_errors_aggregate_endpoint(client, monkeypatch) -> None:
     collected_request_ids: list[str] = []
     for index in range(1, 4):
         step = client.post(
-            f"/v2/sessions/{session_id}/step",
+            session_step_path(session_id),
             json={
                 "client_action_id": f"admin-error-{index}",
                 "input": {"type": "text", "text": f"noise-{index}"},
@@ -204,7 +217,7 @@ def test_admin_runtime_errors_aggregate_endpoint(client, monkeypatch) -> None:
         assert step.status_code == 503
         collected_request_ids.append(step.headers["X-Request-ID"])
 
-    aggregated = client.get("/v2/admin/observability/runtime-errors?window_seconds=300&limit=20")
+    aggregated = client.get(f"{admin_runtime_errors_path()}?window_seconds=300&limit=20")
     assert aggregated.status_code == 200
     body = aggregated.json()
     assert body["started_total"] >= 3
@@ -220,7 +233,7 @@ def test_admin_runtime_errors_aggregate_endpoint(client, monkeypatch) -> None:
     assert set(first["sample_request_ids"]).issubset(set(collected_request_ids))
 
     filtered = client.get(
-        "/v2/admin/observability/runtime-errors?window_seconds=300&limit=20&stage=route&error_code=llm_route_failed"
+        f"{admin_runtime_errors_path()}?window_seconds=300&limit=20&stage=route&error_code=llm_route_failed"
     )
     assert filtered.status_code == 200
     filtered_body = filtered.json()
@@ -237,7 +250,7 @@ def test_admin_http_health_endpoint(client, monkeypatch) -> None:
 
     for index in range(1, 4):
         response = client.post(
-            f"/v2/sessions/{session_id}/step",
+            session_step_path(session_id),
             json={
                 "client_action_id": f"http-health-{index}",
                 "input": {"type": "text", "text": f"fail-{index}"},
@@ -246,7 +259,7 @@ def test_admin_http_health_endpoint(client, monkeypatch) -> None:
         )
         assert response.status_code == 503
 
-    aggregated = client.get("/v2/admin/observability/http-health?window_seconds=300")
+    aggregated = client.get(f"{admin_http_health_path()}?window_seconds=300")
     assert aggregated.status_code == 200
     body = aggregated.json()
     assert body["window_started_at"]
@@ -265,7 +278,7 @@ def test_admin_llm_call_health_endpoint(client, monkeypatch) -> None:
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     ok = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "llm-call-ok-1",
             "input": {"type": "text", "text": "progress"},
@@ -276,7 +289,7 @@ def test_admin_llm_call_health_endpoint(client, monkeypatch) -> None:
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: RouteFailureProvider())
     failed = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "llm-call-fail-1",
             "input": {"type": "text", "text": "bad input"},
@@ -285,7 +298,7 @@ def test_admin_llm_call_health_endpoint(client, monkeypatch) -> None:
     )
     assert failed.status_code == 503
 
-    aggregated = client.get("/v2/admin/observability/llm-call-health?window_seconds=300")
+    aggregated = client.get(f"{admin_llm_call_health_path()}?window_seconds=300")
     assert aggregated.status_code == 200
     body = aggregated.json()
     assert body["window_started_at"]
@@ -296,7 +309,7 @@ def test_admin_llm_call_health_endpoint(client, monkeypatch) -> None:
     assert set(body["by_stage"].keys()) == {"route", "narration", "json", "unknown"}
     assert set(body["by_gateway_mode"].keys()) == {"local", "worker", "unknown"}
 
-    route_only = client.get("/v2/admin/observability/llm-call-health?window_seconds=300&stage=route")
+    route_only = client.get(f"{admin_llm_call_health_path()}?window_seconds=300&stage=route")
     assert route_only.status_code == 200
     assert route_only.json()["total_calls"] >= 1
 
@@ -328,12 +341,12 @@ def test_admin_readiness_health_endpoint(client, monkeypatch) -> None:
     monkeypatch.setattr(readiness_obs, "check_llm_config", _ok_check)
     monkeypatch.setattr(readiness_obs, "check_llm_probe", _failed_probe)
 
-    first = client.get("/ready")
-    second = client.get("/ready")
+    first = client.get(READY_PATH)
+    second = client.get(READY_PATH)
     assert first.status_code == 503
     assert second.status_code == 503
 
-    aggregated = client.get("/v2/admin/observability/readiness-health?window_seconds=300")
+    aggregated = client.get(f"{admin_readiness_health_path()}?window_seconds=300")
     assert aggregated.status_code == 200
     body = aggregated.json()
     assert body["window_started_at"]

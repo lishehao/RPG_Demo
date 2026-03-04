@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+from tests.helpers.route_paths import session_step_path
+
 
 def _load_alerts_module():
     repo_root = Path(__file__).resolve().parents[1]
@@ -207,7 +209,7 @@ def test_build_snapshot_emits_all_new_signals(monkeypatch) -> None:
             "failed_5xx": 9,
             "error_rate": 0.09,
             "p95_ms": 1200,
-            "top_5xx_paths": [{"path": "/v2/sessions/x/step", "failed_count": 6, "sample_request_ids": ["r1"]}],
+            "top_5xx_paths": [{"path": session_step_path("x"), "failed_count": 6, "sample_request_ids": ["r1"]}],
         },
     )
     monkeypatch.setattr(

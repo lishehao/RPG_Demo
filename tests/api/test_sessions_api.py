@@ -13,6 +13,14 @@ from rpg_backend.config.settings import get_settings
 from rpg_backend.main import app
 from rpg_backend.storage.engine import engine
 from rpg_backend.storage.models import SessionAction
+from tests.helpers.route_paths import (
+    admin_session_timeline_path,
+    session_path,
+    session_step_path,
+    sessions_path,
+    story_publish_path,
+    stories_path,
+)
 from tests.helpers.providers import (
     BarrierDeterministicProvider,
     DeterministicProvider,
@@ -27,9 +35,9 @@ PACK_PATH = Path("sample_data/story_pack_v1.json")
 
 def _bootstrap_story(client):
     pack = json.loads(PACK_PATH.read_text(encoding="utf-8"))
-    created = client.post("/v2/stories", json={"title": "Session Story", "pack_json": pack})
+    created = client.post(stories_path(), json={"title": "Session Story", "pack_json": pack})
     story_id = created.json()["story_id"]
-    published = client.post(f"/v2/stories/{story_id}/publish", json={})
+    published = client.post(story_publish_path(story_id), json={})
     version = published.json()["version"]
     return story_id, version
 
@@ -39,7 +47,7 @@ def _error_payload(response) -> dict:
 
 
 def _get_timeline_events(client, session_id: str) -> list[dict]:
-    response = client.get(f"/v2/admin/sessions/{session_id}/timeline")
+    response = client.get(admin_session_timeline_path(session_id))
     assert response.status_code == 200
     return response.json()["events"]
 
@@ -62,13 +70,13 @@ def test_session_create_and_get(client, monkeypatch) -> None:
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
 
-    created = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    created = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     assert created.status_code == 200
     body = created.json()
     session_id = body["session_id"]
     assert body["scene_id"] == "sc1"
 
-    fetched = client.get(f"/v2/sessions/{session_id}?dev_mode=true")
+    fetched = client.get(f"{session_path(session_id)}?dev_mode=true")
     assert fetched.status_code == 200
     fetched_body = fetched.json()
     assert fetched_body["session_id"] == session_id
@@ -80,7 +88,7 @@ def test_step_is_idempotent_by_client_action_id(client, monkeypatch) -> None:
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
     payload = {
@@ -88,8 +96,8 @@ def test_step_is_idempotent_by_client_action_id(client, monkeypatch) -> None:
         "input": {"type": "text", "text": "random noise"},
         "dev_mode": False,
     }
-    first = client.post(f"/v2/sessions/{session_id}/step", json=payload)
-    second = client.post(f"/v2/sessions/{session_id}/step", json=payload)
+    first = client.post(session_step_path(session_id), json=payload)
+    second = client.post(session_step_path(session_id), json=payload)
 
     assert first.status_code == 200
     assert second.status_code == 200
@@ -118,10 +126,10 @@ def test_step_conflict_returns_409_and_preserves_single_commit(client, monkeypat
     barrier = Barrier(2)
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: BarrierDeterministicProvider(barrier))
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
-    request_url = f"/v2/sessions/{session_id}/step"
+    request_url = session_step_path(session_id)
     payloads = [
         {
             "client_action_id": "concurrent-a",
@@ -169,9 +177,9 @@ def test_step_same_action_concurrent_requests_replay_without_500(client, monkeyp
     barrier = Barrier(2)
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: BarrierDeterministicProvider(barrier))
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
-    request_url = f"/v2/sessions/{session_id}/step"
+    request_url = session_step_path(session_id)
     payload = {
         "client_action_id": "same-action-race",
         "input": {"type": "text", "text": "same action"},
@@ -204,14 +212,14 @@ def test_step_tolerates_button_without_move_id(client, monkeypatch) -> None:
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
     payload = {
         "client_action_id": "shape-1",
         "input": {"type": "button"},
     }
-    response = client.post(f"/v2/sessions/{session_id}/step", json=payload)
+    response = client.post(session_step_path(session_id), json=payload)
     assert response.status_code == 200
     body = response.json()
     assert body["recognized"]["move_id"] == "global.help_me_progress"
@@ -222,11 +230,11 @@ def test_step_tolerates_missing_or_invalid_input_shape(client, monkeypatch) -> N
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
     missing_input = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={"client_action_id": "shape-2"},
     )
     assert missing_input.status_code == 200
@@ -236,7 +244,7 @@ def test_step_tolerates_missing_or_invalid_input_shape(client, monkeypatch) -> N
     }
 
     invalid_type = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={"client_action_id": "shape-3", "input": {"type": "nonsense", "text": ""}},
     )
     assert invalid_type.status_code == 200
@@ -251,11 +259,11 @@ def test_step_response_strict_shape_and_debug_only_in_dev_mode(client, monkeypat
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
     normal = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "strict-shape-1",
             "input": {"type": "text", "text": "advance story"},
@@ -278,7 +286,7 @@ def test_step_response_strict_shape_and_debug_only_in_dev_mode(client, monkeypat
     assert all(set(move.keys()) == {"move_id", "label", "risk_hint"} for move in normal_body["ui"]["moves"])
 
     dev = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "strict-shape-2",
             "input": {"type": "text", "text": "advance again"},
@@ -314,7 +322,7 @@ def test_session_create_returns_503_when_openai_provider_misconfigured(client, m
     monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "")
     get_settings.cache_clear()
 
-    response = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     assert response.status_code == 503
     err = _error_payload(response)
     assert err["code"] == "service_unavailable"
@@ -331,7 +339,7 @@ def test_session_create_succeeds_when_only_route_model_configured(client, monkey
     monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "")
     get_settings.cache_clear()
 
-    response = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     assert response.status_code == 200
     body = response.json()
     assert body["story_id"] == story_id
@@ -348,7 +356,7 @@ def test_session_create_succeeds_when_only_narration_model_configured(client, mo
     monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "narration-only-model")
     get_settings.cache_clear()
 
-    response = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     assert response.status_code == 200
     body = response.json()
     assert body["story_id"] == story_id
@@ -361,13 +369,13 @@ def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> Non
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
-    before = client.get(f"/v2/sessions/{session_id}?dev_mode=true").json()
+    before = client.get(f"{session_path(session_id)}?dev_mode=true").json()
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: RouteFailureProvider())
     response = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "route-fail-1",
             "input": {"type": "text", "text": "nonsense input"},
@@ -381,7 +389,7 @@ def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> Non
     assert body["details"]["provider"] == "openai"
     request_id = response.headers["X-Request-ID"]
 
-    after = client.get(f"/v2/sessions/{session_id}?dev_mode=true").json()
+    after = client.get(f"{session_path(session_id)}?dev_mode=true").json()
     assert after["scene_id"] == before["scene_id"]
     assert after["beat_progress"] == before["beat_progress"]
     assert after["state"] == before["state"]
@@ -400,12 +408,12 @@ def test_step_returns_503_on_low_confidence_for_openai_strict(client, monkeypatc
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: LowConfidenceProvider())
     response = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "low-confidence-1",
             "input": {"type": "text", "text": "???"},
@@ -424,12 +432,12 @@ def test_step_returns_503_on_invalid_move_for_openai_strict(client, monkeypatch)
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: InvalidMoveProvider())
     response = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "invalid-move-1",
             "input": {"type": "text", "text": "use hidden move"},
@@ -448,12 +456,12 @@ def test_step_returns_503_when_narration_fails_for_openai_strict(client, monkeyp
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     story_id, version = _bootstrap_story(client)
-    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     session_id = session_resp.json()["session_id"]
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: NarrationFailureProvider())
     response = client.post(
-        f"/v2/sessions/{session_id}/step",
+        session_step_path(session_id),
         json={
             "client_action_id": "narration-fail-1",
             "input": {"type": "text", "text": "help me progress"},

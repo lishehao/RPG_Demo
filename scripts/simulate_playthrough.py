@@ -11,6 +11,7 @@ import urllib.request
 from typing import Any
 
 from rpg_backend.domain.pack_schema import StoryPack
+from rpg_backend.api.route_paths import session_path, session_step_path, sessions_path
 from rpg_backend.generator.versioning import compute_pack_hash
 from rpg_backend.llm.base import LLMProviderConfigError
 from rpg_backend.llm.factory import get_llm_provider
@@ -61,18 +62,18 @@ def _request_json(method: str, url: str, payload: dict[str, Any] | None = None) 
 def _create_session(base_url: str, story_id: str, version: int) -> dict[str, Any]:
     return _request_json(
         "POST",
-        f"{base_url}/v2/sessions",
+        f"{base_url}{sessions_path()}",
         {"story_id": story_id, "version": version},
     )
 
 
 def _step_session(base_url: str, session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    return _request_json("POST", f"{base_url}/v2/sessions/{session_id}/step", payload)
+    return _request_json("POST", f"{base_url}{session_step_path(session_id)}", payload)
 
 
 def _get_session(base_url: str, session_id: str, dev_mode: bool) -> dict[str, Any]:
     query = urllib.parse.urlencode({"dev_mode": str(dev_mode).lower()})
-    return _request_json("GET", f"{base_url}/v2/sessions/{session_id}?{query}")
+    return _request_json("GET", f"{base_url}{session_path(session_id)}?{query}")
 
 
 def _build_action_input(
