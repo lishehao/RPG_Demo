@@ -22,7 +22,7 @@ from rpg_backend.storage.repositories.stories import (
     publish_story_version,
 )
 
-router = APIRouter(prefix="/stories", tags=["stories"])
+router = APIRouter(prefix="/v2/stories", tags=["stories"])
 
 
 @router.post("", response_model=StoryCreateResponse)
@@ -61,6 +61,7 @@ def generate_story_endpoint(
             npc_count=payload.npc_count,
             style=payload.style,
             variant_seed=payload.variant_seed,
+            candidate_parallelism=payload.candidate_parallelism,
             generator_version=payload.generator_version,
             palette_policy=payload.palette_policy,
         )
@@ -81,19 +82,24 @@ def generate_story_endpoint(
             has_seed=bool((payload.seed_text or "").strip()),
             prompt_text_len=len(payload.prompt_text or ""),
             seed_text_len=len(payload.seed_text or ""),
+            candidate_parallelism=payload.candidate_parallelism,
         )
         raise HTTPException(
             status_code=422,
             detail={
-                "error_code": exc.error_code or "generation_failed_after_regenerates",
+                "error_code": exc.error_code or "generation_failed",
+                "message": "story generation failed",
+                "retryable": False,
                 "errors": exc.lint_report.errors,
                 "warnings": exc.lint_report.warnings,
                 "generation_attempts": exc.generation_attempts,
                 "regenerate_count": exc.regenerate_count,
-                "notes": exc.notes,
                 "generator_version": exc.generator_version,
                 "variant_seed": exc.variant_seed,
                 "palette_policy": exc.palette_policy,
+                "candidate_parallelism": exc.candidate_parallelism,
+                "attempt_history": exc.attempt_history,
+                "notes": exc.notes,
             },
         ) from exc
 
@@ -109,18 +115,23 @@ def generate_story_endpoint(
         status="ok",
         story_id=story.id,
         version=version,
-        generation_mode=result.generation_mode,
         pack=result.pack,
         pack_hash=result.pack_hash,
-        generator_version=result.generator_version,
-        variant_seed=result.variant_seed,
-        palette_policy=result.palette_policy,
-        spec_hash=result.spec_hash,
-        spec_summary=result.spec_summary,
-        lint_report={"errors": result.lint_report.errors, "warnings": result.lint_report.warnings},
-        generation_attempts=result.generation_attempts,
-        regenerate_count=result.regenerate_count,
-        notes=result.notes,
+        generation={
+            "mode": result.generation_mode,
+            "generator_version": result.generator_version,
+            "variant_seed": result.variant_seed,
+            "palette_policy": result.palette_policy,
+            "attempts": result.generation_attempts,
+            "regenerate_count": result.regenerate_count,
+            "candidate_parallelism": result.candidate_parallelism,
+            "compile": {
+                "spec_hash": result.spec_hash,
+                "spec_summary": result.spec_summary,
+            },
+            "lint": {"errors": result.lint_report.errors, "warnings": result.lint_report.warnings},
+            "attempt_history": result.attempt_history,
+        },
     )
     log_event(
         "story_generate_succeeded",
@@ -141,6 +152,7 @@ def generate_story_endpoint(
         has_seed=bool((payload.seed_text or "").strip()),
         prompt_text_len=len(payload.prompt_text or ""),
         seed_text_len=len(payload.seed_text or ""),
+        candidate_parallelism=payload.candidate_parallelism,
     )
     return response
 

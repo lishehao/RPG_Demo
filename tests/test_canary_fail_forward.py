@@ -10,11 +10,11 @@ PACK_PATH = Path("sample_data/story_pack_v1.json")
 
 def _bootstrap_session(client) -> str:
     pack = json.loads(PACK_PATH.read_text(encoding="utf-8"))
-    story_resp = client.post("/stories", json={"title": "FailForward Story", "pack_json": pack})
+    story_resp = client.post("/v2/stories", json={"title": "FailForward Story", "pack_json": pack})
     story_id = story_resp.json()["story_id"]
-    publish_resp = client.post(f"/stories/{story_id}/publish", json={})
+    publish_resp = client.post(f"/v2/stories/{story_id}/publish", json={})
     version = publish_resp.json()["version"]
-    session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
     return session_resp.json()["session_id"]
 
 
@@ -25,7 +25,7 @@ def test_fail_forward_triggers_for_always_fail_forward_move(client, monkeypatch)
     session_id = _bootstrap_session(client)
 
     response = client.post(
-        f"/sessions/{session_id}/step",
+        f"/v2/sessions/{session_id}/step",
         json={
             "client_action_id": "help-attempt",
             "input": {"type": "button", "move_id": "global.help_me_progress"},

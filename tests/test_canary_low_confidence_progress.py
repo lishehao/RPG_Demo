@@ -10,11 +10,11 @@ PACK_PATH = Path("sample_data/story_pack_v1.json")
 
 def _bootstrap_session(client) -> str:
     pack = json.loads(PACK_PATH.read_text(encoding="utf-8"))
-    story_resp = client.post("/stories", json={"title": "HealthyPath Story", "pack_json": pack})
+    story_resp = client.post("/v2/stories", json={"title": "HealthyPath Story", "pack_json": pack})
     story_id = story_resp.json()["story_id"]
-    publish_resp = client.post(f"/stories/{story_id}/publish", json={})
+    publish_resp = client.post(f"/v2/stories/{story_id}/publish", json={})
     version = publish_resp.json()["version"]
-    session_resp = client.post("/sessions", json={"story_id": story_id, "version": version})
+    session_resp = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
     return session_resp.json()["session_id"]
 
 
@@ -23,12 +23,12 @@ def test_three_text_inputs_advance_progress_on_healthy_path(client, monkeypatch)
 
     monkeypatch.setattr(sessions_api, "get_llm_provider", lambda: DeterministicProvider())
     session_id = _bootstrap_session(client)
-    start = client.get(f"/sessions/{session_id}").json()
+    start = client.get(f"/v2/sessions/{session_id}").json()
     start_progress = sum(int(v) for v in start["beat_progress"].values())
 
     for idx in range(1, 4):
         response = client.post(
-            f"/sessions/{session_id}/step",
+            f"/v2/sessions/{session_id}/step",
             json={
                 "client_action_id": f"healthy-text-{idx}",
                 "input": {"type": "text", "text": "help me progress"},
@@ -36,6 +36,6 @@ def test_three_text_inputs_advance_progress_on_healthy_path(client, monkeypatch)
         )
         assert response.status_code == 200
 
-    end = client.get(f"/sessions/{session_id}").json()
+    end = client.get(f"/v2/sessions/{session_id}").json()
     end_progress = sum(int(v) for v in end["beat_progress"].values())
     assert end_progress > start_progress

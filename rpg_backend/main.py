@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from rpg_backend.api.errors import register_error_handlers
 from rpg_backend.api.admin_sessions import observability_router as admin_observability_router
 from rpg_backend.api.admin_sessions import router as admin_sessions_router
 from rpg_backend.api.health import router as health_router
@@ -21,6 +22,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="RPG Backend API", lifespan=lifespan)
 app.add_middleware(RequestIdMiddleware)
+register_error_handlers(app)
 app.include_router(health_router)
 app.include_router(stories_router)
 app.include_router(sessions_router)

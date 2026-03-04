@@ -25,20 +25,20 @@ def test_live_openai_session_step_critical_path(client) -> None:
         pytest.skip("missing OpenAI runtime env for live critical test")
 
     pack = json.loads(PACK_PATH.read_text(encoding="utf-8"))
-    created = client.post("/stories", json={"title": "Live OpenAI Critical Story", "pack_json": pack})
+    created = client.post("/v2/stories", json={"title": "Live OpenAI Critical Story", "pack_json": pack})
     assert created.status_code == 200
     story_id = created.json()["story_id"]
 
-    published = client.post(f"/stories/{story_id}/publish", json={})
+    published = client.post(f"/v2/stories/{story_id}/publish", json={})
     assert published.status_code == 200
     version = published.json()["version"]
 
-    session = client.post("/sessions", json={"story_id": story_id, "version": version})
+    session = client.post("/v2/sessions", json={"story_id": story_id, "version": version})
     assert session.status_code == 200
     session_id = session.json()["session_id"]
 
     step = client.post(
-        f"/sessions/{session_id}/step",
+        f"/v2/sessions/{session_id}/step",
         json={
             "client_action_id": "live-critical-1",
             "input": {"type": "text", "text": "help me progress"},

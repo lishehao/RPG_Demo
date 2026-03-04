@@ -36,6 +36,7 @@ class StoryGenerateRequest(BaseModel):
     npc_count: int = Field(default=4, ge=3, le=5)
     style: str | None = None
     variant_seed: str | int | None = None
+    candidate_parallelism: int | None = Field(default=None, ge=1, le=8)
     generator_version: str | None = None
     palette_policy: Literal["random", "balanced", "fixed"] = "random"
     publish: bool = False
@@ -58,18 +59,9 @@ class StoryGenerateResponse(BaseModel):
     status: Literal["ok"]
     story_id: str
     version: int | None = None
-    generation_mode: Literal["prompt", "seed"]
     pack: dict[str, Any] = Field(default_factory=dict)
     pack_hash: str
-    generator_version: str
-    variant_seed: str
-    palette_policy: Literal["random", "balanced", "fixed"]
-    spec_hash: str | None = None
-    spec_summary: dict[str, Any] | None = None
-    lint_report: LintReportPayload = Field(default_factory=LintReportPayload)
-    generation_attempts: int = Field(default=1, ge=1, le=4)
-    regenerate_count: int = Field(default=0, ge=0, le=3)
-    notes: list[str] = Field(default_factory=list)
+    generation: "GenerationDiagnostics"
 
 
 class SessionCreateRequest(BaseModel):
@@ -209,3 +201,47 @@ class ReadinessResponse(BaseModel):
     status: Literal["ready", "not_ready"]
     checked_at: datetime
     checks: ReadinessChecksPayload
+
+
+class GenerationCompilePayload(BaseModel):
+    spec_hash: str | None = None
+    spec_summary: dict[str, Any] | None = None
+
+
+class GenerationAttemptRecord(BaseModel):
+    attempt_index: int = Field(ge=1, le=4)
+    variant_seed: str
+    winner_candidate_index: int | None = Field(default=None, ge=0)
+    winner_candidate_seed: str | None = None
+    best_candidate_index: int | None = Field(default=None, ge=0)
+    best_candidate_seed: str | None = None
+    lint_ok: bool
+    candidate_count: int = Field(ge=1, le=8)
+
+
+class GenerationDiagnostics(BaseModel):
+    mode: Literal["prompt", "seed"]
+    generator_version: str
+    variant_seed: str
+    palette_policy: Literal["random", "balanced", "fixed"]
+    attempts: int = Field(default=1, ge=1, le=4)
+    regenerate_count: int = Field(default=0, ge=0, le=3)
+    candidate_parallelism: int = Field(default=1, ge=1, le=8)
+    compile: GenerationCompilePayload = Field(default_factory=GenerationCompilePayload)
+    lint: LintReportPayload = Field(default_factory=LintReportPayload)
+    attempt_history: list[GenerationAttemptRecord] = Field(default_factory=list)
+
+
+class ErrorPayload(BaseModel):
+    code: str
+    message: str
+    retryable: bool = False
+    request_id: str | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ErrorEnvelope(BaseModel):
+    error: ErrorPayload
+
+
+StoryGenerateResponse.model_rebuild()

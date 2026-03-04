@@ -61,18 +61,18 @@ def _request_json(method: str, url: str, payload: dict[str, Any] | None = None) 
 def _create_session(base_url: str, story_id: str, version: int) -> dict[str, Any]:
     return _request_json(
         "POST",
-        f"{base_url}/sessions",
+        f"{base_url}/v2/sessions",
         {"story_id": story_id, "version": version},
     )
 
 
 def _step_session(base_url: str, session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    return _request_json("POST", f"{base_url}/sessions/{session_id}/step", payload)
+    return _request_json("POST", f"{base_url}/v2/sessions/{session_id}/step", payload)
 
 
 def _get_session(base_url: str, session_id: str, dev_mode: bool) -> dict[str, Any]:
     query = urllib.parse.urlencode({"dev_mode": str(dev_mode).lower()})
-    return _request_json("GET", f"{base_url}/sessions/{session_id}?{query}")
+    return _request_json("GET", f"{base_url}/v2/sessions/{session_id}?{query}")
 
 
 def _build_action_input(

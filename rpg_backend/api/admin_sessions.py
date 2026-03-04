@@ -23,8 +23,8 @@ from rpg_backend.storage.repositories.runtime_events import list_runtime_events
 from rpg_backend.storage.repositories.session_feedback import create_session_feedback, list_session_feedback
 from rpg_backend.storage.repositories.sessions import get_session as get_session_record
 
-router = APIRouter(prefix="/admin/sessions", tags=["admin"])
-observability_router = APIRouter(prefix="/admin/observability", tags=["admin"])
+router = APIRouter(prefix="/v2/admin/sessions", tags=["admin"])
+observability_router = APIRouter(prefix="/v2/admin/observability", tags=["admin"])
 
 
 def _require_session(db: Session, session_id: str):
