@@ -6,6 +6,8 @@ import hashlib
 import json
 import re
 import socket
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -145,6 +147,8 @@ def _build_fun_focus_report(metrics: dict[str, Any]) -> dict[str, Any]:
     warnings: list[str] = []
     fun_score_avg = _to_score(metrics.get("fun_score_avg"))
     fun_score_case_min = _to_score(metrics.get("fun_score_case_min"))
+    global_help_route_rate = _to_score(metrics.get("global_help_route_rate"))
+    non_global_text_route_rate = _to_score(metrics.get("non_global_text_route_rate"))
     if fun_score_avg < FUN_FOCUS_THRESHOLD_HINTS["fun_score_avg_min"]:
         warnings.append(
             f"fun_score_avg={fun_score_avg:.4f} < hint {FUN_FOCUS_THRESHOLD_HINTS['fun_score_avg_min']:.4f}"
@@ -153,6 +157,10 @@ def _build_fun_focus_report(metrics: dict[str, Any]) -> dict[str, Any]:
         warnings.append(
             f"fun_score_case_min={fun_score_case_min:.4f} < hint {FUN_FOCUS_THRESHOLD_HINTS['fun_score_case_min']:.4f}"
         )
+    if global_help_route_rate > 0.25:
+        warnings.append(f"global_help_route_rate={global_help_route_rate:.4f} > diagnostic target 0.2500")
+    if non_global_text_route_rate < 0.55:
+        warnings.append(f"non_global_text_route_rate={non_global_text_route_rate:.4f} < diagnostic target 0.5500")
     return {
         "formula": {
             "expression": "0.40*overall + 0.25*playability + 0.25*choice_impact + 0.10*tension_curve",
@@ -245,6 +253,15 @@ def _classify_precheck_error(exc: BaseException) -> str:
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8")
+
+
+_PACK_WRITE_LOCK = threading.Lock()
+
+
+def _write_json_if_missing(path: Path, payload: dict[str, Any]) -> None:
+    with _PACK_WRITE_LOCK:
+        if not path.exists():
+            _write_json(path, payload)
 
 
 def _load_prompt_suite(path: Path) -> PromptSuite:
@@ -455,16 +472,25 @@ def _summarize_transcript(report: dict[str, Any]) -> dict[str, Any]:
 
 def _run_precheck() -> dict[str, Any]:
     settings = get_settings()
-    base_url = (settings.llm_openai_base_url or "").strip()
+    gateway_mode = str(getattr(settings, "llm_gateway_mode", "local") or "local").strip().lower()
+    if gateway_mode == "worker":
+        base_url = (getattr(settings, "llm_worker_base_url", None) or "").strip()
+    else:
+        base_url = (settings.llm_openai_base_url or "").strip()
     parsed = urlparse(base_url)
     host = parsed.hostname or ""
     if not host:
         return {
             "status": "failed",
             "error_type": "misconfigured",
-            "error": "APP_LLM_OPENAI_BASE_URL is missing or invalid",
+            "error": (
+                "APP_LLM_WORKER_BASE_URL is missing or invalid"
+                if gateway_mode == "worker"
+                else "APP_LLM_OPENAI_BASE_URL is missing or invalid"
+            ),
             "base_url": base_url,
             "host": host,
+            "gateway_mode": gateway_mode,
         }
 
     try:
@@ -476,6 +502,7 @@ def _run_precheck() -> dict[str, Any]:
             "error": str(exc),
             "base_url": base_url,
             "host": host,
+            "gateway_mode": gateway_mode,
         }
 
     try:
@@ -493,6 +520,7 @@ def _run_precheck() -> dict[str, Any]:
             "error": None,
             "base_url": base_url,
             "host": host,
+            "gateway_mode": gateway_mode,
             "compiler_model": compiled.model,
             "compiler_attempts": compiled.attempts,
             "spec_hash": compiled.spec_hash,
@@ -504,6 +532,7 @@ def _run_precheck() -> dict[str, Any]:
             "error": str(exc),
             "base_url": base_url,
             "host": host,
+            "gateway_mode": gateway_mode,
         }
 
 
@@ -605,6 +634,270 @@ def _empty_metrics() -> dict[str, Any]:
     }
 
 
+def _evaluate_case_run(
+    *,
+    case: PromptSuiteCase,
+    run_index: int,
+    strategies: list[str],
+    max_steps: int,
+    packs_dir: Path,
+    artifacts_dir: Path,
+    judge_model: str | None,
+    service: GeneratorService | None = None,
+    judge: StoryQualityJudge | None = None,
+) -> dict[str, Any]:
+    case_seed = _derive_case_seed(case.id)
+    run_seed = f"{case_seed}:run{run_index}"
+    run_entry: dict[str, Any] = {
+        "run_index": run_index,
+        "variant_seed": run_seed,
+        "status": "failed",
+        "playthroughs": [],
+    }
+    generation_failure_breakdown: dict[str, int] = {}
+    prompt_spec_invalid_field_counts: dict[str, int] = {}
+    case_play_reports: list[dict[str, Any]] = []
+    case_level_overall: list[float] = []
+    case_level_fun: list[float] = []
+    case_level_playability: list[float] = []
+    case_level_choice_impact: list[float] = []
+    case_level_tension_curve: list[float] = []
+    global_judge_results: list[dict[str, Any]] = []
+    global_judge_overall_scores: list[float] = []
+    global_judge_fidelity_scores: list[float] = []
+
+    service_instance = service or GeneratorService()
+
+    try:
+        generated = service_instance.generate_pack(
+            prompt_text=case.prompt_text,
+            target_minutes=case.target_minutes,
+            npc_count=case.npc_count,
+            style=case.style,
+            variant_seed=run_seed,
+        )
+    except GeneratorBuildError as exc:
+        error_code = exc.error_code or "generation_failed_after_regenerates"
+        generation_failure_breakdown[error_code] = generation_failure_breakdown.get(error_code, 0) + 1
+        if error_code == "prompt_spec_invalid":
+            per_run_counts = _extract_prompt_spec_invalid_field_counts(list(exc.lint_report.errors))
+            for field, count in per_run_counts.items():
+                prompt_spec_invalid_field_counts[field] = prompt_spec_invalid_field_counts.get(field, 0) + count
+        run_entry.update(
+            {
+                "status": "generation_failed",
+                "error_code": error_code,
+                "errors": list(exc.lint_report.errors),
+                "warnings": list(exc.lint_report.warnings),
+                "generation_attempts": exc.generation_attempts,
+                "regenerate_count": exc.regenerate_count,
+                "notes": list(exc.notes),
+            }
+        )
+        return {
+            "run_entry": run_entry,
+            "generation_success": False,
+            "pack_lint_success": False,
+            "duplicate_beat_title_count": 0,
+            "banned_move_hit_count": 0,
+            "strategy_triangle_coverage": 0.0,
+            "play_reports": case_play_reports,
+            "judge_overall_scores": global_judge_overall_scores,
+            "judge_results": global_judge_results,
+            "judge_fidelity_scores": global_judge_fidelity_scores,
+            "case_level_overall": case_level_overall,
+            "case_level_fun": case_level_fun,
+            "case_level_playability": case_level_playability,
+            "case_level_choice_impact": case_level_choice_impact,
+            "case_level_tension_curve": case_level_tension_curve,
+            "generation_failure_breakdown": generation_failure_breakdown,
+            "prompt_spec_invalid_field_counts": prompt_spec_invalid_field_counts,
+        }
+    except Exception as exc:  # noqa: BLE001
+        generation_failure_breakdown["generation_exception"] = generation_failure_breakdown.get("generation_exception", 0) + 1
+        run_entry.update(
+            {
+                "status": "generation_failed",
+                "error_code": "generation_exception",
+                "errors": [str(exc)],
+                "warnings": [],
+            }
+        )
+        return {
+            "run_entry": run_entry,
+            "generation_success": False,
+            "pack_lint_success": False,
+            "duplicate_beat_title_count": 0,
+            "banned_move_hit_count": 0,
+            "strategy_triangle_coverage": 0.0,
+            "play_reports": case_play_reports,
+            "judge_overall_scores": global_judge_overall_scores,
+            "judge_results": global_judge_results,
+            "judge_fidelity_scores": global_judge_fidelity_scores,
+            "case_level_overall": case_level_overall,
+            "case_level_fun": case_level_fun,
+            "case_level_playability": case_level_playability,
+            "case_level_choice_impact": case_level_choice_impact,
+            "case_level_tension_curve": case_level_tension_curve,
+            "generation_failure_breakdown": generation_failure_breakdown,
+            "prompt_spec_invalid_field_counts": prompt_spec_invalid_field_counts,
+        }
+
+    pack_path = packs_dir / f"{generated.pack_hash}.json"
+    _write_json_if_missing(pack_path, generated.pack)
+    run_entry.update(
+        {
+            "status": "ok",
+            "pack_hash": generated.pack_hash,
+            "pack_path": str(pack_path),
+            "generator_version": generated.generator_version,
+            "generation_attempts": generated.generation_attempts,
+            "regenerate_count": generated.regenerate_count,
+            "spec_hash": generated.spec_hash,
+            "lint_ok": generated.lint_report.ok,
+            "lint_errors": list(generated.lint_report.errors),
+            "lint_warnings": list(generated.lint_report.warnings),
+        }
+    )
+
+    run_play_reports: list[dict[str, Any]] = []
+    transcript_by_strategy: dict[str, dict[str, Any]] = {}
+    for strategy in strategies:
+        strategy_seed = _derive_strategy_seed(
+            pack_hash=generated.pack_hash,
+            case_id=case.id,
+            run_index=run_index,
+            strategy=strategy,
+        )
+        try:
+            play_report = simulate_pack_playthrough(
+                generated.pack,
+                strategy=strategy,
+                provider_name="openai",
+                max_steps=max_steps,
+                strategy_seed=strategy_seed,
+                metadata={
+                    "pack_hash": generated.pack_hash,
+                    "generator_version": generated.generator_version,
+                    "variant_seed": generated.variant_seed,
+                },
+            )
+        except Exception as exc:  # noqa: BLE001
+            run_entry["playthroughs"].append(
+                {
+                    "strategy": strategy,
+                    "status": "failed",
+                    "error": str(exc),
+                }
+            )
+            continue
+
+        case_play_reports.append(play_report)
+        run_play_reports.append(play_report)
+        transcript_digest = compute_transcript_digest(play_report["transcript"])
+        transcript_summary = _summarize_transcript(play_report)
+        transcript_by_strategy[strategy] = transcript_summary
+        artifact_path = artifacts_dir / case.id / f"run{run_index}_{strategy}.json"
+        _write_json(
+            artifact_path,
+            {
+                "case_id": case.id,
+                "run_index": run_index,
+                "strategy": strategy,
+                "pack_hash": generated.pack_hash,
+                "generator_version": generated.generator_version,
+                "variant_seed": generated.variant_seed,
+                "strategy_seed": strategy_seed,
+                "transcript_digest": transcript_digest,
+                "summary": transcript_summary,
+            },
+        )
+
+        run_entry["playthroughs"].append(
+            {
+                "strategy": strategy,
+                "status": "ok",
+                "ended": bool(play_report["ended"]),
+                "steps": int(play_report["steps"]),
+                "meaningful_steps": int(play_report["meaningful_steps"]),
+                "text_input_steps": int(play_report["text_input_steps"]),
+                "llm_route_steps": int(play_report["llm_route_steps"]),
+                "global_help_route_steps": int(play_report.get("global_help_route_steps", 0)),
+                "pressure_recoil_steps": int(play_report.get("pressure_recoil_steps", 0)),
+                "npc_stance_mentions": int(play_report.get("npc_stance_mentions", 0)),
+                "runtime_error": bool(play_report["runtime_error"]),
+                "runtime_error_code": play_report["runtime_error_code"],
+                "runtime_error_stage": play_report["runtime_error_stage"],
+                "strategy_seed": strategy_seed,
+                "artifact_path": str(artifact_path),
+                "transcript_digest": transcript_digest,
+            }
+        )
+
+    if run_play_reports:
+        run_metrics = _aggregate_playthrough_metrics(run_play_reports)
+        try:
+            judge_instance = judge or StoryQualityJudge(model_override=judge_model)
+            decision = judge_instance.evaluate(
+                prompt_text=case.prompt_text,
+                expected_tone=case.expected_tone,
+                pack_summary=_build_pack_summary(generated.pack),
+                transcript_summary={
+                    "strategies": transcript_by_strategy,
+                    "aggregate": run_metrics,
+                },
+                metrics=run_metrics,
+            )
+            judge_payload = decision.result.model_dump()
+            fun_score = _compute_fun_score(judge_payload)
+            global_judge_overall_scores.append(float(decision.result.overall_score))
+            global_judge_fidelity_scores.append(float(decision.result.prompt_fidelity_score))
+            global_judge_results.append(judge_payload)
+            case_level_overall.append(float(decision.result.overall_score))
+            case_level_fun.append(fun_score)
+            case_level_playability.append(float(decision.result.playability_score))
+            case_level_choice_impact.append(float(decision.result.choice_impact_score))
+            case_level_tension_curve.append(float(decision.result.tension_curve_score))
+            run_entry["judge"] = {
+                "status": "ok",
+                "model": decision.model,
+                "attempts": decision.attempts,
+                "fun_score": fun_score,
+                **judge_payload,
+            }
+        except Exception as exc:  # noqa: BLE001
+            run_entry["judge"] = {
+                "status": "failed",
+                "error_type": _classify_precheck_error(exc),
+                "error": str(exc),
+            }
+    else:
+        run_entry["judge"] = {
+            "status": "skipped",
+            "reason": "no_playthrough_data",
+        }
+
+    return {
+        "run_entry": run_entry,
+        "generation_success": True,
+        "pack_lint_success": bool(generated.lint_report.ok),
+        "duplicate_beat_title_count": _count_duplicate_beat_titles(generated.pack),
+        "banned_move_hit_count": _count_banned_moves(generated.pack),
+        "strategy_triangle_coverage": _strategy_triangle_coverage_rate(generated.pack),
+        "play_reports": case_play_reports,
+        "judge_overall_scores": global_judge_overall_scores,
+        "judge_results": global_judge_results,
+        "judge_fidelity_scores": global_judge_fidelity_scores,
+        "case_level_overall": case_level_overall,
+        "case_level_fun": case_level_fun,
+        "case_level_playability": case_level_playability,
+        "case_level_choice_impact": case_level_choice_impact,
+        "case_level_tension_curve": case_level_tension_curve,
+        "generation_failure_breakdown": generation_failure_breakdown,
+        "prompt_spec_invalid_field_counts": prompt_spec_invalid_field_counts,
+    }
+
+
 def evaluate_llm_story_generation(
     *,
     suite: PromptSuite,
@@ -614,6 +907,7 @@ def evaluate_llm_story_generation(
     packs_dir: Path,
     artifacts_dir: Path,
     judge_model: str | None = None,
+    max_workers: int = 1,
 ) -> dict[str, Any]:
     precheck = _run_precheck()
     suite_meta = {
@@ -626,6 +920,7 @@ def evaluate_llm_story_generation(
         "strategies": strategies,
         "max_steps": max_steps,
         "judge_model": judge_model,
+        "max_workers": max(1, int(max_workers)),
     }
 
     if precheck["status"] != "ok":
@@ -646,8 +941,11 @@ def evaluate_llm_story_generation(
             "cases": [],
         }
 
-    service = GeneratorService()
-    judge = StoryQualityJudge(model_override=judge_model)
+    shared_service: GeneratorService | None = None
+    shared_judge: StoryQualityJudge | None = None
+    if max_workers <= 1:
+        shared_service = GeneratorService()
+        shared_judge = StoryQualityJudge(model_override=judge_model)
 
     total_runs = len(suite.cases) * runs_per_prompt
     generation_success_count = 0
@@ -672,7 +970,6 @@ def evaluate_llm_story_generation(
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     for case in suite.cases:
-        case_seed = _derive_case_seed(case.id)
         case_runs: list[dict[str, Any]] = []
         case_play_reports: list[dict[str, Any]] = []
         case_level_overall.setdefault(case.id, [])
@@ -681,202 +978,73 @@ def evaluate_llm_story_generation(
         case_level_choice_impact.setdefault(case.id, [])
         case_level_tension_curve.setdefault(case.id, [])
 
-        for run_index in range(1, runs_per_prompt + 1):
-            run_seed = f"{case_seed}:run{run_index}"
-            run_entry: dict[str, Any] = {
-                "run_index": run_index,
-                "variant_seed": run_seed,
-                "status": "failed",
-                "playthroughs": [],
-            }
-
-            try:
-                generated = service.generate_pack(
-                    prompt_text=case.prompt_text,
-                    target_minutes=case.target_minutes,
-                    npc_count=case.npc_count,
-                    style=case.style,
-                    variant_seed=run_seed,
-                )
-            except GeneratorBuildError as exc:
-                error_code = exc.error_code or "generation_failed_after_regenerates"
-                generation_failure_breakdown[error_code] = generation_failure_breakdown.get(error_code, 0) + 1
-                if error_code == "prompt_spec_invalid":
-                    per_run_counts = _extract_prompt_spec_invalid_field_counts(list(exc.lint_report.errors))
-                    for field, count in per_run_counts.items():
-                        prompt_spec_invalid_field_counts[field] = prompt_spec_invalid_field_counts.get(field, 0) + count
-                run_entry.update(
-                    {
-                        "status": "generation_failed",
-                        "error_code": error_code,
-                        "errors": list(exc.lint_report.errors),
-                        "warnings": list(exc.lint_report.warnings),
-                        "generation_attempts": exc.generation_attempts,
-                        "regenerate_count": exc.regenerate_count,
-                        "notes": list(exc.notes),
-                    }
-                )
-                case_runs.append(run_entry)
-                continue
-            except Exception as exc:  # noqa: BLE001
-                generation_failure_breakdown["generation_exception"] = (
-                    generation_failure_breakdown.get("generation_exception", 0) + 1
-                )
-                run_entry.update(
-                    {
-                        "status": "generation_failed",
-                        "error_code": "generation_exception",
-                        "errors": [str(exc)],
-                        "warnings": [],
-                    }
-                )
-                case_runs.append(run_entry)
-                continue
-
-            generation_success_count += 1
-            if generated.lint_report.ok:
-                pack_lint_success_count += 1
-            duplicate_beat_title_run_count += _count_duplicate_beat_titles(generated.pack)
-            banned_move_hit_count += _count_banned_moves(generated.pack)
-            strategy_triangle_coverage_accumulator += _strategy_triangle_coverage_rate(generated.pack)
-
-            pack_path = packs_dir / f"{generated.pack_hash}.json"
-            if not pack_path.exists():
-                _write_json(pack_path, generated.pack)
-
-            run_entry.update(
-                {
-                    "status": "ok",
-                    "pack_hash": generated.pack_hash,
-                    "pack_path": str(pack_path),
-                    "generator_version": generated.generator_version,
-                    "generation_attempts": generated.generation_attempts,
-                    "regenerate_count": generated.regenerate_count,
-                    "spec_hash": generated.spec_hash,
-                    "lint_ok": generated.lint_report.ok,
-                    "lint_errors": list(generated.lint_report.errors),
-                    "lint_warnings": list(generated.lint_report.warnings),
-                }
-            )
-
-            run_play_reports: list[dict[str, Any]] = []
-            transcript_by_strategy: dict[str, dict[str, Any]] = {}
-            for strategy in strategies:
-                strategy_seed = _derive_strategy_seed(
-                    pack_hash=generated.pack_hash,
-                    case_id=case.id,
-                    run_index=run_index,
-                    strategy=strategy,
-                )
-                try:
-                    play_report = simulate_pack_playthrough(
-                        generated.pack,
-                        strategy=strategy,
-                        provider_name="openai",
+        run_results: list[dict[str, Any]] = []
+        if max_workers <= 1:
+            for run_index in range(1, runs_per_prompt + 1):
+                run_results.append(
+                    _evaluate_case_run(
+                        case=case,
+                        run_index=run_index,
+                        strategies=strategies,
                         max_steps=max_steps,
-                        strategy_seed=strategy_seed,
-                        metadata={
-                            "pack_hash": generated.pack_hash,
-                            "generator_version": generated.generator_version,
-                            "variant_seed": generated.variant_seed,
-                        },
+                        packs_dir=packs_dir,
+                        artifacts_dir=artifacts_dir,
+                        judge_model=judge_model,
+                        service=shared_service,
+                        judge=shared_judge,
                     )
-                except Exception as exc:  # noqa: BLE001
-                    run_entry["playthroughs"].append(
-                        {
-                            "strategy": strategy,
-                            "status": "failed",
-                            "error": str(exc),
-                        }
-                    )
-                    continue
-
-                global_play_reports.append(play_report)
-                case_play_reports.append(play_report)
-                run_play_reports.append(play_report)
-                transcript_digest = compute_transcript_digest(play_report["transcript"])
-                transcript_summary = _summarize_transcript(play_report)
-                transcript_by_strategy[strategy] = transcript_summary
-                artifact_path = artifacts_dir / case.id / f"run{run_index}_{strategy}.json"
-                _write_json(
-                    artifact_path,
-                    {
-                        "case_id": case.id,
-                        "run_index": run_index,
-                        "strategy": strategy,
-                        "pack_hash": generated.pack_hash,
-                        "generator_version": generated.generator_version,
-                        "variant_seed": generated.variant_seed,
-                        "strategy_seed": strategy_seed,
-                        "transcript_digest": transcript_digest,
-                        "summary": transcript_summary,
-                    },
                 )
-
-                run_entry["playthroughs"].append(
-                    {
-                        "strategy": strategy,
-                        "status": "ok",
-                        "ended": bool(play_report["ended"]),
-                        "steps": int(play_report["steps"]),
-                        "meaningful_steps": int(play_report["meaningful_steps"]),
-                        "text_input_steps": int(play_report["text_input_steps"]),
-                        "llm_route_steps": int(play_report["llm_route_steps"]),
-                        "global_help_route_steps": int(play_report.get("global_help_route_steps", 0)),
-                        "pressure_recoil_steps": int(play_report.get("pressure_recoil_steps", 0)),
-                        "npc_stance_mentions": int(play_report.get("npc_stance_mentions", 0)),
-                        "runtime_error": bool(play_report["runtime_error"]),
-                        "runtime_error_code": play_report["runtime_error_code"],
-                        "runtime_error_stage": play_report["runtime_error_stage"],
-                        "strategy_seed": strategy_seed,
-                        "artifact_path": str(artifact_path),
-                        "transcript_digest": transcript_digest,
-                    }
-                )
-
-            if run_play_reports:
-                run_metrics = _aggregate_playthrough_metrics(run_play_reports)
-                try:
-                    decision = judge.evaluate(
-                        prompt_text=case.prompt_text,
-                        expected_tone=case.expected_tone,
-                        pack_summary=_build_pack_summary(generated.pack),
-                        transcript_summary={
-                            "strategies": transcript_by_strategy,
-                            "aggregate": run_metrics,
-                        },
-                        metrics=run_metrics,
-                    )
-                    judge_payload = decision.result.model_dump()
-                    fun_score = _compute_fun_score(judge_payload)
-                    global_judge_overall_scores.append(float(decision.result.overall_score))
-                    global_judge_fidelity_scores.append(float(decision.result.prompt_fidelity_score))
-                    global_judge_results.append(judge_payload)
-                    case_level_overall[case.id].append(float(decision.result.overall_score))
-                    case_level_fun[case.id].append(fun_score)
-                    case_level_playability[case.id].append(float(decision.result.playability_score))
-                    case_level_choice_impact[case.id].append(float(decision.result.choice_impact_score))
-                    case_level_tension_curve[case.id].append(float(decision.result.tension_curve_score))
-                    run_entry["judge"] = {
-                        "status": "ok",
-                        "model": decision.model,
-                        "attempts": decision.attempts,
-                        "fun_score": fun_score,
-                        **judge_payload,
-                    }
-                except Exception as exc:  # noqa: BLE001
-                    run_entry["judge"] = {
-                        "status": "failed",
-                        "error_type": _classify_precheck_error(exc),
-                        "error": str(exc),
-                    }
-            else:
-                run_entry["judge"] = {
-                    "status": "skipped",
-                    "reason": "no_playthrough_data",
+        else:
+            with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                futures = {
+                    pool.submit(
+                        _evaluate_case_run,
+                        case=case,
+                        run_index=run_index,
+                        strategies=strategies,
+                        max_steps=max_steps,
+                        packs_dir=packs_dir,
+                        artifacts_dir=artifacts_dir,
+                        judge_model=judge_model,
+                        service=None,
+                        judge=None,
+                    ): run_index
+                    for run_index in range(1, runs_per_prompt + 1)
                 }
+                for future in as_completed(futures):
+                    run_results.append(future.result())
 
+        run_results.sort(key=lambda item: int((item.get("run_entry") or {}).get("run_index", 0)))
+        for run_result in run_results:
+            run_entry = dict(run_result.get("run_entry") or {})
             case_runs.append(run_entry)
+
+            if bool(run_result.get("generation_success", False)):
+                generation_success_count += 1
+            if bool(run_result.get("pack_lint_success", False)):
+                pack_lint_success_count += 1
+            duplicate_beat_title_run_count += int(run_result.get("duplicate_beat_title_count", 0))
+            banned_move_hit_count += int(run_result.get("banned_move_hit_count", 0))
+            strategy_triangle_coverage_accumulator += float(run_result.get("strategy_triangle_coverage", 0.0))
+
+            for code, count in (run_result.get("generation_failure_breakdown") or {}).items():
+                generation_failure_breakdown[code] = generation_failure_breakdown.get(code, 0) + int(count)
+            for field, count in (run_result.get("prompt_spec_invalid_field_counts") or {}).items():
+                prompt_spec_invalid_field_counts[field] = prompt_spec_invalid_field_counts.get(field, 0) + int(count)
+
+            play_reports = list(run_result.get("play_reports") or [])
+            global_play_reports.extend(play_reports)
+            case_play_reports.extend(play_reports)
+
+            global_judge_overall_scores.extend(float(v) for v in (run_result.get("judge_overall_scores") or []))
+            global_judge_results.extend(list(run_result.get("judge_results") or []))
+            global_judge_fidelity_scores.extend(float(v) for v in (run_result.get("judge_fidelity_scores") or []))
+
+            case_level_overall[case.id].extend(float(v) for v in (run_result.get("case_level_overall") or []))
+            case_level_fun[case.id].extend(float(v) for v in (run_result.get("case_level_fun") or []))
+            case_level_playability[case.id].extend(float(v) for v in (run_result.get("case_level_playability") or []))
+            case_level_choice_impact[case.id].extend(float(v) for v in (run_result.get("case_level_choice_impact") or []))
+            case_level_tension_curve[case.id].extend(float(v) for v in (run_result.get("case_level_tension_curve") or []))
 
         case_metrics = _aggregate_playthrough_metrics(case_play_reports)
         case_generation_success_count = sum(1 for run in case_runs if run.get("status") == "ok")
@@ -972,6 +1140,12 @@ def main() -> int:
         help="Comma-separated simulation strategies",
     )
     parser.add_argument("--max-steps", type=int, default=None, help="Maximum simulation steps per playthrough")
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=1,
+        help="Max parallel workers across case x run units (default: 1 serial)",
+    )
     parser.add_argument("--output", default=DEFAULT_OUTPUT, help="Output report path")
     parser.add_argument("--packs-dir", default=DEFAULT_PACKS_DIR, help="Directory to persist generated pack files")
     parser.add_argument(
@@ -1015,6 +1189,7 @@ def main() -> int:
         packs_dir=Path(args.packs_dir),
         artifacts_dir=Path(args.artifacts_dir),
         judge_model=args.judge_model,
+        max_workers=max(1, int(args.max_workers)),
     )
 
     report["config"]["profile"] = args.profile

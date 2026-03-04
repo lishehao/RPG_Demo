@@ -268,6 +268,8 @@ def test_eval_report_shape_with_mocks(tmp_path, monkeypatch) -> None:
     assert report["metrics"]["prompt_spec_invalid_field_counts"] == {}
     assert report["fun_focus"]["formula"]["weights"] == eval_story.FUN_SCORE_WEIGHTS
     assert isinstance(report["fun_focus"]["warnings"], list)
+    assert any("global_help_route_rate" in warning for warning in report["fun_focus"]["warnings"])
+    assert any("non_global_text_route_rate" in warning for warning in report["fun_focus"]["warnings"])
     run_entry = report["cases"][0]["runs"][0]
     assert Path(run_entry["pack_path"]).exists()
     assert run_entry["judge"]["status"] == "ok"
@@ -279,6 +281,122 @@ def test_eval_report_shape_with_mocks(tmp_path, monkeypatch) -> None:
     first_play = run_entry["playthroughs"][0]
     assert Path(first_play["artifact_path"]).exists()
     assert eval_story._determine_exit_code(strict=True, gate=report["gate"]) == 0
+
+
+def test_eval_parallel_max_workers_path(tmp_path, monkeypatch) -> None:
+    suite = eval_story.PromptSuite.model_validate(
+        {
+            "id": "suite-parallel-test",
+            "version": "test",
+            "cases": [
+                {
+                    "id": "case-1",
+                    "prompt_text": "Generate a compact emergency story.",
+                    "target_minutes": 10,
+                    "npc_count": 4,
+                    "style": "tense",
+                    "tags": ["test"],
+                    "expected_tone": "urgent",
+                }
+            ],
+        }
+    )
+    repo_root = Path(__file__).resolve().parents[1]
+    sample_pack = json.loads((repo_root / "sample_data/story_pack_v1.json").read_text(encoding="utf-8"))
+
+    monkeypatch.setattr(
+        eval_story,
+        "_run_precheck",
+        lambda: {
+            "status": "ok",
+            "error_type": None,
+            "error": None,
+            "base_url": "http://worker.internal",
+            "host": "worker.internal",
+            "gateway_mode": "worker",
+            "compiler_model": "judge-model",
+            "compiler_attempts": 1,
+            "spec_hash": "f" * 64,
+        },
+    )
+
+    class _FakeGeneratorService:
+        def generate_pack(self, **kwargs):  # noqa: ANN003, ANN201
+            variant_seed = kwargs.get("variant_seed") or "seed"
+            pack_hash = f"{hash(variant_seed) & 0xFFFFFFFF:064x}"
+            return SimpleNamespace(
+                pack=sample_pack,
+                pack_hash=pack_hash,
+                generator_version="v3.3",
+                variant_seed=variant_seed,
+                palette_policy="random",
+                generation_attempts=1,
+                regenerate_count=0,
+                spec_hash="b" * 64,
+                lint_report=SimpleNamespace(ok=True, errors=[], warnings=[]),
+            )
+
+    class _FakeJudge:
+        def __init__(self, *, model_override=None) -> None:
+            self.model = model_override or "judge-model"
+
+        def evaluate(self, **_kwargs):  # noqa: ANN003, ANN201
+            return SimpleNamespace(
+                result=StoryQualityJudgeResult.model_validate(
+                    {
+                        "overall_score": 8.0,
+                        "playability_score": 8.0,
+                        "coherence_score": 8.0,
+                        "tension_curve_score": 8.0,
+                        "choice_impact_score": 8.0,
+                        "prompt_fidelity_score": 8.0,
+                        "major_issues": [],
+                        "strengths": ["good pacing"],
+                        "verdict": "pass",
+                    }
+                ),
+                model=self.model,
+                attempts=1,
+                notes=[],
+            )
+
+    monkeypatch.setattr(eval_story, "GeneratorService", _FakeGeneratorService)
+    monkeypatch.setattr(eval_story, "StoryQualityJudge", _FakeJudge)
+    monkeypatch.setattr(
+        eval_story,
+        "simulate_pack_playthrough",
+        lambda _pack, **_kwargs: {
+            "strategy": _kwargs["strategy"],
+            "provider": "openai",
+            "steps": 14,
+            "ended": True,
+            "meaningful_steps": 14,
+            "text_input_steps": 10,
+            "llm_route_steps": 10,
+            "runtime_error_steps": 0,
+            "runtime_error": False,
+            "runtime_error_code": None,
+            "runtime_error_stage": None,
+            "runtime_error_message": None,
+            "transcript": [{"step": 1, "action_input": {"type": "text"}}],
+        },
+    )
+
+    report = eval_story.evaluate_llm_story_generation(
+        suite=suite,
+        runs_per_prompt=2,
+        strategies=["mixed"],
+        max_steps=20,
+        packs_dir=tmp_path / "packs",
+        artifacts_dir=tmp_path / "artifacts",
+        judge_model="judge-model",
+        max_workers=2,
+    )
+
+    assert report["config"]["max_workers"] == 2
+    assert len(report["cases"]) == 1
+    assert len(report["cases"][0]["runs"]) == 2
+    assert report["metrics"]["generation_success_rate"] == 1.0
 
 
 def test_strict_exit_code_failed_gate() -> None:
@@ -455,6 +573,20 @@ def test_gate_unchanged_with_low_fun_fields() -> None:
     }
     gate = eval_story._compute_gate(metrics)
     assert gate["passed"] is True
+
+
+def test_fun_focus_report_includes_route_kpi_warnings() -> None:
+    report = eval_story._build_fun_focus_report(
+        {
+            "fun_score_avg": 7.8,
+            "fun_score_case_min": 6.8,
+            "global_help_route_rate": 0.33,
+            "non_global_text_route_rate": 0.41,
+        }
+    )
+    warnings = report["warnings"]
+    assert any("global_help_route_rate" in warning for warning in warnings)
+    assert any("non_global_text_route_rate" in warning for warning in warnings)
 
 
 def test_profile_fun_focus_defaults_applied() -> None:

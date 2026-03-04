@@ -4,6 +4,9 @@ This file maps `docs/architecture.md` sections to current implementation status.
 
 ## Implemented
 - OpenAI strict runtime loop (Pass A + Pass B) with deterministic outcome resolution.
+- LLM gateway mode switch:
+  - `local` direct provider path
+  - `worker` mode via internal `rpg_backend.llm_worker` service (`route-intent`/`render-narration`/`json-object`)
 - `fail_forward` mandatory linter validation.
 - OpenAI-only routing policy:
   - `openai`: quality-first failfast on route error/invalid move/low confidence
@@ -28,7 +31,7 @@ This file maps `docs/architecture.md` sections to current implementation status.
 - Story draft/publish/get APIs.
 - Session create/get/step APIs.
 - Sample story pack and canary tests.
-- Deterministic story generator (`/stories/generate`) with lint + bounded regenerate attempts.
+- Deterministic story generator (`/v2/stories/generate`) with lint + bounded regenerate attempts.
 - Eval diagnostics extended (non-hard-gate in phase A):
   - `global_help_route_rate`
   - `non_global_text_route_rate`

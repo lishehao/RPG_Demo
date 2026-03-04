@@ -22,7 +22,7 @@ Code is split by responsibilities:
 - `rpg_backend/runtime`: Pass A routing + Pass B deterministic resolution + narration composition
 - `rpg_backend/llm`: OpenAI provider abstraction (`OpenAIProvider`)
 - `rpg_backend/storage`: SQLModel entities + repositories
-- `rpg_backend/api`: REST API (stories/sessions)
+- `rpg_backend/api`: REST API (stories/v2/sessions)
 
 Runtime architecture source of truth:
 - `docs/story_architecture_v3.md`
@@ -77,6 +77,17 @@ Environment variables use `APP_` prefix.
 - `APP_LLM_OPENAI_TEMPERATURE_NARRATION` default: `0.4`
 - `APP_LLM_OPENAI_GENERATOR_TEMPERATURE` default: `0.15`
 - `APP_LLM_OPENAI_GENERATOR_MAX_RETRIES` default: `3` (max 3)
+- `APP_GENERATOR_CANDIDATE_PARALLELISM` default: `1` (per-attempt candidate fanout during story generation)
+- `APP_LLM_GATEWAY_MODE` default: `local` (`local|worker`)
+- `APP_LLM_WORKER_BASE_URL` required when `APP_LLM_GATEWAY_MODE=worker`
+- `APP_LLM_WORKER_TIMEOUT_SECONDS` default: `20`
+- `APP_LLM_WORKER_CONNECT_TIMEOUT_SECONDS` default: `5`
+- `APP_LLM_WORKER_MAX_CONNECTIONS` default: `100`
+- `APP_LLM_WORKER_MAX_KEEPALIVE_CONNECTIONS` default: `20`
+- `APP_LLM_WORKER_HTTP2_ENABLED` default: `false`
+- `APP_LLM_WORKER_ROUTE_MAX_INFLIGHT` default: `64`
+- `APP_LLM_WORKER_NARRATION_MAX_INFLIGHT` default: `64`
+- `APP_LLM_WORKER_JSON_MAX_INFLIGHT` default: `32`
 - `APP_OBS_LOG_LEVEL` default: `INFO`
 - `APP_OBS_REQUEST_ID_HEADER` default: `X-Request-ID`
 - `APP_OBS_REDACT_INPUT_TEXT` default: `true`
@@ -137,7 +148,8 @@ Readiness endpoint contract:
 - `/ready` is a strict readiness probe:
   - checks DB connectivity (`SELECT 1`)
   - checks LLM config completeness
-  - runs a minimal OpenAI-compatible `who are you` probe (JSON mode)
+  - `APP_LLM_GATEWAY_MODE=local`: runs a minimal OpenAI-compatible `who are you` probe (JSON mode)
+  - `APP_LLM_GATEWAY_MODE=worker`: probes worker `/ready` (which does upstream LLM probe)
 - `/ready` returns:
   - `200` with `status=ready` when all checks pass
   - `503` with `status=not_ready` and detailed check diagnostics when any critical check fails
@@ -148,10 +160,21 @@ Readiness endpoint contract:
     - `deploy/k8s/rpg-backend-deployment.yaml`
     - `deploy/k8s/rpg-backend-configmap.yaml`
     - `deploy/k8s/rpg-backend-secret.example.yaml`
+    - `deploy/k8s/rpg-llm-worker-deployment.yaml`
+    - `deploy/k8s/rpg-llm-worker-service.yaml`
+    - `deploy/k8s/rpg-llm-worker-hpa.yaml`
   - systemd units:
     - `deploy/systemd/rpg-backend.service`
     - `deploy/systemd/rpg-backend-readiness.service`
     - `deploy/systemd/rpg-backend-readiness.timer`
+    - `deploy/systemd/rpg-llm-worker.service`
+    - `deploy/systemd/rpg-llm-worker-readiness.service`
+    - `deploy/systemd/rpg-llm-worker-readiness.timer`
+
+LLM worker mode:
+- start worker: `uvicorn rpg_backend.llm_worker.main:app --host 0.0.0.0 --port 8100`
+- switch backend: set `APP_LLM_GATEWAY_MODE=worker` and `APP_LLM_WORKER_BASE_URL=http://127.0.0.1:8100`
+- worker debug CLI: `python scripts/call_llm_worker.py --task probe`
 
 ## Story Pack and Linter
 Global move IDs (required in every scene):
@@ -161,7 +184,7 @@ Global move IDs (required in every scene):
 
 StoryPack DSL (hard break, no backward compatibility):
 - each move must include `strategy_style`.
-- each pack must include `npc_profiles[]` with `{name, red_line}`.
+- each pack must include `npc_profiles[]` with `{name, red_line, conflict_tags}`.
 - each scene must include at least one move from each strategy style (triangle hard constraint).
 - `inspect_relic` is banned and fails lint.
 
@@ -188,7 +211,7 @@ Regenerate status:
 ### 1) Create draft story
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/stories \
+curl -sS -X POST http://127.0.0.1:8000/v2/stories \
   -H 'Content-Type: application/json' \
   -d "$(jq -n --arg title 'City Signal Draft' --argjson pack "$(cat sample_data/story_pack_v1.json)" '{title:$title, pack_json:$pack}')"
 ```
@@ -196,7 +219,7 @@ curl -sS -X POST http://127.0.0.1:8000/stories \
 ### 2) Publish story version
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/stories/{story_id}/publish \
+curl -sS -X POST http://127.0.0.1:8000/v2/stories/{story_id}/publish \
   -H 'Content-Type: application/json' \
   -d '{}'
 ```
@@ -204,13 +227,13 @@ curl -sS -X POST http://127.0.0.1:8000/stories/{story_id}/publish \
 ### 3) Read published raw pack
 
 ```bash
-curl -sS "http://127.0.0.1:8000/stories/{story_id}?version=1"
+curl -sS "http://127.0.0.1:8000/v2/stories/{story_id}?version=1"
 ```
 
 ### 3.5) Generate story
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/stories/generate \
+curl -sS -X POST http://127.0.0.1:8000/v2/stories/generate \
   -H 'Content-Type: application/json' \
   -d '{
     "prompt_text":"A city-wide signal breach where a burned-out systems engineer must stabilize a failing reactor while rival factions compete for control.",
@@ -218,7 +241,8 @@ curl -sS -X POST http://127.0.0.1:8000/stories/generate \
     "target_minutes":10,
     "npc_count":4,
     "variant_seed":"demo-seed-001",
-    "generator_version":"v3.2",
+    "candidate_parallelism":3,
+    "generator_version":"v3.3",
     "palette_policy":"random",
     "publish":false
   }'
@@ -236,25 +260,22 @@ Prompt compile behavior (strict):
   - stage 3: one feedback-guided regeneration if stage 2 validation fails
 - total compile budget is max 3 calls.
 - no local truncation is applied; failures remain strict (`prompt_outline_invalid` / `prompt_spec_invalid`).
-Generator output now includes:
-- `lint_report`
-- `generation_attempts`
-- `regenerate_count`
-- `notes`
-- `generation_mode` (`prompt|seed`)
-- `spec_hash` / `spec_summary` (prompt mode only)
-- `pack_hash` (stable hash of raw `pack_json`)
-- `generator_version`
-- `variant_seed` (actual seed used; auto-generated when omitted)
-- `palette_policy` (`random|balanced|fixed`)
+`/v2/stories/generate` returns structured diagnostics under `generation`:
+- `generation.mode` (`prompt|seed`)
+- `generation.generator_version`, `generation.variant_seed`, `generation.palette_policy`
+- `generation.attempts`, `generation.regenerate_count`, `generation.candidate_parallelism`
+- `generation.compile.spec_hash` / `generation.compile.spec_summary` (prompt mode only)
+- `generation.lint.errors` / `generation.lint.warnings`
+- `generation.attempt_history[]` with winner candidate trace per attempt
+- top-level `pack_hash` remains the stable hash for raw `pack_json`
 
-Breaking change:
-- `attempts` and `repair_notes` were removed from `/stories/generate` response/detail.
+Error responses are unified as:
+- `{ "error": { "code", "message", "retryable", "request_id", "details" } }`
 
 ### 4) Create session
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/sessions \
+curl -sS -X POST http://127.0.0.1:8000/v2/sessions \
   -H 'Content-Type: application/json' \
   -d '{"story_id":"{story_id}","version":1}'
 ```
@@ -262,7 +283,7 @@ curl -sS -X POST http://127.0.0.1:8000/sessions \
 ### 5) Step with text input
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
+curl -sS -X POST http://127.0.0.1:8000/v2/sessions/{session_id}/step \
   -H 'Content-Type: application/json' \
   -d '{
     "client_action_id":"step-1",
@@ -274,7 +295,7 @@ curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
 ### 6) Step with button input
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
+curl -sS -X POST http://127.0.0.1:8000/v2/sessions/{session_id}/step \
   -H 'Content-Type: application/json' \
   -d '{
     "client_action_id":"step-2",
@@ -286,7 +307,7 @@ curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
 ### 7) Inspect session state
 
 ```bash
-curl -sS "http://127.0.0.1:8000/sessions/{session_id}?dev_mode=true"
+curl -sS "http://127.0.0.1:8000/v2/sessions/{session_id}?dev_mode=true"
 ```
 
 ### 8) Simulate a playthrough transcript
@@ -487,7 +508,7 @@ Important:
 - full gate and exit-code behavior remain unchanged.
 
 ## Idempotency Contract
-`POST /sessions/{session_id}/step` uses `client_action_id`.
+`POST /v2/sessions/{session_id}/step` uses `client_action_id`.
 
 If the same `client_action_id` is submitted again for the same session:
 - returns **HTTP 200**
@@ -516,7 +537,7 @@ Use only in local/internal environments.
 ### 1) Timeline replay
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/timeline?limit=200&order=asc"
+curl -sS "http://127.0.0.1:8000/v2/admin/sessions/{session_id}/timeline?limit=200&order=asc"
 ```
 
 Optional query:
@@ -532,7 +553,7 @@ Event payload shape:
 ### 2) Feedback marker (good/bad)
 
 ```bash
-curl -sS -X POST "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback" \
+curl -sS -X POST "http://127.0.0.1:8000/v2/admin/sessions/{session_id}/feedback" \
   -H 'Content-Type: application/json' \
   -d '{
     "verdict":"bad",
@@ -543,7 +564,7 @@ curl -sS -X POST "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback" \
 ```
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback?limit=50"
+curl -sS "http://127.0.0.1:8000/v2/admin/sessions/{session_id}/feedback?limit=50"
 ```
 
 This lets you attach "not fun" cases directly to session traces for later analysis.
@@ -551,7 +572,7 @@ This lets you attach "not fun" cases directly to session traces for later analys
 ### 3) Runtime error aggregation (5m buckets)
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/observability/runtime-errors?window_seconds=300&limit=20"
+curl -sS "http://127.0.0.1:8000/v2/admin/observability/runtime-errors?window_seconds=300&limit=20"
 ```
 
 Optional filters:

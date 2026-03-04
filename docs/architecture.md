@@ -74,7 +74,7 @@ Moves are **parameterizable** and reusable across stories.
 
 ### 2.5 NPC Profiles
 StoryPack includes explicit NPC profile metadata:
-- `npc_profiles[]`: `{name, red_line}`
+- `npc_profiles[]`: `{name, red_line, conflict_tags[]}`
 - `red_line` is the NPC's non-negotiable constraint and must exist for every listed NPC.
 
 ---
@@ -127,6 +127,9 @@ Input → `MoveInvocation`
 **Low confidence policy:**
 - `openai`: if confidence < threshold, parse fails, or move is invalid, failfast this step with `503`.
 - for non-help text, router excludes `global.help_me_progress` from LLM candidate moves.
+- LLM transport can run in two gateway modes:
+  - `local`: backend calls OpenAI-compatible endpoint directly
+  - `worker`: backend calls internal LLM worker (`/v1/tasks/*`), worker calls upstream OpenAI-compatible endpoint
 
 ### Pass B — Outcome Resolution (Deterministic)
 `MoveInvocation + scene + state` → choose an `Outcome`
@@ -171,16 +174,16 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 ## 6. API Surface (v3 recommendation)
 
 ### Stories
-- `POST /stories` — create draft with raw `pack_json`
-- `POST /stories/{story_id}/publish` — publish a version (store raw `pack_json`)
-- `GET /stories/{story_id}?version=...` — returns wrapper with `pack` = raw `pack_json`
+- `POST /v2/stories` — create draft with raw `pack_json`
+- `POST /v2/stories/{story_id}/publish` — publish a version (store raw `pack_json`)
+- `GET /v2/stories/{story_id}?version=...` — returns wrapper with `pack` = raw `pack_json`
 
 ### Sessions
-- `POST /sessions` — create session bound to `{story_id, version}`, initialize `state`, set `current_scene_id`
-- `GET /sessions/{session_id}` — fetch current status (optionally `dev_mode` for full state)
+- `POST /v2/sessions` — create session bound to `{story_id, version}`, initialize `state`, set `current_scene_id`
+- `GET /v2/sessions/{session_id}` — fetch current status (optionally `dev_mode` for full state)
 
 ### Step (player action)
-- `POST /sessions/{session_id}/step`
+- `POST /v2/sessions/{session_id}/step`
   - Request:
     - `client_action_id` (idempotency)
     - `input`: `{type:"button"|"text", move_id?, text?}`
@@ -192,20 +195,28 @@ Narration renders `narration_slots` into player-facing text using a strict templ
     - `ui`: `{moves:[{move_id,label,risk_hint?}], input_hint}`
     - `debug` (dev only): resolution trace, applied deltas, selected outcome id
 
-**Step contract:** `POST /sessions/{session_id}/step` may return:
+**Step contract:** `POST /v2/sessions/{session_id}/step` may return:
 - `503` on strict LLM failures (route error, low confidence, invalid move, narration failure)
-- `409` with `error_code=session_conflict_retry` when optimistic CAS detects a concurrent turn advance
+- `409` with `error.code=session_conflict_retry` when optimistic CAS detects a concurrent turn advance
 
 ### Admin Diagnostics (no-auth in current phase)
-- `GET /admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed|step_conflicted`)
-- `POST /admin/sessions/{session_id}/feedback` — attach `good|bad` verdict and tags/notes to a session
-- `GET /admin/sessions/{session_id}/feedback` — list feedback markers for a session
-- `GET /admin/observability/runtime-errors` — rolling window 503 aggregation by `error_code|stage|model`
+- `GET /v2/admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed|step_conflicted`)
+- `POST /v2/admin/sessions/{session_id}/feedback` — attach `good|bad` verdict and tags/notes to a session
+- `GET /v2/admin/sessions/{session_id}/feedback` — list feedback markers for a session
+- `GET /v2/admin/observability/runtime-errors` — rolling window 503 aggregation by `error_code|stage|model`
 
 ### One-click generation (author tooling)
-- `POST /stories/generate`
+- `POST /v2/stories/generate`
   - Request: `{prompt_text?, seed_text?, target_minutes, npc_count, style?, publish?}`
-  - Output: `{story_id, version?, pack, lint_report, generation_attempts, regenerate_count}`
+  - Output:
+    - `story_id, version?, pack, pack_hash`
+    - `generation.mode` (`prompt|seed`)
+    - `generation.compile.{spec_hash,spec_summary}`
+    - `generation.lint.{errors,warnings}`
+    - `generation.{attempts,regenerate_count,candidate_parallelism,attempt_history}`
+
+Business endpoints use a unified error envelope:
+- `{ "error": { "code", "message", "retryable", "request_id", "details" } }`
 
 ---
 
