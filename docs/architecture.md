@@ -129,7 +129,7 @@ Input → `MoveInvocation`
 - for non-help text, router excludes `global.help_me_progress` from LLM candidate moves.
 - LLM transport can run in two gateway modes:
   - `local`: backend calls OpenAI-compatible endpoint directly
-  - `worker`: backend calls internal LLM worker (`/v1/tasks/*`), worker calls upstream OpenAI-compatible endpoint
+  - `worker`: backend calls internal LLM worker (`/v2/llm/tasks/*`), worker calls upstream OpenAI-compatible endpoint
 
 ### Pass B — Outcome Resolution (Deterministic)
 `MoveInvocation + scene + state` → choose an `Outcome`
@@ -172,6 +172,11 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 ---
 
 ## 6. API Surface (v3 recommendation)
+
+Path governance:
+- backend paths are centralized in `rpg_backend/api/route_paths.py`.
+- worker task paths are centralized in `rpg_backend/llm_worker/route_paths.py`.
+- router registration is centralized in `rpg_backend/api/router_registry.py`.
 
 ### Stories
 - `POST /v2/stories` — create draft with raw `pack_json`

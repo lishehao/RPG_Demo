@@ -6,7 +6,9 @@ This file maps `docs/architecture.md` sections to current implementation status.
 - OpenAI strict runtime loop (Pass A + Pass B) with deterministic outcome resolution.
 - LLM gateway mode switch:
   - `local` direct provider path
-  - `worker` mode via internal `rpg_backend.llm_worker` service (`route-intent`/`render-narration`/`json-object`)
+  - `worker` mode via internal `rpg_backend.llm_worker` service (`POST /v2/llm/tasks/{route-intent|render-narration|json-object}`)
+  - worker probes remain unversioned (`GET /health`, `GET /ready`)
+  - legacy worker routes `/v1/tasks/*` removed (hard cut, no compatibility alias)
 - `fail_forward` mandatory linter validation.
 - OpenAI-only routing policy:
   - `openai`: quality-first failfast on route error/invalid move/low confidence
@@ -50,6 +52,10 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - `scripts/emit_runtime_alerts.py` emits severity-based webhook alerts for `http_5xx_rate_high`, `backend_ready_unhealthy`, `worker_failure_rate_high`, and `llm_call_p95_high`
   - cooldown dedupe persisted via `RuntimeAlertDispatch`
   - oncall SOP documented in `docs/oncall_sop.md`
+- Route organization and path source-of-truth:
+  - backend route constants: `rpg_backend/api/route_paths.py`
+  - worker route constants: `rpg_backend/llm_worker/route_paths.py`
+  - centralized router registration: `rpg_backend/api/router_registry.py`
 
 ## Planned
 - Promote route-convergence KPI to hard gate after repeated stable runs:

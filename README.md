@@ -22,10 +22,15 @@ Code is split by responsibilities:
 - `rpg_backend/runtime`: Pass A routing + Pass B deterministic resolution + narration composition
 - `rpg_backend/llm`: OpenAI provider abstraction (`OpenAIProvider`)
 - `rpg_backend/storage`: SQLModel entities + repositories
-- `rpg_backend/api`: REST API (stories/v2/sessions)
+- `rpg_backend/api`: REST API (`/v2/*`) + route registry/paths (`router_registry.py`, `route_paths.py`)
 
 Internal import policy:
 - use explicit module imports (for example `rpg_backend.generator.pipeline`) instead of wrapper/facade paths.
+
+Route path policy:
+- backend business routes and probe paths must come from `rpg_backend.api.route_paths`.
+- worker task routes must come from `rpg_backend.llm_worker.route_paths`.
+- tests/scripts should import the same constants/helpers (no ad-hoc `"/v2/..."` literals).
 
 Runtime architecture source of truth:
 - `docs/story_architecture_v3.md`
@@ -189,6 +194,9 @@ Readiness endpoint contract:
 LLM worker mode:
 - start worker: `uvicorn rpg_backend.llm_worker.main:app --host 0.0.0.0 --port 8100`
 - switch backend: set `APP_LLM_GATEWAY_MODE=worker` and `APP_LLM_WORKER_BASE_URL=http://127.0.0.1:8100`
+- worker task API (hard cut): `POST /v2/llm/tasks/route-intent`, `POST /v2/llm/tasks/render-narration`, `POST /v2/llm/tasks/json-object`
+- worker probes stay unversioned: `GET /health`, `GET /ready`
+- legacy `/v1/tasks/*` is removed (no alias/redirect compatibility)
 - worker debug CLI: `python scripts/call_llm_worker.py --task probe`
 
 ## Story Pack and Linter
