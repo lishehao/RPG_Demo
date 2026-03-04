@@ -693,8 +693,29 @@ pytest -q -m "not live_openai_critical"
 Live OpenAI critical validation (sessions runtime + gate precheck):
 
 ```bash
-pytest -q -m live_openai_critical -o addopts='-q'
+PYTHONPATH=. python -m pytest -q -m live_openai_critical -o addopts='-q -rs'
 ```
+
+Live test notes:
+- `tests/live/conftest.py` auto-loads repository `.env` into process environment for live marker tests.
+- Required env keys for non-skip live runs: `APP_LLM_OPENAI_BASE_URL`, `APP_LLM_OPENAI_API_KEY`, and one model key from `APP_LLM_OPENAI_ROUTE_MODEL | APP_LLM_OPENAI_NARRATION_MODEL | APP_LLM_OPENAI_MODEL`.
+- If live tests fail with `dns_unreachable` or `llm_route_failed`, verify upstream reachability first:
+
+```bash
+curl -X POST "https://dashscope-us.aliyuncs.com/compatible-mode/v1/chat/completions" \
+  -H "Authorization: Bearer ${APP_LLM_OPENAI_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen-flash-us",
+    "messages": [{"role": "user", "content": "hello"}],
+    "max_tokens": 10
+  }'
+```
+
+Codex sandbox network behavior:
+- In Codex CLI sessions, sandboxed command execution can run with restricted outbound network by default.
+- In restricted mode, DNS resolution to upstream LLM hosts may fail even when `.env` and API key are correct.
+- When DNS/connect errors appear only in sandbox, rerun the same live command with external network permission (outside sandbox restrictions).
 
 Canary tests included:
 - `tests/test_canary_runtime_input_tolerance.py`
