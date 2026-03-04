@@ -249,6 +249,11 @@ Business endpoints use a unified error envelope:
 - Max retries: 3 regenerates (4 total attempts).
 - Prompt mode regenerates by rerunning `PromptCompiler + build + lint`.
 - No local post-generation mutation of generated pack.
+- Internal implementation is pipeline-based:
+  - `generator/pipeline.py`: orchestration (`validate -> compile/plan -> execute candidates -> resolve`)
+  - `generator/candidate_executor.py`: candidate parallelism + winner/best selection
+  - `generator/result_builder.py`: diagnostics + `GeneratorBuildResult` assembly
+  - `generator/errors.py`: `GeneratorBuildError` construction and mapping
 
 ---
 

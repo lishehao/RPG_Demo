@@ -18,7 +18,7 @@ Backend-first interactive narrative RPG service with OpenAI-only runtime behavio
 ## Architecture
 Code is split by responsibilities:
 - `rpg_backend/domain`: Story Pack DSL schema + linter
-- `rpg_backend/generator`: deterministic story generator (`planner/builder/prompt_compiler/service`)
+- `rpg_backend/generator`: deterministic story generator (`pipeline/candidate_executor/result_builder/errors` + `planner/builder/prompt_compiler/service facade`)
 - `rpg_backend/runtime`: Pass A routing + Pass B deterministic resolution + narration composition
 - `rpg_backend/llm`: OpenAI provider abstraction (`OpenAIProvider`)
 - `rpg_backend/storage`: SQLModel entities + repositories
@@ -215,6 +215,11 @@ Regenerate status:
 - Generator uses `build -> lint -> regenerate`.
 - When lint fails, it regenerates the whole pack with derived seeds (max 3 regenerates / 4 total attempts).
 - Prompt mode regenerates by rerunning `PromptCompiler + build + lint` each attempt.
+- Internal implementation split:
+  - `GeneratorPipeline`: validation + compile/plan + regenerate orchestration
+  - `candidate_executor`: candidate parallel execution and winner/best selection
+  - `result_builder`: attempt history and response assembly
+  - `errors`: centralized `GeneratorBuildError` construction
 
 ## API Flow (curl)
 
