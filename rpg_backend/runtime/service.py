@@ -274,7 +274,7 @@ class RuntimeService:
         beat_index = beat_index_by_id[next_scene.beat_id]
 
         stance_summary = self._build_stance_summary(stance_snapshot) if runtime_turn % 2 == 0 else None
-        narration_text = render_echo_commit_hook(
+        narration_result = render_echo_commit_hook(
             self.provider,
             outcome.narration_slots,
             recognized["interpreted_intent"],
@@ -283,6 +283,7 @@ class RuntimeService:
             strategy_style=chosen_move.strategy_style,
             stance_summary=stance_summary,
         )
+        narration_text = str(narration_result["text"])
 
         response = {
             "scene_id": current_scene_id,
@@ -298,6 +299,12 @@ class RuntimeService:
             "ui": {
                 "moves": self.list_ui_moves(pack, current_scene_id),
                 "input_hint": pack.input_hint,
+            },
+            "runtime_metrics": {
+                "route_llm_duration_ms": recognized.get("llm_duration_ms"),
+                "route_llm_gateway_mode": recognized.get("llm_gateway_mode"),
+                "narration_llm_duration_ms": narration_result.get("llm_duration_ms"),
+                "narration_llm_gateway_mode": narration_result.get("llm_gateway_mode"),
             },
         }
 

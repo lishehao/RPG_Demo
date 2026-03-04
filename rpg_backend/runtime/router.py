@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import Any
 
 from rpg_backend.config.settings import get_settings
@@ -114,16 +115,23 @@ def route_player_action(
         "state_snapshot": state_snapshot,
     }
     provider_name = "openai"
+    gateway_mode = str(getattr(provider, "gateway_mode", "local") or "local").strip().lower()
+    route_started_at = time.perf_counter()
 
     try:
         routed = provider.route_intent(scene_context, text)
     except Exception as exc:  # noqa: BLE001
+        route_duration_ms = int((time.perf_counter() - route_started_at) * 1000)
         raise RuntimeRouteError(
             error_code="llm_route_failed",
             message=f"route_intent failed after provider retries: {exc}",
             provider=provider_name,
+            provider_error_code=getattr(exc, "provider_error_code", None),
+            llm_duration_ms=route_duration_ms,
+            gateway_mode=str(getattr(exc, "gateway_mode", gateway_mode) or gateway_mode),
         ) from exc
 
+    route_duration_ms = int((time.perf_counter() - route_started_at) * 1000)
     chosen_move = routed.move_id
     confidence = float(routed.confidence)
     route_source = "llm"
@@ -132,12 +140,16 @@ def route_player_action(
             error_code="llm_route_invalid_move",
             message=f"route_intent returned unavailable move_id: {chosen_move}",
             provider=provider_name,
+            llm_duration_ms=route_duration_ms,
+            gateway_mode=gateway_mode,
         )
     elif confidence < threshold:
         raise RuntimeRouteError(
             error_code="llm_route_low_confidence",
             message=f"route_intent confidence {confidence:.4f} below threshold {threshold:.4f}",
             provider=provider_name,
+            llm_duration_ms=route_duration_ms,
+            gateway_mode=gateway_mode,
         )
 
     return {
@@ -145,4 +157,6 @@ def route_player_action(
         "move_id": chosen_move,
         "confidence": confidence,
         "route_source": route_source,
+        "llm_duration_ms": route_duration_ms,
+        "llm_gateway_mode": gateway_mode,
     }

@@ -20,9 +20,31 @@ class LLMProviderConfigError(RuntimeError):
 class LLMRouteError(RuntimeError):
     """Raised when provider cannot return a valid routed intent."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        provider_error_code: str | None = None,
+        gateway_mode: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.provider_error_code = provider_error_code
+        self.gateway_mode = gateway_mode
+
 
 class LLMNarrationError(RuntimeError):
     """Raised when provider cannot render narration text."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        provider_error_code: str | None = None,
+        gateway_mode: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.provider_error_code = provider_error_code
+        self.gateway_mode = gateway_mode
 
 
 class LLMProvider(ABC):

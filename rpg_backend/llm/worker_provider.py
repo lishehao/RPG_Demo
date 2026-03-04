@@ -20,6 +20,7 @@ class WorkerProvider(LLMProvider):
         narration_temperature: float,
     ) -> None:
         self.worker_client = worker_client
+        self.gateway_mode = "worker"
         self.route_model = route_model
         self.narration_model = narration_model
         self.timeout_seconds = timeout_seconds
@@ -39,7 +40,11 @@ class WorkerProvider(LLMProvider):
                 timeout_seconds=self.timeout_seconds,
             )
         except WorkerClientError as exc:
-            raise LLMRouteError(f"worker route_intent failed: {exc.error_code}: {exc.message}") from exc
+            raise LLMRouteError(
+                f"worker route_intent failed: {exc.error_code}: {exc.message}",
+                provider_error_code=exc.error_code,
+                gateway_mode=self.gateway_mode,
+            ) from exc
 
         try:
             routed = RouteIntentResult.model_validate(
@@ -51,10 +56,18 @@ class WorkerProvider(LLMProvider):
                 }
             )
         except Exception as exc:  # noqa: BLE001
-            raise LLMRouteError(f"worker route_intent invalid payload: {exc}") from exc
+            raise LLMRouteError(
+                f"worker route_intent invalid payload: {exc}",
+                provider_error_code="llm_worker_invalid_response",
+                gateway_mode=self.gateway_mode,
+            ) from exc
 
         if not routed.move_id.strip() or not routed.interpreted_intent.strip():
-            raise LLMRouteError("worker route_intent invalid payload: blank fields")
+            raise LLMRouteError(
+                "worker route_intent invalid payload: blank fields",
+                provider_error_code="llm_worker_invalid_response",
+                gateway_mode=self.gateway_mode,
+            )
         routed.move_id = routed.move_id.strip()
         return routed
 
@@ -69,9 +82,17 @@ class WorkerProvider(LLMProvider):
                 timeout_seconds=self.timeout_seconds,
             )
         except WorkerClientError as exc:
-            raise LLMNarrationError(f"worker render_narration failed: {exc.error_code}: {exc.message}") from exc
+            raise LLMNarrationError(
+                f"worker render_narration failed: {exc.error_code}: {exc.message}",
+                provider_error_code=exc.error_code,
+                gateway_mode=self.gateway_mode,
+            ) from exc
 
         text = payload.get("narration_text")
         if not isinstance(text, str) or not text.strip():
-            raise LLMNarrationError("worker render_narration returned blank text")
+            raise LLMNarrationError(
+                "worker render_narration returned blank text",
+                provider_error_code="llm_worker_invalid_response",
+                gateway_mode=self.gateway_mode,
+            )
         return text.strip()

@@ -27,6 +27,7 @@ class OpenAIProvider(LLMProvider):
         route_temperature: float = 0.1,
         narration_temperature: float = 0.4,
     ) -> None:
+        self.gateway_mode = "local"
         self.base_url = base_url.strip()
         self.api_key = api_key.strip()
         default_model = (model or "").strip()
