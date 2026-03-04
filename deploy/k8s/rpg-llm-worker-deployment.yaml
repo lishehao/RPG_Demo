@@ -6,6 +6,14 @@ metadata:
     app: rpg-llm-worker
 spec:
   replicas: 2
+  revisionHistoryLimit: 10
+  minReadySeconds: 10
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: rpg-llm-worker

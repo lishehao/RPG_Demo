@@ -6,7 +6,6 @@ metadata:
     app: rpg-backend
 data:
   APP_ENV: "prod"
-  APP_DATABASE_URL: "sqlite:////data/app.db"
 
   # Optional explicit model split; at least one of these three must be set.
   APP_LLM_OPENAI_MODEL: "qwen-flash-us"
