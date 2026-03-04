@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     obs_alert_bucket_min_share: float = Field(default=0.10, ge=0.0, le=1.0)
     obs_alert_global_error_rate: float = Field(default=0.05, ge=0.0, le=1.0)
     obs_alert_cooldown_seconds: int = Field(default=900, ge=60, le=86400)
+    obs_alert_http_5xx_rate: float = Field(default=0.05, ge=0.0, le=1.0)
+    obs_alert_http_5xx_min_count: int = Field(default=10, ge=1)
+    obs_alert_ready_fail_streak: int = Field(default=2, ge=1, le=50)
+    obs_alert_worker_fail_rate: float = Field(default=0.05, ge=0.0, le=1.0)
+    obs_alert_worker_fail_min_count: int = Field(default=20, ge=1)
+    obs_alert_llm_call_p95_ms: int = Field(default=3000, ge=1, le=120000)
+    obs_alert_llm_call_min_count: int = Field(default=30, ge=1)
     ready_llm_probe_enabled: bool = True
     ready_llm_probe_cache_ttl_seconds: int = Field(default=30, ge=1, le=300)
     ready_llm_probe_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
