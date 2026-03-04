@@ -190,10 +190,13 @@ Narration renders `narration_slots` into player-facing text using a strict templ
     - `dev_mode?`
   - Response (minimum):
     - `scene_id`, `narration_text`
-    - `recognized`: `{interpreted_intent, move_id, confidence}`
+    - `recognized`: `{interpreted_intent, move_id, confidence, route_source, llm_duration_ms?, llm_gateway_mode?}`
     - `resolution`: `{result, costs_summary, consequences_summary}`
-    - `ui`: `{moves:[{move_id,label,risk_hint?}], input_hint}`
-    - `debug` (dev only): resolution trace, applied deltas, selected outcome id
+    - `ui`: `{moves:[{move_id,label,risk_hint}], input_hint}`
+    - `debug` (dev only): `{selected_move, selected_outcome, selected_strategy_style, pressure_recoil_triggered, stance_snapshot, state, beat_progress}`
+  - Contract note:
+    - `recognized/resolution/ui/debug` are strict typed objects (unknown keys rejected)
+    - `debug` key is omitted when `dev_mode=false`
 
 **Step contract:** `POST /v2/sessions/{session_id}/step` may return:
 - `503` on strict LLM failures (route error, low confidence, invalid move, narration failure)
@@ -204,6 +207,11 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 - `POST /v2/admin/sessions/{session_id}/feedback` — attach `good|bad` verdict and tags/notes to a session
 - `GET /v2/admin/sessions/{session_id}/feedback` — list feedback markers for a session
 - `GET /v2/admin/observability/runtime-errors` — rolling window 503 aggregation by `error_code|stage|model`
+- `GET /v2/admin/observability/http-health` — HTTP request health (`5xx rate`, `p95`, `top_5xx_paths`) with `window_started_at/window_ended_at`
+- `GET /v2/admin/observability/llm-call-health` — per-call LLM health (`failure_rate`, `p95`) with fixed groups:
+  - `by_stage`: `route/narration/json/unknown`
+  - `by_gateway_mode`: `local/worker/unknown`
+- `GET /v2/admin/observability/readiness-health` — backend/worker readiness failures + streaks with `window_started_at/window_ended_at`
 
 ### One-click generation (author tooling)
 - `POST /v2/stories/generate`
@@ -266,7 +274,14 @@ Business endpoints use a unified error envelope:
 - Session timeline events persisted for replay and diagnostics (`step_started|step_succeeded|step_failed|step_replayed|step_conflicted`)
 - User-side quality markers (`good|bad`) linked to session and turn index
 - Runtime 503 aggregation: 5-minute rolling buckets keyed by `error_code|stage|model`, with sample `session_id/request_id`
-- Alerting: cron-driven webhook emitter (`scripts/emit_runtime_alerts.py`) with cooldown dedupe via dispatch table
+- Request event sampling: every request stores `{service, method, path, status_code, duration_ms, request_id}`
+- LLM call event sampling: route/narration/json calls store `{stage, gateway_mode, success, error_code, duration_ms}`
+- Readiness probe event sampling: backend/worker `/ready` writes `{ok, error_code, latency_ms, request_id}`
+- Alerting: cron-driven webhook emitter (`scripts/emit_runtime_alerts.py`) with cooldown dedupe via dispatch table and signal keys:
+  - `http_5xx_rate_high`
+  - `backend_ready_unhealthy`
+  - `worker_failure_rate_high`
+  - `llm_call_p95_high`
 - Acceptance metrics:
   - meaningful_accept_rate (state/progress changed)
   - llm_route_success_rate

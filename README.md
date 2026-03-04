@@ -97,6 +97,13 @@ Environment variables use `APP_` prefix.
 - `APP_OBS_ALERT_BUCKET_MIN_SHARE` default: `0.10`
 - `APP_OBS_ALERT_GLOBAL_ERROR_RATE` default: `0.05`
 - `APP_OBS_ALERT_COOLDOWN_SECONDS` default: `900`
+- `APP_OBS_ALERT_HTTP_5XX_RATE` default: `0.05`
+- `APP_OBS_ALERT_HTTP_5XX_MIN_COUNT` default: `10`
+- `APP_OBS_ALERT_READY_FAIL_STREAK` default: `2`
+- `APP_OBS_ALERT_WORKER_FAIL_RATE` default: `0.05`
+- `APP_OBS_ALERT_WORKER_FAIL_MIN_COUNT` default: `20`
+- `APP_OBS_ALERT_LLM_CALL_P95_MS` default: `3000`
+- `APP_OBS_ALERT_LLM_CALL_MIN_COUNT` default: `30`
 - `APP_READY_LLM_PROBE_ENABLED` default: `true`
 - `APP_READY_LLM_PROBE_CACHE_TTL_SECONDS` default: `30`
 - `APP_READY_LLM_PROBE_TIMEOUT_SECONDS` default: `5`
@@ -163,6 +170,7 @@ Readiness endpoint contract:
     - `deploy/k8s/rpg-llm-worker-deployment.yaml`
     - `deploy/k8s/rpg-llm-worker-service.yaml`
     - `deploy/k8s/rpg-llm-worker-hpa.yaml`
+    - `deploy/k8s/rpg-observability-alerts-cronjob.yaml`
   - systemd units:
     - `deploy/systemd/rpg-backend.service`
     - `deploy/systemd/rpg-backend-readiness.service`
@@ -170,6 +178,8 @@ Readiness endpoint contract:
     - `deploy/systemd/rpg-llm-worker.service`
     - `deploy/systemd/rpg-llm-worker-readiness.service`
     - `deploy/systemd/rpg-llm-worker-readiness.timer`
+    - `deploy/systemd/rpg-alert-emitter.service`
+    - `deploy/systemd/rpg-alert-emitter.timer`
 
 LLM worker mode:
 - start worker: `uvicorn rpg_backend.llm_worker.main:app --host 0.0.0.0 --port 8100`
@@ -516,6 +526,11 @@ If the same `client_action_id` is submitted again for the same session:
 
 Step input tolerance contract:
 - malformed action shape in valid JSON (missing `input`, missing `move_id`, invalid `input.type`) is normalized and executed with global fallback moves.
+- successful step payload is strict typed:
+  - `recognized`: `{interpreted_intent, move_id, confidence, route_source, llm_duration_ms?, llm_gateway_mode?}`
+  - `resolution`: `{result, costs_summary, consequences_summary}`
+  - `ui`: `{moves:[{move_id,label,risk_hint}], input_hint}`
+- `debug` field is returned only when `dev_mode=true`; omitted otherwise.
 - invalid session state still returns system errors (`404`/`409`).
 - concurrent write conflict (different action racing on stale turn) returns `409` with retry detail:
   - `error_code`: `session_conflict_retry`
@@ -531,7 +546,7 @@ Step input tolerance contract:
 - every API response includes `X-Request-ID` for trace correlation.
 
 ## Admin Diagnostics (Session Trace + Feedback)
-Admin diagnostics endpoints are exposed under `/admin` with no auth in this phase.
+Admin diagnostics endpoints are exposed under `/v2/admin` with no auth in this phase.
 Use only in local/internal environments.
 
 ### 1) Timeline replay
@@ -603,6 +618,60 @@ Suggested crontab (every minute):
 ```bash
 * * * * * cd /path/to/RPG_Demo && /path/to/.venv/bin/python scripts/emit_runtime_alerts.py --window-seconds 300 --limit 20
 ```
+
+Alert signals emitted via single webhook channel:
+- `http_5xx_rate_high` (critical)
+- `backend_ready_unhealthy` (critical)
+- `worker_failure_rate_high` (warning)
+- `llm_call_p95_high` (warning)
+
+Each alert includes:
+- `severity`, `signal`, `value`, `threshold`, `window_seconds`, `samples`, `runbook_hint`
+
+Oncall runbook:
+- `docs/oncall_sop.md`
+
+### 5) HTTP health aggregation
+
+```bash
+curl -sS "http://127.0.0.1:8000/v2/admin/observability/http-health?window_seconds=300"
+```
+
+Optional query:
+- `service=backend|worker`
+- `path_prefix=/v2/sessions`
+- `exclude_paths=/health,/ready`
+
+Response includes:
+- `window_started_at`, `window_ended_at`
+- `total_requests`, `failed_5xx`, `error_rate`, `p95_ms`, `top_5xx_paths`
+
+### 6) LLM call health aggregation
+
+```bash
+curl -sS "http://127.0.0.1:8000/v2/admin/observability/llm-call-health?window_seconds=300"
+```
+
+Optional query:
+- `stage=route|narration|json`
+- `gateway_mode=local|worker`
+
+Response includes:
+- `window_started_at`, `window_ended_at`
+- `by_stage` fixed keys: `route`, `narration`, `json`, `unknown`
+- `by_gateway_mode` fixed keys: `local`, `worker`, `unknown`
+
+### 7) Readiness health aggregation
+
+```bash
+curl -sS "http://127.0.0.1:8000/v2/admin/observability/readiness-health?window_seconds=300"
+```
+
+Response includes:
+- `window_started_at`, `window_ended_at`
+- backend/worker fail counts in window
+- backend/worker consecutive fail streaks
+- last failure records (`service`, `error_code`, `request_id`, `created_at`)
 
 ## Tests
 Default low-cost test set (no live OpenAI critical tests):

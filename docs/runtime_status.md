@@ -15,7 +15,7 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - explicit help/stuck intent can still route to `global.help_me_progress`
 - Story DSL hard break:
   - `Move.strategy_style` required
-  - `StoryPack.npc_profiles[{name, red_line}]` required
+  - `StoryPack.npc_profiles[{name, red_line, conflict_tags}]` required
   - scene-level strategy triangle coverage is a linter hard error
 - Fixed delayed-consequence tracks in runtime state:
   - `public_trust`, `resource_stress`, `coordination_noise`
@@ -40,6 +40,16 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - `npc_stance_mentions_per_run_avg`
   - `duplicate_beat_title_run_count`
   - `banned_move_hit_count`
+- Observability health endpoints:
+  - `GET /v2/admin/observability/http-health`
+  - `GET /v2/admin/observability/llm-call-health`
+  - `GET /v2/admin/observability/readiness-health`
+  - all three responses include `window_started_at/window_ended_at` for fixed window boundaries
+  - `llm-call-health` group fields are stable (`by_stage`: route/narration/json/unknown, `by_gateway_mode`: local/worker/unknown)
+- Alert loop closure:
+  - `scripts/emit_runtime_alerts.py` emits severity-based webhook alerts for `http_5xx_rate_high`, `backend_ready_unhealthy`, `worker_failure_rate_high`, and `llm_call_p95_high`
+  - cooldown dedupe persisted via `RuntimeAlertDispatch`
+  - oncall SOP documented in `docs/oncall_sop.md`
 
 ## Planned
 - Promote route-convergence KPI to hard gate after repeated stable runs:
