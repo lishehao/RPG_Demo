@@ -11,7 +11,7 @@ import httpx
 
 from rpg_backend.domain.linter import LintReport
 from rpg_backend.eval.story_quality_schema import StoryQualityJudgeResult
-from rpg_backend.generator.service import GeneratorBuildError
+from rpg_backend.generator.errors import GeneratorBuildError
 
 
 def _load_eval_module():

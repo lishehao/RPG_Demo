@@ -189,9 +189,9 @@ def test_lint_first_pass_success_has_no_regenerate() -> None:
 
 
 def test_first_lint_fail_then_second_attempt_succeeds(monkeypatch) -> None:
-    import rpg_backend.generator.service as service_module
+    import rpg_backend.generator.candidate_executor as candidate_module
 
-    original_lint = service_module.lint_story_pack
+    original_lint = candidate_module.lint_story_pack
     calls = {"count": 0}
 
     def _lint_once_then_pass(pack: dict) -> LintReport:
@@ -200,7 +200,7 @@ def test_first_lint_fail_then_second_attempt_succeeds(monkeypatch) -> None:
             return LintReport(errors=["forced lint fail"], warnings=[])
         return original_lint(pack)
 
-    monkeypatch.setattr(service_module, "lint_story_pack", _lint_once_then_pass)
+    monkeypatch.setattr(candidate_module, "lint_story_pack", _lint_once_then_pass)
 
     result = GeneratorService().generate_pack(
         seed_text="force second attempt",
@@ -216,10 +216,10 @@ def test_first_lint_fail_then_second_attempt_succeeds(monkeypatch) -> None:
 
 
 def test_all_regenerates_fail_returns_last_lint_report(monkeypatch) -> None:
-    import rpg_backend.generator.service as service_module
+    import rpg_backend.generator.candidate_executor as candidate_module
 
     monkeypatch.setattr(
-        service_module,
+        candidate_module,
         "lint_story_pack",
         lambda _: LintReport(errors=["always bad"], warnings=["forced warning"]),
     )
@@ -240,7 +240,7 @@ def test_all_regenerates_fail_returns_last_lint_report(monkeypatch) -> None:
 
 
 def test_prompt_mode_lint_fail_recompiles_each_attempt_with_derived_seed(monkeypatch) -> None:
-    import rpg_backend.generator.service as service_module
+    import rpg_backend.generator.candidate_executor as candidate_module
 
     sample_spec = _sample_story_spec()
     seen: list[tuple[int, str | None]] = []
@@ -256,9 +256,9 @@ def test_prompt_mode_lint_fail_recompiles_each_attempt_with_derived_seed(monkeyp
             notes=["prompt compiler mocked"],
         )
 
-    monkeypatch.setattr("rpg_backend.generator.service.PromptCompiler.compile", _fake_compile)
+    monkeypatch.setattr("rpg_backend.generator.pipeline.PromptCompiler.compile", _fake_compile)
     monkeypatch.setattr(
-        service_module,
+        candidate_module,
         "lint_story_pack",
         lambda _: LintReport(errors=["forced prompt lint fail"], warnings=[]),
     )
@@ -386,7 +386,7 @@ def test_palette_policy_fixed_vs_balanced_changes_distribution() -> None:
 def test_prompt_mode_generates_lint_ok_pack(monkeypatch) -> None:
     sample_spec = _sample_story_spec()
     monkeypatch.setattr(
-        "rpg_backend.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.pipeline.PromptCompiler.compile",
         lambda *args, **kwargs: PromptCompileResult(
             spec=sample_spec,
             spec_hash="abc123" * 10 + "abcd",
@@ -411,7 +411,7 @@ def test_prompt_mode_generates_lint_ok_pack(monkeypatch) -> None:
 def test_prompt_mode_pacing_reaches_terminal_14_16(monkeypatch) -> None:
     sample_spec = _sample_story_spec()
     monkeypatch.setattr(
-        "rpg_backend.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.pipeline.PromptCompiler.compile",
         lambda *args, **kwargs: PromptCompileResult(
             spec=sample_spec,
             spec_hash="def456" * 10 + "def4",
@@ -454,7 +454,7 @@ def test_prompt_mode_pacing_reaches_terminal_14_16(monkeypatch) -> None:
 
 def test_prompt_compile_failure_returns_generator_error(monkeypatch) -> None:
     monkeypatch.setattr(
-        "rpg_backend.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.pipeline.PromptCompiler.compile",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             PromptCompileError(
                 error_code="prompt_compile_failed",
@@ -479,7 +479,7 @@ def test_prompt_compile_failure_returns_generator_error(monkeypatch) -> None:
 
 def test_prompt_compile_failure_does_not_fallback_to_seed_planner(monkeypatch) -> None:
     monkeypatch.setattr(
-        "rpg_backend.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.pipeline.PromptCompiler.compile",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             PromptCompileError(
                 error_code="prompt_compile_failed",
@@ -489,7 +489,7 @@ def test_prompt_compile_failure_does_not_fallback_to_seed_planner(monkeypatch) -
         ),
     )
     monkeypatch.setattr(
-        "rpg_backend.generator.service.plan_beats",
+        "rpg_backend.generator.pipeline.plan_beats",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             AssertionError("seed planner should not be used when prompt compile fails")
         ),
@@ -506,7 +506,7 @@ def test_prompt_compile_failure_does_not_fallback_to_seed_planner(monkeypatch) -
 
 def test_prompt_spec_invalid_returns_generator_error(monkeypatch) -> None:
     monkeypatch.setattr(
-        "rpg_backend.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.pipeline.PromptCompiler.compile",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             PromptCompileError(
                 error_code="prompt_spec_invalid",
@@ -530,11 +530,11 @@ def test_prompt_spec_invalid_returns_generator_error(monkeypatch) -> None:
 
 
 def test_candidate_parallelism_can_select_non_primary_candidate(monkeypatch) -> None:
-    import rpg_backend.generator.service as service_module
+    import rpg_backend.generator.candidate_executor as candidate_module
 
     sample_spec = _sample_story_spec()
     monkeypatch.setattr(
-        "rpg_backend.generator.service.PromptCompiler.compile",
+        "rpg_backend.generator.pipeline.PromptCompiler.compile",
         lambda *args, **kwargs: PromptCompileResult(
             spec=sample_spec,
             spec_hash="c" * 64,
@@ -544,14 +544,14 @@ def test_candidate_parallelism_can_select_non_primary_candidate(monkeypatch) -> 
         ),
     )
 
-    original_build_candidate = service_module.GeneratorService._build_candidate
+    original_build_candidate = candidate_module.build_candidate
 
     def _fake_build_candidate(**kwargs):  # noqa: ANN003, ANN201
         candidate_seed = kwargs["candidate_seed"]
         built = original_build_candidate(**kwargs)
         ok = candidate_seed.endswith("#cand1")
         lint = LintReport(errors=[] if ok else ["forced candidate lint fail"], warnings=[])
-        return service_module._CandidateBuildResult(
+        return candidate_module.CandidateBuildResult(
             candidate_index=0,
             candidate_seed=candidate_seed,
             pack=built.pack,
@@ -559,9 +559,9 @@ def test_candidate_parallelism_can_select_non_primary_candidate(monkeypatch) -> 
         )
 
     monkeypatch.setattr(
-        service_module.GeneratorService,
-        "_build_candidate",
-        staticmethod(_fake_build_candidate),
+        candidate_module,
+        "build_candidate",
+        _fake_build_candidate,
     )
 
     result = GeneratorService().generate_pack(
