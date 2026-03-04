@@ -7,6 +7,13 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session as DBSession
 
 from rpg_backend.llm_worker.errors import WorkerTaskError
+from rpg_backend.llm_worker.route_paths import (
+    WORKER_HEALTH_PATH,
+    WORKER_JSON_OBJECT_TASK_PATH,
+    WORKER_READY_PATH,
+    WORKER_RENDER_NARRATION_TASK_PATH,
+    WORKER_ROUTE_INTENT_TASK_PATH,
+)
 from rpg_backend.llm_worker.schemas import (
     WorkerReadyResponse,
     WorkerTaskJsonObjectRequest,
@@ -64,12 +71,12 @@ def _task_error_response(exc: WorkerTaskError) -> JSONResponse:
     return JSONResponse(status_code=503, content=exc.to_payload().model_dump(mode="json"))
 
 
-@app.get("/health")
+@app.get(WORKER_HEALTH_PATH)
 async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/ready", response_model=WorkerReadyResponse)
+@app.get(WORKER_READY_PATH, response_model=WorkerReadyResponse)
 async def ready(request: Request, refresh: bool = Query(default=False)) -> WorkerReadyResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
     report = await service.ready(refresh=refresh)
@@ -117,7 +124,7 @@ async def ready(request: Request, refresh: bool = Query(default=False)) -> Worke
     return JSONResponse(status_code=503, content=report.model_dump(mode="json"))
 
 
-@app.post("/v1/tasks/route-intent", response_model=WorkerTaskRouteIntentResponse)
+@app.post(WORKER_ROUTE_INTENT_TASK_PATH, response_model=WorkerTaskRouteIntentResponse)
 async def route_intent_task(
     payload: WorkerTaskRouteIntentRequest,
     request: Request,
@@ -152,7 +159,7 @@ async def route_intent_task(
     return result
 
 
-@app.post("/v1/tasks/render-narration", response_model=WorkerTaskNarrationResponse)
+@app.post(WORKER_RENDER_NARRATION_TASK_PATH, response_model=WorkerTaskNarrationResponse)
 async def render_narration_task(
     payload: WorkerTaskNarrationRequest,
     request: Request,
@@ -187,7 +194,7 @@ async def render_narration_task(
     return result
 
 
-@app.post("/v1/tasks/json-object", response_model=WorkerTaskJsonObjectResponse)
+@app.post(WORKER_JSON_OBJECT_TASK_PATH, response_model=WorkerTaskJsonObjectResponse)
 async def json_object_task(
     payload: WorkerTaskJsonObjectRequest,
     request: Request,

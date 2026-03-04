@@ -8,6 +8,12 @@ from urllib.parse import urlparse
 import httpx
 
 from rpg_backend.config.settings import get_settings
+from rpg_backend.llm_worker.route_paths import (
+    WORKER_JSON_OBJECT_TASK_PATH,
+    WORKER_READY_PATH,
+    WORKER_RENDER_NARRATION_TASK_PATH,
+    WORKER_ROUTE_INTENT_TASK_PATH,
+)
 
 
 @dataclass
@@ -133,7 +139,7 @@ class WorkerClient:
         timeout_seconds: float,
     ) -> dict[str, Any]:
         return self._post_json(
-            path="/v1/tasks/route-intent",
+            path=WORKER_ROUTE_INTENT_TASK_PATH,
             payload={
                 "scene_context": scene_context,
                 "text": text or "",
@@ -156,7 +162,7 @@ class WorkerClient:
         timeout_seconds: float,
     ) -> dict[str, Any]:
         return self._post_json(
-            path="/v1/tasks/render-narration",
+            path=WORKER_RENDER_NARRATION_TASK_PATH,
             payload={
                 "slots": slots,
                 "style_guard": style_guard,
@@ -179,7 +185,7 @@ class WorkerClient:
         timeout_seconds: float,
     ) -> dict[str, Any]:
         response = self._post_json(
-            path="/v1/tasks/json-object",
+            path=WORKER_JSON_OBJECT_TASK_PATH,
             payload={
                 "system_prompt": system_prompt,
                 "user_prompt": user_prompt,
@@ -201,7 +207,7 @@ class WorkerClient:
 
     def probe_ready(self, *, refresh: bool = False) -> tuple[int, dict[str, Any]]:
         try:
-            response = self._client.get(self._url("/ready"), params={"refresh": str(bool(refresh)).lower()})
+            response = self._client.get(self._url(WORKER_READY_PATH), params={"refresh": str(bool(refresh)).lower()})
         except httpx.TimeoutException as exc:
             raise WorkerClientError(
                 error_code="llm_worker_timeout",
