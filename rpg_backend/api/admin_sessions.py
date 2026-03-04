@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session
 
 from rpg_backend.api.errors import ApiError
-from rpg_backend.api.route_paths import API_V2_ADMIN_SESSIONS_PREFIX
+from rpg_backend.api.route_paths import API_ADMIN_SESSIONS_PREFIX
 from rpg_backend.api.schemas import (
     AdminSessionTimelineEvent,
     AdminSessionTimelineResponse,
@@ -21,7 +21,7 @@ from rpg_backend.storage.repositories.runtime_events import list_runtime_events
 from rpg_backend.storage.repositories.session_feedback import create_session_feedback, list_session_feedback
 from rpg_backend.storage.repositories.sessions import get_session as get_session_record
 
-router = APIRouter(prefix=API_V2_ADMIN_SESSIONS_PREFIX, tags=["admin"])
+router = APIRouter(prefix=API_ADMIN_SESSIONS_PREFIX, tags=["admin"])
 
 
 def _require_session(db: Session, session_id: str):
@@ -130,4 +130,3 @@ def list_session_feedback_endpoint(
             for item in items
         ],
     )
-

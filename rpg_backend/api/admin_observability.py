@@ -6,7 +6,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 
-from rpg_backend.api.route_paths import API_V2_ADMIN_OBSERVABILITY_PREFIX, HEALTH_PATH
+from rpg_backend.api.route_paths import API_ADMIN_OBSERVABILITY_PREFIX, HEALTH_PATH
 from rpg_backend.api.schemas import (
     HttpHealthAggregateResponse,
     LLMCallByGatewayModePayload,
@@ -25,7 +25,7 @@ from rpg_backend.storage.repositories.observability import (
     aggregate_runtime_error_buckets,
 )
 
-router = APIRouter(prefix=API_V2_ADMIN_OBSERVABILITY_PREFIX, tags=["admin"])
+router = APIRouter(prefix=API_ADMIN_OBSERVABILITY_PREFIX, tags=["admin"])
 
 
 def _empty_llm_group() -> LLMCallGroupHealthPayload:
@@ -165,4 +165,3 @@ def get_readiness_health_endpoint(
         worker_fail_streak=int(aggregated["worker_fail_streak"]),
         last_failures=list(aggregated["last_failures"]),
     )
-

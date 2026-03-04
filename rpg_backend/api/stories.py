@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session
 
 from rpg_backend.api.errors import ApiError
-from rpg_backend.api.route_paths import API_V2_STORIES_PREFIX
+from rpg_backend.api.route_paths import API_STORIES_PREFIX
 from rpg_backend.api.schemas import (
     StoryCreateRequest,
     StoryCreateResponse,
@@ -25,7 +25,7 @@ from rpg_backend.storage.repositories.stories import (
     publish_story_version,
 )
 
-router = APIRouter(prefix=API_V2_STORIES_PREFIX, tags=["stories"])
+router = APIRouter(prefix=API_STORIES_PREFIX, tags=["stories"])
 
 
 @router.post("", response_model=StoryCreateResponse)
