@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import hmac
 
-from fastapi import FastAPI, Query, Request
+from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.responses import JSONResponse
 from sqlmodel import Session as DBSession
 
+from rpg_backend.api.errors import ApiError, register_error_handlers
+from rpg_backend.config.settings import get_settings
 from rpg_backend.llm_worker.errors import WorkerTaskError
 from rpg_backend.llm_worker.route_paths import (
     WORKER_HEALTH_PATH,
@@ -27,6 +30,7 @@ from rpg_backend.llm_worker.service import LLMWorkerService
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import configure_logging, log_event
 from rpg_backend.observability.middleware import RequestIdMiddleware
+from rpg_backend.security.bootstrap import assert_production_secret_requirements
 from rpg_backend.storage.engine import engine
 from rpg_backend.storage.migrations import assert_schema_current
 from rpg_backend.storage.repositories.observability import save_readiness_probe_event
@@ -59,6 +63,7 @@ def _save_worker_readiness_probe(
 async def lifespan(_: FastAPI):
     configure_logging()
     assert_schema_current()
+    assert_production_secret_requirements()
     await service.startup()
     yield
     await service.shutdown()
@@ -66,10 +71,25 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="RPG LLM Worker", lifespan=lifespan)
 app.add_middleware(RequestIdMiddleware, service_name="worker")
+register_error_handlers(app)
 
 
 def _task_error_response(exc: WorkerTaskError) -> JSONResponse:
     return JSONResponse(status_code=503, content=exc.to_payload().model_dump(mode="json"))
+
+
+def _require_worker_internal_token(
+    header_token: str | None = Header(default=None, alias="X-Internal-Worker-Token"),
+) -> None:
+    expected = (get_settings().internal_worker_token or "").strip()
+    provided = (header_token or "").strip()
+    if not expected or not provided or not hmac.compare_digest(expected, provided):
+        raise ApiError(
+            status_code=401,
+            code="worker_token_invalid",
+            message="invalid worker internal token",
+            retryable=False,
+        )
 
 
 @app.get(WORKER_HEALTH_PATH)
@@ -129,6 +149,7 @@ async def ready(request: Request, refresh: bool = Query(default=False)) -> Worke
 async def route_intent_task(
     payload: WorkerTaskRouteIntentRequest,
     request: Request,
+    _: None = Depends(_require_worker_internal_token),
 ) -> WorkerTaskRouteIntentResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
     try:
@@ -164,6 +185,7 @@ async def route_intent_task(
 async def render_narration_task(
     payload: WorkerTaskNarrationRequest,
     request: Request,
+    _: None = Depends(_require_worker_internal_token),
 ) -> WorkerTaskNarrationResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
     try:
@@ -199,6 +221,7 @@ async def render_narration_task(
 async def json_object_task(
     payload: WorkerTaskJsonObjectRequest,
     request: Request,
+    _: None = Depends(_require_worker_internal_token),
 ) -> WorkerTaskJsonObjectResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
     try:

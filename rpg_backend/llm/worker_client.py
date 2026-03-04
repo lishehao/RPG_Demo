@@ -39,6 +39,7 @@ class WorkerClient:
         max_connections: int,
         max_keepalive_connections: int,
         http2_enabled: bool,
+        internal_token: str,
     ) -> None:
         normalized = (base_url or "").strip().rstrip("/")
         if not normalized:
@@ -49,6 +50,13 @@ class WorkerClient:
             )
         self.base_url = normalized
         self.host = urlparse(normalized).hostname
+        self.internal_token = (internal_token or "").strip()
+        if not self.internal_token:
+            raise WorkerClientError(
+                error_code="llm_worker_misconfigured",
+                message="APP_INTERNAL_WORKER_TOKEN is required when gateway mode is worker",
+                retryable=False,
+            )
 
         limits = httpx.Limits(
             max_connections=max_connections,
@@ -71,6 +79,16 @@ class WorkerClient:
 
     @staticmethod
     def _parse_error_payload(payload: dict[str, Any]) -> tuple[str, str, bool, int | None, str | None, int | None]:
+        if isinstance(payload.get("error"), dict):
+            err = payload["error"]
+            return (
+                str(err.get("code") or "llm_worker_request_failed"),
+                str(err.get("message") or "worker request failed"),
+                bool(err.get("retryable", False)),
+                None,
+                None,
+                None,
+            )
         return (
             str(payload.get("error_code") or "llm_worker_request_failed"),
             str(payload.get("message") or "worker request failed"),
@@ -87,8 +105,9 @@ class WorkerClient:
         payload: dict[str, Any],
         timeout_seconds: float | None = None,
     ) -> dict[str, Any]:
+        headers = {"X-Internal-Worker-Token": self.internal_token}
         try:
-            response = self._client.post(self._url(path), json=payload, timeout=timeout_seconds)
+            response = self._client.post(self._url(path), json=payload, timeout=timeout_seconds, headers=headers)
         except httpx.TimeoutException as exc:
             raise WorkerClientError(
                 error_code="llm_worker_timeout",
@@ -256,6 +275,7 @@ def get_worker_client() -> WorkerClient:
                 max_connections=int(settings.llm_worker_max_connections),
                 max_keepalive_connections=int(settings.llm_worker_max_keepalive_connections),
                 http2_enabled=bool(settings.llm_worker_http2_enabled),
+                internal_token=settings.internal_worker_token or "",
             )
             _worker_client_base_url = base_url
         return _worker_client
