@@ -6,9 +6,9 @@ This file maps `docs/architecture.md` sections to current implementation status.
 - OpenAI strict runtime loop (Pass A + Pass B) with deterministic outcome resolution.
 - LLM gateway mode switch:
   - `local` direct provider path
-  - `worker` mode via internal `rpg_backend.llm_worker` service (`POST /v2/llm/tasks/{route-intent|render-narration|json-object}`)
+  - `worker` mode via internal `rpg_backend.llm_worker` service (`POST /internal/llm/tasks/{route-intent|render-narration|json-object}`)
   - worker probes remain unversioned (`GET /health`, `GET /ready`)
-  - legacy worker routes `/v1/tasks/*` removed (hard cut, no compatibility alias)
+  - legacy worker routes `/v2/llm/tasks/*` removed (hard cut, no compatibility alias)
 - `fail_forward` mandatory linter validation.
 - OpenAI-only routing policy:
   - `openai`: quality-first failfast on route error/invalid move/low confidence
@@ -33,7 +33,7 @@ This file maps `docs/architecture.md` sections to current implementation status.
 - Story draft/publish/get APIs.
 - Session create/get/step APIs.
 - Sample story pack and canary tests.
-- Deterministic story generator (`/v2/stories/generate`) with lint + bounded regenerate attempts.
+- Deterministic story generator (`/stories/generate`) with lint + bounded regenerate attempts.
 - Eval diagnostics extended (non-hard-gate in phase A):
   - `global_help_route_rate`
   - `non_global_text_route_rate`
@@ -43,9 +43,9 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - `duplicate_beat_title_run_count`
   - `banned_move_hit_count`
 - Observability health endpoints:
-  - `GET /v2/admin/observability/http-health`
-  - `GET /v2/admin/observability/llm-call-health`
-  - `GET /v2/admin/observability/readiness-health`
+  - `GET /admin/observability/http-health`
+  - `GET /admin/observability/llm-call-health`
+  - `GET /admin/observability/readiness-health`
   - all three responses include `window_started_at/window_ended_at` for fixed window boundaries
   - `llm-call-health` group fields are stable (`by_stage`: route/narration/json/unknown, `by_gateway_mode`: local/worker/unknown)
 - Alert loop closure:
@@ -56,6 +56,10 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - backend route constants: `rpg_backend/api/route_paths.py`
   - worker route constants: `rpg_backend/llm_worker/route_paths.py`
   - centralized router registration: `rpg_backend/api/router_registry.py`
+- Database migration guard:
+  - Alembic revision management is the source of truth for schema lifecycle
+  - backend/worker startup fails when DB revision is not at Alembic head
+  - manual migration and rollback flow documented in `docs/db_migration_runbook.md`
 
 ## Planned
 - Promote route-convergence KPI to hard gate after repeated stable runs:

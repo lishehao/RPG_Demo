@@ -26,6 +26,32 @@ kubectl apply -f deploy/k8s/rpg-llm-worker-hpa.yaml
 kubectl apply -f deploy/k8s/rpg-observability-alerts-cronjob.yaml
 ```
 
+Important:
+- `APP_DATABASE_URL` is expected from secret (`deploy/k8s/rpg-backend-secret.example.yaml`), not configmap.
+- Backend/worker do not rely on local SQLite files in Kubernetes.
+
+### Release sequence (manual migration mode)
+
+```bash
+# 1) migrate DB first
+./scripts/k8s_db_migrate_manual.sh head
+
+# 2) deploy backend/worker manifests
+kubectl apply -f deploy/k8s/rpg-backend-deployment.yaml
+kubectl apply -f deploy/k8s/rpg-llm-worker-deployment.yaml
+
+# 3) verify rollout and probes
+./scripts/k8s_verify_rollout.sh
+```
+
+If deployment fails:
+
+```bash
+./scripts/k8s_rollback_last.sh
+```
+
+Only run DB downgrade when incident assessment confirms schema rollback is required.
+
 ### Probe wiring
 
 - `livenessProbe`: `GET /health`

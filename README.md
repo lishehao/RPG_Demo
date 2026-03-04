@@ -12,7 +12,7 @@ Backend-first interactive narrative RPG service with OpenAI-only runtime behavio
 ## Stack
 - Python 3.11+
 - FastAPI + Pydantic v2
-- SQLModel + SQLite
+- SQLModel + PostgreSQL (SQLite remains supported for local dev only)
 - pytest
 
 ## Architecture
@@ -22,7 +22,7 @@ Code is split by responsibilities:
 - `rpg_backend/runtime`: Pass A routing + Pass B deterministic resolution + narration composition
 - `rpg_backend/llm`: OpenAI provider abstraction (`OpenAIProvider`)
 - `rpg_backend/storage`: SQLModel entities + repositories
-- `rpg_backend/api`: REST API (`/v2/*`) + route registry/paths (`router_registry.py`, `route_paths.py`)
+- `rpg_backend/api`: REST API (`/stories|/sessions|/admin`) + route registry/paths (`router_registry.py`, `route_paths.py`)
 
 Internal import policy:
 - use explicit module imports (for example `rpg_backend.generator.pipeline`) instead of wrapper/facade paths.
@@ -30,7 +30,7 @@ Internal import policy:
 Route path policy:
 - backend business routes and probe paths must come from `rpg_backend.api.route_paths`.
 - worker task routes must come from `rpg_backend.llm_worker.route_paths`.
-- tests/scripts should import the same constants/helpers (no ad-hoc `"/v2/..."` literals).
+- tests/scripts should import the same constants/helpers (no ad-hoc hardcoded route literals).
 
 Runtime architecture source of truth:
 - `docs/story_architecture_v3.md`
@@ -43,6 +43,7 @@ Runtime architecture source of truth:
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
+python scripts/db_migrate.py upgrade head
 ```
 
 Run server:
@@ -117,6 +118,35 @@ Environment variables use `APP_` prefix.
 - `APP_READY_LLM_PROBE_ENABLED` default: `true`
 - `APP_READY_LLM_PROBE_CACHE_TTL_SECONDS` default: `30`
 - `APP_READY_LLM_PROBE_TIMEOUT_SECONDS` default: `5`
+
+Production DB policy:
+- production/staging should use external PostgreSQL via `APP_DATABASE_URL` (for example `postgresql+psycopg://...`).
+- backend/worker startup is strict on schema revision and will fail when DB revision is not at Alembic head.
+
+## Database Migration And Rollback
+
+Manual migration commands:
+
+```bash
+python scripts/db_migrate.py current
+python scripts/db_migrate.py heads
+python scripts/db_migrate.py upgrade head
+python scripts/db_migrate.py downgrade <revision>
+```
+
+Kubernetes helper wrappers:
+
+```bash
+./scripts/k8s_db_migrate_manual.sh head
+./scripts/k8s_verify_rollout.sh
+./scripts/k8s_rollback_last.sh
+```
+
+Release order:
+1. run migration (`upgrade head`)
+2. rollout backend/worker
+3. verify `/health` + `/ready`
+4. rollback app (and downgrade DB only if explicitly required)
 
 OpenAI model resolution:
 - `route_model = APP_LLM_OPENAI_ROUTE_MODEL or APP_LLM_OPENAI_NARRATION_MODEL or APP_LLM_OPENAI_MODEL`
@@ -194,9 +224,9 @@ Readiness endpoint contract:
 LLM worker mode:
 - start worker: `uvicorn rpg_backend.llm_worker.main:app --host 0.0.0.0 --port 8100`
 - switch backend: set `APP_LLM_GATEWAY_MODE=worker` and `APP_LLM_WORKER_BASE_URL=http://127.0.0.1:8100`
-- worker task API (hard cut): `POST /v2/llm/tasks/route-intent`, `POST /v2/llm/tasks/render-narration`, `POST /v2/llm/tasks/json-object`
+- worker task API (hard cut): `POST /internal/llm/tasks/route-intent`, `POST /internal/llm/tasks/render-narration`, `POST /internal/llm/tasks/json-object`
 - worker probes stay unversioned: `GET /health`, `GET /ready`
-- legacy `/v1/tasks/*` is removed (no alias/redirect compatibility)
+- legacy `/v2/llm/tasks/*` is removed (no alias/redirect compatibility)
 - worker debug CLI: `python scripts/call_llm_worker.py --task probe`
 
 ## Story Pack and Linter
@@ -239,7 +269,7 @@ Regenerate status:
 ### 1) Create draft story
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/v2/stories \
+curl -sS -X POST http://127.0.0.1:8000/stories \
   -H 'Content-Type: application/json' \
   -d "$(jq -n --arg title 'City Signal Draft' --argjson pack "$(cat sample_data/story_pack_v1.json)" '{title:$title, pack_json:$pack}')"
 ```
@@ -247,7 +277,7 @@ curl -sS -X POST http://127.0.0.1:8000/v2/stories \
 ### 2) Publish story version
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/v2/stories/{story_id}/publish \
+curl -sS -X POST http://127.0.0.1:8000/stories/{story_id}/publish \
   -H 'Content-Type: application/json' \
   -d '{}'
 ```
@@ -255,13 +285,13 @@ curl -sS -X POST http://127.0.0.1:8000/v2/stories/{story_id}/publish \
 ### 3) Read published raw pack
 
 ```bash
-curl -sS "http://127.0.0.1:8000/v2/stories/{story_id}?version=1"
+curl -sS "http://127.0.0.1:8000/stories/{story_id}?version=1"
 ```
 
 ### 3.5) Generate story
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/v2/stories/generate \
+curl -sS -X POST http://127.0.0.1:8000/stories/generate \
   -H 'Content-Type: application/json' \
   -d '{
     "prompt_text":"A city-wide signal breach where a burned-out systems engineer must stabilize a failing reactor while rival factions compete for control.",
@@ -288,7 +318,7 @@ Prompt compile behavior (strict):
   - stage 3: one feedback-guided regeneration if stage 2 validation fails
 - total compile budget is max 3 calls.
 - no local truncation is applied; failures remain strict (`prompt_outline_invalid` / `prompt_spec_invalid`).
-`/v2/stories/generate` returns structured diagnostics under `generation`:
+`/stories/generate` returns structured diagnostics under `generation`:
 - `generation.mode` (`prompt|seed`)
 - `generation.generator_version`, `generation.variant_seed`, `generation.palette_policy`
 - `generation.attempts`, `generation.regenerate_count`, `generation.candidate_parallelism`
@@ -303,7 +333,7 @@ Error responses are unified as:
 ### 4) Create session
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/v2/sessions \
+curl -sS -X POST http://127.0.0.1:8000/sessions \
   -H 'Content-Type: application/json' \
   -d '{"story_id":"{story_id}","version":1}'
 ```
@@ -311,7 +341,7 @@ curl -sS -X POST http://127.0.0.1:8000/v2/sessions \
 ### 5) Step with text input
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/v2/sessions/{session_id}/step \
+curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
   -H 'Content-Type: application/json' \
   -d '{
     "client_action_id":"step-1",
@@ -323,7 +353,7 @@ curl -sS -X POST http://127.0.0.1:8000/v2/sessions/{session_id}/step \
 ### 6) Step with button input
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/v2/sessions/{session_id}/step \
+curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
   -H 'Content-Type: application/json' \
   -d '{
     "client_action_id":"step-2",
@@ -335,7 +365,7 @@ curl -sS -X POST http://127.0.0.1:8000/v2/sessions/{session_id}/step \
 ### 7) Inspect session state
 
 ```bash
-curl -sS "http://127.0.0.1:8000/v2/sessions/{session_id}?dev_mode=true"
+curl -sS "http://127.0.0.1:8000/sessions/{session_id}?dev_mode=true"
 ```
 
 ### 8) Simulate a playthrough transcript
@@ -536,7 +566,7 @@ Important:
 - full gate and exit-code behavior remain unchanged.
 
 ## Idempotency Contract
-`POST /v2/sessions/{session_id}/step` uses `client_action_id`.
+`POST /sessions/{session_id}/step` uses `client_action_id`.
 
 If the same `client_action_id` is submitted again for the same session:
 - returns **HTTP 200**
@@ -564,13 +594,13 @@ Step input tolerance contract:
 - every API response includes `X-Request-ID` for trace correlation.
 
 ## Admin Diagnostics (Session Trace + Feedback)
-Admin diagnostics endpoints are exposed under `/v2/admin` with no auth in this phase.
+Admin diagnostics endpoints are exposed under `/admin` with no auth in this phase.
 Use only in local/internal environments.
 
 ### 1) Timeline replay
 
 ```bash
-curl -sS "http://127.0.0.1:8000/v2/admin/sessions/{session_id}/timeline?limit=200&order=asc"
+curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/timeline?limit=200&order=asc"
 ```
 
 Optional query:
@@ -586,7 +616,7 @@ Event payload shape:
 ### 2) Feedback marker (good/bad)
 
 ```bash
-curl -sS -X POST "http://127.0.0.1:8000/v2/admin/sessions/{session_id}/feedback" \
+curl -sS -X POST "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback" \
   -H 'Content-Type: application/json' \
   -d '{
     "verdict":"bad",
@@ -597,7 +627,7 @@ curl -sS -X POST "http://127.0.0.1:8000/v2/admin/sessions/{session_id}/feedback"
 ```
 
 ```bash
-curl -sS "http://127.0.0.1:8000/v2/admin/sessions/{session_id}/feedback?limit=50"
+curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback?limit=50"
 ```
 
 This lets you attach "not fun" cases directly to session traces for later analysis.
@@ -605,7 +635,7 @@ This lets you attach "not fun" cases directly to session traces for later analys
 ### 3) Runtime error aggregation (5m buckets)
 
 ```bash
-curl -sS "http://127.0.0.1:8000/v2/admin/observability/runtime-errors?window_seconds=300&limit=20"
+curl -sS "http://127.0.0.1:8000/admin/observability/runtime-errors?window_seconds=300&limit=20"
 ```
 
 Optional filters:
@@ -652,12 +682,12 @@ Oncall runbook:
 ### 5) HTTP health aggregation
 
 ```bash
-curl -sS "http://127.0.0.1:8000/v2/admin/observability/http-health?window_seconds=300"
+curl -sS "http://127.0.0.1:8000/admin/observability/http-health?window_seconds=300"
 ```
 
 Optional query:
 - `service=backend|worker`
-- `path_prefix=/v2/sessions`
+- `path_prefix=/sessions`
 - `exclude_paths=/health,/ready`
 
 Response includes:
@@ -667,7 +697,7 @@ Response includes:
 ### 6) LLM call health aggregation
 
 ```bash
-curl -sS "http://127.0.0.1:8000/v2/admin/observability/llm-call-health?window_seconds=300"
+curl -sS "http://127.0.0.1:8000/admin/observability/llm-call-health?window_seconds=300"
 ```
 
 Optional query:
@@ -682,7 +712,7 @@ Response includes:
 ### 7) Readiness health aggregation
 
 ```bash
-curl -sS "http://127.0.0.1:8000/v2/admin/observability/readiness-health?window_seconds=300"
+curl -sS "http://127.0.0.1:8000/admin/observability/readiness-health?window_seconds=300"
 ```
 
 Response includes:

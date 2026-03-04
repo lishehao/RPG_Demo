@@ -1,6 +1,6 @@
 # Prompt Authoring Structure (Current Baseline)
 
-This document explains the current prompt-authoring pipeline used by `/v2/stories/generate` in `prompt` mode.
+This document explains the current prompt-authoring pipeline used by `/stories/generate` in `prompt` mode.
 
 Goal:
 - give reviewers a concrete view of prompt structure and constraints
@@ -43,7 +43,7 @@ Live verification policy for this step:
 ## 1) End-To-End Call Path
 
 Prompt mode execution path:
-1. `POST /v2/stories/generate` receives `prompt_text`
+1. `POST /stories/generate` receives `prompt_text`
 2. `GeneratorPipeline.run(...)`
 3. `GeneratorPipeline.compile_or_plan(...)`
 4. `PromptCompiler.compile(...)`

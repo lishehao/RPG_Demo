@@ -129,7 +129,7 @@ Input → `MoveInvocation`
 - for non-help text, router excludes `global.help_me_progress` from LLM candidate moves.
 - LLM transport can run in two gateway modes:
   - `local`: backend calls OpenAI-compatible endpoint directly
-  - `worker`: backend calls internal LLM worker (`/v2/llm/tasks/*`), worker calls upstream OpenAI-compatible endpoint
+  - `worker`: backend calls internal LLM worker (`/internal/llm/tasks/*`), worker calls upstream OpenAI-compatible endpoint
 
 ### Pass B — Outcome Resolution (Deterministic)
 `MoveInvocation + scene + state` → choose an `Outcome`
@@ -179,16 +179,16 @@ Path governance:
 - router registration is centralized in `rpg_backend/api/router_registry.py`.
 
 ### Stories
-- `POST /v2/stories` — create draft with raw `pack_json`
-- `POST /v2/stories/{story_id}/publish` — publish a version (store raw `pack_json`)
-- `GET /v2/stories/{story_id}?version=...` — returns response object with `pack` = raw `pack_json`
+- `POST /stories` — create draft with raw `pack_json`
+- `POST /stories/{story_id}/publish` — publish a version (store raw `pack_json`)
+- `GET /stories/{story_id}?version=...` — returns response object with `pack` = raw `pack_json`
 
 ### Sessions
-- `POST /v2/sessions` — create session bound to `{story_id, version}`, initialize `state`, set `current_scene_id`
-- `GET /v2/sessions/{session_id}` — fetch current status (optionally `dev_mode` for full state)
+- `POST /sessions` — create session bound to `{story_id, version}`, initialize `state`, set `current_scene_id`
+- `GET /sessions/{session_id}` — fetch current status (optionally `dev_mode` for full state)
 
 ### Step (player action)
-- `POST /v2/sessions/{session_id}/step`
+- `POST /sessions/{session_id}/step`
   - Request:
     - `client_action_id` (idempotency)
     - `input`: `{type:"button"|"text", move_id?, text?}`
@@ -203,23 +203,23 @@ Path governance:
     - `recognized/resolution/ui/debug` are strict typed objects (unknown keys rejected)
     - `debug` key is omitted when `dev_mode=false`
 
-**Step contract:** `POST /v2/sessions/{session_id}/step` may return:
+**Step contract:** `POST /sessions/{session_id}/step` may return:
 - `503` on strict LLM failures (route error, low confidence, invalid move, narration failure)
 - `409` with `error.code=session_conflict_retry` when optimistic CAS detects a concurrent turn advance
 
 ### Admin Diagnostics (no-auth in current phase)
-- `GET /v2/admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed|step_conflicted`)
-- `POST /v2/admin/sessions/{session_id}/feedback` — attach `good|bad` verdict and tags/notes to a session
-- `GET /v2/admin/sessions/{session_id}/feedback` — list feedback markers for a session
-- `GET /v2/admin/observability/runtime-errors` — rolling window 503 aggregation by `error_code|stage|model`
-- `GET /v2/admin/observability/http-health` — HTTP request health (`5xx rate`, `p95`, `top_5xx_paths`) with `window_started_at/window_ended_at`
-- `GET /v2/admin/observability/llm-call-health` — per-call LLM health (`failure_rate`, `p95`) with fixed groups:
+- `GET /admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed|step_conflicted`)
+- `POST /admin/sessions/{session_id}/feedback` — attach `good|bad` verdict and tags/notes to a session
+- `GET /admin/sessions/{session_id}/feedback` — list feedback markers for a session
+- `GET /admin/observability/runtime-errors` — rolling window 503 aggregation by `error_code|stage|model`
+- `GET /admin/observability/http-health` — HTTP request health (`5xx rate`, `p95`, `top_5xx_paths`) with `window_started_at/window_ended_at`
+- `GET /admin/observability/llm-call-health` — per-call LLM health (`failure_rate`, `p95`) with fixed groups:
   - `by_stage`: `route/narration/json/unknown`
   - `by_gateway_mode`: `local/worker/unknown`
-- `GET /v2/admin/observability/readiness-health` — backend/worker readiness failures + streaks with `window_started_at/window_ended_at`
+- `GET /admin/observability/readiness-health` — backend/worker readiness failures + streaks with `window_started_at/window_ended_at`
 
 ### One-click generation (author tooling)
-- `POST /v2/stories/generate`
+- `POST /stories/generate`
   - Request: `{prompt_text?, seed_text?, target_minutes, npc_count, style?, publish?}`
   - Output:
     - `story_id, version?, pack, pack_hash`

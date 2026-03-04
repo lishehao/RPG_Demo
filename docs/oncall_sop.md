@@ -19,9 +19,9 @@ This runbook defines acknowledgement targets, triage flow, and mitigation steps 
 1. Acknowledge the alert in your oncall channel/ticket.
 2. Capture timestamp, signal name, service environment, and request window.
 3. Query observability endpoints for corroboration:
-- `GET /v2/admin/observability/http-health?window_seconds=300`
-- `GET /v2/admin/observability/llm-call-health?window_seconds=300`
-- `GET /v2/admin/observability/readiness-health?window_seconds=300`
+- `GET /admin/observability/http-health?window_seconds=300`
+- `GET /admin/observability/llm-call-health?window_seconds=300`
+- `GET /admin/observability/readiness-health?window_seconds=300`
 4. Check latest deploy/config changes in the last 30 minutes.
 5. Start mitigation if threshold is still breached.
 
@@ -56,7 +56,7 @@ Signal criteria:
 - worker failure rate `> APP_OBS_ALERT_WORKER_FAIL_RATE`.
 
 Immediate checks:
-1. Query `GET /v2/admin/observability/llm-call-health?window_seconds=300&gateway_mode=worker`.
+1. Query `GET /admin/observability/llm-call-health?window_seconds=300&gateway_mode=worker`.
 2. Inspect worker logs for `llm_worker_task_failed` grouped by `error_code`.
 3. Verify worker `/ready` and backend `/ready`.
 
@@ -84,7 +84,7 @@ Signal criteria:
 - per-call P95 latency `> APP_OBS_ALERT_LLM_CALL_P95_MS` (default `3000ms`).
 
 Immediate checks:
-1. Query `GET /v2/admin/observability/llm-call-health?window_seconds=300`.
+1. Query `GET /admin/observability/llm-call-health?window_seconds=300`.
 2. Split by stage:
 - `...&stage=route`
 - `...&stage=narration`
@@ -113,12 +113,12 @@ Signal criteria:
 - 5xx rate `> APP_OBS_ALERT_HTTP_5XX_RATE`.
 
 Immediate checks:
-1. Query `GET /v2/admin/observability/http-health?window_seconds=300`.
+1. Query `GET /admin/observability/http-health?window_seconds=300`.
 2. Inspect `top_5xx_paths`.
-3. Cross-check runtime buckets: `GET /v2/admin/observability/runtime-errors?window_seconds=300`.
+3. Cross-check runtime buckets: `GET /admin/observability/runtime-errors?window_seconds=300`.
 
 Likely causes:
-- Runtime strict failures concentrated on `/v2/sessions/*/step`.
+- Runtime strict failures concentrated on `/sessions/*/step`.
 - Readiness failures (`/ready`) causing infra churn.
 - Worker task path failures in worker mode.
 
