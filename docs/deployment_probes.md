@@ -29,6 +29,14 @@ kubectl apply -f deploy/k8s/rpg-observability-alerts-cronjob.yaml
 Important:
 - `APP_DATABASE_URL` is expected from secret (`deploy/k8s/rpg-backend-secret.example.yaml`), not configmap.
 - Backend/worker do not rely on local SQLite files in Kubernetes.
+- Secret should include auth/runtime critical keys:
+  - `APP_AUTH_JWT_SECRET`
+  - `APP_ADMIN_BOOTSTRAP_EMAIL`
+  - `APP_ADMIN_BOOTSTRAP_PASSWORD`
+  - `APP_INTERNAL_WORKER_TOKEN`
+  - `APP_LLM_OPENAI_BASE_URL`
+  - `APP_LLM_OPENAI_API_KEY`
+  - `APP_OBS_ALERT_WEBHOOK_URL`
 
 ### Release sequence (manual migration mode)
 

@@ -7,8 +7,13 @@ This file maps `docs/architecture.md` sections to current implementation status.
 - LLM gateway mode switch:
   - `local` direct provider path
   - `worker` mode via internal `rpg_backend.llm_worker` service (`POST /internal/llm/tasks/{route-intent|render-narration|json-object}`)
+  - worker task calls require `X-Internal-Worker-Token`
   - worker probes remain unversioned (`GET /health`, `GET /ready`)
   - legacy worker routes `/v2/llm/tasks/*` removed (hard cut, no compatibility alias)
+- Auth and account baseline:
+  - `POST /admin/auth/login` issues JWT access token from bootstrap admin account
+  - all business/admin routes require Bearer auth; only `/health`, `/ready`, `/admin/auth/login` are anonymous
+  - `/admin/users` and `/admin/users/{user_id}` expose safe admin profile fields only
 - `fail_forward` mandatory linter validation.
 - OpenAI-only routing policy:
   - `openai`: quality-first failfast on route error/invalid move/low confidence

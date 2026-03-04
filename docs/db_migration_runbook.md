@@ -5,6 +5,11 @@ This runbook defines the manual migration workflow for backend/worker services.
 ## Preconditions
 
 - `APP_DATABASE_URL` points to the target PostgreSQL database.
+- For production rollout, secret set also includes auth/runtime keys:
+  - `APP_AUTH_JWT_SECRET`
+  - `APP_ADMIN_BOOTSTRAP_EMAIL`
+  - `APP_ADMIN_BOOTSTRAP_PASSWORD`
+  - `APP_INTERNAL_WORKER_TOKEN`
 - Current deploy image contains the latest Alembic files.
 - You can run repository scripts from the deploy environment.
 

@@ -123,6 +123,14 @@ Production DB policy:
 - production/staging should use external PostgreSQL via `APP_DATABASE_URL` (for example `postgresql+psycopg://...`).
 - backend/worker startup is strict on schema revision and will fail when DB revision is not at Alembic head.
 
+Production secret requirements (`APP_ENV=prod`):
+- `APP_DATABASE_URL` must be non-sqlite.
+- `APP_LLM_OPENAI_BASE_URL`, `APP_LLM_OPENAI_API_KEY`, and at least one model key must be set.
+- `APP_OBS_ALERT_WEBHOOK_URL` must be set.
+- `APP_AUTH_JWT_SECRET` must be set (not default dev value).
+- `APP_ADMIN_BOOTSTRAP_EMAIL`, `APP_ADMIN_BOOTSTRAP_PASSWORD` must be set.
+- `APP_INTERNAL_WORKER_TOKEN` must be set.
+
 ## Database Migration And Rollback
 
 Manual migration commands:
@@ -225,6 +233,7 @@ LLM worker mode:
 - start worker: `uvicorn rpg_backend.llm_worker.main:app --host 0.0.0.0 --port 8100`
 - switch backend: set `APP_LLM_GATEWAY_MODE=worker` and `APP_LLM_WORKER_BASE_URL=http://127.0.0.1:8100`
 - worker task API (hard cut): `POST /internal/llm/tasks/route-intent`, `POST /internal/llm/tasks/render-narration`, `POST /internal/llm/tasks/json-object`
+- worker task API requires header: `X-Internal-Worker-Token: ${APP_INTERNAL_WORKER_TOKEN}`
 - worker probes stay unversioned: `GET /health`, `GET /ready`
 - legacy `/v2/llm/tasks/*` is removed (no alias/redirect compatibility)
 - worker debug CLI: `python scripts/call_llm_worker.py --task probe`
@@ -266,10 +275,21 @@ Regenerate status:
 
 ## API Flow (curl)
 
+All business/admin routes require Bearer token.
+Login first:
+
+```bash
+AUTH_TOKEN=$(curl -sS -X POST http://127.0.0.1:8000/admin/auth/login \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"${APP_ADMIN_BOOTSTRAP_EMAIL}\",\"password\":\"${APP_ADMIN_BOOTSTRAP_PASSWORD}\"}" | jq -r '.access_token')
+AUTH_HEADER="Authorization: Bearer ${AUTH_TOKEN}"
+```
+
 ### 1) Create draft story
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/stories \
+  -H "${AUTH_HEADER}" \
   -H 'Content-Type: application/json' \
   -d "$(jq -n --arg title 'City Signal Draft' --argjson pack "$(cat sample_data/story_pack_v1.json)" '{title:$title, pack_json:$pack}')"
 ```
@@ -278,6 +298,7 @@ curl -sS -X POST http://127.0.0.1:8000/stories \
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/stories/{story_id}/publish \
+  -H "${AUTH_HEADER}" \
   -H 'Content-Type: application/json' \
   -d '{}'
 ```
@@ -285,13 +306,15 @@ curl -sS -X POST http://127.0.0.1:8000/stories/{story_id}/publish \
 ### 3) Read published raw pack
 
 ```bash
-curl -sS "http://127.0.0.1:8000/stories/{story_id}?version=1"
+curl -sS "http://127.0.0.1:8000/stories/{story_id}?version=1" \
+  -H "${AUTH_HEADER}"
 ```
 
 ### 3.5) Generate story
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/stories/generate \
+  -H "${AUTH_HEADER}" \
   -H 'Content-Type: application/json' \
   -d '{
     "prompt_text":"A city-wide signal breach where a burned-out systems engineer must stabilize a failing reactor while rival factions compete for control.",
@@ -334,6 +357,7 @@ Error responses are unified as:
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/sessions \
+  -H "${AUTH_HEADER}" \
   -H 'Content-Type: application/json' \
   -d '{"story_id":"{story_id}","version":1}'
 ```
@@ -342,6 +366,7 @@ curl -sS -X POST http://127.0.0.1:8000/sessions \
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
+  -H "${AUTH_HEADER}" \
   -H 'Content-Type: application/json' \
   -d '{
     "client_action_id":"step-1",
@@ -354,6 +379,7 @@ curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
+  -H "${AUTH_HEADER}" \
   -H 'Content-Type: application/json' \
   -d '{
     "client_action_id":"step-2",
@@ -365,7 +391,8 @@ curl -sS -X POST http://127.0.0.1:8000/sessions/{session_id}/step \
 ### 7) Inspect session state
 
 ```bash
-curl -sS "http://127.0.0.1:8000/sessions/{session_id}?dev_mode=true"
+curl -sS "http://127.0.0.1:8000/sessions/{session_id}?dev_mode=true" \
+  -H "${AUTH_HEADER}"
 ```
 
 ### 8) Simulate a playthrough transcript
@@ -594,13 +621,26 @@ Step input tolerance contract:
 - every API response includes `X-Request-ID` for trace correlation.
 
 ## Admin Diagnostics (Session Trace + Feedback)
-Admin diagnostics endpoints are exposed under `/admin` with no auth in this phase.
+Admin diagnostics endpoints are exposed under `/admin` and require Bearer auth.
 Use only in local/internal environments.
+
+### 0) Admin user info
+
+```bash
+curl -sS "http://127.0.0.1:8000/admin/users?limit=100" \
+  -H "${AUTH_HEADER}"
+```
+
+```bash
+curl -sS "http://127.0.0.1:8000/admin/users/{user_id}" \
+  -H "${AUTH_HEADER}"
+```
 
 ### 1) Timeline replay
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/timeline?limit=200&order=asc"
+curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/timeline?limit=200&order=asc" \
+  -H "${AUTH_HEADER}"
 ```
 
 Optional query:
@@ -617,6 +657,7 @@ Event payload shape:
 
 ```bash
 curl -sS -X POST "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback" \
+  -H "${AUTH_HEADER}" \
   -H 'Content-Type: application/json' \
   -d '{
     "verdict":"bad",
@@ -627,7 +668,8 @@ curl -sS -X POST "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback" \
 ```
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback?limit=50"
+curl -sS "http://127.0.0.1:8000/admin/sessions/{session_id}/feedback?limit=50" \
+  -H "${AUTH_HEADER}"
 ```
 
 This lets you attach "not fun" cases directly to session traces for later analysis.
@@ -635,7 +677,8 @@ This lets you attach "not fun" cases directly to session traces for later analys
 ### 3) Runtime error aggregation (5m buckets)
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/observability/runtime-errors?window_seconds=300&limit=20"
+curl -sS "http://127.0.0.1:8000/admin/observability/runtime-errors?window_seconds=300&limit=20" \
+  -H "${AUTH_HEADER}"
 ```
 
 Optional filters:
@@ -682,7 +725,8 @@ Oncall runbook:
 ### 5) HTTP health aggregation
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/observability/http-health?window_seconds=300"
+curl -sS "http://127.0.0.1:8000/admin/observability/http-health?window_seconds=300" \
+  -H "${AUTH_HEADER}"
 ```
 
 Optional query:
@@ -697,7 +741,8 @@ Response includes:
 ### 6) LLM call health aggregation
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/observability/llm-call-health?window_seconds=300"
+curl -sS "http://127.0.0.1:8000/admin/observability/llm-call-health?window_seconds=300" \
+  -H "${AUTH_HEADER}"
 ```
 
 Optional query:
@@ -712,7 +757,8 @@ Response includes:
 ### 7) Readiness health aggregation
 
 ```bash
-curl -sS "http://127.0.0.1:8000/admin/observability/readiness-health?window_seconds=300"
+curl -sS "http://127.0.0.1:8000/admin/observability/readiness-health?window_seconds=300" \
+  -H "${AUTH_HEADER}"
 ```
 
 Response includes:

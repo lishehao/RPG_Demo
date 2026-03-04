@@ -22,6 +22,7 @@ This runbook defines acknowledgement targets, triage flow, and mitigation steps 
 - `GET /admin/observability/http-health?window_seconds=300`
 - `GET /admin/observability/llm-call-health?window_seconds=300`
 - `GET /admin/observability/readiness-health?window_seconds=300`
+   - all `/admin/*` queries require Bearer token from `POST /admin/auth/login`.
 4. Check latest deploy/config changes in the last 30 minutes.
 5. Start mitigation if threshold is still breached.
 

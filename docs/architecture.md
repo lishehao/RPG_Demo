@@ -171,12 +171,17 @@ Narration renders `narration_slots` into player-facing text using a strict templ
 
 ---
 
-## 6. API Surface (v3 recommendation)
+## 6. API Surface
 
 Path governance:
 - backend paths are centralized in `rpg_backend/api/route_paths.py`.
 - worker task paths are centralized in `rpg_backend/llm_worker/route_paths.py`.
 - router registration is centralized in `rpg_backend/api/router_registry.py`.
+
+Auth governance:
+- all business/admin routes require Bearer token.
+- anonymous routes are limited to: `POST /admin/auth/login`, `GET /health`, `GET /ready`.
+- worker internal task routes require `X-Internal-Worker-Token`.
 
 ### Stories
 - `POST /stories` — create draft with raw `pack_json`
@@ -207,7 +212,12 @@ Path governance:
 - `503` on strict LLM failures (route error, low confidence, invalid move, narration failure)
 - `409` with `error.code=session_conflict_retry` when optimistic CAS detects a concurrent turn advance
 
-### Admin Diagnostics (no-auth in current phase)
+### Admin Auth & User Management
+- `POST /admin/auth/login` — issue JWT access token from `{email,password}`
+- `GET /admin/users` — list admin users
+- `GET /admin/users/{user_id}` — fetch admin user profile
+
+### Admin Diagnostics
 - `GET /admin/sessions/{session_id}/timeline` — structured replay events (`step_started|step_succeeded|step_failed|step_replayed|step_conflicted`)
 - `POST /admin/sessions/{session_id}/feedback` — attach `good|bad` verdict and tags/notes to a session
 - `GET /admin/sessions/{session_id}/feedback` — list feedback markers for a session

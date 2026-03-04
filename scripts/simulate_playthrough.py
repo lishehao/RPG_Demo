@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 import urllib.error
@@ -11,7 +12,7 @@ import urllib.request
 from typing import Any
 
 from rpg_backend.domain.pack_schema import StoryPack
-from rpg_backend.api.route_paths import session_path, session_step_path, sessions_path
+from rpg_backend.api.route_paths import admin_auth_login_path, session_path, session_step_path, sessions_path
 from rpg_backend.generator.versioning import compute_pack_hash
 from rpg_backend.llm.base import LLMProviderConfigError
 from rpg_backend.llm.factory import get_llm_provider
@@ -42,9 +43,18 @@ CONTEXT_TEXTS = (
 )
 
 
-def _request_json(method: str, url: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def _request_json(
+    method: str,
+    url: str,
+    payload: dict[str, Any] | None = None,
+    *,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     headers = {"Content-Type": "application/json"}
+    token = (access_token or "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url=url, data=data, headers=headers, method=method)
 
     try:
@@ -59,21 +69,45 @@ def _request_json(method: str, url: str, payload: dict[str, Any] | None = None) 
         raise RuntimeError(f"Network error on {method} {url}: {exc.reason}") from exc
 
 
-def _create_session(base_url: str, story_id: str, version: int) -> dict[str, Any]:
+def _create_session(base_url: str, story_id: str, version: int, *, access_token: str | None) -> dict[str, Any]:
     return _request_json(
         "POST",
         f"{base_url}{sessions_path()}",
         {"story_id": story_id, "version": version},
+        access_token=access_token,
     )
 
 
-def _step_session(base_url: str, session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    return _request_json("POST", f"{base_url}{session_step_path(session_id)}", payload)
+def _step_session(
+    base_url: str,
+    session_id: str,
+    payload: dict[str, Any],
+    *,
+    access_token: str | None,
+) -> dict[str, Any]:
+    return _request_json(
+        "POST",
+        f"{base_url}{session_step_path(session_id)}",
+        payload,
+        access_token=access_token,
+    )
 
 
-def _get_session(base_url: str, session_id: str, dev_mode: bool) -> dict[str, Any]:
+def _get_session(base_url: str, session_id: str, dev_mode: bool, *, access_token: str | None) -> dict[str, Any]:
     query = urllib.parse.urlencode({"dev_mode": str(dev_mode).lower()})
-    return _request_json("GET", f"{base_url}{session_path(session_id)}?{query}")
+    return _request_json("GET", f"{base_url}{session_path(session_id)}?{query}", access_token=access_token)
+
+
+def _login_and_get_access_token(base_url: str, *, email: str, password: str) -> str:
+    response = _request_json(
+        "POST",
+        f"{base_url}{admin_auth_login_path()}",
+        {"email": email, "password": password},
+    )
+    token = str(response.get("access_token") or "").strip()
+    if not token:
+        raise RuntimeError("login succeeded but access_token missing")
+    return token
 
 
 def _build_action_input(
@@ -293,13 +327,14 @@ def run_simulation(
     strategy_seed: int | None = None,
     metadata: dict[str, Any] | None = None,
     dev_mode: bool,
+    access_token: str | None,
 ) -> dict[str, Any]:
     rng = random.Random(strategy_seed)
     metadata_payload = metadata or {}
     pack_hash = metadata_payload.get("pack_hash")
     generator_version = metadata_payload.get("generator_version")
     variant_seed = metadata_payload.get("variant_seed")
-    created = _create_session(base_url, story_id, version)
+    created = _create_session(base_url, story_id, version, access_token=access_token)
     session_id = created["session_id"]
     transcript: list[dict[str, Any]] = []
     ui_moves: list[dict[str, Any]] = []
@@ -311,9 +346,9 @@ def run_simulation(
             "input": action,
             "dev_mode": dev_mode,
         }
-        step = _step_session(base_url, session_id, payload)
+        step = _step_session(base_url, session_id, payload, access_token=access_token)
         ui_moves = step.get("ui", {}).get("moves", [])
-        session = _get_session(base_url, session_id, dev_mode=True)
+        session = _get_session(base_url, session_id, dev_mode=True, access_token=access_token)
         transcript.append(
             {
                 "step": step_index,
@@ -333,7 +368,7 @@ def run_simulation(
         if session["ended"]:
             break
 
-    final_state = _get_session(base_url, session_id, dev_mode=True)
+    final_state = _get_session(base_url, session_id, dev_mode=True, access_token=access_token)
     return {
         "mode": "api",
         "strategy": strategy,
@@ -370,6 +405,9 @@ def main() -> int:
     parser.add_argument("--pack-hash", help="Optional metadata override for pack hash")
     parser.add_argument("--generator-version", help="Optional metadata override for generator version")
     parser.add_argument("--variant-seed", help="Optional metadata override for variant seed")
+    parser.add_argument("--access-token", help="Bearer access token for protected API routes")
+    parser.add_argument("--auth-email", help="If set with --auth-password, auto-login to get access token")
+    parser.add_argument("--auth-password", help="Password for --auth-email")
     args = parser.parse_args()
     metadata = {
         "pack_hash": args.pack_hash,
@@ -392,6 +430,13 @@ def main() -> int:
         else:
             if not args.story_id or not args.version:
                 raise RuntimeError("story-id and version are required when pack-file is not provided")
+            access_token = args.access_token or os.getenv("APP_AUTH_ACCESS_TOKEN")
+            if not access_token and args.auth_email and args.auth_password:
+                access_token = _login_and_get_access_token(
+                    args.base_url.rstrip("/"),
+                    email=args.auth_email,
+                    password=args.auth_password,
+                )
             report = run_simulation(
                 base_url=args.base_url.rstrip("/"),
                 story_id=args.story_id,
@@ -401,6 +446,7 @@ def main() -> int:
                 strategy_seed=args.strategy_seed,
                 metadata=metadata,
                 dev_mode=args.dev_mode,
+                access_token=access_token,
             )
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
