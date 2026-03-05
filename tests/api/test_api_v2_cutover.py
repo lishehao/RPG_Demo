@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from tests.helpers.route_paths import (
     HEALTH_PATH,
-    LEGACY_V2_ADMIN_PREFIX,
-    LEGACY_V2_SESSIONS_PREFIX,
-    LEGACY_V2_STORIES_PREFIX,
 )
+
+LEGACY_V2_STORIES_PREFIX = "/v2/stories"
+LEGACY_V2_SESSIONS_PREFIX = "/v2/sessions"
+LEGACY_V2_ADMIN_PREFIX = "/v2/admin"
 
 
 def _assert_not_found_envelope(response) -> None:

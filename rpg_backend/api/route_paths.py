@@ -11,10 +11,6 @@ API_ADMIN_SESSIONS_PREFIX = "/admin/sessions"
 API_ADMIN_USERS_PREFIX = "/admin/users"
 API_ADMIN_OBSERVABILITY_PREFIX = "/admin/observability"
 
-LEGACY_V2_STORIES_PREFIX = "/v2/stories"
-LEGACY_V2_SESSIONS_PREFIX = "/v2/sessions"
-LEGACY_V2_ADMIN_PREFIX = "/v2/admin"
-
 
 def stories_path() -> str:
     return API_STORIES_PREFIX

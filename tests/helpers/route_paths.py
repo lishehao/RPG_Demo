@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from rpg_backend.api.route_paths import (
     HEALTH_PATH,
-    LEGACY_V2_ADMIN_PREFIX,
-    LEGACY_V2_SESSIONS_PREFIX,
-    LEGACY_V2_STORIES_PREFIX,
     READY_PATH,
     admin_auth_login_path,
     admin_http_health_path,
@@ -26,9 +23,6 @@ from rpg_backend.api.route_paths import (
 
 __all__ = [
     "HEALTH_PATH",
-    "LEGACY_V2_ADMIN_PREFIX",
-    "LEGACY_V2_SESSIONS_PREFIX",
-    "LEGACY_V2_STORIES_PREFIX",
     "READY_PATH",
     "admin_auth_login_path",
     "admin_http_health_path",
