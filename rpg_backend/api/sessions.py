@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError
 from rpg_backend.api.route_paths import API_SESSIONS_PREFIX
@@ -19,11 +19,14 @@ from rpg_backend.llm.base import LLMProviderConfigError
 from rpg_backend.llm.factory import get_llm_provider
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.security.deps import require_current_user
+from rpg_backend.infrastructure.db.async_session import get_async_session
+from rpg_backend.infrastructure.repositories.sessions_async import (
+    create_session,
+    get_session as get_session_record,
+)
+from rpg_backend.infrastructure.repositories.stories_async import get_story, get_story_version
 from rpg_backend.runtime.service import RuntimeService
 from rpg_backend.runtime.session_step.orchestrator import process_step_request
-from rpg_backend.storage.engine import get_session
-from rpg_backend.storage.repositories.sessions import create_session, get_session as get_session_record
-from rpg_backend.storage.repositories.stories import get_story, get_story_version
 
 router = APIRouter(
     prefix=API_SESSIONS_PREFIX,
@@ -55,12 +58,15 @@ def _build_runtime_or_503() -> RuntimeService:
 
 
 @router.post("", response_model=SessionCreateResponse)
-def create_session_endpoint(payload: SessionCreateRequest, db: Session = Depends(get_session)) -> SessionCreateResponse:
-    story = get_story(db, payload.story_id)
+async def create_session_endpoint(
+    payload: SessionCreateRequest,
+    db: AsyncSession = Depends(get_async_session),
+) -> SessionCreateResponse:
+    story = await get_story(db, payload.story_id)
     if story is None:
         raise ApiError(status_code=404, code="not_found", message="story not found", retryable=False)
 
-    story_version = get_story_version(db, payload.story_id, payload.version)
+    story_version = await get_story_version(db, payload.story_id, payload.version)
     if story_version is None:
         raise ApiError(status_code=404, code="not_found", message="story version not found", retryable=False)
 
@@ -68,7 +74,7 @@ def create_session_endpoint(payload: SessionCreateRequest, db: Session = Depends
     runtime = _build_runtime_or_503()
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
-    session = create_session(
+    session = await create_session(
         db,
         story_id=payload.story_id,
         version=payload.version,
@@ -88,12 +94,12 @@ def create_session_endpoint(payload: SessionCreateRequest, db: Session = Depends
 
 
 @router.get("/{session_id}", response_model=SessionGetResponse)
-def get_session_endpoint(
+async def get_session_endpoint(
     session_id: str,
     dev_mode: bool = Query(default=False),
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> SessionGetResponse:
-    session = get_session_record(db, session_id)
+    session = await get_session_record(db, session_id)
     if session is None:
         raise ApiError(status_code=404, code="not_found", message="session not found", retryable=False)
 
@@ -108,14 +114,14 @@ def get_session_endpoint(
 
 
 @router.post("/{session_id}/step", response_model=SessionStepResponse, response_model_exclude_none=True)
-def step_session_endpoint(
+async def step_session_endpoint(
     session_id: str,
     payload: SessionStepRequest,
     request: Request,
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> SessionStepResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
-    return process_step_request(
+    return await process_step_request(
         db=db,
         session_id=session_id,
         payload=payload,

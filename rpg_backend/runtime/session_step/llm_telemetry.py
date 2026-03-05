@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from rpg_backend.infrastructure.repositories.observability_async import save_llm_call_event
 from rpg_backend.runtime.errors import RuntimeNarrationError, RuntimeRouteError
-from rpg_backend.storage.repositories.observability import save_llm_call_event
 
 
 def provider_name() -> str:
@@ -37,9 +37,9 @@ def llm_runtime_failure_detail(exc: RuntimeRouteError | RuntimeNarrationError) -
     return detail
 
 
-def record_llm_failure_event(
+async def record_llm_failure_event(
     *,
-    db: Session,
+    db: AsyncSession,
     session_id: str,
     turn_index_expected: int,
     request_id: str,
@@ -57,7 +57,7 @@ def record_llm_failure_event(
     gateway_mode = str(exc.gateway_mode or provider_gateway_mode or "unknown")
     llm_duration_ms = int(exc.llm_duration_ms) if exc.llm_duration_ms is not None else fallback_duration_ms
 
-    save_llm_call_event(
+    await save_llm_call_event(
         db,
         session_id=session_id,
         turn_index=turn_index_expected,
@@ -72,9 +72,9 @@ def record_llm_failure_event(
     return llm_duration_ms, gateway_mode, failed_stage_model
 
 
-def record_llm_success_events(
+async def record_llm_success_events(
     *,
-    db: Session,
+    db: AsyncSession,
     session_id: str,
     turn_index_expected: int,
     request_id: str,
@@ -91,7 +91,7 @@ def record_llm_success_events(
     )
 
     if isinstance(route_llm_duration_ms, int):
-        save_llm_call_event(
+        await save_llm_call_event(
             db,
             session_id=session_id,
             turn_index=turn_index_expected,
@@ -104,7 +104,7 @@ def record_llm_success_events(
             request_id=request_id,
         )
     if isinstance(narration_llm_duration_ms, int):
-        save_llm_call_event(
+        await save_llm_call_event(
             db,
             session_id=session_id,
             turn_index=turn_index_expected,

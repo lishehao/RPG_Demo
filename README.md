@@ -75,6 +75,9 @@ curl "http://127.0.0.1:8000/ready?refresh=true"
 Environment variables use `APP_` prefix.
 
 - `APP_DATABASE_URL` default: `sqlite:///./app.db`
+- `APP_DB_ASYNC_POOL_SIZE` default: `20`
+- `APP_DB_ASYNC_MAX_OVERFLOW` default: `20`
+- `APP_DB_ASYNC_POOL_TIMEOUT_SECONDS` default: `30`
 - `APP_ROUTING_CONFIDENCE_THRESHOLD` default: `0.55`
 - `APP_LLM_OPENAI_BASE_URL` required
 - `APP_LLM_OPENAI_API_KEY` required
@@ -131,6 +134,7 @@ Environment variables use `APP_` prefix.
 Production DB policy:
 - production/staging should use external PostgreSQL via `APP_DATABASE_URL` (for example `postgresql+psycopg://...`).
 - backend/worker startup is strict on schema revision and will fail when DB revision is not at Alembic head.
+- runtime hot paths use async SQLAlchemy/SQLModel sessions (`AsyncSession`) for API, worker quota, readiness, and observability writes.
 
 Production secret requirements (`APP_ENV=prod`):
 - `APP_DATABASE_URL` must be non-sqlite.

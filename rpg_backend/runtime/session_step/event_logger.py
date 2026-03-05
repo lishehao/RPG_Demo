@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from rpg_backend.infrastructure.repositories.runtime_events_async import save_runtime_event
 from rpg_backend.observability.logging import log_event
 from rpg_backend.runtime.errors import RuntimeNarrationError, RuntimeRouteError
-from rpg_backend.storage.repositories.runtime_events import save_runtime_event
 
 
-def emit_step_started_event(
+async def emit_step_started_event(
     *,
-    db: Session,
+    db: AsyncSession,
     session_id: str,
     story_id: str,
     turn_index_expected: int,
@@ -25,7 +25,7 @@ def emit_step_started_event(
     narration_model: str | None,
     input_log_fields: dict[str, Any],
 ) -> None:
-    save_runtime_event(
+    await save_runtime_event(
         db,
         session_id=session_id,
         turn_index=turn_index_expected,
@@ -59,9 +59,9 @@ def emit_step_started_event(
     )
 
 
-def emit_step_replayed_event(
+async def emit_step_replayed_event(
     *,
-    db: Session,
+    db: AsyncSession,
     session_id: str,
     story_id: str,
     turn_index: int,
@@ -70,7 +70,7 @@ def emit_step_replayed_event(
     request_id: str,
     note: str,
 ) -> None:
-    save_runtime_event(
+    await save_runtime_event(
         db,
         session_id=session_id,
         turn_index=turn_index,
@@ -93,9 +93,9 @@ def emit_step_replayed_event(
     )
 
 
-def emit_step_conflicted_event(
+async def emit_step_conflicted_event(
     *,
-    db: Session,
+    db: AsyncSession,
     session_id: str,
     story_id: str,
     turn_index_expected: int,
@@ -107,7 +107,7 @@ def emit_step_conflicted_event(
     input_log_fields: dict[str, Any],
     error_code: str,
 ) -> None:
-    save_runtime_event(
+    await save_runtime_event(
         db,
         session_id=session_id,
         turn_index=turn_index_expected,
@@ -139,9 +139,9 @@ def emit_step_conflicted_event(
     )
 
 
-def emit_step_failed_event(
+async def emit_step_failed_event(
     *,
-    db: Session,
+    db: AsyncSession,
     session_id: str,
     story_id: str,
     turn_index_expected: int,
@@ -157,7 +157,7 @@ def emit_step_failed_event(
     exc: RuntimeRouteError | RuntimeNarrationError,
     input_log_fields: dict[str, Any],
 ) -> None:
-    save_runtime_event(
+    await save_runtime_event(
         db,
         session_id=session_id,
         turn_index=turn_index_expected,
@@ -204,9 +204,9 @@ def emit_step_failed_event(
     )
 
 
-def emit_step_succeeded_event(
+async def emit_step_succeeded_event(
     *,
-    db: Session,
+    db: AsyncSession,
     session_id: str,
     story_id: str,
     turn_index_applied: int,
@@ -225,7 +225,7 @@ def emit_step_succeeded_event(
     provider_name: str,
     input_log_fields: dict[str, Any],
 ) -> None:
-    save_runtime_event(
+    await save_runtime_event(
         db,
         session_id=session_id,
         turn_index=turn_index_applied,

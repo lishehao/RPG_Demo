@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError
 from rpg_backend.api.route_paths import API_ADMIN_SESSIONS_PREFIX
@@ -14,13 +14,16 @@ from rpg_backend.api.schemas import (
     SessionFeedbackItem,
     SessionFeedbackListResponse,
 )
+from rpg_backend.infrastructure.db.async_session import get_async_session
+from rpg_backend.infrastructure.repositories.runtime_events_async import list_runtime_events
+from rpg_backend.infrastructure.repositories.session_feedback_async import (
+    create_session_feedback,
+    list_session_feedback,
+)
+from rpg_backend.infrastructure.repositories.sessions_async import get_session as get_session_record
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import log_event
 from rpg_backend.security.deps import require_admin
-from rpg_backend.storage.engine import get_session
-from rpg_backend.storage.repositories.runtime_events import list_runtime_events
-from rpg_backend.storage.repositories.session_feedback import create_session_feedback, list_session_feedback
-from rpg_backend.storage.repositories.sessions import get_session as get_session_record
 
 router = APIRouter(
     prefix=API_ADMIN_SESSIONS_PREFIX,
@@ -29,23 +32,23 @@ router = APIRouter(
 )
 
 
-def _require_session(db: Session, session_id: str):
-    session = get_session_record(db, session_id)
+async def _require_session(db: AsyncSession, session_id: str):
+    session = await get_session_record(db, session_id)
     if session is None:
         raise ApiError(status_code=404, code="not_found", message="session not found", retryable=False)
     return session
 
 
 @router.get("/{session_id}/timeline", response_model=AdminSessionTimelineResponse)
-def get_session_timeline_endpoint(
+async def get_session_timeline_endpoint(
     session_id: str,
     limit: int = Query(default=200, ge=1, le=1000),
     order: Literal["asc", "desc"] = Query(default="asc"),
     event_type: str | None = Query(default=None),
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> AdminSessionTimelineResponse:
-    _require_session(db, session_id)
-    events = list_runtime_events(
+    await _require_session(db, session_id)
+    events = await list_runtime_events(
         db,
         session_id=session_id,
         limit=limit,
@@ -68,15 +71,15 @@ def get_session_timeline_endpoint(
 
 
 @router.post("/{session_id}/feedback", response_model=SessionFeedbackItem)
-def create_session_feedback_endpoint(
+async def create_session_feedback_endpoint(
     session_id: str,
     payload: SessionFeedbackCreateRequest,
     request: Request,
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> SessionFeedbackItem:
-    session = _require_session(db, session_id)
+    session = await _require_session(db, session_id)
     request_id = getattr(request.state, "request_id", None) or get_request_id()
-    feedback = create_session_feedback(
+    feedback = await create_session_feedback(
         db,
         session_id=session.id,
         story_id=session.story_id,
@@ -111,13 +114,13 @@ def create_session_feedback_endpoint(
 
 
 @router.get("/{session_id}/feedback", response_model=SessionFeedbackListResponse)
-def list_session_feedback_endpoint(
+async def list_session_feedback_endpoint(
     session_id: str,
     limit: int = Query(default=50, ge=1, le=200),
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> SessionFeedbackListResponse:
-    _require_session(db, session_id)
-    items = list_session_feedback(db, session_id=session_id, limit=limit)
+    await _require_session(db, session_id)
+    items = await list_session_feedback(db, session_id=session_id, limit=limit)
     return SessionFeedbackListResponse(
         session_id=session_id,
         items=[

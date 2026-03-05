@@ -18,7 +18,7 @@ async def lifespan(_: FastAPI):
     configure_logging()
     assert_schema_current()
     assert_production_secret_requirements()
-    ensure_bootstrap_admin()
+    await ensure_bootstrap_admin()
     yield
 
 

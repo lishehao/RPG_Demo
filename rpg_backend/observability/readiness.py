@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import copy
+import inspect
 import threading
 import time
 from datetime import UTC, datetime
@@ -8,15 +10,16 @@ from typing import Any
 from urllib.parse import urlparse
 
 from sqlalchemy import text
-from sqlmodel import Session as DBSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.config.settings import get_settings
+from rpg_backend.infrastructure.db.async_engine import async_engine
 from rpg_backend.llm.factory import resolve_openai_models
 from rpg_backend.llm.worker_client import WorkerClientError, get_worker_client
-from rpg_backend.storage.engine import engine
 
-_probe_cache_lock = threading.Lock()
+_probe_cache_lock = asyncio.Lock()
 _probe_cache_entry: dict[str, Any] | None = None
+_sync_probe_cache_lock = threading.Lock()
 
 
 def _utc_now() -> datetime:
@@ -73,12 +76,12 @@ def _resolved_probe_config() -> tuple[dict[str, Any], list[str]]:
     )
 
 
-def check_db() -> dict[str, Any]:
+async def check_db_async() -> dict[str, Any]:
     started_at = _monotonic()
     checked_at = _utc_now()
     try:
-        with DBSession(engine) as db:
-            db.exec(text("SELECT 1")).one()
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            await db.exec(text("SELECT 1"))
     except Exception as exc:  # noqa: BLE001
         return _build_check_result(
             ok=False,
@@ -94,6 +97,10 @@ def check_db() -> dict[str, Any]:
         error_code=None,
         message=None,
     )
+
+
+async def check_db() -> dict[str, Any]:
+    return await check_db_async()
 
 
 def check_llm_config() -> dict[str, Any]:
@@ -126,13 +133,19 @@ def check_llm_config() -> dict[str, Any]:
     )
 
 
-def reset_llm_probe_cache() -> None:
+async def reset_llm_probe_cache_async() -> None:
     global _probe_cache_entry
-    with _probe_cache_lock:
+    async with _probe_cache_lock:
         _probe_cache_entry = None
 
 
-def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
+def reset_llm_probe_cache() -> None:
+    global _probe_cache_entry
+    with _sync_probe_cache_lock:
+        _probe_cache_entry = None
+
+
+async def check_llm_probe_async(*, refresh: bool = False) -> dict[str, Any]:
     global _probe_cache_entry
 
     settings = get_settings()
@@ -171,7 +184,7 @@ def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
 
     now_monotonic = _monotonic()
     if not refresh:
-        with _probe_cache_lock:
+        async with _probe_cache_lock:
             cache_entry = _probe_cache_entry
             if (
                 cache_entry is not None
@@ -187,7 +200,7 @@ def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
     started_at = _monotonic()
     try:
         worker_client = get_worker_client()
-        status_code, worker_payload = worker_client.probe_ready(refresh=refresh)
+        status_code, worker_payload = await asyncio.to_thread(worker_client.probe_ready, refresh=refresh)
         if status_code >= 400:
             error_message = str(
                 worker_payload.get("checks", {}).get("llm_probe", {}).get("error_code")
@@ -256,7 +269,7 @@ def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
             },
         )
 
-    with _probe_cache_lock:
+    async with _probe_cache_lock:
         _probe_cache_entry = {
             "cache_key": cache_key,
             "expires_at_monotonic": _monotonic() + ttl_seconds,
@@ -265,12 +278,24 @@ def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
     return result
 
 
-def run_readiness_checks(*, refresh: bool = False) -> dict[str, Any]:
+async def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
+    return await check_llm_probe_async(refresh=refresh)
+
+
+async def _resolve_check_result(value: Any) -> dict[str, Any]:
+    if inspect.isawaitable(value):
+        resolved = await value
+    else:
+        resolved = value
+    return dict(resolved)
+
+
+async def run_readiness_checks_async(*, refresh: bool = False) -> dict[str, Any]:
     checked_at = _utc_now()
-    db_check = check_db()
+    db_check = await _resolve_check_result(check_db())
     llm_config_check = check_llm_config()
     if llm_config_check["ok"]:
-        llm_probe_check = check_llm_probe(refresh=refresh)
+        llm_probe_check = await _resolve_check_result(check_llm_probe(refresh=refresh))
     else:
         llm_probe_check = _build_check_result(
             ok=False,
@@ -291,3 +316,7 @@ def run_readiness_checks(*, refresh: bool = False) -> dict[str, Any]:
             "llm_probe": llm_probe_check,
         },
     }
+
+
+def run_readiness_checks(*, refresh: bool = False) -> dict[str, Any]:
+    return asyncio.run(run_readiness_checks_async(refresh=refresh))

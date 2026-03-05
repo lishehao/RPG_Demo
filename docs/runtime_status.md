@@ -9,6 +9,13 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - worker task calls require `X-Internal-Worker-Token` sourced from `APP_INTERNAL_WORKER_TOKEN`
   - worker probes remain unversioned (`GET /health`, `GET /ready`)
   - legacy worker routes `/v2/llm/tasks/*` removed (hard cut, no compatibility alias)
+- Async data layer hard cut:
+  - API/repository access uses `AsyncSession` via `rpg_backend/infrastructure/db/async_session.py`
+  - worker quota reservation/reconcile/cleanup uses async repository path
+  - backend readiness and HTTP observability persistence avoid sync DB calls on request hot path
+- Session step pipeline refactor:
+  - runtime step orchestration now executes through `application/session_step` staged use-case
+  - `runtime/session_step/orchestrator.py` is a thin async facade to the staged pipeline
 - Auth and account baseline:
   - `POST /admin/auth/login` issues JWT access token from bootstrap admin account
   - all business/admin routes require Bearer auth; only `/health`, `/ready`, `/admin/auth/login` are anonymous

@@ -1,5 +1,7 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, Query, Request
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError
 from rpg_backend.api.route_paths import API_STORIES_PREFIX
@@ -17,8 +19,8 @@ from rpg_backend.security.deps import require_current_user
 from rpg_backend.domain.linter import lint_story_pack
 from rpg_backend.generator.errors import GeneratorBuildError
 from rpg_backend.generator.pipeline import GeneratorPipeline
-from rpg_backend.storage.engine import get_session
-from rpg_backend.storage.repositories.stories import (
+from rpg_backend.infrastructure.db.async_session import get_async_session
+from rpg_backend.infrastructure.repositories.stories_async import (
     create_story,
     get_latest_story_version,
     get_story,
@@ -34,14 +36,20 @@ router = APIRouter(
 
 
 @router.post("", response_model=StoryCreateResponse)
-def create_story_endpoint(payload: StoryCreateRequest, db: Session = Depends(get_session)) -> StoryCreateResponse:
-    story = create_story(db, title=payload.title, pack_json=payload.pack_json)
+async def create_story_endpoint(
+    payload: StoryCreateRequest,
+    db: AsyncSession = Depends(get_async_session),
+) -> StoryCreateResponse:
+    story = await create_story(db, title=payload.title, pack_json=payload.pack_json)
     return StoryCreateResponse(story_id=story.id, status="draft", created_at=story.created_at)
 
 
 @router.post("/{story_id}/publish", response_model=StoryPublishResponse)
-def publish_story_endpoint(story_id: str, db: Session = Depends(get_session)) -> StoryPublishResponse:
-    story = get_story(db, story_id)
+async def publish_story_endpoint(
+    story_id: str,
+    db: AsyncSession = Depends(get_async_session),
+) -> StoryPublishResponse:
+    story = await get_story(db, story_id)
     if story is None:
         raise ApiError(status_code=404, code="not_found", message="story not found", retryable=False)
 
@@ -55,20 +63,21 @@ def publish_story_endpoint(story_id: str, db: Session = Depends(get_session)) ->
             details={"errors": report.errors, "warnings": report.warnings},
         )
 
-    version = publish_story_version(db, story)
+    version = await publish_story_version(db, story)
     return StoryPublishResponse(story_id=story_id, version=version.version, published_at=version.created_at)
 
 
 @router.post("/generate", response_model=StoryGenerateResponse)
-def generate_story_endpoint(
+async def generate_story_endpoint(
     payload: StoryGenerateRequest,
     request: Request,
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> StoryGenerateResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
     pipeline = GeneratorPipeline()
     try:
-        result = pipeline.run(
+        result = await asyncio.to_thread(
+            pipeline.run,
             seed_text=payload.seed_text,
             prompt_text=payload.prompt_text,
             target_minutes=payload.target_minutes,
@@ -119,10 +128,10 @@ def generate_story_endpoint(
 
     fallback_title_source = (payload.seed_text or payload.prompt_text or "generated story").strip()
     title = result.pack.get("title") or f"Generated: {fallback_title_source[:48]}"
-    story = create_story(db, title=title, pack_json=result.pack)
+    story = await create_story(db, title=title, pack_json=result.pack)
     version: int | None = None
     if payload.publish:
-        published = publish_story_version(db, story)
+        published = await publish_story_version(db, story)
         version = published.version
 
     response = StoryGenerateResponse(
@@ -172,16 +181,16 @@ def generate_story_endpoint(
 
 
 @router.get("/{story_id}", response_model=StoryGetResponse)
-def get_story_endpoint(
+async def get_story_endpoint(
     story_id: str,
     version: int | None = Query(default=None, ge=1),
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> StoryGetResponse:
-    story = get_story(db, story_id)
+    story = await get_story(db, story_id)
     if story is None:
         raise ApiError(status_code=404, code="not_found", message="story not found", retryable=False)
 
-    resolved = get_story_version(db, story_id, version) if version else get_latest_story_version(db, story_id)
+    resolved = await get_story_version(db, story_id, version) if version else await get_latest_story_version(db, story_id)
     if resolved is None:
         raise ApiError(status_code=404, code="not_found", message="published version not found", retryable=False)
 

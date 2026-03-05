@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
-from sqlmodel import Session as DBSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.route_paths import HEALTH_PATH, READY_PATH
 from rpg_backend.api.schemas import ReadinessResponse
+from rpg_backend.infrastructure.db.async_engine import async_engine
+from rpg_backend.infrastructure.repositories.observability_async import save_readiness_probe_event
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import log_event
-from rpg_backend.observability.readiness import run_readiness_checks
-from rpg_backend.storage.engine import engine
-from rpg_backend.storage.repositories.observability import save_readiness_probe_event
+from rpg_backend.observability.readiness import run_readiness_checks_async
 
 router = APIRouter(tags=["health"])
 
 
-def _save_backend_readiness_probe(
+async def _save_backend_readiness_probe(
     *,
     ok: bool,
     error_code: str | None,
@@ -21,8 +21,8 @@ def _save_backend_readiness_probe(
     request_id: str | None,
 ) -> None:
     try:
-        with DBSession(engine) as db:
-            save_readiness_probe_event(
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            await save_readiness_probe_event(
                 db,
                 service="backend",
                 ok=ok,
@@ -35,14 +35,14 @@ def _save_backend_readiness_probe(
 
 
 @router.get(HEALTH_PATH)
-def health() -> dict[str, str]:
+async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
 @router.get(READY_PATH, response_model=ReadinessResponse)
-def ready(request: Request, refresh: bool = Query(default=False)) -> ReadinessResponse | JSONResponse:
+async def ready(request: Request, refresh: bool = Query(default=False)) -> ReadinessResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
-    report = ReadinessResponse.model_validate(run_readiness_checks(refresh=refresh))
+    report = ReadinessResponse.model_validate(await run_readiness_checks_async(refresh=refresh))
     db_ok = bool(report.checks.db.ok)
     llm_config_ok = bool(report.checks.llm_config.ok)
     llm_probe_ok = bool(report.checks.llm_probe.ok)
@@ -56,7 +56,7 @@ def ready(request: Request, refresh: bool = Query(default=False)) -> ReadinessRe
         isinstance(item, int) for item in latency_candidates
     ) else None
     if report.status == "ready":
-        _save_backend_readiness_probe(
+        await _save_backend_readiness_probe(
             ok=True,
             error_code=None,
             latency_ms=latency_ms,
@@ -81,7 +81,7 @@ def ready(request: Request, refresh: bool = Query(default=False)) -> ReadinessRe
         or report.checks.llm_probe.error_code
         or "readiness_failed"
     )
-    _save_backend_readiness_probe(
+    await _save_backend_readiness_probe(
         ok=False,
         error_code=first_error_code,
         latency_ms=latency_ms,

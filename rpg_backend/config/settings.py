@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     app_env: str = "dev"
     debug: bool = False
     database_url: str = "sqlite:///./app.db"
+    db_async_pool_size: int = Field(default=20, ge=1, le=500)
+    db_async_max_overflow: int = Field(default=20, ge=0, le=1000)
+    db_async_pool_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
     auth_jwt_secret: str = "dev-only-change-me"
     auth_jwt_expire_minutes: int = Field(default=480, ge=1, le=10080)
     auth_jwt_issuer: str = "rpg-backend"

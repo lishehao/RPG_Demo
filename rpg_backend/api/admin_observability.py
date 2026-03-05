@@ -4,8 +4,9 @@ from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from rpg_backend.application.observability.snapshot_service import ObservabilitySnapshotService
 from rpg_backend.api.route_paths import API_ADMIN_OBSERVABILITY_PREFIX, HEALTH_PATH
 from rpg_backend.api.schemas import (
     HttpHealthAggregateResponse,
@@ -17,20 +18,15 @@ from rpg_backend.api.schemas import (
     RuntimeErrorsAggregateResponse,
     ReadinessHealthAggregateResponse,
 )
-from rpg_backend.storage.engine import get_session
+from rpg_backend.infrastructure.db.async_session import get_async_session
 from rpg_backend.security.deps import require_admin
-from rpg_backend.storage.repositories.observability import (
-    aggregate_http_health,
-    aggregate_llm_call_health,
-    aggregate_readiness_health,
-    aggregate_runtime_error_buckets,
-)
 
 router = APIRouter(
     prefix=API_ADMIN_OBSERVABILITY_PREFIX,
     tags=["admin"],
     dependencies=[Depends(require_admin)],
 )
+snapshot_service = ObservabilitySnapshotService()
 
 
 def _empty_llm_group() -> LLMCallGroupHealthPayload:
@@ -54,14 +50,14 @@ def _stable_gateway_groups(raw: dict[str, dict]) -> LLMCallByGatewayModePayload:
 
 
 @router.get("/runtime-errors", response_model=RuntimeErrorsAggregateResponse)
-def get_runtime_errors_aggregate_endpoint(
+async def get_runtime_errors_aggregate_endpoint(
     window_seconds: int = Query(default=300, ge=60, le=3600),
     limit: int = Query(default=20, ge=1, le=100),
     stage: Literal["route", "narration"] | None = Query(default=None),
     error_code: str | None = Query(default=None),
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> RuntimeErrorsAggregateResponse:
-    aggregated = aggregate_runtime_error_buckets(
+    aggregated = await snapshot_service.aggregate_runtime_errors(
         db,
         window_seconds=window_seconds,
         limit=limit,
@@ -91,17 +87,17 @@ def get_runtime_errors_aggregate_endpoint(
 
 
 @router.get("/http-health", response_model=HttpHealthAggregateResponse)
-def get_http_health_endpoint(
+async def get_http_health_endpoint(
     window_seconds: int = Query(default=300, ge=60, le=3600),
     service: Literal["backend", "worker"] = Query(default="backend"),
     path_prefix: str | None = Query(default=None),
     exclude_paths: str | None = Query(default=None),
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> HttpHealthAggregateResponse:
     excluded = [item.strip() for item in (exclude_paths or "").split(",") if item.strip()]
     if service == "backend" and not excluded:
         excluded = [HEALTH_PATH]
-    aggregated = aggregate_http_health(
+    aggregated = await snapshot_service.aggregate_http_health(
         db,
         window_seconds=window_seconds,
         service=service,
@@ -123,13 +119,13 @@ def get_http_health_endpoint(
 
 
 @router.get("/llm-call-health", response_model=LLMCallHealthAggregateResponse)
-def get_llm_call_health_endpoint(
+async def get_llm_call_health_endpoint(
     window_seconds: int = Query(default=300, ge=60, le=3600),
     stage: Literal["route", "narration", "json"] | None = Query(default=None),
     gateway_mode: Literal["worker", "unknown"] | None = Query(default=None),
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> LLMCallHealthAggregateResponse:
-    aggregated = aggregate_llm_call_health(
+    aggregated = await snapshot_service.aggregate_llm_health(
         db,
         window_seconds=window_seconds,
         stage=stage,
@@ -150,11 +146,11 @@ def get_llm_call_health_endpoint(
 
 
 @router.get("/readiness-health", response_model=ReadinessHealthAggregateResponse)
-def get_readiness_health_endpoint(
+async def get_readiness_health_endpoint(
     window_seconds: int = Query(default=300, ge=60, le=3600),
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> ReadinessHealthAggregateResponse:
-    aggregated = aggregate_readiness_health(
+    aggregated = await snapshot_service.aggregate_readiness_health(
         db,
         window_seconds=window_seconds,
     )

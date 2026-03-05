@@ -1,28 +1,31 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError
 from rpg_backend.api.route_paths import API_ADMIN_AUTH_PREFIX
 from rpg_backend.api.schemas import AdminAuthLoginRequest, AdminAuthLoginResponse, AdminUserPublic
 from rpg_backend.config.settings import get_settings
-from rpg_backend.security.tokens import create_access_token
-from rpg_backend.storage.engine import get_session
-from rpg_backend.storage.repositories.admin_users import (
+from rpg_backend.infrastructure.db.async_session import get_async_session
+from rpg_backend.infrastructure.repositories.admin_users_async import (
     get_admin_user_by_email,
     normalize_email,
     update_admin_user_last_login,
 )
+from rpg_backend.security.tokens import create_access_token
 from rpg_backend.security.passwords import verify_password
 
 router = APIRouter(prefix=API_ADMIN_AUTH_PREFIX, tags=["admin-auth"])
 
 
 @router.post("/login", response_model=AdminAuthLoginResponse)
-def admin_login_endpoint(payload: AdminAuthLoginRequest, db: Session = Depends(get_session)) -> AdminAuthLoginResponse:
+async def admin_login_endpoint(
+    payload: AdminAuthLoginRequest,
+    db: AsyncSession = Depends(get_async_session),
+) -> AdminAuthLoginResponse:
     email = normalize_email(payload.email)
-    user = get_admin_user_by_email(db, email)
+    user = await get_admin_user_by_email(db, email)
     if user is None:
         raise ApiError(status_code=401, code="invalid_credentials", message="invalid credentials", retryable=False)
     if not bool(user.is_active):
@@ -30,7 +33,7 @@ def admin_login_endpoint(payload: AdminAuthLoginRequest, db: Session = Depends(g
     if not verify_password(payload.password, user.password_hash):
         raise ApiError(status_code=401, code="invalid_credentials", message="invalid credentials", retryable=False)
 
-    user = update_admin_user_last_login(db, user)
+    user = await update_admin_user_last_login(db, user)
     settings = get_settings()
     access_token, expires_at = create_access_token(
         user_id=user.id,

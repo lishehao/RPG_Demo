@@ -6,13 +6,12 @@ import json
 
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.responses import JSONResponse
-from sqlmodel import Session as DBSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError, register_error_handlers
 from rpg_backend.config.settings import get_settings
 from rpg_backend.llm_worker.dispatcher import WorkerDispatcher, WorkerQueueConfig
 from rpg_backend.llm_worker.errors import WorkerTaskError
-from rpg_backend.llm_worker.quota_service import QuotaService
 from rpg_backend.llm_worker.route_paths import (
     WORKER_HEALTH_PATH,
     WORKER_JSON_OBJECT_TASK_PATH,
@@ -29,20 +28,23 @@ from rpg_backend.llm_worker.schemas import (
     WorkerTaskRouteIntentRequest,
     WorkerTaskRouteIntentResponse,
 )
-from rpg_backend.llm_worker.service import LLMWorkerService
+from rpg_backend.llm_worker.services.quota_service import QuotaService
+from rpg_backend.llm_worker.services.readiness_service import WorkerReadinessService
+from rpg_backend.llm_worker.services.task_service import WorkerTaskService
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import configure_logging, log_event
 from rpg_backend.observability.middleware import RequestIdMiddleware
 from rpg_backend.security.bootstrap import assert_production_secret_requirements
-from rpg_backend.storage.engine import engine
+from rpg_backend.infrastructure.db.async_engine import async_engine
+from rpg_backend.infrastructure.repositories.observability_async import save_readiness_probe_event
 from rpg_backend.storage.migrations import assert_schema_current
-from rpg_backend.storage.repositories.observability import save_readiness_probe_event
 
-service = LLMWorkerService()
+task_service = WorkerTaskService()
+readiness_service = WorkerReadinessService(task_service=task_service)
 dispatcher: WorkerDispatcher | None = None
 
 
-def _save_worker_readiness_probe(
+async def _save_worker_readiness_probe(
     *,
     ok: bool,
     error_code: str | None,
@@ -50,8 +52,8 @@ def _save_worker_readiness_probe(
     request_id: str | None,
 ) -> None:
     try:
-        with DBSession(engine) as db:
-            save_readiness_probe_event(
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            await save_readiness_probe_event(
                 db,
                 service="worker",
                 ok=ok,
@@ -69,7 +71,7 @@ async def lifespan(_: FastAPI):
     configure_logging()
     assert_schema_current()
     assert_production_secret_requirements()
-    await service.startup()
+    await task_service.startup()
     settings = get_settings()
     weights_raw = (getattr(settings, "llm_worker_queue_weights_json", "") or "").strip()
     try:
@@ -90,7 +92,7 @@ async def lifespan(_: FastAPI):
         token_est_json_output=int(getattr(settings, "llm_worker_token_est_json_output", 256)),
     )
     dispatcher = WorkerDispatcher(
-        service=service,
+        service=task_service,
         quota_service=QuotaService(),
         config=queue_config,
     )
@@ -99,7 +101,7 @@ async def lifespan(_: FastAPI):
     if dispatcher is not None:
         await dispatcher.stop()
         dispatcher = None
-    await service.shutdown()
+    await task_service.shutdown()
 
 
 app = FastAPI(title="RPG LLM Worker", lifespan=lifespan)
@@ -139,13 +141,13 @@ async def health() -> dict[str, str]:
 @app.get(WORKER_READY_PATH, response_model=WorkerReadyResponse)
 async def ready(request: Request, refresh: bool = Query(default=False)) -> WorkerReadyResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
-    report = await service.ready(refresh=refresh)
+    report = await readiness_service.ready(refresh=refresh)
     llm_config_ok = bool(report.checks["llm_config"].ok)
     llm_probe_ok = bool(report.checks["llm_probe"].ok)
 
     if report.status == "ready":
         latency_ms = report.checks["llm_probe"].latency_ms
-        _save_worker_readiness_probe(
+        await _save_worker_readiness_probe(
             ok=True,
             error_code=None,
             latency_ms=latency_ms,
@@ -164,7 +166,7 @@ async def ready(request: Request, refresh: bool = Query(default=False)) -> Worke
         return report
 
     error_code = report.checks["llm_probe"].error_code or report.checks["llm_config"].error_code
-    _save_worker_readiness_probe(
+    await _save_worker_readiness_probe(
         ok=False,
         error_code=error_code,
         latency_ms=report.checks["llm_probe"].latency_ms,

@@ -2,26 +2,33 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+import inspect
 import json
 from datetime import UTC, datetime
 from typing import Any
 
 import httpx
-from sqlmodel import Session as DBSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from rpg_backend.application.observability.snapshot_service import ObservabilitySnapshotService
 from rpg_backend.config.settings import get_settings
-from rpg_backend.storage.engine import engine, init_db
-from rpg_backend.storage.repositories.observability import (
-    aggregate_http_health,
-    aggregate_llm_call_health,
-    aggregate_readiness_health,
-    aggregate_runtime_error_buckets,
+from rpg_backend.infrastructure.db.async_engine import async_engine
+from rpg_backend.infrastructure.repositories.observability_async import (
     has_recent_alert_dispatch,
     save_alert_dispatch,
 )
+from rpg_backend.storage.engine import init_db
 
 GLOBAL_ALERT_MIN_FAILED_TOTAL = 3
 BUCKET_MIN_COUNT_FOR_SHARE = 2
+SNAPSHOT_SERVICE = ObservabilitySnapshotService()
+
+
+async def _resolve(value):
+    if inspect.isawaitable(value):
+        return await value
+    return value
 
 
 def _bucket_key(error_code: str, stage: str, model: str) -> str:
@@ -65,32 +72,51 @@ def _build_signal(
     }
 
 
-def _build_snapshot(
-    db: DBSession,
+async def aggregate_runtime_error_buckets(db: AsyncSession, *, window_seconds: int, limit: int) -> dict[str, Any]:
+    return await SNAPSHOT_SERVICE.aggregate_runtime_errors(db, window_seconds=window_seconds, limit=limit)
+
+
+async def aggregate_http_health(
+    db: AsyncSession,
+    *,
+    window_seconds: int,
+    service: str,
+    exclude_paths: list[str] | None = None,
+) -> dict[str, Any]:
+    return await SNAPSHOT_SERVICE.aggregate_http_health(
+        db,
+        window_seconds=window_seconds,
+        service=service,
+        exclude_paths=exclude_paths,
+    )
+
+
+async def aggregate_llm_call_health(db: AsyncSession, *, window_seconds: int) -> dict[str, Any]:
+    return await SNAPSHOT_SERVICE.aggregate_llm_health(db, window_seconds=window_seconds)
+
+
+async def aggregate_readiness_health(db: AsyncSession, *, window_seconds: int) -> dict[str, Any]:
+    return await SNAPSHOT_SERVICE.aggregate_readiness_health(db, window_seconds=window_seconds)
+
+
+async def _build_snapshot_async(
+    db: AsyncSession,
     *,
     window_seconds: int,
     limit: int,
 ) -> dict[str, Any]:
     settings = get_settings()
-    runtime_agg = aggregate_runtime_error_buckets(
-        db,
-        window_seconds=window_seconds,
-        limit=limit,
+    runtime_agg = await _resolve(aggregate_runtime_error_buckets(db, window_seconds=window_seconds, limit=limit))
+    http_agg = await _resolve(
+        aggregate_http_health(
+            db,
+            window_seconds=window_seconds,
+            service="backend",
+            exclude_paths=["/health"],
+        )
     )
-    http_agg = aggregate_http_health(
-        db,
-        window_seconds=window_seconds,
-        service="backend",
-        exclude_paths=["/health"],
-    )
-    llm_agg = aggregate_llm_call_health(
-        db,
-        window_seconds=window_seconds,
-    )
-    readiness_agg = aggregate_readiness_health(
-        db,
-        window_seconds=window_seconds,
-    )
+    llm_agg = await _resolve(aggregate_llm_call_health(db, window_seconds=window_seconds))
+    readiness_agg = await _resolve(aggregate_readiness_health(db, window_seconds=window_seconds))
 
     triggered_buckets: list[dict[str, Any]] = []
     for bucket in runtime_agg["buckets"]:
@@ -99,9 +125,8 @@ def _build_snapshot(
             bucket.error_share >= settings.obs_alert_bucket_min_share
             and bucket.failed_count >= BUCKET_MIN_COUNT_FOR_SHARE
         )
-        if not (meets_count or meets_share):
-            continue
-        triggered_buckets.append(_serialize_bucket(bucket))
+        if meets_count or meets_share:
+            triggered_buckets.append(_serialize_bucket(bucket))
 
     global_triggered = (
         float(runtime_agg["step_error_rate"]) > settings.obs_alert_global_error_rate
@@ -114,7 +139,6 @@ def _build_snapshot(
     worker_failure_rate = float(worker_group.get("failure_rate") or 0.0)
     llm_total = int(llm_agg["total_calls"])
     llm_p95 = llm_agg.get("p95_ms")
-
     signals: list[dict[str, Any]] = []
 
     if int(http_agg["total_requests"]) >= settings.obs_alert_http_5xx_min_count and float(http_agg["error_rate"]) > float(
@@ -153,9 +177,9 @@ def _build_snapshot(
                 threshold={"ready_fail_streak_gte": int(settings.obs_alert_ready_fail_streak)},
                 window_seconds=window_seconds,
                 samples={
-                    "last_failures": [
-                        item for item in readiness_agg["last_failures"] if item.get("service") == "backend"
-                    ][:5]
+                    "last_failures": [item for item in readiness_agg["last_failures"] if item.get("service") == "backend"][
+                        :5
+                    ]
                 },
                 runbook_hint="docs/oncall_sop.md#backend_ready_unhealthy",
             )
@@ -179,10 +203,7 @@ def _build_snapshot(
                     "min_worker_calls": int(settings.obs_alert_worker_fail_min_count),
                 },
                 window_seconds=window_seconds,
-                samples={
-                    "by_stage": llm_agg.get("by_stage", {}),
-                    "worker_group": worker_group,
-                },
+                samples={"by_stage": llm_agg.get("by_stage", {}), "worker_group": worker_group},
                 runbook_hint="docs/oncall_sop.md#worker_failure_rate_high",
             )
         )
@@ -195,10 +216,7 @@ def _build_snapshot(
                 signal="llm_call_p95_high",
                 dispatch_key="signal:llm_call_p95",
                 severity="warning",
-                value={
-                    "llm_call_p95_ms": int(llm_p95),
-                    "total_calls": llm_total,
-                },
+                value={"llm_call_p95_ms": int(llm_p95), "total_calls": llm_total},
                 threshold={
                     "llm_call_p95_ms_gt": int(settings.obs_alert_llm_call_p95_ms),
                     "min_total_calls": int(settings.obs_alert_llm_call_min_count),
@@ -270,15 +288,13 @@ def _send_webhook(webhook_url: str, payload: dict[str, Any]) -> None:
 
 
 def _highest_severity(*, signals: list[dict[str, Any]], global_triggered: bool) -> str:
-    if global_triggered:
-        return "critical"
-    if any(str(signal.get("severity")) == "critical" for signal in signals):
+    if global_triggered or any(str(signal.get("severity")) == "critical" for signal in signals):
         return "critical"
     return "warning"
 
 
-def _dispatch_alerts(
-    db: DBSession,
+async def _dispatch_alerts_async(
+    db: AsyncSession,
     *,
     snapshot: dict[str, Any],
     dry_run: bool,
@@ -286,7 +302,6 @@ def _dispatch_alerts(
     settings = get_settings()
     triggered_buckets = list(snapshot.get("triggered_buckets") or [])
     triggered_signals = list(snapshot.get("signals") or [])
-
     has_any_alert = bool(snapshot.get("global_triggered") or triggered_buckets or triggered_signals)
     if not has_any_alert:
         return {
@@ -305,14 +320,13 @@ def _dispatch_alerts(
     pending_keys: list[str] = []
     suppressed_keys: list[str] = []
     for key in candidate_keys:
-        if has_recent_alert_dispatch(
-            db,
-            bucket_key=key,
-            cooldown_seconds=settings.obs_alert_cooldown_seconds,
-        ):
+        in_cooldown = await _resolve(
+            has_recent_alert_dispatch(db, bucket_key=key, cooldown_seconds=settings.obs_alert_cooldown_seconds)
+        )
+        if in_cooldown:
             suppressed_keys.append(key)
-            continue
-        pending_keys.append(key)
+        else:
+            pending_keys.append(key)
 
     if not pending_keys:
         return {
@@ -362,16 +376,18 @@ def _dispatch_alerts(
         }
 
     try:
-        _send_webhook(webhook_url, send_payload)
+        await asyncio.to_thread(_send_webhook, webhook_url, send_payload)
     except Exception as exc:  # noqa: BLE001
         for key in pending_keys:
-            save_alert_dispatch(
-                db,
-                bucket_key=key,
-                window_started_at=datetime.fromisoformat(snapshot["window_started_at"]),
-                window_ended_at=datetime.fromisoformat(snapshot["window_ended_at"]),
-                status="failed",
-                payload_json={"error": str(exc), "payload": send_payload},
+            await _resolve(
+                save_alert_dispatch(
+                    db,
+                    bucket_key=key,
+                    window_started_at=datetime.fromisoformat(snapshot["window_started_at"]),
+                    window_ended_at=datetime.fromisoformat(snapshot["window_ended_at"]),
+                    status="failed",
+                    payload_json={"error": str(exc), "payload": send_payload},
+                )
             )
         return {
             "status": "send_failed",
@@ -385,13 +401,15 @@ def _dispatch_alerts(
         }
 
     for key in pending_keys:
-        save_alert_dispatch(
-            db,
-            bucket_key=key,
-            window_started_at=datetime.fromisoformat(snapshot["window_started_at"]),
-            window_ended_at=datetime.fromisoformat(snapshot["window_ended_at"]),
-            status="sent",
-            payload_json=send_payload,
+        await _resolve(
+            save_alert_dispatch(
+                db,
+                bucket_key=key,
+                window_started_at=datetime.fromisoformat(snapshot["window_started_at"]),
+                window_ended_at=datetime.fromisoformat(snapshot["window_ended_at"]),
+                status="sent",
+                payload_json=send_payload,
+            )
         )
     return {
         "status": "sent",
@@ -404,25 +422,33 @@ def _dispatch_alerts(
     }
 
 
+def _build_snapshot(
+    db: Any,
+    *,
+    window_seconds: int,
+    limit: int,
+) -> dict[str, Any]:
+    return asyncio.run(_build_snapshot_async(db, window_seconds=window_seconds, limit=limit))
+
+
+def _dispatch_alerts(
+    db: Any,
+    *,
+    snapshot: dict[str, Any],
+    dry_run: bool,
+) -> dict[str, Any]:
+    return asyncio.run(_dispatch_alerts_async(db, snapshot=snapshot, dry_run=dry_run))
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Emit runtime 503 bucket alerts to webhook.")
-    parser.add_argument(
-        "--window-seconds",
-        type=int,
-        default=None,
-        help="Rolling window in seconds. Defaults to APP_OBS_ALERT_WINDOW_SECONDS.",
-    )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=20,
-        help="Max number of runtime error buckets to aggregate (1..100).",
-    )
+    parser.add_argument("--window-seconds", type=int, default=None, help="Rolling window in seconds.")
+    parser.add_argument("--limit", type=int, default=20, help="Max runtime error buckets to aggregate (1..100).")
     parser.add_argument("--dry-run", action="store_true", help="Compute alerts but do not send webhook.")
     return parser
 
 
-def main() -> int:
+async def _async_main() -> int:
     parser = _build_parser()
     args = parser.parse_args()
     settings = get_settings()
@@ -430,17 +456,9 @@ def main() -> int:
     limit = max(1, min(args.limit, 100))
 
     init_db()
-    with DBSession(engine) as db:
-        snapshot = _build_snapshot(
-            db,
-            window_seconds=window_seconds,
-            limit=limit,
-        )
-        dispatch_result = _dispatch_alerts(
-            db,
-            snapshot=snapshot,
-            dry_run=bool(args.dry_run),
-        )
+    async with AsyncSession(async_engine, expire_on_commit=False) as db:
+        snapshot = await _build_snapshot_async(db, window_seconds=window_seconds, limit=limit)
+        dispatch_result = await _dispatch_alerts_async(db, snapshot=snapshot, dry_run=bool(args.dry_run))
 
     output = {
         "window_seconds": window_seconds,
@@ -454,6 +472,10 @@ def main() -> int:
     if dispatch_result["status"] in {"send_failed", "webhook_not_configured"}:
         return 1
     return 0
+
+
+def main() -> int:
+    return asyncio.run(_async_main())
 
 
 if __name__ == "__main__":

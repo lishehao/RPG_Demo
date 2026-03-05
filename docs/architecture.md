@@ -14,6 +14,7 @@ This document defines the current “north star” architecture for an **8–12 
 - **Deterministic state transitions** (LLM does not decide success/failure or next node).
 - **Schema-first** story format with **lint + regenerate** loops for one-click generation.
 - Runtime safety: no dead-ends, no infinite reroute loops, no “invalid input” stalls.
+- **Async hot-path data layer**: API, worker quota, readiness, and observability writes use async DB sessions.
 
 ---
 
@@ -175,6 +176,9 @@ Path governance:
 - backend paths are centralized in `rpg_backend/api/route_paths.py`.
 - worker task paths are centralized in `rpg_backend/llm_worker/route_paths.py`.
 - router registration is centralized in `rpg_backend/api/router_registry.py`.
+- runtime orchestration:
+  - staged session-step use case lives in `rpg_backend/application/session_step/*`
+  - async repositories live in `rpg_backend/infrastructure/repositories/*_async.py`
 
 Auth governance:
 - all business/admin routes require Bearer token.

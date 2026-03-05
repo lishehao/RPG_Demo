@@ -7,13 +7,13 @@ from typing import Any
 
 from rpg_backend.llm_worker.errors import WorkerTaskError
 from rpg_backend.llm_worker.queue import QueuedTask, TaskKind, WeightedTaskQueue
-from rpg_backend.llm_worker.quota_service import QuotaService
+from rpg_backend.llm_worker.services.quota_service import QuotaService
 from rpg_backend.llm_worker.schemas import (
     WorkerTaskJsonObjectRequest,
     WorkerTaskNarrationRequest,
     WorkerTaskRouteIntentRequest,
 )
-from rpg_backend.llm_worker.service import LLMWorkerService
+from rpg_backend.llm_worker.services.task_service import WorkerTaskService
 
 
 @dataclass(frozen=True)
@@ -31,7 +31,7 @@ class WorkerDispatcher:
     def __init__(
         self,
         *,
-        service: LLMWorkerService,
+        service: WorkerTaskService,
         quota_service: QuotaService,
         config: WorkerQueueConfig,
     ) -> None:
@@ -169,7 +169,7 @@ class WorkerDispatcher:
 
                 model = str(getattr(task.payload, "model", "") or "")
                 estimated_tokens = self._estimate_tokens(kind=task.kind, payload=task.payload)
-                reservation = self._quota_service.reserve(model=model, estimated_tokens=estimated_tokens)
+                reservation = await self._quota_service.reserve_async(model=model, estimated_tokens=estimated_tokens)
                 if not reservation.allowed:
                     if time.monotonic() >= task.deadline_monotonic:
                         if not task.future.done():
@@ -222,7 +222,7 @@ class WorkerDispatcher:
                     continue
 
                 try:
-                    self._quota_service.reconcile_usage(
+                    await self._quota_service.reconcile_async(
                         model=model,
                         window_epoch_minute=reservation.window_epoch_minute,
                         estimated_tokens=reservation.estimated_tokens,

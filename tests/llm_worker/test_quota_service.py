@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-from sqlmodel import Session as DBSession
 from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-import rpg_backend.llm_worker.quota_service as quota_module
-from rpg_backend.llm_worker.quota_service import QuotaService
-from rpg_backend.storage.engine import engine
+import rpg_backend.llm_worker.services.quota_service as quota_module
+from rpg_backend.infrastructure.db.async_engine import async_engine
+from rpg_backend.llm_worker.services.quota_service import QuotaService
 from rpg_backend.storage.models import LLMQuotaWindow
 
 
@@ -27,8 +28,8 @@ def _set_quota_settings(monkeypatch, *, default_rpm: int, default_tpm: int, mode
 def test_quota_service_reserve_hits_rpm_limit(monkeypatch) -> None:
     _set_quota_settings(monkeypatch, default_rpm=1, default_tpm=10_000)
     service = QuotaService()
-    first = service.reserve(model="qwen-plus-us", estimated_tokens=50)
-    second = service.reserve(model="qwen-plus-us", estimated_tokens=50)
+    first = asyncio.run(service.reserve_async(model="qwen-plus-us", estimated_tokens=50))
+    second = asyncio.run(service.reserve_async(model="qwen-plus-us", estimated_tokens=50))
     assert first.allowed is True
     assert second.allowed is False
     assert second.error_code == "worker_rate_limited"
@@ -37,8 +38,8 @@ def test_quota_service_reserve_hits_rpm_limit(monkeypatch) -> None:
 def test_quota_service_reserve_hits_tpm_limit(monkeypatch) -> None:
     _set_quota_settings(monkeypatch, default_rpm=100, default_tpm=100)
     service = QuotaService()
-    first = service.reserve(model="qwen-flash-us", estimated_tokens=60)
-    second = service.reserve(model="qwen-flash-us", estimated_tokens=60)
+    first = asyncio.run(service.reserve_async(model="qwen-flash-us", estimated_tokens=60))
+    second = asyncio.run(service.reserve_async(model="qwen-flash-us", estimated_tokens=60))
     assert first.allowed is True
     assert second.allowed is False
 
@@ -46,28 +47,37 @@ def test_quota_service_reserve_hits_tpm_limit(monkeypatch) -> None:
 def test_quota_service_reconcile_usage_updates_window(monkeypatch) -> None:
     _set_quota_settings(monkeypatch, default_rpm=100, default_tpm=10_000)
     service = QuotaService()
-    reservation = service.reserve(model="qwen-plus-us", estimated_tokens=120)
+    reservation = asyncio.run(service.reserve_async(model="qwen-plus-us", estimated_tokens=120))
     assert reservation.allowed is True
 
-    service.reconcile_usage(
-        model=reservation.model,
-        window_epoch_minute=reservation.window_epoch_minute,
-        estimated_tokens=reservation.estimated_tokens,
-        actual_total_tokens=90,
+    asyncio.run(
+        service.reconcile_async(
+            model=reservation.model,
+            window_epoch_minute=reservation.window_epoch_minute,
+            estimated_tokens=reservation.estimated_tokens,
+            actual_total_tokens=90,
+        )
     )
 
-    with DBSession(engine) as db:
-        record = db.exec(
-            select(LLMQuotaWindow).where(
-                LLMQuotaWindow.model == reservation.model,
-                LLMQuotaWindow.window_epoch_minute == reservation.window_epoch_minute,
-            )
-        ).one()
+    async def _load_window() -> LLMQuotaWindow:
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            return (
+                await db.exec(
+                    select(LLMQuotaWindow).where(
+                        LLMQuotaWindow.model == reservation.model,
+                        LLMQuotaWindow.window_epoch_minute == reservation.window_epoch_minute,
+                    )
+                )
+            ).one()
+
+    record = asyncio.run(_load_window())
     assert record.tpm_used == 90
     assert record.rpm_used == 1
 
-    cleanup_count = service.cleanup(
-        keep_last_minutes=1,
-        now=datetime.fromtimestamp((reservation.window_epoch_minute + 200) * 60, tz=timezone.utc),
+    cleanup_count = asyncio.run(
+        service.cleanup_async(
+            keep_last_minutes=1,
+            now=datetime.fromtimestamp((reservation.window_epoch_minute + 200) * 60, tz=timezone.utc),
+        )
     )
     assert cleanup_count >= 1

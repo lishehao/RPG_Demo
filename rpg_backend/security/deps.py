@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlmodel import Session as DBSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError
 from rpg_backend.config.settings import get_settings
+from rpg_backend.infrastructure.db.async_session import get_async_session
+from rpg_backend.infrastructure.repositories.admin_users_async import get_admin_user_by_id
 from rpg_backend.security.tokens import TokenValidationError, decode_access_token
-from rpg_backend.storage.engine import get_session
 from rpg_backend.storage.models import AdminUser
-from rpg_backend.storage.repositories.admin_users import get_admin_user_by_id
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -27,9 +27,9 @@ def _extract_bearer_token(
     return token
 
 
-def require_current_user(
+async def require_current_user(
     token: str = Depends(_extract_bearer_token),
-    db: DBSession = Depends(get_session),
+    db: AsyncSession = Depends(get_async_session),
 ) -> AdminUser:
     settings = get_settings()
     try:
@@ -47,7 +47,7 @@ def require_current_user(
             details={"reason": exc.message},
         ) from exc
 
-    user = get_admin_user_by_id(db, claims.sub)
+    user = await get_admin_user_by_id(db, claims.sub)
     if user is None:
         raise ApiError(status_code=401, code="unauthorized", message="user not found", retryable=False)
     if not bool(user.is_active):

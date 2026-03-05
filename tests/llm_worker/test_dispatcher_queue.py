@@ -28,7 +28,7 @@ class _FakeQuotaService:
         del system_prompt, user_prompt
         return max(1, int(output_token_estimate))
 
-    def reserve(self, *, model: str, estimated_tokens: int):  # noqa: ANN003, ANN201
+    async def reserve_async(self, *, model: str, estimated_tokens: int):  # noqa: ANN003, ANN201
         return SimpleNamespace(
             allowed=self.allow,
             model=model,
@@ -36,7 +36,7 @@ class _FakeQuotaService:
             estimated_tokens=estimated_tokens,
         )
 
-    def reconcile_usage(
+    async def reconcile_async(
         self,
         *,
         model: str,

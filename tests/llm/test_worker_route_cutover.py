@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from rpg_backend.config.settings import get_settings
 from rpg_backend.llm.task_executor import TaskUsage
-from rpg_backend.llm_worker.main import app, service
+from rpg_backend.llm_worker.main import app, task_service
 from rpg_backend.llm_worker.route_paths import (
     WORKER_JSON_OBJECT_TASK_PATH,
     WORKER_RENDER_NARRATION_TASK_PATH,
@@ -37,7 +37,7 @@ def test_worker_route_intent_uses_internal_path_and_v2_is_removed(monkeypatch) -
             TaskUsage(total_tokens=42),
         )
 
-    monkeypatch.setattr(service, "execute_route_intent_task", _fake_execute_route_intent_task)
+    monkeypatch.setattr(task_service, "execute_route_intent_task", _fake_execute_route_intent_task)
     with TestClient(app) as client:
         response = client.post(
             WORKER_ROUTE_INTENT_TASK_PATH,
@@ -79,7 +79,7 @@ def test_worker_render_narration_uses_internal_path_and_v2_is_removed(monkeypatc
             TaskUsage(total_tokens=36),
         )
 
-    monkeypatch.setattr(service, "execute_render_narration_task", _fake_execute_render_narration_task)
+    monkeypatch.setattr(task_service, "execute_render_narration_task", _fake_execute_render_narration_task)
     with TestClient(app) as client:
         response = client.post(
             WORKER_RENDER_NARRATION_TASK_PATH,
@@ -121,7 +121,7 @@ def test_worker_json_object_uses_internal_path_and_v2_is_removed(monkeypatch) ->
             TaskUsage(total_tokens=28),
         )
 
-    monkeypatch.setattr(service, "execute_json_object_task", _fake_execute_json_object_task)
+    monkeypatch.setattr(task_service, "execute_json_object_task", _fake_execute_json_object_task)
     with TestClient(app) as client:
         response = client.post(
             WORKER_JSON_OBJECT_TASK_PATH,

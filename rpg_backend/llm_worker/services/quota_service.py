@@ -3,13 +3,12 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
 
-from sqlmodel import Session as DBSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.config.settings import get_settings
-from rpg_backend.storage.engine import engine
-from rpg_backend.storage.repositories.llm_quota import (
+from rpg_backend.infrastructure.db.async_engine import async_engine
+from rpg_backend.infrastructure.repositories.llm_quota_async import (
     adjust_quota_tokens,
     cleanup_old_windows,
     current_window_epoch_minute,
@@ -82,7 +81,7 @@ class QuotaService:
         output_est = max(1, int(output_token_estimate))
         return input_est + output_est
 
-    def reserve(
+    async def reserve_async(
         self,
         *,
         model: str,
@@ -91,8 +90,8 @@ class QuotaService:
     ) -> QuotaReservation:
         limits = self.model_limit(model)
         window_minute = current_window_epoch_minute(now=now)
-        with DBSession(engine) as db:
-            reservation = reserve_quota_window(
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            reservation = await reserve_quota_window(
                 db,
                 model=model,
                 window_epoch_minute=window_minute,
@@ -117,7 +116,7 @@ class QuotaService:
             estimated_tokens=reservation.estimated_tokens,
         )
 
-    def reconcile_usage(
+    async def reconcile_async(
         self,
         *,
         model: str,
@@ -130,16 +129,17 @@ class QuotaService:
         delta = int(actual_total_tokens) - max(1, int(estimated_tokens))
         if delta == 0:
             return
-        with DBSession(engine) as db:
-            adjust_quota_tokens(
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            await adjust_quota_tokens(
                 db,
                 model=model,
                 window_epoch_minute=window_epoch_minute,
                 delta_tokens=delta,
             )
 
-    def cleanup(self, *, keep_last_minutes: int = 120, now: datetime | None = None) -> int:
+    async def cleanup_async(self, *, keep_last_minutes: int = 120, now: datetime | None = None) -> int:
         current_minute = current_window_epoch_minute(now=now)
         threshold = current_minute - max(1, int(keep_last_minutes))
-        with DBSession(engine) as db:
-            return cleanup_old_windows(db, min_window_epoch_minute=threshold)
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            return await cleanup_old_windows(db, min_window_epoch_minute=threshold)
+

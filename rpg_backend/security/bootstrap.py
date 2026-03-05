@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlmodel import Session as DBSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.config.settings import Settings, get_settings
+from rpg_backend.infrastructure.db.async_engine import async_engine
+from rpg_backend.infrastructure.repositories.admin_users_async import get_admin_user_by_email, upsert_bootstrap_admin
 from rpg_backend.security.passwords import hash_password, verify_password
-from rpg_backend.storage.engine import engine
 from rpg_backend.storage.models import AdminUser
-from rpg_backend.storage.repositories.admin_users import get_admin_user_by_email, upsert_bootstrap_admin
 
 _DEFAULT_JWT_SECRET = "dev-only-change-me"
 _DEFAULT_ADMIN_EMAIL = "admin@example.com"
@@ -83,7 +83,7 @@ def assert_production_secret_requirements(settings: Settings | None = None) -> N
         )
 
 
-def ensure_bootstrap_admin(settings: Settings | None = None) -> AdminUser:
+async def ensure_bootstrap_admin(settings: Settings | None = None) -> AdminUser:
     current = settings or get_settings()
     email = (current.admin_bootstrap_email or "").strip().lower()
     password = (current.admin_bootstrap_password or "").strip()
@@ -93,10 +93,10 @@ def ensure_bootstrap_admin(settings: Settings | None = None) -> AdminUser:
     if not password:
         raise RuntimeError("APP_ADMIN_BOOTSTRAP_PASSWORD is required")
 
-    with DBSession(engine) as db:
-        existing = get_admin_user_by_email(db, email)
+    async with AsyncSession(async_engine, expire_on_commit=False) as db:
+        existing = await get_admin_user_by_email(db, email)
         if existing is not None and verify_password(password, existing.password_hash):
             target_hash = existing.password_hash
         else:
             target_hash = hash_password(password)
-        return upsert_bootstrap_admin(db, email=email, password_hash=target_hash)
+        return await upsert_bootstrap_admin(db, email=email, password_hash=target_hash)
