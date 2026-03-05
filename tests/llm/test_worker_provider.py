@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from rpg_backend.config.settings import Settings
 import rpg_backend.llm.factory as factory_module
 from rpg_backend.llm.base import LLMNarrationError, LLMProviderConfigError, LLMRouteError
 from rpg_backend.llm.worker_client import WorkerClientError
@@ -90,12 +92,9 @@ def test_worker_provider_narration_blank_raises() -> None:
 
 def test_factory_returns_worker_provider(monkeypatch) -> None:
     settings = SimpleNamespace(
-        llm_gateway_mode="worker",
         llm_openai_route_model="route-model",
         llm_openai_narration_model="narration-model",
         llm_openai_model="",
-        llm_openai_base_url="",
-        llm_openai_api_key="",
         llm_openai_timeout_seconds=20.0,
         llm_openai_route_max_retries=3,
         llm_openai_narration_max_retries=1,
@@ -109,14 +108,11 @@ def test_factory_returns_worker_provider(monkeypatch) -> None:
     assert isinstance(provider, WorkerProvider)
 
 
-def test_factory_invalid_gateway_mode_raises(monkeypatch) -> None:
+def test_factory_missing_models_raises(monkeypatch) -> None:
     settings = SimpleNamespace(
-        llm_gateway_mode="bad-mode",
-        llm_openai_route_model="route-model",
-        llm_openai_narration_model="narration-model",
+        llm_openai_route_model="",
+        llm_openai_narration_model="",
         llm_openai_model="",
-        llm_openai_base_url="https://example.com",
-        llm_openai_api_key="key",
         llm_openai_timeout_seconds=20.0,
         llm_openai_route_max_retries=3,
         llm_openai_narration_max_retries=1,
@@ -127,3 +123,11 @@ def test_factory_invalid_gateway_mode_raises(monkeypatch) -> None:
 
     with pytest.raises(LLMProviderConfigError):
         factory_module.get_llm_provider()
+
+
+def test_settings_no_longer_exposes_gateway_mode() -> None:
+    assert "llm_gateway_mode" not in Settings.model_fields
+
+
+def test_openai_provider_module_removed() -> None:
+    assert not Path("rpg_backend/llm/openai_provider.py").exists()

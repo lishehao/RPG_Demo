@@ -22,6 +22,11 @@ def _settings_stub(*, max_retries: int = 3) -> SimpleNamespace:
     )
 
 
+def _install_prompt_compiler_stubs(monkeypatch, prompt_module, *, max_retries: int = 3) -> None:  # noqa: ANN001
+    monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=max_retries))
+    monkeypatch.setattr(prompt_module, "get_worker_client", lambda: object())
+
+
 def _outline_payload() -> dict[str, object]:
     return {
         "title": "Signal Rift Outline",
@@ -171,7 +176,7 @@ def _spec_payload(*, premise: str) -> dict[str, object]:
 def test_two_stage_compile_success_within_three_calls(monkeypatch) -> None:
     import rpg_backend.generator.prompt_compiler as prompt_module
 
-    monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
+    _install_prompt_compiler_stubs(monkeypatch, prompt_module, max_retries=3)
 
     queued = [_outline_payload(), _spec_payload(premise="A compact premise that fits all schema limits.")]
     captured_prompts: list[dict[str, object]] = []
@@ -199,7 +204,7 @@ def test_two_stage_compile_success_within_three_calls(monkeypatch) -> None:
 def test_two_stage_compile_stage2_validation_feedback_then_success(monkeypatch) -> None:
     import rpg_backend.generator.prompt_compiler as prompt_module
 
-    monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
+    _install_prompt_compiler_stubs(monkeypatch, prompt_module, max_retries=3)
     queued = [
         _outline_payload(),
         _spec_payload(premise="x" * 401),
@@ -230,7 +235,7 @@ def test_two_stage_compile_stage2_validation_feedback_then_success(monkeypatch) 
 def test_two_stage_compile_outline_invalid_raises_prompt_outline_invalid(monkeypatch) -> None:
     import rpg_backend.generator.prompt_compiler as prompt_module
 
-    monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
+    _install_prompt_compiler_stubs(monkeypatch, prompt_module, max_retries=3)
 
     invalid_outline = _outline_payload()
     invalid_outline["beats"][1]["title"] = invalid_outline["beats"][0]["title"]
@@ -257,7 +262,7 @@ def test_two_stage_compile_outline_invalid_raises_prompt_outline_invalid(monkeyp
 def test_compile_never_truncates_premise_locally(monkeypatch) -> None:
     import rpg_backend.generator.prompt_compiler as prompt_module
 
-    monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
+    _install_prompt_compiler_stubs(monkeypatch, prompt_module, max_retries=3)
     queued = [
         _outline_payload(),
         _spec_payload(premise="z" * 430),
@@ -306,7 +311,7 @@ def test_build_validation_feedback_adds_style_targets_for_outline_fields() -> No
 def test_outline_payload_contains_style_targets(monkeypatch) -> None:
     import rpg_backend.generator.prompt_compiler as prompt_module
 
-    monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
+    _install_prompt_compiler_stubs(monkeypatch, prompt_module, max_retries=3)
     queued = [_outline_payload(), _spec_payload(premise="A compact premise that fits all schema limits.")]
     captured_prompts: list[dict[str, object]] = []
 
@@ -343,7 +348,7 @@ def test_outline_payload_contains_style_targets(monkeypatch) -> None:
 def test_system_prompts_use_sectioned_contract_structure(monkeypatch) -> None:
     import rpg_backend.generator.prompt_compiler as prompt_module
 
-    monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
+    _install_prompt_compiler_stubs(monkeypatch, prompt_module, max_retries=3)
     queued = [_outline_payload(), _spec_payload(premise="A compact premise that fits all schema limits.")]
     captured_system_prompts: list[str] = []
     captured_payloads: list[dict[str, object]] = []
@@ -381,7 +386,7 @@ def test_system_prompts_use_sectioned_contract_structure(monkeypatch) -> None:
 def test_outline_invalid_error_notes_include_outline_feedback(monkeypatch) -> None:
     import rpg_backend.generator.prompt_compiler as prompt_module
 
-    monkeypatch.setattr(prompt_module, "get_settings", lambda: _settings_stub(max_retries=3))
+    _install_prompt_compiler_stubs(monkeypatch, prompt_module, max_retries=3)
     invalid_outline = _outline_payload()
     invalid_outline["premise_core"] = "x" * 300
 

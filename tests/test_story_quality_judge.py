@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import json
-import httpx
 import pytest
 
-import rpg_backend.eval.story_quality_judge as judge_module
 from rpg_backend.eval.story_quality_judge import StoryQualityJudge, StoryQualityJudgeError
+from rpg_backend.llm.json_gateway import JsonGatewayError, JsonGatewayResult
 
 
 def _valid_payload() -> dict[str, object]:
@@ -50,6 +48,8 @@ def _new_judge_for_retry_tests(max_retries: int = 3) -> StoryQualityJudge:
     judge = StoryQualityJudge.__new__(StoryQualityJudge)
     judge.model = "judge-model"
     judge.max_retries = max_retries
+    judge.temperature = 0.1
+    judge.timeout_seconds = 10.0
     return judge
 
 
@@ -57,14 +57,19 @@ def test_judge_does_not_retry_on_401(monkeypatch) -> None:
     judge = _new_judge_for_retry_tests(max_retries=3)
     call_count = 0
 
-    def _unauthorized(*, system_prompt: str, user_prompt: str) -> dict:  # noqa: ARG001
-        nonlocal call_count
-        call_count += 1
-        request = httpx.Request("POST", "https://example.com/v1/chat/completions")
-        response = httpx.Response(401, request=request)
-        raise httpx.HTTPStatusError("unauthorized", request=request, response=response)
+    class _FailingGateway:
+        def call_json_object(self, **_kwargs):  # noqa: ANN003, ANN201
+            nonlocal call_count
+            call_count += 1
+            raise JsonGatewayError(
+                error_code="json_task_http_error",
+                message="status=401",
+                retryable=False,
+                status_code=401,
+                attempts=1,
+            )
 
-    monkeypatch.setattr(judge, "_call_chat_completions", _unauthorized)
+    judge._json_gateway = _FailingGateway()
 
     with pytest.raises(StoryQualityJudgeError) as exc_info:
         judge.evaluate(
@@ -76,25 +81,25 @@ def test_judge_does_not_retry_on_401(monkeypatch) -> None:
         )
 
     assert exc_info.value.error_type == "judge_failed"
+    assert "status=401" in str(exc_info.value)
     assert call_count == 1
 
 
-def test_judge_retries_on_503_then_succeeds(monkeypatch) -> None:
+def test_judge_respects_gateway_attempts_on_success(monkeypatch) -> None:
     judge = _new_judge_for_retry_tests(max_retries=3)
     call_count = 0
 
-    monkeypatch.setattr(judge_module.time, "sleep", lambda _delay: None)
+    class _FlakyGateway:
+        def call_json_object(self, **_kwargs):  # noqa: ANN003, ANN201
+            nonlocal call_count
+            call_count += 1
+            return JsonGatewayResult(
+                payload=_valid_payload(),
+                attempts=3,
+                duration_ms=120,
+            )
 
-    def _flaky_then_ok(*, system_prompt: str, user_prompt: str) -> dict:  # noqa: ARG001
-        nonlocal call_count
-        call_count += 1
-        if call_count < 3:
-            request = httpx.Request("POST", "https://example.com/v1/chat/completions")
-            response = httpx.Response(503, request=request)
-            raise httpx.HTTPStatusError("temporary failure", request=request, response=response)
-        return {"choices": [{"message": {"content": json.dumps(_valid_payload())}}]}
-
-    monkeypatch.setattr(judge, "_call_chat_completions", _flaky_then_ok)
+    judge._json_gateway = _FlakyGateway()
 
     decision = judge.evaluate(
         prompt_text="prompt",
@@ -106,3 +111,30 @@ def test_judge_retries_on_503_then_succeeds(monkeypatch) -> None:
 
     assert decision.attempts == 3
     assert decision.result.verdict == "pass"
+    assert call_count == 1
+
+
+def test_judge_returns_failed_when_gateway_raises_runtime_error(monkeypatch) -> None:
+    judge = _new_judge_for_retry_tests(max_retries=3)
+
+    class _RuntimeFailingGateway:
+        def call_json_object(self, **_kwargs):  # noqa: ANN003, ANN201
+            nonlocal call_count
+            call_count += 1
+            raise RuntimeError("upstream exploded")
+
+    call_count = 0
+    judge._json_gateway = _RuntimeFailingGateway()
+
+    with pytest.raises(StoryQualityJudgeError) as exc_info:
+        judge.evaluate(
+            prompt_text="prompt",
+            expected_tone="tense",
+            pack_summary={"scenes": 14},
+            transcript_summary={"steps": 14},
+            metrics={"completion_rate": 1.0},
+        )
+
+    assert exc_info.value.error_type == "judge_failed"
+    assert "upstream exploded" in str(exc_info.value)
+    assert call_count == 1

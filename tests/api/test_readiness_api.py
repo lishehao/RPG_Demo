@@ -32,16 +32,16 @@ def _check(
     }
 
 
-def _install_ready_settings(monkeypatch, *, ttl_seconds: int = 30, gateway_mode: str = "local") -> None:
+def _install_ready_settings(monkeypatch, *, ttl_seconds: int = 30) -> None:
     settings = SimpleNamespace(
-        llm_gateway_mode=gateway_mode,
-        llm_openai_base_url="https://probe.example/compatible-mode",
+        llm_openai_base_url="https://upstream.example/compatible-mode",
         llm_openai_api_key="test-key",
         llm_openai_model="model-default",
         llm_openai_route_model="",
         llm_openai_narration_model="",
         llm_openai_generator_model="",
         llm_worker_base_url="http://worker.internal",
+        internal_worker_token="worker-secret",
         ready_llm_probe_enabled=True,
         ready_llm_probe_cache_ttl_seconds=ttl_seconds,
         ready_llm_probe_timeout_seconds=5.0,
@@ -135,20 +135,25 @@ def test_ready_uses_cached_llm_probe_within_ttl(client, monkeypatch) -> None:
     clock = {"value": 1000.0}
     monkeypatch.setattr(readiness_obs, "_monotonic", lambda: clock["value"])
 
-    calls: list[dict] = []
+    class _FakeWorkerClient:
+        def __init__(self) -> None:
+            self.calls = 0
 
-    def _fake_probe_request(*, base_url: str, api_key: str, probe_model: str, timeout_seconds: float) -> dict:
-        calls.append(
-            {
-                "base_url": base_url,
-                "api_key": api_key,
-                "probe_model": probe_model,
-                "timeout_seconds": timeout_seconds,
-            }
-        )
-        return {"ok": True, "who": "readiness-probe"}
+        def probe_ready(self, *, refresh: bool = False):  # noqa: ANN201
+            del refresh
+            self.calls += 1
+            return (
+                200,
+                {
+                    "status": "ready",
+                    "checks": {
+                        "llm_probe": {"ok": True, "meta": {"cached": False}},
+                    },
+                },
+            )
 
-    monkeypatch.setattr(readiness_obs, "_perform_llm_probe_request", _fake_probe_request)
+    fake_client = _FakeWorkerClient()
+    monkeypatch.setattr(readiness_obs, "get_worker_client", lambda: fake_client)
 
     first = client.get("/ready")
     clock["value"] = 1005.0
@@ -156,7 +161,7 @@ def test_ready_uses_cached_llm_probe_within_ttl(client, monkeypatch) -> None:
 
     assert first.status_code == 200
     assert second.status_code == 200
-    assert len(calls) == 1
+    assert fake_client.calls == 1
     assert first.json()["checks"]["llm_probe"]["meta"]["cached"] is False
     assert second.json()["checks"]["llm_probe"]["meta"]["cached"] is True
 
@@ -167,13 +172,25 @@ def test_ready_refresh_true_bypasses_cache(client, monkeypatch) -> None:
     clock = {"value": 2000.0}
     monkeypatch.setattr(readiness_obs, "_monotonic", lambda: clock["value"])
 
-    call_count = {"value": 0}
+    class _FakeWorkerClient:
+        def __init__(self) -> None:
+            self.calls = 0
 
-    def _fake_probe_request(*, base_url: str, api_key: str, probe_model: str, timeout_seconds: float) -> dict:  # noqa: ARG001
-        call_count["value"] += 1
-        return {"ok": True, "who": "readiness-probe"}
+        def probe_ready(self, *, refresh: bool = False):  # noqa: ANN201
+            del refresh
+            self.calls += 1
+            return (
+                200,
+                {
+                    "status": "ready",
+                    "checks": {
+                        "llm_probe": {"ok": True, "meta": {"cached": False}},
+                    },
+                },
+            )
 
-    monkeypatch.setattr(readiness_obs, "_perform_llm_probe_request", _fake_probe_request)
+    fake_client = _FakeWorkerClient()
+    monkeypatch.setattr(readiness_obs, "get_worker_client", lambda: fake_client)
 
     first = client.get("/ready")
     clock["value"] = 2001.0
@@ -181,7 +198,7 @@ def test_ready_refresh_true_bypasses_cache(client, monkeypatch) -> None:
 
     assert first.status_code == 200
     assert second.status_code == 200
-    assert call_count["value"] == 2
+    assert fake_client.calls == 2
     assert first.json()["checks"]["llm_probe"]["meta"]["cached"] is False
     assert second.json()["checks"]["llm_probe"]["meta"]["cached"] is False
 
@@ -192,13 +209,25 @@ def test_ready_cache_expires_after_ttl(client, monkeypatch) -> None:
     clock = {"value": 3000.0}
     monkeypatch.setattr(readiness_obs, "_monotonic", lambda: clock["value"])
 
-    call_count = {"value": 0}
+    class _FakeWorkerClient:
+        def __init__(self) -> None:
+            self.calls = 0
 
-    def _fake_probe_request(*, base_url: str, api_key: str, probe_model: str, timeout_seconds: float) -> dict:  # noqa: ARG001
-        call_count["value"] += 1
-        return {"ok": True, "who": "readiness-probe"}
+        def probe_ready(self, *, refresh: bool = False):  # noqa: ANN201
+            del refresh
+            self.calls += 1
+            return (
+                200,
+                {
+                    "status": "ready",
+                    "checks": {
+                        "llm_probe": {"ok": True, "meta": {"cached": False}},
+                    },
+                },
+            )
 
-    monkeypatch.setattr(readiness_obs, "_perform_llm_probe_request", _fake_probe_request)
+    fake_client = _FakeWorkerClient()
+    monkeypatch.setattr(readiness_obs, "get_worker_client", lambda: fake_client)
 
     first = client.get("/ready")
     clock["value"] = 3011.0
@@ -206,7 +235,7 @@ def test_ready_cache_expires_after_ttl(client, monkeypatch) -> None:
 
     assert first.status_code == 200
     assert second.status_code == 200
-    assert call_count["value"] == 2
+    assert fake_client.calls == 2
     assert first.json()["checks"]["llm_probe"]["meta"]["cached"] is False
     assert second.json()["checks"]["llm_probe"]["meta"]["cached"] is False
 
@@ -221,9 +250,9 @@ def test_ready_response_contains_x_request_id(client, monkeypatch) -> None:
     assert response.headers.get("X-Request-ID")
 
 
-def test_ready_worker_mode_uses_worker_probe(client, monkeypatch) -> None:
+def test_ready_uses_worker_probe(client, monkeypatch) -> None:
     readiness_obs.reset_llm_probe_cache()
-    _install_ready_settings(monkeypatch, ttl_seconds=30, gateway_mode="worker")
+    _install_ready_settings(monkeypatch, ttl_seconds=30)
     monkeypatch.setattr(readiness_obs, "check_db", lambda: _check(ok=True))
 
     class _FakeWorkerClient:

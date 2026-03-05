@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from rpg_backend.config.settings import get_settings
+from rpg_backend.llm.task_executor import TaskUsage
 from rpg_backend.llm_worker.main import app, service
 from rpg_backend.llm_worker.route_paths import (
     WORKER_JSON_OBJECT_TASK_PATH,
@@ -21,19 +22,22 @@ def _worker_headers() -> dict[str, str]:
 
 
 def test_worker_route_intent_uses_internal_path_and_v2_is_removed(monkeypatch) -> None:
-    async def _fake_route_intent(_payload) -> WorkerTaskRouteIntentResponse:  # noqa: ANN001
-        return WorkerTaskRouteIntentResponse(
-            move_id="global.help_me_progress",
-            args={},
-            confidence=0.92,
-            interpreted_intent="help me progress",
-            model="test-model",
-            attempts=1,
-            retry_count=0,
-            duration_ms=5,
+    async def _fake_execute_route_intent_task(_payload):  # noqa: ANN001, ANN201
+        return (
+            WorkerTaskRouteIntentResponse(
+                move_id="global.help_me_progress",
+                args={},
+                confidence=0.92,
+                interpreted_intent="help me progress",
+                model="test-model",
+                attempts=1,
+                retry_count=0,
+                duration_ms=5,
+            ),
+            TaskUsage(total_tokens=42),
         )
 
-    monkeypatch.setattr(service, "route_intent", _fake_route_intent)
+    monkeypatch.setattr(service, "execute_route_intent_task", _fake_execute_route_intent_task)
     with TestClient(app) as client:
         response = client.post(
             WORKER_ROUTE_INTENT_TASK_PATH,
@@ -63,16 +67,19 @@ def test_worker_route_intent_uses_internal_path_and_v2_is_removed(monkeypatch) -
 
 
 def test_worker_render_narration_uses_internal_path_and_v2_is_removed(monkeypatch) -> None:
-    async def _fake_render_narration(_payload) -> WorkerTaskNarrationResponse:  # noqa: ANN001
-        return WorkerTaskNarrationResponse(
-            narration_text="narration ok",
-            model="test-model",
-            attempts=1,
-            retry_count=0,
-            duration_ms=5,
+    async def _fake_execute_render_narration_task(_payload):  # noqa: ANN001, ANN201
+        return (
+            WorkerTaskNarrationResponse(
+                narration_text="narration ok",
+                model="test-model",
+                attempts=1,
+                retry_count=0,
+                duration_ms=5,
+            ),
+            TaskUsage(total_tokens=36),
         )
 
-    monkeypatch.setattr(service, "render_narration", _fake_render_narration)
+    monkeypatch.setattr(service, "execute_render_narration_task", _fake_execute_render_narration_task)
     with TestClient(app) as client:
         response = client.post(
             WORKER_RENDER_NARRATION_TASK_PATH,
@@ -102,16 +109,19 @@ def test_worker_render_narration_uses_internal_path_and_v2_is_removed(monkeypatc
 
 
 def test_worker_json_object_uses_internal_path_and_v2_is_removed(monkeypatch) -> None:
-    async def _fake_json_object(_payload) -> WorkerTaskJsonObjectResponse:  # noqa: ANN001
-        return WorkerTaskJsonObjectResponse(
-            payload={"ok": True},
-            model="test-model",
-            attempts=1,
-            retry_count=0,
-            duration_ms=5,
+    async def _fake_execute_json_object_task(_payload):  # noqa: ANN001, ANN201
+        return (
+            WorkerTaskJsonObjectResponse(
+                payload={"ok": True},
+                model="test-model",
+                attempts=1,
+                retry_count=0,
+                duration_ms=5,
+            ),
+            TaskUsage(total_tokens=28),
         )
 
-    monkeypatch.setattr(service, "json_object", _fake_json_object)
+    monkeypatch.setattr(service, "execute_json_object_task", _fake_execute_json_object_task)
     with TestClient(app) as client:
         response = client.post(
             WORKER_JSON_OBJECT_TASK_PATH,

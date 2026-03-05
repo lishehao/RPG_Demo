@@ -322,6 +322,8 @@ def test_session_create_returns_503_when_openai_provider_misconfigured(client, m
     monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
     monkeypatch.setenv("APP_LLM_OPENAI_ROUTE_MODEL", "")
     monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "")
+    monkeypatch.setenv("APP_LLM_WORKER_BASE_URL", "")
+    monkeypatch.setenv("APP_INTERNAL_WORKER_TOKEN", "")
     get_settings.cache_clear()
 
     response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
@@ -339,6 +341,8 @@ def test_session_create_succeeds_when_only_route_model_configured(client, monkey
     monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
     monkeypatch.setenv("APP_LLM_OPENAI_ROUTE_MODEL", "route-only-model")
     monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "")
+    monkeypatch.setenv("APP_LLM_WORKER_BASE_URL", "http://worker.internal")
+    monkeypatch.setenv("APP_INTERNAL_WORKER_TOKEN", "worker-token")
     get_settings.cache_clear()
 
     response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
@@ -356,6 +360,8 @@ def test_session_create_succeeds_when_only_narration_model_configured(client, mo
     monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
     monkeypatch.setenv("APP_LLM_OPENAI_ROUTE_MODEL", "")
     monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "narration-only-model")
+    monkeypatch.setenv("APP_LLM_WORKER_BASE_URL", "http://worker.internal")
+    monkeypatch.setenv("APP_INTERNAL_WORKER_TOKEN", "worker-token")
     get_settings.cache_clear()
 
     response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
