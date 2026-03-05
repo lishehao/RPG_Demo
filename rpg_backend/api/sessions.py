@@ -26,7 +26,7 @@ from rpg_backend.infrastructure.repositories.sessions_async import (
 )
 from rpg_backend.infrastructure.repositories.stories_async import get_story, get_story_version
 from rpg_backend.runtime.service import RuntimeService
-from rpg_backend.runtime.session_step.orchestrator import process_step_request
+from rpg_backend.application.session_step.use_case import process_step_request
 
 router = APIRouter(
     prefix=API_SESSIONS_PREFIX,
