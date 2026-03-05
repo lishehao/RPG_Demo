@@ -51,7 +51,7 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - `GET /admin/observability/llm-call-health`
   - `GET /admin/observability/readiness-health`
   - all three responses include `window_started_at/window_ended_at` for fixed window boundaries
-  - `llm-call-health` group fields are stable (`by_stage`: route/narration/json/unknown, `by_gateway_mode`: local/worker/unknown; new traffic should be worker/unknown only)
+  - `llm-call-health` group fields are stable (`by_stage`: route/narration/json/unknown, `by_gateway_mode`: worker/unknown)
 - Alert loop closure:
   - `scripts/emit_runtime_alerts.py` emits severity-based webhook alerts for `http_5xx_rate_high`, `backend_ready_unhealthy`, `worker_failure_rate_high`, and `llm_call_p95_high`
   - cooldown dedupe persisted via `RuntimeAlertDispatch`

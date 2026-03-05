@@ -44,7 +44,7 @@ Likely causes:
 Mitigations:
 1. Restore DB connectivity or release lock pressure.
 2. Correct env/secrets (`APP_LLM_*`, `APP_LLM_WORKER_*`).
-3. Temporarily reduce worker inflight limits.
+3. Temporarily reduce worker executor concurrency.
 4. Roll back latest backend/worker config release if regression is confirmed.
 
 Exit criteria:
@@ -63,14 +63,12 @@ Immediate checks:
 
 Likely causes:
 - Upstream model 429/5xx spikes.
-- Worker connection saturation or inflight misconfiguration.
+- Worker connection saturation or queue/concurrency misconfiguration.
 - Bad deploy of worker task handlers.
 
 Mitigations:
-1. Lower inflight limits:
-- `APP_LLM_WORKER_ROUTE_MAX_INFLIGHT`
-- `APP_LLM_WORKER_NARRATION_MAX_INFLIGHT`
-- `APP_LLM_WORKER_JSON_MAX_INFLIGHT`
+1. Lower worker executor concurrency:
+- `APP_LLM_WORKER_EXECUTOR_CONCURRENCY`
 2. Scale worker replicas temporarily.
 3. Tune worker queue/quota knobs (`APP_LLM_WORKER_QUEUE_*`, `APP_LLM_WORKER_DEFAULT_RPM/TPM`, model limits JSON).
 4. Roll back worker version/config if failures correlate with recent release.
@@ -99,7 +97,7 @@ Likely causes:
 - Prompt payload inflation.
 
 Mitigations:
-1. Reduce inflight limits to avoid queue collapse.
+1. Reduce worker executor concurrency to avoid queue collapse.
 2. Scale worker horizontally.
 3. Trim oversized prompt context if a recent change introduced payload bloat.
 4. Roll back latest runtime/gateway changes if latency jump aligns with deploy.
@@ -133,7 +131,7 @@ Exit criteria:
 
 ## Standard Mitigation Levers
 
-1. Reduce worker inflight values.
+1. Reduce worker executor concurrency.
 2. Increase worker replica count.
 3. Tune worker queue and quota settings.
 4. Roll back latest version/config.

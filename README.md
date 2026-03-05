@@ -107,9 +107,7 @@ Environment variables use `APP_` prefix.
 - `APP_LLM_WORKER_TOKEN_EST_ROUTE_OUTPUT` default: `96`
 - `APP_LLM_WORKER_TOKEN_EST_NARRATION_OUTPUT` default: `192`
 - `APP_LLM_WORKER_TOKEN_EST_JSON_OUTPUT` default: `256`
-- `APP_LLM_WORKER_ROUTE_MAX_INFLIGHT` default: `64`
-- `APP_LLM_WORKER_NARRATION_MAX_INFLIGHT` default: `64`
-- `APP_LLM_WORKER_JSON_MAX_INFLIGHT` default: `32`
+- `APP_LLM_WORKER_EXECUTOR_CONCURRENCY` is the single worker execution concurrency control
 - `APP_OBS_LOG_LEVEL` default: `INFO`
 - `APP_OBS_REQUEST_ID_HEADER` default: `X-Request-ID`
 - `APP_OBS_REDACT_INPUT_TEXT` default: `true`
@@ -760,12 +758,12 @@ curl -sS "http://127.0.0.1:8000/admin/observability/llm-call-health?window_secon
 
 Optional query:
 - `stage=route|narration|json`
-- `gateway_mode=worker|unknown` (`local` exists only for historical buckets)
+- `gateway_mode=worker|unknown`
 
 Response includes:
 - `window_started_at`, `window_ended_at`
 - `by_stage` fixed keys: `route`, `narration`, `json`, `unknown`
-- `by_gateway_mode` fixed keys: `local`, `worker`, `unknown`
+- `by_gateway_mode` fixed keys: `worker`, `unknown`
 
 ### 7) Readiness health aggregation
 

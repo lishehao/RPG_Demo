@@ -224,7 +224,7 @@ Auth governance:
 - `GET /admin/observability/http-health` — HTTP request health (`5xx rate`, `p95`, `top_5xx_paths`) with `window_started_at/window_ended_at`
 - `GET /admin/observability/llm-call-health` — per-call LLM health (`failure_rate`, `p95`) with fixed groups:
   - `by_stage`: `route/narration/json/unknown`
-  - `by_gateway_mode`: `local/worker/unknown` (new traffic should be `worker` or `unknown`)
+  - `by_gateway_mode`: `worker/unknown`
 - `GET /admin/observability/readiness-health` — backend/worker readiness failures + streaks with `window_started_at/window_ended_at`
 
 ### One-click generation (author tooling)
