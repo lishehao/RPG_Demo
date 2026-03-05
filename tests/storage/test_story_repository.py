@@ -1,7 +1,9 @@
-from sqlmodel import Session
+import asyncio
 
-from rpg_backend.storage.engine import engine
-from rpg_backend.storage.repositories.stories import (
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from rpg_backend.infrastructure.db.async_engine import async_engine
+from rpg_backend.infrastructure.repositories.stories_async import (
     create_story,
     get_latest_story_version,
     publish_story_version,
@@ -9,14 +11,15 @@ from rpg_backend.storage.repositories.stories import (
 
 
 def test_publish_increments_version() -> None:
-    with Session(engine) as db:
-        story = create_story(db, title="Draft", pack_json={"foo": "bar"})
-        story_id = story.id
-        publish_story_version(db, story)
-        publish_story_version(db, story)
+    async def _run() -> int | None:
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            story = await create_story(db, title="Draft", pack_json={"foo": "bar"})
+            story_id = story.id
+            await publish_story_version(db, story)
+            await publish_story_version(db, story)
 
-    with Session(engine) as db:
-        latest = get_latest_story_version(db, story_id)
+        async with AsyncSession(async_engine, expire_on_commit=False) as db:
+            latest = await get_latest_story_version(db, story_id)
+            return latest.version if latest is not None else None
 
-    assert latest is not None
-    assert latest.version == 2
+    assert asyncio.run(_run()) == 2
