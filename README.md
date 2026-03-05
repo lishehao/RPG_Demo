@@ -24,10 +24,12 @@ Code is split by responsibilities:
 - `rpg_backend/storage`: SQLModel entities + migration guard (`engine/migrations/models`)
 - `rpg_backend/infrastructure/repositories`: async repository source of truth (`*_async.py`)
 - `rpg_backend/api`: REST API (`/stories|/sessions|/admin`) + route registry/paths (`router_registry.py`, `route_paths.py`)
+- `rpg_backend/observability/readiness_core.py`: shared readiness core used by backend + worker (payload builder/config validator/async TTL probe cache)
 
 Internal import policy:
 - use explicit module imports (for example `rpg_backend.generator.pipeline`) instead of wrapper/facade paths.
 - do not import `rpg_backend.storage.repositories.*` (removed; no compatibility path).
+- do not import `rpg_backend.runtime.session_step.orchestrator` or `rpg_backend.runtime.session_step.contracts` (removed; use `rpg_backend.application.session_step.*`).
 
 Route path policy:
 - backend business routes and probe paths must come from `rpg_backend.api.route_paths`.
@@ -225,6 +227,7 @@ Readiness endpoint contract:
 - `/ready` returns:
   - `200` with `status=ready` when all checks pass
   - `503` with `status=not_ready` and detailed check diagnostics when any critical check fails
+- backend and worker readiness share one implementation core for config checks + probe cache semantics.
 - LLM readiness probe is cached in-process by TTL (`APP_READY_LLM_PROBE_CACHE_TTL_SECONDS`) to control token/latency overhead.
 - Deployment probe templates (Kubernetes + systemd process manager):
   - [docs/deployment_probes.md](/Users/lishehao/Desktop/Project/RPG_Demo/docs/deployment_probes.md)

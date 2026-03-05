@@ -178,8 +178,11 @@ Path governance:
 - router registration is centralized in `rpg_backend/api/router_registry.py`.
 - runtime orchestration:
   - staged session-step use case lives in `rpg_backend/application/session_step/*`
+  - runtime `session_step` facade layer is removed (no compatibility import path)
+  - LLM route/narration pipeline is async end-to-end (`LLMProvider` -> `WorkerClient` -> runtime stages)
   - async repositories live in `rpg_backend/infrastructure/repositories/*_async.py`
   - legacy sync repositories in `rpg_backend/storage/repositories/*` are removed (no compatibility import path)
+  - backend/worker readiness share a common core (`rpg_backend/observability/readiness_core.py`) for config checks and TTL probe caching
 
 Auth governance:
 - all business/admin routes require Bearer token.

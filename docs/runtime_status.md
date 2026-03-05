@@ -14,8 +14,14 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - worker quota reservation/reconcile/cleanup uses async repository path
   - backend readiness and HTTP observability persistence avoid sync DB calls on request hot path
 - Session step pipeline refactor:
-  - runtime step orchestration now executes through `application/session_step` staged use-case
-  - `runtime/session_step/orchestrator.py` is a thin async facade to the staged pipeline
+  - runtime step orchestration now executes directly through `application/session_step` staged use-case
+  - `runtime/session_step/*` facade/contracts were hard-cut and are no longer import targets
+- LLM async call-chain hard cut:
+  - `LLMProvider`, `WorkerProvider`, `WorkerClient`, runtime router/narration/service, generator pipeline, prompt compiler, and quality judge are async end-to-end
+  - LLM hot paths no longer use `asyncio.to_thread` bridges
+- Readiness shared-core refactor:
+  - backend and worker readiness both reuse `rpg_backend/observability/readiness_core.py`
+  - config validation, check payload shaping, and TTL probe cache semantics are single-source
 - Auth and account baseline:
   - `POST /admin/auth/login` issues JWT access token from bootstrap admin account
   - all business/admin routes require Bearer auth; only `/health`, `/ready`, `/admin/auth/login` are anonymous

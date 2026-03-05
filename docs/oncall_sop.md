@@ -33,6 +33,7 @@ Signal criteria:
 
 Immediate checks:
 1. Call `GET /ready` and inspect `checks.db`, `checks.llm_config`, `checks.llm_probe`.
+   - use `GET /ready?refresh=true` when you need to bypass readiness probe cache.
 2. Confirm backend process health: `GET /health`.
 3. Compare with worker readiness: `GET http://<worker>/ready`.
 
@@ -40,6 +41,7 @@ Likely causes:
 - DB unavailable or locked.
 - Missing/invalid LLM configuration.
 - Upstream LLM probe timeout/auth failure.
+- readiness cache stale data during active upstream incidents (verify with `refresh=true`).
 
 Mitigations:
 1. Restore DB connectivity or release lock pressure.
