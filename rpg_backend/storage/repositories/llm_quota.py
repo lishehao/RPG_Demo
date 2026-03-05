@@ -43,12 +43,12 @@ def reserve_quota_window(
     tpm_limit_value = max(1, int(tpm_limit))
     token_value = max(1, int(estimated_tokens))
 
-    db.exec(
+    db.execute(
         text(
             """
             INSERT INTO llmquotawindow (id, model, window_epoch_minute, rpm_used, tpm_used, updated_at)
             VALUES (:id, :model, :window_epoch_minute, 0, 0, :updated_at)
-            ON CONFLICT (model, window_epoch_minute) DO NOTHING
+            ON CONFLICT DO NOTHING
             """
         ),
         {
@@ -58,7 +58,7 @@ def reserve_quota_window(
             "updated_at": now_value,
         },
     )
-    update_result = db.exec(
+    update_result = db.execute(
         text(
             """
             UPDATE llmquotawindow
@@ -105,7 +105,7 @@ def adjust_quota_tokens(
     model_value = str(model or "").strip() or "unknown"
     minute_value = int(window_epoch_minute)
     now_value = now or utc_now()
-    db.exec(
+    db.execute(
         text(
             """
             UPDATE llmquotawindow
@@ -133,7 +133,7 @@ def cleanup_old_windows(
     *,
     min_window_epoch_minute: int,
 ) -> int:
-    delete_result = db.exec(
+    delete_result = db.execute(
         text("DELETE FROM llmquotawindow WHERE window_epoch_minute < :min_window_epoch_minute"),
         {"min_window_epoch_minute": int(min_window_epoch_minute)},
     )

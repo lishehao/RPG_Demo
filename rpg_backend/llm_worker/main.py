@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 import hmac
+import json
 
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.responses import JSONResponse
@@ -9,7 +10,9 @@ from sqlmodel import Session as DBSession
 
 from rpg_backend.api.errors import ApiError, register_error_handlers
 from rpg_backend.config.settings import get_settings
+from rpg_backend.llm_worker.dispatcher import WorkerDispatcher, WorkerQueueConfig
 from rpg_backend.llm_worker.errors import WorkerTaskError
+from rpg_backend.llm_worker.quota_service import QuotaService
 from rpg_backend.llm_worker.route_paths import (
     WORKER_HEALTH_PATH,
     WORKER_JSON_OBJECT_TASK_PATH,
@@ -36,6 +39,7 @@ from rpg_backend.storage.migrations import assert_schema_current
 from rpg_backend.storage.repositories.observability import save_readiness_probe_event
 
 service = LLMWorkerService()
+dispatcher: WorkerDispatcher | None = None
 
 
 def _save_worker_readiness_probe(
@@ -61,11 +65,40 @@ def _save_worker_readiness_probe(
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    global dispatcher
     configure_logging()
     assert_schema_current()
     assert_production_secret_requirements()
     await service.startup()
+    settings = get_settings()
+    weights_raw = (getattr(settings, "llm_worker_queue_weights_json", "") or "").strip()
+    try:
+        weights_payload = json.loads(weights_raw) if weights_raw else {}
+    except Exception:  # noqa: BLE001
+        weights_payload = {}
+    queue_config = WorkerQueueConfig(
+        max_size=int(getattr(settings, "llm_worker_queue_max_size", 1024)),
+        wait_timeout_seconds=float(getattr(settings, "llm_worker_queue_wait_timeout_seconds", 8.0)),
+        weights={
+            "route_intent": int((weights_payload or {}).get("route_intent", 5)),
+            "render_narration": int((weights_payload or {}).get("render_narration", 3)),
+            "json_object": int((weights_payload or {}).get("json_object", 2)),
+        },
+        executor_concurrency=int(getattr(settings, "llm_worker_executor_concurrency", 16)),
+        token_est_route_output=int(getattr(settings, "llm_worker_token_est_route_output", 96)),
+        token_est_narration_output=int(getattr(settings, "llm_worker_token_est_narration_output", 192)),
+        token_est_json_output=int(getattr(settings, "llm_worker_token_est_json_output", 256)),
+    )
+    dispatcher = WorkerDispatcher(
+        service=service,
+        quota_service=QuotaService(),
+        config=queue_config,
+    )
+    await dispatcher.start()
     yield
+    if dispatcher is not None:
+        await dispatcher.stop()
+        dispatcher = None
     await service.shutdown()
 
 
@@ -75,7 +108,13 @@ register_error_handlers(app)
 
 
 def _task_error_response(exc: WorkerTaskError) -> JSONResponse:
-    return JSONResponse(status_code=503, content=exc.to_payload().model_dump(mode="json"))
+    if exc.error_code in {"worker_queue_full", "worker_queue_timeout", "worker_rate_limited"}:
+        status_code = 429
+    elif exc.error_code == "worker_token_invalid":
+        status_code = 401
+    else:
+        status_code = 503
+    return JSONResponse(status_code=status_code, content=exc.to_payload().model_dump(mode="json"))
 
 
 def _require_worker_internal_token(
@@ -153,7 +192,8 @@ async def route_intent_task(
 ) -> WorkerTaskRouteIntentResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
     try:
-        result = await service.route_intent(payload)
+        assert dispatcher is not None
+        result = await dispatcher.submit_route_intent(payload=payload, request_id=request_id)
     except WorkerTaskError as exc:
         log_event(
             "llm_worker_task_failed",
@@ -189,7 +229,8 @@ async def render_narration_task(
 ) -> WorkerTaskNarrationResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
     try:
-        result = await service.render_narration(payload)
+        assert dispatcher is not None
+        result = await dispatcher.submit_render_narration(payload=payload, request_id=request_id)
     except WorkerTaskError as exc:
         log_event(
             "llm_worker_task_failed",
@@ -225,7 +266,8 @@ async def json_object_task(
 ) -> WorkerTaskJsonObjectResponse | JSONResponse:
     request_id = getattr(request.state, "request_id", None) or get_request_id()
     try:
-        result = await service.json_object(payload)
+        assert dispatcher is not None
+        result = await dispatcher.submit_json_object(payload=payload, request_id=request_id)
     except WorkerTaskError as exc:
         log_event(
             "llm_worker_task_failed",
