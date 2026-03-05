@@ -68,32 +68,11 @@ class PromptCompiler:
 
     def __init__(self) -> None:
         settings = get_settings()
-        self.gateway_mode = str(getattr(settings, "llm_gateway_mode", "local") or "local").strip().lower()
-        self.base_url = (settings.llm_openai_base_url or "").strip()
-        self.api_key = (settings.llm_openai_api_key or "").strip()
         self.model = self._resolve_model(settings)
         self.timeout_seconds = settings.llm_openai_timeout_seconds
         self.temperature = settings.llm_openai_generator_temperature
         self.max_retries = settings.llm_openai_generator_max_retries
-        worker_client = None
-        if self.gateway_mode == "worker":
-            try:
-                worker_client = get_worker_client()
-            except WorkerClientError as exc:
-                raise LLMProviderConfigError(
-                    f"llm worker misconfigured for prompt compiler: {exc.error_code}: {exc.message}"
-                ) from exc
-        self._json_gateway = JsonGateway(
-            gateway_mode=self.gateway_mode,
-            base_url=self.base_url,
-            api_key=self.api_key,
-            default_timeout_seconds=float(self.timeout_seconds),
-            connect_timeout_seconds=5.0,
-            max_connections=100,
-            max_keepalive_connections=20,
-            http2_enabled=False,
-            worker_client=worker_client,
-        )
+        self._json_gateway: JsonGateway | None = None
 
     @staticmethod
     def _resolve_model(settings) -> str:
@@ -156,6 +135,18 @@ class PromptCompiler:
         return "\n".join(f"- `{key}`: {catalog[key]}" for key in ordered_keys)
 
     def _call_json_object(self, *, system_prompt: str, payload: dict[str, Any]) -> dict[str, Any]:
+        if self._json_gateway is None:
+            try:
+                worker_client = get_worker_client()
+            except WorkerClientError as exc:
+                raise LLMProviderConfigError(
+                    f"llm worker misconfigured for prompt compiler: {exc.error_code}: {exc.message}"
+                ) from exc
+            self._json_gateway = JsonGateway(
+                default_timeout_seconds=float(self.timeout_seconds),
+                worker_client=worker_client,
+            )
+
         user_prompt = json.dumps(payload, ensure_ascii=False)
         try:
             result = self._json_gateway.call_json_object(
@@ -193,13 +184,6 @@ class PromptCompiler:
                 errors=["openai generator config missing model"],
                 notes=["check APP_LLM_OPENAI_GENERATOR_MODEL / APP_LLM_OPENAI_ROUTE_MODEL / APP_LLM_OPENAI_MODEL"],
             )
-        if self.gateway_mode != "worker" and (not self.base_url or not self.api_key):
-            raise PromptCompileError(
-                error_code="prompt_compile_failed",
-                errors=["openai generator config missing base_url/api_key"],
-                notes=["check APP_LLM_OPENAI_BASE_URL and APP_LLM_OPENAI_API_KEY"],
-            )
-
         required_move_bias_tags = [
             "social",
             "stealth",

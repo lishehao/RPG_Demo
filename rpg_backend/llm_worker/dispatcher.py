@@ -199,11 +199,11 @@ class WorkerDispatcher:
 
                 try:
                     if task.kind == "route_intent":
-                        result = await self._service.route_intent(task.payload)
+                        result, usage = await self._service.execute_route_intent_task(task.payload)
                     elif task.kind == "render_narration":
-                        result = await self._service.render_narration(task.payload)
+                        result, usage = await self._service.execute_render_narration_task(task.payload)
                     else:
-                        result = await self._service.json_object(task.payload)
+                        result, usage = await self._service.execute_json_object_task(task.payload)
                 except WorkerTaskError as exc:
                     if not task.future.done():
                         task.future.set_exception(exc)
@@ -220,6 +220,16 @@ class WorkerDispatcher:
                             )
                         )
                     continue
+
+                try:
+                    self._quota_service.reconcile_usage(
+                        model=model,
+                        window_epoch_minute=reservation.window_epoch_minute,
+                        estimated_tokens=reservation.estimated_tokens,
+                        actual_total_tokens=usage.total_tokens,
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
 
                 if not task.future.done():
                     task.future.set_result(result)

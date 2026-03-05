@@ -53,7 +53,7 @@ def render_echo_commit_hook(
         "stance_summary": stance_summary or "",
     }
     provider_name = "openai"
-    gateway_mode = str(getattr(provider, "gateway_mode", "local") or "local").strip().lower()
+    gateway_mode = str(getattr(provider, "gateway_mode", "unknown") or "unknown").strip().lower()
     started_at = time.perf_counter()
     try:
         rendered = provider.render_narration(prompt_slots, style_guard)

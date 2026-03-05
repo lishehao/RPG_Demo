@@ -54,7 +54,7 @@ def record_llm_failure_event(
         route_model=route_model,
         narration_model=narration_model,
     )
-    gateway_mode = str(exc.gateway_mode or provider_gateway_mode or "local")
+    gateway_mode = str(exc.gateway_mode or provider_gateway_mode or "unknown")
     llm_duration_ms = int(exc.llm_duration_ms) if exc.llm_duration_ms is not None else fallback_duration_ms
 
     save_llm_call_event(
@@ -85,9 +85,9 @@ def record_llm_success_events(
 ) -> tuple[int | None, int | None, str, str]:
     route_llm_duration_ms = runtime_metrics.get("route_llm_duration_ms")
     narration_llm_duration_ms = runtime_metrics.get("narration_llm_duration_ms")
-    route_llm_gateway_mode = str(runtime_metrics.get("route_llm_gateway_mode") or provider_gateway_mode or "local")
+    route_llm_gateway_mode = str(runtime_metrics.get("route_llm_gateway_mode") or provider_gateway_mode or "unknown")
     narration_llm_gateway_mode = str(
-        runtime_metrics.get("narration_llm_gateway_mode") or provider_gateway_mode or "local"
+        runtime_metrics.get("narration_llm_gateway_mode") or provider_gateway_mode or "unknown"
     )
 
     if isinstance(route_llm_duration_ms, int):

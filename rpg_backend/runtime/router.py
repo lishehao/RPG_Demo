@@ -115,7 +115,7 @@ def route_player_action(
         "state_snapshot": state_snapshot,
     }
     provider_name = "openai"
-    gateway_mode = str(getattr(provider, "gateway_mode", "local") or "local").strip().lower()
+    gateway_mode = str(getattr(provider, "gateway_mode", "unknown") or "unknown").strip().lower()
     route_started_at = time.perf_counter()
 
     try:

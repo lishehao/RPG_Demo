@@ -45,7 +45,7 @@ class WorkerClient:
         if not normalized:
             raise WorkerClientError(
                 error_code="llm_worker_misconfigured",
-                message="APP_LLM_WORKER_BASE_URL is required when gateway mode is worker",
+                message="APP_LLM_WORKER_BASE_URL is required",
                 retryable=False,
             )
         self.base_url = normalized
@@ -54,7 +54,7 @@ class WorkerClient:
         if not self.internal_token:
             raise WorkerClientError(
                 error_code="llm_worker_misconfigured",
-                message="APP_INTERNAL_WORKER_TOKEN is required when gateway mode is worker",
+                message="APP_INTERNAL_WORKER_TOKEN is required",
                 retryable=False,
             )
 

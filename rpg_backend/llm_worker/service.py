@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
-import time
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlparse
@@ -10,12 +8,17 @@ from urllib.parse import urlparse
 import httpx
 
 from rpg_backend.config.settings import get_settings
-from rpg_backend.llm.base import RouteIntentResult
 from rpg_backend.llm.factory import resolve_openai_models
-from rpg_backend.llm.task_executor import TaskUsage
-from rpg_backend.llm.retry_policy import is_retriable_llm_error, retry_delay_seconds
-from rpg_backend.llm_worker.upstream.base import WorkerUpstreamClient
-from rpg_backend.llm_worker.upstream.factory import build_worker_upstream_client
+from rpg_backend.llm.task_executor import TaskExecutionResult, TaskExecutorError, TaskUsage, execute_json_task
+from rpg_backend.llm.task_specs import (
+    TaskSpec,
+    build_readiness_probe_task,
+    build_render_narration_task,
+    build_route_intent_task,
+    validate_narration_payload,
+    validate_readiness_probe_payload,
+    validate_route_intent_payload,
+)
 from rpg_backend.llm_worker.errors import WorkerTaskError
 from rpg_backend.llm_worker.schemas import (
     WorkerReadyCheckPayload,
@@ -27,6 +30,8 @@ from rpg_backend.llm_worker.schemas import (
     WorkerTaskRouteIntentRequest,
     WorkerTaskRouteIntentResponse,
 )
+from rpg_backend.llm_worker.upstream.base import WorkerUpstreamClient
+from rpg_backend.llm_worker.upstream.factory import build_worker_upstream_client
 
 
 class LLMWorkerService:
@@ -43,7 +48,9 @@ class LLMWorkerService:
         self.route_model = route_model
         self.narration_model = narration_model
         self.generator_model = (settings.llm_openai_generator_model or "").strip() or route_model
-        self.upstream_api_format = (getattr(settings, "llm_worker_upstream_api_format", None) or "chat_completions").strip()
+        self.upstream_api_format = (
+            getattr(settings, "llm_worker_upstream_api_format", None) or "chat_completions"
+        ).strip()
 
         self._client: httpx.AsyncClient | None = None
         self._upstream_client: WorkerUpstreamClient | None = None
@@ -96,7 +103,7 @@ class LLMWorkerService:
 
     @staticmethod
     def _monotonic() -> float:
-        return time.monotonic()
+        return asyncio.get_running_loop().time()
 
     @staticmethod
     def _check_payload(
@@ -123,12 +130,14 @@ class LLMWorkerService:
         if not self.api_key:
             missing.append("APP_LLM_OPENAI_API_KEY")
         if not self.generator_model:
-            missing.append("one of APP_LLM_OPENAI_GENERATOR_MODEL / APP_LLM_OPENAI_ROUTE_MODEL / APP_LLM_OPENAI_NARRATION_MODEL / APP_LLM_OPENAI_MODEL")
+            missing.append(
+                "one of APP_LLM_OPENAI_GENERATOR_MODEL / APP_LLM_OPENAI_ROUTE_MODEL / APP_LLM_OPENAI_NARRATION_MODEL / APP_LLM_OPENAI_MODEL"
+            )
         if self.upstream_api_format not in {"chat_completions", "responses"}:
             missing.append("APP_LLM_WORKER_UPSTREAM_API_FORMAT(chat_completions|responses)")
         return missing
 
-    async def _call_upstream_json_object(
+    async def call_json_object(
         self,
         *,
         model: str,
@@ -149,230 +158,154 @@ class LLMWorkerService:
         )
         return result.payload, result.usage
 
-    @staticmethod
-    def _to_worker_error(
-        *,
-        exc: Exception,
-        model: str,
-        attempts: int,
-        default_code: str,
-    ) -> WorkerTaskError:
-        if isinstance(exc, httpx.TimeoutException):
-            return WorkerTaskError(
-                error_code=f"{default_code}_timeout",
-                message=str(exc),
-                retryable=True,
-                model=model,
-                attempts=attempts,
-            )
-        if isinstance(exc, httpx.HTTPStatusError):
-            return WorkerTaskError(
-                error_code=f"{default_code}_http_error",
-                message=f"status={exc.response.status_code}",
-                retryable=exc.response.status_code in {408, 409, 425, 429, 500, 502, 503, 504},
-                provider_status=exc.response.status_code,
-                model=model,
-                attempts=attempts,
-            )
-        if isinstance(exc, (json.JSONDecodeError, ValueError)):
-            return WorkerTaskError(
-                error_code=f"{default_code}_invalid_response",
-                message=str(exc),
-                retryable=True,
-                model=model,
-                attempts=attempts,
-            )
-        if isinstance(exc, httpx.HTTPError):
-            return WorkerTaskError(
-                error_code=f"{default_code}_http_error",
-                message=str(exc),
-                retryable=True,
-                model=model,
-                attempts=attempts,
-            )
-        return WorkerTaskError(
-            error_code=f"{default_code}_failed",
-            message=str(exc),
-            retryable=False,
-            model=model,
-            attempts=attempts,
-        )
-
-    async def _run_json_object_task(
+    async def _execute_task(
         self,
         *,
+        semaphore: asyncio.Semaphore,
+        spec: TaskSpec,
         model: str,
-        system_prompt: str,
-        user_prompt: str,
         temperature: float,
         max_retries: int,
         timeout_seconds: float,
         error_code_prefix: str,
-    ) -> tuple[dict[str, Any], int]:
-        last_exc: Exception | None = None
-        retries = max(1, min(max_retries, 3))
-
-        for attempt in range(1, retries + 1):
-            try:
-                payload, _usage = await self._call_upstream_json_object(
+    ) -> TaskExecutionResult:
+        try:
+            async with semaphore:
+                return await execute_json_task(
+                    caller=self,
                     model=model,
-                    system_prompt=system_prompt,
-                    user_prompt=user_prompt,
+                    system_prompt=spec.system_prompt,
+                    user_payload=spec.user_payload,
                     temperature=temperature,
+                    max_retries=max_retries,
                     timeout_seconds=timeout_seconds,
+                    error_code_prefix=error_code_prefix,
                 )
-                return payload, attempt
-            except Exception as exc:  # noqa: BLE001
-                last_exc = exc
-                if not is_retriable_llm_error(exc):
-                    break
-                if attempt < retries:
-                    delay = retry_delay_seconds(attempt, exc)
-                    if delay > 0:
-                        await asyncio.sleep(delay)
+        except TaskExecutorError as exc:
+            raise WorkerTaskError(
+                error_code=exc.error_code,
+                message=exc.message,
+                retryable=exc.retryable,
+                provider_status=exc.status_code,
+                model=exc.model or model,
+                attempts=exc.attempts,
+            ) from exc
 
-        assert last_exc is not None
-        raise self._to_worker_error(
-            exc=last_exc,
-            model=model,
-            attempts=retries,
-            default_code=error_code_prefix,
-        )
-
-    async def route_intent(self, payload: WorkerTaskRouteIntentRequest) -> WorkerTaskRouteIntentResponse:
+    async def execute_route_intent_task(
+        self,
+        payload: WorkerTaskRouteIntentRequest,
+    ) -> tuple[WorkerTaskRouteIntentResponse, TaskUsage]:
         started = self._monotonic()
-        system_prompt = (
-            "You route player text to a move. "
-            "Return JSON only with keys: move_id (string), args (object), confidence (0..1), interpreted_intent (string). "
-            "Prefer scene-specific moves over global moves. "
-            "Use scene_snapshot and state_snapshot to infer intent from current pressure, beat goals, and recent events. "
-            "Use global.help_me_progress only when the user explicitly asks for help or says they are stuck."
-        )
-        user_prompt = json.dumps(
-            {
-                "task": "route_intent",
-                "input_text": payload.text or "",
-                "fallback_move": payload.scene_context.get("fallback_move"),
-                "moves": payload.scene_context.get("moves", []),
-                "scene_seed": payload.scene_context.get("scene_seed", ""),
-                "scene_snapshot": payload.scene_context.get("scene_snapshot", {}),
-                "state_snapshot": payload.scene_context.get("state_snapshot", {}),
-                "route_policy": {
-                    "prefer_scene_specific": True,
-                    "allow_global_help": bool(payload.scene_context.get("allow_global_help", False)),
-                },
-            },
-            ensure_ascii=False,
-        )
         timeout_seconds = float(payload.timeout_seconds or self.settings.llm_openai_timeout_seconds)
-
-        async with self._route_sem:
-            result, attempts = await self._run_json_object_task(
-                model=payload.model,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                temperature=float(payload.temperature),
-                max_retries=int(payload.max_retries),
-                timeout_seconds=timeout_seconds,
-                error_code_prefix="route_task",
-            )
-
-        routed = RouteIntentResult.model_validate(result)
-        if not routed.move_id.strip():
+        spec = build_route_intent_task(scene_context=payload.scene_context, text=payload.text)
+        execution = await self._execute_task(
+            semaphore=self._route_sem,
+            spec=spec,
+            model=payload.model,
+            temperature=float(payload.temperature),
+            max_retries=int(payload.max_retries),
+            timeout_seconds=timeout_seconds,
+            error_code_prefix="route_task",
+        )
+        try:
+            routed = validate_route_intent_payload(execution.payload)
+        except ValueError as exc:
             raise WorkerTaskError(
                 error_code="route_task_invalid_response",
-                message="move_id is blank",
+                message=str(exc),
                 retryable=True,
                 model=payload.model,
-                attempts=attempts,
-            )
-        if not routed.interpreted_intent.strip():
-            raise WorkerTaskError(
-                error_code="route_task_invalid_response",
-                message="interpreted_intent is blank",
-                retryable=True,
-                model=payload.model,
-                attempts=attempts,
-            )
+                attempts=execution.attempts,
+            ) from exc
 
-        return WorkerTaskRouteIntentResponse(
+        response = WorkerTaskRouteIntentResponse(
             move_id=routed.move_id.strip(),
             args=dict(routed.args),
             confidence=float(routed.confidence),
             interpreted_intent=routed.interpreted_intent.strip(),
             model=payload.model,
-            attempts=attempts,
-            retry_count=max(0, attempts - 1),
+            attempts=execution.attempts,
+            retry_count=max(0, execution.attempts - 1),
             duration_ms=int((self._monotonic() - started) * 1000),
         )
+        return response, execution.usage
 
-    async def render_narration(self, payload: WorkerTaskNarrationRequest) -> WorkerTaskNarrationResponse:
+    async def route_intent(self, payload: WorkerTaskRouteIntentRequest) -> WorkerTaskRouteIntentResponse:
+        response, _usage = await self.execute_route_intent_task(payload)
+        return response
+
+    async def execute_render_narration_task(
+        self,
+        payload: WorkerTaskNarrationRequest,
+    ) -> tuple[WorkerTaskNarrationResponse, TaskUsage]:
         started = self._monotonic()
-        system_prompt = (
-            "Write one concise narration paragraph from given slots. "
-            "Return JSON only with key narration_text (string)."
-        )
-        user_prompt = json.dumps(
-            {
-                "task": "render_narration",
-                "style_guard": payload.style_guard,
-                "slots": payload.slots,
-            },
-            ensure_ascii=False,
-        )
         timeout_seconds = float(payload.timeout_seconds or self.settings.llm_openai_timeout_seconds)
-
-        async with self._narration_sem:
-            result, attempts = await self._run_json_object_task(
-                model=payload.model,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                temperature=float(payload.temperature),
-                max_retries=int(payload.max_retries),
-                timeout_seconds=timeout_seconds,
-                error_code_prefix="narration_task",
-            )
-
-        narration_text = result.get("narration_text")
-        if not isinstance(narration_text, str) or not narration_text.strip():
+        spec = build_render_narration_task(slots=payload.slots, style_guard=payload.style_guard)
+        execution = await self._execute_task(
+            semaphore=self._narration_sem,
+            spec=spec,
+            model=payload.model,
+            temperature=float(payload.temperature),
+            max_retries=int(payload.max_retries),
+            timeout_seconds=timeout_seconds,
+            error_code_prefix="narration_task",
+        )
+        try:
+            narration = validate_narration_payload(execution.payload)
+        except ValueError as exc:
             raise WorkerTaskError(
                 error_code="narration_task_invalid_response",
-                message="narration_text is blank",
+                message=str(exc),
                 retryable=True,
                 model=payload.model,
-                attempts=attempts,
-            )
+                attempts=execution.attempts,
+            ) from exc
 
-        return WorkerTaskNarrationResponse(
-            narration_text=narration_text.strip(),
+        response = WorkerTaskNarrationResponse(
+            narration_text=narration.narration_text.strip(),
             model=payload.model,
-            attempts=attempts,
-            retry_count=max(0, attempts - 1),
+            attempts=execution.attempts,
+            retry_count=max(0, execution.attempts - 1),
             duration_ms=int((self._monotonic() - started) * 1000),
         )
+        return response, execution.usage
 
-    async def json_object(self, payload: WorkerTaskJsonObjectRequest) -> WorkerTaskJsonObjectResponse:
+    async def render_narration(self, payload: WorkerTaskNarrationRequest) -> WorkerTaskNarrationResponse:
+        response, _usage = await self.execute_render_narration_task(payload)
+        return response
+
+    async def execute_json_object_task(
+        self,
+        payload: WorkerTaskJsonObjectRequest,
+    ) -> tuple[WorkerTaskJsonObjectResponse, TaskUsage]:
         started = self._monotonic()
         timeout_seconds = float(payload.timeout_seconds or self.settings.llm_openai_timeout_seconds)
-
-        async with self._json_sem:
-            result, attempts = await self._run_json_object_task(
-                model=payload.model,
-                system_prompt=payload.system_prompt,
-                user_prompt=payload.user_prompt,
-                temperature=float(payload.temperature),
-                max_retries=int(payload.max_retries),
-                timeout_seconds=timeout_seconds,
-                error_code_prefix="json_task",
-            )
-
-        return WorkerTaskJsonObjectResponse(
-            payload=result,
+        spec = TaskSpec(
+            task_name="json_object",
+            system_prompt=payload.system_prompt,
+            user_payload=payload.user_prompt,
+        )
+        execution = await self._execute_task(
+            semaphore=self._json_sem,
+            spec=spec,
             model=payload.model,
-            attempts=attempts,
-            retry_count=max(0, attempts - 1),
+            temperature=float(payload.temperature),
+            max_retries=int(payload.max_retries),
+            timeout_seconds=timeout_seconds,
+            error_code_prefix="json_task",
+        )
+        response = WorkerTaskJsonObjectResponse(
+            payload=execution.payload,
+            model=payload.model,
+            attempts=execution.attempts,
+            retry_count=max(0, execution.attempts - 1),
             duration_ms=int((self._monotonic() - started) * 1000),
         )
+        return response, execution.usage
+
+    async def json_object(self, payload: WorkerTaskJsonObjectRequest) -> WorkerTaskJsonObjectResponse:
+        response, _usage = await self.execute_json_object_task(payload)
+        return response
 
     async def _run_probe(self) -> WorkerReadyCheckPayload:
         started = self._monotonic()
@@ -387,21 +320,16 @@ class LLMWorkerService:
             )
 
         try:
-            result, _attempts = await self._run_json_object_task(
+            execution = await self._execute_task(
+                semaphore=self._json_sem,
+                spec=build_readiness_probe_task(),
                 model=probe_model,
-                system_prompt="Readiness probe. Return JSON only with keys ok, who.",
-                user_prompt="who are you",
                 temperature=0.0,
                 max_retries=1,
                 timeout_seconds=float(self.settings.ready_llm_probe_timeout_seconds),
                 error_code_prefix="worker_probe",
             )
-            ok_value = result.get("ok")
-            who_value = result.get("who")
-            if ok_value is not True:
-                raise ValueError("probe response ok is not true")
-            if not isinstance(who_value, str) or not who_value.strip():
-                raise ValueError("probe response who is blank")
+            parsed = validate_readiness_probe_payload(execution.payload)
             return self._check_payload(
                 ok=True,
                 latency_ms=int((self._monotonic() - started) * 1000),
@@ -409,7 +337,7 @@ class LLMWorkerService:
                     "cached": False,
                     "probe_model": probe_model,
                     "base_url_host": urlparse(self.base_url).hostname,
-                    "who_preview": who_value.strip()[:120],
+                    "who_preview": parsed.who.strip()[:120],
                 },
             )
         except WorkerTaskError as exc:

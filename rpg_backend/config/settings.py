@@ -30,7 +30,6 @@ class Settings(BaseSettings):
     llm_openai_generator_temperature: float = Field(default=0.15, ge=0.0, le=2.0)
     llm_openai_generator_max_retries: int = Field(default=3, ge=1, le=3)
     generator_candidate_parallelism: int = Field(default=1, ge=1, le=8)
-    llm_gateway_mode: str = Field(default="local")
     llm_worker_base_url: str | None = None
     llm_worker_upstream_api_format: str = Field(default="chat_completions")
     llm_worker_model_limits_json: str = "{}"

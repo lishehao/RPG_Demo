@@ -128,6 +128,7 @@ async def execute_json_task(
     retries = max(1, min(int(max_retries), 3))
     started = time.perf_counter()
     last_exc: Exception | None = None
+    last_attempt = 1
     user_prompt = user_payload if isinstance(user_payload, str) else json.dumps(user_payload, ensure_ascii=False)
 
     for attempt in range(1, retries + 1):
@@ -149,6 +150,7 @@ async def execute_json_task(
             )
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
+            last_attempt = attempt
             if not is_retriable_llm_error(exc) or attempt >= retries:
                 break
             delay = retry_delay_seconds(attempt, exc)
@@ -158,7 +160,7 @@ async def execute_json_task(
     assert last_exc is not None
     raise _to_executor_error(
         exc=last_exc,
-        attempts=retries,
+        attempts=last_attempt,
         model=model,
         error_code_prefix=error_code_prefix,
     ) from last_exc

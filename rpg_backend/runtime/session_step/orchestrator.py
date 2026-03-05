@@ -194,7 +194,7 @@ def record_llm_call_events(
     fallback_duration_ms: int | None = None,
 ) -> tuple[int | None, int | None, str, str]:
     provider = execution_context.runtime.provider
-    provider_gateway_mode = str(getattr(provider, "gateway_mode", "local") or "local")
+    provider_gateway_mode = str(getattr(provider, "gateway_mode", "unknown") or "unknown")
 
     if runtime_exc is not None:
         llm_duration_ms, llm_gateway_mode, _stage_model = record_llm_failure_event(
@@ -326,7 +326,7 @@ def emit_success_or_failure_events(
             narration_model=execution_context.narration_model,
             duration_ms=int(failure_duration_ms or 0),
             llm_duration_ms=int(llm_duration_ms or failure_duration_ms or 0),
-            llm_gateway_mode=str(llm_gateway_mode or "local"),
+            llm_gateway_mode=str(llm_gateway_mode or "unknown"),
             exc=runtime_exc,
             input_log_fields=ctx.input_log_fields,
         )
@@ -349,8 +349,8 @@ def emit_success_or_failure_events(
         duration_ms=execution_success.duration_ms,
         route_llm_duration_ms=route_llm_duration_ms,
         narration_llm_duration_ms=narration_llm_duration_ms,
-        route_llm_gateway_mode=str(route_llm_gateway_mode or "local"),
-        narration_llm_gateway_mode=str(narration_llm_gateway_mode or "local"),
+        route_llm_gateway_mode=str(route_llm_gateway_mode or "unknown"),
+        narration_llm_gateway_mode=str(narration_llm_gateway_mode or "unknown"),
         result=execution_success.result,
         provider_name=execution_context.provider_name,
         input_log_fields=ctx.input_log_fields,
