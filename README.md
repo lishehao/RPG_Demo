@@ -37,6 +37,12 @@ Route path policy:
 - tests/scripts should import the same constants/helpers (no ad-hoc hardcoded route literals).
 - `LEGACY_V2_*` route constants are removed from production code; `/v2/*` probes live in tests only.
 
+Dual-agent monorepo collaboration:
+- frontend workspace lives under `frontend/` (Antigravity-owned), backend remains under `rpg_backend/` (Codex-owned).
+- backend/route schema changes must update `contracts/openapi/backend.openapi.json` first.
+- frontend consumes generated SDK from `frontend/src/shared/api/generated/backend-sdk.ts` (no manual protocol guessing).
+- detailed workflow: `docs/agent_collab_workflow.md`.
+
 Runtime architecture source of truth:
 - `docs/architecture.md`
 - `docs/runtime_status.md`
@@ -794,6 +800,14 @@ Default low-cost test set (no live OpenAI critical tests):
 
 ```bash
 pytest -q -m "not live_openai_critical"
+```
+
+Contract sync checks (backend-first gate):
+
+```bash
+python -m scripts.export_openapi --check
+python -m scripts.generate_frontend_sdk --check
+PYTHONPATH=. python -m pytest -q tests/test_contract_artifacts_sync.py tests/api/test_route_contract_snapshot.py
 ```
 
 Live OpenAI critical validation (sessions runtime + gate precheck):

@@ -177,6 +177,8 @@ Path governance:
 - worker task paths are centralized in `rpg_backend/llm_worker/route_paths.py`.
 - router registration is centralized in `rpg_backend/api/router_registry.py`.
 - production route path module contains no `LEGACY_V2_*` compatibility constants.
+- backend OpenAPI artifact is published at `contracts/openapi/backend.openapi.json` and treated as frontend contract source of truth.
+- frontend generated SDK artifact is `frontend/src/shared/api/generated/backend-sdk.ts` (generated, not hand-edited).
 - runtime orchestration:
   - staged session-step use case lives in `rpg_backend/application/session_step/*`
   - runtime `session_step` namespace is removed (no compatibility import path)

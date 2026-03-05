@@ -24,6 +24,10 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - backend and worker readiness both reuse `rpg_backend/observability/readiness_core.py`
   - config validation, check payload shaping, and TTL probe cache semantics are single-source
   - backend readiness module is async-only (no awaitable/sync compatibility helpers)
+- Monorepo backend/frontend contract flow:
+  - backend exports `contracts/openapi/backend.openapi.json` as canonical API contract artifact
+  - frontend consumes generated SDK `frontend/src/shared/api/generated/backend-sdk.ts`
+  - backend-first merge gate is enforced by contract sync checks (`scripts.export_openapi` + `scripts.generate_frontend_sdk`)
 - Auth and account baseline:
   - `POST /admin/auth/login` issues JWT access token from bootstrap admin account
   - all business/admin routes require Bearer auth; only `/health`, `/ready`, `/admin/auth/login` are anonymous
