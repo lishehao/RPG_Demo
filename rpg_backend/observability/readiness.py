@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-import copy
 import inspect
-import threading
-import time
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
 
@@ -16,18 +13,23 @@ from rpg_backend.config.settings import get_settings
 from rpg_backend.infrastructure.db.async_engine import async_engine
 from rpg_backend.llm.factory import resolve_openai_models
 from rpg_backend.llm.worker_client import WorkerClientError, get_worker_client
+from rpg_backend.observability.readiness_core import (
+    AsyncTTLProbeCache,
+    build_check_payload,
+    monotonic as _core_monotonic,
+    utc_now as _core_utc_now,
+    validate_required_config,
+)
 
-_probe_cache_lock = asyncio.Lock()
-_probe_cache_entry: dict[str, Any] | None = None
-_sync_probe_cache_lock = threading.Lock()
+_probe_cache: AsyncTTLProbeCache[dict[str, Any]] = AsyncTTLProbeCache()
 
 
 def _utc_now() -> datetime:
-    return datetime.now(UTC)
+    return _core_utc_now()
 
 
 def _monotonic() -> float:
-    return time.monotonic()
+    return _core_monotonic()
 
 
 def _build_check_result(
@@ -39,14 +41,14 @@ def _build_check_result(
     message: str | None,
     meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return {
-        "ok": bool(ok),
-        "latency_ms": latency_ms,
-        "checked_at": checked_at,
-        "error_code": error_code,
-        "message": message,
-        "meta": meta or {},
-    }
+    return build_check_payload(
+        ok=ok,
+        latency_ms=latency_ms,
+        checked_at=checked_at,
+        error_code=error_code,
+        message=message,
+        meta=meta,
+    )
 
 
 def _resolved_probe_config() -> tuple[dict[str, Any], list[str]]:
@@ -59,11 +61,12 @@ def _resolved_probe_config() -> tuple[dict[str, Any], list[str]]:
         settings.llm_openai_model,
     )
     probe_model = (settings.llm_openai_generator_model or "").strip() or route_model or narration_model
-    missing: list[str] = []
-    if not worker_base_url:
-        missing.append("APP_LLM_WORKER_BASE_URL")
-    if not internal_worker_token:
-        missing.append("APP_INTERNAL_WORKER_TOKEN")
+    missing = validate_required_config(
+        {
+            "APP_LLM_WORKER_BASE_URL": worker_base_url,
+            "APP_INTERNAL_WORKER_TOKEN": internal_worker_token,
+        }
+    )
     return (
         {
             "gateway_mode": "worker",
@@ -134,20 +137,30 @@ def check_llm_config() -> dict[str, Any]:
 
 
 async def reset_llm_probe_cache_async() -> None:
-    global _probe_cache_entry
-    async with _probe_cache_lock:
-        _probe_cache_entry = None
+    await _probe_cache.reset()
 
 
 def reset_llm_probe_cache() -> None:
-    global _probe_cache_entry
-    with _sync_probe_cache_lock:
-        _probe_cache_entry = None
+    try:
+        asyncio.get_running_loop().create_task(reset_llm_probe_cache_async())
+    except RuntimeError:
+        asyncio.run(reset_llm_probe_cache_async())
+
+
+def _mark_cached_probe_result(payload: dict[str, Any]) -> dict[str, Any]:
+    meta = dict(payload.get("meta") or {})
+    meta["cached"] = True
+    payload["meta"] = meta
+    return payload
+
+
+async def _await_if_needed(value: Any) -> Any:
+    if inspect.isawaitable(value):
+        return await value
+    return value
 
 
 async def check_llm_probe_async(*, refresh: bool = False) -> dict[str, Any]:
-    global _probe_cache_entry
-
     settings = get_settings()
     checked_at = _utc_now()
     if not settings.ready_llm_probe_enabled:
@@ -182,51 +195,37 @@ async def check_llm_probe_async(*, refresh: bool = False) -> dict[str, Any]:
             },
         )
 
-    now_monotonic = _monotonic()
-    if not refresh:
-        async with _probe_cache_lock:
-            cache_entry = _probe_cache_entry
-            if (
-                cache_entry is not None
-                and cache_entry.get("cache_key") == cache_key
-                and float(cache_entry.get("expires_at_monotonic", 0.0)) > now_monotonic
-            ):
-                cached_result = copy.deepcopy(cache_entry["result"])
-                meta = dict(cached_result.get("meta") or {})
-                meta["cached"] = True
-                cached_result["meta"] = meta
-                return cached_result
+    async def _compute_probe_result() -> dict[str, Any]:
+        started_at = _monotonic()
+        try:
+            worker_client = get_worker_client()
+            status_code, worker_payload = await _await_if_needed(worker_client.probe_ready(refresh=refresh))
+            if status_code >= 400:
+                error_message = str(
+                    worker_payload.get("checks", {}).get("llm_probe", {}).get("error_code")
+                    or worker_payload.get("status")
+                    or f"worker status={status_code}"
+                )
+                return _build_check_result(
+                    ok=False,
+                    latency_ms=int((_monotonic() - started_at) * 1000),
+                    checked_at=_utc_now(),
+                    error_code="llm_probe_worker_not_ready",
+                    message=error_message,
+                    meta={
+                        "cached": False,
+                        "gateway_mode": "worker",
+                        "probe_model": probe_model,
+                        "worker_host": worker_host,
+                        "worker_status_code": status_code,
+                    },
+                )
 
-    started_at = _monotonic()
-    try:
-        worker_client = get_worker_client()
-        status_code, worker_payload = await asyncio.to_thread(worker_client.probe_ready, refresh=refresh)
-        if status_code >= 400:
-            error_message = str(
-                worker_payload.get("checks", {}).get("llm_probe", {}).get("error_code")
-                or worker_payload.get("status")
-                or f"worker status={status_code}"
-            )
-            result = _build_check_result(
-                ok=False,
-                latency_ms=int((_monotonic() - started_at) * 1000),
-                checked_at=_utc_now(),
-                error_code="llm_probe_worker_not_ready",
-                message=error_message,
-                meta={
-                    "cached": False,
-                    "gateway_mode": "worker",
-                    "probe_model": probe_model,
-                    "worker_host": worker_host,
-                    "worker_status_code": status_code,
-                },
-            )
-        else:
             worker_status = str(worker_payload.get("status") or "")
             if worker_status != "ready":
                 raise ValueError(f"worker /ready returned unexpected status: {worker_status}")
             llm_probe = (worker_payload.get("checks") or {}).get("llm_probe") or {}
-            result = _build_check_result(
+            return _build_check_result(
                 ok=True,
                 latency_ms=int((_monotonic() - started_at) * 1000),
                 checked_at=_utc_now(),
@@ -240,42 +239,43 @@ async def check_llm_probe_async(*, refresh: bool = False) -> dict[str, Any]:
                     "worker_probe_cached": bool((llm_probe.get("meta") or {}).get("cached", False)),
                 },
             )
-    except WorkerClientError as exc:
-        result = _build_check_result(
-            ok=False,
-            latency_ms=int((_monotonic() - started_at) * 1000),
-            checked_at=_utc_now(),
-            error_code="llm_probe_worker_unreachable",
-            message=f"{exc.error_code}: {exc.message}",
-            meta={
-                "cached": False,
-                "gateway_mode": "worker",
-                "probe_model": probe_model,
-                "worker_host": worker_host,
-            },
-        )
-    except Exception as exc:  # noqa: BLE001
-        result = _build_check_result(
-            ok=False,
-            latency_ms=int((_monotonic() - started_at) * 1000),
-            checked_at=_utc_now(),
-            error_code="llm_probe_failed",
-            message=str(exc),
-            meta={
-                "cached": False,
-                "gateway_mode": "worker",
-                "probe_model": probe_model,
-                "worker_host": worker_host,
-            },
-        )
+        except WorkerClientError as exc:
+            return _build_check_result(
+                ok=False,
+                latency_ms=int((_monotonic() - started_at) * 1000),
+                checked_at=_utc_now(),
+                error_code="llm_probe_worker_unreachable",
+                message=f"{exc.error_code}: {exc.message}",
+                meta={
+                    "cached": False,
+                    "gateway_mode": "worker",
+                    "probe_model": probe_model,
+                    "worker_host": worker_host,
+                },
+            )
+        except Exception as exc:  # noqa: BLE001
+            return _build_check_result(
+                ok=False,
+                latency_ms=int((_monotonic() - started_at) * 1000),
+                checked_at=_utc_now(),
+                error_code="llm_probe_failed",
+                message=str(exc),
+                meta={
+                    "cached": False,
+                    "gateway_mode": "worker",
+                    "probe_model": probe_model,
+                    "worker_host": worker_host,
+                },
+            )
 
-    async with _probe_cache_lock:
-        _probe_cache_entry = {
-            "cache_key": cache_key,
-            "expires_at_monotonic": _monotonic() + ttl_seconds,
-            "result": copy.deepcopy(result),
-        }
-    return result
+    return await _probe_cache.get_or_compute(
+        refresh=refresh,
+        cache_key=cache_key,
+        ttl_seconds=float(ttl_seconds),
+        compute=_compute_probe_result,
+        mark_cached=_mark_cached_probe_result,
+        now_provider=_monotonic,
+    )
 
 
 async def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:

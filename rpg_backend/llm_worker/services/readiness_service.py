@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import asyncio
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
 
@@ -9,23 +8,27 @@ from rpg_backend.llm.task_specs import build_readiness_probe_task, validate_read
 from rpg_backend.llm_worker.errors import WorkerTaskError
 from rpg_backend.llm_worker.schemas import WorkerReadyCheckPayload, WorkerReadyResponse
 from rpg_backend.llm_worker.services.task_service import WorkerTaskService
+from rpg_backend.observability.readiness_core import (
+    AsyncTTLProbeCache,
+    build_check_payload,
+    monotonic,
+    utc_now,
+    validate_required_config,
+)
 
 
 class WorkerReadinessService:
     def __init__(self, *, task_service: WorkerTaskService) -> None:
         self._task_service = task_service
-        self._probe_cache_lock = asyncio.Lock()
-        self._probe_cache_key = ""
-        self._probe_cache_expires = 0.0
-        self._probe_cache_value: WorkerReadyCheckPayload | None = None
+        self._probe_cache: AsyncTTLProbeCache[WorkerReadyCheckPayload] = AsyncTTLProbeCache()
 
     @staticmethod
     def _utc_now() -> datetime:
-        return datetime.now(UTC)
+        return utc_now()
 
     @staticmethod
     def _monotonic() -> float:
-        return asyncio.get_running_loop().time()
+        return monotonic()
 
     @staticmethod
     def _check_payload(
@@ -36,28 +39,36 @@ class WorkerReadinessService:
         message: str | None = None,
         meta: dict[str, Any] | None = None,
     ) -> WorkerReadyCheckPayload:
-        return WorkerReadyCheckPayload(
-            ok=bool(ok),
-            checked_at=WorkerReadinessService._utc_now(),
-            latency_ms=latency_ms,
-            error_code=error_code,
-            message=message,
-            meta=meta or {},
+        return WorkerReadyCheckPayload.model_validate(
+            build_check_payload(
+                ok=ok,
+                latency_ms=latency_ms,
+                checked_at=WorkerReadinessService._utc_now(),
+                error_code=error_code,
+                message=message,
+                meta=meta,
+            )
         )
 
     def _config_missing(self) -> list[str]:
-        missing: list[str] = []
-        if not self._task_service.base_url:
-            missing.append("APP_LLM_OPENAI_BASE_URL")
-        if not self._task_service.api_key:
-            missing.append("APP_LLM_OPENAI_API_KEY")
-        if not self._task_service.generator_model:
-            missing.append(
-                "one of APP_LLM_OPENAI_GENERATOR_MODEL / APP_LLM_OPENAI_ROUTE_MODEL / APP_LLM_OPENAI_NARRATION_MODEL / APP_LLM_OPENAI_MODEL"
-            )
+        missing = validate_required_config(
+            {
+                "APP_LLM_OPENAI_BASE_URL": self._task_service.base_url,
+                "APP_LLM_OPENAI_API_KEY": self._task_service.api_key,
+                (
+                    "one of APP_LLM_OPENAI_GENERATOR_MODEL / APP_LLM_OPENAI_ROUTE_MODEL / "
+                    "APP_LLM_OPENAI_NARRATION_MODEL / APP_LLM_OPENAI_MODEL"
+                ): self._task_service.generator_model,
+            }
+        )
         if self._task_service.upstream_api_format not in {"chat_completions", "responses"}:
             missing.append("APP_LLM_WORKER_UPSTREAM_API_FORMAT(chat_completions|responses)")
         return missing
+
+    @staticmethod
+    def _mark_cached_probe(check: WorkerReadyCheckPayload) -> WorkerReadyCheckPayload:
+        check.meta["cached"] = True
+        return check
 
     async def _run_probe(self) -> WorkerReadyCheckPayload:
         started = self._monotonic()
@@ -156,32 +167,18 @@ class WorkerReadinessService:
             f"{self._task_service.base_url}|"
             f"{self._task_service.generator_model or self._task_service.route_model or self._task_service.narration_model}"
         )
-        now = self._monotonic()
         ttl_seconds = int(self._task_service.settings.ready_llm_probe_cache_ttl_seconds)
-        if not refresh:
-            async with self._probe_cache_lock:
-                if (
-                    self._probe_cache_value is not None
-                    and self._probe_cache_key == cache_key
-                    and self._probe_cache_expires > now
-                ):
-                    cached = self._probe_cache_value.model_copy(deep=True)
-                    cached.meta["cached"] = True
-                    return WorkerReadyResponse(
-                        status="ready" if cached.ok else "not_ready",
-                        checked_at=checked_at,
-                        checks={"llm_config": llm_config, "llm_probe": cached},
-                    )
-
-        llm_probe = await self._run_probe()
-        async with self._probe_cache_lock:
-            self._probe_cache_key = cache_key
-            self._probe_cache_expires = self._monotonic() + ttl_seconds
-            self._probe_cache_value = llm_probe.model_copy(deep=True)
+        llm_probe = await self._probe_cache.get_or_compute(
+            refresh=refresh,
+            cache_key=cache_key,
+            ttl_seconds=float(ttl_seconds),
+            compute=self._run_probe,
+            mark_cached=self._mark_cached_probe,
+            now_provider=self._monotonic,
+        )
 
         return WorkerReadyResponse(
             status="ready" if llm_probe.ok else "not_ready",
             checked_at=checked_at,
             checks={"llm_config": llm_config, "llm_probe": llm_probe},
         )
-
