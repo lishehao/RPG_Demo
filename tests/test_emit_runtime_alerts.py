@@ -226,7 +226,7 @@ def test_build_snapshot_emits_all_new_signals(monkeypatch) -> None:
             },
             "by_gateway_mode": {
                 "worker": {"total_calls": 80, "failed_calls": 6, "failure_rate": 0.075, "p95_ms": 3500},
-                "local": {"total_calls": 40, "failed_calls": 4, "failure_rate": 0.1, "p95_ms": 3300},
+                "unknown": {"total_calls": 40, "failed_calls": 4, "failure_rate": 0.1, "p95_ms": 3300},
             },
         },
     )

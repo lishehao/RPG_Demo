@@ -308,11 +308,14 @@ def test_admin_llm_call_health_endpoint(client, monkeypatch) -> None:
     assert body["failed_calls"] >= 1
     assert body["p95_ms"] is not None
     assert set(body["by_stage"].keys()) == {"route", "narration", "json", "unknown"}
-    assert set(body["by_gateway_mode"].keys()) == {"local", "worker", "unknown"}
+    assert set(body["by_gateway_mode"].keys()) == {"worker", "unknown"}
 
     route_only = client.get(f"{admin_llm_call_health_path()}?window_seconds=300&stage=route")
     assert route_only.status_code == 200
     assert route_only.json()["total_calls"] >= 1
+
+    local_filtered = client.get(f"{admin_llm_call_health_path()}?window_seconds=300&gateway_mode=local")
+    assert local_filtered.status_code == 422
 
 
 def test_admin_readiness_health_endpoint(client, monkeypatch) -> None:

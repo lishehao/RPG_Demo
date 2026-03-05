@@ -127,6 +127,9 @@ def test_factory_missing_models_raises(monkeypatch) -> None:
 
 def test_settings_no_longer_exposes_gateway_mode() -> None:
     assert "llm_gateway_mode" not in Settings.model_fields
+    assert "llm_worker_route_max_inflight" not in Settings.model_fields
+    assert "llm_worker_narration_max_inflight" not in Settings.model_fields
+    assert "llm_worker_json_max_inflight" not in Settings.model_fields
 
 
 def test_openai_provider_module_removed() -> None:

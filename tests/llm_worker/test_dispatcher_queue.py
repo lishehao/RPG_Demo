@@ -95,12 +95,37 @@ class _FakeService:
         )
 
 
-def _config(*, max_size: int = 4, wait_timeout_seconds: float = 0.1) -> WorkerQueueConfig:
+class _ConcurrencyTrackingService(_FakeService):
+    def __init__(self, *, sleep_seconds: float = 0.05) -> None:
+        self._sleep_seconds = float(sleep_seconds)
+        self._active_count = 0
+        self.max_active_count = 0
+        self._lock = asyncio.Lock()
+
+    async def execute_route_intent_task(self, payload: WorkerTaskRouteIntentRequest):  # noqa: ANN201
+        async with self._lock:
+            self._active_count += 1
+            if self._active_count > self.max_active_count:
+                self.max_active_count = self._active_count
+        try:
+            await asyncio.sleep(self._sleep_seconds)
+            return await super().execute_route_intent_task(payload)
+        finally:
+            async with self._lock:
+                self._active_count -= 1
+
+
+def _config(
+    *,
+    max_size: int = 4,
+    wait_timeout_seconds: float = 0.1,
+    executor_concurrency: int = 1,
+) -> WorkerQueueConfig:
     return WorkerQueueConfig(
         max_size=max_size,
         wait_timeout_seconds=wait_timeout_seconds,
         weights={"route_intent": 5, "render_narration": 3, "json_object": 2},
-        executor_concurrency=1,
+        executor_concurrency=executor_concurrency,
         token_est_route_output=96,
         token_est_narration_output=192,
         token_est_json_output=256,
@@ -188,6 +213,39 @@ def test_dispatcher_reconciles_actual_usage_on_success() -> None:
             call = quota.reconcile_calls[0]
             assert call["model"] == "model-a"
             assert call["actual_total_tokens"] == 55
+        finally:
+            await dispatcher.stop()
+
+    asyncio.run(_run())
+
+
+def test_dispatcher_limits_max_inflight_to_executor_concurrency() -> None:
+    quota = _FakeQuotaService(allow=True)
+    service = _ConcurrencyTrackingService(sleep_seconds=0.05)
+    dispatcher = WorkerDispatcher(
+        service=service,
+        quota_service=quota,
+        config=_config(max_size=32, wait_timeout_seconds=1.0, executor_concurrency=2),
+    )
+
+    async def _run() -> None:
+        await dispatcher.start()
+        try:
+            payload = WorkerTaskRouteIntentRequest(
+                scene_context={"moves": [], "fallback_move": "global.help_me_progress"},
+                text="help",
+                model="m",
+                temperature=0.1,
+                max_retries=1,
+                timeout_seconds=1.0,
+            )
+            tasks = [
+                asyncio.create_task(dispatcher.submit_route_intent(payload=payload, request_id=f"r-{index}"))
+                for index in range(6)
+            ]
+            results = await asyncio.gather(*tasks)
+            assert all(item.move_id == "global.help_me_progress" for item in results)
+            assert service.max_active_count <= 2
         finally:
             await dispatcher.stop()
 

@@ -285,6 +285,7 @@ def test_step_response_strict_shape_and_debug_only_in_dev_mode(client, monkeypat
     assert set(normal_body["resolution"].keys()) == {"result", "costs_summary", "consequences_summary"}
     assert set(normal_body["ui"].keys()) == {"moves", "input_hint"}
     assert "debug" not in normal_body
+    assert normal_body["recognized"]["llm_gateway_mode"] in {"worker", "unknown"}
     assert all(set(move.keys()) == {"move_id", "label", "risk_hint"} for move in normal_body["ui"]["moves"])
 
     dev = client.post(
