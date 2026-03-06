@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+:root {
+  color-scheme: dark;
+  --bg-obsidian: #0d0c0f;
+  --bg-shadow: #161218;
+  --bg-panel: rgba(30, 24, 30, 0.84);
+  --bg-panel-strong: rgba(44, 35, 42, 0.92);
+  --bg-panel-soft: rgba(255, 248, 229, 0.08);
+  --text-ivory: #f7efdf;
+  --text-mist: #d7ccb9;
+  --text-dim: #9e8f83;
+  --ember: #ef7e45;
+  --ember-soft: #f5b36f;
+  --ember-deep: #8e3d23;
+  --moss: #8b9a62;
+  --line: rgba(255, 239, 220, 0.12);
+  --line-strong: rgba(255, 219, 178, 0.24);
+  --shadow-glow: 0 32px 90px rgba(0, 0, 0, 0.42);
+  --radius-xl: 30px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --font-title: 'Cinzel', serif;
+  --font-body: 'Manrope', sans-serif;
+}
+
+@theme {
+  --font-title: var(--font-title);
+  --font-body: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background:
+    radial-gradient(circle at top, rgba(239, 126, 69, 0.14), transparent 34%),
+    radial-gradient(circle at 80% 20%, rgba(139, 154, 98, 0.12), transparent 28%),
+    linear-gradient(160deg, #09080b 0%, #140f14 45%, #0a090c 100%);
+  color: var(--text-ivory);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black 46%, transparent 100%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.page-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.page-shell::after {
+  content: '';
+  position: absolute;
+  inset: auto -10% -30% auto;
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(239, 126, 69, 0.22), transparent 70%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+.grain-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 231, 0.06), rgba(255, 248, 231, 0.02)),
+    rgba(23, 18, 24, 0.9);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-glow);
+  backdrop-filter: blur(18px);
+}
+
+.ornament-line {
+  position: relative;
+}
+
+.ornament-line::after {
+  content: '';
+  display: block;
+  width: 72px;
+  height: 1px;
+  margin-top: 12px;
+  background: linear-gradient(90deg, transparent, var(--ember-soft), transparent);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(239, 126, 69, 0.6) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(239, 126, 69, 0.5);
+  border-radius: 999px;
+}
+
+.fade-rise {
+  animation: fade-rise 420ms ease-out;
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

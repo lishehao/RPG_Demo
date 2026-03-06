@@ -1,14 +1,25 @@
-# Frontend Workspace (Antigravity-owned)
+# Frontend Workspace
 
-This directory is reserved for frontend implementation in the monorepo collaboration flow.
+This frontend is a Vite + React + TypeScript app built against the mock backend contract.
 
-## Contract policy
+## Run
 
-- Do not guess backend payload fields.
-- Consume generated SDK from `frontend/src/shared/api/generated/backend-sdk.ts`.
-- Request backend contract changes first, then rebase `main`, then regenerate SDK.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Ownership
+The Vite server runs on `http://localhost:5173` and proxies `/api/*` to `http://localhost:8000`.
 
-- Frontend agent should only modify files under `frontend/**`.
-- Backend agent should avoid editing this directory except generated SDK bootstrap when contract tooling changes.
+## Contract inputs
+
+- `../frontend_agent_contract.md`
+- `src/shared/api/generated/backend-sdk.ts`
+
+## Build
+
+```bash
+cd frontend
+npm run build
+```
