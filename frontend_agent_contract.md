@@ -2,7 +2,10 @@
 
 ## 1. Overview
 
-Frontend should implement an admin UI for managing RPG sessions and playing generated stories.
+Frontend implements a two-mode admin product for generated RPG stories:
+
+- `Author Mode`: create and launch stories from the dashboard.
+- `Play Mode`: run an active session and inspect narration history.
 
 Backend base URL:
 
@@ -17,9 +20,69 @@ All requests and responses use JSON.
 - This backend is a mock contract server.
 - Data is stored in process memory only.
 - Restarting the backend clears stories, sessions, and histories.
-- Suitable for UI development and API integration tests only, not for production gameplay.
+- The current product supports a lightweight author workflow plus a playable runtime.
+- The current product does **not** include a full author studio such as story editing, version editing, or publishing workflows.
 
-## 2. Authentication
+## 2. Product Modes
+
+### Access Layer
+
+Route: `/login`
+
+Purpose:
+
+- Authenticate the admin user.
+- Store Bearer token for protected routes.
+- Redirect to `Author Mode` after success.
+
+### Author Mode
+
+Route: `/dashboard`
+
+Purpose:
+
+- Generate a story from `theme + difficulty`.
+- List generated stories.
+- Create a new session from a story.
+
+Current scope:
+
+- This is a **lightweight author mode**.
+- It covers story generation, story library review, and session launch only.
+- It does **not** cover story editing, draft comparison, asset management, or publishing controls.
+
+API dependencies:
+
+- `POST /stories/generate`
+- `GET /stories`
+- `POST /sessions`
+
+### Play Mode
+
+Route: `/sessions/{session_id}`
+
+Purpose:
+
+- Restore and display the full narration timeline.
+- Show current available actions.
+- Submit either `move_id` or `free_text`.
+- Keep the session usable after reload.
+
+API dependencies:
+
+- `GET /sessions/{session_id}`
+- `GET /sessions/{session_id}/history`
+- `POST /sessions/{session_id}/step`
+
+## 3. Route Map
+
+| Route | Product role | Mode |
+| --- | --- | --- |
+| `/login` | access gate | entry |
+| `/dashboard` | story generation + session launch | author |
+| `/sessions/{session_id}` | live play surface + history timeline | play |
+
+## 4. Authentication
 
 Authentication header:
 
@@ -52,7 +115,7 @@ Response:
 }
 ```
 
-## 3. Story APIs
+## 5. Story APIs
 
 ### Generate story
 
@@ -94,7 +157,7 @@ Response:
 }
 ```
 
-## 4. Session APIs
+## 6. Session APIs
 
 ### Create session
 
@@ -178,7 +241,7 @@ Request option B:
 }
 ```
 
-## 5. Step Response Format
+## 7. Step Response Format
 
 Response:
 
@@ -200,9 +263,14 @@ Response:
 }
 ```
 
-`narration`, `actions`, and `risk_hint` are stable fields.
+Stable fields:
 
-## 6. Error Envelope
+- `turn`
+- `narration`
+- `actions`
+- `risk_hint`
+
+## 8. Error Envelope
 
 All API errors return:
 
@@ -217,20 +285,51 @@ All API errors return:
 }
 ```
 
-## 7. UI Requirements
+## 9. Behavior Matrix
 
-Frontend should implement:
+| Behavior | Route | Mode | Current status |
+| --- | --- | --- | --- |
+| Admin login | `/login` | entry | supported |
+| Generate story | `/dashboard` | author | supported |
+| List stories | `/dashboard` | author | supported |
+| Create session | `/dashboard` | author | supported |
+| Show narration history | `/sessions/{session_id}` | play | supported |
+| Show move buttons | `/sessions/{session_id}` | play | supported |
+| Allow free text input | `/sessions/{session_id}` | play | supported |
+| Auto scroll latest turn | `/sessions/{session_id}` | play | supported |
+| Restore history after reload | `/sessions/{session_id}` | play | supported |
+| Full story editing studio | none | author | not supported |
+| Story version management UI | none | author | not supported |
+| Publish workflow UI | none | author | not supported |
 
-- Login page
-  - Admin login.
-- Dashboard
-  - Generate story
-  - List stories
-  - Create session
-- Session page
-  - Show narration history timeline
-  - Show move buttons
-  - Allow free text input
-  - Auto scroll latest turn
-  - Recover story history after page reload via `GET /sessions/{session_id}/history`
+## 10. Audit Result
 
+Latest audit baseline:
+
+- Verified in local browser flow on March 6, 2026.
+- `Author Mode` behavior verified: login, generate story, list stories, create session.
+- `Play Mode` behavior verified: button step, free-text step, timeline rendering, reload recovery.
+- Current documentation should treat these behaviors as implemented and stable against the current mock backend contract.
+
+## 11. Design Source
+
+Current UI design is a self-authored Figma-first implementation.
+
+Visual baseline:
+
+- Figma review file: [Ember Command UI Review](https://www.figma.com/design/H5Lw8e3kT7cpV4lzYDGwuP)
+- Primary reviewed surfaces: `Login`, `Dashboard`, `Session`
+
+Design intent:
+
+- `obsidian + parchment + ember` palette
+- dramatic mission-control framing
+- lightweight glass panels and timeline-driven play surface
+
+This design source is a review baseline, not an external template dependency.
+
+## 12. Current Product Limits
+
+- `Author Mode` is intentionally lightweight in the current implementation.
+- The backend contract does not expose story editing or version lifecycle endpoints.
+- Documentation should treat `Dashboard` as the current author surface, not as a full authoring studio.
