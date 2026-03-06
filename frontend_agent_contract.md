@@ -2,10 +2,10 @@
 
 ## 1. Overview
 
-Frontend implements a two-mode admin product for generated RPG stories:
+Frontend implements a real two-track product on top of the DB-backed RPG backend:
 
-- `Author Mode`: create and launch stories from the dashboard.
-- `Play Mode`: run an active session and inspect narration history.
+- `Author Mode`: generate, inspect, and publish stories.
+- `Play Mode`: browse published stories, start sessions, and play them through the live runtime.
 
 Backend base URL:
 
@@ -14,14 +14,6 @@ http://localhost:8000
 ```
 
 All requests and responses use JSON.
-
-### Mock backend semantics
-
-- This backend is a mock contract server.
-- Data is stored in process memory only.
-- Restarting the backend clears stories, sessions, and histories.
-- The current product supports a lightweight author workflow plus a playable runtime.
-- The current product does **not** include a full author studio such as story editing, version editing, or publishing workflows.
 
 ## 2. Product Modes
 
@@ -32,55 +24,53 @@ Route: `/login`
 Purpose:
 
 - Authenticate the admin user.
-- Store Bearer token for protected routes.
-- Redirect to `Author Mode` after success.
+- Store Bearer token.
+- Redirect to the author suite.
 
 ### Author Mode
 
-Route: `/dashboard`
+Routes:
+
+- `/author/stories`
+- `/author/stories/{story_id}`
 
 Purpose:
 
-- Generate a story from `theme + difficulty`.
-- List generated stories.
-- Create a new session from a story.
+- Generate a DB-backed story draft with the real LLM pipeline.
+- List story supply across drafts and published versions.
+- Inspect draft payload.
+- Publish a story version so Play Mode can consume it.
 
 Current scope:
 
-- This is a **lightweight author mode**.
-- It covers story generation, story library review, and session launch only.
-- It does **not** cover story editing, draft comparison, asset management, or publishing controls.
-
-API dependencies:
-
-- `POST /stories/generate`
-- `GET /stories`
-- `POST /sessions`
+- This is an MVP author track.
+- It supports generation, story list, story detail, publish, and handoff into Play.
+- It does **not** implement a full visual story editor, diffing, or version branch management.
 
 ### Play Mode
 
-Route: `/sessions/{session_id}`
+Routes:
+
+- `/play/library`
+- `/play/sessions/{session_id}`
 
 Purpose:
 
-- Restore and display the full narration timeline.
-- Show current available actions.
-- Submit either `move_id` or `free_text`.
-- Keep the session usable after reload.
-
-API dependencies:
-
-- `GET /sessions/{session_id}`
-- `GET /sessions/{session_id}/history`
-- `POST /sessions/{session_id}/step`
+- Browse only published stories.
+- Create a playable session from a published version.
+- Display narration timeline and action deck.
+- Submit both button actions and free-text directives.
+- Restore play history after reload.
 
 ## 3. Route Map
 
 | Route | Product role | Mode |
 | --- | --- | --- |
 | `/login` | access gate | entry |
-| `/dashboard` | story generation + session launch | author |
-| `/sessions/{session_id}` | live play surface + history timeline | play |
+| `/author/stories` | author list + generation | author |
+| `/author/stories/{story_id}` | draft detail + publish | author |
+| `/play/library` | published story library | play |
+| `/play/sessions/{session_id}` | live runtime | play |
 
 ## 4. Authentication
 
@@ -90,7 +80,7 @@ Authentication header:
 Authorization: Bearer <token>
 ```
 
-All endpoints except login require Bearer token.
+All business endpoints except login require Bearer token.
 
 ### Login
 
@@ -100,8 +90,8 @@ Request:
 
 ```json
 {
-  "email": "admin@test.com",
-  "password": "password"
+  "email": "admin@example.com",
+  "password": "admin123456"
 }
 ```
 
@@ -109,24 +99,33 @@ Response:
 
 ```json
 {
-  "token": "jwt_or_mock_token",
-  "access_token": "jwt_or_mock_token",
-  "token_type": "bearer"
+  "access_token": "jwt_token",
+  "token_type": "bearer",
+  "expires_at": "timestamp",
+  "user": {
+    "id": "uuid",
+    "email": "admin@example.com",
+    "role": "admin",
+    "is_active": true,
+    "created_at": "timestamp",
+    "updated_at": "timestamp",
+    "last_login_at": "timestamp"
+  }
 }
 ```
 
-## 5. Story APIs
+## 5. Author APIs
 
-### Generate story
+### Create raw draft
 
-`POST /stories/generate`
+`POST /stories`
 
 Request:
 
 ```json
 {
-  "theme": "fantasy",
-  "difficulty": "medium"
+  "title": "Signal Draft",
+  "pack_json": {}
 }
 ```
 
@@ -135,8 +134,39 @@ Response:
 ```json
 {
   "story_id": "uuid",
-  "title": "Fantasy - Medium Quest",
-  "published": true
+  "status": "draft",
+  "created_at": "timestamp"
+}
+```
+
+### Generate draft with LLM
+
+`POST /stories/generate`
+
+Request:
+
+```json
+{
+  "prompt_text": "A city-wide signal breach with a pyrrhic ending.",
+  "target_minutes": 10,
+  "npc_count": 4,
+  "style": "tense, cinematic, strategic",
+  "publish": false
+}
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "story_id": "uuid",
+  "version": null,
+  "pack": {},
+  "pack_hash": "sha256",
+  "generation": {
+    "mode": "prompt"
+  }
 }
 ```
 
@@ -151,15 +181,64 @@ Response:
   "stories": [
     {
       "story_id": "uuid",
-      "title": "Fantasy - Medium Quest"
+      "title": "Generated: Signal Draft",
+      "created_at": "timestamp",
+      "has_draft": true,
+      "latest_published_version": 1,
+      "latest_published_at": "timestamp"
     }
   ]
 }
 ```
 
-## 6. Session APIs
+### Get draft detail
 
-### Create session
+`GET /stories/{story_id}/draft`
+
+Response:
+
+```json
+{
+  "story_id": "uuid",
+  "title": "Generated: Signal Draft",
+  "created_at": "timestamp",
+  "draft_pack": {},
+  "latest_published_version": 1,
+  "latest_published_at": "timestamp"
+}
+```
+
+### Publish version
+
+`POST /stories/{story_id}/publish`
+
+Response:
+
+```json
+{
+  "story_id": "uuid",
+  "version": 1,
+  "published_at": "timestamp"
+}
+```
+
+### Get published pack
+
+`GET /stories/{story_id}?version=1`
+
+Response:
+
+```json
+{
+  "story_id": "uuid",
+  "version": 1,
+  "pack": {}
+}
+```
+
+## 6. Play APIs
+
+### Create session from published story
 
 `POST /sessions`
 
@@ -167,7 +246,8 @@ Request:
 
 ```json
 {
-  "story_id": "uuid"
+  "story_id": "uuid",
+  "version": 1
 }
 ```
 
@@ -175,11 +255,19 @@ Response:
 
 ```json
 {
-  "session_id": "uuid"
+  "session_id": "uuid",
+  "story_id": "uuid",
+  "version": 1,
+  "scene_id": "sc1",
+  "state_summary": {
+    "events": 0,
+    "inventory": 0,
+    "cost_total": 0
+  }
 }
 ```
 
-### Get session
+### Get session state
 
 `GET /sessions/{session_id}`
 
@@ -188,9 +276,14 @@ Response:
 ```json
 {
   "session_id": "uuid",
-  "story_id": "uuid",
-  "created_at": "2026-03-05T12:00:00Z",
-  "state": "active"
+  "scene_id": "sc1",
+  "beat_progress": {},
+  "ended": false,
+  "state_summary": {
+    "events": 0,
+    "inventory": 0,
+    "cost_total": 0
+  }
 }
 ```
 
@@ -202,134 +295,138 @@ Response:
 
 ```json
 {
+  "session_id": "uuid",
   "history": [
     {
-      "turn": 1,
-      "narration": "You wake up in a forest.",
-      "actions": [
-        {
-          "id": "look",
-          "label": "Look around"
-        },
-        {
-          "id": "walk",
-          "label": "Walk forward"
-        }
-      ]
+      "turn_index": 1,
+      "scene_id": "sc2",
+      "narration_text": "Narration text.",
+      "recognized": {
+        "interpreted_intent": "look around",
+        "move_id": "scan_signal",
+        "confidence": 0.91,
+        "route_source": "llm"
+      },
+      "resolution": {
+        "result": "You uncover the first clue.",
+        "costs_summary": "none",
+        "consequences_summary": "none"
+      },
+      "ui": {
+        "moves": [
+          {
+            "move_id": "global.help_me_progress",
+            "label": "Push forward",
+            "risk_hint": "steady but slow"
+          }
+        ],
+        "input_hint": "Describe your next move"
+      },
+      "ended": false
     }
   ]
 }
 ```
 
-### Step
+### Step runtime
 
 `POST /sessions/{session_id}/step`
 
-Request option A:
+Request:
 
 ```json
 {
-  "move_id": "look"
+  "client_action_id": "step-001",
+  "input": {
+    "type": "button",
+    "move_id": "global.help_me_progress"
+  },
+  "dev_mode": false
 }
 ```
 
-Request option B:
+or
 
 ```json
 {
-  "free_text": "I try to climb the tree"
+  "client_action_id": "step-002",
+  "input": {
+    "type": "text",
+    "text": "I inspect the reactor seals"
+  },
+  "dev_mode": false
 }
 ```
-
-## 7. Step Response Format
 
 Response:
 
 ```json
 {
-  "turn": 3,
-  "narration": "You see a small cabin.",
-  "actions": [
-    {
-      "id": "enter_cabin",
-      "label": "Enter the cabin"
-    },
-    {
-      "id": "ignore",
-      "label": "Ignore it"
-    }
-  ],
-  "risk_hint": "low"
+  "session_id": "uuid",
+  "version": 1,
+  "scene_id": "sc3",
+  "narration_text": "Narration text.",
+  "recognized": {
+    "interpreted_intent": "inspect reactor",
+    "move_id": "scan_signal",
+    "confidence": 0.88,
+    "route_source": "llm"
+  },
+  "resolution": {
+    "result": "You gain partial clarity.",
+    "costs_summary": "time +1",
+    "consequences_summary": "pressure rises"
+  },
+  "ui": {
+    "moves": [
+      {
+        "move_id": "stabilize_core",
+        "label": "Stabilize Core",
+        "risk_hint": "politically safe: spends resources to preserve trust"
+      }
+    ],
+    "input_hint": "Describe your next move"
+  }
 }
 ```
 
-Stable fields:
-
-- `turn`
-- `narration`
-- `actions`
-- `risk_hint`
-
-## 8. Error Envelope
+## 7. Error Envelope
 
 All API errors return:
 
 ```json
 {
   "error": {
-    "code": "INVALID_MOVE",
-    "message": "Move not allowed",
+    "code": "service_unavailable",
+    "message": "llm provider misconfigured",
     "retryable": false,
-    "request_id": "abc123"
+    "request_id": "abc123",
+    "details": {}
   }
 }
 ```
 
-## 9. Behavior Matrix
+## 8. UI Behavior Matrix
 
-| Behavior | Route | Mode | Current status |
+| Behavior | Route | Mode | Current target |
 | --- | --- | --- | --- |
-| Admin login | `/login` | entry | supported |
-| Generate story | `/dashboard` | author | supported |
-| List stories | `/dashboard` | author | supported |
-| Create session | `/dashboard` | author | supported |
-| Show narration history | `/sessions/{session_id}` | play | supported |
-| Show move buttons | `/sessions/{session_id}` | play | supported |
-| Allow free text input | `/sessions/{session_id}` | play | supported |
-| Auto scroll latest turn | `/sessions/{session_id}` | play | supported |
-| Restore history after reload | `/sessions/{session_id}` | play | supported |
-| Full story editing studio | none | author | not supported |
-| Story version management UI | none | author | not supported |
-| Publish workflow UI | none | author | not supported |
+| Login | `/login` | entry | required |
+| Generate story draft | `/author/stories` | author | required |
+| View story supply | `/author/stories` | author | required |
+| Inspect draft detail | `/author/stories/{story_id}` | author | required |
+| Publish story | `/author/stories/{story_id}` | author | required |
+| Browse published stories | `/play/library` | play | required |
+| Start session from published version | `/play/library` | play | required |
+| Show narration timeline | `/play/sessions/{session_id}` | play | required |
+| Show move buttons | `/play/sessions/{session_id}` | play | required |
+| Allow free text input | `/play/sessions/{session_id}` | play | required |
+| Restore history after reload | `/play/sessions/{session_id}` | play | required |
+| Full visual story editor | none | author | not in MVP |
 
-## 10. Audit Result
+## 9. Design Source
 
-Latest audit baseline:
+Visual review source remains the Figma-first review file:
 
-- Verified in local browser flow on March 6, 2026.
-- `Author Mode` behavior verified: login, generate story, list stories, create session.
-- `Play Mode` behavior verified: button step, free-text step, timeline rendering, reload recovery.
-- Current documentation should treat these behaviors as implemented and stable against the current mock backend contract.
+- [Ember Command UI Review](https://www.figma.com/design/H5Lw8e3kT7cpV4lzYDGwuP)
 
-## 11. Design Source
-
-Current UI design is a self-authored Figma-first implementation.
-
-Visual baseline:
-
-- Figma review file: [Ember Command UI Review](https://www.figma.com/design/H5Lw8e3kT7cpV4lzYDGwuP)
-- Primary reviewed surfaces: `Login`, `Dashboard`, `Session`
-
-Design intent:
-
-- `obsidian + parchment + ember` palette
-- dramatic mission-control framing
-- lightweight glass panels and timeline-driven play surface
-
-This design source is a review baseline, not an external template dependency.
-
-## 12. Current Product Limits
-
-- `Author Mode` is intentionally lightweight in the current implementation.
-- The backend contract does not expose story editing or version lifecycle endpoints.
-- Documentation should treat `Dashboard` as the current author surface, not as a full authoring studio.
+The next phase expands it into separate `Author Suite` and `Play Suite` surfaces.

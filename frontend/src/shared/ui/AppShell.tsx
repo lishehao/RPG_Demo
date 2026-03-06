@@ -3,9 +3,19 @@ import { useAuthStore } from '@/shared/store/authStore';
 import { cn } from '@/shared/lib/cn';
 import type { PropsWithChildren } from 'react';
 
-const navItems = [{ label: 'Dashboard', href: '/dashboard' }];
+type NavItem = {
+  label: string;
+  href: string;
+};
 
-export function AppShell({ children }: PropsWithChildren) {
+type AppShellProps = PropsWithChildren<{
+  eyebrow: string;
+  title: string;
+  modeLabel: string;
+  navItems: NavItem[];
+}>;
+
+export function AppShell({ children, eyebrow, title, modeLabel, navItems }: AppShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
@@ -15,13 +25,16 @@ export function AppShell({ children }: PropsWithChildren) {
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-7xl flex-col rounded-[32px] border border-[var(--line)] bg-[rgba(8,8,10,0.55)] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl md:p-6">
         <header className="flex flex-col gap-4 rounded-[26px] border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
           <div>
-            <p className="text-xs uppercase tracking-[0.32em] text-[var(--text-dim)]">Ember Command</p>
+            <p className="text-xs uppercase tracking-[0.32em] text-[var(--text-dim)]">{eyebrow}</p>
             <h1 className="mt-2 font-[var(--font-title)] text-2xl tracking-[0.08em] text-[var(--text-ivory)] md:text-3xl">
-              RPG Mission Control
+              {title}
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
+            <span className="rounded-full bg-[rgba(245,179,111,0.16)] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[var(--ember-soft)]">
+              {modeLabel}
+            </span>
             <nav className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-1">
               {navItems.map((item) => (
                 <Link

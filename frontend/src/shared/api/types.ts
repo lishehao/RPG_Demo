@@ -1,11 +1,10 @@
-export type RiskHint = 'low' | 'medium' | 'high';
-
 export type ErrorEnvelope = {
   error: {
     code: string;
     message: string;
     retryable: boolean;
     request_id: string | null;
+    details?: Record<string, unknown>;
   };
 };
 
@@ -14,75 +13,149 @@ export type AdminLoginRequest = {
   password: string;
 };
 
+export type AdminUser = {
+  id: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+};
+
 export type AdminLoginResponse = {
-  token: string;
   access_token: string;
   token_type: 'bearer';
+  expires_at: string;
+  user: AdminUser;
 };
 
-export type StoryGenerateRequest = {
-  theme: string;
-  difficulty: string;
-};
-
-export type StoryGenerateResponse = {
+export type StorySummary = {
   story_id: string;
   title: string;
-  published: boolean;
-};
-
-export type StoryListItem = {
-  story_id: string;
-  title: string;
+  created_at: string;
+  has_draft: boolean;
+  latest_published_version: number | null;
+  latest_published_at: string | null;
 };
 
 export type StoryListResponse = {
-  stories: StoryListItem[];
+  stories: StorySummary[];
+};
+
+export type StoryDraftResponse = {
+  story_id: string;
+  title: string;
+  created_at: string;
+  draft_pack: Record<string, unknown>;
+  latest_published_version: number | null;
+  latest_published_at: string | null;
+};
+
+export type StoryGenerateRequest = {
+  seed_text?: string;
+  prompt_text?: string;
+  target_minutes?: number;
+  npc_count?: number;
+  style?: string;
+  publish?: boolean;
+};
+
+export type StoryGenerateResponse = {
+  status: 'ok';
+  story_id: string;
+  version: number | null;
+  pack: Record<string, unknown>;
+  pack_hash: string;
+  generation: Record<string, unknown>;
+};
+
+export type StoryPublishResponse = {
+  story_id: string;
+  version: number;
+  published_at: string;
 };
 
 export type SessionCreateRequest = {
   story_id: string;
+  version: number;
 };
 
 export type SessionCreateResponse = {
   session_id: string;
+  story_id: string;
+  version: number;
+  scene_id: string;
+  state_summary: Record<string, unknown>;
 };
 
 export type SessionMeta = {
   session_id: string;
-  story_id: string;
-  created_at: string;
-  state: 'active' | 'completed';
+  scene_id: string;
+  beat_progress: Record<string, unknown>;
+  ended: boolean;
+  state_summary: Record<string, unknown>;
+  state?: Record<string, unknown> | null;
 };
 
-export type SessionAction = {
-  id: string;
+export type SessionUiMove = {
+  move_id: string;
   label: string;
+  risk_hint: string;
+};
+
+export type SessionUi = {
+  moves: SessionUiMove[];
+  input_hint: string;
+};
+
+export type SessionRecognized = {
+  interpreted_intent: string;
+  move_id: string;
+  confidence: number;
+  route_source: 'button' | 'button_fallback' | 'llm';
+  llm_duration_ms?: number | null;
+  llm_gateway_mode?: 'worker' | 'unknown' | null;
+};
+
+export type SessionResolution = {
+  result: string;
+  costs_summary: string;
+  consequences_summary: string;
 };
 
 export type SessionHistoryTurn = {
-  turn: number;
-  narration: string;
-  actions: SessionAction[];
+  turn_index: number;
+  scene_id: string;
+  narration_text: string;
+  recognized: SessionRecognized;
+  resolution: SessionResolution;
+  ui: SessionUi;
+  ended: boolean;
 };
 
 export type SessionHistoryResponse = {
+  session_id: string;
   history: SessionHistoryTurn[];
 };
 
-export type SessionStepRequest =
-  | {
-      move_id: string;
-      free_text?: never;
-    }
-  | {
-      move_id?: never;
-      free_text: string;
-    };
+export type SessionStepRequest = {
+  client_action_id: string;
+  input?: {
+    type?: 'button' | 'text';
+    move_id?: string;
+    text?: string;
+  };
+  dev_mode?: boolean;
+};
 
 export type SessionStepResponse = {
-  turn: number;
-  narration: string;
-  actions: SessionAction[];
-  risk_hint: RiskHint;
+  session_id: string;
+  version: number;
+  scene_id: string;
+  narration_text: string;
+  recognized: SessionRecognized;
+  resolution: SessionResolution;
+  ui: SessionUi;
+  debug?: Record<string, unknown> | null;
 };

@@ -13,7 +13,9 @@ def test_backend_openapi_artifact_is_synced() -> None:
 
     expected = canonical_openapi_json(generate_openapi_schema())
     actual = artifact_path.read_text(encoding="utf-8")
-    assert actual == expected, "OpenAPI artifact is stale. Run `python -m scripts.export_openapi` and commit."
+    assert (
+        actual == expected
+    ), "OpenAPI artifact is stale. Run `python -m scripts.export_openapi` and commit the result."
 
 
 def test_frontend_generated_sdk_is_synced() -> None:
@@ -26,5 +28,6 @@ def test_frontend_generated_sdk_is_synced() -> None:
     openapi = json.loads(openapi_path.read_text(encoding="utf-8"))
     expected = generate_sdk_source(openapi=openapi, openapi_source="contracts/openapi/backend.openapi.json")
     actual = sdk_path.read_text(encoding="utf-8")
-    assert actual == expected, "Frontend SDK artifact is stale. Run `python -m scripts.generate_frontend_sdk`."
-
+    assert (
+        actual == expected
+    ), "Frontend SDK artifact is stale. Run `python -m scripts.generate_frontend_sdk` and commit the result."

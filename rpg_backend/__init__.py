@@ -1,2 +1,1 @@
-"""Mock backend package for UI reimplementation handoff."""
-
+"""RPG backend package."""
