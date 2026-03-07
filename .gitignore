@@ -10,3 +10,4 @@ output/playwright/
 .DS_Store
 .env
 reports/
+output/dev_stack/

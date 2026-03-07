@@ -55,24 +55,29 @@ Runtime architecture source of truth:
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
-python scripts/db_migrate.py upgrade head
+cd frontend && npm install && cd ..
+./scripts/dev_stack.sh up
 ```
 
-Run server:
+Common local dev commands:
 
 ```bash
-uvicorn rpg_backend.main:app --reload
+./scripts/dev_stack.sh status
+./scripts/dev_stack.sh ready
+./scripts/dev_stack.sh logs backend
+./scripts/dev_stack.sh resetdb
+./scripts/dev_stack.sh down
 ```
 
-Health check:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
+Notes:
+- `./scripts/dev_stack.sh up` runs `python scripts/db_migrate.py upgrade head` automatically before starting worker, backend, and frontend.
+- If you change `.env` admin bootstrap credentials, run `./scripts/dev_stack.sh restart` or `./scripts/dev_stack.sh resetdb` so backend restarts with the current config.
+- `resetdb` is for local SQLite only; it refuses to run against non-local or non-SQLite database URLs.
 
 Readiness check (DB + LLM config + cached LLM probe):
 
 ```bash
+./scripts/dev_stack.sh ready
 curl http://127.0.0.1:8000/ready
 ```
 
