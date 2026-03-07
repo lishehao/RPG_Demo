@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "release:browser-gate": "node ./scripts/author_play_release_gate.mjs"
   },
   "dependencies": {
     "react": "^19.1.1",
@@ -25,6 +26,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "tailwindcss": "^4.1.12",
     "typescript": "^5.9.2",
-    "vite": "^7.1.3"
+    "vite": "^7.1.3",
+    "playwright-core": "^1.55.0"
   }
 }

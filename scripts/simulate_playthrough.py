@@ -26,6 +26,8 @@ DEFAULT_STRATEGIES = (
     "button_first",
     "button_random",
     "mixed",
+    "branch_hunter",
+    "style_balanced",
 )
 NOISE_TEXTS = (
     "",
@@ -42,6 +44,7 @@ CONTEXT_TEXTS = (
     "reduce coordination noise and keep the team aligned",
     "protect civilians even if resources get tighter",
 )
+REQUIRED_STYLES = ("fast_dirty", "steady_slow", "political_safe_resource_heavy")
 
 
 def _request_json(
@@ -111,12 +114,98 @@ def _login_and_get_access_token(base_url: str, *, email: str, password: str) -> 
     return token
 
 
+def _scene_map(pack: StoryPack) -> dict[str, Any]:
+    return {scene.id: scene for scene in pack.scenes}
+
+
+def _move_style_map(pack: StoryPack) -> dict[str, str]:
+    return {move.id: move.strategy_style for move in pack.moves}
+
+
+def _build_branch_targets(pack: StoryPack) -> dict[str, list[dict[str, Any]]]:
+    targets: dict[str, list[dict[str, Any]]] = {}
+    for scene in pack.scenes:
+        scene_targets: list[dict[str, Any]] = []
+        for cond in scene.exit_conditions:
+            trigger_move_id = None
+            if cond.condition_kind == "state_equals" and cond.key == "last_move" and isinstance(cond.value, str):
+                trigger_move_id = cond.value
+            scene_targets.append(
+                {
+                    "edge_id": cond.id,
+                    "trigger_move_id": trigger_move_id,
+                    "condition_kind": cond.condition_kind,
+                    "to_scene_id": cond.next_scene_id,
+                    "end_story": bool(cond.end_story),
+                }
+            )
+        targets[scene.id] = scene_targets
+    return targets
+
+
+def _choose_style_balanced_move(
+    *,
+    ui_moves: list[dict[str, Any]],
+    move_style_map: dict[str, str],
+    strategy_state: dict[str, Any],
+) -> dict[str, Any] | None:
+    style_counts = strategy_state.setdefault("style_counts", {style: 0 for style in REQUIRED_STYLES})
+    candidates: list[tuple[int, str, dict[str, Any]]] = []
+    for ui_move in ui_moves:
+        move_id = str(ui_move.get("move_id") or "")
+        style = move_style_map.get(move_id)
+        if not style:
+            continue
+        candidates.append((int(style_counts.get(style, 0)), style, ui_move))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: (item[0], REQUIRED_STYLES.index(item[1]) if item[1] in REQUIRED_STYLES else 99))
+    _, style, selected = candidates[0]
+    style_counts[style] = int(style_counts.get(style, 0)) + 1
+    return {"type": "button", "move_id": str(selected["move_id"])}
+
+
+def _choose_branch_hunter_move(
+    *,
+    scene_id: str,
+    ui_moves: list[dict[str, Any]],
+    strategy_state: dict[str, Any],
+) -> dict[str, Any] | None:
+    covered_edge_ids = set(strategy_state.get("covered_edge_ids") or [])
+    targets_by_scene = strategy_state.get("branch_targets") or {}
+    scene_targets = list(targets_by_scene.get(scene_id) or [])
+    ui_move_ids = {str(move.get("move_id")) for move in ui_moves if isinstance(move.get("move_id"), str)}
+
+    for target in scene_targets:
+        edge_id = str(target.get("edge_id") or "")
+        trigger_move_id = target.get("trigger_move_id")
+        if edge_id in covered_edge_ids:
+            continue
+        if isinstance(trigger_move_id, str) and trigger_move_id in ui_move_ids:
+            return {"type": "button", "move_id": trigger_move_id}
+
+    seen_by_scene = strategy_state.setdefault("seen_moves_by_scene", {})
+    seen_moves = seen_by_scene.setdefault(scene_id, set())
+    for ui_move in ui_moves:
+        move_id = str(ui_move.get("move_id") or "")
+        if move_id and move_id not in seen_moves:
+            seen_moves.add(move_id)
+            return {"type": "button", "move_id": move_id}
+
+    return None
+
+
 def _build_action_input(
     strategy: str,
     step_index: int,
     ui_moves: list[dict[str, Any]],
     rng: random.Random,
+    *,
+    scene_id: str | None = None,
+    move_style_map: dict[str, str] | None = None,
+    strategy_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    state = strategy_state or {}
     if strategy == "text_help":
         return {"type": "text", "text": "help me progress"}
     if strategy == "text_noise":
@@ -137,6 +226,22 @@ def _build_action_input(
         if ui_moves:
             return {"type": "button", "move_id": ui_moves[rng.randrange(0, len(ui_moves))]["move_id"]}
         return {"type": "text", "text": NOISE_TEXTS[rng.randrange(0, len(NOISE_TEXTS))]}
+    if strategy == "branch_hunter":
+        if scene_id is not None:
+            selected = _choose_branch_hunter_move(scene_id=scene_id, ui_moves=ui_moves, strategy_state=state)
+            if selected is not None:
+                return selected
+        if ui_moves:
+            return {"type": "button", "move_id": ui_moves[0]["move_id"]}
+        return {"type": "text", "text": CONTEXT_TEXTS[rng.randrange(0, len(CONTEXT_TEXTS))]}
+    if strategy == "style_balanced":
+        if move_style_map:
+            selected = _choose_style_balanced_move(ui_moves=ui_moves, move_style_map=move_style_map, strategy_state=state)
+            if selected is not None:
+                return selected
+        if ui_moves:
+            return {"type": "button", "move_id": ui_moves[rng.randrange(0, len(ui_moves))]["move_id"]}
+        return {"type": "text", "text": CONTEXT_TEXTS[rng.randrange(0, len(CONTEXT_TEXTS))]}
     return {"type": "text", "text": "help me progress"}
 
 
@@ -167,6 +272,7 @@ def simulate_pack_playthrough(
     strategy_seed: int | None = None,
     metadata: dict[str, Any] | None = None,
     rng: random.Random | None = None,
+    strategy_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if provider_name != "openai":
         raise RuntimeError(f"unsupported provider for local simulation: {provider_name}")
@@ -182,9 +288,16 @@ def simulate_pack_playthrough(
     except LLMProviderConfigError as exc:
         raise RuntimeError(f"failed to initialize provider '{provider_name}': {exc}") from exc
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
+    initial_scene_id = scene_id
     ui_moves = runtime.list_ui_moves(pack, scene_id)
+    move_style_map = _move_style_map(pack)
+    branch_targets = _build_branch_targets(pack)
+
+    effective_strategy_state = dict(strategy_state or {})
+    effective_strategy_state.setdefault("branch_targets", branch_targets)
 
     transcript: list[dict[str, Any]] = []
+    traversed_edges: list[dict[str, Any]] = []
     meaningful_steps = 0
     text_input_steps = 0
     llm_route_steps = 0
@@ -200,7 +313,15 @@ def simulate_pack_playthrough(
     for step_index in range(1, max_steps + 1):
         previous_scene_id = scene_id
         previous_progress = dict(beat_progress)
-        action_input = _build_action_input(strategy, step_index, ui_moves, working_rng)
+        action_input = _build_action_input(
+            strategy,
+            step_index,
+            ui_moves,
+            working_rng,
+            scene_id=scene_id,
+            move_style_map=move_style_map,
+            strategy_state=effective_strategy_state,
+        )
         is_text_input = action_input.get("type") == "text"
         if is_text_input:
             text_input_steps += 1
@@ -237,6 +358,7 @@ def simulate_pack_playthrough(
                     "strategy_seed": strategy_seed,
                     "provider": provider_name,
                     "scene_id": scene_id,
+                    "previous_scene_id": previous_scene_id,
                     "runtime_error": True,
                     "runtime_error_code": runtime_error_code,
                     "runtime_error_stage": runtime_error_stage,
@@ -262,15 +384,26 @@ def simulate_pack_playthrough(
 
         recognized = result["recognized"]
         route_source = recognized.get("route_source", "unknown")
+        move_id = recognized.get("move_id")
         if is_text_input and route_source == "llm":
             llm_route_steps += 1
-            if recognized.get("move_id") == "global.help_me_progress":
+            if move_id == "global.help_me_progress":
                 global_help_route_steps += 1
 
         if "Pressure recoil:" in str(result["resolution"].get("consequences_summary", "")):
             pressure_recoil_steps += 1
         if "Stance update:" in (result.get("narration_text") or ""):
             npc_stance_mentions += 1
+
+        traversed_edges.append(
+            {
+                "step": step_index,
+                "from_scene_id": previous_scene_id,
+                "to_scene_id": scene_id,
+                "move_id": move_id,
+                "route_source": route_source,
+            }
+        )
 
         transcript.append(
             {
@@ -283,17 +416,22 @@ def simulate_pack_playthrough(
                 "provider": provider_name,
                 "route_source": route_source,
                 "scene_id": scene_id,
+                "previous_scene_id": previous_scene_id,
                 "recognized": recognized,
                 "resolution": result["resolution"],
                 "narration_text": result["narration_text"],
                 "ended": ended,
                 "beat_progress": dict(beat_progress),
                 "meaningful_change": meaningful,
+                "selected_move_id": move_id,
+                "selected_strategy_style": ((result.get("debug") or {}).get("selected_strategy_style")),
             }
         )
 
         if ended:
             break
+
+    scene_path = [initial_scene_id, *[str(item["scene_id"]) for item in transcript if isinstance(item.get("scene_id"), str)]]
 
     return {
         "mode": "pack",
@@ -316,6 +454,9 @@ def simulate_pack_playthrough(
         "runtime_error_code": runtime_error_code,
         "runtime_error_stage": runtime_error_stage,
         "runtime_error_message": runtime_error_message,
+        "scene_path": scene_path,
+        "visited_scene_ids": sorted({str(scene) for scene in scene_path if isinstance(scene, str)}),
+        "traversed_edges": traversed_edges,
         "transcript": transcript,
     }
 
@@ -340,9 +481,13 @@ def run_simulation(
     created = _create_session(base_url, story_id, version, access_token=access_token)
     session_id = created["session_id"]
     transcript: list[dict[str, Any]] = []
+    traversed_edges: list[dict[str, Any]] = []
     ui_moves: list[dict[str, Any]] = []
+    scene_id = created["scene_id"]
+    scene_path = [scene_id]
 
     for step_index in range(1, max_steps + 1):
+        previous_scene_id = scene_id
         action = _build_action_input(strategy, step_index, ui_moves, rng)
         payload = {
             "client_action_id": f"simulate-{step_index}",
@@ -351,6 +496,17 @@ def run_simulation(
         }
         step = _step_session(base_url, session_id, payload, access_token=access_token)
         ui_moves = step.get("ui", {}).get("moves", [])
+        scene_id = step["scene_id"]
+        scene_path.append(scene_id)
+        traversed_edges.append(
+            {
+                "step": step_index,
+                "from_scene_id": previous_scene_id,
+                "to_scene_id": scene_id,
+                "move_id": step.get("recognized", {}).get("move_id"),
+                "route_source": step.get("recognized", {}).get("route_source"),
+            }
+        )
         session = _get_session(base_url, session_id, dev_mode=True, access_token=access_token)
         transcript.append(
             {
@@ -360,12 +516,14 @@ def run_simulation(
                 "generator_version": generator_version,
                 "variant_seed": variant_seed,
                 "strategy_seed": strategy_seed,
-                "scene_id": step["scene_id"],
+                "previous_scene_id": previous_scene_id,
+                "scene_id": scene_id,
                 "recognized": step["recognized"],
                 "resolution": step["resolution"],
                 "narration_text": step["narration_text"],
                 "ended": session["ended"],
                 "beat_progress": session["beat_progress"],
+                "selected_move_id": step.get("recognized", {}).get("move_id"),
             }
         )
         if session["ended"]:
@@ -384,6 +542,9 @@ def run_simulation(
         "version": version,
         "steps": len(transcript),
         "ended": final_state["ended"],
+        "scene_path": scene_path,
+        "visited_scene_ids": sorted({str(scene) for scene in scene_path if isinstance(scene, str)}),
+        "traversed_edges": traversed_edges,
         "transcript": transcript,
     }
 

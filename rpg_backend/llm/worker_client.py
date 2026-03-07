@@ -41,61 +41,84 @@ class WorkerClient:
         http2_enabled: bool,
         internal_token: str,
     ) -> None:
-        normalized = (base_url or "").strip().rstrip("/")
+        normalized = (base_url or '').strip().rstrip('/')
         if not normalized:
             raise WorkerClientError(
-                error_code="llm_worker_misconfigured",
-                message="APP_LLM_WORKER_BASE_URL is required",
+                error_code='llm_worker_misconfigured',
+                message='APP_LLM_WORKER_BASE_URL is required',
                 retryable=False,
             )
         self.base_url = normalized
         self.host = urlparse(normalized).hostname
-        self.internal_token = (internal_token or "").strip()
+        self.internal_token = (internal_token or '').strip()
         if not self.internal_token:
             raise WorkerClientError(
-                error_code="llm_worker_misconfigured",
-                message="APP_INTERNAL_WORKER_TOKEN is required",
+                error_code='llm_worker_misconfigured',
+                message='APP_INTERNAL_WORKER_TOKEN is required',
                 retryable=False,
             )
 
-        limits = httpx.Limits(
+        self._limits = httpx.Limits(
             max_connections=max_connections,
             max_keepalive_connections=max_keepalive_connections,
             keepalive_expiry=30.0,
         )
-        timeout = httpx.Timeout(
+        self._timeout = httpx.Timeout(
             connect=connect_timeout_seconds,
             read=timeout_seconds,
             write=timeout_seconds,
             pool=timeout_seconds,
         )
-        self._client = httpx.AsyncClient(timeout=timeout, limits=limits, http2=bool(http2_enabled))
+        self._http2_enabled = bool(http2_enabled)
+        self._client: httpx.AsyncClient | None = None
+        self._client_loop: asyncio.AbstractEventLoop | None = None
+
+    async def _ensure_client(self) -> httpx.AsyncClient:
+        loop = asyncio.get_running_loop()
+        if self._client is not None and self._client_loop is loop:
+            return self._client
+
+        old_client = self._client
+        self._client = httpx.AsyncClient(timeout=self._timeout, limits=self._limits, http2=self._http2_enabled)
+        self._client_loop = loop
+        if old_client is not None:
+            try:
+                await old_client.aclose()
+            except RuntimeError:
+                pass
+        return self._client
 
     async def aclose(self) -> None:
-        await self._client.aclose()
+        if self._client is not None:
+            try:
+                await self._client.aclose()
+            except RuntimeError:
+                pass
+            self._client = None
+            self._client_loop = None
 
     def _url(self, path: str) -> str:
-        return f"{self.base_url}{path}"
+        return f'{self.base_url}{path}'
 
     @staticmethod
     def _parse_error_payload(payload: dict[str, Any]) -> tuple[str, str, bool, int | None, str | None, int | None]:
-        if isinstance(payload.get("error"), dict):
-            err = payload["error"]
+        if isinstance(payload.get('error'), dict):
+            err = payload['error']
             return (
-                str(err.get("code") or "llm_worker_request_failed"),
-                str(err.get("message") or "worker request failed"),
-                bool(err.get("retryable", False)),
+                str(err.get('code') or 'llm_worker_request_failed'),
+                str(err.get('message') or 'worker request failed'),
+                bool(err.get('retryable', False)),
                 None,
                 None,
                 None,
             )
         return (
-            str(payload.get("error_code") or "llm_worker_request_failed"),
-            str(payload.get("message") or "worker request failed"),
-            bool(payload.get("retryable", False)),
-            int(payload["provider_status"]) if payload.get("provider_status") is not None else None,
-            str(payload.get("model")) if payload.get("model") else None,
-            int(payload["attempts"]) if payload.get("attempts") is not None else None,
+            str(payload.get('error_code') or 'llm_worker_request_failed'),
+            str(payload.get('message') or 'worker request failed'),
+            bool(payload.get('retryable', False)),
+            int(payload['provider_status']) if payload.get('provider_status') is not None else None,
+            str(payload.get('model')) if payload.get('model') else None,
+            int(payload['attempts']) if payload.get('attempts') is not None else None,
         )
 
     async def _post_json(
@@ -105,9 +128,10 @@ class WorkerClient:
         payload: dict[str, Any],
         timeout_seconds: float | None = None,
     ) -> dict[str, Any]:
-        headers = {"X-Internal-Worker-Token": self.internal_token}
+        headers = {'X-Internal-Worker-Token': self.internal_token}
+        client = await self._ensure_client()
         try:
-            response = await self._client.post(
+            response = await client.post(
                 self._url(path),
                 json=payload,
                 timeout=timeout_seconds,
@@ -115,13 +139,13 @@ class WorkerClient:
             )
         except httpx.TimeoutException as exc:
             raise WorkerClientError(
-                error_code="llm_worker_timeout",
+                error_code='llm_worker_timeout',
                 message=str(exc),
                 retryable=True,
             ) from exc
         except httpx.HTTPError as exc:
             raise WorkerClientError(
-                error_code="llm_worker_unreachable",
+                error_code='llm_worker_unreachable',
                 message=str(exc),
                 retryable=True,
             ) from exc
@@ -146,8 +170,8 @@ class WorkerClient:
 
         if not isinstance(data, dict):
             raise WorkerClientError(
-                error_code="llm_worker_invalid_response",
-                message="worker returned non-object response",
+                error_code='llm_worker_invalid_response',
+                message='worker returned non-object response',
                 retryable=True,
             )
         return data
@@ -165,12 +189,12 @@ class WorkerClient:
         return await self._post_json(
             path=WORKER_ROUTE_INTENT_TASK_PATH,
             payload={
-                "scene_context": scene_context,
-                "text": text or "",
-                "model": model,
-                "temperature": temperature,
-                "max_retries": max_retries,
-                "timeout_seconds": timeout_seconds,
+                'scene_context': scene_context,
+                'text': text or '',
+                'model': model,
+                'temperature': temperature,
+                'max_retries': max_retries,
+                'timeout_seconds': timeout_seconds,
             },
             timeout_seconds=timeout_seconds,
         )
@@ -188,12 +212,12 @@ class WorkerClient:
         return await self._post_json(
             path=WORKER_RENDER_NARRATION_TASK_PATH,
             payload={
-                "slots": slots,
-                "style_guard": style_guard,
-                "model": model,
-                "temperature": temperature,
-                "max_retries": max_retries,
-                "timeout_seconds": timeout_seconds,
+                'slots': slots,
+                'style_guard': style_guard,
+                'model': model,
+                'temperature': temperature,
+                'max_retries': max_retries,
+                'timeout_seconds': timeout_seconds,
             },
             timeout_seconds=timeout_seconds,
         )
@@ -211,39 +235,40 @@ class WorkerClient:
         response = await self._post_json(
             path=WORKER_JSON_OBJECT_TASK_PATH,
             payload={
-                "system_prompt": system_prompt,
-                "user_prompt": user_prompt,
-                "model": model,
-                "temperature": temperature,
-                "max_retries": max_retries,
-                "timeout_seconds": timeout_seconds,
+                'system_prompt': system_prompt,
+                'user_prompt': user_prompt,
+                'model': model,
+                'temperature': temperature,
+                'max_retries': max_retries,
+                'timeout_seconds': timeout_seconds,
             },
             timeout_seconds=timeout_seconds,
         )
-        payload = response.get("payload")
+        payload = response.get('payload')
         if not isinstance(payload, dict):
             raise WorkerClientError(
-                error_code="llm_worker_invalid_response",
-                message="worker json-object task did not return payload object",
+                error_code='llm_worker_invalid_response',
+                message='worker json-object task did not return payload object',
                 retryable=True,
             )
         return response
 
     async def probe_ready(self, *, refresh: bool = False) -> tuple[int, dict[str, Any]]:
+        client = await self._ensure_client()
         try:
-            response = await self._client.get(
+            response = await client.get(
                 self._url(WORKER_READY_PATH),
-                params={"refresh": str(bool(refresh)).lower()},
+                params={'refresh': str(bool(refresh)).lower()},
             )
         except httpx.TimeoutException as exc:
             raise WorkerClientError(
-                error_code="llm_worker_timeout",
+                error_code='llm_worker_timeout',
                 message=str(exc),
                 retryable=True,
             ) from exc
         except httpx.HTTPError as exc:
             raise WorkerClientError(
-                error_code="llm_worker_unreachable",
+                error_code='llm_worker_unreachable',
                 message=str(exc),
                 retryable=True,
             ) from exc
@@ -255,8 +280,8 @@ class WorkerClient:
 
         if not isinstance(data, dict):
             raise WorkerClientError(
-                error_code="llm_worker_invalid_response",
-                message="worker /ready returned non-object response",
+                error_code='llm_worker_invalid_response',
+                message='worker /ready returned non-object response',
                 retryable=True,
             )
         return response.status_code, data
@@ -269,7 +294,7 @@ _worker_client_base_url: str | None = None
 def get_worker_client() -> WorkerClient:
     global _worker_client, _worker_client_base_url
     settings = get_settings()
-    base_url = (settings.llm_worker_base_url or "").strip().rstrip("/")
+    base_url = (settings.llm_worker_base_url or '').strip().rstrip('/')
     if _worker_client is None or _worker_client_base_url != base_url:
         old_client = _worker_client
         _worker_client = WorkerClient(
@@ -279,7 +304,7 @@ def get_worker_client() -> WorkerClient:
             max_connections=int(settings.llm_worker_max_connections),
             max_keepalive_connections=int(settings.llm_worker_max_keepalive_connections),
             http2_enabled=bool(settings.llm_worker_http2_enabled),
-            internal_token=settings.internal_worker_token or "",
+            internal_token=settings.internal_worker_token or '',
         )
         _worker_client_base_url = base_url
         if old_client is not None:
