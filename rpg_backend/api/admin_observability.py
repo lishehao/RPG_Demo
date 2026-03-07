@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.application.observability.snapshot_service import ObservabilitySnapshotService
 from rpg_backend.api.route_paths import API_ADMIN_OBSERVABILITY_PREFIX, HEALTH_PATH
-from rpg_backend.api.schemas import (
+from rpg_backend.api.contracts.observability import (
     HttpHealthAggregateResponse,
     LLMCallByGatewayModePayload,
     LLMCallByStagePayload,

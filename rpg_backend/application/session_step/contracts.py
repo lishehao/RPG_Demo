@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from rpg_backend.api.schemas import SessionStepRequest
+from rpg_backend.api.contracts.sessions import SessionStepRequest
 from rpg_backend.runtime.service import RuntimeService
 from rpg_backend.storage.models.entities import Session as SessionRecord
 

@@ -6,7 +6,7 @@ from typing import Any, Callable
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError
-from rpg_backend.api.schemas import SessionStepRequest, SessionStepResponse
+from rpg_backend.api.contracts.sessions import SessionStepRequest, SessionStepResponse
 from rpg_backend.application.session_step.stages.commit import cas_commit_transition, resolve_conflict_or_replay
 from rpg_backend.application.session_step.stages.emit import emit_success_or_failure_events, record_llm_call_events
 from rpg_backend.application.session_step.stages.execute import build_execution_context, execute_runtime_step

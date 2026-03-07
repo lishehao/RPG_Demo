@@ -5,7 +5,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError
 from rpg_backend.api.route_paths import API_ADMIN_AUTH_PREFIX
-from rpg_backend.api.schemas import AdminAuthLoginRequest, AdminAuthLoginResponse, AdminUserPublic
+from rpg_backend.api.contracts.admin import AdminAuthLoginRequest, AdminAuthLoginResponse, AdminUserPublic
 from rpg_backend.config.settings import get_settings
 from rpg_backend.infrastructure.db.async_session import get_async_session
 from rpg_backend.infrastructure.repositories.admin_users_async import (

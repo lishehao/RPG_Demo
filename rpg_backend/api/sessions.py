@@ -5,9 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from rpg_backend.api.errors import ApiError
-from rpg_backend.api.route_paths import API_SESSIONS_PREFIX
-from rpg_backend.api.schemas import (
+from rpg_backend.api.contracts.sessions import (
     SessionCreateRequest,
     SessionCreateResponse,
     SessionGetResponse,
@@ -16,12 +14,11 @@ from rpg_backend.api.schemas import (
     SessionStepRequest,
     SessionStepResponse,
 )
-from rpg_backend.domain.opening_guidance import build_opening_guidance_for_pack
+from rpg_backend.api.errors import ApiError
+from rpg_backend.api.route_paths import API_SESSIONS_PREFIX
+from rpg_backend.application.session_step.use_case import process_step_request
+from rpg_backend.application.story_draft import resolve_opening_guidance
 from rpg_backend.domain.pack_schema import StoryPack
-from rpg_backend.llm.base import LLMProviderConfigError
-from rpg_backend.llm.factory import get_llm_provider
-from rpg_backend.observability.context import get_request_id
-from rpg_backend.security.deps import require_current_user
 from rpg_backend.infrastructure.db.async_session import get_async_session
 from rpg_backend.infrastructure.repositories.sessions_async import (
     create_session,
@@ -29,8 +26,11 @@ from rpg_backend.infrastructure.repositories.sessions_async import (
     list_session_actions,
 )
 from rpg_backend.infrastructure.repositories.stories_async import get_story, get_story_version
+from rpg_backend.llm.base import LLMProviderConfigError
+from rpg_backend.llm.factory import get_llm_provider
+from rpg_backend.observability.context import get_request_id
 from rpg_backend.runtime.service import RuntimeService
-from rpg_backend.application.session_step.use_case import process_step_request
+from rpg_backend.security.deps import require_current_user
 
 router = APIRouter(
     prefix=API_SESSIONS_PREFIX,
@@ -46,11 +46,6 @@ def _state_summary(state: dict) -> dict[str, int]:
         "inventory": len(state.get("inventory", [])),
         "cost_total": int(values.get("cost_total", 0)),
     }
-
-
-def _resolved_opening_guidance(pack: StoryPack) -> dict[str, Any]:
-    guidance = pack.opening_guidance or build_opening_guidance_for_pack(pack)
-    return guidance.model_dump(mode="json")
 
 
 def _build_runtime_or_503() -> RuntimeService:
@@ -112,7 +107,7 @@ async def create_session_endpoint(
         version=payload.version,
         scene_id=scene_id,
         state_summary=_state_summary(state),
-        opening_guidance=_resolved_opening_guidance(pack),
+        opening_guidance=resolve_opening_guidance(pack),
     )
 
 
@@ -137,7 +132,7 @@ async def get_session_endpoint(
         beat_progress=session.beat_progress_json,
         ended=session.ended,
         state_summary=_state_summary(session.state_json),
-        opening_guidance=_resolved_opening_guidance(pack),
+        opening_guidance=resolve_opening_guidance(pack),
         state=session.state_json if dev_mode else None,
     )
 

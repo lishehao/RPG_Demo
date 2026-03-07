@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.route_paths import HEALTH_PATH, READY_PATH
-from rpg_backend.api.schemas import ReadinessResponse
+from rpg_backend.api.contracts.observability import ReadinessResponse
 from rpg_backend.infrastructure.db.async_engine import async_engine
 from rpg_backend.infrastructure.repositories.observability_async import save_readiness_probe_event
 from rpg_backend.observability.context import get_request_id

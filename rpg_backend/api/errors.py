@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from rpg_backend.api.schemas import ErrorEnvelope
+from rpg_backend.api.contracts.common import ErrorEnvelope
 from rpg_backend.observability.context import get_request_id
 
 

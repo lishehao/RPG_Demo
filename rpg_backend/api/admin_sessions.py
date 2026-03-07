@@ -7,13 +7,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.errors import ApiError
 from rpg_backend.api.route_paths import API_ADMIN_SESSIONS_PREFIX
-from rpg_backend.api.schemas import (
-    AdminSessionTimelineEvent,
-    AdminSessionTimelineResponse,
-    SessionFeedbackCreateRequest,
-    SessionFeedbackItem,
-    SessionFeedbackListResponse,
-)
+from rpg_backend.api.contracts.admin import AdminSessionTimelineEvent, AdminSessionTimelineResponse
+from rpg_backend.api.contracts.sessions import SessionFeedbackCreateRequest, SessionFeedbackItem, SessionFeedbackListResponse
 from rpg_backend.infrastructure.db.async_session import get_async_session
 from rpg_backend.infrastructure.repositories.runtime_events_async import list_runtime_events
 from rpg_backend.infrastructure.repositories.session_feedback_async import (

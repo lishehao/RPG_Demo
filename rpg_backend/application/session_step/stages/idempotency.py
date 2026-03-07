@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from rpg_backend.api.schemas import SessionStepResponse
+from rpg_backend.api.contracts.sessions import SessionStepResponse
 from rpg_backend.application.session_step.contracts import StepRequestContext
 from rpg_backend.application.session_step.event_logger import emit_step_replayed_event
 from rpg_backend.infrastructure.repositories.sessions_async import get_session_action

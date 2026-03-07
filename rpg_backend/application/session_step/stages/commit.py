@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from rpg_backend.api.errors import ApiError
-from rpg_backend.api.schemas import SessionStepResponse
+from rpg_backend.api.contracts.sessions import SessionStepResponse
 from rpg_backend.application.session_step.contracts import RuntimeExecutionSuccess, StepRequestContext
 from rpg_backend.infrastructure.repositories.sessions_async import (
     StepCommitResult,

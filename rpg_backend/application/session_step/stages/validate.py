@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from rpg_backend.api.errors import ApiError
-from rpg_backend.api.schemas import SessionStepRequest
+from rpg_backend.api.contracts.sessions import SessionStepRequest
 from rpg_backend.application.session_step.contracts import StepRequestContext
 from rpg_backend.config.settings import get_settings
 from rpg_backend.domain.constants import GLOBAL_HELP_ME_PROGRESS_MOVE_ID
