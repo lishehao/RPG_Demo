@@ -3,15 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '@/shared/api/service';
 import { ApiClientError } from '@/shared/api/client';
 import type { StoryDraftResponse } from '@/shared/api/types';
-import { useAuthorStoryStore } from '@/shared/store/authorStoryStore';
+import { useAuthorStoryStore } from '@/features/author-review/store/authorStoryStore';
 import {
   applyEditableStoryDraft,
   buildEditableStoryDraftState,
   buildStoryDraftPatchChanges,
   hasEditableStoryDraftChanges,
   type EditableStoryDraftState,
-} from '@/shared/lib/storyDraftEditing';
-import { buildStoryPackReviewModel, type ReviewIssue, type StoryPackBeat, type StoryPackMove, type StoryPackScene } from '@/shared/lib/storyPackReview';
+} from '@/features/author-review/lib/storyDraftEditing';
+import { buildStoryPackReviewModel, type ReviewIssue, type StoryPackBeat, type StoryPackMove, type StoryPackScene } from '@/features/author-review/lib/storyPackReview';
 import { cn } from '@/shared/lib/cn';
 import { formatDateTime, titleCase } from '@/shared/lib/format';
 import type { ErrorPresentationContext } from '@/shared/lib/apiErrorPresentation';

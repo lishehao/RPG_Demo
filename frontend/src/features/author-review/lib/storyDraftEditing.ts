@@ -1,4 +1,4 @@
-import { buildStoryPackReviewModel, type StoryPackReviewModel } from '@/shared/lib/storyPackReview';
+import { buildStoryPackReviewModel, type StoryPackReviewModel } from '@/features/author-review/lib/storyPackReview';
 import type { StoryDraftPatchChange } from '@/shared/api/types';
 
 export type EditableStoryDraftState = {
