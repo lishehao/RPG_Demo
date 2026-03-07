@@ -676,7 +676,7 @@ export function AuthorStoryDetailPage() {
                       />
                     </div>
                     <Field
-                      label="Starter Prompt 1"
+                      label="Observe Prompt"
                       multiline
                       value={editableDraft.openingGuidance.starter_prompt_1}
                       onChange={(event) =>
@@ -691,7 +691,7 @@ export function AuthorStoryDetailPage() {
                       }
                     />
                     <Field
-                      label="Starter Prompt 2"
+                      label="Ask Prompt"
                       multiline
                       value={editableDraft.openingGuidance.starter_prompt_2}
                       onChange={(event) =>
@@ -707,7 +707,7 @@ export function AuthorStoryDetailPage() {
                     />
                     <div className="lg:col-span-2">
                       <Field
-                        label="Starter Prompt 3"
+                        label="Act Prompt"
                         multiline
                         value={editableDraft.openingGuidance.starter_prompt_3}
                         onChange={(event) =>

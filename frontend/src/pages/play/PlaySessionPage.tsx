@@ -243,19 +243,23 @@ export function PlaySessionPage() {
                   <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-4">
                     <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Starter Prompts</div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {starterPrompts.map((prompt) => (
-                        <button
-                          key={prompt}
-                          type="button"
-                          onClick={() => {
-                            setTextInput(prompt);
-                            setOpeningPromptSeeded(true);
-                          }}
-                          className="rounded-full border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-4 py-2 text-left text-sm text-[var(--text-mist)] transition hover:border-[var(--line-strong)] hover:text-[var(--text-ivory)]"
-                        >
-                          {prompt}
-                        </button>
-                      ))}
+                      {starterPrompts.map((prompt, index) => {
+                        const promptLabel = ['Observe', 'Ask', 'Act'][index] ?? `Prompt ${index + 1}`;
+                        return (
+                          <button
+                            key={prompt}
+                            type="button"
+                            onClick={() => {
+                              setTextInput(prompt);
+                              setOpeningPromptSeeded(true);
+                            }}
+                            className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-4 py-3 text-left transition hover:border-[var(--line-strong)] hover:text-[var(--text-ivory)]"
+                          >
+                            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)]">{promptLabel}</div>
+                            <div className="mt-2 text-sm leading-7 text-[var(--text-mist)]">{prompt}</div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

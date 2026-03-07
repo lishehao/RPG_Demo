@@ -64,8 +64,9 @@ function formatValidationLabel(loc: string[]): string | null {
     return '开局目标提示';
   }
   if (loc[0] === 'opening_guidance' && loc[1] === 'starter_prompts') {
-    const index = Number(loc[2] ?? 0) + 1;
-    return `示例输入 ${Number.isFinite(index) && index > 0 ? index : ''}`.trim();
+    const promptLabels = ['观察起手提示', '询问起手提示', '行动起手提示'];
+    const index = Number(loc[2] ?? 0);
+    return promptLabels[index] ?? `示例输入 ${index + 1}`;
   }
 
   return null;
