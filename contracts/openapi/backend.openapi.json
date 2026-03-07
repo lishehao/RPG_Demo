@@ -1691,6 +1691,72 @@
         "title": "StoryDraftGetResponse",
         "type": "object"
       },
+      "StoryDraftPatchChange": {
+        "properties": {
+          "field": {
+            "enum": [
+              "title",
+              "description",
+              "style_guard",
+              "input_hint",
+              "scene_seed",
+              "red_line"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "target_type": {
+            "enum": [
+              "story",
+              "beat",
+              "scene",
+              "npc"
+            ],
+            "title": "Target Type",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_type",
+          "field",
+          "value"
+        ],
+        "title": "StoryDraftPatchChange",
+        "type": "object"
+      },
+      "StoryDraftPatchRequest": {
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/StoryDraftPatchChange"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "changes"
+        ],
+        "title": "StoryDraftPatchRequest",
+        "type": "object"
+      },
       "StoryGenerateRequest": {
         "properties": {
           "candidate_parallelism": {
@@ -3205,6 +3271,61 @@
           }
         ],
         "summary": "Get Story Draft Endpoint",
+        "tags": [
+          "stories"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_story_draft_endpoint_stories__story_id__draft_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryDraftPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryDraftGetResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Patch Story Draft Endpoint",
         "tags": [
           "stories"
         ]

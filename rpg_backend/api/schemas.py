@@ -51,6 +51,41 @@ class StoryDraftGetResponse(BaseModel):
     latest_published_at: datetime | None = None
 
 
+class StoryDraftPatchChange(BaseModel):
+    target_type: Literal["story", "beat", "scene", "npc"]
+    field: Literal["title", "description", "style_guard", "input_hint", "scene_seed", "red_line"]
+    target_id: str | None = None
+    value: str
+
+    @model_validator(mode="after")
+    def validate_target_and_field(self) -> "StoryDraftPatchChange":
+        if self.target_type == "story":
+            if self.target_id not in {None, ""}:
+                raise ValueError("story target_type must not include target_id")
+            if self.field not in {"title", "description", "style_guard", "input_hint"}:
+                raise ValueError("story target_type only supports title, description, style_guard, input_hint")
+            return self
+
+        normalized_target_id = (self.target_id or "").strip()
+        if not normalized_target_id:
+            raise ValueError(f"{self.target_type} target_type requires target_id")
+        self.target_id = normalized_target_id
+
+        allowed_fields = {
+            "beat": {"title"},
+            "scene": {"scene_seed"},
+            "npc": {"red_line"},
+        }
+        if self.field not in allowed_fields[self.target_type]:
+            allowed = ", ".join(sorted(allowed_fields[self.target_type]))
+            raise ValueError(f"{self.target_type} target_type only supports {allowed}")
+        return self
+
+
+class StoryDraftPatchRequest(BaseModel):
+    changes: list[StoryDraftPatchChange] = Field(min_length=1, max_length=64)
+
+
 class StoryGenerateRequest(BaseModel):
     seed_text: str | None = None
     prompt_text: str | None = None

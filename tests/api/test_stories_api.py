@@ -8,7 +8,7 @@ from rpg_backend.generator.prompt_compiler import PromptCompileError, PromptComp
 from rpg_backend.generator.spec_schema import StorySpec
 from rpg_backend.generator.errors import GeneratorBuildError
 from rpg_backend.generator.versioning import GENERATOR_VERSION
-from tests.helpers.route_paths import story_draft_path, story_path, story_publish_path, stories_generate_path, stories_path
+from tests.helpers.route_paths import story_draft_patch_path, story_draft_path, story_path, story_publish_path, stories_generate_path, stories_path
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
@@ -161,6 +161,105 @@ def test_story_list_and_draft_endpoints_return_author_summary(client) -> None:
     assert draft_body["title"] == "Author Story"
     assert draft_body["draft_pack"] == pack
     assert draft_body["latest_published_version"] == 1
+
+
+def test_story_draft_patch_updates_story_beat_scene_and_npc_fields(client) -> None:
+    pack = _sample_pack()
+    created = client.post(stories_path(), json={"title": "Editable Story", "pack_json": pack})
+    assert created.status_code == 200
+    story_id = created.json()["story_id"]
+
+    response = client.patch(
+        story_draft_patch_path(story_id),
+        json={
+            "changes": [
+                {"target_type": "story", "field": "title", "value": "Whispers in the Veilwood"},
+                {"target_type": "story", "field": "description", "value": "A cleaner review description."},
+                {"target_type": "story", "field": "style_guard", "value": "quiet, exact, strategic"},
+                {"target_type": "story", "field": "input_hint", "value": "Lead with free input."},
+                {"target_type": "beat", "target_id": "b1", "field": "title", "value": "The First Silence Breaks"},
+                {"target_type": "scene", "target_id": "sc2", "field": "scene_seed", "value": "Investigate the broken vow under strict silence."},
+                {"target_type": "npc", "target_id": pack["npc_profiles"][0]["name"], "field": "red_line", "value": "I will not falsify the ritual record."},
+            ]
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["title"] == "Whispers in the Veilwood"
+    assert body["draft_pack"]["title"] == "Whispers in the Veilwood"
+    assert body["draft_pack"]["description"] == "A cleaner review description."
+    assert body["draft_pack"]["style_guard"] == "quiet, exact, strategic"
+    assert body["draft_pack"]["input_hint"] == "Lead with free input."
+    assert body["draft_pack"]["beats"][0]["title"] == "The First Silence Breaks"
+    assert body["draft_pack"]["scenes"][1]["scene_seed"] == "Investigate the broken vow under strict silence."
+    assert body["draft_pack"]["npc_profiles"][0]["red_line"] == "I will not falsify the ritual record."
+
+    refreshed = client.get(story_draft_path(story_id))
+    assert refreshed.status_code == 200
+    refreshed_body = refreshed.json()
+    assert refreshed_body["title"] == "Whispers in the Veilwood"
+    assert refreshed_body["draft_pack"]["input_hint"] == "Lead with free input."
+
+
+def test_story_draft_patch_rejects_invalid_field_combination(client) -> None:
+    pack = _sample_pack()
+    created = client.post(stories_path(), json={"title": "Invalid Patch", "pack_json": pack})
+    story_id = created.json()["story_id"]
+
+    response = client.patch(
+        story_draft_patch_path(story_id),
+        json={
+            "changes": [
+                {"target_type": "story", "field": "scene_seed", "value": "bad"}
+            ]
+        },
+    )
+    assert response.status_code == 422
+    err = _error_payload(response)
+    assert err["code"] == "validation_error"
+
+
+def test_story_draft_patch_returns_404_for_missing_target(client) -> None:
+    pack = _sample_pack()
+    created = client.post(stories_path(), json={"title": "Missing Target", "pack_json": pack})
+    story_id = created.json()["story_id"]
+
+    response = client.patch(
+        story_draft_patch_path(story_id),
+        json={
+            "changes": [
+                {"target_type": "scene", "target_id": "sc404", "field": "scene_seed", "value": "bad"}
+            ]
+        },
+    )
+    assert response.status_code == 404
+    err = _error_payload(response)
+    assert err["code"] == "draft_target_not_found"
+
+
+def test_story_draft_patch_is_atomic_on_validation_failure(client) -> None:
+    pack = _sample_pack()
+    created = client.post(stories_path(), json={"title": "Atomic Story", "pack_json": pack})
+    story_id = created.json()["story_id"]
+
+    response = client.patch(
+        story_draft_patch_path(story_id),
+        json={
+            "changes": [
+                {"target_type": "story", "field": "description", "value": "intermediate change"},
+                {"target_type": "npc", "target_id": pack["npc_profiles"][0]["name"], "field": "red_line", "value": ""},
+            ]
+        },
+    )
+    assert response.status_code == 422
+    err = _error_payload(response)
+    assert err["code"] == "validation_error"
+
+    refreshed = client.get(story_draft_path(story_id))
+    assert refreshed.status_code == 200
+    refreshed_body = refreshed.json()
+    assert refreshed_body["draft_pack"]["description"] == pack["description"]
+    assert refreshed_body["draft_pack"]["npc_profiles"][0]["red_line"] == pack["npc_profiles"][0]["red_line"]
 
 
 def test_generate_story_success_without_publish(client) -> None:

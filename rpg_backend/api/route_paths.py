@@ -28,6 +28,10 @@ def story_publish_path(story_id: str) -> str:
     return f"{API_STORIES_PREFIX}/{story_id}/publish"
 
 
+def story_draft_patch_path(story_id: str) -> str:
+    return f"{API_STORIES_PREFIX}/{story_id}/draft"
+
+
 def stories_generate_path() -> str:
     return f"{API_STORIES_PREFIX}/generate"
 

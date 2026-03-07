@@ -1,7 +1,7 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Source: scripts/generate_frontend_sdk.py
 // OpenAPI source: contracts/openapi/backend.openapi.json
-// OpenAPI sha256: 88297b4aa92f01f7cb5b61b3fecba90bca0975fc8727926b26f73669309cac40
+// OpenAPI sha256: 5414b0c53ae578ad5922bc100de90c4cb70626666a7202039c133d2b6bbe6ffe
 
 export type ApiHttpMethod =
   | 'GET'
@@ -23,7 +23,7 @@ export type ApiOperationMeta = {
   responseCodes: string[];
 };
 
-export const BACKEND_OPENAPI_SHA256 = '88297b4aa92f01f7cb5b61b3fecba90bca0975fc8727926b26f73669309cac40' as const;
+export const BACKEND_OPENAPI_SHA256 = '5414b0c53ae578ad5922bc100de90c4cb70626666a7202039c133d2b6bbe6ffe' as const;
 
 export const API_OPERATIONS: ApiOperationMeta[] = [
   {
@@ -313,6 +313,20 @@ export const API_OPERATIONS: ApiOperationMeta[] = [
       "stories"
     ],
     "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  {
+    "operationId": "patch_story_draft_endpoint_stories__story_id__draft_patch",
+    "method": "PATCH",
+    "path": "/stories/{story_id}/draft",
+    "tags": [
+      "stories"
+    ],
+    "hasRequestBody": true,
     "hasParameters": true,
     "responseCodes": [
       "200",
@@ -623,6 +637,20 @@ export const API_OPERATION_MAP: Record<string, ApiOperationMeta> = {
       "stories"
     ],
     "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  "patch_story_draft_endpoint_stories__story_id__draft_patch": {
+    "operationId": "patch_story_draft_endpoint_stories__story_id__draft_patch",
+    "method": "PATCH",
+    "path": "/stories/{story_id}/draft",
+    "tags": [
+      "stories"
+    ],
+    "hasRequestBody": true,
     "hasParameters": true,
     "responseCodes": [
       "200",

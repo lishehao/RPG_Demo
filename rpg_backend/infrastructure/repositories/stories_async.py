@@ -14,6 +14,21 @@ async def create_story(db: AsyncSession, *, title: str, pack_json: dict) -> Stor
     return story
 
 
+async def update_story_draft(
+    db: AsyncSession,
+    story: Story,
+    *,
+    title: str,
+    draft_pack_json: dict,
+) -> Story:
+    story.title = title
+    story.draft_pack_json = draft_pack_json
+    db.add(story)
+    await db.commit()
+    await db.refresh(story)
+    return story
+
+
 async def list_stories(db: AsyncSession, *, limit: int = 100) -> list[Story]:
     stmt = select(Story).order_by(desc(Story.created_at)).limit(limit)
     return list((await db.exec(stmt)).all())

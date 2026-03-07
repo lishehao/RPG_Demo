@@ -208,6 +208,63 @@ Response:
 }
 ```
 
+### Patch draft fields
+
+`PATCH /stories/{story_id}/draft`
+
+Request:
+
+```json
+{
+  "changes": [
+    {
+      "target_type": "story",
+      "field": "title",
+      "value": "Whispers in the Veilwood"
+    },
+    {
+      "target_type": "beat",
+      "target_id": "b1",
+      "field": "title",
+      "value": "The First Silence Breaks"
+    },
+    {
+      "target_type": "scene",
+      "target_id": "sc2",
+      "field": "scene_seed",
+      "value": "Investigate the broken vow under strict silence."
+    },
+    {
+      "target_type": "npc",
+      "target_id": "Kael",
+      "field": "red_line",
+      "value": "I will not falsify the ritual record."
+    }
+  ]
+}
+```
+
+Response:
+
+```json
+{
+  "story_id": "uuid",
+  "title": "Whispers in the Veilwood",
+  "created_at": "timestamp",
+  "draft_pack": {},
+  "latest_published_version": 1,
+  "latest_published_at": "timestamp"
+}
+```
+
+Notes:
+- `target_type=story` supports `title`, `description`, `style_guard`, `input_hint`
+- `target_type=beat` supports `title`
+- `target_type=scene` supports `scene_seed`
+- `target_type=npc` supports `red_line`
+- Invalid target/field combinations return `422 validation_error`
+- Missing beat/scene/npc targets return `404 draft_target_not_found`
+
 ### Publish version
 
 `POST /stories/{story_id}/publish`
