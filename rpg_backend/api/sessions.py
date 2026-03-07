@@ -16,6 +16,7 @@ from rpg_backend.api.schemas import (
     SessionStepRequest,
     SessionStepResponse,
 )
+from rpg_backend.domain.opening_guidance import build_opening_guidance_for_pack
 from rpg_backend.domain.pack_schema import StoryPack
 from rpg_backend.llm.base import LLMProviderConfigError
 from rpg_backend.llm.factory import get_llm_provider
@@ -45,6 +46,11 @@ def _state_summary(state: dict) -> dict[str, int]:
         "inventory": len(state.get("inventory", [])),
         "cost_total": int(values.get("cost_total", 0)),
     }
+
+
+def _resolved_opening_guidance(pack: StoryPack) -> dict[str, Any]:
+    guidance = pack.opening_guidance or build_opening_guidance_for_pack(pack)
+    return guidance.model_dump(mode="json")
 
 
 def _build_runtime_or_503() -> RuntimeService:
@@ -106,6 +112,7 @@ async def create_session_endpoint(
         version=payload.version,
         scene_id=scene_id,
         state_summary=_state_summary(state),
+        opening_guidance=_resolved_opening_guidance(pack),
     )
 
 
@@ -119,12 +126,18 @@ async def get_session_endpoint(
     if session is None:
         raise ApiError(status_code=404, code="not_found", message="session not found", retryable=False)
 
+    story_version = await get_story_version(db, session.story_id, session.version)
+    if story_version is None:
+        raise ApiError(status_code=404, code="not_found", message="story version not found", retryable=False)
+    pack = StoryPack.model_validate(story_version.pack_json)
+
     return SessionGetResponse(
         session_id=session.id,
         scene_id=session.current_scene_id,
         beat_progress=session.beat_progress_json,
         ended=session.ended,
         state_summary=_state_summary(session.state_json),
+        opening_guidance=_resolved_opening_guidance(pack),
         state=session.state_json if dev_mode else None,
     )
 

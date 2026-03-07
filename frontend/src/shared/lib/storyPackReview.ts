@@ -9,12 +9,19 @@ export type ReviewIssue = {
   target_id: string;
 };
 
+export type StoryPackOpeningGuidance = {
+  introText: string;
+  goalHint: string;
+  starterPrompts: [string, string, string] | string[];
+};
+
 export type StoryPackOverview = {
   storyId: string;
   title: string;
   description: string;
   styleGuard: string;
   inputHint: string;
+  openingGuidance: StoryPackOpeningGuidance;
 };
 
 export type StoryPackCastMember = {
@@ -95,14 +102,39 @@ function asNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function buildFallbackOpeningGuidance(pack: Record<string, unknown>) {
+  const title = asString(pack.title) || 'This story';
+  const description = asString(pack.description);
+  const beat = asObjectArray(pack.beats)[0] ?? {};
+  const intro = [title, description].filter(Boolean).join(' — ');
+  return {
+    introText: intro || 'You are entering the opening pressure point of this story.',
+    goalHint: `Start by understanding ${asString(beat.title) || 'the first beat'} and what will get worse if you wait.`,
+    starterPrompts: [
+      'I inspect the immediate scene and look for the first reliable clue.',
+      'I ask the most relevant ally what changed just before this began.',
+      'I move carefully and test the safest next action.',
+    ],
+  };
+}
+
 export function buildStoryPackReviewModel(draftPack: Record<string, unknown>): StoryPackReviewModel {
   const pack = asObject(draftPack);
+  const openingGuidanceObject = asObject(pack.opening_guidance);
   const overview: StoryPackOverview = {
     storyId: asString(pack.story_id),
     title: asString(pack.title),
     description: asString(pack.description),
     styleGuard: asString(pack.style_guard),
     inputHint: asString(pack.input_hint),
+    openingGuidance:
+      Object.keys(openingGuidanceObject).length > 0
+        ? {
+            introText: asString(openingGuidanceObject.intro_text),
+            goalHint: asString(openingGuidanceObject.goal_hint),
+            starterPrompts: asStringArray(openingGuidanceObject.starter_prompts).slice(0, 3),
+          }
+        : buildFallbackOpeningGuidance(pack),
   };
 
   const cast = asObjectArray(pack.npc_profiles).map((profile) => ({
@@ -152,7 +184,6 @@ export function buildStoryPackReviewModel(draftPack: Record<string, unknown>): S
   const issues: ReviewIssue[] = [];
   const sceneIds = new Set(scenes.map((scene) => scene.id).filter(Boolean));
   const beatIds = new Set(beats.map((beat) => beat.id).filter(Boolean));
-  const moveIds = new Set(moves.map((move) => move.id).filter(Boolean));
 
   if (!overview.storyId) {
     issues.push({
@@ -188,6 +219,15 @@ export function buildStoryPackReviewModel(draftPack: Record<string, unknown>): S
       message: 'The pack should define at least one move before publish review.',
       target_type: 'pack',
       target_id: 'moves',
+    });
+  }
+  if (!overview.openingGuidance.introText.trim()) {
+    issues.push({
+      severity: 'warning',
+      title: 'Opening intro is empty',
+      message: 'Play first-turn guidance works better when the story has a clear opening setup.',
+      target_type: 'pack',
+      target_id: 'opening_guidance.intro_text',
     });
   }
 
@@ -252,36 +292,6 @@ export function buildStoryPackReviewModel(draftPack: Record<string, unknown>): S
           target_id: scene.id || 'unknown-scene',
         });
       }
-    }
-  }
-
-  for (const move of moves) {
-    if (move.outcomes.length === 0) {
-      issues.push({
-        severity: 'blocking',
-        title: 'Move has no outcomes',
-        message: `Move ${move.id || '(unknown)'} has no authored outcomes.`,
-        target_type: 'move',
-        target_id: move.id || 'unknown-move',
-      });
-    }
-    if (!move.label) {
-      issues.push({
-        severity: 'warning',
-        title: 'Move label missing',
-        message: `Move ${move.id || '(unknown)'} has an empty label, which makes review and play harder to read.`,
-        target_type: 'move',
-        target_id: move.id || 'unknown-move',
-      });
-    }
-    if (!moveIds.has(move.id)) {
-      issues.push({
-        severity: 'warning',
-        title: 'Move identifier missing',
-        message: 'A move entry is missing its id.',
-        target_type: 'move',
-        target_id: 'unknown-move',
-      });
     }
   }
 

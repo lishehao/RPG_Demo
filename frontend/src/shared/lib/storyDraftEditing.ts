@@ -8,6 +8,13 @@ export type EditableStoryDraftState = {
     style_guard: string;
     input_hint: string;
   };
+  openingGuidance: {
+    intro_text: string;
+    goal_hint: string;
+    starter_prompt_1: string;
+    starter_prompt_2: string;
+    starter_prompt_3: string;
+  };
   beats: Record<string, { title: string }>;
   scenes: Record<string, { scene_seed: string }>;
   npcs: Record<string, { red_line: string }>;
@@ -18,12 +25,24 @@ function cloneDraftPack(draftPack: Record<string, unknown>) {
 }
 
 export function buildEditableStoryDraftState(reviewModel: StoryPackReviewModel): EditableStoryDraftState {
+  const prompts = [...reviewModel.overview.openingGuidance.starterPrompts];
+  while (prompts.length < 3) {
+    prompts.push('');
+  }
+
   return {
     story: {
       title: reviewModel.overview.title,
       description: reviewModel.overview.description,
       style_guard: reviewModel.overview.styleGuard,
       input_hint: reviewModel.overview.inputHint,
+    },
+    openingGuidance: {
+      intro_text: reviewModel.overview.openingGuidance.introText,
+      goal_hint: reviewModel.overview.openingGuidance.goalHint,
+      starter_prompt_1: prompts[0],
+      starter_prompt_2: prompts[1],
+      starter_prompt_3: prompts[2],
     },
     beats: Object.fromEntries(reviewModel.beats.map((beat) => [beat.id, { title: beat.title }])),
     scenes: Object.fromEntries(reviewModel.scenes.map((scene) => [scene.id, { scene_seed: scene.sceneSeed }])),
@@ -41,6 +60,15 @@ export function applyEditableStoryDraft(
   nextPack.description = editableDraft.story.description;
   nextPack.style_guard = editableDraft.story.style_guard;
   nextPack.input_hint = editableDraft.story.input_hint;
+  nextPack.opening_guidance = {
+    intro_text: editableDraft.openingGuidance.intro_text,
+    goal_hint: editableDraft.openingGuidance.goal_hint,
+    starter_prompts: [
+      editableDraft.openingGuidance.starter_prompt_1,
+      editableDraft.openingGuidance.starter_prompt_2,
+      editableDraft.openingGuidance.starter_prompt_3,
+    ],
+  };
 
   const beats = Array.isArray(nextPack.beats) ? nextPack.beats : [];
   for (const beat of beats) {
@@ -93,6 +121,23 @@ export function buildStoryDraftPatchChanges(
   if (editableDraft.story.input_hint !== originalReviewModel.overview.inputHint) {
     changes.push({ target_type: 'story', field: 'input_hint', value: editableDraft.story.input_hint });
   }
+
+  if (editableDraft.openingGuidance.intro_text !== originalReviewModel.overview.openingGuidance.introText) {
+    changes.push({ target_type: 'opening_guidance', field: 'intro_text', value: editableDraft.openingGuidance.intro_text });
+  }
+  if (editableDraft.openingGuidance.goal_hint !== originalReviewModel.overview.openingGuidance.goalHint) {
+    changes.push({ target_type: 'opening_guidance', field: 'goal_hint', value: editableDraft.openingGuidance.goal_hint });
+  }
+  const originalPrompts = [...originalReviewModel.overview.openingGuidance.starterPrompts];
+  while (originalPrompts.length < 3) {
+    originalPrompts.push('');
+  }
+  const promptFields: Array<keyof EditableStoryDraftState['openingGuidance']> = ['starter_prompt_1', 'starter_prompt_2', 'starter_prompt_3'];
+  promptFields.forEach((field, index) => {
+    if (editableDraft.openingGuidance[field] !== originalPrompts[index]) {
+      changes.push({ target_type: 'opening_guidance', field, value: editableDraft.openingGuidance[field] });
+    }
+  });
 
   for (const beat of originalReviewModel.beats) {
     const nextValue = editableDraft.beats[beat.id]?.title;

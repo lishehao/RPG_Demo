@@ -1,7 +1,7 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Source: scripts/generate_frontend_sdk.py
 // OpenAPI source: contracts/openapi/backend.openapi.json
-// OpenAPI sha256: 5414b0c53ae578ad5922bc100de90c4cb70626666a7202039c133d2b6bbe6ffe
+// OpenAPI sha256: d29debd40c43f2d86e7a211e8fa0fe9d27ade50fd9f641781ad1ceea8675ed90
 
 export type ApiHttpMethod =
   | 'GET'
@@ -23,7 +23,7 @@ export type ApiOperationMeta = {
   responseCodes: string[];
 };
 
-export const BACKEND_OPENAPI_SHA256 = '5414b0c53ae578ad5922bc100de90c4cb70626666a7202039c133d2b6bbe6ffe' as const;
+export const BACKEND_OPENAPI_SHA256 = 'd29debd40c43f2d86e7a211e8fa0fe9d27ade50fd9f641781ad1ceea8675ed90' as const;
 
 export const API_OPERATIONS: ApiOperationMeta[] = [
   {

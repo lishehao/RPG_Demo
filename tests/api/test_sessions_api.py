@@ -76,12 +76,17 @@ def test_session_create_and_get(client, monkeypatch) -> None:
     body = created.json()
     session_id = body["session_id"]
     assert body["scene_id"] == "sc1"
+    assert body["opening_guidance"]["intro_text"]
+    assert body["opening_guidance"]["goal_hint"]
+    assert len(body["opening_guidance"]["starter_prompts"]) == 3
 
     fetched = client.get(f"{session_path(session_id)}?dev_mode=true")
     assert fetched.status_code == 200
     fetched_body = fetched.json()
     assert fetched_body["session_id"] == session_id
     assert "state" in fetched_body
+    assert fetched_body["opening_guidance"]["intro_text"]
+    assert len(fetched_body["opening_guidance"]["starter_prompts"]) == 3
 
 
 def test_session_history_returns_replayable_turns(client, monkeypatch) -> None:

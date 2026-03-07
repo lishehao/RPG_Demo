@@ -159,8 +159,57 @@ def test_story_list_and_draft_endpoints_return_author_summary(client) -> None:
     draft_body = draft.json()
     assert draft_body["story_id"] == story_id
     assert draft_body["title"] == "Author Story"
-    assert draft_body["draft_pack"] == pack
+    assert draft_body["draft_pack"]["story_id"] == pack["story_id"]
+    assert draft_body["draft_pack"]["title"] == pack["title"]
+    assert draft_body["draft_pack"]["opening_guidance"]["intro_text"]
+    assert len(draft_body["draft_pack"]["opening_guidance"]["starter_prompts"]) == 3
     assert draft_body["latest_published_version"] == 1
+
+
+def test_story_draft_patch_updates_opening_guidance_fields(client) -> None:
+    pack = _sample_pack()
+    created = client.post(stories_path(), json={"title": "Editable Guidance", "pack_json": pack})
+    story_id = created.json()["story_id"]
+
+    response = client.patch(
+        story_draft_patch_path(story_id),
+        json={
+            "changes": [
+                {"target_type": "opening_guidance", "field": "intro_text", "value": "The city enters a dangerous silence."},
+                {"target_type": "opening_guidance", "field": "goal_hint", "value": "Understand what is breaking before you commit."},
+                {"target_type": "opening_guidance", "field": "starter_prompt_1", "value": "I inspect the damaged ward first."},
+                {"target_type": "opening_guidance", "field": "starter_prompt_2", "value": "I ask the nearest ally what changed."},
+                {"target_type": "opening_guidance", "field": "starter_prompt_3", "value": "I move carefully and test the safest action."},
+            ]
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["draft_pack"]["opening_guidance"]["intro_text"] == "The city enters a dangerous silence."
+    assert body["draft_pack"]["opening_guidance"]["goal_hint"] == "Understand what is breaking before you commit."
+    assert body["draft_pack"]["opening_guidance"]["starter_prompts"] == [
+        "I inspect the damaged ward first.",
+        "I ask the nearest ally what changed.",
+        "I move carefully and test the safest action.",
+    ]
+
+
+def test_story_draft_patch_rejects_invalid_opening_guidance_fields(client) -> None:
+    pack = _sample_pack()
+    created = client.post(stories_path(), json={"title": "Bad Guidance", "pack_json": pack})
+    story_id = created.json()["story_id"]
+
+    response = client.patch(
+        story_draft_patch_path(story_id),
+        json={
+            "changes": [
+                {"target_type": "opening_guidance", "field": "starter_prompt_2", "value": ""}
+            ]
+        },
+    )
+    assert response.status_code == 422
+    err = _error_payload(response)
+    assert err["code"] == "validation_error"
 
 
 def test_story_draft_patch_updates_story_beat_scene_and_npc_fields(client) -> None:
@@ -279,6 +328,8 @@ def test_generate_story_success_without_publish(client) -> None:
     assert body["version"] is None
     generation = body["generation"]
     assert generation["mode"] == "seed"
+    assert body["pack"]["opening_guidance"]["intro_text"]
+    assert len(body["pack"]["opening_guidance"]["starter_prompts"]) == 3
     assert body["pack_hash"]
     assert generation["generator_version"] == GENERATOR_VERSION
     assert generation["variant_seed"]
@@ -288,6 +339,9 @@ def test_generate_story_success_without_publish(client) -> None:
     assert isinstance(generation["attempts"], int)
     assert isinstance(generation["regenerate_count"], int)
     assert isinstance(generation["attempt_history"], list)
+    assert body["pack"]["opening_guidance"]["intro_text"]
+    assert body["pack"]["opening_guidance"]["goal_hint"]
+    assert len(body["pack"]["opening_guidance"]["starter_prompts"]) == 3
     report = lint_story_pack(body["pack"])
     assert report.ok, report.errors
 
@@ -439,6 +493,8 @@ def test_generate_story_prompt_mode_success_without_publish(client, monkeypatch)
     assert body["status"] == "ok"
     generation = body["generation"]
     assert generation["mode"] == "prompt"
+    assert body["pack"]["opening_guidance"]["intro_text"]
+    assert len(body["pack"]["opening_guidance"]["starter_prompts"]) == 3
     assert body["version"] is None
     assert generation["compile"]["spec_hash"] == "a" * 64
     assert generation["compile"]["spec_summary"]

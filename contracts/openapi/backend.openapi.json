@@ -632,6 +632,34 @@
         "title": "LintReportPayload",
         "type": "object"
       },
+      "OpeningGuidancePayload": {
+        "properties": {
+          "goal_hint": {
+            "title": "Goal Hint",
+            "type": "string"
+          },
+          "intro_text": {
+            "title": "Intro Text",
+            "type": "string"
+          },
+          "starter_prompts": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Starter Prompts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "intro_text",
+          "goal_hint",
+          "starter_prompts"
+        ],
+        "title": "OpeningGuidancePayload",
+        "type": "object"
+      },
       "ReadinessCheckPayload": {
         "properties": {
           "checked_at": {
@@ -981,6 +1009,9 @@
       },
       "SessionCreateResponse": {
         "properties": {
+          "opening_guidance": {
+            "$ref": "#/components/schemas/OpeningGuidancePayload"
+          },
           "scene_id": {
             "title": "Scene Id",
             "type": "string"
@@ -1008,7 +1039,8 @@
           "story_id",
           "version",
           "scene_id",
-          "state_summary"
+          "state_summary",
+          "opening_guidance"
         ],
         "title": "SessionCreateResponse",
         "type": "object"
@@ -1165,6 +1197,9 @@
             "title": "Ended",
             "type": "boolean"
           },
+          "opening_guidance": {
+            "$ref": "#/components/schemas/OpeningGuidancePayload"
+          },
           "scene_id": {
             "title": "Scene Id",
             "type": "string"
@@ -1196,7 +1231,8 @@
           "scene_id",
           "beat_progress",
           "ended",
-          "state_summary"
+          "state_summary",
+          "opening_guidance"
         ],
         "title": "SessionGetResponse",
         "type": "object"
@@ -1700,7 +1736,12 @@
               "style_guard",
               "input_hint",
               "scene_seed",
-              "red_line"
+              "red_line",
+              "intro_text",
+              "goal_hint",
+              "starter_prompt_1",
+              "starter_prompt_2",
+              "starter_prompt_3"
             ],
             "title": "Field",
             "type": "string"
@@ -1721,7 +1762,8 @@
               "story",
               "beat",
               "scene",
-              "npc"
+              "npc",
+              "opening_guidance"
             ],
             "title": "Target Type",
             "type": "string"

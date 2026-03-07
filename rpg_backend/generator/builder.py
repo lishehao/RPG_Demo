@@ -20,6 +20,7 @@ from rpg_backend.domain.move_library import (
     MoveTemplate,
     StrategyStyle,
 )
+from rpg_backend.domain.opening_guidance import build_opening_guidance_payload
 from rpg_backend.domain.outcome_palette import OUTCOME_PALETTE_BY_ID, OutcomePalette
 from rpg_backend.generator.defaults import default_npc_conflict_tags, default_npc_red_line
 from rpg_backend.generator.planner import BeatPlan
@@ -389,5 +390,26 @@ def build_pack(
         for move_id in MOVE_TEMPLATE_BY_ID
         if move_id in used_move_ids
     ]
+
+    first_beat = pack["beats"][0] if pack.get("beats") else {}
+    first_scene = pack["scenes"][0] if pack.get("scenes") else {}
+    move_map = {move["id"]: move for move in pack["moves"] if isinstance(move, dict) and isinstance(move.get("id"), str)}
+    first_scene_move_ids = [
+        *[move_id for move_id in first_scene.get("enabled_moves", []) if isinstance(move_id, str)],
+        *[move_id for move_id in first_scene.get("always_available_moves", []) if isinstance(move_id, str)],
+    ]
+    first_scene_moves = [
+        {"move_id": move_id, "label": str(move_map.get(move_id, {}).get("label") or move_id)}
+        for move_id in first_scene_move_ids
+    ]
+    pack["opening_guidance"] = build_opening_guidance_payload(
+        title=str(pack.get("title") or ""),
+        description=str(pack.get("description") or ""),
+        input_hint=str(pack.get("input_hint") or ""),
+        first_beat_title=str(first_beat.get("title") or "the opening beat"),
+        first_scene_seed=str(first_scene.get("scene_seed") or "The opening scene is already unstable."),
+        first_scene_npcs=[npc for npc in first_scene.get("present_npcs", []) if isinstance(npc, str)],
+        first_scene_moves=first_scene_moves,
+    )
 
     return pack

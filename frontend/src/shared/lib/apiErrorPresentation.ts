@@ -57,6 +57,16 @@ function formatValidationLabel(loc: string[]): string | null {
   if (loc[0] === 'npc_profiles' && loc.at(-1) === 'red_line') {
     return 'NPC red line';
   }
+  if (loc[0] === 'opening_guidance' && loc.at(-1) === 'intro_text') {
+    return '开场说明';
+  }
+  if (loc[0] === 'opening_guidance' && loc.at(-1) === 'goal_hint') {
+    return '开局目标提示';
+  }
+  if (loc[0] === 'opening_guidance' && loc[1] === 'starter_prompts') {
+    const index = Number(loc[2] ?? 0) + 1;
+    return `示例输入 ${Number.isFinite(index) && index > 0 ? index : ''}`.trim();
+  }
 
   return null;
 }

@@ -53,8 +53,19 @@ export type StoryDraftResponse = {
 };
 
 export type StoryDraftPatchChange = {
-  target_type: 'story' | 'beat' | 'scene' | 'npc';
-  field: 'title' | 'description' | 'style_guard' | 'input_hint' | 'scene_seed' | 'red_line';
+  target_type: 'story' | 'beat' | 'scene' | 'npc' | 'opening_guidance';
+  field:
+    | 'title'
+    | 'description'
+    | 'style_guard'
+    | 'input_hint'
+    | 'scene_seed'
+    | 'red_line'
+    | 'intro_text'
+    | 'goal_hint'
+    | 'starter_prompt_1'
+    | 'starter_prompt_2'
+    | 'starter_prompt_3';
   target_id?: string;
   value: string;
 };
@@ -87,6 +98,12 @@ export type StoryPublishResponse = {
   published_at: string;
 };
 
+export type OpeningGuidance = {
+  intro_text: string;
+  goal_hint: string;
+  starter_prompts: [string, string, string] | string[];
+};
+
 export type SessionCreateRequest = {
   story_id: string;
   version: number;
@@ -98,6 +115,7 @@ export type SessionCreateResponse = {
   version: number;
   scene_id: string;
   state_summary: Record<string, unknown>;
+  opening_guidance: OpeningGuidance;
 };
 
 export type SessionMeta = {
@@ -106,6 +124,7 @@ export type SessionMeta = {
   beat_progress: Record<string, unknown>;
   ended: boolean;
   state_summary: Record<string, unknown>;
+  opening_guidance: OpeningGuidance;
   state?: Record<string, unknown> | null;
 };
 

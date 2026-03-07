@@ -239,6 +239,16 @@ Request:
       "target_id": "Kael",
       "field": "red_line",
       "value": "I will not falsify the ritual record."
+    },
+    {
+      "target_type": "opening_guidance",
+      "field": "intro_text",
+      "value": "The city enters a dangerous silence."
+    },
+    {
+      "target_type": "opening_guidance",
+      "field": "starter_prompt_1",
+      "value": "I inspect the damaged ward first."
     }
   ]
 }
@@ -262,6 +272,7 @@ Notes:
 - `target_type=beat` supports `title`
 - `target_type=scene` supports `scene_seed`
 - `target_type=npc` supports `red_line`
+- `target_type=opening_guidance` supports `intro_text`, `goal_hint`, `starter_prompt_1`, `starter_prompt_2`, `starter_prompt_3`
 - Invalid target/field combinations return `422 validation_error`
 - Missing beat/scene/npc targets return `404 draft_target_not_found`
 
@@ -320,6 +331,11 @@ Response:
     "events": 0,
     "inventory": 0,
     "cost_total": 0
+  },
+  "opening_guidance": {
+    "intro_text": "text",
+    "goal_hint": "text",
+    "starter_prompts": ["text", "text", "text"]
   }
 }
 ```
@@ -340,6 +356,11 @@ Response:
     "events": 0,
     "inventory": 0,
     "cost_total": 0
+  },
+  "opening_guidance": {
+    "intro_text": "text",
+    "goal_hint": "text",
+    "starter_prompts": ["text", "text", "text"]
   }
 }
 ```

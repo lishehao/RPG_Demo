@@ -43,6 +43,7 @@ export function PlaySessionPage() {
   const [error, setError] = useState<ApiClientError | Error | null>(null);
   const [errorContext, setErrorContext] = useState<ErrorPresentationContext>('play-session-load');
   const [mobileView, setMobileView] = useState<MobileView>('now');
+  const [openingPromptSeeded, setOpeningPromptSeeded] = useState(false);
   const { sessionMeta, history, submitting, setSessionMeta, setHistoryResponse, setSubmitting, reset } = useSessionStore();
 
   async function loadSession() {
@@ -70,6 +71,8 @@ export function PlaySessionPage() {
   useEffect(() => {
     reset();
     setMobileView('now');
+    setOpeningPromptSeeded(false);
+    setTextInput('');
     void loadSession();
   }, [sessionId]);
 
@@ -84,6 +87,17 @@ export function PlaySessionPage() {
   const recommendedMoves = useMemo(() => deriveRecommendedMoves(latestActions, 3), [latestActions]);
   const hiddenActionCount = Math.max(0, latestActions.length - recommendedMoves.length);
   const isComplete = Boolean(sessionMeta?.ended || latestTurn?.ended);
+  const openingGuidance = sessionMeta?.opening_guidance ?? null;
+  const starterPrompts = Array.isArray(openingGuidance?.starter_prompts)
+    ? openingGuidance.starter_prompts.filter((prompt): prompt is string => typeof prompt === 'string')
+    : [];
+
+  useEffect(() => {
+    if (!openingPromptSeeded && history.length === 0 && !textInput.trim() && starterPrompts[0]) {
+      setTextInput(starterPrompts[0]);
+      setOpeningPromptSeeded(true);
+    }
+  }, [history.length, openingPromptSeeded, starterPrompts, textInput]);
 
   async function submitButton(moveId: string) {
     if (!sessionId) return;
@@ -204,14 +218,48 @@ export function PlaySessionPage() {
 
         <div className={cn(mobileView === 'now' ? 'block' : 'hidden', 'xl:block xl:sticky xl:top-4')}>
           <Panel
-            eyebrow="Recommended Follow-ups"
-            title={isComplete ? 'Session sealed' : 'Drive the next turn'}
-            subtitle={isComplete ? 'This session has ended.' : 'Free input is the primary control. Suggested moves are intentionally limited to the top recommendations.'}
+            eyebrow={history.length === 0 ? 'Opening Guidance' : 'Recommended Follow-ups'}
+            title={isComplete ? 'Session sealed' : history.length === 0 ? 'Step into the opening move' : 'Drive the next turn'}
+            subtitle={
+              isComplete
+                ? 'This session has ended.'
+                : history.length === 0
+                  ? 'Use the opening guidance to orient yourself, then send your own first move through free input.'
+                  : 'Free input is the primary control. Suggested moves are intentionally limited to the top recommendations.'
+            }
           >
             {sessionMeta ? <Pill tone={sessionMeta.ended ? 'neutral' : 'success'}>{sessionMeta.ended ? 'Completed' : 'Active'}</Pill> : null}
 
             <div className="mt-5 space-y-5">
-              {latestTurn ? (
+              {history.length === 0 && openingGuidance ? (
+                <div className="space-y-4">
+                  <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-4">
+                    <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Story Opening</div>
+                    <p className="mt-3 break-words text-sm leading-7 text-[var(--text-mist)]">{openingGuidance.intro_text}</p>
+                    <div className="mt-4 text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">First Goal</div>
+                    <p className="mt-3 break-words text-sm leading-7 text-[var(--text-mist)]">{openingGuidance.goal_hint}</p>
+                  </div>
+
+                  <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-4">
+                    <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Starter Prompts</div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {starterPrompts.map((prompt) => (
+                        <button
+                          key={prompt}
+                          type="button"
+                          onClick={() => {
+                            setTextInput(prompt);
+                            setOpeningPromptSeeded(true);
+                          }}
+                          className="rounded-full border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-4 py-2 text-left text-sm text-[var(--text-mist)] transition hover:border-[var(--line-strong)] hover:text-[var(--text-ivory)]"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : latestTurn ? (
                 <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-4">
                   <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Current Turn State</div>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -228,12 +276,19 @@ export function PlaySessionPage() {
                   multiline
                   placeholder="Describe what the player attempts next..."
                   value={textInput}
-                  onChange={(event) => setTextInput(event.target.value)}
-                  hint={latestTurn?.ui.input_hint ?? 'Free input is the fastest way to steer the story, ask for nuance, or try tactics outside the recommended list.'}
+                  onChange={(event) => {
+                    setTextInput(event.target.value);
+                    setOpeningPromptSeeded(true);
+                  }}
+                  hint={
+                    history.length === 0
+                      ? (openingGuidance?.goal_hint || 'Use the opening guidance to decide your first move, then describe it in your own words.')
+                      : (latestTurn?.ui.input_hint ?? 'Free input is the fastest way to steer the story, ask for nuance, or try tactics outside the recommended list.')
+                  }
                 />
                 <div className="flex flex-wrap gap-3">
                   <Button type="submit" disabled={submitting || isComplete || !textInput.trim()}>
-                    {submitting ? 'Sending...' : 'Send Directive'}
+                    {submitting ? 'Sending...' : history.length === 0 ? 'Begin Session' : 'Send Directive'}
                   </Button>
                   <Button variant="secondary" type="button" onClick={() => navigate('/play/library')}>
                     Back to Play Library
@@ -241,44 +296,46 @@ export function PlaySessionPage() {
                 </div>
               </form>
 
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Suggested Moves</div>
-                    <p className="mt-2 text-sm leading-7 text-[var(--text-mist)]">
-                      {hiddenActionCount > 0
-                        ? `Showing ${recommendedMoves.length} suggested moves. ${hiddenActionCount} additional surfaced actions are intentionally hidden so free input stays primary.`
-                        : 'Only the top suggested moves are shown here. Use free input for everything else.'}
-                    </p>
+              {history.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Suggested Moves</div>
+                      <p className="mt-2 text-sm leading-7 text-[var(--text-mist)]">
+                        {hiddenActionCount > 0
+                          ? `Showing ${recommendedMoves.length} suggested moves. ${hiddenActionCount} additional surfaced actions are intentionally hidden so free input stays primary.`
+                          : 'Only the top suggested moves are shown here. Use free input for everything else.'}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                {recommendedMoves.length > 0 ? (
-                  <div className="space-y-3">
-                    {recommendedMoves.map((move) => (
-                      <button
-                        key={move.move_id}
-                        type="button"
-                        onClick={() => void submitButton(move.move_id)}
-                        disabled={submitting || isComplete}
-                        className="w-full rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] px-4 py-4 text-left transition hover:border-[rgba(239,126,69,0.36)] hover:bg-[rgba(239,126,69,0.08)] disabled:cursor-not-allowed disabled:opacity-45"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="break-words font-[var(--font-title)] text-lg tracking-[0.05em] text-[var(--text-ivory)]">{move.label}</div>
-                            <div className="mt-2 text-sm leading-7 text-[var(--text-mist)]">{move.risk_hint}</div>
+                  {recommendedMoves.length > 0 ? (
+                    <div className="space-y-3">
+                      {recommendedMoves.map((move) => (
+                        <button
+                          key={move.move_id}
+                          type="button"
+                          onClick={() => void submitButton(move.move_id)}
+                          disabled={submitting || isComplete}
+                          className="w-full rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] px-4 py-4 text-left transition hover:border-[rgba(239,126,69,0.36)] hover:bg-[rgba(239,126,69,0.08)] disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="break-words font-[var(--font-title)] text-lg tracking-[0.05em] text-[var(--text-ivory)]">{move.label}</div>
+                              <div className="mt-2 text-sm leading-7 text-[var(--text-mist)]">{move.risk_hint}</div>
+                            </div>
+                            <Pill tone={normalizeRisk(move.risk_hint)}>{summarizeRiskHint(move.risk_hint)}</Pill>
                           </div>
-                          <Pill tone={normalizeRisk(move.risk_hint)}>{summarizeRiskHint(move.risk_hint)}</Pill>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-[22px] border border-dashed border-[var(--line)] px-4 py-5 text-sm text-[var(--text-dim)]">
-                    No recommended buttons yet. Use free text to begin or continue the session.
-                  </div>
-                )}
-              </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-[22px] border border-dashed border-[var(--line)] px-4 py-5 text-sm text-[var(--text-dim)]">
+                      No recommended buttons yet. Use free text to begin or continue the session.
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           </Panel>
         </div>

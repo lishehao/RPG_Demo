@@ -52,18 +52,22 @@ class StoryDraftGetResponse(BaseModel):
 
 
 class StoryDraftPatchChange(BaseModel):
-    target_type: Literal["story", "beat", "scene", "npc"]
-    field: Literal["title", "description", "style_guard", "input_hint", "scene_seed", "red_line"]
+    target_type: Literal["story", "beat", "scene", "npc", "opening_guidance"]
+    field: Literal["title", "description", "style_guard", "input_hint", "scene_seed", "red_line", "intro_text", "goal_hint", "starter_prompt_1", "starter_prompt_2", "starter_prompt_3"]
     target_id: str | None = None
     value: str
 
     @model_validator(mode="after")
     def validate_target_and_field(self) -> "StoryDraftPatchChange":
-        if self.target_type == "story":
+        if self.target_type in {"story", "opening_guidance"}:
             if self.target_id not in {None, ""}:
-                raise ValueError("story target_type must not include target_id")
-            if self.field not in {"title", "description", "style_guard", "input_hint"}:
-                raise ValueError("story target_type only supports title, description, style_guard, input_hint")
+                raise ValueError(f"{self.target_type} target_type must not include target_id")
+            allowed_story_fields = {"title", "description", "style_guard", "input_hint"}
+            allowed_opening_fields = {"intro_text", "goal_hint", "starter_prompt_1", "starter_prompt_2", "starter_prompt_3"}
+            allowed = allowed_story_fields if self.target_type == "story" else allowed_opening_fields
+            if self.field not in allowed:
+                allowed_text = ", ".join(sorted(allowed))
+                raise ValueError(f"{self.target_type} target_type only supports {allowed_text}")
             return self
 
         normalized_target_id = (self.target_id or "").strip()
@@ -121,6 +125,12 @@ class StoryGenerateResponse(BaseModel):
     generation: "GenerationDiagnostics"
 
 
+class OpeningGuidancePayload(BaseModel):
+    intro_text: str
+    goal_hint: str
+    starter_prompts: list[str] = Field(min_length=3, max_length=3)
+
+
 class SessionCreateRequest(BaseModel):
     story_id: str
     version: int = Field(ge=1)
@@ -132,6 +142,7 @@ class SessionCreateResponse(BaseModel):
     version: int
     scene_id: str
     state_summary: dict[str, Any]
+    opening_guidance: OpeningGuidancePayload
 
 
 class StepInput(BaseModel):
@@ -222,6 +233,7 @@ class SessionGetResponse(BaseModel):
     beat_progress: dict[str, Any]
     ended: bool
     state_summary: dict[str, Any]
+    opening_guidance: OpeningGuidancePayload
     state: dict[str, Any] | None = None
 
 

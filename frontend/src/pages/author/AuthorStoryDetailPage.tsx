@@ -638,6 +638,92 @@ export function AuthorStoryDetailPage() {
                       : 'Draft only. Not published yet.'}
                   </p>
                 </div>
+                <div className="rounded-[24px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-5 lg:col-span-2">
+                  <div className="mb-4 text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Opening Guidance</div>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="lg:col-span-2">
+                      <Field
+                        label="Opening Intro"
+                        multiline
+                        value={editableDraft.openingGuidance.intro_text}
+                        onChange={(event) =>
+                          setEditableDraft((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  openingGuidance: { ...current.openingGuidance, intro_text: event.target.value },
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <Field
+                        label="Goal Hint"
+                        multiline
+                        value={editableDraft.openingGuidance.goal_hint}
+                        onChange={(event) =>
+                          setEditableDraft((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  openingGuidance: { ...current.openingGuidance, goal_hint: event.target.value },
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                    </div>
+                    <Field
+                      label="Starter Prompt 1"
+                      multiline
+                      value={editableDraft.openingGuidance.starter_prompt_1}
+                      onChange={(event) =>
+                        setEditableDraft((current) =>
+                          current
+                            ? {
+                                ...current,
+                                openingGuidance: { ...current.openingGuidance, starter_prompt_1: event.target.value },
+                              }
+                            : current,
+                        )
+                      }
+                    />
+                    <Field
+                      label="Starter Prompt 2"
+                      multiline
+                      value={editableDraft.openingGuidance.starter_prompt_2}
+                      onChange={(event) =>
+                        setEditableDraft((current) =>
+                          current
+                            ? {
+                                ...current,
+                                openingGuidance: { ...current.openingGuidance, starter_prompt_2: event.target.value },
+                              }
+                            : current,
+                        )
+                      }
+                    />
+                    <div className="lg:col-span-2">
+                      <Field
+                        label="Starter Prompt 3"
+                        multiline
+                        value={editableDraft.openingGuidance.starter_prompt_3}
+                        onChange={(event) =>
+                          setEditableDraft((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  openingGuidance: { ...current.openingGuidance, starter_prompt_3: event.target.value },
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : null}
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from rpg_backend.domain.conflict_tags import NPCConflictTag
 from rpg_backend.domain.constants import GLOBAL_MOVE_IDS
@@ -123,6 +123,27 @@ class NPCProfile(BaseModel):
     conflict_tags: list[NPCConflictTag] = Field(min_length=1, max_length=3)
 
 
+class OpeningGuidance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    intro_text: str = Field(min_length=1, max_length=320)
+    goal_hint: str = Field(min_length=1, max_length=220)
+    starter_prompts: list[str] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def validate_starter_prompts(self) -> "OpeningGuidance":
+        normalized: list[str] = []
+        for prompt in self.starter_prompts:
+            trimmed = prompt.strip()
+            if not trimmed:
+                raise ValueError("starter_prompts entries must be non-empty")
+            normalized.append(trimmed)
+        self.starter_prompts = normalized
+        self.intro_text = self.intro_text.strip()
+        self.goal_hint = self.goal_hint.strip()
+        return self
+
+
 class StoryPack(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -136,3 +157,4 @@ class StoryPack(BaseModel):
     moves: list[Move] = Field(min_length=1)
     input_hint: str = "Describe what you do next."
     style_guard: str = "Keep narration concise, concrete, and forward-moving."
+    opening_guidance: OpeningGuidance | None = None

@@ -19,6 +19,7 @@ from rpg_backend.api.schemas import (
     StoryListResponse,
     StoryPublishResponse,
 )
+from rpg_backend.domain.opening_guidance import build_opening_guidance_for_pack
 from rpg_backend.domain.pack_schema import StoryPack
 from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import log_event
@@ -44,12 +45,27 @@ router = APIRouter(
 )
 
 
+def _normalized_draft_pack(pack_json: dict) -> dict:
+    try:
+        pack = StoryPack.model_validate(pack_json)
+    except ValidationError:
+        return deepcopy(pack_json)
+
+    if pack.opening_guidance is not None:
+        return deepcopy(pack_json)
+
+    normalized = deepcopy(pack_json)
+    normalized["opening_guidance"] = build_opening_guidance_for_pack(pack).model_dump(mode="json")
+    return normalized
+
+
 def _build_story_draft_response(*, story, latest_version) -> StoryDraftGetResponse:
+    draft_pack = _normalized_draft_pack(story.draft_pack_json)
     return StoryDraftGetResponse(
         story_id=story.id,
         title=story.title,
         created_at=story.created_at,
-        draft_pack=story.draft_pack_json,
+        draft_pack=draft_pack,
         latest_published_version=latest_version.version if latest_version else None,
         latest_published_at=latest_version.created_at if latest_version else None,
     )
@@ -76,6 +92,20 @@ def _apply_story_draft_change(*, pack_json: dict, story_title: str, change: Stor
         updated_pack[change.field] = change.value
         if change.field == "title":
             updated_title = change.value
+        return updated_pack, updated_title
+
+    if change.target_type == "opening_guidance":
+        updated_pack = _normalized_draft_pack(updated_pack)
+        opening_guidance = updated_pack.setdefault("opening_guidance", {})
+        if change.field.startswith("starter_prompt_"):
+            prompts = list(opening_guidance.get("starter_prompts") or ["", "", ""])
+            while len(prompts) < 3:
+                prompts.append("")
+            prompt_index = int(change.field.rsplit("_", 1)[1]) - 1
+            prompts[prompt_index] = change.value
+            opening_guidance["starter_prompts"] = prompts[:3]
+        else:
+            opening_guidance[change.field] = change.value
         return updated_pack, updated_title
 
     if change.target_type == "beat":
