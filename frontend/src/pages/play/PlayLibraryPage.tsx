@@ -78,7 +78,7 @@ export function PlayLibraryPage() {
                 <Pill tone="success">Published v{story.latest_published_version}</Pill>
                 <Pill tone="neutral">Updated {story.latest_published_at ? formatDateTime(story.latest_published_at) : 'unknown'}</Pill>
               </div>
-              <h3 className="mt-4 font-[var(--font-title)] text-2xl tracking-[0.06em] text-[var(--text-ivory)]">{story.title}</h3>
+              <h3 className="mt-4 break-words font-[var(--font-title)] text-2xl tracking-[0.06em] text-[var(--text-ivory)]">{story.title}</h3>
               <p className="mt-3 break-all text-sm leading-6 text-[var(--text-dim)]">{story.story_id}</p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Button

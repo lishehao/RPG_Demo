@@ -52,6 +52,17 @@ export type StoryDraftResponse = {
   latest_published_at: string | null;
 };
 
+export type StoryDraftPatchChange = {
+  target_type: 'story' | 'beat' | 'scene' | 'npc';
+  field: 'title' | 'description' | 'style_guard' | 'input_hint' | 'scene_seed' | 'red_line';
+  target_id?: string;
+  value: string;
+};
+
+export type StoryDraftPatchRequest = {
+  changes: StoryDraftPatchChange[];
+};
+
 export type StoryGenerateRequest = {
   seed_text?: string;
   prompt_text?: string;
