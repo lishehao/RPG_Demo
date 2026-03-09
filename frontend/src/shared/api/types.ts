@@ -141,6 +141,29 @@ export type AuthorStoryGetResponse = {
   draft_pack: Record<string, unknown>;
 };
 
+export type SessionPressureValue = {
+  value: number;
+  label: string;
+};
+
+export type SessionCrewSignal = {
+  name: string;
+  stance: string;
+  label: string;
+};
+
+export type SessionStateSummary = {
+  events: number;
+  inventory: number;
+  cost_total: number;
+  pressure: {
+    public_trust: SessionPressureValue;
+    resource_stress: SessionPressureValue;
+    coordination_noise: SessionPressureValue;
+  };
+  crew_signals: SessionCrewSignal[];
+};
+
 export type OpeningGuidance = {
   intro_text: string;
   goal_hint: string;
@@ -157,7 +180,7 @@ export type SessionCreateResponse = {
   story_id: string;
   version: number;
   scene_id: string;
-  state_summary: Record<string, unknown>;
+  state_summary: SessionStateSummary;
   opening_guidance: OpeningGuidance;
 };
 
@@ -166,7 +189,7 @@ export type SessionMeta = {
   scene_id: string;
   beat_progress: Record<string, unknown>;
   ended: boolean;
-  state_summary: Record<string, unknown>;
+  state_summary: SessionStateSummary;
   opening_guidance: OpeningGuidance;
   state?: Record<string, unknown> | null;
 };

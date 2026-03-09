@@ -26,14 +26,62 @@ from rpg_backend.infrastructure.repositories.sessions_async import (
 from rpg_backend.infrastructure.repositories.stories_async import get_story, get_story_version
 from rpg_backend.llm.base import LLMProviderConfigError
 from rpg_backend.runtime.service import RuntimeService
+from rpg_backend.runtime.stance import classify_stance
 
 
-def build_state_summary(state: dict[str, Any]) -> dict[str, int]:
+def _trust_label(value: int) -> str:
+    if value <= -3:
+        return "broken"
+    if value <= -1:
+        return "shaken"
+    if value <= 1:
+        return "steady"
+    if value <= 3:
+        return "strong"
+    return "surging"
+
+
+def _pressure_label(value: int) -> str:
+    if value <= 0:
+        return "calm"
+    if value <= 2:
+        return "rising"
+    if value <= 4:
+        return "high"
+    return "critical"
+
+
+def build_state_summary(state: dict[str, Any], *, npc_names: list[str]) -> dict[str, Any]:
     values = state.get("values", {})
+    crew_signals = []
+    for name in npc_names:
+        trust_value = int(values.get(f"npc_trust::{name}", 0))
+        crew_signals.append(
+            {
+                "name": name,
+                "stance": classify_stance(trust_value),
+                "label": "pressured" if trust_value < 0 else "supportive" if trust_value > 1 else "watching",
+            }
+        )
     return {
         "events": len(state.get("events", [])),
         "inventory": len(state.get("inventory", [])),
         "cost_total": int(values.get("cost_total", 0)),
+        "pressure": {
+            "public_trust": {
+                "value": int(values.get("public_trust", 0)),
+                "label": _trust_label(int(values.get("public_trust", 0))),
+            },
+            "resource_stress": {
+                "value": int(values.get("resource_stress", 0)),
+                "label": _pressure_label(int(values.get("resource_stress", 0))),
+            },
+            "coordination_noise": {
+                "value": int(values.get("coordination_noise", 0)),
+                "label": _pressure_label(int(values.get("coordination_noise", 0))),
+            },
+        },
+        "crew_signals": crew_signals,
     }
 
 
@@ -78,7 +126,7 @@ async def create_play_session(
         story_id=story_id,
         version=version,
         scene_id=scene_id,
-        state_summary=build_state_summary(state),
+        state_summary=build_state_summary(state, npc_names=list(pack.npcs)),
         opening_guidance=resolve_opening_guidance(pack),
     )
 
@@ -98,7 +146,7 @@ async def get_play_session(*, db, session_id: str, dev_mode: bool) -> SessionVie
         scene_id=session.current_scene_id,
         beat_progress=session.beat_progress_json,
         ended=bool(session.ended),
-        state_summary=build_state_summary(session.state_json),
+        state_summary=build_state_summary(session.state_json, npc_names=list(pack.npcs)),
         opening_guidance=resolve_opening_guidance(pack),
         state=session.state_json if dev_mode else None,
     )

@@ -6,11 +6,11 @@ import { deriveRecommendedMoves } from '@/features/play-runtime/lib/sessionRecom
 import { cn } from '@/shared/lib/cn';
 import { useSessionStore } from '@/features/play-runtime/store/sessionStore';
 import type { ErrorPresentationContext } from '@/shared/lib/apiErrorPresentation';
+import type { SessionStateSummary } from '@/shared/api/types';
 import { Button } from '@/shared/ui/Button';
 import { ErrorBanner } from '@/shared/ui/ErrorBanner';
 import { Panel } from '@/shared/ui/Panel';
 import { Pill } from '@/shared/ui/Pill';
-
 
 function summarizeRiskHint(value: string) {
   const lower = value.toLowerCase();
@@ -21,6 +21,66 @@ function summarizeRiskHint(value: string) {
   if (lower.includes('steady but slow')) return 'Steady';
   if (lower.includes('politically safe')) return 'Safe / Costly';
   return 'Suggested';
+}
+
+function titleCase(value: string) {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => {
+      const lower = part.toLowerCase();
+      if (lower === 'llm') return 'LLM';
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    })
+    .join(' ');
+}
+
+function humanizeIntent(value: string) {
+  if (!value) return 'Take the next move.';
+  const quoted = value.match(/[“"']([^"”']{8,})[”"']/);
+  if (quoted?.[1]) return quoted[1].trim();
+  const stripped = value.replace(/^The player intends to\s+/i, '').replace(/,?\s+as explicitly stated.*$/i, '').trim();
+  return stripped ? stripped.charAt(0).toUpperCase() + stripped.slice(1) : value;
+}
+
+function humanizeResult(value: string) {
+  switch (value) {
+    case 'success':
+      return 'Breakthrough';
+    case 'partial':
+      return 'Costly progress';
+    case 'fail_forward':
+      return 'Forward under pressure';
+    default:
+      return value ? titleCase(value) : 'Awaiting first turn';
+  }
+}
+
+function trustProgress(value: number) {
+  const clamped = Math.max(-4, Math.min(4, value));
+  return ((clamped + 4) / 8) * 100;
+}
+
+function pressureProgress(value: number) {
+  const clamped = Math.max(0, Math.min(5, value));
+  return (clamped / 5) * 100;
+}
+
+function progressTone(tone: 'trust' | 'stress' | 'noise') {
+  if (tone === 'trust') {
+    return 'bg-[linear-gradient(90deg,rgba(120,220,170,0.9),rgba(255,209,102,0.92))]';
+  }
+  if (tone === 'stress') {
+    return 'bg-[linear-gradient(90deg,rgba(255,209,102,0.92),rgba(255,138,61,0.95))]';
+  }
+  return 'bg-[linear-gradient(90deg,rgba(139,180,255,0.88),rgba(255,138,61,0.92))]';
+}
+
+function crewTone(stance: string) {
+  if (stance === 'support') return 'border-[rgba(120,220,170,0.3)] bg-[rgba(120,220,170,0.1)]';
+  if (stance === 'oppose') return 'border-[rgba(255,138,61,0.34)] bg-[rgba(255,138,61,0.12)]';
+  return 'border-[rgba(255,209,102,0.26)] bg-[rgba(255,209,102,0.08)]';
 }
 
 function TurnBubble({ title, children, tone }: { title: string; children: React.ReactNode; tone: 'player' | 'world' | 'system' }) {
@@ -43,9 +103,32 @@ function TurnBubble({ title, children, tone }: { title: string; children: React.
 
 function MetricChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-full border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-3 py-2 text-sm text-[var(--text-mist)]">
-      <span className="font-bold uppercase tracking-[0.14em] text-[var(--text-dim)]">{label}</span>
-      <span className="ml-2 text-[var(--text-ivory)]">{value}</span>
+    <div className="rounded-[18px] border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-3 py-3">
+      <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-dim)]">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-[var(--text-ivory)]">{value}</div>
+    </div>
+  );
+}
+
+function PressureMeter({ label, valueLabel, progress, tone }: { label: string; valueLabel: string; progress: number; tone: 'trust' | 'stress' | 'noise' }) {
+  return (
+    <div className="rounded-[20px] border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)]">{label}</span>
+        <span className="text-sm font-semibold text-[var(--text-ivory)]">{titleCase(valueLabel)}</span>
+      </div>
+      <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[rgba(255,248,229,0.08)]">
+        <div className={cn('h-full rounded-full transition-[width] duration-500', progressTone(tone))} style={{ width: `${Math.max(8, Math.min(100, progress))}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function CrewSignalCard({ name, label, stance }: { name: string; label: string; stance: string }) {
+  return (
+    <div className={cn('rounded-[18px] border px-3 py-3', crewTone(stance))}>
+      <div className="text-sm font-semibold text-[var(--text-ivory)]">{name}</div>
+      <div className="mt-1 text-xs uppercase tracking-[0.14em] text-[var(--text-dim)]">{titleCase(label)}</div>
     </div>
   );
 }
@@ -102,6 +185,7 @@ export function PlaySessionPage() {
   const hiddenActionCount = Math.max(0, latestActions.length - recommendedMoves.length);
   const isComplete = Boolean(sessionMeta?.ended || latestTurn?.ended);
   const openingGuidance = sessionMeta?.opening_guidance ?? null;
+  const stateSummary = (sessionMeta?.state_summary ?? null) as SessionStateSummary | null;
   const starterPrompts = Array.isArray(openingGuidance?.starter_prompts)
     ? openingGuidance.starter_prompts.filter((prompt): prompt is string => typeof prompt === 'string')
     : [];
@@ -167,15 +251,15 @@ export function PlaySessionPage() {
         <div className="flex flex-wrap gap-2">
           {sessionMeta ? <Pill tone={sessionMeta.ended ? 'neutral' : 'success'}>{sessionMeta.ended ? 'Completed' : 'Active'}</Pill> : null}
           {latestTurn ? <Pill tone="neutral">Scene {latestTurn.scene_id}</Pill> : null}
-          {latestTurn ? <Pill tone={latestTurn.ended ? 'neutral' : 'success'}>{latestTurn.resolution.result}</Pill> : null}
-          {latestTurn ? <Pill tone="neutral">{latestTurn.recognized.route_source}</Pill> : null}
+          {latestTurn ? <Pill tone={latestTurn.ended ? 'neutral' : 'success'}>{humanizeResult(latestTurn.resolution.result)}</Pill> : null}
+          {latestTurn ? <Pill tone="neutral">{titleCase(latestTurn.recognized.route_source)}</Pill> : null}
         </div>
         <Button variant="secondary" type="button" onClick={() => navigate('/play/library')}>
           Back to Play Library
         </Button>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
         <div className="min-w-0 rounded-[26px] border border-[var(--line)] bg-[rgba(255,248,229,0.04)]">
           <div ref={timelineRef} className="custom-scrollbar flex min-h-[58vh] max-h-[64vh] flex-col gap-4 overflow-y-auto px-5 py-5">
             {loading ? (
@@ -197,7 +281,7 @@ export function PlaySessionPage() {
               history.map((turn) => (
                 <div key={turn.turn_index} className="space-y-3">
                   <TurnBubble title={`You · Turn ${turn.turn_index}`} tone="player">
-                    {turn.recognized.interpreted_intent}
+                    {humanizeIntent(turn.recognized.interpreted_intent)}
                   </TurnBubble>
                   <TurnBubble title="World" tone="world">
                     {turn.narration_text}
@@ -244,7 +328,7 @@ export function PlaySessionPage() {
                 <p className="text-sm text-[var(--text-dim)]">
                   {history.length === 0
                     ? (openingGuidance?.goal_hint || 'Use the opening guidance to choose your first move.')
-                    : (latestTurn?.ui.input_hint ?? 'Free input is the main control surface; suggested moves are optional shortcuts.')} 
+                    : (latestTurn?.ui.input_hint ?? 'Free input is the main control surface; suggested moves are optional shortcuts.')}
                 </p>
               </label>
               <div className="flex flex-wrap gap-3">
@@ -260,9 +344,7 @@ export function PlaySessionPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)]">Suggested Moves</div>
                   <div className="text-xs text-[var(--text-dim)]">
-                    {hiddenActionCount > 0
-                      ? `${hiddenActionCount} more hidden`
-                      : 'Top shortlist only'}
+                    {hiddenActionCount > 0 ? `${hiddenActionCount} more hidden` : 'Top shortlist only'}
                   </div>
                 </div>
                 {recommendedMoves.length > 0 ? (
@@ -273,10 +355,12 @@ export function PlaySessionPage() {
                         type="button"
                         onClick={() => void submitButton(move.move_id)}
                         disabled={submitting || isComplete}
-                        className="rounded-full border border-[var(--line)] bg-[rgba(255,248,229,0.05)] px-4 py-3 text-left transition hover:border-[rgba(239,126,69,0.36)] hover:bg-[rgba(239,126,69,0.08)] disabled:cursor-not-allowed disabled:opacity-45"
+                        className="group rounded-full border border-[rgba(255,232,206,0.18)] bg-[rgba(255,248,229,0.08)] px-4 py-3 text-left transition hover:-translate-y-[1px] hover:border-[rgba(255,138,61,0.38)] hover:bg-[rgba(255,138,61,0.12)] disabled:cursor-not-allowed disabled:opacity-45"
                       >
-                        <div className="text-sm font-semibold text-[var(--text-ivory)]">{move.label}</div>
-                        <div className="mt-1 text-xs text-[var(--text-mist)]">{summarizeRiskHint(move.risk_hint)}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-[var(--text-ivory)]">{move.label}</span>
+                          <span className="rounded-full bg-[rgba(255,255,255,0.06)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--text-dim)] transition group-hover:text-[var(--text-ivory)]">{summarizeRiskHint(move.risk_hint)}</span>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -289,12 +373,52 @@ export function PlaySessionPage() {
         <div className="space-y-4 lg:sticky lg:top-4">
           <div className="rounded-[24px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-4">
             <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Current Turn State</div>
-            <div className="mt-3 grid gap-3">
+            <div className="mt-3 grid gap-2">
               <MetricChip label="Scene" value={latestTurn?.scene_id ?? 'Opening'} />
-              <MetricChip label="Result" value={latestTurn?.resolution.result ?? 'Awaiting first turn'} />
-              <MetricChip label="Route" value={latestTurn?.recognized.route_source ?? 'Pending'} />
+              <MetricChip label="Result" value={humanizeResult(latestTurn?.resolution.result ?? '')} />
+              <MetricChip label="Route" value={latestTurn?.recognized.route_source ? `${titleCase(latestTurn.recognized.route_source)} route` : 'Pending'} />
             </div>
           </div>
+
+          {stateSummary ? (
+            <div className="rounded-[24px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Player Signals</div>
+              <div className="mt-3 grid gap-3">
+                <PressureMeter
+                  label="Trust"
+                  valueLabel={stateSummary.pressure.public_trust.label}
+                  progress={trustProgress(stateSummary.pressure.public_trust.value)}
+                  tone="trust"
+                />
+                <PressureMeter
+                  label="Stress"
+                  valueLabel={stateSummary.pressure.resource_stress.label}
+                  progress={pressureProgress(stateSummary.pressure.resource_stress.value)}
+                  tone="stress"
+                />
+                <PressureMeter
+                  label="Noise"
+                  valueLabel={stateSummary.pressure.coordination_noise.label}
+                  progress={pressureProgress(stateSummary.pressure.coordination_noise.value)}
+                  tone="noise"
+                />
+                <MetricChip label="Cost" value={stateSummary.cost_total > 0 ? `${stateSummary.cost_total} total` : 'Minimal'} />
+              </div>
+              <p className="mt-3 text-sm leading-7 text-[var(--text-dim)]">
+                These signals show public trust, operational strain, and coordination friction without exposing raw runtime internals.
+              </p>
+              {stateSummary.crew_signals.length > 0 ? (
+                <div className="mt-4 space-y-2">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)]">Crew Signals</div>
+                  <div className="grid gap-2">
+                    {stateSummary.crew_signals.slice(0, 4).map((item) => (
+                      <CrewSignalCard key={item.name} name={item.name} label={item.label} stance={item.stance} />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </Panel>

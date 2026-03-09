@@ -17,6 +17,14 @@ const POLL_INTERVAL_MS = 2000;
 const POLL_LIMIT = 120;
 
 
+function runStatusLabel(status: string | null | undefined) {
+  if (status === 'failed') return 'Run failed';
+  if (status === 'review_ready') return 'Review ready';
+  if (status === 'running') return 'Graph running';
+  if (status === 'pending') return 'Queued';
+  return 'Detached';
+}
+
 function runTone(status: string | null | undefined) {
   if (status === 'failed') return 'high' as const;
   if (status === 'review_ready') return 'success' as const;
@@ -139,7 +147,7 @@ export function AuthorStoriesPage() {
                 <div className="min-w-0">
                   <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Current author run</div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <Pill tone={runTone(pendingRun.status)}>{pendingRun.status === 'failed' ? 'Run failed' : pendingRun.status}</Pill>
+                    <Pill tone={runTone(pendingRun.status)}>{runStatusLabel(pendingRun.status)}</Pill>
                     {pendingRun.current_node ? <Pill tone="neutral">{pendingRun.current_node}</Pill> : null}
                   </div>
                 </div>
@@ -207,7 +215,7 @@ export function AuthorStoriesPage() {
                   <div className="flex flex-wrap gap-2">
                     {story.latest_run_status ? (
                       <Pill tone={runTone(story.latest_run_status)}>
-                        {story.latest_run_status === 'failed' ? 'Run failed' : story.latest_run_status}
+                        {runStatusLabel(story.latest_run_status)}
                       </Pill>
                     ) : null}
                     {story.latest_published_version !== null ? (

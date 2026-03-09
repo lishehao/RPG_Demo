@@ -211,7 +211,7 @@ class SessionCreateView:
     story_id: str
     version: int
     scene_id: str
-    state_summary: dict[str, int]
+    state_summary: dict[str, Any]
     opening_guidance: OpeningGuidanceView
 
 
@@ -221,7 +221,7 @@ class SessionView:
     scene_id: str
     beat_progress: dict[str, Any]
     ended: bool
-    state_summary: dict[str, int]
+    state_summary: dict[str, Any]
     opening_guidance: OpeningGuidanceView
     state: dict[str, Any] | None = None
 
