@@ -7,11 +7,11 @@ type PillProps = {
 };
 
 const toneClasses = {
-  neutral: 'bg-[rgba(255,248,229,0.08)] text-[var(--text-mist)]',
-  low: 'bg-[rgba(139,154,98,0.18)] text-[#dbe8b6]',
-  medium: 'bg-[rgba(245,179,111,0.18)] text-[#f7d5a1]',
-  high: 'bg-[rgba(239,126,69,0.18)] text-[#ffc3a6]',
-  success: 'bg-[rgba(120,192,156,0.18)] text-[#b9f0d3]',
+  neutral: 'bg-[rgba(255,248,229,0.12)] text-[var(--text-mist)] border border-[rgba(255,232,206,0.12)]',
+  low: 'bg-[rgba(158,203,107,0.24)] text-[#e7f8c8] border border-[rgba(158,203,107,0.24)]',
+  medium: 'bg-[rgba(255,209,102,0.22)] text-[#fff1c2] border border-[rgba(255,209,102,0.22)]',
+  high: 'bg-[rgba(255,138,61,0.24)] text-[#ffd0b1] border border-[rgba(255,138,61,0.24)]',
+  success: 'bg-[rgba(120,220,170,0.22)] text-[#d4ffe9] border border-[rgba(120,220,170,0.2)]',
 } as const;
 
 export function Pill({ children, tone = 'neutral' }: PillProps) {
