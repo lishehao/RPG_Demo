@@ -1,13 +1,13 @@
-# Prompt Authoring Structure (Current Baseline)
+# Prompt Authoring Structure (Legacy Baseline)
 
-This document explains the current prompt-authoring pipeline used by `/stories/generate` in `prompt` mode.
+This document describes the legacy two-stage prompt-authoring pipeline that was used by `/stories/generate` before the single-stage LangChain-based `AuthorGenerationChain` refactor.
 
 Goal:
 - give reviewers a concrete view of prompt structure and constraints
 - make it easy to suggest improvements with minimal code-reading overhead
 
 Scope:
-- story generation prompt compile path only (`PromptCompiler`)
+- archived story generation prompt compile path only (`PromptCompiler` two-stage baseline)
 - no runtime route/narration prompt details in this document
 
 Last verified against code:

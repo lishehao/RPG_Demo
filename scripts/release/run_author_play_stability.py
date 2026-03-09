@@ -21,14 +21,15 @@ from rpg_backend.config.settings import get_settings
 from rpg_backend.api.route_paths import (
     READY_PATH,
     admin_auth_login_path,
+    author_run_path,
+    author_runs_path,
+    author_stories_path,
     session_history_path,
     session_path,
     session_step_path,
     sessions_path,
     story_draft_path,
     story_publish_path,
-    stories_generate_path,
-    stories_path,
 )
 from rpg_backend.eval.story_quality_judge import StoryQualityJudge, StoryQualityJudgeError
 from scripts.eval.branch_coverage import analyze_branch_graph, summarize_branch_coverage
@@ -136,21 +137,42 @@ def _check_ready(base_url: str, worker_url: str) -> dict[str, Any]:
     }
 
 
-def _generate_story(base_url: str, auth: AuthContext, case: StabilityCase) -> tuple[httpx.Response, dict[str, Any]]:
-    payload: dict[str, Any] = {
-        "style": case.style,
-        "target_minutes": case.target_minutes,
-        "npc_count": case.npc_count,
-        "publish": False,
-    }
-    if case.kind == "prompt":
-        payload["prompt_text"] = case.prompt_text
-    else:
-        payload["seed_text"] = case.seed_text
+def _generate_story(base_url: str, auth: AuthContext, case: StabilityCase) -> tuple[Any, dict[str, Any]]:
+    raw_brief = (case.prompt_text or case.seed_text or '').strip()
     with httpx.Client(timeout=240.0) as client:
-        response = client.post(f"{base_url}{stories_generate_path()}", headers=auth.headers, json=payload)
-        body = response.json()
-    return response, body
+        created = client.post(
+            f"{base_url}{author_runs_path()}",
+            headers=auth.headers,
+            json={"raw_brief": raw_brief},
+        )
+        created_body = created.json()
+        if created.status_code >= 400:
+            return created, created_body
+
+        run_id = created_body["run_id"]
+        story_id = created_body["story_id"]
+        run_body: dict[str, Any] = {}
+        for _ in range(120):
+            run_response = client.get(f"{base_url}{author_run_path(run_id)}", headers=auth.headers)
+            run_body = run_response.json()
+            if run_response.status_code >= 400:
+                return run_response, run_body
+            if run_body.get("status") == "review_ready":
+                draft_response = client.get(f"{base_url}{story_draft_path(story_id)}", headers=auth.headers)
+                draft_body = draft_response.json()
+                synthesized = {
+                    "story_id": story_id,
+                    "run_id": run_id,
+                    "status": run_body.get("status"),
+                    "pack": draft_body.get("draft_pack", {}),
+                    "author_run": run_body,
+                }
+                return draft_response, synthesized
+            if run_body.get("status") == "failed":
+                return run_response, run_body
+            import time
+            time.sleep(2.0)
+        return run_response, {"error": "author_run_timeout", "run": run_body}
 
 
 def _publish_story(base_url: str, auth: AuthContext, story_id: str) -> tuple[httpx.Response, dict[str, Any]]:
@@ -162,7 +184,7 @@ def _publish_story(base_url: str, auth: AuthContext, story_id: str) -> tuple[htt
 
 def _story_supply(base_url: str, auth: AuthContext) -> dict[str, Any]:
     with httpx.Client(timeout=60.0) as client:
-        response = client.get(f"{base_url}{stories_path()}", headers=auth.headers)
+        response = client.get(f"{base_url}{author_stories_path()}", headers=auth.headers)
         response.raise_for_status()
         return response.json()
 

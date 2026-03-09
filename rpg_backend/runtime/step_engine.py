@@ -86,6 +86,11 @@ async def process_runtime_step(
         outcome.result,
         pack.style_guard,
         strategy_style=chosen_move.strategy_style,
+        scene_id=scene.id,
+        next_scene_id=current_scene_id if not ended else None,
+        move_label=chosen_move.label,
+        costs_summary="; ".join(costs) if costs else "none",
+        consequences_summary="; ".join(consequences) if consequences else "none",
         stance_summary=stance_summary,
     )
     narration_text = str(narration_result["text"])

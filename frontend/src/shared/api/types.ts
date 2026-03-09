@@ -74,28 +74,71 @@ export type StoryDraftPatchRequest = {
   changes: StoryDraftPatchChange[];
 };
 
-export type StoryGenerateRequest = {
-  seed_text?: string;
-  prompt_text?: string;
-  target_minutes?: number;
-  npc_count?: number;
-  style?: string;
-  publish?: boolean;
-};
-
-export type StoryGenerateResponse = {
-  status: 'ok';
-  story_id: string;
-  version: number | null;
-  pack: Record<string, unknown>;
-  pack_hash: string;
-  generation: Record<string, unknown>;
-};
-
 export type StoryPublishResponse = {
   story_id: string;
   version: number;
   published_at: string;
+};
+
+export type AuthorRunStatus = 'pending' | 'running' | 'review_ready' | 'failed';
+
+export type AuthorRunCreateRequest = {
+  raw_brief: string;
+};
+
+export type AuthorRunCreateResponse = {
+  story_id: string;
+  run_id: string;
+  status: AuthorRunStatus;
+  created_at: string;
+};
+
+
+export type AuthorRunArtifactSummary = {
+  artifact_type: string;
+  artifact_key: string;
+  payload: Record<string, unknown>;
+  updated_at: string;
+};
+
+export type AuthorRunGetResponse = {
+  run_id: string;
+  story_id: string;
+  status: AuthorRunStatus;
+  current_node: string | null;
+  raw_brief: string;
+  error_code: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  artifacts: AuthorRunArtifactSummary[];
+};
+
+export type AuthorStoryListItem = {
+  story_id: string;
+  title: string;
+  created_at: string;
+  latest_run_id: string | null;
+  latest_run_status: string | null;
+  latest_run_current_node: string | null;
+  latest_run_updated_at: string | null;
+  latest_published_version: number | null;
+  latest_published_at: string | null;
+};
+
+export type AuthorStoryListResponse = {
+  stories: AuthorStoryListItem[];
+};
+
+export type AuthorStoryGetResponse = {
+  story_id: string;
+  title: string;
+  created_at: string;
+  latest_run: AuthorRunGetResponse | null;
+  latest_published_version: number | null;
+  latest_published_at: string | null;
+  draft_pack: Record<string, unknown>;
 };
 
 export type OpeningGuidance = {
@@ -139,43 +182,43 @@ export type SessionUi = {
   input_hint: string;
 };
 
-export type SessionRecognized = {
+export type SessionStepRecognized = {
   interpreted_intent: string;
   move_id: string;
   confidence: number;
-  route_source: 'button' | 'button_fallback' | 'llm';
+  route_source: 'button' | 'llm';
   llm_duration_ms?: number | null;
-  llm_gateway_mode?: 'worker' | 'unknown' | null;
+  llm_gateway_mode?: string | null;
 };
 
-export type SessionResolution = {
+export type SessionStepResult = {
   result: string;
   costs_summary: string;
   consequences_summary: string;
 };
 
-export type SessionHistoryTurn = {
-  turn_index: number;
-  scene_id: string;
-  narration_text: string;
-  recognized: SessionRecognized;
-  resolution: SessionResolution;
-  ui: SessionUi;
-  ended: boolean;
+export type SessionStepDebugStance = {
+  support: string[];
+  oppose: string[];
+  contested: string[];
+  red_line_hits: string[];
 };
 
-export type SessionHistoryResponse = {
-  session_id: string;
-  history: SessionHistoryTurn[];
+export type SessionStepDebug = {
+  selected_move: string;
+  selected_outcome: string;
+  selected_strategy_style: string;
+  pressure_recoil_triggered: boolean;
+  stance_snapshot: SessionStepDebugStance;
+  state: Record<string, unknown>;
+  beat_progress: Record<string, number>;
 };
 
 export type SessionStepRequest = {
   client_action_id: string;
-  input?: {
-    type?: 'button' | 'text';
-    move_id?: string;
-    text?: string;
-  };
+  input:
+    | { type: 'button'; move_id: string }
+    | { type: 'text'; text: string };
   dev_mode?: boolean;
 };
 
@@ -184,8 +227,23 @@ export type SessionStepResponse = {
   version: number;
   scene_id: string;
   narration_text: string;
-  recognized: SessionRecognized;
-  resolution: SessionResolution;
+  recognized: SessionStepRecognized;
+  resolution: SessionStepResult;
   ui: SessionUi;
-  debug?: Record<string, unknown> | null;
+  debug?: SessionStepDebug | null;
+};
+
+export type SessionHistoryTurn = {
+  turn_index: number;
+  scene_id: string;
+  narration_text: string;
+  recognized: SessionStepRecognized;
+  resolution: SessionStepResult;
+  ui: SessionUi;
+  ended: boolean;
+};
+
+export type SessionHistoryResponse = {
+  session_id: string;
+  history: SessionHistoryTurn[];
 };

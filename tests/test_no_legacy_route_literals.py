@@ -11,7 +11,9 @@ _ALLOW_V2_LITERAL = {
     "tests/api/test_api_v2_cutover.py",
     "tests/llm/test_worker_route_cutover.py",
 }
-_ALLOW_WORKER_INTERNAL_LITERAL: set[str] = set()
+_ALLOW_WORKER_INTERNAL_LITERAL: set[str] = {
+    "tests/llm/test_worker_route_cutover.py",
+}
 _ALLOW_V1_TASKS_LITERAL: set[str] = set()
 _ALLOW_LEGACY_LITERAL = {
     "tests/test_docs_consistency.py",

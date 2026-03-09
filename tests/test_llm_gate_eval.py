@@ -106,17 +106,25 @@ def test_precheck_calls_route_only_not_narration(monkeypatch) -> None:
     monkeypatch.setattr(gate_eval.socket, "getaddrinfo", lambda *_args, **_kwargs: [object()])
 
     class _Provider:
+        gateway_mode = "fake"
         route_model = "route-model"
+        narration_model = "narration-model"
+        timeout_seconds = 20.0
+        route_max_retries = 3
+        narration_max_retries = 1
+        route_temperature = 0.1
+        narration_temperature = 0.4
 
         def __init__(self) -> None:
             self.route_called = 0
             self.narration_called = 0
 
-        async def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-            self.route_called += 1
-            return SimpleNamespace(move_id="global.help_me_progress", confidence=0.9)
-
-        async def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
+        async def invoke_json_object(self, **kwargs):  # noqa: ANN003, ANN201
+            import json
+            payload = json.loads(kwargs["user_prompt"])
+            if payload.get("task") == "route_intent":
+                self.route_called += 1
+                return SimpleNamespace(payload={"selected_key": "m0", "confidence": 0.9, "interpreted_intent": "help me progress"}, duration_ms=5)
             self.narration_called += 1
             raise AssertionError("render_narration should not be called by precheck")
 

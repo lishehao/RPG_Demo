@@ -178,182 +178,402 @@
         "title": "AdminUserPublic",
         "type": "object"
       },
-      "GenerationAttemptRecord": {
+      "AuthorRunArtifactSummary": {
         "properties": {
-          "attempt_index": {
-            "maximum": 4.0,
-            "minimum": 1.0,
-            "title": "Attempt Index",
-            "type": "integer"
-          },
-          "best_candidate_index": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Best Candidate Index"
-          },
-          "best_candidate_seed": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Best Candidate Seed"
-          },
-          "candidate_count": {
-            "maximum": 8.0,
-            "minimum": 1.0,
-            "title": "Candidate Count",
-            "type": "integer"
-          },
-          "lint_ok": {
-            "title": "Lint Ok",
-            "type": "boolean"
-          },
-          "variant_seed": {
-            "title": "Variant Seed",
+          "artifact_key": {
+            "default": "",
+            "title": "Artifact Key",
             "type": "string"
           },
-          "winner_candidate_index": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Winner Candidate Index"
+          "artifact_type": {
+            "title": "Artifact Type",
+            "type": "string"
           },
-          "winner_candidate_seed": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Winner Candidate Seed"
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
           }
         },
         "required": [
-          "attempt_index",
-          "variant_seed",
-          "lint_ok",
-          "candidate_count"
+          "artifact_type",
+          "updated_at"
         ],
-        "title": "GenerationAttemptRecord",
+        "title": "AuthorRunArtifactSummary",
         "type": "object"
       },
-      "GenerationCompilePayload": {
+      "AuthorRunCreateRequest": {
         "properties": {
-          "spec_hash": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Spec Hash"
-          },
-          "spec_summary": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Spec Summary"
+          "raw_brief": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Raw Brief",
+            "type": "string"
           }
         },
-        "title": "GenerationCompilePayload",
+        "required": [
+          "raw_brief"
+        ],
+        "title": "AuthorRunCreateRequest",
         "type": "object"
       },
-      "GenerationDiagnostics": {
+      "AuthorRunCreateResponse": {
         "properties": {
-          "attempt_history": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "review_ready",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "story_id": {
+            "title": "Story Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "story_id",
+          "run_id",
+          "status",
+          "created_at"
+        ],
+        "title": "AuthorRunCreateResponse",
+        "type": "object"
+      },
+      "AuthorRunEventPayload": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "node_name": {
+            "title": "Node Name",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          }
+        },
+        "required": [
+          "event_id",
+          "node_name",
+          "event_type",
+          "created_at"
+        ],
+        "title": "AuthorRunEventPayload",
+        "type": "object"
+      },
+      "AuthorRunEventsResponse": {
+        "properties": {
+          "events": {
             "items": {
-              "$ref": "#/components/schemas/GenerationAttemptRecord"
+              "$ref": "#/components/schemas/AuthorRunEventPayload"
             },
-            "title": "Attempt History",
+            "title": "Events",
             "type": "array"
           },
-          "attempts": {
-            "default": 1,
-            "maximum": 4.0,
-            "minimum": 1.0,
-            "title": "Attempts",
-            "type": "integer"
-          },
-          "candidate_parallelism": {
-            "default": 1,
-            "maximum": 8.0,
-            "minimum": 1.0,
-            "title": "Candidate Parallelism",
-            "type": "integer"
-          },
-          "compile": {
-            "$ref": "#/components/schemas/GenerationCompilePayload"
-          },
-          "generator_version": {
-            "title": "Generator Version",
-            "type": "string"
-          },
-          "lint": {
-            "$ref": "#/components/schemas/LintReportPayload"
-          },
-          "mode": {
-            "enum": [
-              "prompt",
-              "seed"
-            ],
-            "title": "Mode",
-            "type": "string"
-          },
-          "palette_policy": {
-            "enum": [
-              "random",
-              "balanced",
-              "fixed"
-            ],
-            "title": "Palette Policy",
-            "type": "string"
-          },
-          "regenerate_count": {
-            "default": 0,
-            "maximum": 3.0,
-            "minimum": 0.0,
-            "title": "Regenerate Count",
-            "type": "integer"
-          },
-          "variant_seed": {
-            "title": "Variant Seed",
+          "run_id": {
+            "title": "Run Id",
             "type": "string"
           }
         },
         "required": [
-          "mode",
-          "generator_version",
-          "variant_seed",
-          "palette_policy"
+          "run_id"
         ],
-        "title": "GenerationDiagnostics",
+        "title": "AuthorRunEventsResponse",
+        "type": "object"
+      },
+      "AuthorRunGetResponse": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/AuthorRunArtifactSummary"
+            },
+            "title": "Artifacts",
+            "type": "array"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_node": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Node"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "raw_brief": {
+            "title": "Raw Brief",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "review_ready",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "story_id": {
+            "title": "Story Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "story_id",
+          "status",
+          "raw_brief",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AuthorRunGetResponse",
+        "type": "object"
+      },
+      "AuthorStoryGetResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "draft_pack": {
+            "additionalProperties": true,
+            "title": "Draft Pack",
+            "type": "object"
+          },
+          "latest_published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Published At"
+          },
+          "latest_published_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Published Version"
+          },
+          "latest_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorRunGetResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "story_id": {
+            "title": "Story Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "story_id",
+          "title",
+          "created_at"
+        ],
+        "title": "AuthorStoryGetResponse",
+        "type": "object"
+      },
+      "AuthorStoryListItem": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "latest_published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Published At"
+          },
+          "latest_published_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Published Version"
+          },
+          "latest_run_current_node": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Current Node"
+          },
+          "latest_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Id"
+          },
+          "latest_run_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Status"
+          },
+          "latest_run_updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Updated At"
+          },
+          "story_id": {
+            "title": "Story Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "story_id",
+          "title",
+          "created_at"
+        ],
+        "title": "AuthorStoryListItem",
+        "type": "object"
+      },
+      "AuthorStoryListResponse": {
+        "properties": {
+          "stories": {
+            "items": {
+              "$ref": "#/components/schemas/AuthorStoryListItem"
+            },
+            "title": "Stories",
+            "type": "array"
+          }
+        },
+        "title": "AuthorStoryListResponse",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -610,26 +830,6 @@
           "failure_rate"
         ],
         "title": "LLMCallHealthAggregateResponse",
-        "type": "object"
-      },
-      "LintReportPayload": {
-        "properties": {
-          "errors": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Errors",
-            "type": "array"
-          },
-          "warnings": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Warnings",
-            "type": "array"
-          }
-        },
-        "title": "LintReportPayload",
         "type": "object"
       },
       "OpeningGuidancePayload": {
@@ -1799,156 +1999,6 @@
         "title": "StoryDraftPatchRequest",
         "type": "object"
       },
-      "StoryGenerateRequest": {
-        "properties": {
-          "candidate_parallelism": {
-            "anyOf": [
-              {
-                "maximum": 8.0,
-                "minimum": 1.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Candidate Parallelism"
-          },
-          "generator_version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Generator Version"
-          },
-          "npc_count": {
-            "default": 4,
-            "maximum": 5.0,
-            "minimum": 3.0,
-            "title": "Npc Count",
-            "type": "integer"
-          },
-          "palette_policy": {
-            "default": "random",
-            "enum": [
-              "random",
-              "balanced",
-              "fixed"
-            ],
-            "title": "Palette Policy",
-            "type": "string"
-          },
-          "prompt_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Prompt Text"
-          },
-          "publish": {
-            "default": false,
-            "title": "Publish",
-            "type": "boolean"
-          },
-          "seed_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seed Text"
-          },
-          "style": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Style"
-          },
-          "target_minutes": {
-            "default": 10,
-            "maximum": 12.0,
-            "minimum": 8.0,
-            "title": "Target Minutes",
-            "type": "integer"
-          },
-          "variant_seed": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Variant Seed"
-          }
-        },
-        "title": "StoryGenerateRequest",
-        "type": "object"
-      },
-      "StoryGenerateResponse": {
-        "properties": {
-          "generation": {
-            "$ref": "#/components/schemas/GenerationDiagnostics"
-          },
-          "pack": {
-            "additionalProperties": true,
-            "title": "Pack",
-            "type": "object"
-          },
-          "pack_hash": {
-            "title": "Pack Hash",
-            "type": "string"
-          },
-          "status": {
-            "const": "ok",
-            "title": "Status",
-            "type": "string"
-          },
-          "story_id": {
-            "title": "Story Id",
-            "type": "string"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version"
-          }
-        },
-        "required": [
-          "status",
-          "story_id",
-          "pack_hash",
-          "generation"
-        ],
-        "title": "StoryGenerateResponse",
-        "type": "object"
-      },
       "StoryGetResponse": {
         "properties": {
           "pack": {
@@ -2792,6 +2842,300 @@
         ]
       }
     },
+    "/author/runs": {
+      "post": {
+        "operationId": "create_author_run_endpoint_author_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorRunCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorRunCreateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Author Run Endpoint",
+        "tags": [
+          "author"
+        ]
+      }
+    },
+    "/author/runs/{run_id}": {
+      "get": {
+        "operationId": "get_author_run_endpoint_author_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorRunGetResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Author Run Endpoint",
+        "tags": [
+          "author"
+        ]
+      }
+    },
+    "/author/runs/{run_id}/events": {
+      "get": {
+        "operationId": "get_author_run_events_endpoint_author_runs__run_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorRunEventsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Author Run Events Endpoint",
+        "tags": [
+          "author"
+        ]
+      }
+    },
+    "/author/stories": {
+      "get": {
+        "operationId": "list_author_stories_endpoint_author_stories_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorStoryListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Author Stories Endpoint",
+        "tags": [
+          "author"
+        ]
+      }
+    },
+    "/author/stories/{story_id}": {
+      "get": {
+        "operationId": "get_author_story_endpoint_author_stories__story_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorStoryGetResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Author Story Endpoint",
+        "tags": [
+          "author"
+        ]
+      }
+    },
+    "/author/stories/{story_id}/runs": {
+      "post": {
+        "operationId": "rerun_author_story_endpoint_author_stories__story_id__runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorRunCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorRunCreateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rerun Author Story Endpoint",
+        "tags": [
+          "author"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "health_health_get",
@@ -3156,52 +3500,6 @@
           }
         ],
         "summary": "Create Story Endpoint",
-        "tags": [
-          "stories"
-        ]
-      }
-    },
-    "/stories/generate": {
-      "post": {
-        "operationId": "generate_story_endpoint_stories_generate_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StoryGenerateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StoryGenerateResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Generate Story Endpoint",
         "tags": [
           "stories"
         ]

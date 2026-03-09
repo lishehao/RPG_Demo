@@ -6,6 +6,7 @@ from typing import Any
 from rpg_backend.domain.pack_schema import NarrationSlots
 from rpg_backend.llm.base import LLMProvider
 from rpg_backend.runtime.errors import RuntimeNarrationError
+from rpg_backend.runtime_chains import NarrationChain
 
 
 def _echo_commit_hook_parts(
@@ -35,6 +36,11 @@ async def render_echo_commit_hook(
     style_guard: str,
     *,
     strategy_style: str,
+    scene_id: str,
+    next_scene_id: str | None,
+    move_label: str,
+    costs_summary: str,
+    consequences_summary: str,
     stance_summary: str | None = None,
 ) -> dict[str, Any]:
     echo, commit, hook = _echo_commit_hook_parts(
@@ -56,7 +62,21 @@ async def render_echo_commit_hook(
     gateway_mode = str(getattr(provider, "gateway_mode", "unknown") or "unknown").strip().lower()
     started_at = time.perf_counter()
     try:
-        rendered = await provider.render_narration(prompt_slots, style_guard)
+        rendered, duration_ms, gateway_mode = await NarrationChain(provider=provider).render(
+            narration_context={
+                "scene_id": scene_id,
+                "next_scene_id": next_scene_id,
+                "interpreted_intent": interpreted_intent,
+                "move_label": move_label,
+                "strategy_style": strategy_style,
+                "result": result,
+                "costs_summary": costs_summary,
+                "consequences_summary": consequences_summary,
+                "stance_summary": stance_summary or "",
+            },
+            prompt_slots=prompt_slots,
+            style_guard=style_guard,
+        )
     except Exception as exc:  # noqa: BLE001
         duration_ms = int((time.perf_counter() - started_at) * 1000)
         raise RuntimeNarrationError(
@@ -67,7 +87,7 @@ async def render_echo_commit_hook(
             llm_duration_ms=duration_ms,
             gateway_mode=str(getattr(exc, "gateway_mode", gateway_mode) or gateway_mode),
         ) from exc
-    duration_ms = int((time.perf_counter() - started_at) * 1000)
+    duration_ms = int(duration_ms or ((time.perf_counter() - started_at) * 1000))
     if not isinstance(rendered, str) or not rendered.strip():
         raise RuntimeNarrationError(
             error_code="llm_narration_failed",

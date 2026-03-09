@@ -40,10 +40,8 @@ class Settings(BaseSettings):
     llm_worker_default_tpm: int = Field(default=600000, ge=1)
     llm_worker_queue_max_size: int = Field(default=1024, ge=1, le=500000)
     llm_worker_queue_wait_timeout_seconds: float = Field(default=8.0, gt=0, le=120)
-    llm_worker_queue_weights_json: str = '{"route_intent":5,"render_narration":3,"json_object":2}'
+    llm_worker_queue_weights_json: str = '{"json_object":1}'
     llm_worker_executor_concurrency: int = Field(default=16, ge=1, le=5000)
-    llm_worker_token_est_route_output: int = Field(default=96, ge=1, le=4000)
-    llm_worker_token_est_narration_output: int = Field(default=192, ge=1, le=8000)
     llm_worker_token_est_json_output: int = Field(default=256, ge=1, le=8000)
     llm_worker_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
     llm_worker_connect_timeout_seconds: float = Field(default=5.0, gt=0, le=30)

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '@/shared/api/service';
 import { ApiClientError } from '@/shared/api/client';
-import type { StoryDraftResponse } from '@/shared/api/types';
+import type { ErrorPresentationContext } from '@/shared/lib/apiErrorPresentation';
 import { useAuthorStoryStore } from '@/features/author-review/store/authorStoryStore';
 import {
   applyEditableStoryDraft,
@@ -14,7 +14,6 @@ import {
 import { buildStoryPackReviewModel, type ReviewIssue, type StoryPackBeat, type StoryPackMove, type StoryPackScene } from '@/features/author-review/lib/storyPackReview';
 import { cn } from '@/shared/lib/cn';
 import { formatDateTime, titleCase } from '@/shared/lib/format';
-import type { ErrorPresentationContext } from '@/shared/lib/apiErrorPresentation';
 import { Button } from '@/shared/ui/Button';
 import { ErrorBanner } from '@/shared/ui/ErrorBanner';
 import { Field } from '@/shared/ui/Field';
@@ -84,7 +83,7 @@ function DetailsCard({
   );
 }
 
-function buildEditableStateFromResponse(response: StoryDraftResponse): EditableStoryDraftState {
+function buildEditableStateFromResponse(response: { draft_pack: Record<string, unknown> }): EditableStoryDraftState {
   return buildEditableStoryDraftState(buildStoryPackReviewModel(response.draft_pack as Record<string, unknown>));
 }
 
@@ -95,6 +94,7 @@ export function AuthorStoryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [rerunning, setRerunning] = useState(false);
   const [error, setError] = useState<ApiClientError | Error | null>(null);
   const [errorContext, setErrorContext] = useState<ErrorPresentationContext>('author-draft-load');
   const [activeTab, setActiveTab] = useState<ReviewTab>('overview');
@@ -109,7 +109,7 @@ export function AuthorStoryDetailPage() {
     }
     setLoading(true);
     try {
-      const response = await apiService.getStoryDraft(storyId);
+      const response = await apiService.getAuthorStory(storyId);
       setCurrentStory(response);
     } catch (caught) {
       setErrorContext('author-draft-load');
@@ -122,6 +122,16 @@ export function AuthorStoryDetailPage() {
   useEffect(() => {
     void loadStory();
   }, [storyId]);
+
+  useEffect(() => {
+    if (!currentStory?.latest_run || !['pending', 'running'].includes(currentStory.latest_run.status)) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      void loadStory();
+    }, 2000);
+    return () => window.clearTimeout(timer);
+  }, [currentStory?.latest_run?.status, currentStory?.latest_run?.updated_at, storyId]);
 
   const originalReviewModel = useMemo(
     () => buildStoryPackReviewModel((currentStory?.draft_pack ?? {}) as Record<string, unknown>),
@@ -149,6 +159,36 @@ export function AuthorStoryDetailPage() {
     () => (editableDraft ? hasEditableStoryDraftChanges(originalReviewModel, editableDraft) : false),
     [editableDraft, originalReviewModel],
   );
+  const latestRun = currentStory?.latest_run ?? null;
+  const latestRunStatus = latestRun?.status ?? null;
+  const isRunFailed = latestRunStatus === 'failed';
+  const isRunRunning = latestRunStatus === 'pending' || latestRunStatus === 'running';
+  const canPublish = !publishing && !saving && !isDirty && (!latestRun || latestRunStatus === 'review_ready');
+
+
+  async function handleRerun() {
+    if (!storyId || !latestRun?.raw_brief?.trim()) {
+      return;
+    }
+    setRerunning(true);
+    setError(null);
+    try {
+      const created = await apiService.rerunAuthorStory(storyId, { raw_brief: latestRun.raw_brief });
+      for (let attempt = 0; attempt < 120; attempt += 1) {
+        const run = await apiService.getAuthorRun(created.run_id);
+        if (run.status === 'review_ready' || run.status === 'failed') {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+      await loadStory();
+    } catch (caught) {
+      setErrorContext('author-generate');
+      setError(caught as ApiClientError | Error);
+    } finally {
+      setRerunning(false);
+    }
+  }
 
   async function handlePublish() {
     if (!storyId) {
@@ -179,8 +219,8 @@ export function AuthorStoryDetailPage() {
     setError(null);
     try {
       const response = await apiService.patchStoryDraft(storyId, { changes });
-      setCurrentStory(response);
       setEditableDraft(buildEditableStateFromResponse(response));
+      await loadStory();
     } catch (caught) {
       setErrorContext('author-draft-save');
       setError(caught as ApiClientError | Error);
@@ -400,7 +440,11 @@ export function AuthorStoryDetailPage() {
         title={currentStory?.title ?? 'Loading draft'}
         subtitle={
           currentStory
-            ? `Draft created ${formatDateTime(currentStory.created_at)}. This is now a review-first publish workspace: inspect the pack, spot structural issues, make light edits, then release it to Play Mode.`
+            ? isRunFailed
+              ? `The latest author run failed${latestRun?.current_node ? ` at ${latestRun.current_node}` : ''}. Review diagnostics below and re-run the workflow before publish.`
+              : isRunRunning
+                ? `The latest author run is still in progress${latestRun?.current_node ? ` at ${latestRun.current_node}` : ''}. Publish stays disabled until the run reaches review_ready.`
+                : `Draft created ${formatDateTime(currentStory.created_at)}. This is now a review-first publish workspace: inspect the pack, spot structural issues, make light edits, then release it to Play Mode.`
             : 'Loading draft payload from the author API.'
         }
       >
@@ -413,12 +457,13 @@ export function AuthorStoryDetailPage() {
         ) : (
           <div className="space-y-5">
             <div className="flex flex-wrap gap-2">
-              <Pill tone="medium">Draft</Pill>
-              {currentStory.latest_published_version !== null ? <Pill tone="success">Published v{currentStory.latest_published_version}</Pill> : <Pill tone="neutral">Not Published Yet</Pill>}
+              <Pill tone={isRunFailed ? 'high' : 'medium'}>{isRunFailed ? 'Diagnostics' : 'Draft'}</Pill>
+              {latestRun ? <Pill tone={isRunFailed ? 'high' : latestRunStatus === 'review_ready' ? 'success' : 'medium'}>{isRunFailed ? 'Run failed' : `Run ${latestRunStatus}`}</Pill> : null}
+              {currentStory.latest_published_version !== null ? <Pill tone="success">Published v{currentStory.latest_published_version}</Pill> : isRunFailed ? <Pill tone="high">No valid draft</Pill> : <Pill tone="neutral">Not Published Yet</Pill>}
               <Pill tone="neutral">{reviewModel.counts.scenes} scenes</Pill>
               <Pill tone="neutral">{reviewModel.counts.moves} moves</Pill>
               <Pill tone="neutral">{reviewModel.counts.beats} beats</Pill>
-              {isDirty ? <Pill tone="high">Unsaved Changes</Pill> : <Pill tone="success">Saved</Pill>}
+              {!isRunFailed ? (isDirty ? <Pill tone="high">Unsaved Changes</Pill> : <Pill tone="success">Saved</Pill>) : <Pill tone="neutral">Awaiting rerun</Pill>}
             </div>
 
             {isDirty ? (
@@ -442,6 +487,42 @@ export function AuthorStoryDetailPage() {
               </div>
             ) : null}
 
+            {latestRun ? (
+              <div className={`rounded-[24px] border p-4 ${isRunFailed ? 'border-[rgba(239,126,69,0.3)] bg-[rgba(239,126,69,0.08)]' : 'border-[var(--line)] bg-[rgba(255,248,229,0.05)]'}`}>
+                <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Run diagnostics</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Pill tone={isRunFailed ? 'high' : latestRunStatus === 'review_ready' ? 'success' : 'medium'}>{isRunFailed ? 'Failed' : latestRunStatus}</Pill>
+                  {latestRun.current_node ? <Pill tone="neutral">{latestRun.current_node}</Pill> : null}
+                  {latestRun.error_code ? <Pill tone="neutral">{latestRun.error_code}</Pill> : null}
+                </div>
+                <p className="mt-3 break-words text-sm leading-7 text-[var(--text-mist)]">
+                  {latestRun.error_message || (isRunFailed ? 'This run did not reach review_ready.' : latestRun.raw_brief)}
+                </p>
+                {latestRun.raw_brief ? (
+                  <div className="mt-3 text-xs uppercase tracking-[0.16em] text-[var(--text-dim)]">Last brief</div>
+                ) : null}
+                {latestRun.raw_brief ? <p className="mt-2 break-words text-sm leading-7 text-[var(--text-dim)]">{latestRun.raw_brief}</p> : null}
+              </div>
+            ) : null}
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className={`rounded-[22px] border px-4 py-4 ${isRunFailed ? 'border-[rgba(239,126,69,0.3)] bg-[rgba(239,126,69,0.08)]' : latestRunStatus === 'review_ready' ? 'border-[rgba(120,192,156,0.24)] bg-[rgba(120,192,156,0.08)]' : 'border-[var(--line)] bg-[rgba(255,248,229,0.05)]'}`}>
+                <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Run state</div>
+                <div className="mt-2 font-[var(--font-title)] text-2xl text-[var(--text-ivory)]">{latestRun ? (isRunFailed ? 'Failed' : latestRunStatus === 'review_ready' ? 'Ready' : 'Running') : 'Detached'}</div>
+                <p className="mt-2 text-sm leading-7 text-[var(--text-mist)]">{latestRun?.current_node ? `Current node: ${latestRun.current_node}` : 'No workflow node recorded.'}</p>
+              </div>
+              <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] px-4 py-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Publish state</div>
+                <div className="mt-2 font-[var(--font-title)] text-2xl text-[var(--text-ivory)]">{currentStory.latest_published_version !== null ? 'Published' : isRunFailed ? 'Blocked' : 'Pending'}</div>
+                <p className="mt-2 text-sm leading-7 text-[var(--text-mist)]">{currentStory.latest_published_version !== null ? `Version ${currentStory.latest_published_version} is live for Play.` : isRunFailed ? 'This story cannot be published until a run reaches review_ready.' : 'Publish becomes available once the current draft is ready.'}</p>
+              </div>
+              <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] px-4 py-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Draft shape</div>
+                <div className="mt-2 font-[var(--font-title)] text-2xl text-[var(--text-ivory)]">{reviewModel.counts.beats} beats</div>
+                <p className="mt-2 text-sm leading-7 text-[var(--text-mist)]">{reviewModel.counts.scenes} scenes · {reviewModel.counts.moves} moves · {isRunFailed ? 'diagnostics-first review' : 'structured pack review'}</p>
+              </div>
+            </div>
+
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
               <div className="min-w-0 space-y-4">
                 <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] px-4 py-4">
@@ -451,7 +532,11 @@ export function AuthorStoryDetailPage() {
                 <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] px-4 py-4">
                   <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Review posture</div>
                   <p className="mt-2 break-words text-sm leading-7 text-[var(--text-mist)]">
-                    Structured review is the primary view. Only a small set of high-value string fields are editable here; raw JSON remains read-only.
+                    {isRunFailed
+                      ? 'This screen is currently diagnostic-first. Re-run the author workflow to produce a valid review-ready draft, then come back here for structured editing.'
+                      : isRunRunning
+                        ? 'The workflow is still running. The current draft can be inspected, but diagnostics and publishability may still change before review_ready.'
+                        : 'Structured review is the primary view. Only a small set of high-value string fields are editable here; raw JSON remains read-only.'}
                   </p>
                 </div>
               </div>
@@ -459,12 +544,25 @@ export function AuthorStoryDetailPage() {
               <div className="min-w-0 rounded-[24px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-4">
                 <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Publish rail</div>
                 <p className="mt-2 text-sm leading-7 text-[var(--text-mist)]">
-                  {isDirty ? 'Save draft changes before publish so Play consumes the reviewed version.' : 'Publish the currently saved draft when it is ready for Play.'}
+                  {isRunFailed
+                    ? 'The latest author run failed. Publish is disabled until a run reaches review_ready.'
+                    : isRunRunning
+                      ? 'The author workflow is still running. Publish stays disabled until it finishes successfully.'
+                      : isDirty
+                        ? 'Save draft changes before publish so Play consumes the reviewed version.'
+                        : 'Publish the currently saved draft when it is ready for Play.'}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Button onClick={handlePublish} disabled={publishing || saving || isDirty}>
-                    {publishing ? 'Publishing...' : 'Publish For Play'}
-                  </Button>
+                  {!isRunFailed && !isRunRunning ? (
+                    <Button onClick={handlePublish} disabled={!canPublish}>
+                      {publishing ? 'Publishing...' : 'Publish For Play'}
+                    </Button>
+                  ) : null}
+                  {isRunFailed ? (
+                    <Button onClick={() => void handleRerun()} disabled={rerunning || saving || publishing || !latestRun?.raw_brief?.trim()}>
+                      {rerunning ? 'Re-running...' : 'Re-run Author Workflow'}
+                    </Button>
+                  ) : null}
                   {currentStory.latest_published_version !== null ? (
                     <Button variant="secondary" onClick={() => navigate('/play/library')}>
                       Open Play Library
@@ -484,7 +582,9 @@ export function AuthorStoryDetailPage() {
         <Panel
           eyebrow="Review Signals"
           title="Structural review at a glance"
-          subtitle="These are review findings derived from the locally edited draft. Blocking findings can exist while you work, but publish will still enforce the backend lint gate."
+          subtitle={isRunFailed
+            ? 'The latest run failed, so these signals describe the current saved draft shell. Re-run the workflow before publish.'
+            : 'These are review findings derived from the locally edited draft. Blocking findings can exist while you work, but publish will still enforce the backend lint gate.'}
         >
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-[22px] border border-[rgba(239,126,69,0.3)] bg-[rgba(239,126,69,0.08)] px-4 py-4">
@@ -528,9 +628,11 @@ export function AuthorStoryDetailPage() {
 
       {!loading && currentStory && editableDraft ? (
         <Panel
-          eyebrow="Review Workspace"
-          title="Read the pack by structure, not by raw JSON"
-          subtitle="Search within the current review tab, edit only the approved fields, and save explicitly when the draft looks ready."
+          eyebrow={isRunFailed ? 'Draft Shell' : 'Review Workspace'}
+          title={isRunFailed ? 'Inspect the saved draft shell' : 'Read the pack by structure, not by raw JSON'}
+          subtitle={isRunFailed
+            ? 'A failed run can still leave behind partial draft fields. Inspect them here, but use rerun rather than publish as the primary action.'
+            : 'Search within the current review tab, edit only the approved fields, and save explicitly when the draft looks ready.'}
         >
           <div className="space-y-5">
             <div className="flex flex-wrap gap-2">

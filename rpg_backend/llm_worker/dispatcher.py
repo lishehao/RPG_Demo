@@ -8,11 +8,7 @@ from typing import Any
 from rpg_backend.llm_worker.errors import WorkerTaskError
 from rpg_backend.llm_worker.queue import QueuedTask, TaskKind, WeightedTaskQueue
 from rpg_backend.llm_worker.services.quota_service import QuotaService
-from rpg_backend.llm_worker.schemas import (
-    WorkerTaskJsonObjectRequest,
-    WorkerTaskNarrationRequest,
-    WorkerTaskRouteIntentRequest,
-)
+from rpg_backend.llm_worker.schemas import WorkerTaskJsonObjectRequest
 from rpg_backend.llm_worker.services.task_service import WorkerTaskService
 
 
@@ -22,8 +18,6 @@ class WorkerQueueConfig:
     wait_timeout_seconds: float
     weights: dict[TaskKind, int]
     executor_concurrency: int
-    token_est_route_output: int
-    token_est_narration_output: int
     token_est_json_output: int
 
 
@@ -40,8 +34,6 @@ class WorkerDispatcher:
         self._queue = WeightedTaskQueue(max_size=config.max_size, weights=config.weights)
         self._wait_timeout_seconds = float(config.wait_timeout_seconds)
         self._executor_concurrency = max(1, int(config.executor_concurrency))
-        self._token_est_route_output = max(1, int(config.token_est_route_output))
-        self._token_est_narration_output = max(1, int(config.token_est_narration_output))
         self._token_est_json_output = max(1, int(config.token_est_json_output))
         self._dispatcher_tasks: list[asyncio.Task[Any]] = []
         self._running = False
@@ -63,22 +55,6 @@ class WorkerDispatcher:
             await asyncio.gather(*self._dispatcher_tasks, return_exceptions=True)
         self._dispatcher_tasks.clear()
 
-    async def submit_route_intent(
-        self,
-        *,
-        payload: WorkerTaskRouteIntentRequest,
-        request_id: str | None,
-    ):
-        return await self._submit(kind="route_intent", payload=payload, request_id=request_id)
-
-    async def submit_render_narration(
-        self,
-        *,
-        payload: WorkerTaskNarrationRequest,
-        request_id: str | None,
-    ):
-        return await self._submit(kind="render_narration", payload=payload, request_id=request_id)
-
     async def submit_json_object(
         self,
         *,
@@ -87,27 +63,18 @@ class WorkerDispatcher:
     ):
         return await self._submit(kind="json_object", payload=payload, request_id=request_id)
 
-    async def _submit(
-        self,
-        *,
-        kind: TaskKind,
-        payload: Any,
-        request_id: str | None,
-    ) -> Any:
-        now = time.monotonic()
-        timeout = self._wait_timeout_seconds
-        loop = asyncio.get_running_loop()
-        future: asyncio.Future[Any] = loop.create_future()
-        queued = QueuedTask(
+    async def _submit(self, *, kind: TaskKind, payload: Any, request_id: str | None):
+        future: asyncio.Future[Any] = asyncio.get_running_loop().create_future()
+        task = QueuedTask(
             kind=kind,
             payload=payload,
             request_id=request_id,
-            created_monotonic=now,
-            deadline_monotonic=now + timeout,
+            created_monotonic=time.monotonic(),
+            deadline_monotonic=time.monotonic() + self._wait_timeout_seconds,
             future=future,
         )
-        accepted = await self._queue.put_nowait(queued)
-        if not accepted:
+        queued = await self._queue.put_nowait(task)
+        if not queued:
             raise WorkerTaskError(
                 error_code="worker_queue_full",
                 message="worker queue is full",
@@ -115,36 +82,28 @@ class WorkerDispatcher:
                 model=str(getattr(payload, "model", "") or ""),
                 attempts=1,
             )
-        try:
-            return await asyncio.wait_for(future, timeout=timeout)
-        except TimeoutError as exc:
-            if not future.done():
-                future.cancel()
-            raise WorkerTaskError(
-                error_code="worker_queue_timeout",
-                message="worker queue wait timeout",
-                retryable=True,
-                model=str(getattr(payload, "model", "") or ""),
-                attempts=1,
-            ) from exc
+        if not self._running:
+            try:
+                return await asyncio.wait_for(future, timeout=self._wait_timeout_seconds)
+            except asyncio.TimeoutError as exc:
+                raise WorkerTaskError(
+                    error_code="worker_queue_timeout",
+                    message="worker queue wait timeout",
+                    retryable=True,
+                    model=str(getattr(payload, "model", "") or ""),
+                    attempts=1,
+                ) from exc
+        return await future
 
-    def _estimate_tokens(self, *, kind: TaskKind, payload: Any) -> int:
-        if kind == "route_intent":
-            output = self._token_est_route_output
-        elif kind == "render_narration":
-            output = self._token_est_narration_output
-        else:
-            output = self._token_est_json_output
+    def _estimate_tokens(self, *, payload: Any) -> int:
         try:
             payload_json = payload.model_dump_json()
         except Exception:  # noqa: BLE001
             payload_json = str(payload)
-        system_prompt = kind
-        user_prompt = payload_json
         return self._quota_service.estimate_tokens(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            output_token_estimate=output,
+            system_prompt="json_object",
+            user_prompt=payload_json,
+            output_token_estimate=self._token_est_json_output,
         )
 
     async def _run_loop(self, _worker_index: int) -> None:
@@ -168,7 +127,7 @@ class WorkerDispatcher:
                     continue
 
                 model = str(getattr(task.payload, "model", "") or "")
-                estimated_tokens = self._estimate_tokens(kind=task.kind, payload=task.payload)
+                estimated_tokens = self._estimate_tokens(payload=task.payload)
                 reservation = await self._quota_service.reserve_async(model=model, estimated_tokens=estimated_tokens)
                 if not reservation.allowed:
                     if time.monotonic() >= task.deadline_monotonic:
@@ -198,12 +157,7 @@ class WorkerDispatcher:
                     continue
 
                 try:
-                    if task.kind == "route_intent":
-                        result, usage = await self._service.execute_route_intent_task(task.payload)
-                    elif task.kind == "render_narration":
-                        result, usage = await self._service.execute_render_narration_task(task.payload)
-                    else:
-                        result, usage = await self._service.execute_json_object_task(task.payload)
+                    result, usage = await self._service.execute_json_object_task(task.payload)
                 except WorkerTaskError as exc:
                     if not task.future.done():
                         task.future.set_exception(exc)

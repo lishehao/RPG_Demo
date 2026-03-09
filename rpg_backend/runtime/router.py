@@ -9,6 +9,7 @@ from rpg_backend.domain.constants import GLOBAL_CLARIFY_MOVE_ID, GLOBAL_HELP_ME_
 from rpg_backend.domain.pack_schema import Beat, Move, Scene
 from rpg_backend.llm.base import LLMProvider
 from rpg_backend.runtime.errors import RuntimeRouteError
+from rpg_backend.runtime_chains import RouteIntentChain
 
 _HELP_INTENT_RE = re.compile(
     r"\b(help|stuck|next step|what now|guide me|dont know|don't know|how do i proceed)\b",
@@ -18,6 +19,25 @@ _HELP_INTENT_RE = re.compile(
 
 def _is_explicit_help_intent(text: str) -> bool:
     return bool(_HELP_INTENT_RE.search(text or ""))
+
+
+def _route_candidates(*, llm_available: list[str], move_map: dict[str, Move]) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for index, move_id in enumerate(llm_available):
+        if move_id not in move_map:
+            continue
+        move = move_map[move_id]
+        candidates.append(
+            {
+                "key": f"m{index}",
+                "move_id": move_id,
+                "label": move.label,
+                "intents": list(move.intents),
+                "synonyms": list(move.synonyms),
+                "is_global": move_id.startswith("global."),
+            }
+        )
+    return candidates
 
 
 async def route_player_action(
@@ -99,14 +119,15 @@ async def route_player_action(
     scene_context = {
         "moves": [
             {
+                "key": item["key"],
                 "id": move_id,
                 "label": move_map[move_id].label,
                 "intents": move_map[move_id].intents,
                 "synonyms": move_map[move_id].synonyms,
                 "is_global": move_id.startswith("global."),
             }
-            for move_id in llm_available
-            if move_id in move_map
+            for item in _route_candidates(llm_available=llm_available, move_map=move_map)
+            for move_id in [item["move_id"]]
         ],
         "fallback_move": GLOBAL_CLARIFY_MOVE_ID if not allow_global_help else fallback_move,
         "scene_seed": scene.scene_seed,
@@ -117,9 +138,15 @@ async def route_player_action(
     provider_name = "openai"
     gateway_mode = str(getattr(provider, "gateway_mode", "unknown") or "unknown").strip().lower()
     route_started_at = time.perf_counter()
+    route_candidates = _route_candidates(llm_available=llm_available, move_map=move_map)
+    route_key_map = {item["key"]: item["move_id"] for item in route_candidates}
 
     try:
-        routed = await provider.route_intent(scene_context, text)
+        routed, route_duration_ms, gateway_mode = await RouteIntentChain(provider=provider).choose(
+            scene_context=scene_context,
+            route_candidates=route_candidates,
+            text=text,
+        )
     except Exception as exc:  # noqa: BLE001
         route_duration_ms = int((time.perf_counter() - route_started_at) * 1000)
         raise RuntimeRouteError(
@@ -131,14 +158,14 @@ async def route_player_action(
             gateway_mode=str(getattr(exc, "gateway_mode", gateway_mode) or gateway_mode),
         ) from exc
 
-    route_duration_ms = int((time.perf_counter() - route_started_at) * 1000)
-    chosen_move = routed.move_id
+    route_duration_ms = int(route_duration_ms or ((time.perf_counter() - route_started_at) * 1000))
+    chosen_move = route_key_map.get(routed.selected_key)
     confidence = float(routed.confidence)
     route_source = "llm"
     if chosen_move not in llm_available:
         raise RuntimeRouteError(
             error_code="llm_route_invalid_move",
-            message=f"route_intent returned unavailable move_id: {chosen_move}",
+            message=f"route_intent returned unavailable selected_key: {routed.selected_key}",
             provider=provider_name,
             llm_duration_ms=route_duration_ms,
             gateway_mode=gateway_mode,

@@ -5,27 +5,38 @@ import json
 from pathlib import Path
 
 from rpg_backend.domain.pack_schema import StoryPack
-from rpg_backend.llm.base import LLMProvider, RouteIntentResult
+from rpg_backend.llm.base import LLMJsonObjectResult, LLMProvider
 from rpg_backend.runtime.router import route_player_action
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
 
 
 class _CaptureProvider(LLMProvider):
+    gateway_mode = "fake"
+    route_model = "route-model"
+    narration_model = "narration-model"
+    timeout_seconds = 20.0
+    route_max_retries = 3
+    narration_max_retries = 1
+    route_temperature = 0.1
+    narration_temperature = 0.4
+
     def __init__(self) -> None:
         self.contexts: list[dict] = []
 
-    async def route_intent(self, scene_context, text):  # noqa: ANN001, ANN201
-        self.contexts.append(scene_context)
-        return RouteIntentResult(
-            move_id=scene_context["moves"][0]["id"],
-            args={},
-            confidence=0.95,
-            interpreted_intent=(text or "").strip() or "fallback",
-        )
-
-    async def render_narration(self, slots, style_guard):  # noqa: ANN001, ANN201
-        return f"{slots['echo']} {slots['commit']} {slots['hook']}"
+    async def invoke_json_object(self, **kwargs) -> LLMJsonObjectResult:  # noqa: ANN003
+        payload = json.loads(kwargs["user_prompt"])
+        if payload.get("task") == "route_intent":
+            self.contexts.append(payload["scene_context"])
+            return LLMJsonObjectResult(
+                payload={
+                    "selected_key": payload["scene_context"]["moves"][0]["key"],
+                    "confidence": 0.95,
+                    "interpreted_intent": (payload.get("player_text") or "").strip() or "fallback",
+                },
+                duration_ms=5,
+            )
+        return LLMJsonObjectResult(payload={"narration_text": "x"}, duration_ms=5)
 
 
 def _load_pack() -> StoryPack:
@@ -67,9 +78,7 @@ def test_route_context_includes_rich_snapshot_fields() -> None:
     context = provider.contexts[0]
     assert context["scene_snapshot"]["scene_id"] == scene.id
     assert context["scene_snapshot"]["beat_title"] == beat.title
-    assert context["scene_snapshot"]["beat_progress_value"] == 1
-    assert context["state_snapshot"]["last_move"] == "trace_anomaly"
-    assert context["state_snapshot"]["pressure_tracks"]["coordination_noise"] == 3
+    assert context["state_snapshot"]["runtime_turn"] == 5
     assert context["state_snapshot"]["recent_events_tail"][-1] == "redline_hit::Kael"
 
 
@@ -90,7 +99,7 @@ def test_route_context_excludes_global_help_for_non_help_text() -> None:
 
     context = provider.contexts[0]
     assert context["allow_global_help"] is False
-    assert all(move["id"] != "global.help_me_progress" for move in context["moves"])
+    assert all(not (move["is_global"] and move["label"] == "Help Me Progress") for move in context["moves"])
 
 
 def test_route_context_allows_global_help_for_help_text() -> None:
@@ -110,4 +119,4 @@ def test_route_context_allows_global_help_for_help_text() -> None:
 
     context = provider.contexts[0]
     assert context["allow_global_help"] is True
-    assert any(move["id"] == "global.help_me_progress" for move in context["moves"])
+    assert any(move["is_global"] for move in context["moves"])

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from rpg_backend.application.errors import ApplicationError
 
 
@@ -37,13 +35,3 @@ class StoryLintFailedError(ApplicationError):
             details={"errors": errors, "warnings": warnings},
         )
 
-
-class StoryGenerationFailedError(ApplicationError):
-    def __init__(self, *, error_code: str, details: dict[str, Any]) -> None:
-        super().__init__(
-            status_code=422,
-            error_code=error_code,
-            message="story generation failed",
-            retryable=False,
-            details=details,
-        )

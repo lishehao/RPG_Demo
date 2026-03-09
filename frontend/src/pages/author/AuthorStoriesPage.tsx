@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '@/shared/api/service';
 import { ApiClientError } from '@/shared/api/client';
 import { useAuthorStoryStore } from '@/features/author-review/store/authorStoryStore';
+import type { AuthorRunGetResponse } from '@/shared/api/types';
 import type { ErrorPresentationContext } from '@/shared/lib/apiErrorPresentation';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
@@ -12,23 +13,57 @@ import { Panel } from '@/shared/ui/Panel';
 import { Pill } from '@/shared/ui/Pill';
 import { formatDateTime } from '@/shared/lib/format';
 
+const POLL_INTERVAL_MS = 2000;
+const POLL_LIMIT = 120;
+
+
+function runTone(status: string | null | undefined) {
+  if (status === 'failed') return 'high' as const;
+  if (status === 'review_ready') return 'success' as const;
+  if (status === 'pending' || status === 'running') return 'medium' as const;
+  return 'neutral' as const;
+}
+
+function storyStateSummary(story: { latest_run_status: string | null; latest_run_current_node: string | null; latest_published_version: number | null }) {
+  if (story.latest_published_version !== null) {
+    return `Published for Play as version ${story.latest_published_version}.`;
+  }
+  if (story.latest_run_status === 'failed') {
+    return `Workflow stopped${story.latest_run_current_node ? ` at ${story.latest_run_current_node}` : ''}. Re-run before review or publish.`;
+  }
+  if (story.latest_run_status === 'review_ready') {
+    return 'Draft is review-ready and waiting for publish.';
+  }
+  if (story.latest_run_status === 'pending' || story.latest_run_status === 'running') {
+    return `Author workflow still running${story.latest_run_current_node ? ` at ${story.latest_run_current_node}` : ''}.`;
+  }
+  return 'Draft shell exists, but no completed author run is attached yet.';
+}
+
+function storyCardClasses(status: string | null | undefined) {
+  if (status === 'failed') {
+    return 'border-[rgba(239,126,69,0.28)] bg-[rgba(239,126,69,0.08)] hover:border-[rgba(239,126,69,0.45)] hover:bg-[rgba(239,126,69,0.12)]';
+  }
+  if (status === 'review_ready') {
+    return 'border-[rgba(120,192,156,0.24)] bg-[rgba(120,192,156,0.07)] hover:border-[rgba(120,192,156,0.4)] hover:bg-[rgba(120,192,156,0.1)]';
+  }
+  return 'border-[var(--line)] bg-[rgba(255,248,229,0.05)] hover:border-[var(--line-strong)] hover:bg-[rgba(255,248,229,0.08)]';
+}
+
 export function AuthorStoriesPage() {
   const navigate = useNavigate();
   const { stories, setStories } = useAuthorStoryStore();
-  const [promptText, setPromptText] = useState('Design a political fantasy thriller about a forest city under ritual siege.');
-  const [seedText, setSeedText] = useState('');
-  const [style, setStyle] = useState('tense, cinematic, strategic');
-  const [targetMinutes, setTargetMinutes] = useState(10);
-  const [npcCount, setNpcCount] = useState(4);
+  const [rawBrief, setRawBrief] = useState('Design a political fantasy thriller about a forest city under ritual siege.');
   const [loadingStories, setLoadingStories] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [pendingRun, setPendingRun] = useState<AuthorRunGetResponse | null>(null);
   const [error, setError] = useState<ApiClientError | Error | null>(null);
   const [errorContext, setErrorContext] = useState<ErrorPresentationContext>('author-stories-load');
 
   async function loadStories() {
     setLoadingStories(true);
     try {
-      const response = await apiService.listStories();
+      const response = await apiService.listAuthorStories();
       setStories(response.stories);
     } catch (caught) {
       setErrorContext('author-stories-load');
@@ -42,23 +77,36 @@ export function AuthorStoriesPage() {
     void loadStories();
   }, []);
 
+  async function pollRun(runId: string, storyId: string) {
+    for (let attempt = 0; attempt < POLL_LIMIT; attempt += 1) {
+      const run = await apiService.getAuthorRun(runId);
+      setPendingRun(run);
+      if (run.status === 'review_ready') {
+        await loadStories();
+        navigate(`/author/stories/${storyId}`);
+        return;
+      }
+      if (run.status === 'failed') {
+        throw new Error(run.error_message || run.error_code || 'Author run failed');
+      }
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    }
+    throw new Error('Author run polling timed out');
+  }
+
   async function handleGenerate() {
     setGenerating(true);
+    setPendingRun(null);
     setError(null);
     try {
-      const response = await apiService.generateStory({
-        prompt_text: promptText.trim() || undefined,
-        seed_text: seedText.trim() || undefined,
-        target_minutes: targetMinutes,
-        npc_count: npcCount,
-        style: style.trim() || undefined,
-        publish: false,
-      });
-      await loadStories();
-      navigate(`/author/stories/${response.story_id}`);
+      const created = await apiService.createAuthorRun({ raw_brief: rawBrief.trim() });
+      const initialRun = await apiService.getAuthorRun(created.run_id);
+      setPendingRun(initialRun);
+      await pollRun(created.run_id, created.story_id);
     } catch (caught) {
       setErrorContext('author-generate');
       setError(caught as ApiClientError | Error);
+      await loadStories();
     } finally {
       setGenerating(false);
     }
@@ -73,54 +121,48 @@ export function AuthorStoriesPage() {
     <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
       <Panel
         eyebrow="Author Flow"
-        title="Forge a new story draft"
-        subtitle="Generate a DB-backed story draft with the real LLM pipeline, then publish it when it looks ready."
+        title="Launch a new author run"
+        subtitle="Submit a raw brief, let the LangGraph workflow synthesize the draft, then review and publish it."
       >
         <div className="space-y-5">
           <Field
-            label="Prompt Brief"
+            label="Raw Brief"
             multiline
-            value={promptText}
-            onChange={(event) => setPromptText(event.target.value)}
-            hint="Preferred path for author generation. If prompt is blank, seed text can drive generation instead."
+            value={rawBrief}
+            onChange={(event) => setRawBrief(event.target.value)}
+            hint="Write one or more sentences. The backend will turn this directly into StoryOverview and beat generation runs."
           />
-          <Field
-            label="Seed Text"
-            value={seedText}
-            onChange={(event) => setSeedText(event.target.value)}
-            hint="Optional. Use when you want a simpler seed-driven generation path."
-          />
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field
-              label="Style"
-              value={style}
-              onChange={(event) => setStyle(event.target.value)}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Field
-                label="Minutes"
-                type="number"
-                min={8}
-                max={12}
-                value={String(targetMinutes)}
-                onChange={(event) => setTargetMinutes(Number(event.target.value))}
-              />
-              <Field
-                label="NPC Count"
-                type="number"
-                min={3}
-                max={5}
-                value={String(npcCount)}
-                onChange={(event) => setNpcCount(Number(event.target.value))}
-              />
+
+          {pendingRun ? (
+            <div className={`rounded-[24px] border p-4 ${pendingRun.status === 'failed' ? 'border-[rgba(239,126,69,0.3)] bg-[rgba(239,126,69,0.08)]' : pendingRun.status === 'review_ready' ? 'border-[rgba(120,192,156,0.24)] bg-[rgba(120,192,156,0.08)]' : 'border-[rgba(245,179,111,0.24)] bg-[rgba(245,179,111,0.08)]'}`}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Current author run</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Pill tone={runTone(pendingRun.status)}>{pendingRun.status === 'failed' ? 'Run failed' : pendingRun.status}</Pill>
+                    {pendingRun.current_node ? <Pill tone="neutral">{pendingRun.current_node}</Pill> : null}
+                  </div>
+                </div>
+                <div className="text-sm text-[var(--text-dim)]">Created {formatDateTime(pendingRun.created_at)}</div>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.8fr)]">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)]">Current brief</div>
+                  <p className="mt-2 break-words text-sm leading-7 text-[var(--text-mist)]">{pendingRun.raw_brief}</p>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)]">Latest status</div>
+                  <p className="mt-2 break-words text-sm leading-7 text-[var(--text-mist)]">{pendingRun.error_message || storyStateSummary({ latest_run_status: pendingRun.status, latest_run_current_node: pendingRun.current_node, latest_published_version: null })}</p>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <ErrorBanner error={error} context={errorContext} />
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={handleGenerate} disabled={generating || (!promptText.trim() && !seedText.trim())}>
-              {generating ? 'Generating Draft...' : 'Generate Draft'}
+            <Button onClick={handleGenerate} disabled={generating || !rawBrief.trim()}>
+              {generating ? 'Running Author Graph...' : 'Create Author Run'}
             </Button>
             <Button variant="secondary" onClick={() => void loadStories()} disabled={loadingStories}>
               Refresh Story Index
@@ -131,8 +173,8 @@ export function AuthorStoriesPage() {
 
       <Panel
         eyebrow="Story Index"
-        title="Drafts and published versions"
-        subtitle="Author mode tracks story supply. Drafts stay here until you explicitly publish them for Play."
+        title="Author stories"
+        subtitle="Stories now track the latest author run directly; publish only after a run reaches review_ready."
       >
         <div className="mb-5 flex flex-wrap gap-2">
           <Pill tone="neutral">{stories.length.toString().padStart(2, '0')} total</Pill>
@@ -145,44 +187,51 @@ export function AuthorStoriesPage() {
           </div>
         ) : stories.length === 0 ? (
           <EmptyState
-            title="No drafts in the forge"
-            body="Generate your first story draft from the left panel. Published stories will later feed the Play library."
+            title="No author stories yet"
+            body="Create an author run from the left panel. Successful runs will materialize a draft pack that can later be published into Play Mode."
           />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {stories.map((story) => (
-              <article
+              <button
                 key={story.story_id}
-                className="rounded-[24px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-5"
+                type="button"
+                onClick={() => navigate(`/author/stories/${story.story_id}`)}
+                className={`w-full rounded-[24px] border p-4 text-left transition ${storyCardClasses(story.latest_run_status)}`}
               >
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Created {formatDateTime(story.created_at)}</p>
-                    <h3 className="mt-2 font-[var(--font-title)] text-xl tracking-[0.06em] text-[var(--text-ivory)]">
-                      {story.title}
-                    </h3>
-                    <p className="mt-2 break-all text-sm leading-6 text-[var(--text-dim)]">{story.story_id}</p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-[var(--font-title)] text-lg tracking-[0.04em] text-[var(--text-ivory)]">{story.title}</div>
+                    <div className="mt-1 text-sm text-[var(--text-dim)]">Created {formatDateTime(story.created_at)}</div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Pill tone={story.has_draft ? 'medium' : 'neutral'}>{story.has_draft ? 'Draft Ready' : 'No Draft'}</Pill>
+                  <div className="flex flex-wrap gap-2">
+                    {story.latest_run_status ? (
+                      <Pill tone={runTone(story.latest_run_status)}>
+                        {story.latest_run_status === 'failed' ? 'Run failed' : story.latest_run_status}
+                      </Pill>
+                    ) : null}
                     {story.latest_published_version !== null ? (
                       <Pill tone="success">Published v{story.latest_published_version}</Pill>
+                    ) : story.latest_run_status === 'failed' ? (
+                      <Pill tone="high">No valid draft</Pill>
+                    ) : story.latest_run_status === 'review_ready' ? (
+                      <Pill tone="medium">Unpublished</Pill>
                     ) : (
-                      <Pill tone="neutral">Unpublished</Pill>
+                      <Pill tone="neutral">Draft shell</Pill>
                     )}
                   </div>
                 </div>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <Button variant="secondary" onClick={() => navigate(`/author/stories/${story.story_id}`)}>
-                    Open Detail
-                  </Button>
-                  {story.latest_published_version !== null ? (
-                    <Button variant="secondary" onClick={() => navigate('/play/library')}>
-                      Open Play Library
-                    </Button>
-                  ) : null}
+                <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)]">State summary</div>
+                    <p className="mt-2 break-words text-sm leading-7 text-[var(--text-mist)]">{storyStateSummary(story)}</p>
+                  </div>
+                  <div className="flex flex-col items-start gap-1 text-sm md:items-end">
+                    <span className="font-semibold text-[var(--text-ivory)]">Open detail →</span>
+                    {story.latest_run_updated_at ? <span className="text-[11px] uppercase tracking-[0.14em] text-[var(--text-dim)]">Updated {formatDateTime(story.latest_run_updated_at)}</span> : null}
+                  </div>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         )}

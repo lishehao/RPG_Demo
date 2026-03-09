@@ -18,8 +18,9 @@ from urllib.parse import urlparse
 import httpx
 
 from rpg_backend.config.settings import get_settings
-from rpg_backend.llm.base import LLMNarrationError, LLMProviderConfigError, LLMRouteError
+from rpg_backend.llm.base import LLMProviderConfigError
 from rpg_backend.llm.factory import get_llm_provider, resolve_openai_models
+from rpg_backend.runtime_chains.play_mode import RouteIntentChain
 
 from scripts.eval.simulate_playthrough import simulate_pack_playthrough
 
@@ -56,10 +57,6 @@ def _classify_precheck_error(exc: BaseException) -> str:
             return f"http_{status}"
         if isinstance(item, LLMProviderConfigError):
             return "misconfigured"
-        if isinstance(item, LLMRouteError):
-            return "route_error"
-        if isinstance(item, LLMNarrationError):
-            return "narration_error"
     return "unknown_error"
 
 
@@ -108,8 +105,8 @@ def _run_openai_precheck() -> dict[str, Any]:
 
     try:
         provider = get_llm_provider()
-        routed = asyncio.run(
-            provider.route_intent(
+        choice, _, gateway_mode = asyncio.run(
+            RouteIntentChain(provider=provider).choose(
                 scene_context={
                     "moves": [
                         {
@@ -117,17 +114,26 @@ def _run_openai_precheck() -> dict[str, Any]:
                             "label": "Help me progress",
                             "intents": ["progress", "help"],
                             "synonyms": ["advance"],
+                            "is_global": True,
                         },
                         {
                             "id": "global.clarify",
                             "label": "Clarify intent",
                             "intents": ["clarify"],
                             "synonyms": ["explain"],
+                            "is_global": True,
                         },
                     ],
                     "fallback_move": "global.help_me_progress",
                     "scene_seed": "precheck scene",
+                    "allow_global_help": True,
+                    "scene_snapshot": {},
+                    "state_snapshot": {},
                 },
+                route_candidates=[
+                    {"key": "m0", "move_id": "global.help_me_progress", "label": "Help me progress", "intents": ["progress", "help"], "synonyms": ["advance"], "is_global": True},
+                    {"key": "m1", "move_id": "global.clarify", "label": "Clarify intent", "intents": ["clarify"], "synonyms": ["explain"], "is_global": True},
+                ],
                 text="help me progress",
             )
         )
@@ -138,8 +144,9 @@ def _run_openai_precheck() -> dict[str, Any]:
             "base_url": base_url,
             "host": host,
             "route_model": getattr(provider, "route_model", route_model),
-            "probe_move_id": routed.move_id,
-            "probe_confidence": float(routed.confidence),
+            "probe_selected_key": choice.selected_key,
+            "probe_confidence": float(choice.confidence),
+            "gateway_mode": gateway_mode,
         }
     except Exception as exc:  # noqa: BLE001
         return {

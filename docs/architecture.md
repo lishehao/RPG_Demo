@@ -185,7 +185,7 @@ Path governance:
   - runtime layer is a pure execution engine and may only depend on `domain` + `llm.base` + sibling runtime modules
   - infrastructure repositories are adapter primitives only and may not commit/rollback on behalf of callers
   - runtime `session_step` namespace is removed (no compatibility import path)
-  - LLM route/narration pipeline is async end-to-end (`LLMProvider` -> `WorkerClient` -> runtime stages)
+  - LLM route/narration pipeline is async end-to-end (`RouteIntentChain` / `NarrationChain` -> worker `json_object` -> runtime stages)
   - async repositories live in `rpg_backend/infrastructure/repositories/*_async.py`
   - legacy sync repositories in `rpg_backend/storage/repositories/*` are removed (no compatibility import path)
   - backend/worker readiness share a common core (`rpg_backend/observability/readiness_core.py`) for config checks and TTL probe caching
@@ -242,7 +242,7 @@ Auth governance:
 - `GET /admin/observability/readiness-health` — backend/worker readiness failures + streaks with `window_started_at/window_ended_at`
 
 ### One-click generation (author tooling)
-- `POST /stories/generate`
+- `POST /author/runs`
   - Request: `{prompt_text?, seed_text?, target_minutes, npc_count, style?, publish?}`
   - Output:
     - `story_id, version?, pack, pack_hash`
@@ -275,20 +275,19 @@ Business endpoints use a unified error envelope:
 - Build pack and run linter.
 - If linter fails, regenerate the full pack with derived seed.
 - Max retries: 3 regenerates (4 total attempts).
-- Prompt mode regenerates by rerunning `PromptCompiler + build + lint`.
+- Author workflow retries regenerate the current overview, beat, or final pack node as needed.
 - No local post-generation mutation of generated pack.
-- Internal implementation is pipeline-based:
-  - `generator/pipeline.py`: orchestration (`validate -> compile/plan -> execute candidates -> resolve`)
-  - `generator/candidate_executor.py`: candidate parallelism + winner/best selection
-  - `generator/result_builder.py`: diagnostics + `GeneratorBuildResult` assembly
-  - `generator/errors.py`: `GeneratorBuildError` construction and mapping
-  - imports are explicit module imports; no legacy facade or wrapper path
+- Internal implementation is workflow-based:
+  - `application/author_runs/service.py`: author workflow orchestration (`overview -> beats -> pack -> final lint`)
+  - `generator/author_workflow_*`: overview, beat generation, validation, assembly
+  - `generator/move_materialization.py` + `generator/outcome_materialization.py`: deterministic move/outcome expansion shared by author/runtime helpers
+  - imports are explicit module imports; no legacy facade or removed generator pipeline path
 
 ---
 
 ## 8. One-click Generation Pipeline (recommended)
 
-1. **Prompt/Seed → Beat Plan** (prompt mode uses two-stage compile: outline -> full spec, strict max 3 calls)  
+1. **RawBrief → StoryOverview → Beat Plan** (`/author/runs` drives the LangGraph author workflow)  
 2. **Beat Plan → Scenes graph** (14–16 scenes, reconverging)
 3. **Scenes → Moves/Intents** (4–5 visible + 2–3 global per scene)
 4. **Outcomes fill** (success/partial/fail_forward; deterministic policies)

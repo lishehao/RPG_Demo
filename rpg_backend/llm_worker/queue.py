@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 
-TaskKind = Literal["route_intent", "render_narration", "json_object"]
+TaskKind = Literal["json_object"]
 
 
 @dataclass
@@ -27,11 +27,7 @@ class WeightedTaskQueue:
         weights: dict[TaskKind, int],
     ) -> None:
         self._max_size = max(1, int(max_size))
-        self._queues: dict[TaskKind, deque[QueuedTask]] = {
-            "route_intent": deque(),
-            "render_narration": deque(),
-            "json_object": deque(),
-        }
+        self._queues: dict[TaskKind, deque[QueuedTask]] = {"json_object": deque()}
         self._size = 0
         self._cond = asyncio.Condition()
         self._schedule = self._build_schedule(weights)
@@ -39,11 +35,8 @@ class WeightedTaskQueue:
 
     @staticmethod
     def _build_schedule(weights: dict[TaskKind, int]) -> list[TaskKind]:
-        schedule: list[TaskKind] = []
-        for kind in ("route_intent", "render_narration", "json_object"):
-            weight = max(1, int(weights.get(kind, 1)))
-            schedule.extend([kind] * weight)
-        return schedule or ["route_intent", "render_narration", "json_object"]
+        weight = max(1, int(weights.get("json_object", 1)))
+        return ["json_object"] * weight
 
     async def put_nowait(self, task: QueuedTask) -> bool:
         async with self._cond:
@@ -68,18 +61,12 @@ class WeightedTaskQueue:
             while True:
                 while self._size <= 0:
                     await self._cond.wait()
-                for _ in range(len(self._schedule)):
-                    kind = self._schedule[self._cursor % len(self._schedule)]
-                    self._cursor = (self._cursor + 1) % len(self._schedule)
-                    queue = self._queues[kind]
-                    if queue:
-                        self._size -= 1
-                        return queue.popleft()
-                for kind in ("route_intent", "render_narration", "json_object"):
-                    queue = self._queues[kind]
-                    if queue:
-                        self._size -= 1
-                        return queue.popleft()
+                kind = self._schedule[self._cursor % len(self._schedule)]
+                self._cursor = (self._cursor + 1) % len(self._schedule)
+                queue = self._queues[kind]
+                if queue:
+                    self._size -= 1
+                    return queue.popleft()
                 self._size = sum(len(queue) for queue in self._queues.values())
 
     async def size(self) -> int:

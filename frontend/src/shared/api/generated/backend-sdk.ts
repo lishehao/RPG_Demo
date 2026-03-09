@@ -1,7 +1,7 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Source: scripts/generate_frontend_sdk.py
 // OpenAPI source: contracts/openapi/backend.openapi.json
-// OpenAPI sha256: d29debd40c43f2d86e7a211e8fa0fe9d27ade50fd9f641781ad1ceea8675ed90
+// OpenAPI sha256: e2b63059f55d70cb35adea81638ca4305ed3df8ffcb86943ba0f935812be4f4d
 
 export type ApiHttpMethod =
   | 'GET'
@@ -23,7 +23,7 @@ export type ApiOperationMeta = {
   responseCodes: string[];
 };
 
-export const BACKEND_OPENAPI_SHA256 = 'd29debd40c43f2d86e7a211e8fa0fe9d27ade50fd9f641781ad1ceea8675ed90' as const;
+export const BACKEND_OPENAPI_SHA256 = 'e2b63059f55d70cb35adea81638ca4305ed3df8ffcb86943ba0f935812be4f4d' as const;
 
 export const API_OPERATIONS: ApiOperationMeta[] = [
   {
@@ -167,6 +167,90 @@ export const API_OPERATIONS: ApiOperationMeta[] = [
     ]
   },
   {
+    "operationId": "create_author_run_endpoint_author_runs_post",
+    "method": "POST",
+    "path": "/author/runs",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": true,
+    "hasParameters": false,
+    "responseCodes": [
+      "202",
+      "422"
+    ]
+  },
+  {
+    "operationId": "get_author_run_endpoint_author_runs__run_id__get",
+    "method": "GET",
+    "path": "/author/runs/{run_id}",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  {
+    "operationId": "get_author_run_events_endpoint_author_runs__run_id__events_get",
+    "method": "GET",
+    "path": "/author/runs/{run_id}/events",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  {
+    "operationId": "list_author_stories_endpoint_author_stories_get",
+    "method": "GET",
+    "path": "/author/stories",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  {
+    "operationId": "get_author_story_endpoint_author_stories__story_id__get",
+    "method": "GET",
+    "path": "/author/stories/{story_id}",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  {
+    "operationId": "rerun_author_story_endpoint_author_stories__story_id__runs_post",
+    "method": "POST",
+    "path": "/author/stories/{story_id}/runs",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": true,
+    "hasParameters": true,
+    "responseCodes": [
+      "202",
+      "422"
+    ]
+  },
+  {
     "operationId": "health_health_get",
     "method": "GET",
     "path": "/health",
@@ -267,20 +351,6 @@ export const API_OPERATIONS: ApiOperationMeta[] = [
     "operationId": "create_story_endpoint_stories_post",
     "method": "POST",
     "path": "/stories",
-    "tags": [
-      "stories"
-    ],
-    "hasRequestBody": true,
-    "hasParameters": false,
-    "responseCodes": [
-      "200",
-      "422"
-    ]
-  },
-  {
-    "operationId": "generate_story_endpoint_stories_generate_post",
-    "method": "POST",
-    "path": "/stories/generate",
     "tags": [
       "stories"
     ],
@@ -490,6 +560,90 @@ export const API_OPERATION_MAP: Record<string, ApiOperationMeta> = {
       "422"
     ]
   },
+  "create_author_run_endpoint_author_runs_post": {
+    "operationId": "create_author_run_endpoint_author_runs_post",
+    "method": "POST",
+    "path": "/author/runs",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": true,
+    "hasParameters": false,
+    "responseCodes": [
+      "202",
+      "422"
+    ]
+  },
+  "get_author_run_endpoint_author_runs__run_id__get": {
+    "operationId": "get_author_run_endpoint_author_runs__run_id__get",
+    "method": "GET",
+    "path": "/author/runs/{run_id}",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  "get_author_run_events_endpoint_author_runs__run_id__events_get": {
+    "operationId": "get_author_run_events_endpoint_author_runs__run_id__events_get",
+    "method": "GET",
+    "path": "/author/runs/{run_id}/events",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  "list_author_stories_endpoint_author_stories_get": {
+    "operationId": "list_author_stories_endpoint_author_stories_get",
+    "method": "GET",
+    "path": "/author/stories",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  "get_author_story_endpoint_author_stories__story_id__get": {
+    "operationId": "get_author_story_endpoint_author_stories__story_id__get",
+    "method": "GET",
+    "path": "/author/stories/{story_id}",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": false,
+    "hasParameters": true,
+    "responseCodes": [
+      "200",
+      "422"
+    ]
+  },
+  "rerun_author_story_endpoint_author_stories__story_id__runs_post": {
+    "operationId": "rerun_author_story_endpoint_author_stories__story_id__runs_post",
+    "method": "POST",
+    "path": "/author/stories/{story_id}/runs",
+    "tags": [
+      "author"
+    ],
+    "hasRequestBody": true,
+    "hasParameters": true,
+    "responseCodes": [
+      "202",
+      "422"
+    ]
+  },
   "health_health_get": {
     "operationId": "health_health_get",
     "method": "GET",
@@ -591,20 +745,6 @@ export const API_OPERATION_MAP: Record<string, ApiOperationMeta> = {
     "operationId": "create_story_endpoint_stories_post",
     "method": "POST",
     "path": "/stories",
-    "tags": [
-      "stories"
-    ],
-    "hasRequestBody": true,
-    "hasParameters": false,
-    "responseCodes": [
-      "200",
-      "422"
-    ]
-  },
-  "generate_story_endpoint_stories_generate_post": {
-    "operationId": "generate_story_endpoint_stories_generate_post",
-    "method": "POST",
-    "path": "/stories/generate",
     "tags": [
       "stories"
     ],

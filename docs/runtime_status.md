@@ -20,7 +20,7 @@ This file maps `docs/architecture.md` sections to current implementation status.
   - runtime has been decomposed into initializer / step_engine / stance / pressure / ui modules with `RuntimeService` as a thin facade
   - `runtime/session_step/*` package is fully removed; `application/session_step/*` is the only source of truth
 - LLM async call-chain hard cut:
-  - `LLMProvider`, `WorkerProvider`, `WorkerClient`, runtime router/narration/service, generator pipeline, prompt compiler, and quality judge are async end-to-end
+  - worker-backed `json_object`, runtime router/narration chains, author workflow, and quality judge are async end-to-end
   - LLM hot paths no longer use `asyncio.to_thread` bridges
 - Readiness shared-core refactor:
   - backend and worker readiness both reuse `rpg_backend/observability/readiness_core.py`
@@ -50,15 +50,14 @@ This file maps `docs/architecture.md` sections to current implementation status.
 - NPC stance visibility:
   - runtime tracks `npc_trust::<name>`
   - narration periodically emits stance updates (support/opposition/red-line pressure)
-- Prompt authoring strict pipeline:
-  - two-stage compile (`outline -> full spec`)
-  - max total 3 compile calls
-  - strict failure codes (`prompt_outline_invalid`, `prompt_spec_invalid`)
+- Author workflow pipeline:
+  - `/author/runs` drives `RawBrief -> StoryOverview -> BeatDraft(loop) -> StoryPack`
+  - beat generation uses `BeatDraftLLM -> normalize -> BeatDraft` with local lint + final lint
+  - backend uses worker-backed JSON generation via `JsonGateway`
 - Session idempotency by `client_action_id` replay.
 - Story draft/publish/get APIs.
 - Session create/get/step APIs.
 - Sample story pack and canary tests.
-- Deterministic story generator (`/stories/generate`) with lint + bounded regenerate attempts.
 - Eval diagnostics extended (non-hard-gate diagnostics):
   - `global_help_route_rate`
   - `non_global_text_route_rate`

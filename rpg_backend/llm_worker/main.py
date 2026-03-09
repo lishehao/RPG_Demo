@@ -7,6 +7,7 @@ import json
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.responses import JSONResponse
 from rpg_backend.api.errors import ApiError, register_error_handlers
+from rpg_backend.application.readiness.service import persist_readiness_probe
 from rpg_backend.config.settings import get_settings
 from rpg_backend.llm.worker_client import close_worker_client_cache
 from rpg_backend.llm_worker.dispatcher import WorkerDispatcher, WorkerQueueConfig
@@ -15,17 +16,11 @@ from rpg_backend.llm_worker.route_paths import (
     WORKER_HEALTH_PATH,
     WORKER_JSON_OBJECT_TASK_PATH,
     WORKER_READY_PATH,
-    WORKER_RENDER_NARRATION_TASK_PATH,
-    WORKER_ROUTE_INTENT_TASK_PATH,
 )
 from rpg_backend.llm_worker.schemas import (
     WorkerReadyResponse,
     WorkerTaskJsonObjectRequest,
     WorkerTaskJsonObjectResponse,
-    WorkerTaskNarrationRequest,
-    WorkerTaskNarrationResponse,
-    WorkerTaskRouteIntentRequest,
-    WorkerTaskRouteIntentResponse,
 )
 from rpg_backend.llm_worker.services.quota_service import QuotaService
 from rpg_backend.llm_worker.services.readiness_service import WorkerReadinessService
@@ -34,7 +29,6 @@ from rpg_backend.observability.context import get_request_id
 from rpg_backend.observability.logging import configure_logging, log_event
 from rpg_backend.observability.middleware import RequestIdMiddleware
 from rpg_backend.security.bootstrap import assert_production_secret_requirements
-from rpg_backend.application.readiness.service import persist_readiness_probe
 from rpg_backend.storage.migrations import assert_schema_current
 
 task_service = WorkerTaskService()
@@ -74,14 +68,8 @@ async def lifespan(_: FastAPI):
     queue_config = WorkerQueueConfig(
         max_size=int(getattr(settings, "llm_worker_queue_max_size", 1024)),
         wait_timeout_seconds=float(getattr(settings, "llm_worker_queue_wait_timeout_seconds", 8.0)),
-        weights={
-            "route_intent": int((weights_payload or {}).get("route_intent", 5)),
-            "render_narration": int((weights_payload or {}).get("render_narration", 3)),
-            "json_object": int((weights_payload or {}).get("json_object", 2)),
-        },
+        weights={"json_object": int((weights_payload or {}).get("json_object", 1))},
         executor_concurrency=int(getattr(settings, "llm_worker_executor_concurrency", 16)),
-        token_est_route_output=int(getattr(settings, "llm_worker_token_est_route_output", 96)),
-        token_est_narration_output=int(getattr(settings, "llm_worker_token_est_narration_output", 192)),
         token_est_json_output=int(getattr(settings, "llm_worker_token_est_json_output", 256)),
     )
     dispatcher = WorkerDispatcher(
@@ -178,80 +166,6 @@ async def ready(request: Request, refresh: bool = Query(default=False)) -> Worke
         error_code=error_code,
     )
     return JSONResponse(status_code=503, content=report.model_dump(mode="json"))
-
-
-@app.post(WORKER_ROUTE_INTENT_TASK_PATH, response_model=WorkerTaskRouteIntentResponse)
-async def route_intent_task(
-    payload: WorkerTaskRouteIntentRequest,
-    request: Request,
-    _: None = Depends(_require_worker_internal_token),
-) -> WorkerTaskRouteIntentResponse | JSONResponse:
-    request_id = getattr(request.state, "request_id", None) or get_request_id()
-    try:
-        assert dispatcher is not None
-        result = await dispatcher.submit_route_intent(payload=payload, request_id=request_id)
-    except WorkerTaskError as exc:
-        log_event(
-            "llm_worker_task_failed",
-            level="ERROR",
-            request_id=request_id,
-            llm_task="route_intent",
-            model=payload.model,
-            error_code=exc.error_code,
-            retryable=exc.retryable,
-            provider_status=exc.provider_status,
-            attempts=exc.attempts,
-        )
-        return _task_error_response(exc)
-
-    log_event(
-        "llm_worker_task_succeeded",
-        level="INFO",
-        request_id=request_id,
-        llm_task="route_intent",
-        model=result.model,
-        attempts=result.attempts,
-        retry_count=result.retry_count,
-        duration_ms=result.duration_ms,
-    )
-    return result
-
-
-@app.post(WORKER_RENDER_NARRATION_TASK_PATH, response_model=WorkerTaskNarrationResponse)
-async def render_narration_task(
-    payload: WorkerTaskNarrationRequest,
-    request: Request,
-    _: None = Depends(_require_worker_internal_token),
-) -> WorkerTaskNarrationResponse | JSONResponse:
-    request_id = getattr(request.state, "request_id", None) or get_request_id()
-    try:
-        assert dispatcher is not None
-        result = await dispatcher.submit_render_narration(payload=payload, request_id=request_id)
-    except WorkerTaskError as exc:
-        log_event(
-            "llm_worker_task_failed",
-            level="ERROR",
-            request_id=request_id,
-            llm_task="render_narration",
-            model=payload.model,
-            error_code=exc.error_code,
-            retryable=exc.retryable,
-            provider_status=exc.provider_status,
-            attempts=exc.attempts,
-        )
-        return _task_error_response(exc)
-
-    log_event(
-        "llm_worker_task_succeeded",
-        level="INFO",
-        request_id=request_id,
-        llm_task="render_narration",
-        model=result.model,
-        attempts=result.attempts,
-        retry_count=result.retry_count,
-        duration_ms=result.duration_ms,
-    )
-    return result
 
 
 @app.post(WORKER_JSON_OBJECT_TASK_PATH, response_model=WorkerTaskJsonObjectResponse)

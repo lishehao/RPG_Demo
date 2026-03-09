@@ -8,14 +8,7 @@ import pytest
 from rpg_backend.llm.task_executor import TaskUsage
 from rpg_backend.llm_worker.dispatcher import WorkerDispatcher, WorkerQueueConfig
 from rpg_backend.llm_worker.errors import WorkerTaskError
-from rpg_backend.llm_worker.schemas import (
-    WorkerTaskJsonObjectRequest,
-    WorkerTaskJsonObjectResponse,
-    WorkerTaskNarrationRequest,
-    WorkerTaskNarrationResponse,
-    WorkerTaskRouteIntentRequest,
-    WorkerTaskRouteIntentResponse,
-)
+from rpg_backend.llm_worker.schemas import WorkerTaskJsonObjectRequest, WorkerTaskJsonObjectResponse
 
 
 class _FakeQuotaService:
@@ -55,37 +48,10 @@ class _FakeQuotaService:
 
 
 class _FakeService:
-    async def execute_route_intent_task(self, payload: WorkerTaskRouteIntentRequest):  # noqa: ANN201
-        return (
-            WorkerTaskRouteIntentResponse(
-                move_id="global.help_me_progress",
-                args={},
-                confidence=0.8,
-                interpreted_intent=payload.text or "help",
-                model=payload.model,
-                attempts=1,
-                retry_count=0,
-                duration_ms=5,
-            ),
-            TaskUsage(total_tokens=21),
-        )
-
-    async def execute_render_narration_task(self, payload: WorkerTaskNarrationRequest):  # noqa: ANN201
-        return (
-            WorkerTaskNarrationResponse(
-                narration_text="narration",
-                model=payload.model,
-                attempts=1,
-                retry_count=0,
-                duration_ms=6,
-            ),
-            TaskUsage(total_tokens=33),
-        )
-
     async def execute_json_object_task(self, payload: WorkerTaskJsonObjectRequest):  # noqa: ANN201
         return (
             WorkerTaskJsonObjectResponse(
-                payload={"ok": True},
+                payload={"ok": True, "echo": payload.user_prompt},
                 model=payload.model,
                 attempts=1,
                 retry_count=0,
@@ -102,17 +68,26 @@ class _ConcurrencyTrackingService(_FakeService):
         self.max_active_count = 0
         self._lock = asyncio.Lock()
 
-    async def execute_route_intent_task(self, payload: WorkerTaskRouteIntentRequest):  # noqa: ANN201
+    async def execute_json_object_task(self, payload: WorkerTaskJsonObjectRequest):  # noqa: ANN201
         async with self._lock:
             self._active_count += 1
             if self._active_count > self.max_active_count:
                 self.max_active_count = self._active_count
         try:
             await asyncio.sleep(self._sleep_seconds)
-            return await super().execute_route_intent_task(payload)
+            return await super().execute_json_object_task(payload)
         finally:
             async with self._lock:
                 self._active_count -= 1
+
+
+class _SlowJsonService(_FakeService):
+    def __init__(self, *, sleep_seconds: float = 0.12) -> None:
+        self._sleep_seconds = float(sleep_seconds)
+
+    async def execute_json_object_task(self, payload: WorkerTaskJsonObjectRequest):  # noqa: ANN201
+        await asyncio.sleep(self._sleep_seconds)
+        return await super().execute_json_object_task(payload)
 
 
 def _config(
@@ -124,11 +99,20 @@ def _config(
     return WorkerQueueConfig(
         max_size=max_size,
         wait_timeout_seconds=wait_timeout_seconds,
-        weights={"route_intent": 5, "render_narration": 3, "json_object": 2},
+        weights={"json_object": 1},
         executor_concurrency=executor_concurrency,
-        token_est_route_output=96,
-        token_est_narration_output=192,
         token_est_json_output=256,
+    )
+
+
+def _json_payload(timeout_seconds: float = 0.05) -> WorkerTaskJsonObjectRequest:
+    return WorkerTaskJsonObjectRequest(
+        system_prompt="return json",
+        user_prompt='{"ok": true}',
+        model="model-a",
+        temperature=0.1,
+        max_retries=1,
+        timeout_seconds=timeout_seconds,
     )
 
 
@@ -138,21 +122,14 @@ def test_dispatcher_queue_full_when_capacity_exceeded() -> None:
         quota_service=_FakeQuotaService(allow=True),
         config=_config(max_size=1, wait_timeout_seconds=0.05),
     )
-    payload = WorkerTaskRouteIntentRequest(
-        scene_context={"moves": [], "fallback_move": "global.help_me_progress"},
-        text="help",
-        model="m",
-        temperature=0.1,
-        max_retries=1,
-        timeout_seconds=0.05,
-    )
+    payload = _json_payload(0.05)
 
     async def _run() -> None:
-        first_task = asyncio.create_task(dispatcher.submit_route_intent(payload=payload, request_id="r1"))
+        first_task = asyncio.create_task(dispatcher.submit_json_object(payload=payload, request_id="r1"))
         await asyncio.sleep(0)
 
         with pytest.raises(WorkerTaskError) as exc_info:
-            await dispatcher.submit_route_intent(payload=payload, request_id="r2")
+            await dispatcher.submit_json_object(payload=payload, request_id="r2")
         assert exc_info.value.error_code == "worker_queue_full"
 
         with pytest.raises(WorkerTaskError):
@@ -171,16 +148,9 @@ def test_dispatcher_rate_limited_when_reservation_denied() -> None:
     async def _run() -> None:
         await dispatcher.start()
         try:
-            payload = WorkerTaskRouteIntentRequest(
-                scene_context={"moves": [], "fallback_move": "global.help_me_progress"},
-                text="help",
-                model="m",
-                temperature=0.1,
-                max_retries=1,
-                timeout_seconds=0.05,
-            )
+            payload = _json_payload(0.05)
             with pytest.raises(WorkerTaskError) as exc_info:
-                await dispatcher.submit_route_intent(payload=payload, request_id="r3")
+                await dispatcher.submit_json_object(payload=payload, request_id="r3")
             assert exc_info.value.error_code in {"worker_rate_limited", "worker_queue_timeout"}
         finally:
             await dispatcher.stop()
@@ -199,16 +169,8 @@ def test_dispatcher_reconciles_actual_usage_on_success() -> None:
     async def _run() -> None:
         await dispatcher.start()
         try:
-            payload = WorkerTaskJsonObjectRequest(
-                system_prompt="return json",
-                user_prompt='{"ok": true}',
-                model="model-a",
-                temperature=0.1,
-                max_retries=1,
-                timeout_seconds=0.2,
-            )
-            result = await dispatcher.submit_json_object(payload=payload, request_id="rq-json")
-            assert result.payload == {"ok": True}
+            result = await dispatcher.submit_json_object(payload=_json_payload(0.2), request_id="rq-json")
+            assert result.payload["ok"] is True
             assert quota.reconcile_calls
             call = quota.reconcile_calls[0]
             assert call["model"] == "model-a"
@@ -231,21 +193,32 @@ def test_dispatcher_limits_max_inflight_to_executor_concurrency() -> None:
     async def _run() -> None:
         await dispatcher.start()
         try:
-            payload = WorkerTaskRouteIntentRequest(
-                scene_context={"moves": [], "fallback_move": "global.help_me_progress"},
-                text="help",
-                model="m",
-                temperature=0.1,
-                max_retries=1,
-                timeout_seconds=1.0,
-            )
+            payload = _json_payload(1.0)
             tasks = [
-                asyncio.create_task(dispatcher.submit_route_intent(payload=payload, request_id=f"r-{index}"))
+                asyncio.create_task(dispatcher.submit_json_object(payload=payload, request_id=f"r-{index}"))
                 for index in range(6)
             ]
             results = await asyncio.gather(*tasks)
-            assert all(item.move_id == "global.help_me_progress" for item in results)
+            assert all(item.payload["ok"] is True for item in results)
             assert service.max_active_count <= 2
+        finally:
+            await dispatcher.stop()
+
+    asyncio.run(_run())
+
+
+def test_dispatcher_allows_execution_longer_than_queue_wait_once_started() -> None:
+    dispatcher = WorkerDispatcher(
+        service=_SlowJsonService(sleep_seconds=0.12),
+        quota_service=_FakeQuotaService(allow=True),
+        config=_config(max_size=4, wait_timeout_seconds=0.05, executor_concurrency=1),
+    )
+
+    async def _run() -> None:
+        await dispatcher.start()
+        try:
+            result = await dispatcher.submit_json_object(payload=_json_payload(0.5), request_id="rq-slow-json")
+            assert result.payload["ok"] is True
         finally:
             await dispatcher.stop()
 

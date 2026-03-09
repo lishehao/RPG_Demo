@@ -6,6 +6,9 @@ READY_PATH = "/ready"
 API_STORIES_PREFIX = "/stories"
 API_SESSIONS_PREFIX = "/sessions"
 API_ADMIN_PREFIX = "/admin"
+API_AUTHOR_PREFIX = "/author"
+API_AUTHOR_RUNS_PREFIX = "/author/runs"
+API_AUTHOR_STORIES_PREFIX = "/author/stories"
 API_ADMIN_AUTH_PREFIX = "/admin/auth"
 API_ADMIN_SESSIONS_PREFIX = "/admin/sessions"
 API_ADMIN_USERS_PREFIX = "/admin/users"
@@ -32,8 +35,29 @@ def story_draft_patch_path(story_id: str) -> str:
     return f"{API_STORIES_PREFIX}/{story_id}/draft"
 
 
-def stories_generate_path() -> str:
-    return f"{API_STORIES_PREFIX}/generate"
+
+def author_runs_path() -> str:
+    return API_AUTHOR_RUNS_PREFIX
+
+
+def author_run_path(run_id: str) -> str:
+    return f"{API_AUTHOR_RUNS_PREFIX}/{run_id}"
+
+
+def author_run_events_path(run_id: str) -> str:
+    return f"{API_AUTHOR_RUNS_PREFIX}/{run_id}/events"
+
+
+def author_stories_path() -> str:
+    return API_AUTHOR_STORIES_PREFIX
+
+
+def author_story_path(story_id: str) -> str:
+    return f"{API_AUTHOR_STORIES_PREFIX}/{story_id}"
+
+
+def author_story_runs_path(story_id: str) -> str:
+    return f"{API_AUTHOR_STORIES_PREFIX}/{story_id}/runs"
 
 
 def sessions_path() -> str:

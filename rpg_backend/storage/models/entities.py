@@ -19,6 +19,40 @@ class Story(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
 
 
+class AuthorRun(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
+    story_id: str = Field(index=True, foreign_key="story.id")
+    status: str = Field(index=True)
+    current_node: str | None = Field(default=None, index=True)
+    raw_brief: str = Field(default="", nullable=False)
+    error_code: str | None = Field(default=None, index=True)
+    error_message: str | None = None
+    created_at: datetime = Field(default_factory=utc_now, index=True, nullable=False)
+    updated_at: datetime = Field(default_factory=utc_now, index=True, nullable=False)
+    completed_at: datetime | None = Field(default=None, index=True)
+
+
+class AuthorRunEvent(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
+    run_id: str = Field(index=True, foreign_key="authorrun.id")
+    node_name: str = Field(index=True)
+    event_type: str = Field(index=True)
+    payload_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(default_factory=utc_now, index=True, nullable=False)
+
+
+class AuthorRunArtifact(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("run_id", "artifact_type", "artifact_key", name="uq_author_run_artifact"),)
+
+    id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
+    run_id: str = Field(index=True, foreign_key="authorrun.id")
+    artifact_type: str = Field(index=True)
+    artifact_key: str = Field(default="", index=True)
+    payload_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(default_factory=utc_now, nullable=False)
+    updated_at: datetime = Field(default_factory=utc_now, index=True, nullable=False)
+
+
 class StoryVersion(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("story_id", "version", name="uq_story_version"),)
 

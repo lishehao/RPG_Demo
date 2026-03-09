@@ -14,20 +14,6 @@ class CreateStoryCommand:
 
 
 @dataclass(frozen=True)
-class GenerateStoryCommand:
-    seed_text: str | None
-    prompt_text: str | None
-    target_minutes: int
-    npc_count: int
-    style: str | None
-    variant_seed: str | int | None
-    candidate_parallelism: int | None
-    generator_version: str | None
-    palette_policy: str
-    publish: bool
-
-
-@dataclass(frozen=True)
 class StoryCreateView:
     story_id: str
     status: str
@@ -58,23 +44,11 @@ class StoryGetView:
     pack: dict[str, Any]
 
 
-@dataclass(frozen=True)
-class StoryGenerateView:
-    status: str
-    story_id: str
-    version: int | None
-    pack: dict[str, Any]
-    pack_hash: str
-    generation: dict[str, Any]
-
-
 __all__ = [
     "CreateStoryCommand",
     "DraftPatchChange",
-    "GenerateStoryCommand",
     "StoryCreateView",
     "StoryDraftView",
-    "StoryGenerateView",
     "StoryGetView",
     "StoryPublishView",
     "StorySummaryView",

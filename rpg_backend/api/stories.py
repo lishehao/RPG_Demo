@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.api.contracts.stories import (
@@ -9,8 +9,6 @@ from rpg_backend.api.contracts.stories import (
     StoryDraftGetResponse,
     StoryDraftPatchChange,
     StoryDraftPatchRequest,
-    StoryGenerateRequest,
-    StoryGenerateResponse,
     StoryGetResponse,
     StoryListItem,
     StoryListResponse,
@@ -19,10 +17,9 @@ from rpg_backend.api.contracts.stories import (
 from rpg_backend.api.error_mapping import api_error_from_application_error
 from rpg_backend.api.route_paths import API_STORIES_PREFIX
 from rpg_backend.application.errors import ApplicationError
-from rpg_backend.application.story_authoring.models import CreateStoryCommand, GenerateStoryCommand
+from rpg_backend.application.story_authoring.models import CreateStoryCommand
 from rpg_backend.application.story_authoring.service import (
     create_story_draft,
-    generate_story,
     get_story_draft_view,
     get_story_version_view,
     list_story_summaries,
@@ -30,9 +27,7 @@ from rpg_backend.application.story_authoring.service import (
     publish_story,
 )
 from rpg_backend.application.story_draft import DraftPatchChange
-from rpg_backend.generator.pipeline import GeneratorPipeline
 from rpg_backend.infrastructure.db.async_session import get_async_session
-from rpg_backend.observability.context import get_request_id
 from rpg_backend.security.deps import require_current_user
 
 router = APIRouter(
@@ -140,44 +135,6 @@ async def publish_story_endpoint(
     except ApplicationError as exc:
         raise api_error_from_application_error(exc) from exc
     return StoryPublishResponse(story_id=view.story_id, version=view.version, published_at=view.published_at)
-
-
-@router.post("/generate", response_model=StoryGenerateResponse)
-async def generate_story_endpoint(
-    payload: StoryGenerateRequest,
-    request: Request,
-    db: AsyncSession = Depends(get_async_session),
-) -> StoryGenerateResponse:
-    request_id = getattr(request.state, "request_id", None) or get_request_id()
-    command = GenerateStoryCommand(
-        seed_text=payload.seed_text,
-        prompt_text=payload.prompt_text,
-        target_minutes=payload.target_minutes,
-        npc_count=payload.npc_count,
-        style=payload.style,
-        variant_seed=payload.variant_seed,
-        candidate_parallelism=payload.candidate_parallelism,
-        generator_version=payload.generator_version,
-        palette_policy=payload.palette_policy,
-        publish=payload.publish,
-    )
-    try:
-        view = await generate_story(
-            db=db,
-            command=command,
-            request_id=request_id,
-            pipeline_factory=GeneratorPipeline,
-        )
-    except ApplicationError as exc:
-        raise api_error_from_application_error(exc) from exc
-    return StoryGenerateResponse(
-        status=view.status,
-        story_id=view.story_id,
-        version=view.version,
-        pack=view.pack,
-        pack_hash=view.pack_hash,
-        generation=view.generation,
-    )
 
 
 @router.get("/{story_id}", response_model=StoryGetResponse)

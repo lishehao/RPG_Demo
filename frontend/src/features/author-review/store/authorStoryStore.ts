@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import type { StoryDraftResponse, StorySummary } from '@/shared/api/types';
+import type { AuthorStoryGetResponse, AuthorStoryListItem } from '@/shared/api/types';
 
 type AuthorStoryState = {
-  stories: StorySummary[];
-  currentStory: StoryDraftResponse | null;
-  setStories: (stories: StorySummary[]) => void;
-  setCurrentStory: (story: StoryDraftResponse | null) => void;
+  stories: AuthorStoryListItem[];
+  currentStory: AuthorStoryGetResponse | null;
+  setStories: (stories: AuthorStoryListItem[]) => void;
+  setCurrentStory: (story: AuthorStoryGetResponse | null) => void;
   reset: () => void;
 };
 

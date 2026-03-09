@@ -1,5 +1,8 @@
 from rpg_backend.storage.models.entities import (
     AdminUser,
+    AuthorRun,
+    AuthorRunArtifact,
+    AuthorRunEvent,
     HttpRequestEvent,
     LLMCallEvent,
     LLMQuotaWindow,
@@ -15,6 +18,9 @@ from rpg_backend.storage.models.entities import (
 
 __all__ = [
     "AdminUser",
+    "AuthorRun",
+    "AuthorRunArtifact",
+    "AuthorRunEvent",
     "Story",
     "StoryVersion",
     "Session",

@@ -22,13 +22,15 @@ This suite validates the real DB-backed RPG product from multiple angles:
 
 Per game:
 
-1. generate draft through real `/stories/generate`
-2. fetch draft detail through `/stories/{story_id}/draft`
-3. publish to `/stories/{story_id}/publish`
+1. create author run through real `/author/runs`
+2. poll `/author/runs/{run_id}` until `review_ready`
+3. fetch draft detail through `/stories/{story_id}/draft`
+4. publish to `/stories/{story_id}/publish`
 4. run an API-level author->play smoke chain
 5. run multiple simulated playthrough strategies
 6. compute branch / scene / terminal coverage
 7. run `StoryQualityJudge` on generated transcripts
+8. browser layer runs a long Author+Play smoke with multi-step session play and reload recovery checks
 
 Default suite size:
 
@@ -39,7 +41,7 @@ Default suite size:
 ## Output layout
 
 - `reports/author_play_release/summary.json`
-- `reports/author_play_release/browser_report.json`
+- `reports/author_play_release/browser_report.json` (includes author run state, publish state, long-session telemetry, reload checks, screenshots)
 - `reports/author_play_release/screenshots/`
 - `reports/author_play_stability/summary.json`
 - `reports/author_play_stability/per_game/<case_id>/generated_response.json`

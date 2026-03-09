@@ -2,6 +2,11 @@ import { apiClient } from '@/shared/api/client';
 import type {
   AdminLoginRequest,
   AdminLoginResponse,
+  AuthorRunCreateRequest,
+  AuthorRunCreateResponse,
+  AuthorRunGetResponse,
+  AuthorStoryGetResponse,
+  AuthorStoryListResponse,
   SessionCreateRequest,
   SessionCreateResponse,
   SessionHistoryResponse,
@@ -10,8 +15,6 @@ import type {
   SessionStepResponse,
   StoryDraftPatchRequest,
   StoryDraftResponse,
-  StoryGenerateRequest,
-  StoryGenerateResponse,
   StoryListResponse,
   StoryPublishResponse,
 } from '@/shared/api/types';
@@ -20,9 +23,13 @@ export const apiService = {
   login: (payload: AdminLoginRequest) =>
     apiClient.post<AdminLoginResponse>('/admin/auth/login', payload, { skipAuth: true }),
   listStories: () => apiClient.get<StoryListResponse>('/stories'),
+  listAuthorStories: () => apiClient.get<AuthorStoryListResponse>('/author/stories'),
+  getAuthorStory: (storyId: string) => apiClient.get<AuthorStoryGetResponse>(`/author/stories/${storyId}`),
+  createAuthorRun: (payload: AuthorRunCreateRequest) => apiClient.post<AuthorRunCreateResponse>('/author/runs', payload),
+  getAuthorRun: (runId: string) => apiClient.get<AuthorRunGetResponse>(`/author/runs/${runId}`),
+  rerunAuthorStory: (storyId: string, payload: AuthorRunCreateRequest) => apiClient.post<AuthorRunCreateResponse>(`/author/stories/${storyId}/runs`, payload),
   getStoryDraft: (storyId: string) => apiClient.get<StoryDraftResponse>(`/stories/${storyId}/draft`),
   patchStoryDraft: (storyId: string, payload: StoryDraftPatchRequest) => apiClient.patch<StoryDraftResponse>(`/stories/${storyId}/draft`, payload),
-  generateStory: (payload: StoryGenerateRequest) => apiClient.post<StoryGenerateResponse>('/stories/generate', payload),
   publishStory: (storyId: string) => apiClient.post<StoryPublishResponse>(`/stories/${storyId}/publish`, {}),
   createSession: (payload: SessionCreateRequest) => apiClient.post<SessionCreateResponse>('/sessions', payload),
   getSession: (sessionId: string, devMode = false) =>

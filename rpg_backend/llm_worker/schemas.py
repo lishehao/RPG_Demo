@@ -15,51 +15,6 @@ class WorkerTaskErrorPayload(BaseModel):
     attempts: int = Field(default=1, ge=1)
 
 
-class WorkerTaskRouteIntentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    scene_context: dict[str, Any] = Field(default_factory=dict)
-    text: str = ""
-    model: str = Field(min_length=1)
-    temperature: float = Field(default=0.1, ge=0.0, le=2.0)
-    max_retries: int = Field(default=3, ge=1, le=3)
-    timeout_seconds: float | None = Field(default=None, gt=0)
-
-
-class WorkerTaskRouteIntentResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    move_id: str
-    args: dict[str, Any] = Field(default_factory=dict)
-    confidence: float = Field(ge=0.0, le=1.0)
-    interpreted_intent: str
-    model: str
-    attempts: int = Field(ge=1, le=3)
-    retry_count: int = Field(ge=0, le=2)
-    duration_ms: int = Field(ge=0)
-
-
-class WorkerTaskNarrationRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    slots: dict[str, Any] = Field(default_factory=dict)
-    style_guard: str = ""
-    model: str = Field(min_length=1)
-    temperature: float = Field(default=0.4, ge=0.0, le=2.0)
-    max_retries: int = Field(default=1, ge=1, le=3)
-    timeout_seconds: float | None = Field(default=None, gt=0)
-
-
-class WorkerTaskNarrationResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    narration_text: str
-    model: str
-    attempts: int = Field(ge=1, le=3)
-    retry_count: int = Field(ge=0, le=2)
-    duration_ms: int = Field(ge=0)
-
-
 class WorkerTaskJsonObjectRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

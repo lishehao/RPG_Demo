@@ -141,7 +141,7 @@ Response:
 
 ### Generate draft with LLM
 
-`POST /stories/generate`
+`POST /author/runs`
 
 Request:
 

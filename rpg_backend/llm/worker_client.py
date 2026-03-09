@@ -11,8 +11,6 @@ from rpg_backend.config.settings import get_settings
 from rpg_backend.llm_worker.route_paths import (
     WORKER_JSON_OBJECT_TASK_PATH,
     WORKER_READY_PATH,
-    WORKER_RENDER_NARRATION_TASK_PATH,
-    WORKER_ROUTE_INTENT_TASK_PATH,
 )
 
 
@@ -175,52 +173,6 @@ class WorkerClient:
                 retryable=True,
             )
         return data
-
-    async def route_intent(
-        self,
-        *,
-        scene_context: dict[str, Any],
-        text: str,
-        model: str,
-        temperature: float,
-        max_retries: int,
-        timeout_seconds: float,
-    ) -> dict[str, Any]:
-        return await self._post_json(
-            path=WORKER_ROUTE_INTENT_TASK_PATH,
-            payload={
-                'scene_context': scene_context,
-                'text': text or '',
-                'model': model,
-                'temperature': temperature,
-                'max_retries': max_retries,
-                'timeout_seconds': timeout_seconds,
-            },
-            timeout_seconds=timeout_seconds,
-        )
-
-    async def render_narration(
-        self,
-        *,
-        slots: dict[str, Any],
-        style_guard: str,
-        model: str,
-        temperature: float,
-        max_retries: int,
-        timeout_seconds: float,
-    ) -> dict[str, Any]:
-        return await self._post_json(
-            path=WORKER_RENDER_NARRATION_TASK_PATH,
-            payload={
-                'slots': slots,
-                'style_guard': style_guard,
-                'model': model,
-                'temperature': temperature,
-                'max_retries': max_retries,
-                'timeout_seconds': timeout_seconds,
-            },
-            timeout_seconds=timeout_seconds,
-        )
 
     async def json_object(
         self,
