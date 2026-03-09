@@ -169,7 +169,7 @@ export function PlaySessionPage() {
           <Panel
             eyebrow="Play Runtime"
             title={sessionMeta ? `Session ${sessionMeta.session_id.slice(0, 8)}` : 'Loading session'}
-            subtitle="History remains fully available, but mobile now defaults to the live control surface so you can act without scrolling past the transcript."
+            subtitle="History stays available while the live control surface remains the primary interaction area."
             className="min-h-[48vh] xl:min-h-[72vh]"
           >
             <ErrorBanner error={error} context={errorContext} />
@@ -266,10 +266,19 @@ export function PlaySessionPage() {
               ) : latestTurn ? (
                 <div className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,248,229,0.05)] p-4">
                   <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Current Turn State</div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Pill tone="neutral">Scene {latestTurn.scene_id}</Pill>
-                    <Pill tone={latestTurn.ended ? 'neutral' : 'success'}>{latestTurn.resolution.result}</Pill>
-                    <Pill tone="neutral">{latestTurn.recognized.route_source}</Pill>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-[18px] border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-3 py-3">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-dim)]">Scene</div>
+                      <div className="mt-2 break-all text-sm text-[var(--text-ivory)]">{latestTurn.scene_id}</div>
+                    </div>
+                    <div className="rounded-[18px] border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-3 py-3">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-dim)]">Result</div>
+                      <div className="mt-2 text-sm text-[var(--text-ivory)]">{latestTurn.resolution.result}</div>
+                    </div>
+                    <div className="rounded-[18px] border border-[var(--line)] bg-[rgba(255,248,229,0.04)] px-3 py-3">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-dim)]">Route</div>
+                      <div className="mt-2 text-sm text-[var(--text-ivory)]">{latestTurn.recognized.route_source}</div>
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -286,8 +295,8 @@ export function PlaySessionPage() {
                   }}
                   hint={
                     history.length === 0
-                      ? (openingGuidance?.goal_hint || 'Use the opening guidance to decide your first move, then describe it in your own words.')
-                      : (latestTurn?.ui.input_hint ?? 'Free input is the fastest way to steer the story, ask for nuance, or try tactics outside the recommended list.')
+                      ? (openingGuidance?.goal_hint || 'Use the opening guidance to choose your first move.')
+                      : (latestTurn?.ui.input_hint ?? 'Free input is the main control surface; suggested moves are optional shortcuts.')
                   }
                 />
                 <div className="flex flex-wrap gap-3">
@@ -307,8 +316,8 @@ export function PlaySessionPage() {
                       <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Suggested Moves</div>
                       <p className="mt-2 text-sm leading-7 text-[var(--text-mist)]">
                         {hiddenActionCount > 0
-                          ? `Showing ${recommendedMoves.length} suggested moves. ${hiddenActionCount} additional surfaced actions are intentionally hidden so free input stays primary.`
-                          : 'Only the top suggested moves are shown here. Use free input for everything else.'}
+                          ? `Showing ${recommendedMoves.length} suggested moves. ${hiddenActionCount} more actions stay hidden so free input remains primary.`
+                          : 'Top suggested moves only. Use free input for anything outside this shortlist.'}
                       </p>
                     </div>
                   </div>

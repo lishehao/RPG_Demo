@@ -56,7 +56,7 @@ export function PlayLibraryPage() {
     <Panel
       eyebrow="Play Entry"
       title="Published story library"
-      subtitle="Play mode only consumes published versions. Author drafts stay on the other rail until they are released."
+      subtitle="Launch sessions only from published story versions. Author detail remains linked for quick cross-checks."
     >
       <div className="mb-5 flex flex-wrap gap-2">
         <Pill tone="success">{publishedCount.toString().padStart(2, '0')} published</Pill>
@@ -83,7 +83,13 @@ export function PlayLibraryPage() {
                 <Pill tone="neutral">Updated {story.latest_published_at ? formatDateTime(story.latest_published_at) : 'unknown'}</Pill>
               </div>
               <h3 className="mt-4 break-words font-[var(--font-title)] text-2xl tracking-[0.06em] text-[var(--text-ivory)]">{story.title}</h3>
-              <p className="mt-3 break-all text-sm leading-6 text-[var(--text-dim)]">{story.story_id}</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)]">Story ID</div>
+                  <p className="mt-2 break-all text-sm leading-6 text-[var(--text-dim)]">{story.story_id}</p>
+                </div>
+                <div className="text-sm text-[var(--text-dim)]">Ready for session launch</div>
+              </div>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Button
                   onClick={() => void handleCreateSession(story.story_id, story.latest_published_version!)}
