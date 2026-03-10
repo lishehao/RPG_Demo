@@ -1,9 +1,16 @@
+import os
 from collections.abc import Generator
 import asyncio
 import sys
 from pathlib import Path
 
 import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+TEST_DB_DIR = REPO_ROOT / 'output' / 'test_runtime'
+TEST_DB_PATH = TEST_DB_DIR / 'pytest_app.db'
+TEST_DB_DIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault('APP_DATABASE_URL', f'sqlite:///{TEST_DB_PATH}')
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from fastapi.testclient import TestClient
