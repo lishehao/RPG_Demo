@@ -32,7 +32,7 @@ export function storyIndexSummary(story: { latest_run_status: string | null; lat
   if (story.latest_run_status === 'pending' || story.latest_run_status === 'running') {
     return `Author workflow still running${story.latest_run_current_node ? ` at ${story.latest_run_current_node}` : ''}.`;
   }
-  return 'Draft shell exists, but no completed author run is attached yet.';
+  return 'No completed author run is attached yet. Start or rerun the workflow before review.';
 }
 
 export function authorStoryCardClasses(status: AuthorRunStatus | string | null | undefined) {

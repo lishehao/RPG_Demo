@@ -185,7 +185,7 @@ export function AuthorStoriesPage() {
                     ) : story.latest_run_status === 'review_ready' ? (
                       <Pill tone="medium">Unpublished</Pill>
                     ) : (
-                      <Pill tone="neutral">Draft shell</Pill>
+                      <Pill tone="neutral">No completed run</Pill>
                     )}
                   </div>
                 </div>
