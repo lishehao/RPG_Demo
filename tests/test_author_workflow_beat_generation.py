@@ -188,6 +188,33 @@ def test_outcome_builder_matches_shared_palette_logic() -> None:
     assert built["narration_slots"]["cost_delta"]
 
 
+def test_beat_generation_chain_strips_legacy_outcome_fields_before_validate(monkeypatch: pytest.MonkeyPatch) -> None:
+    legacy_payload = _llm_draft().model_dump(mode="json")
+    legacy_payload["moves"][0]["outcomes"][0]["effects"] = [{"kind": "cost", "key": "resource_stress", "delta": 1}]
+    legacy_payload["moves"][0]["outcomes"][0]["preconditions"] = []
+    legacy_payload["moves"][0]["outcomes"][0]["narration_slots"] = {"commit": "x", "hook": "y"}
+
+    async def _fake_invoke_chain(self, *, system_prompt: str, user_payload: dict[str, object]):  # noqa: ANN001, ANN202
+        del system_prompt, user_payload
+        return type("R", (), {"payload": legacy_payload, "attempts": 1})()
+
+    monkeypatch.setattr(BeatGenerationChain, "_invoke_chain", _fake_invoke_chain)
+    chain = BeatGenerationChain()
+    draft = asyncio.run(
+        chain.compile(
+            story_id="story-1",
+            overview_context=project_overview_for_beat_generation(_overview()),
+            blueprint=_blueprint().model_dump(mode="json"),
+            last_accepted_beat=None,
+            prefix_summary=build_structured_prefix_summary([]),
+            lint_feedback=[],
+        )
+    )
+    assert draft.moves[0].outcomes[0].effects
+    assert chain.last_beat_draft_llm is not None
+
+
+
 def test_beat_generation_chain_retries_after_schema_feedback(monkeypatch: pytest.MonkeyPatch) -> None:
     responses = [
         {"payload": {"present_npcs": ["Mara"], "events_produced": [], "scenes": [], "moves": []}},

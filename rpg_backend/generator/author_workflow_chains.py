@@ -16,6 +16,57 @@ from rpg_backend.llm.factory import resolve_openai_generator_model
 from rpg_backend.llm.json_gateway import JsonGateway, JsonGatewayResult
 
 
+def _strip_legacy_beat_payload(payload: Any) -> Any:
+    if not isinstance(payload, dict):
+        return payload
+
+    cleaned: dict[str, Any] = {}
+
+    if isinstance(payload.get("present_npcs"), list):
+        cleaned["present_npcs"] = payload["present_npcs"]
+    if isinstance(payload.get("events_produced"), list):
+        cleaned["events_produced"] = payload["events_produced"]
+
+    scenes = payload.get("scenes")
+    if isinstance(scenes, list):
+        cleaned["scenes"] = [
+            {
+                key: scene.get(key)
+                for key in ("scene_seed", "present_npcs", "enabled_move_indexes", "is_terminal")
+                if key in scene
+            }
+            for scene in scenes
+            if isinstance(scene, dict)
+        ]
+
+    moves = payload.get("moves")
+    if isinstance(moves, list):
+        cleaned_moves: list[dict[str, Any]] = []
+        for move in moves:
+            if not isinstance(move, dict):
+                continue
+            cleaned_move = {
+                key: move.get(key)
+                for key in ("label", "strategy_style", "intents", "synonyms", "resolution_policy")
+                if key in move
+            }
+            outcomes = move.get("outcomes")
+            if isinstance(outcomes, list):
+                cleaned_move["outcomes"] = [
+                    {
+                        key: outcome.get(key)
+                        for key in ("result", "palette_id", "next_scene_index")
+                        if key in outcome
+                    }
+                    for outcome in outcomes
+                    if isinstance(outcome, dict)
+                ]
+            cleaned_moves.append(cleaned_move)
+        cleaned["moves"] = cleaned_moves
+
+    return cleaned
+
+
 class _JsonSchemaChain:
     def __init__(self) -> None:
         settings = get_settings()
@@ -193,6 +244,8 @@ class BeatGenerationChain(_JsonSchemaChain):
             "- next_scene_index must be a 0-based index into the scenes list when present.\n"
             "- every move must contain success and fail_forward outcomes.\n"
             "- every outcome must provide a palette_id matching its result.\n"
+            "- Do NOT output outcome preconditions, effects, narration_slots, or any other outcome fields beyond result, palette_id, and next_scene_index.\n"
+            "- Do NOT output scene ids, move ids, outcome ids, args_schema, or exit_conditions.\n"
             "- every non-global scene move set must cover the 3 strategy styles.\n"
             f"{palette_constraints}\n"
         )
@@ -224,7 +277,8 @@ class BeatGenerationChain(_JsonSchemaChain):
                     notes=["beat draft gateway execution failed"],
                 ) from exc
             try:
-                llm_draft = BeatDraftLLM.model_validate(result.payload)
+                cleaned_payload = _strip_legacy_beat_payload(result.payload)
+                llm_draft = BeatDraftLLM.model_validate(cleaned_payload)
                 self.last_beat_draft_llm = llm_draft
                 return normalize_beat_draft(
                     blueprint=blueprint if isinstance(blueprint, BeatBlueprint) else BeatBlueprint.model_validate(blueprint),
