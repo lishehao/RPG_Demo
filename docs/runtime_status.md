@@ -83,6 +83,7 @@ This file maps `docs/architecture.md` sections to current implementation status.
 - Database migration guard:
   - Alembic revision management is the source of truth for schema lifecycle
   - backend/worker startup fails when DB revision is not at Alembic head
+- local development defaults to PostgreSQL (`127.0.0.1:8132`), not SQLite
   - manual migration and rollback flow documented in `docs/db_migration_runbook.md`
 
 ## Planned

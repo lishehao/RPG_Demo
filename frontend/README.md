@@ -58,7 +58,7 @@ npm run dev
 npm run build
 ```
 
-The Vite server runs on `http://127.0.0.1:8173` and proxies `/api/*` to `http://127.0.0.1:8000`.
+The Vite server runs on `http://127.0.0.1:8173`, proxies `/api/*` to `http://127.0.0.1:8000`, and expects local PostgreSQL to be available on `127.0.0.1:8132` via `./scripts/dev_stack.sh up`.
 
 ## Manual Verification Path
 

@@ -32,10 +32,17 @@ def _alembic_script_location() -> Path:
     return _repo_root() / "alembic"
 
 
+def _normalize_database_url(value: str) -> str:
+    database_url = (value or "").strip()
+    if database_url.startswith("postgresql://"):
+        return database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return database_url
+
+
 def _get_database_url() -> str:
     from rpg_backend.config.settings import get_settings
 
-    return get_settings().database_url
+    return _normalize_database_url(get_settings().database_url)
 
 
 def get_alembic_config() -> Config:

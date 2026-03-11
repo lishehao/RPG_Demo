@@ -13,7 +13,7 @@ def test_aggregate_llm_call_health_excludes_legacy_local_gateway_mode() -> None:
         async with AsyncSession(async_engine, expire_on_commit=False) as db:
             await save_llm_call_event(
                 db,
-                session_id="s-local",
+                session_id=None,
                 turn_index=1,
                 stage="route",
                 gateway_mode="local",
@@ -25,7 +25,7 @@ def test_aggregate_llm_call_health_excludes_legacy_local_gateway_mode() -> None:
             )
             await save_llm_call_event(
                 db,
-                session_id="s-worker",
+                session_id=None,
                 turn_index=1,
                 stage="route",
                 gateway_mode="worker",
@@ -37,7 +37,7 @@ def test_aggregate_llm_call_health_excludes_legacy_local_gateway_mode() -> None:
             )
             await save_llm_call_event(
                 db,
-                session_id="s-unknown",
+                session_id=None,
                 turn_index=1,
                 stage="narration",
                 gateway_mode="unknown",
@@ -63,7 +63,7 @@ def test_aggregate_llm_call_health_local_filter_returns_empty_result() -> None:
         async with AsyncSession(async_engine, expire_on_commit=False) as db:
             await save_llm_call_event(
                 db,
-                session_id="s-local",
+                session_id=None,
                 turn_index=1,
                 stage="route",
                 gateway_mode="local",

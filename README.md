@@ -207,9 +207,9 @@ Useful commands:
 
 Notes:
 
-- `./scripts/dev_stack.sh up` runs DB migrations before starting services
-- local SQLite is supported for development
-- when manually recreating `app.db`, restart backend and worker so they reopen the current file handle
+- `./scripts/dev_stack.sh up` starts local PostgreSQL via Docker Compose, runs DB migrations, then starts services
+- local development now defaults to PostgreSQL on `127.0.0.1:8132`
+- `./scripts/dev_stack.sh resetdb` recreates local `rpg_dev` safely; no manual `app.db` workflow remains
 
 ---
 
@@ -295,6 +295,7 @@ python scripts/release/run_author_play_stability.py
 ### Manual health checks
 
 ```bash
+docker compose -f compose.yaml ps
 curl http://127.0.0.1:8000/ready
 curl http://127.0.0.1:8100/ready
 ```

@@ -29,6 +29,7 @@ kubectl apply -f deploy/k8s/rpg-observability-alerts-cronjob.yaml
 Important:
 - `APP_DATABASE_URL` is expected from secret (`deploy/k8s/rpg-backend-secret.example.yaml`), not configmap.
 - Backend/worker do not rely on local SQLite files in Kubernetes.
+- Local development defaults to Docker Compose PostgreSQL on `127.0.0.1:8132`.
 - Secret should include auth/runtime critical keys:
   - `APP_AUTH_JWT_SECRET`
   - `APP_ADMIN_BOOTSTRAP_EMAIL`

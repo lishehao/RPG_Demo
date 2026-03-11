@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "rpg-backend"
     app_env: str = "dev"
     debug: bool = False
-    database_url: str = "sqlite:///./app.db"
+    database_url: str = "postgresql://rpg_local:rpg_local@127.0.0.1:8132/rpg_dev"
     db_async_pool_size: int = Field(default=20, ge=1, le=500)
     db_async_max_overflow: int = Field(default=20, ge=0, le=1000)
     db_async_pool_timeout_seconds: float = Field(default=30.0, gt=0, le=300)

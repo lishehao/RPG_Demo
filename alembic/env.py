@@ -12,6 +12,13 @@ from rpg_backend.storage import models  # noqa: F401
 
 config = context.config
 
+
+def _normalize_database_url(value: str) -> str:
+    database_url = (value or "").strip()
+    if database_url.startswith("postgresql://"):
+        return database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return database_url
+
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
@@ -19,8 +26,8 @@ if config.config_file_name is not None:
 def _database_url() -> str:
     env_url = os.getenv("APP_DATABASE_URL")
     if env_url:
-        return env_url
-    return get_settings().database_url
+        return _normalize_database_url(env_url)
+    return _normalize_database_url(get_settings().database_url)
 
 
 config.set_main_option("sqlalchemy.url", _database_url())

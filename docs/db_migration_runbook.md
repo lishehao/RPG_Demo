@@ -13,6 +13,17 @@ This runbook defines the manual migration workflow for backend/worker services.
 - Current deploy image contains the latest Alembic files.
 - You can run repository scripts from the deploy environment.
 
+## Local development
+
+For local development, the default database is PostgreSQL via `compose.yaml` on `127.0.0.1:8132` (`rpg_dev` for app runtime, `rpg_test` for pytest).
+
+Bring it up with:
+
+```bash
+docker compose up -d postgres
+python scripts/db_migrate.py upgrade head
+```
+
 ## Standard rollout flow
 
 1. Check current and target revision:
