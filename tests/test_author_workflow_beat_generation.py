@@ -125,10 +125,10 @@ def test_author_workflow_policy_defaults_are_converged() -> None:
 def test_story_overview_chain_makes_single_gateway_call_per_compile(monkeypatch: pytest.MonkeyPatch) -> None:
     invalid = _overview().model_dump(mode="json")
     invalid["npc_roster"][1]["conflict_tags"] = ["technical"]
-    calls = {"count": 0, "timeout_seconds": None, "user_payload": None}
+    calls = {"count": 0, "timeout_seconds": None, "user_payload": None, "system_prompt": None}
 
     async def _fake_invoke_chain(self, *, system_prompt: str, user_payload: dict[str, object], timeout_seconds: float | None = None):  # noqa: ANN001, ANN202
-        del system_prompt
+        calls["system_prompt"] = system_prompt
         calls["count"] += 1
         calls["timeout_seconds"] = timeout_seconds
         calls["user_payload"] = dict(user_payload)
@@ -142,6 +142,8 @@ def test_story_overview_chain_makes_single_gateway_call_per_compile(monkeypatch:
     assert calls["count"] == 1
     assert calls["timeout_seconds"] == 12.5
     assert "validation_feedback" not in calls["user_payload"]
+    assert "# Soft Goals" in calls["system_prompt"]
+    assert "recur across multiple beats" in calls["system_prompt"]
     assert chain.max_retries == 1
 
 
@@ -405,3 +407,6 @@ def test_beat_generation_chain_payload_uses_last_accepted_beat_and_structured_su
     assert "scene_plans" in payload["output_schema"]["properties"]
     assert "move_surfaces" in payload["output_schema"]["properties"]
     assert "prior_beats" not in payload
+    assert "# Soft Goals" in captured["system_prompt"]
+    assert "Prefer at least two active NPCs in the beat" in captured["system_prompt"]
+    assert "Reuse recent NPCs and unresolved threads from author_memory" in captured["system_prompt"]

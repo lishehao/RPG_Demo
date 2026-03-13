@@ -159,6 +159,10 @@ class StoryOverviewChain(_JsonSchemaChain):
             "- move_bias values must come from the move_bias enum only.\n"
             "- npc_roster[*].conflict_tags must use only the npc conflict tag enum values below.\n"
             "- npc conflict tags are NOT move_bias values. Never use social, technical, stealth, investigate, support, resource, conflict, or mobility in npc_roster[*].conflict_tags.\n\n"
+            "# Soft Goals\n"
+            "- Design a cast that can recur across multiple beats; prefer durable pressure relationships over disposable one-scene characters.\n"
+            "- Give every NPC a sharp enough role and red line that later deterministic materialization can keep them distinct without extra exposition.\n"
+            "- Write scene_constraints as playable pressure lenses, not decorative lore fragments.\n\n"
             "# NPC Conflict Tags\n"
             f"{catalog_markdown}\n\n"
             "# Raw Brief\n"
@@ -231,7 +235,12 @@ class BeatGenerationChain(_JsonSchemaChain):
             "- Each move_surfaces entry may only define label, intents, synonyms, and roleplay_examples. The backend will inject one executable move for each style deterministically.\n"
             "- roleplay_examples must be short first-person things a player might actually type, such as 'I cut the feeder and reroute it by hand.'\n"
             "- Labels must be concrete action choices a player would click. Bad labels: 'Fast Dirty Surface', 'Steady Slow Surface'. Good labels: 'Cut the feeder and reroute it', 'Stabilize the relay step by step'.\n"
-            "- Keep the beat compact but not brittle: usually 2 scenes, allow 1-3 when needed."
+            "- Keep the beat compact but not brittle: usually 2 scenes, allow 1-3 when needed.\n\n"
+            "# Soft Goals\n"
+            "- Prefer at least two active NPCs in the beat unless deliberate isolation is dramatically better.\n"
+            "- Reuse recent NPCs and unresolved threads from author_memory when that strengthens continuity.\n"
+            "- Make the three move surfaces feel genuinely distinct in risk, tempo, and political cost.\n"
+            "- Keep the beat lean enough for the blueprint step budget; avoid scene bloat."
         )
         payload = {
             "story_id": story_id,

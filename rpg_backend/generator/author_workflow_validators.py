@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from rpg_backend.domain.constants import GLOBAL_MOVE_IDS
 from rpg_backend.generator.author_workflow_models import (
     AuthorMemory,
     AuthorMemoryBeatSummary,
@@ -13,14 +12,6 @@ from rpg_backend.generator.author_workflow_models import (
     BeatPrefixSummary,
     StoryOverview,
 )
-
-
-_REQUIRED_STRATEGY_STYLES = {
-    "fast_dirty",
-    "steady_slow",
-    "political_safe_resource_heavy",
-}
-
 
 def check_story_overview(overview: StoryOverview) -> list[str]:
     errors: list[str] = []
@@ -116,7 +107,6 @@ def lint_beat_draft(
     prior_beats: list[BeatDraft],
 ) -> BeatLintReport:
     errors: list[str] = []
-    warnings: list[str] = []
     if draft.beat_id != blueprint.beat_id:
         errors.append("beat_id does not match blueprint")
     if draft.title.strip() != blueprint.title.strip():
@@ -133,8 +123,6 @@ def lint_beat_draft(
     allowed_npcs = {npc.name for npc in overview.npc_roster}
     if not set(draft.present_npcs).issubset(allowed_npcs):
         errors.append("beat uses NPCs outside overview npc_roster")
-    if len(set(draft.present_npcs)) < min(blueprint.npc_quota, len(allowed_npcs)):
-        warnings.append("beat present_npcs count is lower than npc_quota target")
 
     prior_scene_ids = {scene.id for beat in prior_beats for scene in beat.scenes}
     prior_move_ids = {move.id for beat in prior_beats for move in beat.moves}
@@ -158,14 +146,6 @@ def lint_beat_draft(
             errors.append(f"scene '{scene.id}' references missing local move ids")
         if any(npc not in allowed_npcs for npc in scene.present_npcs):
             errors.append(f"scene '{scene.id}' references unknown npc")
-        enabled_styles = {
-            move.strategy_style
-            for move in draft.moves
-            if move.id in scene.enabled_moves and move.id not in GLOBAL_MOVE_IDS
-        }
-        missing_styles = sorted(_REQUIRED_STRATEGY_STYLES - enabled_styles)
-        if missing_styles:
-            errors.append(f"scene '{scene.id}' missing strategy styles: {missing_styles}")
         for cond in scene.exit_conditions:
             if cond.next_scene_id and cond.next_scene_id not in scene_ids:
                 errors.append(f"scene '{scene.id}' exit points outside current beat")
@@ -181,4 +161,4 @@ def lint_beat_draft(
             if outcome.next_scene_id and outcome.next_scene_id not in scene_ids:
                 errors.append(f"move '{move.id}' outcome '{outcome.id}' points outside current beat")
 
-    return BeatLintReport(ok=not errors, errors=errors, warnings=warnings)
+    return BeatLintReport(ok=not errors, errors=errors, warnings=[])

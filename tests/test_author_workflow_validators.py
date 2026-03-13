@@ -121,7 +121,7 @@ def test_lint_beat_draft_rejects_missing_fail_forward() -> None:
     assert any("fail_forward" in err for err in report.errors)
 
 
-def test_lint_beat_draft_rejects_missing_strategy_styles() -> None:
+def test_lint_beat_draft_ignores_missing_strategy_styles_as_soft_constraint() -> None:
     overview = _overview()
     blueprint = plan_beat_blueprints_from_overview(overview)[0]
     draft = _valid_beat_draft(blueprint)
@@ -129,8 +129,9 @@ def test_lint_beat_draft_rejects_missing_strategy_styles() -> None:
 
     report = lint_beat_draft(overview=overview, blueprint=blueprint, draft=draft, prior_beats=[])
 
-    assert report.ok is False
-    assert any("missing strategy styles" in err for err in report.errors)
+    assert report.ok is True
+    assert report.errors == []
+    assert report.warnings == []
 
 
 def test_project_overview_for_beat_generation_trims_fields() -> None:
