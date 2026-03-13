@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from rpg_backend.domain.pack_schema import StoryPack
+from rpg_backend.runtime.compiled_pack import CompiledPlayRuntimePack
 
 
-def initialize_session_state(pack: StoryPack) -> tuple[str, int, dict[str, Any], dict[str, int]]:
-    first_beat = pack.beats[0]
-    beat_progress = {beat.id: 0 for beat in pack.beats}
+def initialize_session_state(compiled_pack: CompiledPlayRuntimePack) -> tuple[str, int, dict[str, Any], dict[str, int]]:
+    first_beat = compiled_pack.pack.beats[0]
+    beat_progress = {beat.id: 0 for beat in compiled_pack.pack.beats}
     state = {
         "events": [],
         "inventory": [],
@@ -21,6 +21,6 @@ def initialize_session_state(pack: StoryPack) -> tuple[str, int, dict[str, Any],
             "runtime_turn": 0,
         },
     }
-    for profile in pack.npc_profiles:
+    for profile in compiled_pack.pack.npc_profiles:
         state["values"][f"npc_trust::{profile.name}"] = 0
     return first_beat.entry_scene_id, 0, state, beat_progress

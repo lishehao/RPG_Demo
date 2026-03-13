@@ -4,6 +4,7 @@ from typing import Any
 
 from rpg_backend.domain.pack_schema import StoryPack
 from rpg_backend.llm.agents import PlayAgent
+from rpg_backend.runtime.compiled_pack import compile_play_runtime_pack
 from rpg_backend.runtime.initializer import initialize_session_state
 from rpg_backend.runtime.step_engine import process_runtime_step
 from rpg_backend.runtime.ui import list_ui_moves
@@ -12,41 +13,22 @@ from rpg_backend.runtime.ui import list_ui_moves
 class RuntimeService:
     def __init__(
         self,
-        bundle_or_play_agent: Any | None = None,
         *,
-        play_agent: PlayAgent | None = None,
+        play_agent: PlayAgent,
         agent_model: str | None = None,
         agent_mode: str | None = None,
     ) -> None:
-        resolved_play_agent = play_agent
-        resolved_agent_model = agent_model
-        resolved_agent_mode = agent_mode
-
-        if resolved_play_agent is None:
-            candidate = bundle_or_play_agent
-            if candidate is None:
-                raise ValueError("RuntimeService requires a play agent or Responses bundle")
-            if hasattr(candidate, "play_agent"):
-                resolved_play_agent = getattr(candidate, "play_agent")
-                if resolved_agent_model is None:
-                    resolved_agent_model = getattr(candidate, "model", None)
-                if resolved_agent_mode is None:
-                    resolved_agent_mode = getattr(candidate, "mode", None)
-            else:
-                resolved_play_agent = candidate
-
-        if resolved_play_agent is None:
-            raise ValueError("RuntimeService missing play agent")
-
-        self.play_agent = resolved_play_agent
-        self.agent_model = str(resolved_agent_model or getattr(resolved_play_agent, "model", "unknown"))
-        self.agent_mode = str(resolved_agent_mode or "responses")
+        self.play_agent = play_agent
+        self.agent_model = str(agent_model or getattr(play_agent, "model", "unknown"))
+        self.agent_mode = str(agent_mode or "responses")
 
     def initialize_session_state(self, pack: StoryPack) -> tuple[str, int, dict[str, Any], dict[str, int]]:
-        return initialize_session_state(pack)
+        compiled_pack = compile_play_runtime_pack(pack)
+        return initialize_session_state(compiled_pack)
 
     def list_ui_moves(self, pack: StoryPack, scene_id: str) -> list[dict[str, Any]]:
-        return list_ui_moves(pack, scene_id)
+        compiled_pack = compile_play_runtime_pack(pack)
+        return list_ui_moves(compiled_pack, scene_id)
 
     async def process_step(
         self,
@@ -60,9 +42,10 @@ class RuntimeService:
         *,
         dev_mode: bool = False,
     ) -> dict[str, Any]:
+        compiled_pack = compile_play_runtime_pack(pack)
         result = await process_runtime_step(
             play_agent=self.play_agent,
-            pack=pack,
+            compiled_pack=compiled_pack,
             session_id=session_id,
             current_scene_id=current_scene_id,
             beat_index=beat_index,

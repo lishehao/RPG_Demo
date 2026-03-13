@@ -6,6 +6,7 @@ from pathlib import Path
 
 from rpg_backend.domain.pack_schema import StoryPack
 from rpg_backend.llm.agents import AgentDiagnostics, AgentUsage, PlayInterpretResult
+from rpg_backend.runtime.compiled_pack import compile_play_runtime_pack
 from rpg_backend.runtime.router import route_player_action
 
 PACK_PATH = Path("sample_data/story_pack_v1.json")
@@ -39,17 +40,17 @@ def _load_pack() -> StoryPack:
 
 def test_route_context_includes_rich_snapshot_fields() -> None:
     pack = _load_pack()
+    compiled_pack = compile_play_runtime_pack(pack)
     scene = pack.scenes[0]
     beat = pack.beats[0]
-    move_map = {move.id: move for move in pack.moves}
     provider = _CaptureAgent()
 
     _ = asyncio.run(
         route_player_action(
             provider,
-            scene,
-            move_map,
-            {"type": "text", "text": "trace the source and keep trust stable"},
+            compiled_pack=compiled_pack,
+            scene=scene,
+            action_input={"type": "text", "text": "trace the source and keep trust stable"},
             session_id="router-context-test",
             state={
                 "events": ["b1.root_cause_locked", "redline_hit::Kael"],
@@ -79,16 +80,16 @@ def test_route_context_includes_rich_snapshot_fields() -> None:
 
 def test_route_context_excludes_global_help_for_non_help_text() -> None:
     pack = _load_pack()
+    compiled_pack = compile_play_runtime_pack(pack)
     scene = pack.scenes[0]
-    move_map = {move.id: move for move in pack.moves}
     provider = _CaptureAgent()
 
     _ = asyncio.run(
         route_player_action(
             provider,
-            scene,
-            move_map,
-            {"type": "text", "text": "stabilize corridor and reduce noise"},
+            compiled_pack=compiled_pack,
+            scene=scene,
+            action_input={"type": "text", "text": "stabilize corridor and reduce noise"},
             session_id="router-context-test",
         )
     )
@@ -100,16 +101,16 @@ def test_route_context_excludes_global_help_for_non_help_text() -> None:
 
 def test_route_context_allows_global_help_for_help_text() -> None:
     pack = _load_pack()
+    compiled_pack = compile_play_runtime_pack(pack)
     scene = pack.scenes[0]
-    move_map = {move.id: move for move in pack.moves}
     provider = _CaptureAgent()
 
     _ = asyncio.run(
         route_player_action(
             provider,
-            scene,
-            move_map,
-            {"type": "text", "text": "help I am stuck what now"},
+            compiled_pack=compiled_pack,
+            scene=scene,
+            action_input={"type": "text", "text": "help I am stuck what now"},
             session_id="router-context-test",
         )
     )

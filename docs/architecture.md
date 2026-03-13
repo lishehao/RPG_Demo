@@ -9,13 +9,13 @@ Active abstractions:
 - `ResponsesTransport`
 - `PlayAgent`
 - `AuthorAgent`
-- `ResponseSessionStore` (provider cursor persistence)
+- `ResponseSessionStore` (Responses cursor persistence)
 
 Removed from active path:
 
 - internal LLM worker service
-- worker provider/client/gateway transport
-- route/narration split chains as the primary play abstraction
+- worker client/gateway transport (removed from active runtime)
+- legacy multi-chain play runtime paths
 
 ## Play Mode
 
@@ -26,6 +26,27 @@ Play Mode is single-agent at the LLM boundary and deterministic for resolution:
 3. `render_resolved_turn` (PlayAgent)
 
 Button input skips interpretation and directly renders resolved output.
+
+Current backend play runtime modules:
+
+- `rpg_backend/runtime/service.py`
+- `rpg_backend/runtime/compiled_pack.py`
+- `rpg_backend/runtime/step_engine.py`
+- `rpg_backend/runtime/router.py`
+- `rpg_backend/runtime/route_context.py`
+- `rpg_backend/runtime/narration.py`
+- `rpg_backend/runtime/narration_context.py`
+- `rpg_backend/application/session_step/*`
+
+Responsibility split:
+
+- `compiled_pack` builds read-only scene/move/beat/NPC indexes for each runtime call
+- `route_context` builds route candidates and scene/state snapshots for `router`
+- `router` maps free-text input onto an allowed move candidate
+- deterministic runtime code resolves outcome/effects/next scene
+- `narration_context` builds deterministic prompt slots and narration context payload
+- `narration` renders player-facing text from already-resolved facts
+- `application/session_step` wraps the runtime with request validation, idempotency, CAS commit, and observability events
 
 Public API shape is unchanged. Admin/dev timeline fields are single-agent:
 
@@ -59,7 +80,7 @@ Deterministic nodes remain deterministic:
 
 ## Cursor Persistence
 
-Provider cursor reuse is persisted in table `response_session_cursors`:
+Responses cursor reuse is persisted in table `response_session_cursors`:
 
 - key: `(scope_type, scope_id, channel)`
 - fields: `model`, `previous_response_id`, `updated_at`
@@ -74,6 +95,7 @@ Cursor invalidation behavior:
 - on invalid/expired cursor error, clear stored cursor
 - retry once without `previous_response_id`
 - save latest `response.id` on success
+- if stored cursor model mismatches the current model, clear the cursor before reuse
 
 ## Config Contract
 

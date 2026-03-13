@@ -1,1 +1,1 @@
-"""Runtime engine for provider-aware narrative progression."""
+"""Runtime engine for Responses-backed narrative progression."""

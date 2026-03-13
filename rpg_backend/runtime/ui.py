@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from rpg_backend.domain.pack_schema import Move, Scene, StoryPack
+from rpg_backend.runtime.compiled_pack import CompiledPlayRuntimePack
 
 STRATEGY_RISK_HINTS = {
     "fast_dirty": "fast but dirty: raises noise and trust risk",
@@ -11,22 +11,11 @@ STRATEGY_RISK_HINTS = {
 }
 
 
-def scene_map(pack: StoryPack) -> dict[str, Scene]:
-    return {scene.id: scene for scene in pack.scenes}
-
-
-def move_map(pack: StoryPack) -> dict[str, Move]:
-    return {move.id: move for move in pack.moves}
-
-
-def list_ui_moves(pack: StoryPack, scene_id: str) -> list[dict[str, Any]]:
-    scenes = scene_map(pack)
-    moves = move_map(pack)
-    scene = scenes[scene_id]
-    move_ids = list(dict.fromkeys(scene.enabled_moves + scene.always_available_moves))
+def list_ui_moves(compiled_pack: CompiledPlayRuntimePack, scene_id: str) -> list[dict[str, Any]]:
+    move_ids = compiled_pack.scene_move_ids(scene_id)
     ui_moves = []
     for move_id in move_ids:
-        move = moves.get(move_id)
+        move = compiled_pack.moves_by_id.get(move_id)
         if move is None:
             continue
         ui_moves.append(

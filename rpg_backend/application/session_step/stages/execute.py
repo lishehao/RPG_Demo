@@ -4,21 +4,21 @@ import json
 import time
 from typing import Any, Callable
 
-from rpg_backend.application.play_sessions.errors import ProviderMisconfiguredError, StoryVersionNotFoundError
+from rpg_backend.application.play_sessions.errors import LLMBackendMisconfiguredError, StoryVersionNotFoundError
 from rpg_backend.application.session_step.contracts import RuntimeExecutionContext, RuntimeExecutionSuccess, StepRequestContext
 from rpg_backend.application.session_step.event_logger import emit_step_started_event
-from rpg_backend.application.session_step.llm_telemetry import provider_name
+from rpg_backend.application.session_step.llm_telemetry import llm_backend_name
 from rpg_backend.domain.pack_schema import StoryPack
 from rpg_backend.infrastructure.repositories.stories_async import get_story_version
-from rpg_backend.llm.base import LLMProviderConfigError
+from rpg_backend.llm.base import LLMBackendConfigError
 from rpg_backend.runtime.service import RuntimeService
 
 
-def build_runtime_or_raise(provider_factory: Callable[[], Any]) -> RuntimeService:
+def build_runtime_or_raise(bundle_factory: Callable[[], Any]) -> RuntimeService:
     try:
-        bundle = provider_factory()
-    except LLMProviderConfigError as exc:
-        raise ProviderMisconfiguredError(message=f"llm provider misconfigured: {exc}") from exc
+        bundle = bundle_factory()
+    except LLMBackendConfigError as exc:
+        raise LLMBackendMisconfiguredError(message=f"llm backend misconfigured: {exc}") from exc
     return RuntimeService(
         play_agent=bundle.play_agent,
         agent_model=bundle.model,
@@ -26,11 +26,11 @@ def build_runtime_or_raise(provider_factory: Callable[[], Any]) -> RuntimeServic
     )
 
 
-def build_execution_context(provider_factory: Callable[[], Any]) -> RuntimeExecutionContext:
-    runtime = build_runtime_or_raise(provider_factory)
+def build_execution_context(bundle_factory: Callable[[], Any]) -> RuntimeExecutionContext:
+    runtime = build_runtime_or_raise(bundle_factory)
     return RuntimeExecutionContext(
         runtime=runtime,
-        provider_name=provider_name(),
+        llm_backend=llm_backend_name(),
         agent_model=getattr(runtime, "agent_model", None),
         agent_mode=getattr(runtime, "agent_mode", None),
     )
@@ -55,7 +55,7 @@ async def execute_runtime_step(
         normalized_input=ctx.normalized_input,
         scene_id_before=ctx.scene_id_before,
         beat_index_before=ctx.beat_index_before,
-        provider_name=execution_context.provider_name,
+        llm_backend=execution_context.llm_backend,
         request_id=ctx.request_id,
         agent_model=execution_context.agent_model,
         agent_mode=execution_context.agent_mode,

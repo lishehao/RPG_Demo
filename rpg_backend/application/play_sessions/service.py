@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from rpg_backend.application.play_sessions.errors import (
-    ProviderMisconfiguredError,
+    LLMBackendMisconfiguredError,
     SessionNotFoundError,
     StoryNotFoundError,
     StoryVersionNotFoundError,
@@ -24,7 +24,7 @@ from rpg_backend.infrastructure.repositories.sessions_async import (
     list_session_actions,
 )
 from rpg_backend.infrastructure.repositories.stories_async import get_story, get_story_version
-from rpg_backend.llm.base import LLMProviderConfigError
+from rpg_backend.llm.base import LLMBackendConfigError
 from rpg_backend.runtime.service import RuntimeService
 from rpg_backend.runtime.stance import classify_stance
 
@@ -85,11 +85,11 @@ def build_state_summary(state: dict[str, Any], *, npc_names: list[str]) -> dict[
     }
 
 
-def build_runtime(provider_factory: Callable[[], Any]) -> RuntimeService:
+def build_runtime(bundle_factory: Callable[[], Any]) -> RuntimeService:
     try:
-        bundle = provider_factory()
-    except LLMProviderConfigError as exc:
-        raise ProviderMisconfiguredError(message=f"llm provider misconfigured: {exc}") from exc
+        bundle = bundle_factory()
+    except LLMBackendConfigError as exc:
+        raise LLMBackendMisconfiguredError(message=f"llm backend misconfigured: {exc}") from exc
     return RuntimeService(
         play_agent=bundle.play_agent,
         agent_model=bundle.model,
@@ -102,7 +102,7 @@ async def create_play_session(
     db,
     story_id: str,
     version: int,
-    provider_factory: Callable[[], Any],
+    bundle_factory: Callable[[], Any],
 ) -> SessionCreateView:
     story = await get_story(db, story_id)
     if story is None:
@@ -113,7 +113,7 @@ async def create_play_session(
         raise StoryVersionNotFoundError(story_id=story_id, version=version)
 
     pack = StoryPack.model_validate(story_version.pack_json)
-    runtime = build_runtime(provider_factory)
+    runtime = build_runtime(bundle_factory)
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
     async with transactional(db):
         session = await create_session(

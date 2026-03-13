@@ -6,12 +6,14 @@
 - Play rail uses one `PlayAgent` abstraction (`interpret_turn`, `render_resolved_turn`).
 - Author rail uses one `AuthorAgent` abstraction for `generate_story_overview` + `generate_beat`.
 - Responses task metadata (task name, developer prompt, channel, thinking, output mode) is centralized in `rpg_backend/llm/task_specs.py`.
-- Provider cursor reuse uses `previous_response_id` persisted in `response_session_cursors`.
-- Cursor reuse hard invariant: stored cursor model must equal current model, otherwise cursor is cleared before provider call.
+- Responses cursor reuse uses `previous_response_id` persisted in `response_session_cursors`.
+- Cursor reuse hard invariant: stored cursor model must equal current model, otherwise cursor is cleared before Responses call.
+- Current Play runtime modules are `RuntimeService`, `compiled_pack`, `step_engine`, `router` + `route_context`, `narration` + `narration_context`, plus `application/session_step/*` for request/commit/event handling.
 
 ## Determinism Boundaries
 
 - Play outcome resolution and effect application remain deterministic in backend runtime.
+- Play free-text routing and narration remain the only LLM-dependent parts of the play rail.
 - Author `plan_beats/beat_lint/normalize` remain deterministic.
 
 ## Observability Contract

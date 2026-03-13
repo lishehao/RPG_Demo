@@ -19,8 +19,8 @@ flowchart LR
 - No internal worker service in the active runtime path.
 - Play Mode keeps deterministic resolution logic in backend code.
 - Author Mode keeps LangGraph orchestration with deterministic non-LLM nodes.
-- Provider-side KV reuse is done via `previous_response_id`, persisted per scope/channel in `response_session_cursors`.
-- Cursor reuse invariant: if stored cursor model differs from current model, backend clears the cursor before any provider call.
+- Responses cursor reuse is done via `previous_response_id`, persisted per scope/channel in `response_session_cursors`.
+- Cursor reuse invariant: if stored cursor model differs from current model, backend clears the cursor before any Responses call.
 
 ## Core Runtime Paths
 
@@ -33,6 +33,15 @@ Play Mode is single-agent at the LLM boundary and deterministic for state change
 3. `PlayAgent.render_resolved_turn` turns the resolved state into player-facing narration
 
 Button input skips interpretation and reuses the same deterministic resolution + render path.
+
+Current backend module shape:
+
+- `rpg_backend/runtime/service.py` is the thin runtime facade
+- `rpg_backend/runtime/compiled_pack.py` builds read-only scene/move/beat/NPC indexes per runtime call
+- `rpg_backend/runtime/step_engine.py` drives route -> resolve -> effects -> next scene -> narration using compiled pack data
+- `rpg_backend/runtime/router.py` owns free-text move routing and delegates context assembly to `runtime/route_context.py`
+- `rpg_backend/runtime/narration.py` owns player-facing render transport and delegates deterministic scaffold/context assembly to `runtime/narration_context.py`
+- `rpg_backend/application/session_step/*` owns validation, idempotency, CAS commit, and event emission around the runtime call
 
 ### Author Mode
 
@@ -132,9 +141,3 @@ Stop services:
 - `POST /author/runs`
 
 Public response shape for play/author remains stable; admin/dev telemetry fields now use single-agent semantics (`agent_model`, `agent_mode`, `response_id`, `reasoning_summary`).
-
-## Migration Spec
-
-Implementation contract for this migration:
-
-- [`/Users/lishehao/Desktop/Project/RPG_Demo/responses_single_agent_migration_spec.md`](/Users/lishehao/Desktop/Project/RPG_Demo/responses_single_agent_migration_spec.md)

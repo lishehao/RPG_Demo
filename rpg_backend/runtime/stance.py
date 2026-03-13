@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from rpg_backend.domain.pack_schema import NPCProfile
@@ -9,10 +10,6 @@ STYLE_CONFLICT_TAG: dict[str, str] = {
     "steady_slow": "anti_speed",
     "political_safe_resource_heavy": "anti_resource_burn",
 }
-
-
-def npc_profile_map(npc_profiles: list[NPCProfile]) -> dict[str, NPCProfile]:
-    return {profile.name: profile for profile in npc_profiles}
 
 
 def classify_stance(trust_value: int) -> str:
@@ -35,7 +32,7 @@ def apply_npc_stance_effects(
     state: dict[str, Any],
     present_npcs: list[str],
     strategy_style: str,
-    npc_profiles: dict[str, NPCProfile],
+    npc_profiles: Mapping[str, NPCProfile],
 ) -> dict[str, Any]:
     state.setdefault("values", {})
     state.setdefault("events", [])

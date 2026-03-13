@@ -2,26 +2,22 @@ from __future__ import annotations
 
 from typing import Any
 
-from rpg_backend.domain.pack_schema import StoryPack
 from rpg_backend.llm.agents import PlayAgent
+from rpg_backend.runtime.compiled_pack import CompiledPlayRuntimePack
 from rpg_backend.runtime.effects import apply_effects
 from rpg_backend.runtime.narration import render_echo_commit_hook
 from rpg_backend.runtime.pressure import apply_pressure_recoil
 from rpg_backend.runtime.resolver import choose_outcome, resolve_next_scene
 from rpg_backend.runtime.results import RuntimeStepResult
 from rpg_backend.runtime.router import route_player_action
-from rpg_backend.runtime.stance import apply_npc_stance_effects, build_stance_summary, npc_profile_map
-from rpg_backend.runtime.ui import list_ui_moves, move_map, scene_map
-
-
-def _beat_index_by_id(pack: StoryPack) -> dict[str, int]:
-    return {beat.id: idx for idx, beat in enumerate(pack.beats)}
+from rpg_backend.runtime.stance import apply_npc_stance_effects, build_stance_summary
+from rpg_backend.runtime.ui import list_ui_moves
 
 
 async def process_runtime_step(
     *,
     play_agent: PlayAgent,
-    pack: StoryPack,
+    compiled_pack: CompiledPlayRuntimePack,
     session_id: str,
     current_scene_id: str,
     beat_index: int,
@@ -30,26 +26,23 @@ async def process_runtime_step(
     action_input: dict[str, Any],
     dev_mode: bool = False,
 ) -> RuntimeStepResult:
-    scenes = scene_map(pack)
-    moves = move_map(pack)
-    beat_index_map = _beat_index_by_id(pack)
-    profiles = npc_profile_map(pack.npc_profiles)
-
-    scene = scenes[current_scene_id]
-    current_beat = pack.beats[beat_index] if 0 <= beat_index < len(pack.beats) else None
+    # Stage 1: resolve current scene + intent routing.
+    scene = compiled_pack.scene(current_scene_id)
+    current_beat = compiled_pack.beat_at_index(beat_index)
     recognized = await route_player_action(
         play_agent,
-        scene,
-        moves,
-        action_input,
+        compiled_pack=compiled_pack,
+        scene=scene,
+        action_input=action_input,
         session_id=session_id,
         state=state,
         beat_progress=beat_progress,
         beat=current_beat,
         beat_index=beat_index,
     )
-    chosen_move = moves[recognized["move_id"]]
+    chosen_move = compiled_pack.move(recognized["move_id"])
 
+    # Stage 2: deterministic resolution + effect application.
     state.setdefault("values", {})
     state["values"]["last_move"] = chosen_move.id
     state["values"]["runtime_turn"] = int(state["values"].get("runtime_turn", 0)) + 1
@@ -59,34 +52,36 @@ async def process_runtime_step(
     outcome = choose_outcome(chosen_move, state, beat_progress, current_beat_id)
     costs, consequences, _ = apply_effects(outcome.effects, state, beat_progress, current_beat_id)
 
+    # Stage 3: deterministic stance/pressure updates.
     stance_snapshot = apply_npc_stance_effects(
         state=state,
         present_npcs=list(scene.present_npcs),
         strategy_style=chosen_move.strategy_style,
-        npc_profiles=profiles,
+        npc_profiles=compiled_pack.npc_profiles_by_name,
     )
     pressure_recoil_triggered = apply_pressure_recoil(
-        pack=pack,
+        pack=compiled_pack.pack,
         beat_index=beat_index,
         state=state,
         costs=costs,
         consequences=consequences,
     )
 
+    # Stage 4: scene transition.
     next_scene_id, ended = resolve_next_scene(scene, outcome, state, beat_progress, current_beat_id)
     if next_scene_id is not None:
         current_scene_id = next_scene_id
 
-    next_scene = scenes[current_scene_id]
-    beat_index = beat_index_map[next_scene.beat_id]
+    beat_index = compiled_pack.beat_index_for_scene(current_scene_id)
 
+    # Stage 5: narration render from resolved facts.
     stance_summary = build_stance_summary(stance_snapshot) if runtime_turn % 2 == 0 else None
     narration_result = await render_echo_commit_hook(
         play_agent,
         outcome.narration_slots,
         recognized["interpreted_intent"],
         outcome.result,
-        pack.style_guard,
+        compiled_pack.pack.style_guard,
         session_id=session_id,
         strategy_style=chosen_move.strategy_style,
         scene_id=scene.id,
@@ -122,8 +117,8 @@ async def process_runtime_step(
             "consequences_summary": "; ".join(consequences) if consequences else "none",
         },
         ui={
-            "moves": list_ui_moves(pack, current_scene_id),
-            "input_hint": pack.input_hint,
+            "moves": list_ui_moves(compiled_pack, current_scene_id),
+            "input_hint": compiled_pack.pack.input_hint,
         },
         runtime_metrics={
             "interpret_duration_ms": recognized.get("llm_duration_ms"),

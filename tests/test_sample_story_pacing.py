@@ -6,14 +6,19 @@ from pathlib import Path
 
 from rpg_backend.domain.pack_schema import StoryPack
 from rpg_backend.runtime.service import RuntimeService
-from tests.helpers.providers import DeterministicProvider
+from tests.helpers.responses_bundles import DeterministicResponsesBundle
 
 PACK_PATH = Path("tests/fixtures/story_pack_v1.json")
 
 
 def test_runtime_simulation_reaches_terminal_within_expected_steps() -> None:
     pack = StoryPack.model_validate(json.loads(PACK_PATH.read_text(encoding="utf-8")))
-    runtime = RuntimeService(DeterministicProvider())
+    bundle = DeterministicResponsesBundle()
+    runtime = RuntimeService(
+        play_agent=bundle.play_agent,
+        agent_model=bundle.model,
+        agent_mode=bundle.mode,
+    )
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
 
     steps = 0
