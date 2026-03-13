@@ -46,6 +46,12 @@ ACTIVE_DOC_FORBIDDEN_MARKERS = {
     "prompt_text?, seed_text?, target_minutes, npc_count, style?, publish?",
 }
 
+RETIRED_BACKEND_PATH_FAMILIES = (
+    REPO_ROOT / "rpg_backend" / "llm_worker",
+    REPO_ROOT / "rpg_backend" / "runtime_chains",
+    REPO_ROOT / "tests" / "llm_worker",
+)
+
 
 def _sample_overview() -> StoryOverview:
     return StoryOverview.model_validate(
@@ -299,6 +305,19 @@ def test_workflow_split_modules_exist() -> None:
     missing = [path for path in expected if not path.exists()]
     assert not missing, "missing required workflow split modules:\n" + "\n".join(
         sorted(path.relative_to(REPO_ROOT).as_posix() for path in missing)
+    )
+
+
+def test_retired_backend_path_families_contain_no_python_source_files() -> None:
+    violations: list[str] = []
+    for retired_root in RETIRED_BACKEND_PATH_FAMILIES:
+        if not retired_root.exists():
+            continue
+        for path in sorted(retired_root.rglob("*.py")):
+            violations.append(path.relative_to(REPO_ROOT).as_posix())
+
+    assert not violations, "retired backend path families must not contain active python source files:\n" + "\n".join(
+        violations
     )
 
 

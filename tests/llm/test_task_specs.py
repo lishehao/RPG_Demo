@@ -16,7 +16,7 @@ def test_readiness_probe_task_and_payload_validation() -> None:
     spec = build_readiness_probe_task()
     assert spec.task_name == "readiness_probe"
     assert spec.user_payload == "who are you"
-    parsed = validate_readiness_probe_payload({"ok": True, "who": "worker-ready"})
+    parsed = validate_readiness_probe_payload({"ok": True, "who": "responses-ready"})
     assert parsed.ok is True
 
 

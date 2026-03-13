@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 import rpg_backend.main as backend_main
 
 
-def test_legacy_internal_worker_routes_are_removed() -> None:
+def test_removed_internal_llm_task_routes_return_404() -> None:
     with TestClient(backend_main.app) as client:
         for path in (
             "/internal/llm/tasks/json-object",
