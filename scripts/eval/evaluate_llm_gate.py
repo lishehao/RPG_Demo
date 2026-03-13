@@ -19,8 +19,7 @@ import httpx
 
 from rpg_backend.config.settings import get_settings
 from rpg_backend.llm.base import LLMProviderConfigError
-from rpg_backend.llm.factory import get_llm_provider, resolve_openai_models
-from rpg_backend.runtime_chains.play_mode import RouteIntentChain
+from rpg_backend.llm.factory import get_responses_agent_bundle
 
 from scripts.eval.simulate_playthrough import simulate_pack_playthrough
 
@@ -62,33 +61,29 @@ def _classify_precheck_error(exc: BaseException) -> str:
 
 def _run_openai_precheck() -> dict[str, Any]:
     settings = get_settings()
-    base_url = (getattr(settings, "llm_openai_base_url", None) or "").strip()
-    route_model, _ = resolve_openai_models(
-        getattr(settings, "llm_openai_route_model", None),
-        getattr(settings, "llm_openai_narration_model", None),
-        getattr(settings, "llm_openai_model", None),
-    )
+    base_url = (getattr(settings, "responses_base_url", None) or "").strip()
+    model = (getattr(settings, "responses_model", None) or "").strip()
     parsed = urlparse(base_url)
     host = parsed.hostname or ""
 
-    if not route_model:
+    if not model:
         return {
             "status": "failed",
             "error_type": "missing_model",
-            "error": "missing route model; set APP_LLM_OPENAI_ROUTE_MODEL or APP_LLM_OPENAI_MODEL",
+            "error": "missing model; set APP_RESPONSES_MODEL",
             "base_url": base_url,
             "host": host,
-            "route_model": route_model,
+            "agent_model": model,
         }
 
     if not host:
         return {
             "status": "failed",
             "error_type": "misconfigured",
-            "error": "APP_LLM_OPENAI_BASE_URL is missing or invalid",
+            "error": "APP_RESPONSES_BASE_URL is missing or invalid",
             "base_url": base_url,
             "host": host,
-            "route_model": route_model,
+            "agent_model": model,
         }
 
     try:
@@ -100,16 +95,18 @@ def _run_openai_precheck() -> dict[str, Any]:
             "error": str(exc),
             "base_url": base_url,
             "host": host,
-            "route_model": route_model,
+            "agent_model": model,
         }
 
     try:
-        provider = get_llm_provider()
-        choice, _, gateway_mode = asyncio.run(
-            RouteIntentChain(provider=provider).choose(
+        bundle = get_responses_agent_bundle()
+        choice = asyncio.run(
+            bundle.play_agent.interpret_turn(
+                session_id="llm_gate_precheck",
                 scene_context={
                     "moves": [
                         {
+                            "key": "m0",
                             "id": "global.help_me_progress",
                             "label": "Help me progress",
                             "intents": ["progress", "help"],
@@ -117,6 +114,7 @@ def _run_openai_precheck() -> dict[str, Any]:
                             "is_global": True,
                         },
                         {
+                            "key": "m1",
                             "id": "global.clarify",
                             "label": "Clarify intent",
                             "intents": ["clarify"],
@@ -143,10 +141,10 @@ def _run_openai_precheck() -> dict[str, Any]:
             "error": None,
             "base_url": base_url,
             "host": host,
-            "route_model": getattr(provider, "route_model", route_model),
+            "agent_model": bundle.model,
             "probe_selected_key": choice.selected_key,
             "probe_confidence": float(choice.confidence),
-            "gateway_mode": gateway_mode,
+            "gateway_mode": choice.diagnostics.agent_mode,
         }
     except Exception as exc:  # noqa: BLE001
         return {
@@ -155,7 +153,7 @@ def _run_openai_precheck() -> dict[str, Any]:
             "error": str(exc),
             "base_url": base_url,
             "host": host,
-            "route_model": route_model,
+            "agent_model": model,
         }
 
 
@@ -242,12 +240,12 @@ def evaluate_llm_gate(
         report = simulate_pack_playthrough(
             pack_json,
             strategy=strategy,
-            provider_name="openai",
+            provider_name="responses",
             max_steps=max_steps,
             strategy_seed=strategy_seed,
         )
         provider_reports.append(report)
-        run_entry["openai"] = {
+        run_entry["responses"] = {
             "ended": report["ended"],
             "steps": report["steps"],
             "meaningful_steps": report["meaningful_steps"],
@@ -278,7 +276,7 @@ def evaluate_llm_gate(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Evaluate OpenAI runtime gate metrics on the same pack.")
+    parser = argparse.ArgumentParser(description="Evaluate Responses runtime gate metrics on the same pack.")
     parser.add_argument("--pack-file", required=True, help="Path to a raw pack JSON file")
     parser.add_argument("--runs", type=int, default=50, help="Number of repeated runs")
     parser.add_argument(

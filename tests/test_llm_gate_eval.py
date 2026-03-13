@@ -75,9 +75,8 @@ def test_precheck_dns_failure_returns_structured_error(monkeypatch) -> None:
         gate_eval,
         "get_settings",
         lambda: SimpleNamespace(
-            llm_openai_base_url="https://bad-host.example/compatible-mode",
-            llm_openai_route_model="route-model",
-            llm_openai_model=None,
+            responses_base_url="https://bad-host.example/compatible-mode",
+            responses_model="responses-model",
         ),
     )
     monkeypatch.setattr(
@@ -90,69 +89,59 @@ def test_precheck_dns_failure_returns_structured_error(monkeypatch) -> None:
     assert precheck["status"] == "failed"
     assert precheck["error_type"] == "dns_unreachable"
     assert precheck["host"] == "bad-host.example"
-    assert precheck["route_model"] == "route-model"
+    assert precheck["agent_model"] == "responses-model"
 
 
-def test_precheck_calls_route_only_not_narration(monkeypatch) -> None:
+def test_precheck_calls_interpret_once(monkeypatch) -> None:
     monkeypatch.setattr(
         gate_eval,
         "get_settings",
         lambda: SimpleNamespace(
-            llm_openai_base_url="https://ok-host.example/compatible-mode",
-            llm_openai_route_model="route-model",
-            llm_openai_model=None,
+            responses_base_url="https://ok-host.example/compatible-mode",
+            responses_model="responses-model",
         ),
     )
     monkeypatch.setattr(gate_eval.socket, "getaddrinfo", lambda *_args, **_kwargs: [object()])
 
-    class _Provider:
-        gateway_mode = "fake"
-        route_model = "route-model"
-        narration_model = "narration-model"
-        timeout_seconds = 20.0
-        route_max_retries = 3
-        narration_max_retries = 1
-        route_temperature = 0.1
-        narration_temperature = 0.4
-
+    class _PlayAgent:
         def __init__(self) -> None:
-            self.route_called = 0
-            self.narration_called = 0
+            self.calls = 0
 
-        async def invoke_json_object(self, **kwargs):  # noqa: ANN003, ANN201
-            import json
-            payload = json.loads(kwargs["user_prompt"])
-            if payload.get("task") == "select_route_candidate":
-                self.route_called += 1
-                return SimpleNamespace(payload={"selected_key": "m0", "confidence": 0.9, "interpreted_intent": "help me progress"}, duration_ms=5)
-            self.narration_called += 1
-            raise AssertionError("runtime narration chain should not be called by precheck")
+        async def interpret_turn(self, **kwargs):  # noqa: ANN003, ANN201
+            del kwargs
+            self.calls += 1
+            return SimpleNamespace(
+                selected_key="m0",
+                confidence=0.9,
+                diagnostics=SimpleNamespace(agent_mode="responses"),
+            )
 
-    provider = _Provider()
-    monkeypatch.setattr(gate_eval, "get_llm_provider", lambda *_args, **_kwargs: provider)
+    play_agent = _PlayAgent()
+    monkeypatch.setattr(
+        gate_eval,
+        "get_responses_agent_bundle",
+        lambda *_args, **_kwargs: SimpleNamespace(play_agent=play_agent, model="responses-model"),
+    )
     precheck = gate_eval._run_openai_precheck()
     assert precheck["status"] == "ok"
-    assert precheck["route_model"] == "route-model"
-    assert provider.route_called == 1
-    assert provider.narration_called == 0
+    assert precheck["agent_model"] == "responses-model"
+    assert play_agent.calls == 1
 
 
-def test_precheck_requires_route_model_or_global_fallback(monkeypatch) -> None:
+def test_precheck_requires_responses_model(monkeypatch) -> None:
     monkeypatch.setattr(
         gate_eval,
         "get_settings",
         lambda: SimpleNamespace(
-            llm_openai_base_url="https://bad-host.example/compatible-mode",
-            llm_openai_route_model="",
-            llm_openai_narration_model="narration-only-model",
-            llm_openai_model=None,
+            responses_base_url="https://bad-host.example/compatible-mode",
+            responses_model="",
         ),
     )
 
     precheck = gate_eval._run_openai_precheck()
     assert precheck["status"] == "failed"
     assert precheck["error_type"] == "missing_model"
-    assert precheck["route_model"] == ""
+    assert precheck["agent_model"] == ""
 
 
 def test_classify_precheck_error_marks_unsupported_chat_completions_api() -> None:
@@ -246,7 +235,7 @@ def test_evaluate_llm_gate_status_failed_when_metrics_below_threshold(monkeypatc
             "runtime_error_steps": 1,
             "runtime_error": True,
             "runtime_error_code": "llm_narration_failed",
-            "runtime_error_stage": "narration",
+            "runtime_error_stage": "render_resolved_turn",
             "runtime_error_message": "runtime narration chain failed",
         },
     )

@@ -128,10 +128,10 @@ async def _build_snapshot_async(
         and int(runtime_agg["failed_total"]) >= GLOBAL_ALERT_MIN_FAILED_TOTAL
     )
 
-    worker_group = llm_agg.get("by_gateway_mode", {}).get("worker", {})
-    worker_total = int(worker_group.get("total_calls") or 0)
-    worker_failed = int(worker_group.get("failed_calls") or 0)
-    worker_failure_rate = float(worker_group.get("failure_rate") or 0.0)
+    responses_group = llm_agg.get("by_gateway_mode", {}).get("responses", {})
+    responses_total = int(responses_group.get("total_calls") or 0)
+    responses_failed = int(responses_group.get("failed_calls") or 0)
+    responses_failure_rate = float(responses_group.get("failure_rate") or 0.0)
     llm_total = int(llm_agg["total_calls"])
     llm_p95 = llm_agg.get("p95_ms")
     signals: list[dict[str, Any]] = []
@@ -180,26 +180,26 @@ async def _build_snapshot_async(
             )
         )
 
-    if worker_total >= int(settings.obs_alert_worker_fail_min_count) and worker_failure_rate > float(
-        settings.obs_alert_worker_fail_rate
+    if responses_total >= int(settings.obs_alert_responses_fail_min_count) and responses_failure_rate > float(
+        settings.obs_alert_responses_fail_rate
     ):
         signals.append(
             _build_signal(
-                signal="worker_failure_rate_high",
-                dispatch_key="signal:worker_failure_rate",
+                signal="responses_failure_rate_high",
+                dispatch_key="signal:responses_failure_rate",
                 severity="warning",
                 value={
-                    "worker_failure_rate": worker_failure_rate,
-                    "worker_failed_calls": worker_failed,
-                    "worker_total_calls": worker_total,
+                    "responses_failure_rate": responses_failure_rate,
+                    "responses_failed_calls": responses_failed,
+                    "responses_total_calls": responses_total,
                 },
                 threshold={
-                    "worker_failure_rate_gt": float(settings.obs_alert_worker_fail_rate),
-                    "min_worker_calls": int(settings.obs_alert_worker_fail_min_count),
+                    "responses_failure_rate_gt": float(settings.obs_alert_responses_fail_rate),
+                    "min_responses_calls": int(settings.obs_alert_responses_fail_min_count),
                 },
                 window_seconds=window_seconds,
-                samples={"by_stage": llm_agg.get("by_stage", {}), "worker_group": worker_group},
-                runbook_hint="docs/oncall_sop.md#worker_failure_rate_high",
+                samples={"by_stage": llm_agg.get("by_stage", {}), "responses_group": responses_group},
+                runbook_hint="docs/oncall_sop.md#responses_failure_rate_high",
             )
         )
 
@@ -252,9 +252,9 @@ async def _build_snapshot_async(
         },
         "readiness_health": {
             "backend_ready_fail_count": int(readiness_agg["backend_ready_fail_count"]),
-            "worker_ready_fail_count": int(readiness_agg["worker_ready_fail_count"]),
+            "responses_ready_fail_count": int(readiness_agg["responses_ready_fail_count"]),
             "backend_fail_streak": int(readiness_agg["backend_fail_streak"]),
-            "worker_fail_streak": int(readiness_agg["worker_fail_streak"]),
+            "responses_fail_streak": int(readiness_agg["responses_fail_streak"]),
             "last_failures": list(readiness_agg["last_failures"]),
         },
         "signals": signals,
@@ -268,8 +268,8 @@ async def _build_snapshot_async(
             "http_5xx_rate_gt": settings.obs_alert_http_5xx_rate,
             "http_5xx_min_count": settings.obs_alert_http_5xx_min_count,
             "ready_fail_streak": settings.obs_alert_ready_fail_streak,
-            "worker_fail_rate_gt": settings.obs_alert_worker_fail_rate,
-            "worker_fail_min_count": settings.obs_alert_worker_fail_min_count,
+            "responses_fail_rate_gt": settings.obs_alert_responses_fail_rate,
+            "responses_fail_min_count": settings.obs_alert_responses_fail_min_count,
             "llm_call_p95_ms_gt": settings.obs_alert_llm_call_p95_ms,
             "llm_call_min_count": settings.obs_alert_llm_call_min_count,
         },

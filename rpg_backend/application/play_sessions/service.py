@@ -87,10 +87,14 @@ def build_state_summary(state: dict[str, Any], *, npc_names: list[str]) -> dict[
 
 def build_runtime(provider_factory: Callable[[], Any]) -> RuntimeService:
     try:
-        provider = provider_factory()
+        bundle = provider_factory()
     except LLMProviderConfigError as exc:
         raise ProviderMisconfiguredError(message=f"llm provider misconfigured: {exc}") from exc
-    return RuntimeService(provider)
+    return RuntimeService(
+        play_agent=bundle.play_agent,
+        agent_model=bundle.model,
+        agent_mode=bundle.mode,
+    )
 
 
 async def create_play_session(

@@ -36,19 +36,18 @@ class RuntimeErrorBucket:
 
 def _normalize_stage(stage: str | None) -> str:
     value = (stage or "").strip().lower()
-    if value in {"route", "narration", "json"}:
-        return value
+    if value in {"interpret_turn", "interpret", "route"}:
+        return "interpret_turn"
+    if value in {"render_resolved_turn", "render", "narration"}:
+        return "render_resolved_turn"
     return "unknown"
 
 
 def _resolve_model(stage: str, payload_json: dict[str, Any]) -> str:
-    route_model = payload_json.get("route_model")
-    narration_model = payload_json.get("narration_model")
-    if stage == "route":
-        return str(route_model or narration_model or "unknown")
-    if stage == "narration":
-        return str(narration_model or route_model or "unknown")
-    return str(route_model or narration_model or "unknown")
+    agent_model = payload_json.get("agent_model")
+    if agent_model:
+        return str(agent_model)
+    return str(payload_json.get("model") or "unknown")
 
 
 def _nearest_rank_percentile(values: list[int], percentile: float) -> int | None:
@@ -262,10 +261,11 @@ async def aggregate_http_health(
     now_value = now or utc_now()
     window_start = now_value - timedelta(seconds=window_seconds)
 
+    normalized_service = str(service or "backend").strip().lower() or "backend"
     stmt = select(HttpRequestEvent).where(
         HttpRequestEvent.created_at >= window_start,
-        HttpRequestEvent.service == str(service or "backend"),
     )
+    stmt = stmt.where(HttpRequestEvent.service == normalized_service)
     events = list((await db.exec(stmt)).all())
 
     prefix = (path_prefix or "").strip()
@@ -308,7 +308,7 @@ async def aggregate_http_health(
         "window_started_at": window_start,
         "window_ended_at": now_value,
         "window_seconds": window_seconds,
-        "service": str(service),
+        "service": normalized_service,
         "total_requests": total_requests,
         "failed_5xx": failed_5xx,
         "error_rate": error_rate,
@@ -327,7 +327,7 @@ async def aggregate_llm_call_health(
 ) -> dict[str, Any]:
     now_value = now or utc_now()
     window_start = now_value - timedelta(seconds=window_seconds)
-    allowed_gateway_modes = {"worker", "unknown"}
+    allowed_gateway_modes = {"responses", "unknown"}
 
     stmt = select(LLMCallEvent).where(LLMCallEvent.created_at >= window_start)
     if stage:
@@ -427,15 +427,15 @@ async def aggregate_readiness_health(
     events = list((await db.exec(stmt)).all())
 
     backend_fail = 0
-    worker_fail = 0
+    responses_fail = 0
     failures: list[dict[str, Any]] = []
     for event in events:
         if event.ok:
             continue
         if event.service == "backend":
             backend_fail += 1
-        elif event.service == "worker":
-            worker_fail += 1
+        elif event.service == "responses":
+            responses_fail += 1
         failures.append(
             {
                 "service": event.service,
@@ -451,9 +451,9 @@ async def aggregate_readiness_health(
         "window_ended_at": now_value,
         "window_seconds": window_seconds,
         "backend_ready_fail_count": backend_fail,
-        "worker_ready_fail_count": worker_fail,
+        "responses_ready_fail_count": responses_fail,
         "backend_fail_streak": await compute_ready_fail_streak(db, service="backend", max_lookback=100),
-        "worker_fail_streak": await compute_ready_fail_streak(db, service="worker", max_lookback=100),
+        "responses_fail_streak": await compute_ready_fail_streak(db, service="responses", max_lookback=100),
         "last_failures": failures[:20],
     }
 
@@ -501,4 +501,3 @@ async def save_alert_dispatch(
     db.add(dispatch)
     await db.flush()
     return dispatch
-

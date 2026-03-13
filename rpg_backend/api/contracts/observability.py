@@ -40,7 +40,7 @@ class ObservabilityWindowPayload(BaseModel):
 
 
 class HttpHealthAggregateResponse(ObservabilityWindowPayload):
-    service: Literal["backend", "worker"]
+    service: Literal["backend", "responses"]
     total_requests: int = Field(ge=0)
     failed_5xx: int = Field(ge=0)
     error_rate: float = Field(ge=0.0, le=1.0)
@@ -58,14 +58,13 @@ class LLMCallGroupHealthPayload(BaseModel):
 class LLMCallByStagePayload(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    route: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload)
-    narration: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload)
-    json_stage: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload, alias="json")
+    interpret_turn: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload)
+    render_resolved_turn: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload)
     unknown: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload)
 
 
 class LLMCallByGatewayModePayload(BaseModel):
-    worker: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload)
+    responses: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload)
     unknown: LLMCallGroupHealthPayload = Field(default_factory=LLMCallGroupHealthPayload)
 
 
@@ -79,7 +78,7 @@ class LLMCallHealthAggregateResponse(ObservabilityWindowPayload):
 
 
 class ReadinessFailurePayload(BaseModel):
-    service: Literal["backend", "worker"]
+    service: Literal["backend", "responses"]
     error_code: str | None = None
     request_id: str | None = None
     created_at: datetime
@@ -87,9 +86,9 @@ class ReadinessFailurePayload(BaseModel):
 
 class ReadinessHealthAggregateResponse(ObservabilityWindowPayload):
     backend_ready_fail_count: int = Field(ge=0)
-    worker_ready_fail_count: int = Field(ge=0)
+    responses_ready_fail_count: int = Field(ge=0)
     backend_fail_streak: int = Field(ge=0)
-    worker_fail_streak: int = Field(ge=0)
+    responses_fail_streak: int = Field(ge=0)
     last_failures: list[ReadinessFailurePayload] = Field(default_factory=list)
 
 

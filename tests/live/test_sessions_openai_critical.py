@@ -14,11 +14,9 @@ pytestmark = pytest.mark.live_openai_critical
 
 
 def _has_openai_env() -> bool:
-    base_url = (os.getenv("APP_LLM_OPENAI_BASE_URL") or "").strip()
-    api_key = (os.getenv("APP_LLM_OPENAI_API_KEY") or "").strip()
-    model = (os.getenv("APP_LLM_OPENAI_ROUTE_MODEL") or "").strip() or (
-        os.getenv("APP_LLM_OPENAI_NARRATION_MODEL") or ""
-    ).strip() or (os.getenv("APP_LLM_OPENAI_MODEL") or "").strip()
+    base_url = (os.getenv("APP_RESPONSES_BASE_URL") or "").strip()
+    api_key = (os.getenv("APP_RESPONSES_API_KEY") or "").strip()
+    model = (os.getenv("APP_RESPONSES_MODEL") or "").strip()
     return bool(base_url and api_key and model)
 
 

@@ -174,3 +174,19 @@ class LLMQuotaWindow(SQLModel, table=True):
     rpm_used: int = Field(default=0, ge=0)
     tpm_used: int = Field(default=0, ge=0)
     updated_at: datetime = Field(default_factory=utc_now, index=True, nullable=False)
+
+
+class ResponseSessionCursor(SQLModel, table=True):
+    __tablename__ = "response_session_cursors"
+
+    __table_args__ = (
+        UniqueConstraint("scope_type", "scope_id", "channel", name="uq_response_session_cursor_scope_channel"),
+    )
+
+    id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
+    scope_type: str = Field(index=True)
+    scope_id: str = Field(index=True)
+    channel: str = Field(index=True)
+    model: str
+    previous_response_id: str = Field(index=True)
+    updated_at: datetime = Field(default_factory=utc_now, index=True, nullable=False)

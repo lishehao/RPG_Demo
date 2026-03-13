@@ -38,15 +38,15 @@ def _sample_snapshot() -> dict:
         "signals": [],
         "triggered_buckets": [
             {
-                "error_code": "llm_route_failed",
-                "stage": "route",
+                "error_code": "llm_interpret_failed",
+                "stage": "interpret_turn",
                 "model": "gpt-test",
                 "failed_count": 4,
                 "error_share": 0.4,
                 "last_seen_at": "2026-03-02T00:00:00+00:00",
                 "sample_session_ids": ["s1"],
                 "sample_request_ids": ["r1"],
-                "bucket_key": "llm_route_failed|route|gpt-test",
+                "bucket_key": "llm_interpret_failed|interpret_turn|gpt-test",
             }
         ],
         "thresholds": {
@@ -59,8 +59,8 @@ def _sample_snapshot() -> dict:
             "http_5xx_rate_gt": 0.05,
             "http_5xx_min_count": 10,
             "ready_fail_streak": 2,
-            "worker_fail_rate_gt": 0.05,
-            "worker_fail_min_count": 20,
+            "responses_fail_rate_gt": 0.05,
+            "responses_fail_min_count": 20,
             "llm_call_p95_ms_gt": 3000,
             "llm_call_min_count": 30,
         },
@@ -98,7 +98,7 @@ def test_dispatch_alerts_dry_run_skips_webhook_and_dispatch_write(monkeypatch) -
     )
     assert result["status"] == "dry_run"
     assert result["sent"] is False
-    assert set(result["pending_bucket_keys"]) == {"llm_route_failed|route|gpt-test", "global"}
+    assert set(result["pending_bucket_keys"]) == {"llm_interpret_failed|interpret_turn|gpt-test", "global"}
     assert result["pending_signal_keys"] == []
 
 
@@ -132,7 +132,7 @@ def test_dispatch_alerts_sends_webhook_and_writes_dispatch(monkeypatch) -> None:
     assert result["status"] == "sent"
     assert result["sent"] is True
     assert len(sent_payloads) == 1
-    assert ("llm_route_failed|route|gpt-test", "sent") in dispatch_rows
+    assert ("llm_interpret_failed|interpret_turn|gpt-test", "sent") in dispatch_rows
     assert ("global", "sent") in dispatch_rows
     assert result["pending_signal_keys"] == []
 
@@ -177,8 +177,8 @@ def test_build_snapshot_emits_all_new_signals(monkeypatch) -> None:
         obs_alert_http_5xx_rate=0.05,
         obs_alert_http_5xx_min_count=10,
         obs_alert_ready_fail_streak=2,
-        obs_alert_worker_fail_rate=0.05,
-        obs_alert_worker_fail_min_count=20,
+        obs_alert_responses_fail_rate=0.05,
+        obs_alert_responses_fail_min_count=20,
         obs_alert_llm_call_p95_ms=3000,
         obs_alert_llm_call_min_count=30,
     )
@@ -192,8 +192,8 @@ def test_build_snapshot_emits_all_new_signals(monkeypatch) -> None:
             "step_error_rate": 0.12,
             "buckets": [
                 SimpleNamespace(
-                    error_code="llm_route_failed",
-                    stage="route",
+                    error_code="llm_interpret_failed",
+                    stage="interpret_turn",
                     model="gpt-test",
                     failed_count=8,
                     error_share=0.08,
@@ -220,11 +220,11 @@ def test_build_snapshot_emits_all_new_signals(monkeypatch) -> None:
             "failure_rate": 0.0833,
             "p95_ms": 3450,
             "by_stage": {
-                "route": {"total_calls": 70, "failed_calls": 7, "failure_rate": 0.1, "p95_ms": 3600},
-                "narration": {"total_calls": 50, "failed_calls": 3, "failure_rate": 0.06, "p95_ms": 3200},
+                "interpret_turn": {"total_calls": 70, "failed_calls": 7, "failure_rate": 0.1, "p95_ms": 3600},
+                "render_resolved_turn": {"total_calls": 50, "failed_calls": 3, "failure_rate": 0.06, "p95_ms": 3200},
             },
             "by_gateway_mode": {
-                "worker": {"total_calls": 80, "failed_calls": 6, "failure_rate": 0.075, "p95_ms": 3500},
+                "responses": {"total_calls": 80, "failed_calls": 6, "failure_rate": 0.075, "p95_ms": 3500},
                 "unknown": {"total_calls": 40, "failed_calls": 4, "failure_rate": 0.1, "p95_ms": 3300},
             },
         }
@@ -232,9 +232,9 @@ def test_build_snapshot_emits_all_new_signals(monkeypatch) -> None:
     async def _aggregate_readiness_health(*_args, **_kwargs):  # noqa: ANN202
         return {
             "backend_ready_fail_count": 4,
-            "worker_ready_fail_count": 1,
+            "responses_ready_fail_count": 1,
             "backend_fail_streak": 3,
-            "worker_fail_streak": 1,
+            "responses_fail_streak": 1,
             "last_failures": [
                 {
                     "service": "backend",
@@ -257,13 +257,13 @@ def test_build_snapshot_emits_all_new_signals(monkeypatch) -> None:
     assert signal_names == {
         "http_5xx_rate_high",
         "backend_ready_unhealthy",
-        "worker_failure_rate_high",
+        "responses_failure_rate_high",
         "llm_call_p95_high",
     }
     severities = {item["signal"]: item["severity"] for item in snapshot["signals"]}
     assert severities["http_5xx_rate_high"] == "critical"
     assert severities["backend_ready_unhealthy"] == "critical"
-    assert severities["worker_failure_rate_high"] == "warning"
+    assert severities["responses_failure_rate_high"] == "warning"
     assert severities["llm_call_p95_high"] == "warning"
 
 

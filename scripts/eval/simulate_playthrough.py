@@ -271,14 +271,17 @@ def simulate_pack_playthrough(
     pack_json: dict[str, Any],
     *,
     strategy: str = "text_help",
-    provider_name: str = "openai",
+    provider_name: str = "responses",
     max_steps: int = 20,
     strategy_seed: int | None = None,
     metadata: dict[str, Any] | None = None,
     rng: random.Random | None = None,
     strategy_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if provider_name != "openai":
+    normalized_provider = str(provider_name or "").strip().lower() or "responses"
+    if normalized_provider == "openai":
+        normalized_provider = "responses"
+    if normalized_provider != "responses":
         raise RuntimeError(f"unsupported provider for local simulation: {provider_name}")
     working_rng = rng or random.Random(strategy_seed)
     metadata_payload = metadata or {}
@@ -288,10 +291,16 @@ def simulate_pack_playthrough(
 
     pack = StoryPack.model_validate(pack_json)
     try:
-        runtime = RuntimeService(get_llm_provider())
+        bundle = get_llm_provider()
+        runtime = RuntimeService(
+            play_agent=bundle.play_agent,
+            agent_model=bundle.model,
+            agent_mode=bundle.mode,
+        )
     except LLMProviderConfigError as exc:
-        raise RuntimeError(f"failed to initialize provider '{provider_name}': {exc}") from exc
+        raise RuntimeError(f"failed to initialize provider '{normalized_provider}': {exc}") from exc
     scene_id, beat_index, state, beat_progress = runtime.initialize_session_state(pack)
+    session_id = f"sim::{strategy_seed or 0}"
     initial_scene_id = scene_id
     ui_moves = runtime.list_ui_moves(pack, scene_id)
     move_style_map = _move_style_map(pack)
@@ -334,6 +343,7 @@ def simulate_pack_playthrough(
             result = asyncio.run(
                 runtime.process_step(
                     pack=pack,
+                    session_id=session_id,
                     current_scene_id=scene_id,
                     beat_index=beat_index,
                     state=state,
@@ -360,7 +370,7 @@ def simulate_pack_playthrough(
                     "generator_version": generator_version,
                     "variant_seed": variant_seed,
                     "strategy_seed": strategy_seed,
-                    "provider": provider_name,
+                    "provider": normalized_provider,
                     "scene_id": scene_id,
                     "previous_scene_id": previous_scene_id,
                     "runtime_error": True,
@@ -417,7 +427,7 @@ def simulate_pack_playthrough(
                 "generator_version": generator_version,
                 "variant_seed": variant_seed,
                 "strategy_seed": strategy_seed,
-                "provider": provider_name,
+                "provider": normalized_provider,
                 "route_source": route_source,
                 "scene_id": scene_id,
                 "previous_scene_id": previous_scene_id,
@@ -444,7 +454,7 @@ def simulate_pack_playthrough(
         "generator_version": generator_version,
         "variant_seed": variant_seed,
         "strategy_seed": strategy_seed,
-        "provider": provider_name,
+        "provider": normalized_provider,
         "steps": len(transcript),
         "ended": ended,
         "meaningful_steps": meaningful_steps,
@@ -563,8 +573,8 @@ def main() -> int:
     parser.add_argument("--strategy-seed", type=int, help="Optional fixed seed for strategy randomness")
     parser.add_argument(
         "--provider",
-        default="openai",
-        choices=["openai"],
+        default="responses",
+        choices=["responses", "openai"],
         help="Provider for local pack simulation mode",
     )
     parser.add_argument("--dev-mode", action="store_true", help="Send dev_mode=true on each /step")

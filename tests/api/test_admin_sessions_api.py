@@ -90,8 +90,8 @@ def test_admin_timeline_contains_step_failed_on_openai_strict_error(client, monk
     assert failed_events
     assert failed_events[-1]["payload"]["error_code"] == "llm_route_failed"
     assert failed_events[-1]["payload"]["request_id"]
-    assert "route_model" in failed_events[-1]["payload"]
-    assert "narration_model" in failed_events[-1]["payload"]
+    assert "agent_model" in failed_events[-1]["payload"]
+    assert failed_events[-1]["payload"]["agent_mode"] == "responses"
 
 
 def test_admin_timeline_contains_step_replayed_for_idempotent_call(client, monkeypatch) -> None:
@@ -227,20 +227,20 @@ def test_admin_runtime_errors_aggregate_endpoint(client, monkeypatch) -> None:
     assert body["buckets"]
     first = body["buckets"][0]
     assert first["error_code"] == "llm_route_failed"
-    assert first["stage"] == "route"
+    assert first["stage"] == "interpret_turn"
     assert isinstance(first["model"], str)
     assert first["model"]
     assert first["sample_request_ids"]
     assert set(first["sample_request_ids"]).issubset(set(collected_request_ids))
 
     filtered = client.get(
-        f"{admin_runtime_errors_path()}?window_seconds=300&limit=20&stage=route&error_code=llm_route_failed"
+        f"{admin_runtime_errors_path()}?window_seconds=300&limit=20&stage=interpret_turn&error_code=llm_route_failed"
     )
     assert filtered.status_code == 200
     filtered_body = filtered.json()
     assert filtered_body["buckets"]
     assert all(bucket["error_code"] == "llm_route_failed" for bucket in filtered_body["buckets"])
-    assert all(bucket["stage"] == "route" for bucket in filtered_body["buckets"])
+    assert all(bucket["stage"] == "interpret_turn" for bucket in filtered_body["buckets"])
 
 
 def test_admin_http_health_endpoint(client, monkeypatch) -> None:
@@ -307,10 +307,10 @@ def test_admin_llm_call_health_endpoint(client, monkeypatch) -> None:
     assert body["total_calls"] >= 2
     assert body["failed_calls"] >= 1
     assert body["p95_ms"] is not None
-    assert set(body["by_stage"].keys()) == {"route", "narration", "json", "unknown"}
-    assert set(body["by_gateway_mode"].keys()) == {"worker", "unknown"}
+    assert set(body["by_stage"].keys()) == {"interpret_turn", "render_resolved_turn", "unknown"}
+    assert set(body["by_gateway_mode"].keys()) == {"responses", "unknown"}
 
-    route_only = client.get(f"{admin_llm_call_health_path()}?window_seconds=300&stage=route")
+    route_only = client.get(f"{admin_llm_call_health_path()}?window_seconds=300&stage=interpret_turn")
     assert route_only.status_code == 200
     assert route_only.json()["total_calls"] >= 1
 

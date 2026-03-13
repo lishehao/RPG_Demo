@@ -25,11 +25,9 @@ def _load_gate_eval_module():
 
 
 def _has_openai_env() -> bool:
-    base_url = (os.getenv("APP_LLM_OPENAI_BASE_URL") or "").strip()
-    api_key = (os.getenv("APP_LLM_OPENAI_API_KEY") or "").strip()
-    model = (os.getenv("APP_LLM_OPENAI_ROUTE_MODEL") or "").strip() or (
-        os.getenv("APP_LLM_OPENAI_NARRATION_MODEL") or ""
-    ).strip() or (os.getenv("APP_LLM_OPENAI_MODEL") or "").strip()
+    base_url = (os.getenv("APP_RESPONSES_BASE_URL") or "").strip()
+    api_key = (os.getenv("APP_RESPONSES_API_KEY") or "").strip()
+    model = (os.getenv("APP_RESPONSES_MODEL") or "").strip()
     return bool(base_url and api_key and model)
 
 
@@ -40,5 +38,5 @@ def test_live_openai_gate_precheck_status_ok() -> None:
     gate_eval = _load_gate_eval_module()
     precheck = gate_eval._run_openai_precheck()
     assert precheck["status"] == "ok", precheck
-    assert precheck.get("route_model")
+    assert precheck.get("agent_model")
     assert isinstance(precheck.get("probe_confidence"), float)

@@ -45,6 +45,7 @@ def _set_present_npc_conflict_tags(pack: StoryPack, scene_id: str, tags: list[st
 
 
 def _run_step(runtime: RuntimeService, *args, **kwargs):  # noqa: ANN002, ANN003, ANN201
+    kwargs.setdefault("session_id", "runtime-test-session")
     return asyncio.run(runtime.process_step(*args, **kwargs))
 
 
@@ -103,7 +104,7 @@ def test_route_failure_raises_runtime_route_error() -> None:
         )
 
     assert exc_info.value.error_code == "llm_route_failed"
-    assert exc_info.value.stage == "route"
+    assert exc_info.value.stage == "interpret_turn"
 
 
 def test_low_confidence_raises_runtime_route_error() -> None:
@@ -122,7 +123,7 @@ def test_low_confidence_raises_runtime_route_error() -> None:
         )
 
     assert exc_info.value.error_code == "llm_route_low_confidence"
-    assert exc_info.value.stage == "route"
+    assert exc_info.value.stage == "interpret_turn"
 
 
 def test_narration_failure_raises_runtime_narration_error() -> None:
@@ -141,7 +142,7 @@ def test_narration_failure_raises_runtime_narration_error() -> None:
         )
 
     assert exc_info.value.error_code == "llm_narration_failed"
-    assert exc_info.value.stage == "narration"
+    assert exc_info.value.stage == "render_resolved_turn"
 
 
 def test_invalid_move_raises_runtime_route_error() -> None:
@@ -160,7 +161,7 @@ def test_invalid_move_raises_runtime_route_error() -> None:
         )
 
     assert exc_info.value.error_code == "llm_route_invalid_move"
-    assert exc_info.value.stage == "route"
+    assert exc_info.value.stage == "interpret_turn"
 
 
 def test_non_help_text_disallows_global_help_route() -> None:
@@ -179,7 +180,7 @@ def test_non_help_text_disallows_global_help_route() -> None:
         )
 
     assert exc_info.value.error_code == "llm_route_invalid_move"
-    assert exc_info.value.stage == "route"
+    assert exc_info.value.stage == "interpret_turn"
 
 
 def test_explicit_help_text_allows_global_help_route() -> None:

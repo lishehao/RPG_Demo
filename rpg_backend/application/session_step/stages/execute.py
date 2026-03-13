@@ -16,10 +16,14 @@ from rpg_backend.runtime.service import RuntimeService
 
 def build_runtime_or_raise(provider_factory: Callable[[], Any]) -> RuntimeService:
     try:
-        provider = provider_factory()
+        bundle = provider_factory()
     except LLMProviderConfigError as exc:
         raise ProviderMisconfiguredError(message=f"llm provider misconfigured: {exc}") from exc
-    return RuntimeService(provider)
+    return RuntimeService(
+        play_agent=bundle.play_agent,
+        agent_model=bundle.model,
+        agent_mode=bundle.mode,
+    )
 
 
 def build_execution_context(provider_factory: Callable[[], Any]) -> RuntimeExecutionContext:
@@ -27,8 +31,8 @@ def build_execution_context(provider_factory: Callable[[], Any]) -> RuntimeExecu
     return RuntimeExecutionContext(
         runtime=runtime,
         provider_name=provider_name(),
-        route_model=getattr(runtime.provider, "route_model", None),
-        narration_model=getattr(runtime.provider, "narration_model", None),
+        agent_model=getattr(runtime, "agent_model", None),
+        agent_mode=getattr(runtime, "agent_mode", None),
     )
 
 
@@ -53,8 +57,8 @@ async def execute_runtime_step(
         beat_index_before=ctx.beat_index_before,
         provider_name=execution_context.provider_name,
         request_id=ctx.request_id,
-        route_model=execution_context.route_model,
-        narration_model=execution_context.narration_model,
+        agent_model=execution_context.agent_model,
+        agent_mode=execution_context.agent_mode,
         input_log_fields=ctx.input_log_fields,
     )
 
@@ -64,6 +68,7 @@ async def execute_runtime_step(
 
     result = await execution_context.runtime.process_step(
         pack,
+        ctx.session.id,
         ctx.session.current_scene_id,
         ctx.session.beat_index,
         working_state,

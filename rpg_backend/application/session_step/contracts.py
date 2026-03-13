@@ -26,8 +26,8 @@ class StepRequestContext:
 class RuntimeExecutionContext:
     runtime: RuntimeService
     provider_name: str
-    route_model: str | None
-    narration_model: str | None
+    agent_model: str | None
+    agent_mode: str | None
 
 
 @dataclass(frozen=True)

@@ -7,9 +7,8 @@ from typing import Any
 from rpg_backend.config.settings import get_settings
 from rpg_backend.domain.constants import GLOBAL_CLARIFY_MOVE_ID, GLOBAL_HELP_ME_PROGRESS_MOVE_ID
 from rpg_backend.domain.pack_schema import Beat, Move, Scene
-from rpg_backend.llm.base import LLMProvider
+from rpg_backend.llm.agents import PlayAgent
 from rpg_backend.runtime.errors import RuntimeRouteError
-from rpg_backend.runtime_chains import RouteIntentChain
 
 _HELP_INTENT_RE = re.compile(
     r"\b(help|stuck|next step|what now|guide me|dont know|don't know|how do i proceed)\b",
@@ -41,11 +40,12 @@ def _route_candidates(*, llm_available: list[str], move_map: dict[str, Move]) ->
 
 
 async def route_player_action(
-    provider: LLMProvider,
+    play_agent: PlayAgent,
     scene: Scene,
     move_map: dict[str, Move],
     action_input: dict[str, Any],
     *,
+    session_id: str,
     state: dict[str, Any] | None = None,
     beat_progress: dict[str, int] | None = None,
     beat: Beat | None = None,
@@ -136,26 +136,29 @@ async def route_player_action(
         "state_snapshot": state_snapshot,
     }
     provider_name = "openai"
-    gateway_mode = str(getattr(provider, "gateway_mode", "unknown") or "unknown").strip().lower()
+    gateway_mode = "responses"
     route_started_at = time.perf_counter()
     route_candidates = _route_candidates(llm_available=llm_available, move_map=move_map)
     route_key_map = {item["key"]: item["move_id"] for item in route_candidates}
 
     try:
-        routed, route_duration_ms, gateway_mode = await RouteIntentChain(provider=provider).choose(
+        routed = await play_agent.interpret_turn(
+            session_id=session_id,
             scene_context=scene_context,
             route_candidates=route_candidates,
             text=text,
         )
+        route_duration_ms = int(routed.diagnostics.duration_ms)
+        gateway_mode = "responses"
     except Exception as exc:  # noqa: BLE001
         route_duration_ms = int((time.perf_counter() - route_started_at) * 1000)
         raise RuntimeRouteError(
             error_code="llm_route_failed",
-            message=f"route chain failed after provider retries: {exc}",
+            message=f"play agent interpret_turn failed: {exc}",
             provider=provider_name,
             provider_error_code=getattr(exc, "provider_error_code", None),
             llm_duration_ms=route_duration_ms,
-            gateway_mode=str(getattr(exc, "gateway_mode", gateway_mode) or gateway_mode),
+            gateway_mode=gateway_mode,
         ) from exc
 
     route_duration_ms = int(route_duration_ms or ((time.perf_counter() - route_started_at) * 1000))
@@ -169,6 +172,8 @@ async def route_player_action(
             provider=provider_name,
             llm_duration_ms=route_duration_ms,
             gateway_mode=gateway_mode,
+            response_id=routed.diagnostics.response_id,
+            reasoning_summary=routed.diagnostics.reasoning_summary,
         )
     elif confidence < threshold:
         raise RuntimeRouteError(
@@ -177,6 +182,8 @@ async def route_player_action(
             provider=provider_name,
             llm_duration_ms=route_duration_ms,
             gateway_mode=gateway_mode,
+            response_id=routed.diagnostics.response_id,
+            reasoning_summary=routed.diagnostics.reasoning_summary,
         )
 
     return {
@@ -186,4 +193,6 @@ async def route_player_action(
         "route_source": route_source,
         "llm_duration_ms": route_duration_ms,
         "llm_gateway_mode": gateway_mode,
+        "response_id": routed.diagnostics.response_id,
+        "reasoning_summary": routed.diagnostics.reasoning_summary,
     }

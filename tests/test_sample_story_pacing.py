@@ -23,6 +23,7 @@ def test_runtime_simulation_reaches_terminal_within_expected_steps() -> None:
         result = asyncio.run(
             runtime.process_step(
                 pack,
+                session_id="runtime-test-session",
                 current_scene_id=scene_id,
                 beat_index=beat_index,
                 state=state,

@@ -1,53 +1,100 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
 from rpg_backend.config.settings import get_settings
-from rpg_backend.llm.base import LLMProvider, LLMProviderConfigError
-from rpg_backend.llm.worker_client import WorkerClientError, get_worker_client
-from rpg_backend.llm.worker_provider import WorkerProvider
+from rpg_backend.llm.agents import AuthorAgent, PlayAgent
+from rpg_backend.llm.base import LLMProviderConfigError
+from rpg_backend.llm.response_sessions import ResponseSessionStore
+from rpg_backend.llm.responses_transport import ResponsesTransport
 
 
-def _normalize_model(value: str | None) -> str:
-    return (value or "").strip()
+@dataclass(frozen=True)
+class ResponsesAgentBundle:
+    play_agent: PlayAgent
+    author_agent: AuthorAgent
+    model: str
+    mode: str = "responses"
 
 
-def resolve_openai_models(
-    route_model: str | None,
-    narration_model: str | None,
-    model: str | None,
-) -> tuple[str, str]:
-    default = _normalize_model(model)
-    effective_route = _normalize_model(route_model) or default
-    effective_narration = _normalize_model(narration_model) or default
-    return effective_route, effective_narration
+_cached_bundle: ResponsesAgentBundle | None = None
+_cached_signature: tuple[str, str, str, float, bool] | None = None
 
 
-def resolve_openai_generator_model(generator_model: str | None, model: str | None) -> str:
-    return _normalize_model(generator_model) or _normalize_model(model)
+def _settings_signature() -> tuple[str, str, str, float, bool]:
+    settings = get_settings()
+    return (
+        (settings.responses_base_url or "").strip(),
+        (settings.responses_api_key or "").strip(),
+        (settings.responses_model or "").strip(),
+        float(settings.responses_timeout_seconds),
+        bool(settings.responses_enable_thinking),
+    )
 
 
-def get_llm_provider() -> LLMProvider:
+def _build_bundle() -> ResponsesAgentBundle:
     settings = get_settings()
 
-    route_model, narration_model = resolve_openai_models(
-        settings.llm_openai_route_model,
-        settings.llm_openai_narration_model,
-        settings.llm_openai_model,
-    )
-    if not route_model or not narration_model:
-        raise LLMProviderConfigError(
-            "openai provider misconfigured; missing route/narration model. "
-            "Set APP_LLM_OPENAI_MODEL or both APP_LLM_OPENAI_ROUTE_MODEL and APP_LLM_OPENAI_NARRATION_MODEL"
-        )
+    base_url = (settings.responses_base_url or "").strip()
+    api_key = (settings.responses_api_key or "").strip()
+    model = (settings.responses_model or "").strip()
 
-    try:
-        worker_client = get_worker_client()
-    except WorkerClientError as exc:
-        raise LLMProviderConfigError(f"llm worker misconfigured: {exc.error_code}: {exc.message}") from exc
-    return WorkerProvider(
-        worker_client=worker_client,
-        route_model=route_model,
-        narration_model=narration_model,
-        timeout_seconds=settings.llm_openai_timeout_seconds,
-        route_max_retries=settings.llm_openai_route_max_retries,
-        narration_max_retries=settings.llm_openai_narration_max_retries,
-        route_temperature=settings.llm_openai_temperature_route,
-        narration_temperature=settings.llm_openai_temperature_narration,
+    if not base_url:
+        raise LLMProviderConfigError("responses provider misconfigured: APP_RESPONSES_BASE_URL is required")
+    if not api_key:
+        raise LLMProviderConfigError("responses provider misconfigured: APP_RESPONSES_API_KEY is required")
+    if not model:
+        raise LLMProviderConfigError("responses provider misconfigured: APP_RESPONSES_MODEL is required")
+
+    timeout_seconds = float(settings.responses_timeout_seconds)
+    enable_thinking = bool(settings.responses_enable_thinking)
+    transport = ResponsesTransport(
+        base_url=base_url,
+        api_key=api_key,
+        model=model,
+        timeout_seconds=timeout_seconds,
     )
+    session_store = ResponseSessionStore()
+
+    play_agent = PlayAgent(
+        transport=transport,
+        session_store=session_store,
+        model=model,
+        timeout_seconds=timeout_seconds,
+        enable_thinking=enable_thinking,
+    )
+    author_agent = AuthorAgent(
+        transport=transport,
+        session_store=session_store,
+        model=model,
+        timeout_seconds=timeout_seconds,
+        enable_thinking=enable_thinking,
+    )
+
+    return ResponsesAgentBundle(
+        play_agent=play_agent,
+        author_agent=author_agent,
+        model=model,
+    )
+
+
+def get_responses_agent_bundle() -> ResponsesAgentBundle:
+    global _cached_bundle, _cached_signature
+    signature = _settings_signature()
+    if _cached_bundle is None or _cached_signature != signature:
+        _cached_bundle = _build_bundle()
+        _cached_signature = signature
+    return _cached_bundle
+
+
+# Backward compatibility for callsites that still reference "provider".
+def get_llm_provider() -> ResponsesAgentBundle:
+    return get_responses_agent_bundle()
+
+
+def get_play_agent() -> PlayAgent:
+    return get_responses_agent_bundle().play_agent
+
+
+def get_author_agent() -> AuthorAgent:
+    return get_responses_agent_bundle().author_agent

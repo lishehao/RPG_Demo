@@ -15,7 +15,6 @@ from rpg_backend.storage.models import AdminUser
 _DEFAULT_JWT_SECRET = "dev-only-change-me"
 _DEFAULT_ADMIN_EMAIL = "admin@example.com"
 _DEFAULT_ADMIN_PASSWORD = "admin123456"
-_DEFAULT_INTERNAL_WORKER_TOKEN = "dev-worker-token"
 
 
 @dataclass(frozen=True)
@@ -28,20 +27,6 @@ class ProductionSecretValidationError(RuntimeError):
 
 def _is_production(settings: Settings) -> bool:
     return (settings.app_env or "").strip().lower() in {"prod", "production"}
-
-
-def _has_any_model(settings: Settings) -> bool:
-    default_model = (settings.llm_openai_model or "").strip()
-    if default_model:
-        return True
-    return all(
-        (value or "").strip()
-        for value in (
-            settings.llm_openai_route_model,
-            settings.llm_openai_narration_model,
-            settings.llm_openai_generator_model,
-        )
-    )
 
 
 def assert_production_secret_requirements(settings: Settings | None = None) -> None:
@@ -57,12 +42,12 @@ def assert_production_secret_requirements(settings: Settings | None = None) -> N
     elif database_url.startswith("sqlite"):
         missing.append("APP_DATABASE_URL(non-sqlite required in prod)")
 
-    if not (current.llm_openai_base_url or "").strip():
-        missing.append("APP_LLM_OPENAI_BASE_URL")
-    if not (current.llm_openai_api_key or "").strip():
-        missing.append("APP_LLM_OPENAI_API_KEY")
-    if not _has_any_model(current):
-        missing.append("APP_LLM_OPENAI_MODEL|APP_LLM_OPENAI_ROUTE_MODEL|APP_LLM_OPENAI_NARRATION_MODEL")
+    if not (current.responses_base_url or "").strip():
+        missing.append("APP_RESPONSES_BASE_URL")
+    if not (current.responses_api_key or "").strip():
+        missing.append("APP_RESPONSES_API_KEY")
+    if not (current.responses_model or "").strip():
+        missing.append("APP_RESPONSES_MODEL")
     if not (current.obs_alert_webhook_url or "").strip():
         missing.append("APP_OBS_ALERT_WEBHOOK_URL")
 
@@ -77,10 +62,6 @@ def assert_production_secret_requirements(settings: Settings | None = None) -> N
     admin_password = (current.admin_bootstrap_password or "").strip()
     if not admin_password or admin_password == _DEFAULT_ADMIN_PASSWORD:
         missing.append("APP_ADMIN_BOOTSTRAP_PASSWORD")
-
-    worker_token = (current.internal_worker_token or "").strip()
-    if not worker_token or worker_token == _DEFAULT_INTERNAL_WORKER_TOKEN:
-        missing.append("APP_INTERNAL_WORKER_TOKEN")
 
     if missing:
         raise ProductionSecretValidationError(

@@ -58,6 +58,7 @@ def _to_executor_error(
     attempts: int,
     model: str,
     error_code_prefix: str,
+    timeout_seconds: float,
 ) -> TaskExecutorError:
     if isinstance(exc, TaskExecutorError):
         return TaskExecutorError(
@@ -69,9 +70,11 @@ def _to_executor_error(
             model=model,
         )
     if isinstance(exc, httpx.TimeoutException):
+        detail = str(exc).strip()
+        message = detail or f"request timed out after {float(timeout_seconds):.1f}s"
         return TaskExecutorError(
             error_code=f"{error_code_prefix}_timeout",
-            message=str(exc),
+            message=message,
             retryable=True,
             status_code=None,
             attempts=attempts,
@@ -163,4 +166,5 @@ async def execute_json_task(
         attempts=last_attempt,
         model=model,
         error_code_prefix=error_code_prefix,
+        timeout_seconds=float(timeout_seconds),
     ) from last_exc

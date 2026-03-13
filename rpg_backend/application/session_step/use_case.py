@@ -45,7 +45,7 @@ async def process_step_command(
         )
     except (RuntimeRouteError, RuntimeNarrationError) as exc:
         failure_duration_ms = int((time.perf_counter() - started_at) * 1000)
-        _route_ms, llm_duration_ms, llm_gateway_mode, _narration_gateway_mode = await record_llm_call_events(
+        _interpret_ms, llm_duration_ms, llm_gateway_mode, _render_gateway_mode, _interpret_response_id, _render_response_id, _interpret_reasoning_summary, _render_reasoning_summary = await record_llm_call_events(
             ctx,
             execution_context=execution_context,
             runtime_exc=exc,
@@ -71,7 +71,7 @@ async def process_step_command(
             },
         ) from exc
 
-    route_llm_duration_ms, narration_llm_duration_ms, route_gateway_mode, narration_gateway_mode = (
+    interpret_duration_ms, render_duration_ms, interpret_gateway_mode, render_gateway_mode, interpret_response_id, render_response_id, interpret_reasoning_summary, render_reasoning_summary = (
         await record_llm_call_events(
             ctx,
             execution_context=execution_context,
@@ -102,10 +102,14 @@ async def process_step_command(
         ctx,
         execution_context=execution_context,
         execution_success=execution_success,
-        route_llm_duration_ms=route_llm_duration_ms,
-        narration_llm_duration_ms=narration_llm_duration_ms,
-        route_llm_gateway_mode=route_gateway_mode,
-        narration_llm_gateway_mode=narration_gateway_mode,
+        interpret_duration_ms=interpret_duration_ms,
+        render_duration_ms=render_duration_ms,
+        interpret_gateway_mode=interpret_gateway_mode,
+        render_gateway_mode=render_gateway_mode,
+        interpret_response_id=interpret_response_id,
+        render_response_id=render_response_id,
+        interpret_reasoning_summary=interpret_reasoning_summary,
+        render_reasoning_summary=render_reasoning_summary,
         turn_index_applied=turn_index_applied,
     )
 

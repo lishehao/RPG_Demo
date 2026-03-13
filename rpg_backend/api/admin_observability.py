@@ -39,16 +39,21 @@ def _empty_llm_group() -> LLMCallGroupHealthPayload:
 
 def _stable_stage_groups(raw: dict[str, dict]) -> LLMCallByStagePayload:
     return LLMCallByStagePayload(
-        route=LLMCallGroupHealthPayload.model_validate(raw.get("route") or _empty_llm_group().model_dump()),
-        narration=LLMCallGroupHealthPayload.model_validate(raw.get("narration") or _empty_llm_group().model_dump()),
-        json_stage=LLMCallGroupHealthPayload.model_validate(raw.get("json") or _empty_llm_group().model_dump()),
+        interpret_turn=LLMCallGroupHealthPayload.model_validate(
+            raw.get("interpret_turn") or _empty_llm_group().model_dump()
+        ),
+        render_resolved_turn=LLMCallGroupHealthPayload.model_validate(
+            raw.get("render_resolved_turn") or _empty_llm_group().model_dump()
+        ),
         unknown=LLMCallGroupHealthPayload.model_validate(raw.get("unknown") or _empty_llm_group().model_dump()),
     )
 
 
 def _stable_gateway_groups(raw: dict[str, dict]) -> LLMCallByGatewayModePayload:
     return LLMCallByGatewayModePayload(
-        worker=LLMCallGroupHealthPayload.model_validate(raw.get("worker") or _empty_llm_group().model_dump()),
+        responses=LLMCallGroupHealthPayload.model_validate(
+            raw.get("responses") or _empty_llm_group().model_dump()
+        ),
         unknown=LLMCallGroupHealthPayload.model_validate(raw.get("unknown") or _empty_llm_group().model_dump()),
     )
 
@@ -57,7 +62,7 @@ def _stable_gateway_groups(raw: dict[str, dict]) -> LLMCallByGatewayModePayload:
 async def get_runtime_errors_aggregate_endpoint(
     window_seconds: int = Query(default=300, ge=60, le=3600),
     limit: int = Query(default=20, ge=1, le=100),
-    stage: Literal["route", "narration"] | None = Query(default=None),
+    stage: Literal["interpret_turn", "render_resolved_turn"] | None = Query(default=None),
     error_code: str | None = Query(default=None),
     db: AsyncSession = Depends(get_async_session),
 ) -> RuntimeErrorsAggregateResponse:
@@ -93,7 +98,7 @@ async def get_runtime_errors_aggregate_endpoint(
 @router.get("/http-health", response_model=HttpHealthAggregateResponse)
 async def get_http_health_endpoint(
     window_seconds: int = Query(default=300, ge=60, le=3600),
-    service: Literal["backend", "worker"] = Query(default="backend"),
+    service: Literal["backend", "responses"] = Query(default="backend"),
     path_prefix: str | None = Query(default=None),
     exclude_paths: str | None = Query(default=None),
     db: AsyncSession = Depends(get_async_session),
@@ -125,8 +130,8 @@ async def get_http_health_endpoint(
 @router.get("/llm-call-health", response_model=LLMCallHealthAggregateResponse)
 async def get_llm_call_health_endpoint(
     window_seconds: int = Query(default=300, ge=60, le=3600),
-    stage: Literal["route", "narration", "json"] | None = Query(default=None),
-    gateway_mode: Literal["worker", "unknown"] | None = Query(default=None),
+    stage: Literal["interpret_turn", "render_resolved_turn"] | None = Query(default=None),
+    gateway_mode: Literal["responses", "unknown"] | None = Query(default=None),
     db: AsyncSession = Depends(get_async_session),
 ) -> LLMCallHealthAggregateResponse:
     aggregated = await query_llm_health(
@@ -161,8 +166,8 @@ async def get_readiness_health_endpoint(
         window_ended_at=aggregated.get("window_ended_at") or datetime.now(UTC),
         window_seconds=window_seconds,
         backend_ready_fail_count=int(aggregated["backend_ready_fail_count"]),
-        worker_ready_fail_count=int(aggregated["worker_ready_fail_count"]),
+        responses_ready_fail_count=int(aggregated["responses_ready_fail_count"]),
         backend_fail_streak=int(aggregated["backend_fail_streak"]),
-        worker_fail_streak=int(aggregated["worker_fail_streak"]),
+        responses_fail_streak=int(aggregated["responses_fail_streak"]),
         last_failures=list(aggregated["last_failures"]),
     )

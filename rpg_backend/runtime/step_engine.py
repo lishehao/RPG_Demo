@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from rpg_backend.domain.pack_schema import StoryPack
-from rpg_backend.llm.base import LLMProvider
+from rpg_backend.llm.agents import PlayAgent
 from rpg_backend.runtime.effects import apply_effects
 from rpg_backend.runtime.narration import render_echo_commit_hook
 from rpg_backend.runtime.pressure import apply_pressure_recoil
@@ -20,8 +20,9 @@ def _beat_index_by_id(pack: StoryPack) -> dict[str, int]:
 
 async def process_runtime_step(
     *,
-    provider: LLMProvider,
+    play_agent: PlayAgent,
     pack: StoryPack,
+    session_id: str,
     current_scene_id: str,
     beat_index: int,
     state: dict[str, Any],
@@ -37,10 +38,11 @@ async def process_runtime_step(
     scene = scenes[current_scene_id]
     current_beat = pack.beats[beat_index] if 0 <= beat_index < len(pack.beats) else None
     recognized = await route_player_action(
-        provider,
+        play_agent,
         scene,
         moves,
         action_input,
+        session_id=session_id,
         state=state,
         beat_progress=beat_progress,
         beat=current_beat,
@@ -80,11 +82,12 @@ async def process_runtime_step(
 
     stance_summary = build_stance_summary(stance_snapshot) if runtime_turn % 2 == 0 else None
     narration_result = await render_echo_commit_hook(
-        provider,
+        play_agent,
         outcome.narration_slots,
         recognized["interpreted_intent"],
         outcome.result,
         pack.style_guard,
+        session_id=session_id,
         strategy_style=chosen_move.strategy_style,
         scene_id=scene.id,
         next_scene_id=current_scene_id if not ended else None,
@@ -123,10 +126,14 @@ async def process_runtime_step(
             "input_hint": pack.input_hint,
         },
         runtime_metrics={
-            "route_llm_duration_ms": recognized.get("llm_duration_ms"),
-            "route_llm_gateway_mode": recognized.get("llm_gateway_mode"),
-            "narration_llm_duration_ms": narration_result.get("llm_duration_ms"),
-            "narration_llm_gateway_mode": narration_result.get("llm_gateway_mode"),
+            "interpret_duration_ms": recognized.get("llm_duration_ms"),
+            "interpret_gateway_mode": recognized.get("llm_gateway_mode"),
+            "interpret_response_id": recognized.get("response_id"),
+            "interpret_reasoning_summary": recognized.get("reasoning_summary"),
+            "render_duration_ms": narration_result.get("llm_duration_ms"),
+            "render_gateway_mode": narration_result.get("llm_gateway_mode"),
+            "render_response_id": narration_result.get("response_id"),
+            "render_reasoning_summary": narration_result.get("reasoning_summary"),
         },
         debug=debug,
     )

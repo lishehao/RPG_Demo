@@ -9,8 +9,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rpg_backend.config.settings import get_settings
 from rpg_backend.infrastructure.db.async_engine import async_engine
-from rpg_backend.llm.factory import resolve_openai_generator_model, resolve_openai_models
-from rpg_backend.llm.worker_client import WorkerClientError, get_worker_client
+from rpg_backend.llm.base import LLMProviderConfigError
+from rpg_backend.llm.factory import get_responses_agent_bundle
+from rpg_backend.llm.responses_transport import ResponsesTransportError
 from rpg_backend.observability.readiness_core import (
     AsyncTTLProbeCache,
     build_check_payload,
@@ -51,30 +52,21 @@ def _build_check_result(
 
 def _resolved_probe_config() -> tuple[dict[str, Any], list[str]]:
     settings = get_settings()
-    worker_base_url = (getattr(settings, "llm_worker_base_url", None) or "").strip()
-    internal_worker_token = (getattr(settings, "internal_worker_token", None) or "").strip()
-    route_model, narration_model = resolve_openai_models(
-        settings.llm_openai_route_model,
-        settings.llm_openai_narration_model,
-        settings.llm_openai_model,
-    )
-    probe_model = resolve_openai_generator_model(
-        settings.llm_openai_generator_model,
-        settings.llm_openai_model,
-    ) or route_model or narration_model
+    responses_base_url = (getattr(settings, "responses_base_url", None) or "").strip()
+    responses_api_key = (getattr(settings, "responses_api_key", None) or "").strip()
+    probe_model = (getattr(settings, "responses_model", None) or "").strip()
     missing = validate_required_config(
         {
-            "APP_LLM_WORKER_BASE_URL": worker_base_url,
-            "APP_INTERNAL_WORKER_TOKEN": internal_worker_token,
+            "APP_RESPONSES_BASE_URL": responses_base_url,
+            "APP_RESPONSES_API_KEY": responses_api_key,
+            "APP_RESPONSES_MODEL": probe_model,
         }
     )
     return (
         {
-            "gateway_mode": "worker",
-            "worker_base_url": worker_base_url,
+            "gateway_mode": "responses",
+            "responses_base_url": responses_base_url,
             "probe_model": probe_model,
-            "route_model": route_model,
-            "narration_model": narration_model,
         },
         missing,
     )
@@ -106,13 +98,11 @@ async def check_db() -> dict[str, Any]:
 def check_llm_config() -> dict[str, Any]:
     checked_at = _utc_now()
     config, missing = _resolved_probe_config()
-    worker_base_url = str(config.get("worker_base_url") or "")
+    responses_base_url = str(config.get("responses_base_url") or "")
     meta = {
-        "gateway_mode": "worker",
+        "gateway_mode": "responses",
         "probe_model": config.get("probe_model"),
-        "route_model": config.get("route_model"),
-        "narration_model": config.get("narration_model"),
-        "worker_host": urlparse(worker_base_url).hostname,
+        "responses_host": urlparse(responses_base_url).hostname,
     }
     if missing:
         return _build_check_result(
@@ -154,14 +144,14 @@ async def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
             checked_at=checked_at,
             error_code=None,
             message=None,
-            meta={"cached": False, "skipped": True, "reason": "probe_disabled", "gateway_mode": "worker"},
+            meta={"cached": False, "skipped": True, "reason": "probe_disabled", "gateway_mode": "responses"},
         )
 
     config, missing = _resolved_probe_config()
     probe_model = str(config.get("probe_model") or "")
-    worker_base_url = str(config.get("worker_base_url") or "")
-    worker_host = urlparse(worker_base_url).hostname
-    cache_key = f"worker|{worker_base_url}|{probe_model}"
+    responses_base_url = str(config.get("responses_base_url") or "")
+    responses_host = urlparse(responses_base_url).hostname
+    cache_key = f"responses|{responses_base_url}|{probe_model}"
     ttl_seconds = settings.ready_llm_probe_cache_ttl_seconds
 
     if missing:
@@ -173,42 +163,31 @@ async def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
             message=f"missing config: {', '.join(missing)}",
             meta={
                 "cached": False,
-                "gateway_mode": "worker",
+                "gateway_mode": "responses",
                 "probe_model": probe_model or None,
-                "worker_host": worker_host,
+                "responses_host": responses_host,
             },
         )
 
     async def _compute_probe_result() -> dict[str, Any]:
         started_at = _monotonic()
         try:
-            worker_client = get_worker_client()
-            status_code, worker_payload = await worker_client.probe_ready(refresh=refresh)
-            if status_code >= 400:
-                error_message = str(
-                    worker_payload.get("checks", {}).get("llm_probe", {}).get("error_code")
-                    or worker_payload.get("status")
-                    or f"worker status={status_code}"
-                )
-                return _build_check_result(
-                    ok=False,
-                    latency_ms=int((_monotonic() - started_at) * 1000),
-                    checked_at=_utc_now(),
-                    error_code="llm_probe_worker_not_ready",
-                    message=error_message,
-                    meta={
-                        "cached": False,
-                        "gateway_mode": "worker",
-                        "probe_model": probe_model,
-                        "worker_host": worker_host,
-                        "worker_status_code": status_code,
+            bundle = get_responses_agent_bundle()
+            transport = bundle.play_agent.transport
+            probe_response = await transport.create(
+                model=probe_model,
+                input=[
+                    {
+                        "role": "developer",
+                        "content": [{"type": "input_text", "text": "Return plain text: ready"}],
                     },
-                )
-
-            worker_status = str(worker_payload.get("status") or "")
-            if worker_status != "ready":
-                raise ValueError(f"worker /ready returned unexpected status: {worker_status}")
-            llm_probe = (worker_payload.get("checks") or {}).get("llm_probe") or {}
+                    {
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": "responses health probe"}],
+                    },
+                ],
+                timeout=float(settings.ready_llm_probe_timeout_seconds),
+            )
             return _build_check_result(
                 ok=True,
                 latency_ms=int((_monotonic() - started_at) * 1000),
@@ -217,24 +196,38 @@ async def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
                 message=None,
                 meta={
                     "cached": False,
-                    "gateway_mode": "worker",
+                    "gateway_mode": "responses",
                     "probe_model": probe_model,
-                    "worker_host": worker_host,
-                    "worker_probe_cached": bool((llm_probe.get("meta") or {}).get("cached", False)),
+                    "responses_host": responses_host,
+                    "response_id": probe_response.response_id,
                 },
             )
-        except WorkerClientError as exc:
+        except LLMProviderConfigError as exc:
             return _build_check_result(
                 ok=False,
                 latency_ms=int((_monotonic() - started_at) * 1000),
                 checked_at=_utc_now(),
-                error_code="llm_probe_worker_unreachable",
-                message=f"{exc.error_code}: {exc.message}",
+                error_code="llm_probe_misconfigured",
+                message=str(exc),
                 meta={
                     "cached": False,
-                    "gateway_mode": "worker",
+                    "gateway_mode": "responses",
                     "probe_model": probe_model,
-                    "worker_host": worker_host,
+                    "responses_host": responses_host,
+                },
+            )
+        except ResponsesTransportError as exc:
+            return _build_check_result(
+                ok=False,
+                latency_ms=int((_monotonic() - started_at) * 1000),
+                checked_at=_utc_now(),
+                error_code=str(exc.error_code or "llm_probe_failed"),
+                message=exc.message,
+                meta={
+                    "cached": False,
+                    "gateway_mode": "responses",
+                    "probe_model": probe_model,
+                    "responses_host": responses_host,
                 },
             )
         except Exception as exc:  # noqa: BLE001
@@ -246,9 +239,9 @@ async def check_llm_probe(*, refresh: bool = False) -> dict[str, Any]:
                 message=str(exc),
                 meta={
                     "cached": False,
-                    "gateway_mode": "worker",
+                    "gateway_mode": "responses",
                     "probe_model": probe_model,
-                    "worker_host": worker_host,
+                    "responses_host": responses_host,
                 },
             )
 
@@ -275,7 +268,7 @@ async def run_readiness_checks_async(*, refresh: bool = False) -> dict[str, Any]
             checked_at=_utc_now(),
             error_code="llm_probe_misconfigured",
             message="llm probe skipped because llm_config is invalid",
-            meta={"cached": False, "skipped": True, "gateway_mode": "worker"},
+            meta={"cached": False, "skipped": True, "gateway_mode": "responses"},
         )
 
     is_ready = bool(db_check["ok"] and llm_config_check["ok"] and llm_probe_check["ok"])

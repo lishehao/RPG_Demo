@@ -4,7 +4,6 @@ from fastapi import FastAPI
 
 from rpg_backend.api.errors import register_error_handlers
 from rpg_backend.api.router_registry import register_routers
-from rpg_backend.llm.worker_client import close_worker_client_cache
 from rpg_backend.observability.logging import configure_logging
 from rpg_backend.security.bootstrap import (
     assert_production_secret_requirements,
@@ -23,7 +22,7 @@ async def lifespan(_: FastAPI):
     try:
         yield
     finally:
-        await close_worker_client_cache()
+        pass
 
 
 app = FastAPI(title="RPG Backend API", lifespan=lifespan)

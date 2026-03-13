@@ -9,9 +9,7 @@ from pydantic import ValidationError
 from rpg_backend.config.settings import get_settings
 from rpg_backend.eval.story_quality_schema import StoryQualityJudgeResult
 from rpg_backend.llm.base import LLMProviderConfigError
-from rpg_backend.llm.factory import resolve_openai_generator_model
-from rpg_backend.llm.json_gateway import JsonGateway, JsonGatewayError
-from rpg_backend.llm.worker_client import WorkerClientError, get_worker_client
+from rpg_backend.llm.factory import get_responses_agent_bundle
 
 
 @dataclass
@@ -34,40 +32,18 @@ class StoryQualityJudge:
 
     def __init__(self, *, model_override: str | None = None) -> None:
         settings = get_settings()
-        self.model = self._resolve_model(settings, model_override=model_override)
-        self.timeout_seconds = settings.llm_openai_timeout_seconds
+        self.bundle = get_responses_agent_bundle()
+        self.model = (model_override or "").strip() or self.bundle.model
+        self.timeout_seconds = float(settings.responses_timeout_seconds)
         self.temperature = 0.1
-        self.max_retries = max(1, min(settings.llm_openai_generator_max_retries, 3))
-        try:
-            worker_client = get_worker_client()
-        except WorkerClientError as exc:
-            raise LLMProviderConfigError(
-                f"llm worker misconfigured for story quality judge: {exc.error_code}: {exc.message}"
-            ) from exc
-
-        self._json_gateway = JsonGateway(
-            default_timeout_seconds=float(self.timeout_seconds),
-            worker_client=worker_client,
-        )
+        self.enable_thinking = bool(settings.responses_enable_thinking)
 
         if not self.model:
             raise StoryQualityJudgeError(
                 error_type="misconfigured",
                 message="story quality judge missing model",
-                notes=[
-                    "check APP_LLM_OPENAI_GENERATOR_MODEL / APP_LLM_OPENAI_ROUTE_MODEL / APP_LLM_OPENAI_MODEL",
-                ],
+                notes=["check APP_RESPONSES_MODEL"],
             )
-
-    @staticmethod
-    def _resolve_model(settings, *, model_override: str | None = None) -> str:
-        override = (model_override or "").strip()
-        if override:
-            return override
-        return resolve_openai_generator_model(
-            settings.llm_openai_generator_model,
-            settings.llm_openai_model,
-        )
 
     @staticmethod
     def parse_result_payload(payload: dict[str, Any]) -> StoryQualityJudgeResult:
@@ -89,10 +65,9 @@ class StoryQualityJudge:
         transcript_summary: dict[str, Any],
         metrics: dict[str, Any],
     ) -> StoryQualityJudgeDecision:
-        system_prompt = (
+        developer_prompt = (
             "You are a strict evaluator for interactive narrative packs. "
-            "Return JSON only. Score each axis from 0 to 10. "
-            "Use low scores when completion exists but player agency, coherence, or fidelity is weak."
+            "Return strict JSON only. Score each axis from 0 to 10."
         )
         user_prompt = json.dumps(
             {
@@ -118,32 +93,50 @@ class StoryQualityJudge:
         )
 
         try:
-            gateway_result = await self._json_gateway.call_json_object(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
+            result = await self.bundle.author_agent.transport.create(
                 model=self.model,
-                temperature=float(self.temperature),
-                max_retries=self.max_retries,
-                timeout_seconds=float(self.timeout_seconds),
+                input=[
+                    {
+                        "role": "developer",
+                        "content": [{"type": "input_text", "text": developer_prompt}],
+                    },
+                    {
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": user_prompt}],
+                    },
+                ],
+                previous_response_id=None,
+                timeout=float(self.timeout_seconds),
+                extra_body={"enable_thinking": self.enable_thinking},
             )
-        except JsonGatewayError as exc:
-            raise StoryQualityJudgeError(
-                error_type="judge_failed",
-                message=f"{exc.error_code}: {exc.message}",
-                notes=[f"judge failed after {exc.attempts or self.max_retries} attempts"],
-            ) from exc
+        except LLMProviderConfigError:
+            raise
         except Exception as exc:  # noqa: BLE001
             raise StoryQualityJudgeError(
                 error_type="judge_failed",
                 message=str(exc),
-                notes=[f"judge failed after {self.max_retries} attempts"],
+                notes=["judge responses call failed"],
             ) from exc
 
-        validated = self.parse_result_payload(gateway_result.payload)
-        attempts = int(gateway_result.attempts or 1)
+        try:
+            payload = json.loads(result.output_text)
+        except Exception as exc:  # noqa: BLE001
+            raise StoryQualityJudgeError(
+                error_type="judge_invalid_json",
+                message=str(exc),
+                notes=["judge output is not valid JSON"],
+            ) from exc
+
+        if not isinstance(payload, dict):
+            raise StoryQualityJudgeError(
+                error_type="judge_invalid_json",
+                message="judge output is not a JSON object",
+            )
+
+        validated = self.parse_result_payload(payload)
         return StoryQualityJudgeDecision(
             result=validated,
             model=self.model,
-            attempts=attempts,
-            notes=[f"judge_model={self.model}", f"judge_attempts={attempts}"],
+            attempts=1,
+            notes=[f"judge_model={self.model}", "judge_attempts=1", f"response_id={result.response_id or ''}"],
         )

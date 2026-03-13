@@ -156,11 +156,11 @@ def test_step_is_idempotent_by_client_action_id(client, monkeypatch) -> None:
     succeeded = _get_last_event(events, "step_succeeded")
     replayed = _get_last_event(events, "step_replayed")
     assert started["payload"]["request_id"]
-    assert "route_model" in started["payload"]
-    assert "narration_model" in started["payload"]
+    assert "agent_model" in started["payload"]
+    assert started["payload"]["agent_mode"] == "responses"
     assert succeeded["payload"]["request_id"]
-    assert "route_model" in succeeded["payload"]
-    assert "narration_model" in succeeded["payload"]
+    assert "agent_model" in succeeded["payload"]
+    assert succeeded["payload"]["agent_mode"] == "responses"
     assert replayed["payload"]["request_id"]
 
 
@@ -329,7 +329,7 @@ def test_step_response_strict_shape_and_debug_only_in_dev_mode(client, monkeypat
     assert set(normal_body["resolution"].keys()) == {"result", "costs_summary", "consequences_summary"}
     assert set(normal_body["ui"].keys()) == {"moves", "input_hint"}
     assert "debug" not in normal_body
-    assert normal_body["recognized"]["llm_gateway_mode"] in {"worker", "unknown"}
+    assert normal_body["recognized"]["llm_gateway_mode"] in {"responses", "unknown"}
     assert all(set(move.keys()) == {"move_id", "label", "risk_hint"} for move in normal_body["ui"]["moves"])
 
     dev = client.post(
@@ -360,15 +360,11 @@ def test_step_response_strict_shape_and_debug_only_in_dev_mode(client, monkeypat
     }
 
 
-def test_session_create_returns_503_when_openai_provider_misconfigured(client, monkeypatch) -> None:
+def test_session_create_returns_503_when_responses_provider_misconfigured(client, monkeypatch) -> None:
     story_id, version = _bootstrap_story(client)
-    monkeypatch.setenv("APP_LLM_OPENAI_BASE_URL", "")
-    monkeypatch.setenv("APP_LLM_OPENAI_API_KEY", "")
-    monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
-    monkeypatch.setenv("APP_LLM_OPENAI_ROUTE_MODEL", "")
-    monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "")
-    monkeypatch.setenv("APP_LLM_WORKER_BASE_URL", "")
-    monkeypatch.setenv("APP_INTERNAL_WORKER_TOKEN", "")
+    monkeypatch.setenv("APP_RESPONSES_BASE_URL", "")
+    monkeypatch.setenv("APP_RESPONSES_API_KEY", "")
+    monkeypatch.setenv("APP_RESPONSES_MODEL", "")
     get_settings.cache_clear()
 
     response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
@@ -379,41 +375,18 @@ def test_session_create_returns_503_when_openai_provider_misconfigured(client, m
     get_settings.cache_clear()
 
 
-def test_session_create_rejects_when_only_route_model_configured_without_default(client, monkeypatch) -> None:
+def test_session_create_rejects_when_responses_model_missing(client, monkeypatch) -> None:
     story_id, version = _bootstrap_story(client)
-    monkeypatch.setenv("APP_LLM_OPENAI_BASE_URL", "https://example.com/compatible-mode")
-    monkeypatch.setenv("APP_LLM_OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
-    monkeypatch.setenv("APP_LLM_OPENAI_ROUTE_MODEL", "route-only-model")
-    monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "")
-    monkeypatch.setenv("APP_LLM_WORKER_BASE_URL", "http://worker.internal")
-    monkeypatch.setenv("APP_INTERNAL_WORKER_TOKEN", "worker-token")
+    monkeypatch.setenv("APP_RESPONSES_BASE_URL", "https://example.com/compatible-mode")
+    monkeypatch.setenv("APP_RESPONSES_API_KEY", "test-key")
+    monkeypatch.setenv("APP_RESPONSES_MODEL", "")
     get_settings.cache_clear()
 
     response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
     assert response.status_code == 503
     err = _error_payload(response)
     assert err["code"] == "service_unavailable"
-    assert "missing route/narration model" in err["message"]
-    get_settings.cache_clear()
-
-
-def test_session_create_rejects_when_only_narration_model_configured_without_default(client, monkeypatch) -> None:
-    story_id, version = _bootstrap_story(client)
-    monkeypatch.setenv("APP_LLM_OPENAI_BASE_URL", "https://example.com/compatible-mode")
-    monkeypatch.setenv("APP_LLM_OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("APP_LLM_OPENAI_MODEL", "")
-    monkeypatch.setenv("APP_LLM_OPENAI_ROUTE_MODEL", "")
-    monkeypatch.setenv("APP_LLM_OPENAI_NARRATION_MODEL", "narration-only-model")
-    monkeypatch.setenv("APP_LLM_WORKER_BASE_URL", "http://worker.internal")
-    monkeypatch.setenv("APP_INTERNAL_WORKER_TOKEN", "worker-token")
-    get_settings.cache_clear()
-
-    response = client.post(sessions_path(), json={"story_id": story_id, "version": version})
-    assert response.status_code == 503
-    err = _error_payload(response)
-    assert err["code"] == "service_unavailable"
-    assert "missing route/narration model" in err["message"]
+    assert "APP_RESPONSES_MODEL" in err["message"]
     get_settings.cache_clear()
 
 
@@ -438,7 +411,7 @@ def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> Non
     assert response.status_code == 503
     body = _error_payload(response)
     assert body["code"] == "llm_route_failed"
-    assert body["details"]["stage"] == "route"
+    assert body["details"]["stage"] == "interpret_turn"
     assert body["details"]["provider"] == "openai"
     request_id = response.headers["X-Request-ID"]
 
@@ -452,8 +425,8 @@ def test_step_returns_503_when_provider_route_throws(client, monkeypatch) -> Non
     assert failed
     assert failed[-1]["payload"]["error_code"] == "llm_route_failed"
     assert failed[-1]["payload"]["request_id"] == request_id
-    assert "route_model" in failed[-1]["payload"]
-    assert "narration_model" in failed[-1]["payload"]
+    assert "agent_model" in failed[-1]["payload"]
+    assert failed[-1]["payload"]["agent_mode"] == "responses"
 
 
 def test_step_returns_503_on_low_confidence_for_openai_strict(client, monkeypatch) -> None:
@@ -476,7 +449,7 @@ def test_step_returns_503_on_low_confidence_for_openai_strict(client, monkeypatc
     assert response.status_code == 503
     body = _error_payload(response)
     assert body["code"] == "llm_route_low_confidence"
-    assert body["details"]["stage"] == "route"
+    assert body["details"]["stage"] == "interpret_turn"
     assert body["details"]["provider"] == "openai"
 
 
@@ -500,7 +473,7 @@ def test_step_returns_503_on_invalid_move_for_openai_strict(client, monkeypatch)
     assert response.status_code == 503
     body = _error_payload(response)
     assert body["code"] == "llm_route_invalid_move"
-    assert body["details"]["stage"] == "route"
+    assert body["details"]["stage"] == "interpret_turn"
     assert body["details"]["provider"] == "openai"
 
 
@@ -524,5 +497,5 @@ def test_step_returns_503_when_narration_fails_for_openai_strict(client, monkeyp
     assert response.status_code == 503
     body = _error_payload(response)
     assert body["code"] == "llm_narration_failed"
-    assert body["details"]["stage"] == "narration"
+    assert body["details"]["stage"] == "render_resolved_turn"
     assert body["details"]["provider"] == "openai"
