@@ -261,7 +261,11 @@ class AuthorWorkflowService:
         )
 
         try:
-            async for mode, payload in graph.astream(final_state, stream_mode=["updates", "values"]):
+            async for mode, payload in graph.astream(
+                final_state,
+                {"recursion_limit": 128},
+                stream_mode=["updates", "values"],
+            ):
                 if mode == "updates":
                     for node_name, update in payload.items():
                         await self.run_persistence.persist_run_update(

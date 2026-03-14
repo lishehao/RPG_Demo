@@ -11,14 +11,26 @@ WORKFLOW_CONDITIONAL_ROUTES: dict[str, set[str]] = {
     },
     AuthorWorkflowNode.PLAN_BEATS: {
         AuthorWorkflowNode.PLAN_BEATS,
-        AuthorWorkflowNode.GENERATE_BEAT,
+        AuthorWorkflowNode.PLAN_BEAT_SCENES,
         AuthorWorkflowNode.WORKFLOW_FAILED,
     },
-    AuthorWorkflowNode.GENERATE_BEAT: {
+    AuthorWorkflowNode.PLAN_BEAT_SCENES: {
+        AuthorWorkflowNode.PLAN_BEAT_SCENES,
+        AuthorWorkflowNode.GENERATE_SCENE,
+        AuthorWorkflowNode.WORKFLOW_FAILED,
+    },
+    AuthorWorkflowNode.GENERATE_SCENE: {
+        AuthorWorkflowNode.GENERATE_SCENE,
+        AuthorWorkflowNode.ASSEMBLE_BEAT,
+        AuthorWorkflowNode.WORKFLOW_FAILED,
+    },
+    AuthorWorkflowNode.ASSEMBLE_BEAT: {
+        AuthorWorkflowNode.PLAN_BEAT_SCENES,
         AuthorWorkflowNode.BEAT_LINT,
+        AuthorWorkflowNode.WORKFLOW_FAILED,
     },
     AuthorWorkflowNode.BEAT_LINT: {
-        AuthorWorkflowNode.GENERATE_BEAT,
+        AuthorWorkflowNode.PLAN_BEAT_SCENES,
         AuthorWorkflowNode.ASSEMBLE_STORY_PACK,
         AuthorWorkflowNode.WORKFLOW_FAILED,
     },

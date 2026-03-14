@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from rpg_backend.domain.conflict_tags import NPCConflictTag
-from rpg_backend.domain.pack_schema import Move, Scene, StoryPack
+from rpg_backend.domain.pack_schema import Move, Scene, StoryPack, StrategyStyle
 from rpg_backend.generator.author_shared_types import EndingShape, MoveBiasTag
 
 
@@ -116,6 +116,88 @@ class AuthorMemory(BaseModel):
     active_npcs: list[str] = Field(default_factory=list)
     unresolved_threads: list[str] = Field(default_factory=list)
     recent_beats: list[AuthorMemoryBeatSummary] = Field(default_factory=list, max_length=2)
+
+
+class BeatScenePlanItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scene_id: str | None = Field(default=None)
+    purpose: str = Field(min_length=1, max_length=220)
+    pressure: str = Field(min_length=1, max_length=220)
+    handoff_intent: str = Field(min_length=1, max_length=220)
+    present_npcs: list[str] = Field(min_length=1, max_length=5)
+    is_terminal: bool = False
+    transition_style: str = Field(min_length=1, max_length=120)
+
+
+class BeatScenePlan(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    beat_id: str = Field(min_length=1)
+    scenes: list[BeatScenePlanItem] = Field(min_length=1, max_length=4)
+
+    @model_validator(mode="after")
+    def normalize_scene_ids(self) -> "BeatScenePlan":
+        scene_ids: list[str] = []
+        for index, item in enumerate(self.scenes, start=1):
+            scene_id = f"{self.beat_id}.sc{index}"
+            item.scene_id = scene_id
+            scene_ids.append(scene_id)
+        if len(scene_ids) != len(set(scene_ids)):
+            raise ValueError("scene plan scene_ids must be unique")
+        return self
+
+
+class GeneratedSceneNarrationSlots(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    npc_reaction: str = Field(min_length=1, max_length=220)
+    world_shift: str = Field(min_length=1, max_length=220)
+    clue_delta: str = Field(min_length=1, max_length=220)
+    cost_delta: str = Field(min_length=1, max_length=220)
+    next_hook: str = Field(min_length=1, max_length=220)
+
+
+class GeneratedSceneMoveOutcome(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    result: Literal["success", "partial", "fail_forward"]
+    narration_slots: GeneratedSceneNarrationSlots
+
+
+class GeneratedSceneMove(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = Field(min_length=1, max_length=80)
+    strategy_style: StrategyStyle
+    intents: list[str] = Field(min_length=1, max_length=3)
+    synonyms: list[str] = Field(default_factory=list, max_length=4)
+    resolution_policy: Literal["prefer_success", "prefer_partial", "always_fail_forward"] = "prefer_success"
+    outcomes: list[GeneratedSceneMoveOutcome] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def validate_outcomes(self) -> "GeneratedSceneMove":
+        outcome_results = [item.result for item in self.outcomes]
+        if set(outcome_results) != {"success", "partial", "fail_forward"}:
+            raise ValueError("generated move outcomes must include success, partial, and fail_forward exactly once")
+        return self
+
+
+class GeneratedBeatScene(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scene_seed: str = Field(min_length=1, max_length=320)
+    present_npcs: list[str] = Field(min_length=1, max_length=5)
+    local_moves: list[GeneratedSceneMove] = Field(min_length=3, max_length=3)
+    events_produced: list[str] = Field(default_factory=list)
+    transition_hint: str | None = Field(default=None, max_length=120)
+
+    @model_validator(mode="after")
+    def validate_generated_scene(self) -> "GeneratedBeatScene":
+        move_labels = [move.label.strip().casefold() for move in self.local_moves]
+        if len(move_labels) != len(set(move_labels)):
+            raise ValueError("generated local move labels must be unique")
+        return self
 
 
 class BeatDraft(BaseModel):

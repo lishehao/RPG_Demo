@@ -12,7 +12,7 @@ from rpg_backend.infrastructure.repositories.response_sessions_async import (
     get_response_session_cursor,
     upsert_response_session_cursor,
 )
-from rpg_backend.llm.task_specs import AUTHOR_BEAT_CHANNEL, AUTHOR_OVERVIEW_CHANNEL, PLAY_CHANNEL
+from rpg_backend.llm.task_specs import PLAY_CHANNEL
 
 PLAY_SCOPE_TYPE = "play_session"
 AUTHOR_SCOPE_TYPE = "author_run"

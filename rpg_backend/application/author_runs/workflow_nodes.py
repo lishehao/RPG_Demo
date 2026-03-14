@@ -7,21 +7,25 @@ from typing import Any
 from rpg_backend.application.author_runs.beat_context_builder import (
     BeatGenerationContext,
     build_beat_generation_context,
+    build_scene_generation_context,
 )
 from rpg_backend.application.author_runs.workflow_retry import AuthorWorkflowNodeHandler
 from rpg_backend.application.author_runs.workflow_state import (
     AuthorWorkflowState,
-    build_beat_generation_update,
+    build_accepted_beat_update,
+    build_beat_assembly_update,
     build_beat_phase_seed_update,
     build_beat_plan_update,
+    build_beat_scene_plan_update,
     build_overview_generation_update,
+    build_scene_generation_update,
     get_beat_phase,
     get_overview_phase,
 )
 from rpg_backend.application.author_runs.workflow_vocabulary import AuthorWorkflowNode, AuthorWorkflowStatus
 from rpg_backend.domain.linter import lint_story_pack
 from rpg_backend.domain.story_pack_normalizer import try_normalize_story_pack_payload
-from rpg_backend.generator.author_workflow_assembler import assemble_story_pack
+from rpg_backend.generator.author_workflow_assembler import assemble_beat, assemble_story_pack
 from rpg_backend.generator.author_workflow_chains import BeatGenerationChain, StoryOverviewChain
 from rpg_backend.generator.author_workflow_planner import (
     check_beat_blueprints,
@@ -32,6 +36,8 @@ from rpg_backend.generator.author_workflow_validators import (
     check_story_overview,
     lint_beat_draft,
 )
+
+DEFAULT_AUTHOR_NODE_TIMEOUT_SECONDS = 40.0
 
 
 def _build_chain(factory: Callable[..., Any], *, policy: AuthorWorkflowPolicy) -> Any:
@@ -52,6 +58,31 @@ def _accepts_kwarg(func: Callable[..., Any], name: str) -> bool:
     )
 
 
+def build_workflow_node_timeout_seconds(
+    *,
+    overview_chain_factory: Callable[..., StoryOverviewChain],
+    beat_chain_factory: Callable[..., BeatGenerationChain],
+    policy: AuthorWorkflowPolicy,
+) -> dict[str, float]:
+    if policy.timeout_seconds is not None:
+        fixed_timeout_seconds = float(policy.timeout_seconds)
+        return {node_name: fixed_timeout_seconds for node_name in AuthorWorkflowNode}
+
+    overview_chain = _build_chain(overview_chain_factory, policy=policy)
+    beat_chain = _build_chain(beat_chain_factory, policy=policy)
+    timeout_seconds = {node_name: DEFAULT_AUTHOR_NODE_TIMEOUT_SECONDS for node_name in AuthorWorkflowNode}
+    timeout_seconds[AuthorWorkflowNode.GENERATE_STORY_OVERVIEW] = float(
+        getattr(overview_chain, "workflow_timeout_seconds", DEFAULT_AUTHOR_NODE_TIMEOUT_SECONDS)
+    )
+    timeout_seconds[AuthorWorkflowNode.PLAN_BEAT_SCENES] = float(
+        getattr(beat_chain, "scene_plan_timeout_seconds", DEFAULT_AUTHOR_NODE_TIMEOUT_SECONDS)
+    )
+    timeout_seconds[AuthorWorkflowNode.GENERATE_SCENE] = float(
+        getattr(beat_chain, "scene_generation_timeout_seconds", DEFAULT_AUTHOR_NODE_TIMEOUT_SECONDS)
+    )
+    return timeout_seconds
+
+
 def build_workflow_nodes(
     *,
     overview_chain_factory: Callable[..., StoryOverviewChain],
@@ -65,9 +96,10 @@ def build_workflow_nodes(
         if overview_phase.errors:
             raw_brief = f"{raw_brief}\n\nPrevious feedback to fix:\n- " + "\n- ".join(overview_phase.errors)
         chain = _build_chain(overview_chain_factory, policy=policy)
+        timeout_seconds = float(getattr(chain, "workflow_timeout_seconds", DEFAULT_AUTHOR_NODE_TIMEOUT_SECONDS))
         overview_kwargs: dict[str, Any] = {
             "raw_brief": raw_brief,
-            "timeout_seconds": policy.timeout_seconds,
+            "timeout_seconds": timeout_seconds,
         }
         if _accepts_kwarg(chain.compile, "run_id"):
             overview_kwargs["run_id"] = state["run_id"]
@@ -92,35 +124,106 @@ def build_workflow_nodes(
         update.update(build_beat_phase_seed_update())
         return update
 
-    async def generate_beat(state: AuthorWorkflowState) -> dict[str, Any]:
+    async def plan_beat_scenes(state: AuthorWorkflowState) -> dict[str, Any]:
         beat_phase = get_beat_phase(state)
         beat_index = beat_phase.index
+        beat_blueprints = list(state.get("beat_blueprints") or [])
+        if beat_index >= len(beat_blueprints):
+            return {"beat_generation_errors": ["current beat index is outside beat_blueprints"]}
         context = beat_context_builder(
             overview=state["overview"],
             prior_beats=beat_phase.drafts,
         )
         chain = _build_chain(beat_chain_factory, policy=policy)
+        timeout_seconds = float(
+            getattr(chain, "scene_plan_timeout_seconds", DEFAULT_AUTHOR_NODE_TIMEOUT_SECONDS)
+        )
         beat_kwargs: dict[str, Any] = {
             "story_id": state["story_id"],
             "overview_context": context.overview_context,
-            "blueprint": state["beat_blueprints"][beat_index].model_dump(mode="json"),
+            "blueprint": beat_blueprints[beat_index].model_dump(mode="json"),
             "last_accepted_beat": context.last_accepted_beat,
             "prefix_summary": context.prefix_summary,
             "author_memory": context.author_memory,
             "lint_feedback": list(state.get("beat_lint_errors") or []),
-            "timeout_seconds": policy.timeout_seconds,
+            "timeout_seconds": timeout_seconds,
         }
-        if _accepts_kwarg(chain.compile_beat, "run_id"):
+        if _accepts_kwarg(chain.compile_beat_scene_plan, "run_id"):
             beat_kwargs["run_id"] = state["run_id"]
-        draft = await chain.compile_beat(**beat_kwargs)
-        return build_beat_generation_update(
+        scene_plan = await chain.compile_beat_scene_plan(**beat_kwargs)
+        return build_beat_scene_plan_update(
             overview_context=context.overview_context,
-            draft=draft,
+            scene_plan=scene_plan,
             prefix_summary=context.prefix_summary,
             author_memory=context.author_memory,
             prior_attempts=beat_phase.attempts,
             current_beat_index=beat_index,
         )
+
+    async def generate_scene(state: AuthorWorkflowState) -> dict[str, Any]:
+        beat_phase = get_beat_phase(state)
+        beat_index = beat_phase.index
+        beat_blueprints = list(state.get("beat_blueprints") or [])
+        if beat_index >= len(beat_blueprints):
+            return {"beat_generation_errors": ["current beat index is outside beat_blueprints"]}
+        scene_plan = beat_phase.scene_plan
+        if scene_plan is None:
+            return {"beat_generation_errors": ["current beat scene plan missing"]}
+        if beat_phase.scene_index >= len(scene_plan.scenes):
+            return {"beat_generation_errors": []}
+        overview_context = state.get("beat_overview_context")
+        if overview_context is None:
+            return {"beat_generation_errors": ["beat overview context missing before scene generation"]}
+        scene_context = build_scene_generation_context(
+            scene_plan=scene_plan,
+            scene_index=beat_phase.scene_index,
+            generated_scenes=beat_phase.generated_scenes,
+        )
+
+        chain = _build_chain(beat_chain_factory, policy=policy)
+        timeout_seconds = float(
+            getattr(chain, "scene_generation_timeout_seconds", DEFAULT_AUTHOR_NODE_TIMEOUT_SECONDS)
+        )
+        scene_kwargs: dict[str, Any] = {
+            "story_id": state["story_id"],
+            "overview_context": overview_context,
+            "blueprint": beat_blueprints[beat_index].model_dump(mode="json"),
+            "scene_plan_item": scene_context.scene_plan_item,
+            "scene_count": len(scene_plan.scenes),
+            "scene_index": beat_phase.scene_index,
+            "prior_generated_scenes": scene_context.prior_scene_memory,
+            "prefix_summary": state["prefix_summary"],
+            "author_memory": state.get("author_memory"),
+            "lint_feedback": list(state.get("beat_lint_errors") or []),
+            "timeout_seconds": timeout_seconds,
+        }
+        if _accepts_kwarg(chain.compile_scene, "run_id"):
+            scene_kwargs["run_id"] = state["run_id"]
+        generated_scene = await chain.compile_scene(**scene_kwargs)
+        return build_scene_generation_update(
+            current_beat_index=beat_index,
+            scene_index=beat_phase.scene_index + 1,
+            generated_scenes=[*beat_phase.generated_scenes, generated_scene],
+        )
+
+    def assemble_beat_node(state: AuthorWorkflowState) -> dict[str, Any]:
+        beat_phase = get_beat_phase(state)
+        beat_index = beat_phase.index
+        beat_blueprints = list(state.get("beat_blueprints") or [])
+        if beat_index >= len(beat_blueprints):
+            return {"beat_generation_errors": ["current beat index is outside beat_blueprints"]}
+        scene_plan = beat_phase.scene_plan
+        if scene_plan is None:
+            return {"beat_generation_errors": ["current beat scene plan missing before assembly"]}
+        try:
+            draft = assemble_beat(
+                blueprint=beat_blueprints[beat_index],
+                scene_plan=scene_plan,
+                generated_scenes=beat_phase.generated_scenes,
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {"beat_generation_errors": [str(exc)]}
+        return build_beat_assembly_update(current_beat_index=beat_index, draft=draft)
 
     def beat_lint(state: AuthorWorkflowState) -> dict[str, Any]:
         beat_phase = get_beat_phase(state)
@@ -145,15 +248,12 @@ def build_workflow_nodes(
                 prior_beats=accepted,
             )
             update.update(
-                {
-                    "beat_drafts": accepted,
-                    "current_beat_index": beat_index + 1,
-                    "current_beat_attempts": 0,
-                    "beat_overview_context": None,
-                    "current_beat_draft": None,
-                    "prefix_summary": accepted_context.prefix_summary,
-                    "author_memory": accepted_context.author_memory,
-                }
+                build_accepted_beat_update(
+                    accepted_drafts=accepted,
+                    next_beat_index=beat_index + 1,
+                    prefix_summary=accepted_context.prefix_summary,
+                    author_memory=accepted_context.author_memory,
+                )
             )
         return update
 
@@ -188,7 +288,9 @@ def build_workflow_nodes(
     return {
         AuthorWorkflowNode.GENERATE_STORY_OVERVIEW: generate_story_overview,
         AuthorWorkflowNode.PLAN_BEATS: plan_beats,
-        AuthorWorkflowNode.GENERATE_BEAT: generate_beat,
+        AuthorWorkflowNode.PLAN_BEAT_SCENES: plan_beat_scenes,
+        AuthorWorkflowNode.GENERATE_SCENE: generate_scene,
+        AuthorWorkflowNode.ASSEMBLE_BEAT: assemble_beat_node,
         AuthorWorkflowNode.BEAT_LINT: beat_lint,
         AuthorWorkflowNode.ASSEMBLE_STORY_PACK: assemble_story_pack_node,
         AuthorWorkflowNode.NORMALIZE_STORY_PACK: normalize_story_pack,

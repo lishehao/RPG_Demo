@@ -32,12 +32,14 @@ Author workflow is a single playable-first path:
 
 1. `generate_story_overview`
 2. `plan_beats`
-3. `generate_beat`
-4. `beat_lint`
-5. `assemble_story_pack`
-6. `normalize_story_pack`
-7. `final_lint`
-8. `review_ready`
+3. `plan_beat_scenes`
+4. `generate_scene` (repeat until current beat scene plan is complete)
+5. `assemble_beat`
+6. `beat_lint`
+7. `assemble_story_pack`
+8. `normalize_story_pack`
+9. `final_lint`
+10. `review_ready`
 
 Retry and timeout policy is unified across this workflow:
 
@@ -95,8 +97,13 @@ These are quality signals, not runtime blockers.
 
 ## Author Workflow: Intermediate Beat Checks
 
-During generation, each beat draft still has stricter internal checks.
-This protects the pipeline before assembly.
+During generation, scene outputs are assembled into a beat draft, then that beat draft still has stricter internal checks.
+This protects the pipeline before full-pack assembly.
+
+Scene generation is intentionally semantic-first:
+
+- the model provides scene seed, present NPCs, local move surface/flavor, and outcome narration slots
+- backend beat assembly deterministically fills scene ids, move ids, `enabled_moves`, fixed global `always_available_moves`, outcome ids, and standard progression exits
 
 A beat draft must satisfy:
 

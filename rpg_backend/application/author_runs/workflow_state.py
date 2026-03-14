@@ -10,8 +10,10 @@ from rpg_backend.generator.author_workflow_models import (
     AuthorMemory,
     BeatBlueprint,
     BeatDraft,
+    BeatScenePlan,
     BeatOverviewContext,
     BeatPrefixSummary,
+    GeneratedBeatScene,
     StoryOverview,
 )
 from rpg_backend.generator.author_workflow_validators import build_author_memory, build_structured_prefix_summary
@@ -30,6 +32,9 @@ class AuthorWorkflowState(TypedDict, total=False):
     current_beat_index: int
     current_beat_attempts: int
     beat_overview_context: BeatOverviewContext | None
+    current_scene_plan: BeatScenePlan | None
+    current_scene_index: int
+    generated_scenes: list[GeneratedBeatScene]
     current_beat_draft: BeatDraft | None
     beat_drafts: list[BeatDraft]
     beat_generation_errors: list[str]
@@ -55,6 +60,9 @@ class BeatPhaseState:
     index: int
     attempts: int
     drafts: list[BeatDraft]
+    scene_plan: BeatScenePlan | None
+    scene_index: int
+    generated_scenes: list[GeneratedBeatScene]
     lint_errors: list[str]
     generation_errors: list[str]
 
@@ -77,6 +85,9 @@ def get_beat_phase(state: AuthorWorkflowState) -> BeatPhaseState:
         index=int(state.get("current_beat_index", 0)),
         attempts=int(state.get("current_beat_attempts", 0)),
         drafts=list(state.get("beat_drafts") or []),
+        scene_plan=state.get("current_scene_plan"),
+        scene_index=int(state.get("current_scene_index", 0)),
+        generated_scenes=list(state.get("generated_scenes") or []),
         lint_errors=list(state.get("beat_lint_errors") or []),
         generation_errors=list(state.get("beat_generation_errors") or []),
     )
@@ -121,6 +132,9 @@ def build_beat_phase_seed_update() -> dict[str, Any]:
     return {
         "current_beat_index": 0,
         "current_beat_attempts": 0,
+        "current_scene_plan": None,
+        "current_scene_index": 0,
+        "generated_scenes": [],
         "beat_drafts": [],
         "beat_generation_errors": [],
         "current_beat_draft": None,
@@ -129,10 +143,10 @@ def build_beat_phase_seed_update() -> dict[str, Any]:
     }
 
 
-def build_beat_generation_update(
+def build_beat_scene_plan_update(
     *,
     overview_context: BeatOverviewContext,
-    draft: BeatDraft,
+    scene_plan: BeatScenePlan,
     prefix_summary: BeatPrefixSummary,
     author_memory: AuthorMemory,
     prior_attempts: int,
@@ -141,13 +155,64 @@ def build_beat_generation_update(
     return {
         "current_beat_index": current_beat_index,
         "beat_overview_context": overview_context,
-        "current_beat_draft": draft,
+        "current_scene_plan": scene_plan,
+        "current_scene_index": 0,
+        "generated_scenes": [],
+        "current_beat_draft": None,
         "current_beat_attempts": prior_attempts + 1,
         "beat_generation_errors": [],
         "prefix_summary": prefix_summary,
         "author_memory": author_memory,
         "beat_lint_errors": [],
         "beat_lint_warnings": [],
+    }
+
+
+def build_scene_generation_update(
+    *,
+    current_beat_index: int,
+    scene_index: int,
+    generated_scenes: list[GeneratedBeatScene],
+) -> dict[str, Any]:
+    return {
+        "current_beat_index": current_beat_index,
+        "current_scene_index": scene_index,
+        "generated_scenes": generated_scenes,
+        "beat_generation_errors": [],
+    }
+
+
+def build_beat_assembly_update(*, current_beat_index: int, draft: BeatDraft) -> dict[str, Any]:
+    return {
+        "current_beat_index": current_beat_index,
+        "current_beat_draft": draft,
+        "beat_generation_errors": [],
+        "beat_lint_errors": [],
+        "beat_lint_warnings": [],
+    }
+
+
+def build_accepted_beat_update(
+    *,
+    accepted_drafts: list[BeatDraft],
+    next_beat_index: int,
+    prefix_summary: BeatPrefixSummary,
+    author_memory: AuthorMemory,
+) -> dict[str, Any]:
+    return {
+        "beat_drafts": accepted_drafts,
+        "current_beat_index": next_beat_index,
+        "current_beat_attempts": 0,
+        "beat_overview_context": None,
+        "current_scene_plan": None,
+        "current_scene_index": 0,
+        "generated_scenes": [],
+        "current_beat_draft": None,
+        "beat_generation_errors": [],
+        "beat_lint_errors": [],
+        "beat_lint_warnings": [],
+        "prefix_summary": prefix_summary,
+        "author_memory": author_memory,
     }
 
 
@@ -160,6 +225,9 @@ def build_initial_author_workflow_state(*, story_id: str, run_id: str, raw_brief
         "beat_plan_attempts": 0,
         "current_beat_index": 0,
         "current_beat_attempts": 0,
+        "current_scene_plan": None,
+        "current_scene_index": 0,
+        "generated_scenes": [],
         "beat_drafts": [],
         "beat_generation_errors": [],
         "current_beat_draft": None,

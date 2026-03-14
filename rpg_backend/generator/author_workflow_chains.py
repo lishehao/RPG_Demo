@@ -6,17 +6,14 @@ from typing import Any
 from pydantic import ValidationError
 
 from rpg_backend.domain.conflict_tags import NPC_CONFLICT_TAG_CATALOG
-from rpg_backend.domain.constants import (
-    GLOBAL_CLARIFY_MOVE_ID,
-    GLOBAL_HELP_ME_PROGRESS_MOVE_ID,
-    GLOBAL_LOOK_MOVE_ID,
-)
 from rpg_backend.generator.author_workflow_errors import PromptCompileError
 from rpg_backend.generator.author_workflow_models import (
     AuthorMemory,
-    BeatDraft,
+    BeatScenePlan,
+    BeatScenePlanItem,
     BeatOverviewContext,
     BeatPrefixSummary,
+    GeneratedBeatScene,
     StoryOverview,
 )
 from rpg_backend.generator.author_workflow_policy import AuthorWorkflowPolicy, get_author_workflow_policy
@@ -74,7 +71,48 @@ def _compact_overview_context_payload(payload: dict[str, Any]) -> dict[str, Any]
     return compact
 
 
+def _compact_author_memory_payload(author_memory: AuthorMemory | None) -> dict[str, Any] | None:
+    if author_memory is None:
+        return None
+    payload = author_memory.model_dump(mode="json")
+    recent_beats = payload.get("recent_beats")
+    compact_recent_beats: list[dict[str, Any]] = []
+    if isinstance(recent_beats, list):
+        for beat in recent_beats[:2]:
+            if not isinstance(beat, dict):
+                continue
+            compact_recent_beats.append(
+                {
+                    "beat_id": beat.get("beat_id"),
+                    "title": beat.get("title"),
+                    "objective": beat.get("objective"),
+                    "present_npcs": list(beat.get("present_npcs") or [])[:3],
+                    "events_produced": list(beat.get("events_produced") or [])[:2],
+                    "closing_hook": beat.get("closing_hook"),
+                }
+            )
+    return {
+        "beat_count": int(payload.get("beat_count") or 0),
+        "active_npcs": list(payload.get("active_npcs") or [])[:4],
+        "unresolved_threads": list(payload.get("unresolved_threads") or [])[:6],
+        "recent_beats": compact_recent_beats,
+    }
+
+
+def _compact_blueprint_for_scene_generation(blueprint: dict[str, Any]) -> dict[str, Any]:
+    compact: dict[str, Any] = {}
+    for key in ("beat_id", "title", "objective", "conflict", "required_event", "scene_intent"):
+        value = blueprint.get(key)
+        if value is not None:
+            compact[key] = value
+    return compact
+
+
 class _JsonSchemaChain:
+    non_thinking_timeout_seconds = 40.0
+    thinking_timeout_seconds = 60.0
+    task_spec_attr_name: str | None = None
+
     def __init__(
         self,
         *,
@@ -84,7 +122,7 @@ class _JsonSchemaChain:
         self.policy = policy or get_author_workflow_policy()
         self._author_agent = author_agent
         self.model = getattr(author_agent, "model", "unknown")
-        self.timeout_seconds = float(self.policy.timeout_seconds)
+        self.timeout_seconds = None if self.policy.timeout_seconds is None else float(self.policy.timeout_seconds)
         self.max_retries = int(self.policy.llm_call_max_retries)
 
     @property
@@ -117,8 +155,24 @@ class _JsonSchemaChain:
             parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in signature.parameters.values()
         )
 
+    @property
+    def enable_thinking(self) -> bool:
+        task_spec_attr_name = getattr(self, "task_spec_attr_name", None)
+        if not task_spec_attr_name:
+            return False
+        task_spec = getattr(self.author_agent, task_spec_attr_name, None)
+        return bool(getattr(task_spec, "enable_thinking", False))
+
+    @property
+    def workflow_timeout_seconds(self) -> float:
+        if self.timeout_seconds is not None:
+            return float(self.timeout_seconds)
+        return self.thinking_timeout_seconds if self.enable_thinking else self.non_thinking_timeout_seconds
+
 
 class StoryOverviewChain(_JsonSchemaChain):
+    task_spec_attr_name = "overview_task_spec"
+
     async def _invoke_chain(
         self,
         *,
@@ -141,7 +195,7 @@ class StoryOverviewChain(_JsonSchemaChain):
         timeout_seconds: float | None = None,
         run_id: str | None = None,
     ) -> StoryOverview:
-        effective_timeout_seconds = float(timeout_seconds or self.timeout_seconds)
+        effective_timeout_seconds = float(self.workflow_timeout_seconds if timeout_seconds is None else timeout_seconds)
         catalog_markdown = "\n".join(
             f"- `{key}`: {value}" for key, value in dict(NPC_CONFLICT_TAG_CATALOG).items()
         )
@@ -160,6 +214,8 @@ class StoryOverviewChain(_JsonSchemaChain):
             "- target_minutes must be between 8 and 12 inclusive.\n"
             "- npc_count must be between 3 and 5 inclusive.\n"
             "- npc_roster length must equal npc_count.\n"
+            "- Keep text compact: premise <= 240 characters, tone <= 70 characters, stakes <= 180 characters.\n"
+            "- Use one short sentence for premise and one short sentence for stakes. Avoid semicolon chains and list formatting.\n"
             "- ending_shape must be one of triumph, pyrrhic, uncertain, sacrifice.\n"
             "- ending_shape_note must briefly explain the emotional flavor and tradeoff implied by ending_shape.\n"
             "- move_bias values must come from the move_bias enum only.\n"
@@ -206,16 +262,36 @@ class StoryOverviewChain(_JsonSchemaChain):
 
 
 class BeatGenerationChain(_JsonSchemaChain):
-    def __init__(
-        self,
-        *,
-        policy: AuthorWorkflowPolicy | None = None,
-        author_agent: AuthorAgent | None = None,
-    ) -> None:
-        super().__init__(policy=policy, author_agent=author_agent)
-        self.last_beat_draft_llm: BeatDraft | None = None
+    task_spec_attr_name = "scene_task_spec"
 
-    async def compile_beat(
+    @staticmethod
+    def _enable_thinking_for_task(agent: AuthorAgent, attr_name: str) -> bool:
+        task_spec = getattr(agent, attr_name, None)
+        return bool(getattr(task_spec, "enable_thinking", False))
+
+    @classmethod
+    def _default_timeout_for_thinking(cls, *, enabled: bool) -> float:
+        return cls.thinking_timeout_seconds if enabled else cls.non_thinking_timeout_seconds
+
+    @property
+    def scene_plan_timeout_seconds(self) -> float:
+        if self.timeout_seconds is not None:
+            return float(self.timeout_seconds)
+        enabled = self._enable_thinking_for_task(self.author_agent, "beat_plan_task_spec")
+        return self._default_timeout_for_thinking(enabled=enabled)
+
+    @property
+    def scene_generation_timeout_seconds(self) -> float:
+        if self.timeout_seconds is not None:
+            return float(self.timeout_seconds)
+        enabled = self._enable_thinking_for_task(self.author_agent, "scene_task_spec")
+        return self._default_timeout_for_thinking(enabled=enabled)
+
+    @property
+    def workflow_timeout_seconds(self) -> float:
+        return self.scene_generation_timeout_seconds
+
+    async def compile_beat_scene_plan(
         self,
         *,
         story_id: str,
@@ -227,42 +303,26 @@ class BeatGenerationChain(_JsonSchemaChain):
         lint_feedback: list[str] | None = None,
         timeout_seconds: float | None = None,
         run_id: str | None = None,
-    ) -> BeatDraft:
-        effective_timeout_seconds = float(timeout_seconds or self.timeout_seconds)
+    ) -> BeatScenePlan:
+        effective_timeout_seconds = float(
+            self.scene_plan_timeout_seconds if timeout_seconds is None else timeout_seconds
+        )
         beat_id = str(blueprint.get("beat_id") or "beat")
-        entry_scene_id = str(blueprint.get("entry_scene_id") or f"{beat_id}.sc1")
-        move_ids = [f"{beat_id}.m1", f"{beat_id}.m2", f"{beat_id}.m3"]
-        global_move_ids = [
-            GLOBAL_CLARIFY_MOVE_ID,
-            GLOBAL_LOOK_MOVE_ID,
-            GLOBAL_HELP_ME_PROGRESS_MOVE_ID,
-        ]
         system_prompt = (
             "# Role & Intent\n"
-            "Generate one strict BeatDraft JSON object for the current beat blueprint.\n"
-            "Read the projected overview, the current beat blueprint, the lightweight last accepted beat summary if present, and the structured prefix summary for completed beat order.\n"
-            "Use the structured author_memory as the primary continuity source of truth for recent beats, active NPCs, and unresolved threads.\n"
-            "Treat last_accepted_beat as a small recent-detail hint only, not as the full serialized prior beat.\n"
-            "Use ending_shape_note, move_bias_note, and each NPC pressure_signature to add nuance without drifting away from the enum fields.\n"
-            "The new beat must continue those exact details; do not contradict prior beats.\n"
+            "Generate one strict BeatScenePlan JSON object for the current beat blueprint.\n"
             "Do NOT output any text outside JSON.\n\n"
             "# Hard Constraints\n"
-            "- The output must be a full BeatDraft and must exactly preserve blueprint values for beat_id, title, objective, conflict, required_event, and entry_scene_id.\n"
-            f"- The first scene id must be '{entry_scene_id}'. Additional scenes, if any, must use sequential ids like '{beat_id}.sc2', '{beat_id}.sc3', with no gaps.\n"
-            f"- Use exactly three local moves with ids {move_ids}. Their strategy_style values must be fast_dirty, steady_slow, and political_safe_resource_heavy in that order.\n"
-            "- Every scene must enable those same three local move ids.\n"
-            f"- Every scene must use always_available_moves exactly as {global_move_ids}.\n"
-            "- Each move must include concrete player-facing label, intents, and synonyms. Labels must be concrete action choices a player would click.\n"
-            "- args_schema should usually be an empty object unless a short freeform argument is clearly required.\n"
-            "- Each move must include success, partial, and fail_forward outcomes with ids '<move_id>.success', '<move_id>.partial', and '<move_id>.fail_forward'.\n"
-            "- outcome next_scene_id values may only point to scenes inside this beat or be null.\n"
-            "- Keep the beat compact but playable: usually 1-3 scenes, no cross-beat scene references, no future-beat prewrites.\n"
-            "- events_produced should include the required_event and may include a small number of additional locally earned events.\n\n"
+            "- beat_id must exactly equal the current blueprint beat_id.\n"
+            "- include 1-3 scenes only.\n"
+            "- each scene plan item must include concise purpose, pressure, handoff_intent, present_npcs, transition_style, and is_terminal.\n"
+            "- scene_id is optional in each scene item; backend will assign deterministic scene ids by order.\n"
+            "- present_npcs must come from overview_context npc_roster names.\n"
+            "- only the final planned scene may set is_terminal=true.\n\n"
             "# Soft Goals\n"
-            "- Prefer at least two active NPCs in the beat unless deliberate isolation is dramatically better.\n"
-            "- Reuse recent NPCs and unresolved threads from author_memory when that strengthens continuity.\n"
-            "- Make the three moves feel genuinely distinct in risk, tempo, and political cost.\n"
-            "- Keep the beat lean enough for the blueprint step budget; avoid scene bloat."
+            "- Keep each scene purpose/actionable for one generation call.\n"
+            "- Preserve continuity from prefix_summary, author_memory, and last_accepted_beat.\n"
+            "- Prefer continuity pressure over lore expansion."
         )
         payload = {
             "story_id": story_id,
@@ -270,46 +330,128 @@ class BeatGenerationChain(_JsonSchemaChain):
             "blueprint": blueprint,
             "last_accepted_beat": _compact_last_accepted_beat(last_accepted_beat),
             "prefix_summary": prefix_summary.model_dump(mode="json"),
-            "author_memory": author_memory.model_dump(mode="json") if author_memory is not None else None,
+            "author_memory": _compact_author_memory_payload(author_memory),
             "lint_feedback": list(lint_feedback or []),
-            "fixed_global_moves": global_move_ids,
-            "id_rules": {
-                "entry_scene_id": entry_scene_id,
-                "additional_scene_pattern": f"{beat_id}.scN",
-                "move_ids": move_ids,
-                "outcome_id_pattern": "<move_id>.<success|partial|fail_forward>",
-            },
-            "output_schema": BeatDraft.model_json_schema(),
+            "output_schema": BeatScenePlan.model_json_schema(),
         }
-
         invoke_kwargs: dict[str, Any] = {
             "system_prompt": system_prompt,
             "user_payload": payload,
             "timeout_seconds": effective_timeout_seconds,
         }
-        if self._accepts_kwarg(self._invoke_chain, "run_id"):
+        if self._accepts_kwarg(self._invoke_scene_plan, "run_id"):
             invoke_kwargs["run_id"] = run_id
         try:
-            result = await self._invoke_chain(**invoke_kwargs)
+            result = await self._invoke_scene_plan(**invoke_kwargs)
         except Exception as exc:  # noqa: BLE001
             raise PromptCompileError(
                 error_code="prompt_compile_failed",
                 errors=[str(exc)],
-                notes=["beat draft responses execution failed"],
+                notes=["beat scene plan responses execution failed"],
             ) from exc
 
         try:
-            draft = BeatDraft.model_validate(result.payload)
-            self.last_beat_draft_llm = draft
-            return draft
+            plan = BeatScenePlan.model_validate(result.payload)
+        except ValidationError as exc:
+            raise PromptCompileError(
+                error_code="beat_scene_plan_invalid",
+                errors=self._build_validation_feedback(exc),
+                notes=["beat scene plan schema validation failed"],
+            ) from exc
+        if plan.beat_id != beat_id:
+            raise PromptCompileError(
+                error_code="beat_scene_plan_invalid",
+                errors=["beat scene plan beat_id does not match current blueprint"],
+                notes=["beat scene plan schema validation failed"],
+            )
+        return plan
+
+    async def compile_scene(
+        self,
+        *,
+        story_id: str,
+        overview_context: BeatOverviewContext,
+        blueprint: dict[str, Any],
+        scene_plan_item: dict[str, Any],
+        scene_count: int,
+        scene_index: int,
+        prior_generated_scenes: list[dict[str, Any]],
+        prefix_summary: BeatPrefixSummary,
+        author_memory: AuthorMemory | None = None,
+        lint_feedback: list[str] | None = None,
+        timeout_seconds: float | None = None,
+        run_id: str | None = None,
+    ) -> GeneratedBeatScene:
+        if scene_index < 0 or scene_index >= int(scene_count):
+            raise PromptCompileError(
+                error_code="scene_invalid",
+                errors=["scene_index is outside current beat scene plan"],
+                notes=["generate_scene called with invalid scene index"],
+            )
+        effective_timeout_seconds = float(
+            self.scene_generation_timeout_seconds if timeout_seconds is None else timeout_seconds
+        )
+        planned_scene = BeatScenePlanItem.model_validate(scene_plan_item)
+        beat_id = str(blueprint.get("beat_id") or "beat")
+        scene_seq = scene_index + 1
+        scene_id = str(planned_scene.scene_id or f"{beat_id}.sc{scene_seq}")
+        system_prompt = (
+            "# Role & Intent\n"
+            "Generate one strict GeneratedBeatScene JSON object for the current planned scene.\n"
+            "Do NOT output any text outside JSON.\n\n"
+            "# Hard Constraints\n"
+            f"- this output is for beat '{beat_id}', scene order {scene_seq}, deterministic scene id '{scene_id}'.\n"
+            "- include scene_seed and present_npcs.\n"
+            "- include exactly three local_moves.\n"
+            "- each local move must include label, strategy_style, intents, optional synonyms, and outcomes.\n"
+            "- each local move outcomes list must include success, partial, and fail_forward exactly once.\n"
+            "- each outcome must include narration_slots only (npc_reaction, world_shift, clue_delta, cost_delta, next_hook).\n"
+            "- do not emit ids, enabled_moves, always_available_moves, exit_conditions, or next_scene_id wiring fields.\n"
+            "- present_npcs should follow the planned scene present_npcs unless continuity requires a strict subset.\n\n"
+            "# Soft Goals\n"
+            "- Keep the scene concise and pressure-forward.\n"
+            "- Preserve continuity with prior_scene_memory and author_memory."
+        )
+        payload = {
+            "story_id": story_id,
+            "overview_context": _compact_overview_context_payload(overview_context.model_dump(mode="json")),
+            "blueprint": _compact_blueprint_for_scene_generation(blueprint),
+            "scene_plan_item": planned_scene.model_dump(mode="json"),
+            "scene_order": scene_seq,
+            "total_scenes": int(scene_count),
+            "prior_scene_memory": list(prior_generated_scenes),
+            "prefix_summary": prefix_summary.model_dump(mode="json"),
+            "author_memory": _compact_author_memory_payload(author_memory),
+            "lint_feedback": list(lint_feedback or []),
+            "output_schema": GeneratedBeatScene.model_json_schema(),
+        }
+        invoke_kwargs: dict[str, Any] = {
+            "system_prompt": system_prompt,
+            "user_payload": payload,
+            "timeout_seconds": effective_timeout_seconds,
+        }
+        if self._accepts_kwarg(self._invoke_scene, "run_id"):
+            invoke_kwargs["run_id"] = run_id
+        try:
+            result = await self._invoke_scene(**invoke_kwargs)
         except Exception as exc:  # noqa: BLE001
             raise PromptCompileError(
-                error_code="beat_invalid",
-                errors=self._build_validation_feedback(exc),
-                notes=["beat draft schema validation failed"],
+                error_code="prompt_compile_failed",
+                errors=[str(exc)],
+                notes=["generated beat scene responses execution failed"],
             ) from exc
 
-    async def _invoke_chain(
+        try:
+            generated = GeneratedBeatScene.model_validate(result.payload)
+        except ValidationError as exc:
+            raise PromptCompileError(
+                error_code="scene_invalid",
+                errors=self._build_validation_feedback(exc),
+                notes=["generated beat scene schema validation failed"],
+            ) from exc
+        return generated
+
+    async def _invoke_scene_plan(
         self,
         *,
         system_prompt: str,
@@ -320,8 +462,27 @@ class BeatGenerationChain(_JsonSchemaChain):
         payload = dict(user_payload)
         payload["instructions"] = system_prompt
         story_id = str(payload.get("story_id") or "story")
-        return await self.author_agent.generate_beat(
-            run_id=run_id or f"author_beat_stateless:{story_id}",
+        return await self.author_agent.plan_beat_scenes(
+            run_id=run_id or f"author_beat_plan_stateless:{story_id}",
+            payload=payload,
+            timeout_seconds=timeout_seconds,
+        )
+
+    async def _invoke_scene(
+        self,
+        *,
+        system_prompt: str,
+        user_payload: dict[str, Any],
+        timeout_seconds: float | None = None,
+        run_id: str | None = None,
+    ):
+        payload = dict(user_payload)
+        payload["instructions"] = system_prompt
+        story_id = str(payload.get("story_id") or "story")
+        beat_id = str(payload.get("blueprint", {}).get("beat_id") or "beat")
+        return await self.author_agent.generate_scene(
+            run_id=run_id or f"author_scene_stateless:{story_id}",
+            beat_id=beat_id,
             payload=payload,
             timeout_seconds=timeout_seconds,
         )

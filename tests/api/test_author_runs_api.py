@@ -14,7 +14,12 @@ from rpg_backend.application.author_runs.workflow_vocabulary import (
 from rpg_backend.domain.constants import GLOBAL_CLARIFY_MOVE_ID, GLOBAL_HELP_ME_PROGRESS_MOVE_ID, GLOBAL_LOOK_MOVE_ID
 from rpg_backend.domain.linter import LintReport
 from rpg_backend.generator.author_workflow_errors import PromptCompileError
-from rpg_backend.generator.author_workflow_models import BeatDraft, StoryOverview
+from rpg_backend.generator.author_workflow_models import (
+    BeatDraft,
+    BeatScenePlan,
+    GeneratedBeatScene,
+    StoryOverview,
+)
 from rpg_backend.generator.author_workflow_policy import AuthorWorkflowPolicy
 from tests.helpers.route_paths import (
     author_run_events_path,
@@ -264,6 +269,89 @@ def _make_beat_draft(*, overview: StoryOverview, blueprint, beat_index: int) -> 
     )
 
 
+def _make_scene_plan(*, blueprint: dict) -> BeatScenePlan:
+    beat_id = str(blueprint["beat_id"])
+    return BeatScenePlan.model_validate(
+        {
+            "beat_id": beat_id,
+            "scenes": [
+                {
+                    "scene_id": f"{beat_id}.sc1",
+                    "purpose": "Create immediate operational pressure.",
+                    "pressure": "Telemetry conflict vs command urgency.",
+                    "handoff_intent": "Force a visible compromise by scene end.",
+                    "present_npcs": ["Mara", "Rook"],
+                    "is_terminal": False,
+                    "transition_style": "escalate",
+                },
+                {
+                    "scene_id": f"{beat_id}.sc2",
+                    "purpose": "Cash pressure into required event progress.",
+                    "pressure": "Resources and legitimacy can no longer both be preserved.",
+                    "handoff_intent": "Close the beat with concrete state change.",
+                    "present_npcs": ["Mara", "Director Vale"],
+                    "is_terminal": True,
+                    "transition_style": "converge",
+                },
+            ],
+        }
+    )
+
+
+def _make_generated_scene(
+    *,
+    blueprint: dict,
+    beat_index: int,
+    scene_index: int,
+    invalid_global_moves: bool = False,
+) -> GeneratedBeatScene:
+    draft = _make_beat_draft(
+        overview=_sample_overview(),
+        blueprint=blueprint,
+        beat_index=beat_index,
+    )
+    source_scene = draft.scenes[scene_index]
+    present_npcs = list(source_scene.present_npcs)
+    if invalid_global_moves:
+        present_npcs.append("Unknown NPC")
+    local_moves = []
+    for move in draft.moves:
+        outcomes_by_result = {outcome.result: outcome for outcome in move.outcomes}
+        fallback_outcome = (
+            outcomes_by_result.get("partial")
+            or outcomes_by_result.get("success")
+            or outcomes_by_result.get("fail_forward")
+            or move.outcomes[0]
+        )
+        local_moves.append(
+            {
+                "label": move.label,
+                "strategy_style": move.strategy_style,
+                "intents": list(move.intents),
+                "synonyms": list(move.synonyms),
+                "resolution_policy": move.resolution_policy,
+                "outcomes": [
+                    {
+                        "result": result,
+                        "narration_slots": outcomes_by_result.get(result, fallback_outcome).narration_slots.model_dump(
+                            mode="json"
+                        ),
+                    }
+                    for result in ("success", "partial", "fail_forward")
+                ],
+            }
+        )
+    return GeneratedBeatScene.model_validate(
+        {
+            "scene_seed": source_scene.scene_seed,
+            "present_npcs": present_npcs,
+            "local_moves": local_moves,
+            "events_produced": [blueprint["required_event"]] if scene_index == len(draft.scenes) - 1 else [],
+            "transition_hint": "converge" if scene_index == len(draft.scenes) - 1 else "escalate",
+        }
+    )
+
+
 class _FakeOverviewChain:
     async def compile(self, *, raw_brief: str, timeout_seconds: float | None = None) -> StoryOverview:
         del raw_brief, timeout_seconds
@@ -271,14 +359,17 @@ class _FakeOverviewChain:
 
 
 class _FakeBeatChain:
-    async def compile_beat(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatDraft:
+    async def compile_beat_scene_plan(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatScenePlan:
         del story_id, overview_context, last_accepted_beat, prefix_summary, author_memory, lint_feedback, timeout_seconds
+        return _make_scene_plan(blueprint=blueprint)
+
+    async def compile_scene(self, *, story_id: str, overview_context: dict | object, blueprint: dict, scene_plan_item: dict[str, object], scene_count: int, scene_index: int, prior_generated_scenes: list[dict[str, object]], prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> GeneratedBeatScene:
+        del story_id, overview_context, scene_plan_item, scene_count, prior_generated_scenes, prefix_summary, author_memory, lint_feedback, timeout_seconds
         beat_index = int(str(blueprint["beat_id"])[1:]) - 1
-        overview = _sample_overview()
-        return _make_beat_draft(
-            overview=overview,
+        return _make_generated_scene(
             blueprint=blueprint,
             beat_index=beat_index,
+            scene_index=scene_index,
         )
 
 
@@ -299,14 +390,22 @@ def _install_fake_workflow(monkeypatch, *, policy: AuthorWorkflowPolicy | None =
 
 
 class _FailingBeatChain:
-    async def compile_beat(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatDraft:
-        del story_id, overview_context, blueprint, last_accepted_beat, prefix_summary, author_memory, lint_feedback, timeout_seconds
+    async def compile_beat_scene_plan(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatScenePlan:
+        del story_id, overview_context, last_accepted_beat, prefix_summary, author_memory, lint_feedback, timeout_seconds
+        return _make_scene_plan(blueprint=blueprint)
+
+    async def compile_scene(self, *, story_id: str, overview_context: dict | object, blueprint: dict, scene_plan_item: dict[str, object], scene_count: int, scene_index: int, prior_generated_scenes: list[dict[str, object]], prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> GeneratedBeatScene:
+        del story_id, overview_context, blueprint, scene_plan_item, scene_count, scene_index, prior_generated_scenes, prefix_summary, author_memory, lint_feedback, timeout_seconds
         raise RuntimeError("beat generation exploded")
 
 
 class _InvalidBeatChain:
-    async def compile_beat(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatDraft:
-        del story_id, overview_context, blueprint, last_accepted_beat, prefix_summary, author_memory, lint_feedback, timeout_seconds
+    async def compile_beat_scene_plan(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatScenePlan:
+        del story_id, overview_context, last_accepted_beat, prefix_summary, author_memory, lint_feedback, timeout_seconds
+        return _make_scene_plan(blueprint=blueprint)
+
+    async def compile_scene(self, *, story_id: str, overview_context: dict | object, blueprint: dict, scene_plan_item: dict[str, object], scene_count: int, scene_index: int, prior_generated_scenes: list[dict[str, object]], prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> GeneratedBeatScene:
+        del story_id, overview_context, blueprint, scene_plan_item, scene_count, scene_index, prior_generated_scenes, prefix_summary, author_memory, lint_feedback, timeout_seconds
         raise PromptCompileError(
             error_code="beat_invalid",
             errors=["always_available_moves must only contain global move ids"],
@@ -328,7 +427,13 @@ class _RetryingOverviewChain:
 class _RetryingBeatChain:
     attempts = 0
 
-    async def compile_beat(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatDraft:
+    async def compile_beat_scene_plan(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatScenePlan:
+        del story_id, overview_context, last_accepted_beat, prefix_summary, author_memory, lint_feedback, timeout_seconds
+        scene_plan = _make_scene_plan(blueprint=blueprint).model_dump(mode="json")
+        scene_plan["scenes"] = scene_plan["scenes"][:1]
+        return BeatScenePlan.model_validate(scene_plan)
+
+    async def compile_scene(self, *, story_id: str, overview_context: dict | object, blueprint: dict, scene_plan_item: dict[str, object], scene_count: int, scene_index: int, prior_generated_scenes: list[dict[str, object]], prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> GeneratedBeatScene:
         _RetryingBeatChain.attempts += 1
         if _RetryingBeatChain.attempts < 3:
             raise PromptCompileError(
@@ -336,23 +441,31 @@ class _RetryingBeatChain:
                 errors=["temporary gateway failure"],
                 notes=["retry in graph"],
             )
-        return await _FakeBeatChain().compile_beat(
+        generated = await _FakeBeatChain().compile_scene(
             story_id=story_id,
             overview_context=overview_context,
             blueprint=blueprint,
-            last_accepted_beat=last_accepted_beat,
+            scene_plan_item=scene_plan_item,
+            scene_count=scene_count,
+            scene_index=scene_index,
+            prior_generated_scenes=prior_generated_scenes,
             prefix_summary=prefix_summary,
             author_memory=author_memory,
             lint_feedback=lint_feedback,
             timeout_seconds=timeout_seconds,
         )
+        if int(scene_count) == 1:
+            payload = generated.model_dump(mode="json")
+            payload["transition_hint"] = "converge"
+            return GeneratedBeatScene.model_validate(payload)
+        return generated
 
 
 class _BeatLintRetryChain:
     calls: list[dict[str, object]] = []
     attempts_by_beat: dict[str, int] = {}
 
-    async def compile_beat(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatDraft:
+    async def compile_beat_scene_plan(self, *, story_id: str, overview_context: dict | object, blueprint: dict, last_accepted_beat: dict | None, prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> BeatScenePlan:
         del story_id, overview_context, prefix_summary, author_memory, timeout_seconds
         beat_id = str(blueprint["beat_id"])
         attempt = self.attempts_by_beat.get(beat_id, 0) + 1
@@ -369,20 +482,19 @@ class _BeatLintRetryChain:
                 "lint_feedback": list(lint_feedback or []),
             }
         )
+        return _make_scene_plan(blueprint=blueprint)
 
-        overview = _sample_overview()
+    async def compile_scene(self, *, story_id: str, overview_context: dict | object, blueprint: dict, scene_plan_item: dict[str, object], scene_count: int, scene_index: int, prior_generated_scenes: list[dict[str, object]], prefix_summary: dict | object, author_memory: dict | object | None = None, lint_feedback: list[str] | None = None, timeout_seconds: float | None = None) -> GeneratedBeatScene:
+        del story_id, overview_context, scene_plan_item, scene_count, prior_generated_scenes, prefix_summary, author_memory, lint_feedback, timeout_seconds
+        beat_id = str(blueprint["beat_id"])
         beat_index = int(beat_id[1:]) - 1
-        draft = _make_beat_draft(
-            overview=overview,
+        invalid = beat_id == "b2" and self.attempts_by_beat.get(beat_id, 0) == 1
+        return _make_generated_scene(
             blueprint=blueprint,
             beat_index=beat_index,
+            scene_index=scene_index,
+            invalid_global_moves=invalid,
         )
-        if beat_id == "b2" and attempt == 1:
-            payload = draft.model_dump(mode="json")
-            for scene in payload["scenes"]:
-                scene["always_available_moves"] = [GLOBAL_CLARIFY_MOVE_ID, GLOBAL_LOOK_MOVE_ID]
-            return BeatDraft.model_validate(payload)
-        return draft
 
 
 def test_create_author_run_and_fetch_review_ready_story(client, monkeypatch) -> None:
@@ -397,7 +509,11 @@ def test_create_author_run_and_fetch_review_ready_story(client, monkeypatch) -> 
     run_response = client.get(author_run_path(run_id))
     assert run_response.status_code == 200
     run_body = run_response.json()
-    assert run_body["status"] == AuthorWorkflowStatus.REVIEW_READY
+    assert run_body["status"] == AuthorWorkflowStatus.REVIEW_READY, (
+        run_body.get("error_code"),
+        run_body.get("error_message"),
+        run_body.get("current_node"),
+    )
     artifact_types = {item["artifact_type"] for item in run_body["artifacts"]}
     prefix_summary_artifact = next(
         item for item in run_body["artifacts"] if item["artifact_type"] == AuthorWorkflowArtifactType.PREFIX_SUMMARY
@@ -407,6 +523,8 @@ def test_create_author_run_and_fetch_review_ready_story(client, monkeypatch) -> 
     assert AuthorWorkflowArtifactType.OVERVIEW in artifact_types
     assert AuthorWorkflowArtifactType.BEAT_BLUEPRINTS in artifact_types
     assert AuthorWorkflowArtifactType.BEAT_OVERVIEW_CONTEXT in artifact_types
+    assert AuthorWorkflowArtifactType.BEAT_SCENE_PLAN in artifact_types
+    assert AuthorWorkflowArtifactType.GENERATED_BEAT_SCENE in artifact_types
     assert AuthorWorkflowArtifactType.CURRENT_BEAT_DRAFT in artifact_types
     assert AuthorWorkflowArtifactType.AUTHOR_MEMORY in artifact_types
     assert AuthorWorkflowArtifactType.STORY_PACK in artifact_types
@@ -479,15 +597,15 @@ def test_failed_author_run_records_actual_failing_node(client, monkeypatch) -> N
     assert run_response.status_code == 200
     run_body = run_response.json()
     assert run_body["status"] == AuthorWorkflowStatus.FAILED
-    assert run_body["current_node"] == AuthorWorkflowNode.GENERATE_BEAT
+    assert run_body["current_node"] == AuthorWorkflowNode.GENERATE_SCENE
     events = client.get(author_run_events_path(run_id)).json()["events"]
     assert any(
-        event["node_name"] == AuthorWorkflowNode.GENERATE_BEAT
+        event["node_name"] == AuthorWorkflowNode.GENERATE_SCENE
         and event["event_type"] == AuthorWorkflowEventType.NODE_STARTED
         for event in events
     )
     assert any(
-        event["node_name"] == AuthorWorkflowNode.GENERATE_BEAT
+        event["node_name"] == AuthorWorkflowNode.GENERATE_SCENE
         and event["event_type"] == AuthorWorkflowEventType.RUN_EXCEPTION
         for event in events
     )
@@ -507,7 +625,7 @@ def test_failed_author_run_exposes_prompt_compile_error_code(client, monkeypatch
     assert run_response.status_code == 200
     run_body = run_response.json()
     assert run_body["status"] == AuthorWorkflowStatus.FAILED
-    assert run_body["current_node"] == AuthorWorkflowNode.GENERATE_BEAT
+    assert run_body["current_node"] == AuthorWorkflowNode.GENERATE_SCENE
     assert run_body["error_code"] == "beat_invalid"
     assert "always_available_moves" in run_body["error_message"]
     workflow_errors = [item for item in run_body["artifacts"] if item["artifact_type"] == AuthorWorkflowArtifactType.WORKFLOW_ERROR]
@@ -533,7 +651,7 @@ def test_author_workflow_retries_timed_out_node_per_attempt(client, monkeypatch)
     run_response = client.get(author_run_path(run_id))
     assert run_response.status_code == 200
     run_body = run_response.json()
-    assert run_body["status"] == AuthorWorkflowStatus.REVIEW_READY
+    assert run_body["status"] == AuthorWorkflowStatus.REVIEW_READY, run_body
     assert _RetryingOverviewChain.attempts == 2
 
     events = client.get(author_run_events_path(run_id)).json()["events"]
@@ -556,7 +674,7 @@ def test_author_workflow_retries_timed_out_node_per_attempt(client, monkeypatch)
     assert retry_events[0]["payload"]["timeout_seconds"] == 0.01
 
 
-def test_author_workflow_retries_direct_beat_until_third_attempt(client, monkeypatch) -> None:
+def test_author_workflow_retries_scene_generation_until_third_attempt(client, monkeypatch) -> None:
     _RetryingBeatChain.attempts = 0
     single_blueprint = author_workflow_nodes_module.plan_beat_blueprints_from_overview(_sample_overview())[-1:]
     monkeypatch.setattr(author_workflow_service, "overview_chain_factory", _FakeOverviewChain)
@@ -571,14 +689,14 @@ def test_author_workflow_retries_direct_beat_until_third_attempt(client, monkeyp
     run_id = created.json()["run_id"]
 
     run_body = client.get(author_run_path(run_id)).json()
-    assert run_body["status"] == AuthorWorkflowStatus.REVIEW_READY
+    assert run_body["status"] == AuthorWorkflowStatus.REVIEW_READY, run_body
     assert _RetryingBeatChain.attempts == 3
 
     events = client.get(author_run_events_path(run_id)).json()["events"]
     retry_events = [
         event
         for event in events
-        if event["node_name"] == AuthorWorkflowNode.GENERATE_BEAT
+        if event["node_name"] == AuthorWorkflowNode.GENERATE_SCENE
         and event["event_type"] == AuthorWorkflowEventType.NODE_RETRY
     ]
     assert len(retry_events) == 2
@@ -606,20 +724,20 @@ def test_author_workflow_retries_only_current_beat_after_lint_failure(client, mo
     assert [call["last_accepted_beat_id"] for call in _BeatLintRetryChain.calls] == [None, "b1", "b1"]
     assert _BeatLintRetryChain.calls[1]["lint_feedback"] == []
     assert _BeatLintRetryChain.calls[2]["lint_feedback"]
-    assert "fixed global always_available_moves" in " ".join(_BeatLintRetryChain.calls[2]["lint_feedback"])
+    assert "unknown npc" in " ".join(_BeatLintRetryChain.calls[2]["lint_feedback"])
 
     accepted = [item for item in run_body["artifacts"] if item["artifact_type"] == AuthorWorkflowArtifactType.ACCEPTED_BEAT_DRAFT]
     assert len(accepted) == 2
     assert {item["artifact_key"] for item in accepted} == {"b1", "b2"}
 
     events = client.get(author_run_events_path(run_id)).json()["events"]
-    generate_beat_starts = [
+    plan_beat_scene_starts = [
         event
         for event in events
-        if event["node_name"] == AuthorWorkflowNode.GENERATE_BEAT
+        if event["node_name"] == AuthorWorkflowNode.PLAN_BEAT_SCENES
         and event["event_type"] == AuthorWorkflowEventType.NODE_STARTED
     ]
-    assert len(generate_beat_starts) == 3
+    assert len(plan_beat_scene_starts) == 3
 
 
 def test_author_workflow_final_lint_failure_does_not_enter_repair(client, monkeypatch) -> None:

@@ -24,6 +24,7 @@ def tracked_node(
     node_name: str,
     func: AuthorWorkflowNodeHandler,
     policy: AuthorWorkflowPolicy,
+    timeout_seconds: float,
     mark_run_node_started: AuthorRunNodeStartRecorder,
     record_run_node_event: AuthorRunEventRecorder,
 ) -> Callable[[AuthorWorkflowState], Awaitable[dict[str, Any]]]:
@@ -35,7 +36,7 @@ def tracked_node(
 
     async def _wrapped(state: AuthorWorkflowState) -> dict[str, Any]:
         max_attempts = int(policy.max_attempts)
-        effective_timeout_seconds = float(policy.timeout_seconds)
+        effective_timeout_seconds = float(timeout_seconds)
         for attempt in range(1, max_attempts + 1):
             await mark_run_node_started(
                 state["run_id"],

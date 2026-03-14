@@ -120,6 +120,7 @@ class PlayAgent:
                 previous_response_id=previous_response_id,
                 timeout=self.timeout_seconds,
                 extra_body={"enable_thinking": task_spec.enable_thinking},
+                max_output_tokens=task_spec.max_output_tokens,
             )
 
         return await self.session_store.call_with_cursor(
@@ -206,14 +207,16 @@ class AuthorAgent:
         model: str,
         timeout_seconds: float,
         overview_task_spec: ResponsesTaskSpec,
-        beat_task_spec: ResponsesTaskSpec,
+        beat_plan_task_spec: ResponsesTaskSpec,
+        scene_task_spec: ResponsesTaskSpec,
     ) -> None:
         self.transport = transport
         self.session_store = session_store
         self.model = str(model)
         self.timeout_seconds = float(timeout_seconds)
         self.overview_task_spec = overview_task_spec
-        self.beat_task_spec = beat_task_spec
+        self.beat_plan_task_spec = beat_plan_task_spec
+        self.scene_task_spec = scene_task_spec
 
     async def _invoke_structured(
         self,
@@ -221,9 +224,11 @@ class AuthorAgent:
         run_id: str,
         task_spec: ResponsesTaskSpec,
         user_payload: dict[str, Any],
+        channel: str | None = None,
         timeout_seconds: float | None = None,
     ) -> AuthorStructuredResult:
-        if task_spec.channel is None:
+        resolved_channel = channel or task_spec.channel
+        if resolved_channel is None:
             raise ValueError("author structured task requires a continuity channel")
         user_text = json.dumps(user_payload, ensure_ascii=False, sort_keys=True)
 
@@ -237,12 +242,13 @@ class AuthorAgent:
                 previous_response_id=previous_response_id,
                 timeout=float(timeout_seconds or self.timeout_seconds),
                 extra_body={"enable_thinking": task_spec.enable_thinking},
+                max_output_tokens=task_spec.max_output_tokens,
             )
 
         result = await self.session_store.call_with_cursor(
             scope_type=AUTHOR_SCOPE_TYPE,
             scope_id=run_id,
-            channel=task_spec.channel,
+            channel=resolved_channel,
             model=self.model,
             invoke=_call,
         )
@@ -271,7 +277,7 @@ class AuthorAgent:
             timeout_seconds=timeout_seconds,
         )
 
-    async def generate_beat(
+    async def plan_beat_scenes(
         self,
         *,
         run_id: str,
@@ -279,10 +285,31 @@ class AuthorAgent:
         timeout_seconds: float | None = None,
     ) -> AuthorStructuredResult:
         request_payload = dict(payload)
-        request_payload["task"] = self.beat_task_spec.task_name
+        request_payload["task"] = self.beat_plan_task_spec.task_name
         return await self._invoke_structured(
             run_id=run_id,
-            task_spec=self.beat_task_spec,
+            task_spec=self.beat_plan_task_spec,
             user_payload=request_payload,
+            timeout_seconds=timeout_seconds,
+        )
+
+    async def generate_scene(
+        self,
+        *,
+        run_id: str,
+        beat_id: str,
+        payload: dict[str, Any],
+        timeout_seconds: float | None = None,
+    ) -> AuthorStructuredResult:
+        if not beat_id.strip():
+            raise ValueError("beat_id is required for generate_scene")
+        request_payload = dict(payload)
+        request_payload["task"] = self.scene_task_spec.task_name
+        base_channel = self.scene_task_spec.channel or "author_scene"
+        return await self._invoke_structured(
+            run_id=run_id,
+            task_spec=self.scene_task_spec,
+            user_payload=request_payload,
+            channel=f"{base_channel}:{beat_id}",
             timeout_seconds=timeout_seconds,
         )

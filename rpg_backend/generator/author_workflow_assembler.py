@@ -3,10 +3,163 @@ from __future__ import annotations
 import random
 from typing import Any
 
+from rpg_backend.domain.constants import (
+    GLOBAL_CLARIFY_MOVE_ID,
+    GLOBAL_HELP_ME_PROGRESS_MOVE_ID,
+    GLOBAL_LOOK_MOVE_ID,
+)
 from rpg_backend.domain.move_library import GLOBAL_MOVE_TEMPLATE_IDS, MOVE_TEMPLATE_BY_ID
 from rpg_backend.domain.opening_guidance import build_opening_guidance_payload
-from rpg_backend.generator.author_workflow_models import BeatBlueprint, BeatDraft, StoryOverview
+from rpg_backend.generator.author_workflow_models import (
+    BeatBlueprint,
+    BeatDraft,
+    BeatScenePlan,
+    GeneratedBeatScene,
+    StoryOverview,
+)
 from rpg_backend.generator.move_materialization import materialize_move_from_template
+
+
+_FIXED_GLOBAL_MOVES = [
+    GLOBAL_CLARIFY_MOVE_ID,
+    GLOBAL_LOOK_MOVE_ID,
+    GLOBAL_HELP_ME_PROGRESS_MOVE_ID,
+]
+_OUTCOME_ORDER = ("success", "partial", "fail_forward")
+
+
+def _unique_ordered(values: list[str]) -> list[str]:
+    unique: list[str] = []
+    for value in values:
+        if value and value not in unique:
+            unique.append(value)
+    return unique
+
+
+def _build_scene_exit_conditions(
+    *,
+    scene_id: str,
+    required_event: str,
+    next_scene_id: str | None,
+) -> list[dict[str, Any]]:
+    if next_scene_id is None:
+        return []
+    return [
+        {
+            "id": f"{scene_id}.advance",
+            "condition_kind": "event_present",
+            "key": required_event,
+            "next_scene_id": next_scene_id,
+            "end_story": False,
+        }
+    ]
+
+
+def assemble_beat(
+    *,
+    blueprint: BeatBlueprint,
+    scene_plan: BeatScenePlan,
+    generated_scenes: list[GeneratedBeatScene],
+) -> BeatDraft:
+    if not generated_scenes:
+        raise ValueError("generated_scenes is empty")
+    if scene_plan.beat_id != blueprint.beat_id:
+        raise ValueError("scene_plan beat_id does not match blueprint beat_id")
+    if len(generated_scenes) != len(scene_plan.scenes):
+        raise ValueError("generated_scenes count must match beat scene plan count")
+    if not scene_plan.scenes:
+        raise ValueError("scene_plan is empty")
+    if scene_plan.scenes[0].scene_id != blueprint.entry_scene_id:
+        raise ValueError("scene_plan entry scene must match blueprint.entry_scene_id")
+
+    local_scenes: list[Any] = []
+    ordered_moves: list[Any] = []
+    present_npcs: list[str] = []
+    events_produced: list[str] = []
+
+    for scene_index, generated in enumerate(generated_scenes):
+        plan_item = scene_plan.scenes[scene_index]
+        scene_id = str(plan_item.scene_id or f"{blueprint.beat_id}.sc{scene_index + 1}")
+        next_scene_id = None
+        if scene_index + 1 < len(scene_plan.scenes):
+            next_scene_id = str(scene_plan.scenes[scene_index + 1].scene_id)
+
+        merged_npcs = _unique_ordered([*generated.present_npcs, *plan_item.present_npcs])
+        if not merged_npcs:
+            raise ValueError(f"generated scene '{scene_id}' must include at least one present_npc")
+
+        move_ids: list[str] = []
+        for move_index, move in enumerate(generated.local_moves, start=1):
+            move_id = f"{scene_id}.m{move_index}"
+            move_ids.append(move_id)
+            outcomes_by_result = {item.result: item for item in move.outcomes}
+            ordered_outcomes = []
+            for result in _OUTCOME_ORDER:
+                outcome = outcomes_by_result[result]
+                ordered_outcomes.append(
+                    {
+                        "id": f"{move_id}.{result}",
+                        "result": result,
+                        "preconditions": [],
+                        "effects": [],
+                        "next_scene_id": next_scene_id,
+                        "narration_slots": outcome.narration_slots.model_dump(mode="json"),
+                    }
+                )
+            ordered_moves.append(
+                {
+                    "id": move_id,
+                    "label": move.label,
+                    "strategy_style": move.strategy_style,
+                    "intents": list(move.intents),
+                    "synonyms": list(move.synonyms),
+                    "args_schema": {},
+                    "resolution_policy": move.resolution_policy,
+                    "outcomes": ordered_outcomes,
+                }
+            )
+
+        local_scenes.append(
+            {
+                "id": scene_id,
+                "beat_id": blueprint.beat_id,
+                "scene_seed": generated.scene_seed,
+                "present_npcs": merged_npcs,
+                "enabled_moves": move_ids,
+                "always_available_moves": list(_FIXED_GLOBAL_MOVES),
+                "exit_conditions": _build_scene_exit_conditions(
+                    scene_id=scene_id,
+                    required_event=blueprint.required_event,
+                    next_scene_id=next_scene_id,
+                ),
+                "is_terminal": next_scene_id is None,
+            }
+        )
+
+        for npc in merged_npcs:
+            if npc not in present_npcs:
+                present_npcs.append(npc)
+        for event_id in generated.events_produced:
+            if event_id not in events_produced:
+                events_produced.append(event_id)
+
+    if not present_npcs:
+        raise ValueError("assembled beat must include at least one present NPC")
+    if blueprint.required_event not in events_produced:
+        events_produced.append(blueprint.required_event)
+
+    return BeatDraft(
+        beat_id=blueprint.beat_id,
+        title=blueprint.title,
+        objective=blueprint.objective,
+        conflict=blueprint.conflict,
+        required_event=blueprint.required_event,
+        entry_scene_id=blueprint.entry_scene_id,
+        scenes=local_scenes,
+        moves=ordered_moves,
+        present_npcs=present_npcs,
+        events_produced=events_produced,
+    )
 
 
 def assemble_story_pack(

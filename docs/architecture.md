@@ -61,18 +61,27 @@ Author Mode keeps LangGraph topology:
 
 - `generate_story_overview`
 - `plan_beats`
-- `generate_beat`
+- `plan_beat_scenes`
+- `generate_scene`
+- `assemble_beat`
 - `beat_lint`
 - `assemble_story_pack`
 - `normalize_story_pack`
 - `final_lint`
 - `review_ready | workflow_failed`
 
-LLM nodes (`generate_story_overview`, `generate_beat`) both use `AuthorAgent` + Responses transport.
+LLM nodes (`generate_story_overview`, `plan_beat_scenes`, `generate_scene`) all use `AuthorAgent` + Responses transport.
+
+`generate_scene` is semantic-first:
+
+- it returns scene seed, present NPCs, local move intent/flavor, and consequence flavor
+- it does not own final runtime wiring such as move ids, `enabled_moves`, fixed global move attachment, outcome ids, or standard scene progression exits
+- deterministic backend assembly (`assemble_beat`) owns that repetitive structure
 
 Deterministic nodes remain deterministic:
 
 - `plan_beats`
+- `assemble_beat`
 - `lint`
 - `normalize`
 
@@ -88,7 +97,7 @@ Responses cursor reuse is persisted in table `response_session_cursors`:
 Channels:
 
 - Play: `play_agent`
-- Author: `author_overview`, `author_beat`
+- Author: `author_overview`, `author_beat_plan`, `author_scene:<beat_id>`
 
 Cursor invalidation behavior:
 
@@ -107,7 +116,8 @@ Only active LLM config:
 - `APP_RESPONSES_TIMEOUT_SECONDS` (`20.0`)
 - `APP_RESPONSES_ENABLE_THINKING_PLAY`
 - `APP_RESPONSES_ENABLE_THINKING_AUTHOR_OVERVIEW`
-- `APP_RESPONSES_ENABLE_THINKING_AUTHOR_BEAT`
+- `APP_RESPONSES_ENABLE_THINKING_AUTHOR_BEAT_PLAN`
+- `APP_RESPONSES_ENABLE_THINKING_AUTHOR_SCENE`
 - `APP_RESPONSES_ENABLE_THINKING_STORY_QUALITY_JUDGE`
 
 No active multi-model route/narration/generator split.

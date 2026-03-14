@@ -1,6 +1,5 @@
 from __future__ import annotations
 
 
-class LLMProviderConfigError(RuntimeError):
-    """Raised when Responses provider configuration is invalid."""
-
+class LLMBackendConfigError(RuntimeError):
+    """Raised when Responses backend configuration is invalid."""

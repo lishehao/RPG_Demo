@@ -18,13 +18,12 @@ from rpg_backend.application.author_runs.workflow_vocabulary import (
     AuthorWorkflowNode,
     AuthorWorkflowStatus,
 )
-from rpg_backend.domain.constants import (
-    GLOBAL_CLARIFY_MOVE_ID,
-    GLOBAL_HELP_ME_PROGRESS_MOVE_ID,
-    GLOBAL_LOOK_MOVE_ID,
-)
 from rpg_backend.generator.author_workflow_errors import PromptCompileError
-from rpg_backend.generator.author_workflow_models import BeatDraft, StoryOverview
+from rpg_backend.generator.author_workflow_models import (
+    BeatScenePlan,
+    GeneratedBeatScene,
+    StoryOverview,
+)
 from rpg_backend.generator.author_workflow_policy import AuthorWorkflowPolicy, get_author_workflow_policy
 
 
@@ -93,7 +92,7 @@ class _RetryingOverviewChain:
 
 
 class _FakeBeatChain:
-    async def compile_beat(
+    async def compile_beat_scene_plan(
         self,
         *,
         story_id: str,
@@ -104,54 +103,66 @@ class _FakeBeatChain:
         author_memory: dict | object | None = None,
         lint_feedback: list[str] | None = None,
         timeout_seconds: float | None = None,
-    ) -> BeatDraft:
+    ) -> BeatScenePlan:
         del story_id, overview_context, last_accepted_beat, prefix_summary, author_memory, lint_feedback, timeout_seconds
-        move_ids = [
-            f"{blueprint['beat_id']}.m1",
-            f"{blueprint['beat_id']}.m2",
-            f"{blueprint['beat_id']}.m3",
-        ]
-        return BeatDraft.model_validate(
+        beat_id = str(blueprint["beat_id"])
+        return BeatScenePlan.model_validate(
             {
-                "beat_id": blueprint["beat_id"],
-                "title": blueprint["title"],
-                "objective": blueprint["objective"],
-                "conflict": blueprint["conflict"],
-                "required_event": blueprint["required_event"],
-                "entry_scene_id": blueprint["entry_scene_id"],
-                "present_npcs": ["Mara", "Rook"],
-                "events_produced": [blueprint["required_event"]],
+                "beat_id": beat_id,
                 "scenes": [
                     {
-                        "id": blueprint["entry_scene_id"],
-                        "beat_id": blueprint["beat_id"],
-                        "scene_seed": blueprint["scene_intent"],
+                        "scene_id": str(blueprint["entry_scene_id"]),
+                        "purpose": "Kick off pressure in the control corridor.",
+                        "pressure": "Competing priorities fracture team alignment.",
+                        "handoff_intent": "Force a concrete decisive event.",
                         "present_npcs": ["Mara", "Rook"],
-                        "enabled_moves": move_ids,
-                        "always_available_moves": [
-                            GLOBAL_CLARIFY_MOVE_ID,
-                            GLOBAL_LOOK_MOVE_ID,
-                            GLOBAL_HELP_ME_PROGRESS_MOVE_ID,
-                        ],
-                        "exit_conditions": [],
-                        "is_terminal": False,
+                        "is_terminal": True,
+                        "transition_style": "converge",
                     }
                 ],
-                "moves": [
+            }
+        )
+
+    async def compile_scene(
+        self,
+        *,
+        story_id: str,
+        overview_context: dict | object,
+        blueprint: dict,
+        scene_plan_item: dict[str, object],
+        scene_count: int,
+        scene_index: int,
+        prior_generated_scenes: list[dict[str, object]],
+        prefix_summary: dict | object,
+        author_memory: dict | object | None = None,
+        lint_feedback: list[str] | None = None,
+        timeout_seconds: float | None = None,
+    ) -> GeneratedBeatScene:
+        del (
+            story_id,
+            overview_context,
+            scene_plan_item,
+            scene_count,
+            scene_index,
+            prior_generated_scenes,
+            prefix_summary,
+            author_memory,
+            lint_feedback,
+            timeout_seconds,
+        )
+        return GeneratedBeatScene.model_validate(
+            {
+                "scene_seed": str(blueprint["scene_intent"]),
+                "present_npcs": ["Mara", "Rook"],
+                "local_moves": [
                     {
-                        "id": move_ids[0],
                         "label": "Push fast through the breach",
                         "strategy_style": "fast_dirty",
                         "intents": ["rush ahead"],
                         "synonyms": ["rush"],
-                        "args_schema": {},
                         "outcomes": [
                             {
-                                "id": f"{move_ids[0]}.success",
                                 "result": "success",
-                                "preconditions": [],
-                                "effects": [],
-                                "next_scene_id": None,
                                 "narration_slots": {
                                     "npc_reaction": "They push through the breach.",
                                     "world_shift": "The breach gives way.",
@@ -161,11 +172,7 @@ class _FakeBeatChain:
                                 },
                             },
                             {
-                                "id": f"{move_ids[0]}.fail_forward",
                                 "result": "fail_forward",
-                                "preconditions": [],
-                                "effects": [],
-                                "next_scene_id": None,
                                 "narration_slots": {
                                     "npc_reaction": "They flinch but follow.",
                                     "world_shift": "The room gets harsher.",
@@ -174,22 +181,26 @@ class _FakeBeatChain:
                                     "next_hook": "The next choice arrives fast.",
                                 },
                             },
+                            {
+                                "result": "partial",
+                                "narration_slots": {
+                                    "npc_reaction": "They waver but follow.",
+                                    "world_shift": "The breach moves unevenly.",
+                                    "clue_delta": "You secure a partial read.",
+                                    "cost_delta": "Control margin shrinks.",
+                                    "next_hook": "A narrower choice opens.",
+                                },
+                            },
                         ],
                     },
                     {
-                        "id": move_ids[1],
                         "label": "Stabilize the corridor carefully",
                         "strategy_style": "steady_slow",
                         "intents": ["move carefully"],
                         "synonyms": ["steady"],
-                        "args_schema": {},
                         "outcomes": [
                             {
-                                "id": f"{move_ids[1]}.success",
                                 "result": "success",
-                                "preconditions": [],
-                                "effects": [],
-                                "next_scene_id": None,
                                 "narration_slots": {
                                     "npc_reaction": "They match your careful pace.",
                                     "world_shift": "The corridor steadies.",
@@ -199,35 +210,35 @@ class _FakeBeatChain:
                                 },
                             },
                             {
-                                "id": f"{move_ids[1]}.fail_forward",
                                 "result": "fail_forward",
-                                "preconditions": [],
-                                "effects": [],
-                                "next_scene_id": None,
                                 "narration_slots": {
                                     "npc_reaction": "They hesitate, then commit.",
                                     "world_shift": "The corridor remains unstable.",
                                     "clue_delta": "You get a partial readout.",
                                     "cost_delta": "Pressure builds on the team.",
-                                    "next_hook": "You still have to choose a side.",
+                                "next_hook": "You still have to choose a side.",
+                                },
+                            },
+                            {
+                                "result": "partial",
+                                "narration_slots": {
+                                    "npc_reaction": "They keep pace uneasily.",
+                                    "world_shift": "Stability is temporary.",
+                                    "clue_delta": "Only part of the pattern resolves.",
+                                    "cost_delta": "The clock keeps burning.",
+                                    "next_hook": "A harder tradeoff looms.",
                                 },
                             },
                         ],
                     },
                     {
-                        "id": move_ids[2],
                         "label": "Take the official safe route",
                         "strategy_style": "political_safe_resource_heavy",
                         "intents": ["take the careful official route"],
                         "synonyms": ["official"],
-                        "args_schema": {},
                         "outcomes": [
                             {
-                                "id": f"{move_ids[2]}.success",
                                 "result": "success",
-                                "preconditions": [],
-                                "effects": [],
-                                "next_scene_id": None,
                                 "narration_slots": {
                                     "npc_reaction": "They accept the official cover.",
                                     "world_shift": "Resources shift into the corridor.",
@@ -237,11 +248,7 @@ class _FakeBeatChain:
                                 },
                             },
                             {
-                                "id": f"{move_ids[2]}.fail_forward",
                                 "result": "fail_forward",
-                                "preconditions": [],
-                                "effects": [],
-                                "next_scene_id": None,
                                 "narration_slots": {
                                     "npc_reaction": "They wince at the political price.",
                                     "world_shift": "The system absorbs a costly delay.",
@@ -250,9 +257,21 @@ class _FakeBeatChain:
                                     "next_hook": "The next beat inherits the bill.",
                                 },
                             },
+                            {
+                                "result": "partial",
+                                "narration_slots": {
+                                    "npc_reaction": "They comply cautiously.",
+                                    "world_shift": "Safety improves unevenly.",
+                                    "clue_delta": "Leverage is partial.",
+                                    "cost_delta": "Resources thin faster.",
+                                    "next_hook": "The bill keeps rising.",
+                                },
+                            },
                         ],
                     },
                 ],
+                "events_produced": [blueprint["required_event"]],
+                "transition_hint": "converge",
             }
         )
 
@@ -262,6 +281,21 @@ def test_topology_excludes_repair_pack_and_final_lint_targets_are_terminal_only(
     all_known_nodes = set(AUTHOR_WORKFLOW_NODE_ALL) | routed_nodes
 
     assert "repair_pack" not in all_known_nodes
+    assert WORKFLOW_CONDITIONAL_ROUTES[AuthorWorkflowNode.PLAN_BEATS] == {
+        AuthorWorkflowNode.PLAN_BEATS,
+        AuthorWorkflowNode.PLAN_BEAT_SCENES,
+        AuthorWorkflowNode.WORKFLOW_FAILED,
+    }
+    assert WORKFLOW_CONDITIONAL_ROUTES[AuthorWorkflowNode.PLAN_BEAT_SCENES] == {
+        AuthorWorkflowNode.PLAN_BEAT_SCENES,
+        AuthorWorkflowNode.GENERATE_SCENE,
+        AuthorWorkflowNode.WORKFLOW_FAILED,
+    }
+    assert WORKFLOW_CONDITIONAL_ROUTES[AuthorWorkflowNode.GENERATE_SCENE] == {
+        AuthorWorkflowNode.GENERATE_SCENE,
+        AuthorWorkflowNode.ASSEMBLE_BEAT,
+        AuthorWorkflowNode.WORKFLOW_FAILED,
+    }
     assert WORKFLOW_CONDITIONAL_ROUTES[AuthorWorkflowNode.FINAL_LINT] == {
         AuthorWorkflowNode.REVIEW_READY,
         AuthorWorkflowNode.WORKFLOW_FAILED,
@@ -350,6 +384,26 @@ def test_active_backend_runtime_has_no_outline_materialize_imports() -> None:
     assert not violations, "outline/materialize legacy markers found in active backend runtime paths:\n" + "\n".join(
         sorted(violations)
     )
+
+
+def test_scene_pipeline_prompts_avoid_mechanical_wiring_constraints() -> None:
+    source = (REPO_ROOT / "rpg_backend" / "generator" / "author_workflow_chains.py").read_text(encoding="utf-8")
+
+    forbidden_markers = {
+        "Use exactly three local moves with ids",
+        "scene.enabled_moves must contain exactly",
+        "always_available_moves exactly as",
+        "id_rules",
+        "fixed_global_moves",
+        "scene ids must be sequential without gaps",
+        "first scene_id must be",
+    }
+    violations = [marker for marker in forbidden_markers if marker in source]
+    assert not violations, "scene prompts should not force mechanical wiring fields:\n" + "\n".join(sorted(violations))
+
+    assert "scene_id is optional in each scene item" in source
+    assert "do not emit ids, enabled_moves, always_available_moves" in source
+    assert "prior_scene_memory" in source
 
 
 def test_retry_events_are_owned_by_graph_wrapper() -> None:

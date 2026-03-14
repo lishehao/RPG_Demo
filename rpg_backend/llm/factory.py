@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from rpg_backend.config.settings import get_settings
 from rpg_backend.llm.agents import AuthorAgent, PlayAgent
-from rpg_backend.llm.base import LLMProviderConfigError
+from rpg_backend.llm.base import LLMBackendConfigError
 from rpg_backend.llm.response_sessions import ResponseSessionStore
 from rpg_backend.llm.responses_transport import ResponsesTransport
 from rpg_backend.llm.task_specs import ResponsesTaskSpecBundle, build_responses_task_spec_bundle
@@ -20,10 +20,10 @@ class ResponsesAgentBundle:
 
 
 _cached_bundle: ResponsesAgentBundle | None = None
-_cached_signature: tuple[str, str, str, float, bool, bool, bool, bool] | None = None
+_cached_signature: tuple[str, str, str, float, bool, bool, bool, bool, bool] | None = None
 
 
-def _settings_signature() -> tuple[str, str, str, float, bool, bool, bool, bool]:
+def _settings_signature() -> tuple[str, str, str, float, bool, bool, bool, bool, bool]:
     settings = get_settings()
     return (
         (settings.responses_base_url or "").strip(),
@@ -32,7 +32,8 @@ def _settings_signature() -> tuple[str, str, str, float, bool, bool, bool, bool]
         float(settings.responses_timeout_seconds),
         bool(settings.responses_enable_thinking_play),
         bool(settings.responses_enable_thinking_author_overview),
-        bool(settings.responses_enable_thinking_author_beat),
+        bool(settings.responses_enable_thinking_author_beat_plan),
+        bool(settings.responses_enable_thinking_author_scene),
         bool(settings.responses_enable_thinking_story_quality_judge),
     )
 
@@ -45,11 +46,11 @@ def _build_bundle() -> ResponsesAgentBundle:
     model = (settings.responses_model or "").strip()
 
     if not base_url:
-        raise LLMProviderConfigError("responses provider misconfigured: APP_RESPONSES_BASE_URL is required")
+        raise LLMBackendConfigError("responses backend misconfigured: APP_RESPONSES_BASE_URL is required")
     if not api_key:
-        raise LLMProviderConfigError("responses provider misconfigured: APP_RESPONSES_API_KEY is required")
+        raise LLMBackendConfigError("responses backend misconfigured: APP_RESPONSES_API_KEY is required")
     if not model:
-        raise LLMProviderConfigError("responses provider misconfigured: APP_RESPONSES_MODEL is required")
+        raise LLMBackendConfigError("responses backend misconfigured: APP_RESPONSES_MODEL is required")
 
     timeout_seconds = float(settings.responses_timeout_seconds)
     task_specs = build_responses_task_spec_bundle(settings)
@@ -75,7 +76,8 @@ def _build_bundle() -> ResponsesAgentBundle:
         model=model,
         timeout_seconds=timeout_seconds,
         overview_task_spec=task_specs.author_overview,
-        beat_task_spec=task_specs.author_beat,
+        beat_plan_task_spec=task_specs.author_beat_plan,
+        scene_task_spec=task_specs.author_scene,
     )
 
     return ResponsesAgentBundle(
@@ -93,11 +95,6 @@ def get_responses_agent_bundle() -> ResponsesAgentBundle:
         _cached_bundle = _build_bundle()
         _cached_signature = signature
     return _cached_bundle
-
-
-# Backward compatibility for callsites that still reference "provider".
-def get_llm_provider() -> ResponsesAgentBundle:
-    return get_responses_agent_bundle()
 
 
 def get_play_agent() -> PlayAgent:

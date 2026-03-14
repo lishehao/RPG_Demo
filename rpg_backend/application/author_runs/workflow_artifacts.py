@@ -62,6 +62,25 @@ def build_persisted_artifacts_for_update(update: dict[str, Any]) -> list[Persist
                 artifact_payload_from_state(update["beat_overview_context"]),
             )
         )
+    if "current_scene_plan" in update and update["current_scene_plan"] is not None:
+        scene_plan = update["current_scene_plan"]
+        beat_id = scene_plan.beat_id if hasattr(scene_plan, "beat_id") else str(update.get("current_beat_index", ""))
+        artifacts.append(
+            PersistedArtifact(
+                AuthorWorkflowArtifactType.BEAT_SCENE_PLAN,
+                beat_id,
+                artifact_payload_from_state(scene_plan),
+            )
+        )
+    if "generated_scenes" in update:
+        for scene_order, generated_scene in enumerate(update["generated_scenes"], start=1):
+            artifacts.append(
+                PersistedArtifact(
+                    AuthorWorkflowArtifactType.GENERATED_BEAT_SCENE,
+                    str(scene_order),
+                    artifact_payload_from_state(generated_scene),
+                )
+            )
     if "current_beat_draft" in update and update["current_beat_draft"] is not None:
         beat = update["current_beat_draft"]
         beat_id = beat.beat_id if hasattr(beat, "beat_id") else str(update.get("current_beat_index", ""))

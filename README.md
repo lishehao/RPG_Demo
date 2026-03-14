@@ -45,20 +45,23 @@ Current backend module shape:
 
 ### Author Mode
 
-Author Mode keeps a LangGraph workflow, but beat generation is now direct:
+Author Mode keeps a LangGraph workflow with scene-by-scene beat generation:
 
 1. `generate_story_overview`
 2. `plan_beats`
-3. `generate_beat`
-4. `beat_lint`
-5. `assemble_story_pack`
-6. `normalize_story_pack`
-7. `final_lint`
+3. `plan_beat_scenes`
+4. `generate_scene` (repeat until current beat scene plan is complete)
+5. `assemble_beat`
+6. `beat_lint`
+7. `assemble_story_pack`
+8. `normalize_story_pack`
+9. `final_lint`
 
 Important current behavior:
 
-- only two Author LLM nodes remain: `generate_story_overview` and `generate_beat`
-- each beat is generated directly as a full `BeatDraft` (no intermediate outline stage)
+- Author LLM nodes are `generate_story_overview`, `plan_beat_scenes`, and `generate_scene`
+- each beat is generated scene-by-scene and then assembled deterministically into a `BeatDraft`
+- `generate_scene` now focuses on scene semantics (seed, present NPCs, local move intent + consequence flavor), while backend assembly owns ids, `enabled_moves`, `always_available_moves`, outcome ids, and standard scene progression wiring
 - generation is one beat at a time; if beat lint fails, only the current beat is retried
 - accepted prior beats stay fixed and feed continuity through `last_accepted_beat`, `prefix_summary`, and `author_memory`
 
@@ -67,15 +70,18 @@ Important current behavior:
 ```mermaid
 flowchart TD
   A["generate_story_overview"] --> B["plan_beats"]
-  B --> C["generate_beat"]
-  C --> D["beat_lint"]
-  D -->|"pass and more beats"| C
-  D -->|"pass and all beats done"| E["assemble_story_pack"]
-  D -->|"fail and retry budget remains"| C
-  E --> F["normalize_story_pack"]
-  F --> G["final_lint"]
-  G -->|"pass"| H["review_ready"]
-  G -->|"fail"| I["workflow_failed"]
+  B --> C["plan_beat_scenes"]
+  C --> D["generate_scene"]
+  D -->|"more scenes in beat"| D
+  D -->|"beat scenes done"| E["assemble_beat"]
+  E --> F["beat_lint"]
+  F -->|"pass and more beats"| C
+  F -->|"pass and all beats done"| G["assemble_story_pack"]
+  F -->|"fail and retry budget remains"| C
+  G --> H["normalize_story_pack"]
+  H --> I["final_lint"]
+  I -->|"pass"| J["review_ready"]
+  I -->|"fail"| K["workflow_failed"]
 ```
 
 ### Assembly And Normalization
@@ -92,7 +98,8 @@ Responses cursor reuse is scoped by channel:
 
 - Play: `play_agent`
 - Author overview: `author_overview`
-- Author beat generation: `author_beat`
+- Author beat scene planning: `author_beat_plan`
+- Author scene generation: `author_scene:<beat_id>`
 
 On invalid or expired cursor errors, the backend clears the stored cursor and retries once without `previous_response_id`.
 If cursor model mismatches current model, backend clears the cursor first and skips stale `previous_response_id` reuse.
@@ -107,14 +114,16 @@ Use only these active env vars:
 - `APP_RESPONSES_TIMEOUT_SECONDS` (default `20.0`)
 - `APP_RESPONSES_ENABLE_THINKING_PLAY` (default `false`)
 - `APP_RESPONSES_ENABLE_THINKING_AUTHOR_OVERVIEW` (default `false`)
-- `APP_RESPONSES_ENABLE_THINKING_AUTHOR_BEAT` (default `true`)
+- `APP_RESPONSES_ENABLE_THINKING_AUTHOR_BEAT_PLAN` (default `true`)
+- `APP_RESPONSES_ENABLE_THINKING_AUTHOR_SCENE` (default `true`)
 - `APP_RESPONSES_ENABLE_THINKING_STORY_QUALITY_JUDGE` (default `false`)
 
 Recommended current defaults:
 
 - Play keeps thinking off for latency
 - Author overview usually keeps thinking off
-- Author beat generation usually keeps thinking on
+- Author beat scene planning usually keeps thinking on
+- Author scene generation usually keeps thinking on
 - Story quality judge can be toggled independently from runtime traffic
 
 Reference template: [`/Users/lishehao/Desktop/Project/RPG_Demo/.env.llm.example`](/Users/lishehao/Desktop/Project/RPG_Demo/.env.llm.example)

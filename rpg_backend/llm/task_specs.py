@@ -11,7 +11,8 @@ TaskOutputMode = Literal["strict_json", "text"]
 
 PLAY_CHANNEL = "play_agent"
 AUTHOR_OVERVIEW_CHANNEL = "author_overview"
-AUTHOR_BEAT_CHANNEL = "author_beat"
+AUTHOR_BEAT_PLAN_CHANNEL = "author_beat_plan"
+AUTHOR_SCENE_CHANNEL = "author_scene"
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class ResponsesTaskTemplate:
     output_mode: TaskOutputMode
     channel: str | None = None
     thinking_setting_field: str | None = None
+    max_output_tokens_setting_field: str | None = None
 
 
 @dataclass(frozen=True)
@@ -30,6 +32,7 @@ class ResponsesTaskSpec:
     output_mode: TaskOutputMode
     channel: str | None
     enable_thinking: bool
+    max_output_tokens: int | None
 
 
 @dataclass(frozen=True)
@@ -37,7 +40,8 @@ class ResponsesTaskSpecBundle:
     play_interpret: ResponsesTaskSpec
     play_render: ResponsesTaskSpec
     author_overview: ResponsesTaskSpec
-    author_beat: ResponsesTaskSpec
+    author_beat_plan: ResponsesTaskSpec
+    author_scene: ResponsesTaskSpec
     story_quality_judge: ResponsesTaskSpec
 
 
@@ -57,12 +61,17 @@ def _resolve_task(template: ResponsesTaskTemplate, settings: Settings) -> Respon
     enable_thinking = False
     if template.thinking_setting_field is not None:
         enable_thinking = bool(getattr(settings, template.thinking_setting_field))
+    max_output_tokens: int | None = None
+    if template.max_output_tokens_setting_field is not None:
+        value = getattr(settings, template.max_output_tokens_setting_field)
+        max_output_tokens = None if value is None else int(value)
     return ResponsesTaskSpec(
         task_name=template.task_name,
         developer_prompt=template.developer_prompt,
         output_mode=template.output_mode,
         channel=template.channel,
         enable_thinking=enable_thinking,
+        max_output_tokens=max_output_tokens,
     )
 
 
@@ -79,6 +88,7 @@ def build_responses_task_spec_bundle(settings: Settings | None = None) -> Respon
             output_mode="strict_json",
             channel=PLAY_CHANNEL,
             thinking_setting_field="responses_enable_thinking_play",
+            max_output_tokens_setting_field="responses_max_output_tokens_play_interpret",
         ),
         resolved_settings,
     )
@@ -92,6 +102,7 @@ def build_responses_task_spec_bundle(settings: Settings | None = None) -> Respon
             output_mode="text",
             channel=PLAY_CHANNEL,
             thinking_setting_field="responses_enable_thinking_play",
+            max_output_tokens_setting_field="responses_max_output_tokens_play_render",
         ),
         resolved_settings,
     )
@@ -105,19 +116,35 @@ def build_responses_task_spec_bundle(settings: Settings | None = None) -> Respon
             output_mode="strict_json",
             channel=AUTHOR_OVERVIEW_CHANNEL,
             thinking_setting_field="responses_enable_thinking_author_overview",
+            max_output_tokens_setting_field="responses_max_output_tokens_author_overview",
         ),
         resolved_settings,
     )
-    author_beat = _resolve_task(
+    author_beat_plan = _resolve_task(
         ResponsesTaskTemplate(
-            task_name="generate_beat",
+            task_name="plan_beat_scenes",
             developer_prompt=(
-                "You are the Author Agent. Compile one BeatDraft JSON object. "
+                "You are the Author Agent. Compile one BeatScenePlan JSON object. "
                 "Return strict JSON only. No prose, no markdown fences."
             ),
             output_mode="strict_json",
-            channel=AUTHOR_BEAT_CHANNEL,
-            thinking_setting_field="responses_enable_thinking_author_beat",
+            channel=AUTHOR_BEAT_PLAN_CHANNEL,
+            thinking_setting_field="responses_enable_thinking_author_beat_plan",
+            max_output_tokens_setting_field="responses_max_output_tokens_author_beat_plan",
+        ),
+        resolved_settings,
+    )
+    author_scene = _resolve_task(
+        ResponsesTaskTemplate(
+            task_name="generate_scene",
+            developer_prompt=(
+                "You are the Author Agent. Compile one GeneratedBeatScene JSON object. "
+                "Return strict JSON only. No prose, no markdown fences."
+            ),
+            output_mode="strict_json",
+            channel=AUTHOR_SCENE_CHANNEL,
+            thinking_setting_field="responses_enable_thinking_author_scene",
+            max_output_tokens_setting_field="responses_max_output_tokens_author_scene",
         ),
         resolved_settings,
     )
@@ -131,6 +158,7 @@ def build_responses_task_spec_bundle(settings: Settings | None = None) -> Respon
             output_mode="strict_json",
             channel=None,
             thinking_setting_field="responses_enable_thinking_story_quality_judge",
+            max_output_tokens_setting_field="responses_max_output_tokens_story_quality_judge",
         ),
         resolved_settings,
     )
@@ -138,7 +166,8 @@ def build_responses_task_spec_bundle(settings: Settings | None = None) -> Respon
         play_interpret=play_interpret,
         play_render=play_render,
         author_overview=author_overview,
-        author_beat=author_beat,
+        author_beat_plan=author_beat_plan,
+        author_scene=author_scene,
         story_quality_judge=story_quality_judge,
     )
 

@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from rpg_backend.application.author_runs.workflow_nodes import build_workflow_nodes
+from rpg_backend.application.author_runs.workflow_nodes import build_workflow_node_timeout_seconds
 from rpg_backend.application.author_runs.workflow_retry import (
     AuthorRunEventRecorder,
     AuthorRunNodeStartRecorder,
@@ -38,6 +39,11 @@ def build_author_workflow_graph(
         beat_chain_factory=beat_chain_factory,
         policy=policy,
     )
+    node_timeout_seconds = build_workflow_node_timeout_seconds(
+        overview_chain_factory=overview_chain_factory,
+        beat_chain_factory=beat_chain_factory,
+        policy=policy,
+    )
     routes = build_workflow_routes(policy=policy)
 
     builder = StateGraph(AuthorWorkflowState)
@@ -49,6 +55,7 @@ def build_author_workflow_graph(
                 node_name=node_name,
                 func=node_handlers[node_name],
                 policy=policy,
+                timeout_seconds=node_timeout_seconds[node_name],
                 mark_run_node_started=mark_run_node_started,
                 record_run_node_event=record_run_node_event,
             ),

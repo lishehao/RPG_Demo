@@ -1,9 +1,9 @@
-"""LLM providers and abstractions."""
+"""LLM runtime interfaces and abstractions."""
 
-from rpg_backend.llm.base import LLMProviderConfigError
-from rpg_backend.llm.factory import get_llm_provider
+from rpg_backend.llm.base import LLMBackendConfigError
+from rpg_backend.llm.factory import get_responses_agent_bundle
 
 __all__ = [
-    "LLMProviderConfigError",
-    "get_llm_provider",
+    "LLMBackendConfigError",
+    "get_responses_agent_bundle",
 ]

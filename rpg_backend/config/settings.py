@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     auth_jwt_issuer: str = "rpg-backend"
     admin_bootstrap_email: str = "admin@example.com"
     admin_bootstrap_password: str = "admin123456"
-    author_workflow_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
+    author_workflow_timeout_seconds: float | None = Field(default=None, gt=0, le=120)
     author_workflow_max_attempts: int = Field(default=3, ge=1, le=10)
     routing_confidence_threshold: float = 0.55
     responses_base_url: str | None = None
@@ -26,8 +26,15 @@ class Settings(BaseSettings):
     responses_timeout_seconds: float = Field(default=20.0, gt=0)
     responses_enable_thinking_play: bool = False
     responses_enable_thinking_author_overview: bool = False
-    responses_enable_thinking_author_beat: bool = True
+    responses_enable_thinking_author_beat_plan: bool = True
+    responses_enable_thinking_author_scene: bool = True
     responses_enable_thinking_story_quality_judge: bool = False
+    responses_max_output_tokens_play_interpret: int | None = Field(default=220, ge=1)
+    responses_max_output_tokens_play_render: int | None = Field(default=420, ge=1)
+    responses_max_output_tokens_author_overview: int | None = Field(default=800, ge=1)
+    responses_max_output_tokens_author_beat_plan: int | None = Field(default=1500, ge=1)
+    responses_max_output_tokens_author_scene: int | None = Field(default=1600, ge=1)
+    responses_max_output_tokens_story_quality_judge: int | None = Field(default=700, ge=1)
     obs_log_level: str = "INFO"
     obs_request_id_header: str = "X-Request-ID"
     obs_redact_input_text: bool = True
