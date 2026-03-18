@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 AxisKind = Literal["pressure", "resource", "relationship", "exposure", "time"]
 StoryFunction = Literal["advance", "reveal", "stabilize", "detour", "pay_cost"]
+BeatMilestoneKind = Literal["reveal", "exposure", "fracture", "concession", "containment", "commitment"]
 AxisTemplateId = Literal[
     "external_pressure",
     "public_panic",
@@ -132,6 +133,10 @@ class BeatSpec(BaseModel):
     title: str = Field(min_length=1, max_length=120)
     goal: str = Field(min_length=1, max_length=220)
     focus_npcs: list[str] = Field(default_factory=list, max_length=3)
+    conflict_npcs: list[str] = Field(default_factory=list, max_length=2)
+    pressure_axis_id: str | None = None
+    milestone_kind: BeatMilestoneKind = "reveal"
+    route_pivot_tag: AffordanceTag | None = None
     required_truths: list[str] = Field(default_factory=list, max_length=4)
     required_events: list[str] = Field(default_factory=list, max_length=4)
     detour_budget: int = Field(default=1, ge=0, le=2)
@@ -202,6 +207,40 @@ class EndingRulesDraft(BaseModel):
     ending_rules: list[EndingRule] = Field(min_length=1, max_length=6)
 
 
+class EndingIntentSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ending_id: str = Field(min_length=1)
+    priority: int = Field(default=100, ge=1)
+    axis_ids: list[str] = Field(default_factory=list, max_length=2)
+    required_truth_ids: list[str] = Field(default_factory=list, max_length=2)
+    required_event_ids: list[str] = Field(default_factory=list, max_length=2)
+    required_flag_ids: list[str] = Field(default_factory=list, max_length=2)
+    fallback: bool = False
+
+
+class EndingIntentDraft(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ending_intents: list[EndingIntentSpec] = Field(min_length=1, max_length=6)
+
+
+class EndingAnchorSuggestionSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ending_id: Literal["collapse", "pyrrhic"]
+    axis_ids: list[str] = Field(default_factory=list, max_length=2)
+    required_truth_ids: list[str] = Field(default_factory=list, max_length=2)
+    required_event_ids: list[str] = Field(default_factory=list, max_length=2)
+    required_flag_ids: list[str] = Field(default_factory=list, max_length=2)
+
+
+class EndingAnchorSuggestionDraft(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ending_anchor_suggestions: list[EndingAnchorSuggestionSpec] = Field(default_factory=list, max_length=2)
+
+
 class RouteOpportunityTriggerDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -245,6 +284,15 @@ class OverviewCastDraft(BaseModel):
     pressure_signature: str = Field(min_length=1, max_length=220)
 
 
+class CastMemberSemanticsDraft(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=80)
+    agenda_detail: str = Field(min_length=1, max_length=180)
+    red_line_detail: str = Field(min_length=1, max_length=180)
+    pressure_detail: str = Field(min_length=1, max_length=180)
+
+
 class OverviewTruthDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -267,18 +315,83 @@ class OverviewFlagDraft(BaseModel):
     starting_value: bool = False
 
 
+class StoryFrameScaffoldDraft(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title_seed: str = Field(min_length=1, max_length=80)
+    setting_frame: str = Field(min_length=1, max_length=180)
+    protagonist_mandate: str = Field(min_length=1, max_length=220)
+    opposition_force: str = Field(min_length=1, max_length=220)
+    stakes_core: str = Field(min_length=1, max_length=220)
+    tone: str = Field(min_length=1, max_length=120)
+    world_rules: list[str] = Field(min_length=2, max_length=5)
+    truths: list[OverviewTruthDraft] = Field(min_length=2, max_length=6)
+    state_axis_choices: list[OverviewAxisDraft] = Field(min_length=2, max_length=5)
+    flags: list[OverviewFlagDraft] = Field(default_factory=list, max_length=4)
+
+
+class StoryFrameProseDraft(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=120)
+    premise: str = Field(min_length=1, max_length=320)
+    stakes: str = Field(min_length=1, max_length=240)
+    style_guard: str = Field(min_length=1, max_length=220)
+
+
 class BeatDraftSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = Field(min_length=1, max_length=120)
     goal: str = Field(min_length=1, max_length=220)
     focus_names: list[str] = Field(default_factory=list, max_length=3)
+    conflict_pair: list[str] = Field(default_factory=list, max_length=2)
+    pressure_axis_id: AxisTemplateId | None = None
+    milestone_kind: BeatMilestoneKind = "reveal"
+    route_pivot_tag: AffordanceTag | None = None
     required_truth_texts: list[str] = Field(default_factory=list, max_length=3)
     detour_budget: int = Field(default=1, ge=0, le=2)
     progress_required: int = Field(default=2, ge=1, le=3)
     return_hooks: list[str] = Field(min_length=1, max_length=3)
     affordance_tags: list[AffordanceTag] = Field(min_length=2, max_length=6)
     blocked_affordances: list[AffordanceTag] = Field(default_factory=list, max_length=4)
+
+
+class BeatSkeletonSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title_seed: str = Field(min_length=1, max_length=80)
+    goal_seed: str = Field(min_length=1, max_length=180)
+    focus_names: list[str] = Field(default_factory=list, max_length=3)
+    conflict_pair: list[str] = Field(default_factory=list, max_length=2)
+    pressure_axis_id: AxisTemplateId | None = None
+    milestone_kind: BeatMilestoneKind = "reveal"
+    route_pivot_tag: AffordanceTag | None = None
+    required_truth_texts: list[str] = Field(default_factory=list, max_length=3)
+    detour_budget: int = Field(default=1, ge=0, le=2)
+    progress_required: int = Field(default=2, ge=1, le=3)
+    affordance_tags: list[AffordanceTag] = Field(min_length=2, max_length=6)
+    blocked_affordances: list[AffordanceTag] = Field(default_factory=list, max_length=4)
+
+
+class BeatPlanSkeletonDraft(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    beats: list[BeatSkeletonSpec] = Field(min_length=2, max_length=4)
+
+
+class BeatProseSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=120)
+    goal: str = Field(min_length=1, max_length=220)
+    return_hooks: list[str] = Field(min_length=1, max_length=3)
+
+
+class BeatPlanProseDraft(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    beats: list[BeatProseSpec] = Field(min_length=2, max_length=4)
 
 
 class StoryFrameDraft(BaseModel):
@@ -355,6 +468,10 @@ class ContextBeatSummary(BaseModel):
     title: str = Field(min_length=1, max_length=120)
     goal: str = Field(min_length=1, max_length=220)
     focus_names: list[str] = Field(default_factory=list, max_length=4)
+    conflict_names: list[str] = Field(default_factory=list, max_length=2)
+    pressure_axis_id: str | None = None
+    milestone_kind: BeatMilestoneKind | None = None
+    route_pivot_tag: AffordanceTag | None = None
     required_truths: list[str] = Field(default_factory=list, max_length=4)
     required_events: list[str] = Field(default_factory=list, max_length=4)
     affordance_tags: list[AffordanceTag] = Field(default_factory=list, max_length=6)
@@ -409,6 +526,245 @@ class AuthorBundleResponse(BaseModel):
 
     run_id: str = Field(min_length=1)
     bundle: DesignBundle
+
+
+class AuthorPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    prompt_seed: str = Field(min_length=1, max_length=4000)
+    random_seed: int | None = None
+
+
+class AuthorPreviewFlashcard(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    card_id: str = Field(min_length=1)
+    kind: Literal["stable", "draft"]
+    label: str = Field(min_length=1, max_length=80)
+    value: str = Field(min_length=1, max_length=220)
+
+
+class AuthorLoadingCard(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    card_id: Literal[
+        "theme",
+        "tone",
+        "structure",
+        "cast_count",
+        "beat_count",
+        "working_title",
+        "core_conflict",
+        "generation_status",
+        "token_budget",
+    ]
+    emphasis: Literal["stable", "draft", "live"]
+    label: str = Field(min_length=1, max_length=80)
+    value: str = Field(min_length=1, max_length=220)
+
+
+class AuthorPreviewTheme(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    primary_theme: str = Field(min_length=1)
+    modifiers: list[str] = Field(default_factory=list, max_length=8)
+    router_reason: str = Field(min_length=1)
+
+
+class AuthorPreviewStrategies(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    story_frame_strategy: str = Field(min_length=1)
+    cast_strategy: str = Field(min_length=1)
+    beat_plan_strategy: str = Field(min_length=1)
+
+
+class AuthorPreviewStructure(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cast_topology: str = Field(min_length=1)
+    expected_npc_count: int = Field(ge=1)
+    expected_beat_count: int = Field(ge=1)
+
+
+class AuthorPreviewStory(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=120)
+    premise: str = Field(min_length=1, max_length=320)
+    tone: str = Field(min_length=1, max_length=120)
+    stakes: str = Field(min_length=1, max_length=240)
+
+
+class AuthorPreviewCastSlotSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    slot_label: str = Field(min_length=1, max_length=80)
+    public_role: str = Field(min_length=1, max_length=120)
+
+
+class AuthorPreviewBeatSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=120)
+    goal: str = Field(min_length=1, max_length=220)
+    milestone_kind: str = Field(min_length=1, max_length=32)
+
+
+class AuthorPreviewResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    preview_id: str = Field(min_length=1)
+    prompt_seed: str = Field(min_length=1, max_length=4000)
+    focused_brief: FocusedBrief
+    theme: AuthorPreviewTheme
+    strategies: AuthorPreviewStrategies
+    structure: AuthorPreviewStructure
+    story: AuthorPreviewStory
+    cast_slots: list[AuthorPreviewCastSlotSummary] = Field(default_factory=list, max_length=5)
+    beats: list[AuthorPreviewBeatSummary] = Field(default_factory=list, max_length=4)
+    flashcards: list[AuthorPreviewFlashcard] = Field(default_factory=list, max_length=16)
+    stage: str = Field(min_length=1, max_length=64)
+
+
+class AuthorJobProgress(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stage: str = Field(min_length=1, max_length=64)
+    stage_index: int = Field(ge=1)
+    stage_total: int = Field(ge=1)
+
+
+class AuthorCacheMetrics(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session_cache_enabled: bool = False
+    cache_path_used: bool = False
+    total_call_count: int = Field(ge=0)
+    previous_response_call_count: int = Field(ge=0)
+    total_input_characters: int = Field(ge=0)
+    estimated_input_tokens_from_chars: int = Field(ge=0)
+    provider_usage: dict[str, int] = Field(default_factory=dict)
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+    cached_input_tokens: int | None = Field(default=None, ge=0)
+    cache_hit_tokens: int | None = Field(default=None, ge=0)
+    cache_write_tokens: int | None = Field(default=None, ge=0)
+    cache_creation_input_tokens: int | None = Field(default=None, ge=0)
+    cache_type: str | None = Field(default=None, max_length=32)
+    billing_type: str | None = Field(default=None, max_length=32)
+    cache_metrics_source: str = Field(min_length=1, max_length=80)
+
+
+class AuthorJobCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    prompt_seed: str = Field(min_length=1, max_length=4000)
+    random_seed: int | None = None
+    preview_id: str | None = None
+
+
+class AuthorJobStatusResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str = Field(min_length=1)
+    status: Literal["queued", "running", "completed", "failed"]
+    prompt_seed: str = Field(min_length=1, max_length=4000)
+    preview: AuthorPreviewResponse
+    progress: AuthorJobProgress
+    progress_snapshot: AuthorJobProgressSnapshot | None = None
+    cache_metrics: AuthorCacheMetrics | None = None
+    error: dict[str, str] | None = None
+
+
+class AuthorStorySummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=120)
+    one_liner: str = Field(min_length=1, max_length=220)
+    premise: str = Field(min_length=1, max_length=320)
+    tone: str = Field(min_length=1, max_length=120)
+    theme: str = Field(min_length=1, max_length=80)
+    npc_count: int = Field(ge=1)
+    beat_count: int = Field(ge=1)
+
+
+class AuthorJobResultResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str = Field(min_length=1)
+    status: Literal["queued", "running", "completed", "failed"]
+    summary: AuthorStorySummary | None = None
+    bundle: DesignBundle | None = None
+    progress_snapshot: AuthorJobProgressSnapshot | None = None
+    cache_metrics: AuthorCacheMetrics | None = None
+
+
+class AuthorJobTokenUsageResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str = Field(min_length=1)
+    status: Literal["queued", "running", "completed", "failed"]
+    progress: AuthorJobProgress
+    token_usage: AuthorCacheMetrics
+
+
+class AuthorJobProgressSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stage: str = Field(min_length=1, max_length=64)
+    stage_label: str = Field(min_length=1, max_length=120)
+    stage_index: int = Field(ge=1)
+    stage_total: int = Field(ge=1)
+    completion_ratio: float = Field(ge=0, le=1)
+    primary_theme: str = Field(min_length=1)
+    cast_topology: str = Field(min_length=1)
+    expected_npc_count: int = Field(ge=1)
+    expected_beat_count: int = Field(ge=1)
+    preview_title: str = Field(min_length=1, max_length=120)
+    preview_premise: str = Field(min_length=1, max_length=320)
+    flashcards: list[AuthorPreviewFlashcard] = Field(default_factory=list, max_length=16)
+    loading_cards: list[AuthorLoadingCard] = Field(default_factory=list, max_length=12)
+
+
+class AuthorTokenUsageBucket(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    bucket_id: str = Field(min_length=1, max_length=80)
+    token_usage: AuthorCacheMetrics
+
+
+class AuthorTokenCostEstimate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    model: str | None = Field(default=None, max_length=120)
+    currency: Literal["RMB"] = "RMB"
+    input_price_per_million_tokens_rmb: float = Field(ge=0)
+    output_price_per_million_tokens_rmb: float = Field(ge=0)
+    session_cache_hit_multiplier: float = Field(ge=0)
+    session_cache_creation_multiplier: float = Field(ge=0)
+    uncached_input_tokens: int = Field(ge=0)
+    cached_input_tokens: int = Field(ge=0)
+    cache_creation_input_tokens: int = Field(ge=0)
+    output_tokens: int = Field(ge=0)
+    estimated_input_cost_rmb: float = Field(ge=0)
+    estimated_output_cost_rmb: float = Field(ge=0)
+    estimated_total_cost_rmb: float = Field(ge=0)
+    notes: str | None = Field(default=None, max_length=240)
+
+
+class AuthorJobTokenUsageDetailResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str = Field(min_length=1)
+    status: Literal["queued", "running", "completed", "failed"]
+    progress: AuthorJobProgress
+    total_token_usage: AuthorCacheMetrics
+    operation_breakdown: list[AuthorTokenUsageBucket] = Field(default_factory=list, max_length=32)
+    stage_breakdown: list[AuthorTokenUsageBucket] = Field(default_factory=list, max_length=16)
+    cost_estimate: AuthorTokenCostEstimate | None = None
 
 
 class ErrorEnvelope(BaseModel):
