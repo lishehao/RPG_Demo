@@ -3,23 +3,13 @@ from __future__ import annotations
 import re
 
 from rpg_backend.author.contracts import FocusedBrief
-
-
-def _normalize(value: str) -> str:
-    return " ".join((value or "").strip().split())
-
-
-def _trim(value: str, limit: int) -> str:
-    text = _normalize(value)
-    if len(text) <= limit:
-        return text
-    return text[: limit - 3].rstrip() + "..."
+from rpg_backend.author.normalize import normalize_whitespace, trim_ellipsis
 
 
 def _extract_tail_after_about(text: str) -> str:
     match = re.search(r"\babout\b\s+(.*)", text, flags=re.IGNORECASE)
     if match:
-        return _normalize(match.group(1))
+        return normalize_whitespace(match.group(1))
     return text
 
 
@@ -41,7 +31,7 @@ def _split_at_first_marker(text: str, markers: tuple[str, ...]) -> tuple[str, st
 def _extract_location_phrase(text: str) -> str:
     tokens = re.findall(r"[a-zA-Z0-9-]+", text)
     if not tokens:
-        return _normalize(text)
+        return normalize_whitespace(text)
     location_nouns = {
         "city",
         "kingdom",
@@ -94,8 +84,8 @@ def _extract_location_phrase(text: str) -> str:
         temporal = re.search(r"\b(during|amid|under)\b\s+([^,.!?;]+)", text, flags=re.IGNORECASE)
         if temporal:
             phrase = f"{phrase} {temporal.group(1)} {temporal.group(2).strip()}"
-        return _normalize(phrase)
-    return _normalize(text)
+        return normalize_whitespace(phrase)
+    return normalize_whitespace(text)
 
 
 def _extract_tone_signal(text: str) -> str:
@@ -105,18 +95,18 @@ def _extract_tone_signal(text: str) -> str:
         flags=re.IGNORECASE,
     )
     if match:
-        return _normalize(match.group(1))
+        return normalize_whitespace(match.group(1))
     fallback_terms: list[str] = []
     for term in ("hopeful", "political", "civic", "mystery", "thriller", "fantasy", "urgent", "tense"):
         if term in text.casefold():
             fallback_terms.append(term)
     if fallback_terms:
         return " ".join(dict.fromkeys(fallback_terms))
-    return _trim(text, 120)
+    return trim_ellipsis(text, 120)
 
 
 def _split_protagonist_and_mission(text: str) -> tuple[str, str]:
-    normalized = _normalize(text)
+    normalized = normalize_whitespace(text)
     if not normalized:
         return "", ""
     match = re.match(
@@ -125,12 +115,12 @@ def _split_protagonist_and_mission(text: str) -> tuple[str, str]:
         flags=re.IGNORECASE,
     )
     if match:
-        return _normalize(match.group(1)), _normalize(match.group(2))
+        return normalize_whitespace(match.group(1)), normalize_whitespace(match.group(2))
     return "", normalized
 
 
 def _to_infinitive(phrase: str) -> str:
-    normalized = _normalize(phrase)
+    normalized = normalize_whitespace(phrase)
     if not normalized:
         return normalized
     parts = normalized.split(" ", 1)
@@ -152,27 +142,27 @@ def _to_infinitive(phrase: str) -> str:
         "stopping": "stop",
     }
     rewritten = rewrites.get(first, parts[0])
-    return _normalize(f"{rewritten} {rest}".strip())
+    return normalize_whitespace(f"{rewritten} {rest}".strip())
 
 
 def _extract_constraint_marker_phrase(text: str) -> tuple[str | None, str | None]:
     for marker in ("without", "during", "while", "before", "after", "amid"):
         match = re.search(rf"\b{marker}\b\s+([^,.!?;]+)", text, flags=re.IGNORECASE)
         if match:
-            return marker, _normalize(match.group(1))
+            return marker, normalize_whitespace(match.group(1))
     return None, None
 
 
 def _infer_pressure_phrase(*, setting_signal: str, constraint_marker: str | None, constraint_tail: str | None) -> str:
     if constraint_tail:
         if constraint_marker in {"during", "while", "amid"}:
-            return _normalize(f"while {constraint_tail} strains civic order")
+            return normalize_whitespace(f"while {constraint_tail} strains civic order")
         if constraint_marker == "without":
-            return _normalize(f"without {constraint_tail}")
+            return normalize_whitespace(f"without {constraint_tail}")
         if constraint_marker == "before":
-            return _normalize(f"before {constraint_tail} triggers open fracture")
+            return normalize_whitespace(f"before {constraint_tail} triggers open fracture")
         if constraint_marker == "after":
-            return _normalize(f"after {constraint_tail} reshapes the balance of power")
+            return normalize_whitespace(f"after {constraint_tail} reshapes the balance of power")
 
     lowered = setting_signal.casefold()
     fragments: list[str] = []
@@ -192,13 +182,13 @@ def _infer_pressure_phrase(*, setting_signal: str, constraint_marker: str | None
 
 
 def focus_brief(raw_brief: str) -> FocusedBrief:
-    normalized = _normalize(raw_brief)
+    normalized = normalize_whitespace(raw_brief)
     tail = _extract_tail_after_about(normalized)
     kernel_head, _kernel_tail = _split_at_first_marker(
         tail,
         ("during", "while", "without", "before", "after", "amid"),
     )
-    story_kernel = _normalize(kernel_head or tail)
+    story_kernel = normalize_whitespace(kernel_head or tail)
     setting_signal = _extract_location_phrase(tail if tail else normalized)
     _protagonist, mission_phrase = _split_protagonist_and_mission(story_kernel)
     mission_core = _to_infinitive(mission_phrase or story_kernel)
@@ -208,22 +198,22 @@ def focus_brief(raw_brief: str) -> FocusedBrief:
         constraint_marker=constraint_marker,
         constraint_tail=constraint_tail,
     )
-    core_conflict = _normalize(f"{mission_core} {pressure_phrase}".strip())
+    core_conflict = normalize_whitespace(f"{mission_core} {pressure_phrase}".strip())
     tone_signal = _extract_tone_signal(normalized)
     hard_constraints = []
     for marker in ("without", "before", "while", "during", "after"):
         match = re.search(rf"\b{marker}\b\s+([^,.!?;]+)", normalized, flags=re.IGNORECASE)
         if match:
-            hard_constraints.append(_normalize(f"{marker} {match.group(1)}"))
+            hard_constraints.append(normalize_whitespace(f"{marker} {match.group(1)}"))
     unique_constraints = []
     for item in hard_constraints:
         if item and item.casefold() not in {existing.casefold() for existing in unique_constraints}:
             unique_constraints.append(item)
     return FocusedBrief(
-        story_kernel=_trim(story_kernel, 220),
-        setting_signal=_trim(setting_signal, 220),
-        core_conflict=_trim(core_conflict, 220),
-        tone_signal=_trim(tone_signal, 120),
-        hard_constraints=[_trim(item, 160) for item in unique_constraints[:4]],
+        story_kernel=trim_ellipsis(story_kernel, 220),
+        setting_signal=trim_ellipsis(setting_signal, 220),
+        core_conflict=trim_ellipsis(core_conflict, 220),
+        tone_signal=trim_ellipsis(tone_signal, 120),
+        hard_constraints=[trim_ellipsis(item, 160) for item in unique_constraints[:4]],
         forbidden_tones=["graphic cruelty", "sadistic evil"],
     )

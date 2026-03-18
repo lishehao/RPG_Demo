@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 
 from rpg_backend.author.contracts import (
@@ -12,22 +11,7 @@ from rpg_backend.author.contracts import (
     OverviewCastDraft,
     StoryFrameDraft,
 )
-
-
-def _normalize(value: str) -> str:
-    return " ".join((value or "").strip().split())
-
-
-def _slug(value: str) -> str:
-    normalized = re.sub(r"[^a-z0-9]+", "_", (value or "").casefold())
-    return normalized.strip("_") or "item"
-
-
-def _trim(value: str, limit: int) -> str:
-    text = _normalize(value)
-    if len(text) <= limit:
-        return text
-    return text[: limit - 3].rstrip() + "..."
+from rpg_backend.author.normalize import normalize_whitespace, slugify, trim_ellipsis
 
 
 CAST_ARCHETYPE_LIBRARY: dict[str, dict[str, str]] = {
@@ -347,10 +331,10 @@ def _looks_like_role_label_name_locally(
     member_name: str,
     slot: CastOverviewSlotDraft,
 ) -> bool:
-    normalized_name = _normalize(member_name).casefold()
+    normalized_name = normalize_whitespace(member_name).casefold()
     if normalized_name in {
-        _normalize(slot.slot_label).casefold(),
-        _normalize(slot.public_role).casefold(),
+        normalize_whitespace(slot.slot_label).casefold(),
+        normalize_whitespace(slot.public_role).casefold(),
     }:
         return True
     generic_tokens = {
@@ -384,20 +368,20 @@ def _looks_like_role_label_name_locally(
 
 
 def _clean_member_detail(detail: str, fallback: str, *, limit: int = 180) -> str:
-    text = _trim(detail or fallback, limit)
+    text = trim_ellipsis(detail or fallback, limit)
     if not text:
-        return _trim(fallback, limit)
+        return trim_ellipsis(fallback, limit)
     return text
 
 
 def _merge_anchor_with_detail(anchor: str, detail: str, *, limit: int = 220) -> str:
-    anchor_text = _trim(anchor, limit)
-    detail_text = _trim(detail, limit)
+    anchor_text = trim_ellipsis(anchor, limit)
+    detail_text = trim_ellipsis(detail, limit)
     if not detail_text:
         return anchor_text
     if detail_text.casefold() in anchor_text.casefold() or anchor_text.casefold() in detail_text.casefold():
         return anchor_text
-    return _trim(f"{anchor_text} {detail_text}", limit)
+    return trim_ellipsis(f"{anchor_text} {detail_text}", limit)
 
 
 def build_cast_draft_from_overview(
@@ -409,10 +393,10 @@ def build_cast_draft_from_overview(
         cast=[
             OverviewCastDraft(
                 name=_generated_name_for_slot(slot, focused_brief, index, used_names),
-                role=_trim(slot.public_role, 120),
-                agenda=_trim(slot.agenda_anchor, 220),
-                red_line=_trim(slot.red_line_anchor, 220),
-                pressure_signature=_trim(slot.pressure_vector, 220),
+                role=trim_ellipsis(slot.public_role, 120),
+                agenda=trim_ellipsis(slot.agenda_anchor, 220),
+                red_line=trim_ellipsis(slot.red_line_anchor, 220),
+                pressure_signature=trim_ellipsis(slot.pressure_vector, 220),
             )
             for index, slot in enumerate(cast_overview.cast_slots)
         ]
@@ -427,10 +411,10 @@ def build_cast_member_from_slot(
 ) -> OverviewCastDraft:
     return OverviewCastDraft(
         name=_generated_name_for_slot(slot, focused_brief, slot_index, existing_names),
-        role=_trim(slot.public_role, 120),
-        agenda=_trim(slot.agenda_anchor, 220),
-        red_line=_trim(slot.red_line_anchor, 220),
-        pressure_signature=_trim(slot.pressure_vector, 220),
+        role=trim_ellipsis(slot.public_role, 120),
+        agenda=trim_ellipsis(slot.agenda_anchor, 220),
+        red_line=trim_ellipsis(slot.red_line_anchor, 220),
+        pressure_signature=trim_ellipsis(slot.pressure_vector, 220),
     )
 
 
@@ -447,7 +431,7 @@ def compile_cast_member_semantics(
         slot_index,
         set(existing_names),
     )
-    generated_name = _trim(semantics.name, 80)
+    generated_name = trim_ellipsis(semantics.name, 80)
     if (
         not generated_name
         or generated_name in existing_names
@@ -471,7 +455,7 @@ def compile_cast_member_semantics(
     )
     return OverviewCastDraft(
         name=name,
-        role=_trim(slot.public_role, 120),
+        role=trim_ellipsis(slot.public_role, 120),
         agenda=_merge_anchor_with_detail(slot.agenda_anchor, agenda_detail, limit=220),
         red_line=_merge_anchor_with_detail(slot.red_line_anchor, red_line_detail, limit=220),
         pressure_signature=_merge_anchor_with_detail(slot.pressure_vector, pressure_detail, limit=220),
@@ -507,7 +491,7 @@ def build_default_cast_draft(_: FocusedBrief) -> CastDraft:
 
 
 def _is_generic_cast_text(value: str) -> bool:
-    lowered = _normalize(value).casefold()
+    lowered = normalize_whitespace(value).casefold()
     generic_fragments = (
         "tries to preserve their role in the crisis",
         "will not lose public legitimacy without resistance",
@@ -531,7 +515,7 @@ def repair_cast_draft(
         (
             ("mediator", "envoy", "inspector", "player", "anchor", "negotiator"),
             {
-                "agenda": _trim(f"Keep the civic process intact long enough to resolve {focused_brief.core_conflict}.", 220),
+                "agenda": trim_ellipsis(f"Keep the civic process intact long enough to resolve {focused_brief.core_conflict}.", 220),
                 "red_line": "Will not let emergency pressure erase public consent.",
                 "pressure_signature": "Reads every compromise in terms of what the public will have to live with next.",
             },
@@ -539,7 +523,7 @@ def repair_cast_draft(
         (
             ("authority", "curator", "official", "institution", "guardian"),
             {
-                "agenda": _trim(f"Preserve institutional continuity inside {focused_brief.setting_signal}.", 220),
+                "agenda": trim_ellipsis(f"Preserve institutional continuity inside {focused_brief.setting_signal}.", 220),
                 "red_line": "Will not yield formal authority without a visible procedural reason.",
                 "pressure_signature": "Tightens procedure whenever panic, blame, or uncertainty starts to spread.",
             },
@@ -547,7 +531,7 @@ def repair_cast_draft(
         (
             ("broker", "rival", "faction", "opposition", "merchant", "leader"),
             {
-                "agenda": _trim(f"Exploit {focused_brief.core_conflict} to reshape who holds leverage after the crisis.", 220),
+                "agenda": trim_ellipsis(f"Exploit {focused_brief.core_conflict} to reshape who holds leverage after the crisis.", 220),
                 "red_line": "Will not accept exclusion from the final settlement.",
                 "pressure_signature": "Treats every emergency as proof that someone else should lose authority.",
             },
@@ -578,16 +562,16 @@ def repair_cast_draft(
                 break
         if matching_slot is not None:
             template = {
-                "agenda": _trim(matching_slot.agenda_anchor, 220),
-                "red_line": _trim(matching_slot.red_line_anchor, 220),
-                "pressure_signature": _trim(matching_slot.pressure_vector, 220),
+                "agenda": trim_ellipsis(matching_slot.agenda_anchor, 220),
+                "red_line": trim_ellipsis(matching_slot.red_line_anchor, 220),
+                "pressure_signature": trim_ellipsis(matching_slot.pressure_vector, 220),
             }
         elif template is None:
             template = (
                 role_templates[min(index, len(role_templates) - 1)][1]
                 if index < len(role_templates)
                 else {
-                    "agenda": _trim(f"Protect their stake in {focused_brief.setting_signal} while the crisis unfolds.", 220),
+                    "agenda": trim_ellipsis(f"Protect their stake in {focused_brief.setting_signal} while the crisis unfolds.", 220),
                     "red_line": "Will not accept being made irrelevant by emergency decree.",
                     "pressure_signature": "Pushes harder for advantage whenever the public mood turns brittle.",
                 }
@@ -627,8 +611,8 @@ def repair_cast_member(
         agenda = slot.agenda_anchor if _is_generic_cast_text(member.agenda) else agenda
     return OverviewCastDraft(
         name=member.name,
-        role=_trim(member.role or slot.public_role, 120),
-        agenda=_trim(agenda, 220),
-        red_line=_trim(red_line, 220),
-        pressure_signature=_trim(pressure_signature, 220),
+        role=trim_ellipsis(member.role or slot.public_role, 120),
+        agenda=trim_ellipsis(agenda, 220),
+        red_line=trim_ellipsis(red_line, 220),
+        pressure_signature=trim_ellipsis(pressure_signature, 220),
     )

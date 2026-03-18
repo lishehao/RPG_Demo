@@ -20,6 +20,13 @@ def trim_text(value: Any, limit: int) -> str:
     return text[:limit].rstrip(" ,;")
 
 
+def trim_ellipsis(value: Any, limit: int) -> str:
+    text = normalize_whitespace(value)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."
+
+
 def coerce_int(value: Any, default: int = 0) -> int:
     if isinstance(value, bool):
         return int(value)

@@ -1,40 +1,11 @@
 from __future__ import annotations
 
-import re
-
 from rpg_backend.author.contracts import BeatDraftSpec, BeatPlanDraft, CastDraft, FocusedBrief, StoryFrameDraft
-
-
-def _normalize(value: str) -> str:
-    return " ".join((value or "").strip().split())
-
-
-def _trim(value: str, limit: int) -> str:
-    text = _normalize(value)
-    if len(text) <= limit:
-        return text
-    return text[: limit - 3].rstrip() + "..."
-
-
-def _slug(value: str) -> str:
-    normalized = re.sub(r"[^a-z0-9]+", "_", (value or "").casefold())
-    return normalized.strip("_") or "item"
-
-
-def _unique_preserve(items: list[str]) -> list[str]:
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for item in items:
-        lowered = item.casefold()
-        if not item or lowered in seen:
-            continue
-        seen.add(lowered)
-        ordered.append(item)
-    return ordered
+from rpg_backend.author.normalize import slugify, trim_ellipsis, unique_preserve
 
 
 def _normalize_affordance_tag(value: str) -> str:
-    normalized = _slug(value)
+    normalized = slugify(value)
     mapping = {
         "reveal": "reveal_truth",
         "investigate": "reveal_truth",
@@ -210,17 +181,17 @@ def build_default_beat_plan_draft(
     return BeatPlanDraft(
         beats=[
             BeatDraftSpec(
-                title=_trim(blueprint["title"], 120),
-                goal=_trim(blueprint["goal"], 220),
+                title=trim_ellipsis(blueprint["title"], 120),
+                goal=trim_ellipsis(blueprint["goal"], 220),
                 focus_names=blueprint["focus_names"],
                 conflict_pair=blueprint["conflict_pair"],
                 pressure_axis_id=blueprint["pressure_axis_id"],
                 milestone_kind=blueprint["milestone_kind"],
                 route_pivot_tag=blueprint["route_pivot_tag"],
-                required_truth_texts=[_trim(item, 220) for item in blueprint["required_truth_texts"][:3]],
+                required_truth_texts=[trim_ellipsis(item, 220) for item in blueprint["required_truth_texts"][:3]],
                 detour_budget=1,
                 progress_required=2,
-                return_hooks=[_trim(item, 180) for item in blueprint["return_hooks"][:3]],
+                return_hooks=[trim_ellipsis(item, 180) for item in blueprint["return_hooks"][:3]],
                 affordance_tags=blueprint["affordance_tags"],
                 blocked_affordances=[],
             )
@@ -246,7 +217,7 @@ def compiled_affordance_tags_for_beat(beat: BeatDraftSpec) -> list[str]:
     tags.extend(list(beat.affordance_tags))
     tags.append("build_trust")
     compiled = [_normalize_affordance_tag(tag) for tag in tags if tag]
-    compiled = _unique_preserve(compiled)
+    compiled = unique_preserve(compiled)
     for fallback_tag in ("reveal_truth", "build_trust"):
         if len(compiled) >= 2:
             break
@@ -256,4 +227,4 @@ def compiled_affordance_tags_for_beat(beat: BeatDraftSpec) -> list[str]:
 
 
 def event_id_for_beat(index: int, beat: BeatDraftSpec) -> str:
-    return f"b{index}.{_slug(beat.milestone_kind or 'milestone')}"
+    return f"b{index}.{slugify(beat.milestone_kind or 'milestone')}"

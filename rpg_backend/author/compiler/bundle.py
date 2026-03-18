@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import re
-
 from rpg_backend.author.compiler.beats import (
     compiled_affordance_tags_for_beat,
     event_id_for_beat,
@@ -25,34 +23,7 @@ from rpg_backend.author.contracts import (
     StoryFrameDraft,
     TruthItem,
 )
-
-
-def _normalize(value: str) -> str:
-    return " ".join((value or "").strip().split())
-
-
-def _slug(value: str) -> str:
-    normalized = re.sub(r"[^a-z0-9]+", "_", (value or "").casefold())
-    return normalized.strip("_") or "item"
-
-
-def _trim(value: str, limit: int) -> str:
-    text = _normalize(value)
-    if len(text) <= limit:
-        return text
-    return text[: limit - 3].rstrip() + "..."
-
-
-def _unique_preserve(items: list[str]) -> list[str]:
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for item in items:
-        lowered = item.casefold()
-        if not item or lowered in seen:
-            continue
-        seen.add(lowered)
-        ordered.append(item)
-    return ordered
+from rpg_backend.author.normalize import slugify, trim_ellipsis, unique_preserve
 
 
 AXIS_TEMPLATE_CATALOG: dict[str, dict[str, str | int]] = {
@@ -74,7 +45,7 @@ DEFAULT_AXIS_ORDER: tuple[AxisTemplateId, ...] = (
 
 
 def _npc_id(name: str) -> str:
-    return _slug(name)
+    return slugify(name)
 
 
 def build_design_bundle(
@@ -86,18 +57,18 @@ def build_design_bundle(
     cast = [
         CastMember(
             npc_id=_npc_id(item.name),
-            name=_trim(item.name, 80),
-            role=_trim(item.role, 120),
-            agenda=_trim(item.agenda, 220),
-            red_line=_trim(item.red_line, 220),
-            pressure_signature=_trim(item.pressure_signature, 220),
+            name=trim_ellipsis(item.name, 80),
+            role=trim_ellipsis(item.role, 120),
+            agenda=trim_ellipsis(item.agenda, 220),
+            red_line=trim_ellipsis(item.red_line, 220),
+            pressure_signature=trim_ellipsis(item.pressure_signature, 220),
         )
         for item in cast_draft.cast
     ]
     truths = [
         TruthItem(
             truth_id=f"truth_{index}",
-            text=_trim(item.text, 220),
+            text=trim_ellipsis(item.text, 220),
             importance=item.importance,
         )
         for index, item in enumerate(story_frame.truths, start=1)
@@ -116,7 +87,7 @@ def build_design_bundle(
         axis_rows.append(
             {
                 "axis_id": axis.template_id,
-                "label": _trim(axis.story_label or str(template["label"]), 80),
+                "label": trim_ellipsis(axis.story_label or str(template["label"]), 80),
                 "kind": template["kind"],
                 "min_value": int(template["min_value"]),
                 "max_value": int(template["max_value"]),
@@ -147,7 +118,7 @@ def build_design_bundle(
                 {
                     "stance_id": f"{_npc_id(item.name)}_stance",
                     "npc_id": _npc_id(item.name),
-                    "label": f"{_trim(item.name, 60)} Stance",
+                    "label": f"{trim_ellipsis(item.name, 60)} Stance",
                     "min_value": -2,
                     "max_value": 3,
                     "starting_value": 0,
@@ -156,8 +127,8 @@ def build_design_bundle(
             ],
             "flags": [
                 {
-                    "flag_id": _slug(flag.label),
-                    "label": _trim(flag.label, 80),
+                    "flag_id": slugify(flag.label),
+                    "label": trim_ellipsis(flag.label, 80),
                     "starting_value": bool(flag.starting_value),
                 }
                 for flag in story_frame.flags
@@ -165,13 +136,13 @@ def build_design_bundle(
         }
     )
     bible = StoryBible(
-        title=_trim(story_frame.title, 120),
-        premise=_trim(story_frame.premise, 320),
-        tone=_trim(story_frame.tone, 120),
-        stakes=_trim(story_frame.stakes, 240),
-        style_guard=_trim(story_frame.style_guard, 220),
+        title=trim_ellipsis(story_frame.title, 120),
+        premise=trim_ellipsis(story_frame.premise, 320),
+        tone=trim_ellipsis(story_frame.tone, 120),
+        stakes=trim_ellipsis(story_frame.stakes, 240),
+        style_guard=trim_ellipsis(story_frame.style_guard, 220),
         cast=cast,
-        world_rules=[_trim(item, 180) for item in story_frame.world_rules],
+        world_rules=[trim_ellipsis(item, 180) for item in story_frame.world_rules],
         truth_catalog=truths,
         ending_catalog=[
             EndingItem(ending_id="mixed", label="Mixed Outcome", summary="The city survives, but trust and stability remain damaged."),
@@ -183,7 +154,7 @@ def build_design_bundle(
     cast_id_by_name = {item.name: _npc_id(item.name) for item in cast_draft.cast}
     beat_spine: list[BeatSpec] = []
     for index, beat in enumerate(beat_plan_draft.beats, start=1):
-        focus_names = _unique_preserve(
+        focus_names = unique_preserve(
             [name for name in (*beat.focus_names, *beat.conflict_pair) if name in cast_names]
         )
         focus_npcs = [cast_id_by_name[name] for name in focus_names][:3]
@@ -193,8 +164,8 @@ def build_design_bundle(
         beat_spine.append(
             BeatSpec(
                 beat_id=f"b{index}",
-                title=_trim(beat.title, 120),
-                goal=_trim(beat.goal, 220),
+                title=trim_ellipsis(beat.title, 120),
+                goal=trim_ellipsis(beat.goal, 220),
                 focus_npcs=focus_npcs,
                 conflict_npcs=conflict_npcs,
                 pressure_axis_id=beat.pressure_axis_id,
@@ -208,7 +179,7 @@ def build_design_bundle(
                 required_events=[event_id],
                 detour_budget=beat.detour_budget,
                 progress_required=beat.progress_required,
-                return_hooks=[_trim(item, 180) for item in beat.return_hooks[:3]],
+                return_hooks=[trim_ellipsis(item, 180) for item in beat.return_hooks[:3]],
                 affordances=[
                     AffordanceWeight(tag=tag, weight=1 + (offset == 0))
                     for offset, tag in enumerate(affordance_tags[:6])
