@@ -15,17 +15,14 @@ from rpg_backend.author.contracts import (
     CastOverviewDraft,
     CastOverviewSlotDraft,
     EndingRule,
-    EndingRulesDraft,
     FocusedBrief,
     RouteOpportunityPlanDraft,
-    RouteAffordancePackDraft,
     OverviewAxisDraft,
     OverviewCastDraft,
     OverviewFlagDraft,
     OverviewTruthDraft,
     StoryFrameDraft,
     StoryFrameScaffoldDraft,
-    StoryOverviewDraft,
 )
 from rpg_backend.author.gateway import AuthorGatewayError, AuthorLLMGateway
 from rpg_backend.author.compiler.router import plan_story_theme
@@ -35,19 +32,17 @@ from rpg_backend.author.generation import endings as ending_generation
 from rpg_backend.author.generation import routes as route_generation
 from rpg_backend.author.generation import story_frame as story_generation
 from rpg_backend.author.workflow import (
-    assemble_story_overview,
     build_author_graph,
     build_design_bundle,
     build_default_ending_rules,
     build_default_route_opportunity_plan,
-    build_default_route_affordance_pack,
     focus_brief,
     run_author_bundle,
 )
 
 
-def _overview_draft() -> StoryOverviewDraft:
-    return StoryOverviewDraft(
+def _overview_fixture() -> SimpleNamespace:
+    return SimpleNamespace(
         title="The Archive Blackout",
         premise="A young envoy must hold together a city of archives through a blackout and a succession crisis.",
         tone="Hopeful civic fantasy under pressure",
@@ -128,7 +123,7 @@ def _overview_draft() -> StoryOverviewDraft:
 
 
 def _story_frame_draft() -> StoryFrameDraft:
-    overview = _overview_draft()
+    overview = _overview_fixture()
     return StoryFrameDraft(
         title=overview.title,
         premise=overview.premise,
@@ -158,7 +153,7 @@ def _story_frame_scaffold_draft() -> StoryFrameScaffoldDraft:
     )
 
 def _cast_draft() -> CastDraft:
-    return CastDraft(cast=_overview_draft().cast)
+    return CastDraft(cast=_overview_fixture().cast)
 
 
 def _cast_overview_draft() -> CastOverviewDraft:
@@ -206,11 +201,11 @@ def _cast_overview_draft() -> CastOverviewDraft:
 
 
 def _beat_plan_draft() -> BeatPlanDraft:
-    return BeatPlanDraft(beats=_overview_draft().beats)
+    return BeatPlanDraft(beats=_overview_fixture().beats)
 
 
 def _beat_plan_skeleton_draft() -> BeatPlanSkeletonDraft:
-    overview = _overview_draft()
+    overview = _overview_fixture()
     return BeatPlanSkeletonDraft(
         beats=[
             BeatSkeletonSpec(
@@ -246,24 +241,6 @@ def _beat_plan_skeleton_draft() -> BeatPlanSkeletonDraft:
         ]
     )
 
-def _route_affordance_pack_draft() -> RouteAffordancePackDraft:
-    overview = _overview_draft()
-    bundle = build_design_bundle(
-        _story_frame_draft(),
-        _cast_draft(),
-        _beat_plan_draft(),
-        FocusedBrief(
-            story_kernel="Hold the city together.",
-            setting_signal="Archive city blackout.",
-            core_conflict="Prevent coalition collapse.",
-            tone_signal="Hopeful civic fantasy.",
-            hard_constraints=[],
-            forbidden_tones=[],
-        ),
-    )
-    return build_default_route_affordance_pack(bundle)
-
-
 def _route_opportunity_plan_draft() -> RouteOpportunityPlanDraft:
     bundle = build_design_bundle(
         _story_frame_draft(),
@@ -279,25 +256,6 @@ def _route_opportunity_plan_draft() -> RouteOpportunityPlanDraft:
         ),
     )
     return build_default_route_opportunity_plan(bundle)
-
-
-def _ending_rules_draft() -> EndingRulesDraft:
-    bundle = build_design_bundle(
-        _story_frame_draft(),
-        _cast_draft(),
-        _beat_plan_draft(),
-        FocusedBrief(
-            story_kernel="Hold the city together.",
-            setting_signal="Archive city blackout.",
-            core_conflict="Prevent coalition collapse.",
-            tone_signal="Hopeful civic fantasy.",
-            hard_constraints=[],
-            forbidden_tones=[],
-        ),
-    )
-    return build_default_ending_rules(bundle)
-
-
 class _FakeClient:
     def __init__(self, payloads: list[dict[str, object] | str]) -> None:
         self.payloads = payloads
@@ -834,9 +792,9 @@ def test_gateway_formats_requests_and_parses_models() -> None:
         cast.value,
         previous_response_id=cast.response_id or story_frame.response_id,
     )
-    overview = assemble_story_overview(story_frame.value, cast.value, beat_plan.value)
-
-    assert overview.title == "Archive Blackout"
+    assert story_frame.value.title == "Archive Blackout"
+    assert cast.value.cast[0].name == "Envoy Iri"
+    assert beat_plan.value.beats[0].title == "The First Nightfall"
     assert client.calls[0]["model"] == "demo-model"
     assert client.calls[0]["max_output_tokens"] == 800
     assert "Return one strict JSON object matching StoryFrameScaffoldDraft" in client.calls[0]["instructions"]

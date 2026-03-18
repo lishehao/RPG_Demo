@@ -10,11 +10,7 @@ from typing_extensions import TypedDict
 from rpg_backend.author.checkpointer import get_author_checkpointer, graph_config
 from rpg_backend.author.compiler.beats import build_default_beat_plan_draft
 from rpg_backend.author.compiler.brief import focus_brief
-from rpg_backend.author.compiler.bundle import (
-    assemble_story_overview,
-    build_default_overview_draft,
-    build_design_bundle,
-)
+from rpg_backend.author.compiler.bundle import build_design_bundle
 from rpg_backend.author.compiler.cast import (
     build_cast_member_from_slot,
     derive_cast_overview_draft,

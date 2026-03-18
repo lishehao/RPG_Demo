@@ -3,15 +3,9 @@ from __future__ import annotations
 import re
 
 from rpg_backend.author.compiler.beats import (
-    build_default_beat_plan_draft,
     compiled_affordance_tags_for_beat,
     event_id_for_beat,
 )
-from rpg_backend.author.compiler.cast import (
-    build_cast_draft_from_overview,
-    build_default_cast_overview_draft,
-)
-from rpg_backend.author.compiler.story import build_default_story_frame_draft
 from rpg_backend.author.contracts import (
     AffordanceEffectProfile,
     AffordanceWeight,
@@ -29,7 +23,6 @@ from rpg_backend.author.contracts import (
     StateSchema,
     StoryBible,
     StoryFrameDraft,
-    StoryOverviewDraft,
     TruthItem,
 )
 
@@ -251,37 +244,3 @@ def build_design_bundle(
             ],
         ),
     )
-
-
-def assemble_story_overview(
-    story_frame: StoryFrameDraft,
-    cast_draft: CastDraft,
-    beat_plan_draft: BeatPlanDraft,
-) -> StoryOverviewDraft:
-    return StoryOverviewDraft(
-        title=story_frame.title,
-        premise=story_frame.premise,
-        tone=story_frame.tone,
-        stakes=story_frame.stakes,
-        style_guard=story_frame.style_guard,
-        cast=cast_draft.cast,
-        world_rules=story_frame.world_rules,
-        truths=story_frame.truths,
-        state_axis_choices=story_frame.state_axis_choices,
-        flags=story_frame.flags,
-        beats=beat_plan_draft.beats,
-    )
-
-
-def build_default_overview_draft(focused_brief: FocusedBrief) -> StoryOverviewDraft:
-    story_frame = build_default_story_frame_draft(focused_brief)
-    cast_draft = build_cast_draft_from_overview(
-        build_default_cast_overview_draft(focused_brief),
-        focused_brief,
-    )
-    beat_plan_draft = build_default_beat_plan_draft(
-        focused_brief,
-        story_frame=story_frame,
-        cast_draft=cast_draft,
-    )
-    return assemble_story_overview(story_frame, cast_draft, beat_plan_draft)

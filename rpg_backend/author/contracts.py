@@ -476,22 +476,6 @@ class BeatPlanDraft(BaseModel):
     beats: list[BeatDraftSpec] = Field(min_length=2, max_length=4)
 
 
-class StoryOverviewDraft(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    title: str = Field(min_length=1, max_length=120)
-    premise: str = Field(min_length=1, max_length=320)
-    tone: str = Field(min_length=1, max_length=120)
-    stakes: str = Field(min_length=1, max_length=240)
-    style_guard: str = Field(min_length=1, max_length=220)
-    cast: list[OverviewCastDraft] = Field(min_length=3, max_length=5)
-    world_rules: list[str] = Field(min_length=2, max_length=5)
-    truths: list[OverviewTruthDraft] = Field(min_length=2, max_length=6)
-    state_axis_choices: list[OverviewAxisDraft] = Field(min_length=2, max_length=5)
-    flags: list[OverviewFlagDraft] = Field(default_factory=list, max_length=4)
-    beats: list[BeatDraftSpec] = Field(min_length=2, max_length=4)
-
-
 class AuthorBundleRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
