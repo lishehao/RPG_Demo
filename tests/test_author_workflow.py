@@ -7,11 +7,9 @@ from langgraph.checkpoint.memory import InMemorySaver
 from rpg_backend.author.checkpointer import graph_config
 from rpg_backend.author.contracts import (
     AuthorBundleRequest,
-    BeatPlanProseDraft,
     BeatPlanSkeletonDraft,
     BeatPlanDraft,
     BeatDraftSpec,
-    BeatProseSpec,
     BeatSkeletonSpec,
     CastDraft,
     CastOverviewDraft,
@@ -26,7 +24,6 @@ from rpg_backend.author.contracts import (
     OverviewFlagDraft,
     OverviewTruthDraft,
     StoryFrameDraft,
-    StoryFrameProseDraft,
     StoryFrameScaffoldDraft,
     StoryOverviewDraft,
 )
@@ -160,17 +157,6 @@ def _story_frame_scaffold_draft() -> StoryFrameScaffoldDraft:
         flags=story_frame.flags,
     )
 
-
-def _story_frame_prose_draft() -> StoryFrameProseDraft:
-    story_frame = _story_frame_draft()
-    return StoryFrameProseDraft(
-        title=story_frame.title,
-        premise=story_frame.premise,
-        stakes=story_frame.stakes,
-        style_guard=story_frame.style_guard,
-    )
-
-
 def _cast_draft() -> CastDraft:
     return CastDraft(cast=_overview_draft().cast)
 
@@ -259,21 +245,6 @@ def _beat_plan_skeleton_draft() -> BeatPlanSkeletonDraft:
             for index, beat in enumerate(overview.beats)
         ]
     )
-
-
-def _beat_plan_prose_draft() -> BeatPlanProseDraft:
-    overview = _overview_draft()
-    return BeatPlanProseDraft(
-        beats=[
-            BeatProseSpec(
-                title=beat.title,
-                goal=beat.goal,
-                return_hooks=beat.return_hooks,
-            )
-            for beat in overview.beats
-        ]
-    )
-
 
 def _route_affordance_pack_draft() -> RouteAffordancePackDraft:
     overview = _overview_draft()

@@ -330,15 +330,6 @@ class StoryFrameScaffoldDraft(BaseModel):
     flags: list[OverviewFlagDraft] = Field(default_factory=list, max_length=4)
 
 
-class StoryFrameProseDraft(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    title: str = Field(min_length=1, max_length=120)
-    premise: str = Field(min_length=1, max_length=320)
-    stakes: str = Field(min_length=1, max_length=240)
-    style_guard: str = Field(min_length=1, max_length=220)
-
-
 class BeatDraftSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -378,20 +369,6 @@ class BeatPlanSkeletonDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     beats: list[BeatSkeletonSpec] = Field(min_length=2, max_length=4)
-
-
-class BeatProseSpec(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    title: str = Field(min_length=1, max_length=120)
-    goal: str = Field(min_length=1, max_length=220)
-    return_hooks: list[str] = Field(min_length=1, max_length=3)
-
-
-class BeatPlanProseDraft(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    beats: list[BeatProseSpec] = Field(min_length=2, max_length=4)
 
 
 class StoryFrameDraft(BaseModel):
