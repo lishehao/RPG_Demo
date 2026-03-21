@@ -12,3 +12,7 @@
 请选择语言查看完整说明。
 
 Choose a language to view the full documentation.
+
+MVP closeout note:
+
+- `specs/mvp_closeout_20260321.md`
