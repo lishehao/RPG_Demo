@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from rpg_backend.author.contracts import (
     FocusedBrief,
     OverviewAxisDraft,
@@ -8,7 +10,117 @@ from rpg_backend.author.contracts import (
     OverviewTruthDraft,
     StoryFrameDraft,
 )
-from rpg_backend.author.normalize import trim_ellipsis
+from rpg_backend.author.normalize import normalize_whitespace, trim_ellipsis
+
+
+_DANGLING_TERMINALS = {
+    "and",
+    "or",
+    "but",
+    "while",
+    "to",
+    "of",
+    "with",
+    "before",
+    "after",
+    "during",
+    "amid",
+    "amidst",
+    "into",
+    "onto",
+}
+
+_FINITE_ACTION_MARKERS = (
+    " must ",
+    " keep ",
+    " keeps ",
+    " hold ",
+    " holds ",
+    " stop ",
+    " stops ",
+    " expose ",
+    " exposes ",
+    " secure ",
+    " secures ",
+    " verify ",
+    " verifies ",
+    " protect ",
+    " protects ",
+    " coordinate ",
+    " coordinates ",
+    " restore ",
+    " restores ",
+    " preserve ",
+    " preserves ",
+    " prevent ",
+    " prevents ",
+    " negotiate ",
+    " negotiates ",
+    " contain ",
+    " contains ",
+    " calm ",
+    " calms ",
+    " can ",
+    " cannot ",
+    " lose ",
+    " loses ",
+    " turn ",
+    " turns ",
+    " while ",
+)
+
+
+def _clean_story_sentence_text(value: str, *, limit: int) -> str:
+    text = normalize_whitespace(value)
+    if not text:
+        return ""
+    text = text.replace(".,", ".").replace(",.", ".")
+    text = re.sub(r"\.\s+(while|and|but|as)\b", r", \1", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+([,.;!?])", r"\1", text)
+    text = re.sub(r"([.?!]){2,}", r"\1", text)
+    stripped = text.rstrip(".!?")
+    words = stripped.split()
+    while words and words[-1].casefold().strip(",;:") in _DANGLING_TERMINALS:
+        words.pop()
+    text = " ".join(words).strip()
+    if not text:
+        return ""
+    if text[-1] not in ".!?":
+        text = f"{text}."
+    return trim_ellipsis(text, limit)
+
+
+def _looks_fragmentary_story_sentence(value: str) -> bool:
+    normalized = normalize_whitespace(value)
+    if not normalized:
+        return True
+    lowered = f" {normalized.casefold()} "
+    if any(pattern in lowered for pattern in (" . while ", " . and ", " . but ", " . as ", " .,", " ,. ")):
+        return True
+    if normalized.endswith((".,", ",.", "..")):
+        return True
+    stripped = normalized.rstrip(".!?")
+    words = stripped.split()
+    if words and words[-1].casefold().strip(",;:") in _DANGLING_TERMINALS:
+        return True
+    if normalized.startswith("In ") and any(token in normalized for token in (". As ", ", As ")):
+        return True
+    return not any(marker in lowered for marker in _FINITE_ACTION_MARKERS)
+
+
+def sanitize_story_sentence(
+    value: str,
+    *,
+    fallback: str,
+    limit: int,
+) -> str:
+    cleaned = _clean_story_sentence_text(value, limit=limit)
+    if cleaned and not _looks_fragmentary_story_sentence(cleaned) and not _looks_fragmentary_story_sentence(value):
+        return cleaned
+    fallback_cleaned = _clean_story_sentence_text(fallback, limit=limit)
+    if fallback_cleaned:
+        return fallback_cleaned
+    return cleaned or trim_ellipsis(normalize_whitespace(fallback or value), limit)
 
 
 def _default_story_frame_title(focused_brief: FocusedBrief) -> str:
@@ -130,6 +242,34 @@ def compile_story_frame(
         truths=scaffold.truths[:6],
         state_axis_choices=scaffold.state_axis_choices[:5],
         flags=scaffold.flags[:4],
+    )
+
+
+def sanitize_story_frame_draft(
+    focused_brief: FocusedBrief,
+    story_frame: StoryFrameDraft,
+) -> StoryFrameDraft:
+    fallback = build_default_story_frame_draft(focused_brief)
+    return story_frame.model_copy(
+        update={
+            "title": trim_ellipsis(normalize_whitespace(story_frame.title or fallback.title), 120) or fallback.title,
+            "premise": sanitize_story_sentence(
+                story_frame.premise,
+                fallback=fallback.premise,
+                limit=320,
+            ),
+            "stakes": sanitize_story_sentence(
+                story_frame.stakes,
+                fallback=fallback.stakes,
+                limit=240,
+            ),
+            "tone": trim_ellipsis(normalize_whitespace(story_frame.tone or fallback.tone), 120) or fallback.tone,
+            "style_guard": trim_ellipsis(
+                normalize_whitespace(story_frame.style_guard or fallback.style_guard),
+                220,
+            )
+            or fallback.style_guard,
+        }
     )
 
 

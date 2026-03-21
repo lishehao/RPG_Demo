@@ -4,21 +4,24 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from rpg_backend.author.compiler.router import plan_brief_theme
-from rpg_backend.author.compiler.story import compile_story_frame
+from rpg_backend.author.compiler.story import compile_story_frame, sanitize_story_frame_draft
+from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
 from rpg_backend.author.contracts import FocusedBrief, StoryFrameDraft, StoryFrameScaffoldDraft
 from rpg_backend.author.normalize import coerce_int, trim_text, unique_preserve
 
 if TYPE_CHECKING:
-    from rpg_backend.author.gateway import AuthorLLMGateway, GatewayStructuredResponse
+    from rpg_backend.author.gateway import AuthorLLMGateway
 
 
 def _story_frame_semantics_output_tokens(gateway: "AuthorLLMGateway", strategy: str) -> int | None:
     budget = gateway.max_output_tokens_overview
     if budget is None:
-        return 1100 if strategy == "legitimacy_story" else 800
+        return 1100 if strategy == "legitimacy_story" else 900 if strategy in {"blackout_referendum_story", "archive_vote_story", "warning_record_story"} else 800
     floor = 800
     if strategy == "legitimacy_story":
         floor = 1100
+    elif strategy in {"blackout_referendum_story", "archive_vote_story", "warning_record_story"}:
+        floor = 900
     return max(int(budget), floor)
 
 
@@ -179,6 +182,11 @@ def _normalize_story_frame_payload(
 
 def _story_frame_theme_guidance(strategy: str) -> str:
     mapping = {
+        "bridge_ration_story": "Emphasize bridge chokepoints, ration ledgers, river wards, flood pressure, and emergency crossing authority.",
+        "harbor_quarantine_story": "Emphasize harbor inspections, quarantine lines, manifests, supply panic, and public oversight of port authority.",
+        "blackout_referendum_story": "Emphasize blackout-era rumor pressure, forged supply reporting, neighborhood councils, and a referendum-level legitimacy squeeze.",
+        "archive_vote_story": "Emphasize altered ledgers, emergency vote certification, chain of custody, witness pressure, and the public record.",
+        "warning_record_story": "Emphasize official warnings, observatory evidence, suppressed bulletins, storm proof, and the politics of sounding the alarm.",
         "legitimacy_story": "Emphasize public legitimacy, coalition bargaining, mandates, and visible settlement pressure.",
         "logistics_story": "Emphasize supply lines, quarantine boundaries, inspections, scarcity, and operational chokepoints.",
         "truth_record_story": "Emphasize records, testimony, evidence integrity, procedural proof, and the public record.",
@@ -280,59 +288,6 @@ def _stabilize_story_frame_scaffold(
     return scaffold.model_copy(update=updates)
 
 
-def _invoke_story_frame_semantics_with_retries(
-    gateway: "AuthorLLMGateway",
-    *,
-    primary_payload: dict[str, Any],
-    final_retry_payload: dict[str, Any],
-    prompts: tuple[str, ...],
-    previous_response_id: str | None,
-    max_output_tokens: int | None,
-):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
-
-    retryable_codes = {"llm_invalid_json", "llm_schema_invalid"}
-    attempt_prev = previous_response_id
-    last_error: Exception | None = None
-    for index, prompt in enumerate(prompts):
-        payload = primary_payload if index < len(prompts) - 1 else final_retry_payload
-        try:
-            raw = gateway._invoke_json(
-                system_prompt=prompt,
-                user_payload=payload,
-                max_output_tokens=max_output_tokens,
-                previous_response_id=attempt_prev,
-                operation_name="story_frame_semantics",
-            )
-        except AuthorGatewayError as exc:
-            last_error = exc
-            if exc.code not in retryable_codes or index == len(prompts) - 1:
-                raise
-            continue
-        try:
-            scaffold = StoryFrameScaffoldDraft.model_validate(
-                _normalize_story_frame_scaffold_payload(gateway, raw.payload)
-            )
-        except Exception as exc:  # noqa: BLE001
-            last_error = AuthorGatewayError(
-                code="llm_schema_invalid",
-                message=str(exc),
-                status_code=502,
-            )
-            attempt_prev = raw.response_id or attempt_prev
-            if index == len(prompts) - 1:
-                raise last_error from exc
-            continue
-        return GatewayStructuredResponse(value=scaffold, response_id=raw.response_id or attempt_prev)
-    if isinstance(last_error, AuthorGatewayError):
-        raise last_error
-    raise AuthorGatewayError(
-        code="llm_schema_invalid",
-        message=str(last_error or "story frame semantics generation failed"),
-        status_code=502,
-    )
-
-
 def generate_story_frame_semantics(
     gateway: "AuthorLLMGateway",
     focused_brief: FocusedBrief,
@@ -340,7 +295,8 @@ def generate_story_frame_semantics(
     previous_response_id: str | None = None,
     story_frame_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
+    from rpg_backend.author.gateway import AuthorGatewayError
+    from rpg_backend.responses_transport import StructuredResponse
 
     theme_decision = plan_brief_theme(focused_brief)
     resolved_strategy = story_frame_strategy or theme_decision.story_frame_strategy
@@ -379,16 +335,20 @@ def generate_story_frame_semantics(
         "Output raw JSON only. Exactly one object matching StoryFrameScaffoldDraft. "
         "Keep all fields short. No prose outside JSON. No code fences. No extra keys."
     )
-    scaffold_result = _invoke_story_frame_semantics_with_retries(
+    scaffold_result = invoke_structured_generation_with_retries(
         gateway,
         primary_payload=payload,
         final_retry_payload=final_retry_payload,
         prompts=(scaffold_prompt, retry_prompt, final_retry_prompt),
         previous_response_id=previous_response_id,
         max_output_tokens=_story_frame_semantics_output_tokens(gateway, resolved_strategy),
+        operation_name="story_frame_semantics",
+        parse_value=lambda raw_payload: StoryFrameScaffoldDraft.model_validate(
+            _normalize_story_frame_scaffold_payload(gateway, raw_payload)
+        ),
     )
     scaffold = _stabilize_story_frame_scaffold(focused_brief, scaffold_result.value)
-    return GatewayStructuredResponse(value=scaffold, response_id=scaffold_result.response_id)
+    return StructuredResponse(value=scaffold, response_id=scaffold_result.response_id)
 
 
 def generate_story_frame(
@@ -398,7 +358,7 @@ def generate_story_frame(
     previous_response_id: str | None = None,
     story_frame_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import GatewayStructuredResponse
+    from rpg_backend.responses_transport import StructuredResponse
 
     semantics = generate_story_frame_semantics(
         gateway,
@@ -406,8 +366,11 @@ def generate_story_frame(
         previous_response_id=previous_response_id,
         story_frame_strategy=story_frame_strategy,
     )
-    return GatewayStructuredResponse(
-        value=compile_story_frame(focused_brief, semantics.value),
+    return StructuredResponse(
+        value=sanitize_story_frame_draft(
+            focused_brief,
+            compile_story_frame(focused_brief, semantics.value),
+        ),
         response_id=semantics.response_id,
     )
 
@@ -419,7 +382,7 @@ def glean_story_frame(
     *,
     previous_response_id: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
+    from rpg_backend.responses_transport import StructuredResponse
 
     payload: dict[str, Any] = {
         "partial_story_frame": partial_story_frame.model_dump(mode="json"),
@@ -434,21 +397,25 @@ def glean_story_frame(
         "Fix malformed punctuation or broken sentence structure when present. "
         "Return a complete StoryFrameDraft."
     )
-    raw = gateway._invoke_json(
-        system_prompt=system_prompt,
-        user_payload=payload,
-        max_output_tokens=gateway.max_output_tokens_overview,
-        previous_response_id=previous_response_id,
-        operation_name="story_frame_glean",
+    retry_prompt = (
+        "Return only one JSON object matching StoryFrameDraft. "
+        "No markdown, no explanation, no extra keys. "
+        "Repair the existing partial_story_frame instead of discarding it."
     )
-    try:
-        return GatewayStructuredResponse(
-            value=StoryFrameDraft.model_validate(_normalize_story_frame_payload(gateway, raw.payload)),
-            response_id=raw.response_id,
-        )
-    except Exception as exc:  # noqa: BLE001
-        raise AuthorGatewayError(
-            code="llm_schema_invalid",
-            message=str(exc),
-            status_code=502,
-        ) from exc
+    final_retry_prompt = (
+        "Output raw JSON only. Exactly one object matching StoryFrameDraft. "
+        "Keep every field compact. No prose outside JSON. No code fences. No extra keys."
+    )
+    result = invoke_structured_generation_with_retries(
+        gateway,
+        primary_payload=payload,
+        prompts=(system_prompt, retry_prompt, final_retry_prompt),
+        previous_response_id=previous_response_id,
+        max_output_tokens=gateway.max_output_tokens_overview,
+        operation_name="story_frame_glean",
+        parse_value=lambda raw_payload: sanitize_story_frame_draft(
+            focused_brief,
+            StoryFrameDraft.model_validate(_normalize_story_frame_payload(gateway, raw_payload)),
+        ),
+    )
+    return StructuredResponse(value=result.value, response_id=result.response_id)

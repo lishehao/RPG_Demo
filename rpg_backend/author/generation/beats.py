@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 from rpg_backend.author.compiler.routes import normalize_affordance_tag
 from rpg_backend.author.compiler.router import plan_story_theme
 from rpg_backend.author.generation.context import build_author_context_from_story
+from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
 from rpg_backend.author.normalize import coerce_int, trim_text, unique_preserve
 from rpg_backend.author.contracts import (
     BeatDraftSpec,
@@ -27,57 +28,18 @@ def _beat_plan_semantics_output_tokens(gateway: "AuthorLLMGateway") -> int:
     return max(int(budget), 1800)
 
 
-def _invoke_json_with_prompt_retries(
-    gateway: "AuthorLLMGateway",
-    *,
-    payload: dict[str, Any],
-    prompts: tuple[str, ...],
-    previous_response_id: str | None,
-    max_output_tokens: int,
-    parse_fn,
-):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
+def _beat_plan_skeleton_output_tokens(gateway: "AuthorLLMGateway") -> int:
+    budget = getattr(gateway, "max_output_tokens_beat_skeleton", None)
+    if budget is None:
+        return 900
+    return max(int(budget), 900)
 
-    retryable_codes = {"llm_invalid_json", "llm_schema_invalid"}
-    attempt_prev = previous_response_id
-    last_error: Exception | None = None
-    for index, prompt in enumerate(prompts):
-        try:
-            raw = gateway._invoke_json(
-                system_prompt=prompt,
-                user_payload=payload,
-                max_output_tokens=max_output_tokens,
-                previous_response_id=attempt_prev,
-                operation_name="beat_plan_generate",
-            )
-        except AuthorGatewayError as exc:
-            last_error = exc
-            if exc.code not in retryable_codes or index == len(prompts) - 1:
-                raise
-            continue
-        try:
-            value = parse_fn(raw.payload)
-        except Exception as exc:  # noqa: BLE001
-            last_error = AuthorGatewayError(
-                code="llm_schema_invalid",
-                message=str(exc),
-                status_code=502,
-            )
-            attempt_prev = raw.response_id or attempt_prev
-            if index == len(prompts) - 1:
-                raise last_error from exc
-            continue
-        return GatewayStructuredResponse(
-            value=value,
-            response_id=raw.response_id or attempt_prev,
-        )
-    if isinstance(last_error, AuthorGatewayError):
-        raise last_error
-    raise AuthorGatewayError(
-        code="llm_schema_invalid",
-        message=str(last_error or "beat plan generation failed"),
-        status_code=502,
-    )
+
+def _beat_plan_repair_output_tokens(gateway: "AuthorLLMGateway") -> int:
+    budget = getattr(gateway, "max_output_tokens_beat_repair", None)
+    if budget is None:
+        return 700
+    return max(int(budget), 700)
 
 
 def _target_beat_count(
@@ -101,6 +63,69 @@ def _beat_theme_guidance(primary_theme: str) -> str:
         "generic_civic_crisis": "Emphasize civic pressure, institutional conflict, and public consequence.",
     }
     return mapping.get(primary_theme, mapping["generic_civic_crisis"])
+
+
+def _beat_strategy_guidance(primary_theme: str, beat_plan_strategy: str | None) -> str:
+    strategy = beat_plan_strategy or ""
+    mapping = {
+        "bridge_ration_compile": (
+            "Treat this as a bridge-and-ration crisis. "
+            "Keep all beats anchored to crossings, ward bargaining, flood logistics, forged counts, and emergency bridge authority."
+        ),
+        "harbor_quarantine_compile": (
+            "Treat this as a harbor-quarantine crisis. "
+            "Keep all beats anchored to manifests, inspection lines, dock authority, quarantine enforcement, and supply panic."
+        ),
+        "blackout_referendum_compile": (
+            "Treat this as a blackout-referendum crisis. "
+            "Keep all beats anchored to forged supply reports, neighborhood councils, rumor control, shared ration legitimacy, and public trust under outage conditions."
+        ),
+        "archive_vote_compile": (
+            "Treat this as an archive-and-vote crisis. "
+            "Every beat should name a concrete ledger, transcript, witness process, or certification step tied to civic legitimacy."
+        ),
+        "warning_record_compile": (
+            "Treat this as a warning-suppression crisis. "
+            "Keep all beats anchored to official warnings, observatory proof, delayed bulletins, evacuation legitimacy, and who controls the record."
+        ),
+    }
+    return mapping.get(strategy, _beat_theme_guidance(primary_theme))
+
+
+def _beat_risk_guidance(focused_brief: FocusedBrief, story_frame: StoryFrameDraft) -> str:
+    haystack = " ".join(
+        [
+            focused_brief.story_kernel,
+            focused_brief.setting_signal,
+            focused_brief.core_conflict,
+            story_frame.title,
+            story_frame.premise,
+            story_frame.stakes,
+        ]
+    ).casefold()
+    if any(keyword in haystack for keyword in ("bridge", "flood", "ration", "ward", "district")):
+        return (
+            "Treat this as a bridge-and-ration crisis. "
+            "Use pressure axes tied to crossings, scarcity, and district fracture. "
+            "Make sure all three beats stay logistics-facing rather than drifting into generic political beats."
+        )
+    if any(keyword in haystack for keyword in ("archive", "ledger", "record", "vote", "witness", "testimony", "evidence")):
+        return (
+            "Treat this as a record-and-vote crisis. "
+            "Make sure every beat names a concrete civic record, witness, or verification process. "
+            "Avoid generic council language without evidence or ledger pressure."
+        )
+    if any(keyword in haystack for keyword in ("observatory", "forecast", "warning", "bulletin", "storm")):
+        return (
+            "Treat this as a warning-suppression crisis. "
+            "Keep every beat tied to official warnings, proof of danger, and the politics of who can sound the alarm in public."
+        )
+    if "blackout" in haystack and any(keyword in haystack for keyword in ("referendum", "council", "councils", "neighborhood", "delegate")):
+        return (
+            "Treat this as a blackout-and-council crisis. "
+            "Keep every beat tied to rumor control, forged reporting, delegated civic authority, and the strain on shared public procedure."
+        )
+    return ""
 
 
 def _default_beat_blueprints(
@@ -163,7 +188,97 @@ def _default_beat_blueprints(
                 "blocked_affordances": [],
             },
         ]
-    if any(keyword in lowered for keyword in ("harbor", "port", "trade", "quarantine")):
+    if "blackout" in lowered and any(keyword in lowered for keyword in ("referendum", "council", "councils", "neighborhood", "delegate", "delegates")):
+        return [
+            {
+                "title_seed": "The Forged Reports",
+                "goal_seed": "Trace the forged supply numbers before blackout panic hardens into district blame.",
+                "focus_names": opening_pair[:3],
+                "conflict_pair": opening_pair[:2],
+                "pressure_axis_id": first_axis,
+                "milestone_kind": "reveal",
+                "route_pivot_tag": "reveal_truth",
+                "required_truth_texts": [truth_texts[0] if truth_texts else story_frame.premise],
+                "detour_budget": 1,
+                "progress_required": 2,
+                "affordance_tags": ["reveal_truth", "contain_chaos", "build_trust"],
+                "blocked_affordances": [],
+            },
+            {
+                "title_seed": "The Council Room",
+                "goal_seed": "Force the neighborhood councils to share one verified picture of scarcity before rumor becomes procedure.",
+                "focus_names": alliance_pair[:3],
+                "conflict_pair": alliance_pair[:2],
+                "pressure_axis_id": second_axis,
+                "milestone_kind": "containment",
+                "route_pivot_tag": "build_trust",
+                "required_truth_texts": [truth_texts[1] if len(truth_texts) > 1 else truth_texts[0] if truth_texts else story_frame.stakes],
+                "detour_budget": 1,
+                "progress_required": 2,
+                "affordance_tags": ["build_trust", "contain_chaos", "shift_public_narrative"],
+                "blocked_affordances": [],
+            },
+            {
+                "title_seed": "The Shared Pact",
+                "goal_seed": "Lock the blackout response into one public pact before local panic turns into street authority.",
+                "focus_names": settlement_pair[:3],
+                "conflict_pair": settlement_pair[:2],
+                "pressure_axis_id": third_axis,
+                "milestone_kind": "commitment",
+                "route_pivot_tag": "shift_public_narrative",
+                "required_truth_texts": [truth_texts[-1] if truth_texts else story_frame.stakes],
+                "detour_budget": 0,
+                "progress_required": 3,
+                "affordance_tags": ["shift_public_narrative", "build_trust", "pay_cost"],
+                "blocked_affordances": [],
+            },
+        ]
+    if any(keyword in lowered for keyword in ("harbor", "port", "trade", "quarantine", "bridge", "flood", "ration", "ward", "district")):
+        if any(keyword in lowered for keyword in ("bridge", "flood", "ration", "ward", "district")):
+            return [
+                {
+                    "title_seed": "The Bridge Ledger",
+                    "goal_seed": "Stabilize the crossing points before forged ration data turns flood control into district fracture.",
+                    "focus_names": opening_pair[:3],
+                    "conflict_pair": opening_pair[:2],
+                    "pressure_axis_id": first_axis,
+                    "milestone_kind": "reveal",
+                    "route_pivot_tag": "reveal_truth",
+                    "required_truth_texts": [truth_texts[0] if truth_texts else story_frame.premise],
+                    "detour_budget": 1,
+                    "progress_required": 2,
+                    "affordance_tags": ["reveal_truth", "contain_chaos", "secure_resources"],
+                    "blocked_affordances": [],
+                },
+                {
+                    "title_seed": "The Ward Bargain",
+                    "goal_seed": "Force the river wards and upper districts to share one verified emergency process before blame becomes policy.",
+                    "focus_names": alliance_pair[:3],
+                    "conflict_pair": alliance_pair[:2],
+                    "pressure_axis_id": second_axis,
+                    "milestone_kind": "containment",
+                    "route_pivot_tag": "build_trust",
+                    "required_truth_texts": [truth_texts[1] if len(truth_texts) > 1 else truth_texts[0] if truth_texts else story_frame.stakes],
+                    "detour_budget": 1,
+                    "progress_required": 2,
+                    "affordance_tags": ["build_trust", "shift_public_narrative", "secure_resources"],
+                    "blocked_affordances": [],
+                },
+                {
+                    "title_seed": "The Flood Charter",
+                    "goal_seed": "Lock the city into a public ration charter before private chokepoints replace common emergency authority.",
+                    "focus_names": settlement_pair[:3],
+                    "conflict_pair": settlement_pair[:2],
+                    "pressure_axis_id": third_axis,
+                    "milestone_kind": "commitment",
+                    "route_pivot_tag": "shift_public_narrative",
+                    "required_truth_texts": [truth_texts[-1] if truth_texts else story_frame.stakes],
+                    "detour_budget": 0,
+                    "progress_required": 3,
+                    "affordance_tags": ["shift_public_narrative", "build_trust", "pay_cost"],
+                    "blocked_affordances": [],
+                },
+            ]
         return [
             {
                 "title_seed": "The Quarantine Line",
@@ -205,6 +320,51 @@ def _default_beat_blueprints(
                 "detour_budget": 0,
                 "progress_required": 3,
                 "affordance_tags": ["build_trust", "secure_resources", "pay_cost"],
+                "blocked_affordances": [],
+            },
+        ]
+    if any(keyword in lowered for keyword in ("observatory", "forecast", "warning", "bulletin", "storm")):
+        return [
+            {
+                "title_seed": "The Missing Ledger",
+                "goal_seed": "Verify the warning record before suppression turns uncertainty into official fact.",
+                "focus_names": opening_pair[:3],
+                "conflict_pair": opening_pair[:2],
+                "pressure_axis_id": first_axis,
+                "milestone_kind": "reveal",
+                "route_pivot_tag": "reveal_truth",
+                "required_truth_texts": [truth_texts[0] if truth_texts else story_frame.premise],
+                "detour_budget": 1,
+                "progress_required": 2,
+                "affordance_tags": ["reveal_truth", "build_trust", "contain_chaos"],
+                "blocked_affordances": [],
+            },
+            {
+                "title_seed": "The Council Warning",
+                "goal_seed": "Force the court to confront the proof before delay becomes its own civic crime.",
+                "focus_names": alliance_pair[:3],
+                "conflict_pair": alliance_pair[:2],
+                "pressure_axis_id": second_axis,
+                "milestone_kind": "exposure",
+                "route_pivot_tag": "shift_public_narrative",
+                "required_truth_texts": [truth_texts[1] if len(truth_texts) > 1 else truth_texts[0] if truth_texts else story_frame.stakes],
+                "detour_budget": 1,
+                "progress_required": 2,
+                "affordance_tags": ["shift_public_narrative", "reveal_truth", "build_trust"],
+                "blocked_affordances": [],
+            },
+            {
+                "title_seed": "The Alarm Order",
+                "goal_seed": "Lock the city into one public warning order before denial leaves evacuation to private improvisation.",
+                "focus_names": settlement_pair[:3],
+                "conflict_pair": settlement_pair[:2],
+                "pressure_axis_id": third_axis,
+                "milestone_kind": "commitment",
+                "route_pivot_tag": "contain_chaos",
+                "required_truth_texts": [truth_texts[-1] if truth_texts else story_frame.stakes],
+                "detour_budget": 0,
+                "progress_required": 3,
+                "affordance_tags": ["contain_chaos", "shift_public_narrative", "pay_cost"],
                 "blocked_affordances": [],
             },
         ]
@@ -399,8 +559,9 @@ def _normalize_beat_plan_semantics_payload(
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
+    primary_theme: str | None = None,
 ) -> dict[str, Any]:
-    theme_decision = plan_story_theme(focused_brief, story_frame)
+    resolved_primary_theme = primary_theme or plan_story_theme(focused_brief, story_frame).primary_theme
     cast_names = [item.name for item in cast_draft.cast]
     truth_texts = [item.text for item in story_frame.truths]
     axis_ids = [item.template_id for item in story_frame.state_axis_choices]
@@ -480,24 +641,12 @@ def _normalize_beat_plan_semantics_payload(
                 "blocked_affordances": blocked_affordances[:4],
             }
         )
-    if theme_decision is None:
-        theme_decision = plan_story_theme(
-            FocusedBrief(
-                story_kernel=story_frame.title,
-                setting_signal=story_frame.premise,
-                core_conflict=story_frame.stakes,
-                tone_signal=story_frame.tone,
-                hard_constraints=[],
-                forbidden_tones=[],
-            ),
-            story_frame,
-        )
     beats = _stabilize_beat_plan_semantics(
         gateway,
         beats,
         story_frame=story_frame,
         cast_draft=cast_draft,
-        primary_theme=theme_decision.primary_theme,
+        primary_theme=resolved_primary_theme,
     )
     return {"beats": beats[:4]}
 
@@ -546,6 +695,93 @@ def _compose_beat_plan_from_skeleton(
     return BeatPlanDraft(beats=beats)
 
 
+def _repair_beat_plan_draft_deterministically(
+    gateway: "AuthorLLMGateway",
+    beat_plan: BeatPlanDraft,
+    *,
+    focused_brief: FocusedBrief,
+    story_frame: StoryFrameDraft,
+    cast_draft: CastDraft,
+) -> BeatPlanDraft:
+    blueprints = _default_beat_blueprints(gateway, story_frame, cast_draft)
+    target_count = min(_target_beat_count(story_frame, cast_draft), len(blueprints))
+    beats = [beat.model_dump(mode="json") for beat in beat_plan.beats[:4]]
+    while len(beats) < target_count:
+        blueprint = blueprints[min(len(beats), len(blueprints) - 1)]
+        beats.append(
+            _compose_beat_plan_from_skeleton(
+                gateway,
+                BeatPlanSkeletonDraft.model_validate({"beats": [blueprint]}),
+            ).beats[0].model_dump(mode="json")
+        )
+
+    cast_names = [item.name for item in cast_draft.cast]
+    truth_texts = [item.text for item in story_frame.truths]
+    axis_ids = [item.template_id for item in story_frame.state_axis_choices]
+
+    for index, beat in enumerate(beats[:target_count]):
+        blueprint = blueprints[min(index, len(blueprints) - 1)]
+        if _is_generic_beat_title_seed(str(beat.get("title") or beat.get("title_seed") or ""), index + 1):
+            beat["title"] = trim_text(blueprint["title_seed"], 120)
+        if _is_generic_beat_goal_seed(str(beat.get("goal") or beat.get("goal_seed") or "")):
+            beat["goal"] = trim_text(blueprint["goal_seed"], 220)
+        if not list(beat.get("focus_names") or []):
+            beat["focus_names"] = list(blueprint["focus_names"][:3])
+        if len(list(beat.get("conflict_pair") or [])) < min(2, len(blueprint["conflict_pair"])):
+            beat["conflict_pair"] = list(blueprint["conflict_pair"][:2])
+        if not beat.get("pressure_axis_id") and blueprint.get("pressure_axis_id"):
+            beat["pressure_axis_id"] = blueprint["pressure_axis_id"]
+        if beat.get("pressure_axis_id") not in axis_ids and axis_ids:
+            beat["pressure_axis_id"] = axis_ids[min(index, len(axis_ids) - 1)]
+        if not beat.get("route_pivot_tag"):
+            beat["route_pivot_tag"] = blueprint["route_pivot_tag"]
+        beat["required_truth_texts"] = [
+            text for text in list(beat.get("required_truth_texts") or [])[:3] if text in truth_texts
+        ] or list(blueprint["required_truth_texts"][:1])
+        if len(list(beat.get("affordance_tags") or [])) < 2:
+            beat["affordance_tags"] = list(blueprint["affordance_tags"][:6])
+        if not list(beat.get("return_hooks") or []):
+            beat["return_hooks"] = [
+                _default_return_hook_for_skeleton(
+                    BeatSkeletonSpec.model_validate(blueprint),
+                    index + 1,
+                )
+            ]
+        beat["blocked_affordances"] = [
+            tag
+            for tag in list(beat.get("blocked_affordances") or [])[:4]
+            if tag not in list(beat.get("affordance_tags") or [])
+        ]
+        beats[index] = beat
+
+    covered_names = {
+        name
+        for beat in beats
+        for name in (*list(beat.get("focus_names") or []), *list(beat.get("conflict_pair") or []))
+        if name in cast_names
+    }
+    missing_names = [name for name in cast_names if name not in covered_names]
+    for beat in beats:
+        if not missing_names:
+            break
+        focus_names = list(beat.get("focus_names") or [])
+        while missing_names and len(focus_names) < 3:
+            focus_names.append(missing_names.pop(0))
+        beat["focus_names"] = focus_names
+
+    used_axes = {beat.get("pressure_axis_id") for beat in beats if beat.get("pressure_axis_id") in axis_ids}
+    if len(axis_ids) >= 2 and len(used_axes) < 2:
+        for index, axis_id in enumerate(axis_ids[: len(beats)]):
+            beats[index]["pressure_axis_id"] = axis_id
+    if len({beat.get("milestone_kind") for beat in beats}) < min(2, len(beats)):
+        for index, blueprint in enumerate(blueprints[: len(beats)]):
+            beats[index]["milestone_kind"] = blueprint["milestone_kind"]
+            beats[index]["route_pivot_tag"] = blueprint["route_pivot_tag"]
+            beats[index]["affordance_tags"] = list(blueprint["affordance_tags"][:6])
+
+    return BeatPlanDraft.model_validate({"beats": beats[:4]})
+
+
 def _normalize_beat_plan_payload(
     gateway: "AuthorLLMGateway",
     payload: dict[str, Any],
@@ -566,6 +802,28 @@ def _normalize_beat_plan_payload(
     return _compose_beat_plan_from_skeleton(gateway, skeleton).model_dump(mode="json")
 
 
+def _normalize_beat_plan_skeleton_payload(
+    gateway: "AuthorLLMGateway",
+    payload: dict[str, Any],
+    *,
+    focused_brief: FocusedBrief,
+    story_frame: StoryFrameDraft,
+    cast_draft: CastDraft,
+    primary_theme: str | None = None,
+) -> dict[str, Any]:
+    skeleton = BeatPlanSkeletonDraft.model_validate(
+        _normalize_beat_plan_semantics_payload(
+            gateway,
+            payload,
+            focused_brief=focused_brief,
+            story_frame=story_frame,
+            cast_draft=cast_draft,
+            primary_theme=primary_theme,
+        )
+    )
+    return skeleton.model_dump(mode="json")
+
+
 def generate_beat_plan(
     gateway: "AuthorLLMGateway",
     focused_brief: FocusedBrief,
@@ -573,8 +831,11 @@ def generate_beat_plan(
     cast_draft: CastDraft,
     *,
     previous_response_id: str | None = None,
+    primary_theme: str | None = None,
+    beat_plan_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
+    from rpg_backend.author.gateway import AuthorGatewayError
+    from rpg_backend.responses_transport import StructuredResponse
 
     context_packet = build_author_context_from_story(story_frame, cast_draft)
     payload: dict[str, Any] = {
@@ -582,7 +843,7 @@ def generate_beat_plan(
     }
     if not (gateway.use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
-    theme_decision = plan_story_theme(focused_brief, story_frame)
+    resolved_primary_theme = primary_theme or plan_story_theme(focused_brief, story_frame).primary_theme
     system_prompt = (
         "You are the Beat Plan skeleton generator. Return one strict JSON object matching BeatPlanSkeletonDraft. "
         "Do not output markdown. Design 2-4 beats for a fixed mainline story with locally flexible play. "
@@ -594,7 +855,7 @@ def generate_beat_plan(
         "Use conflict_pair to name the two characters whose clash or alliance defines the beat when possible. "
         "Affordance tags must come from: reveal_truth, build_trust, contain_chaos, shift_public_narrative, protect_civilians, secure_resources, unlock_ally, pay_cost. "
         "Keep title_seed short and concrete. Keep goal_seed under one sentence. "
-        f"{_beat_theme_guidance(theme_decision.primary_theme)}"
+        f"{_beat_strategy_guidance(resolved_primary_theme, beat_plan_strategy)}"
     )
     retry_prompt = (
         "Return only one JSON object matching BeatPlanSkeletonDraft. "
@@ -602,20 +863,28 @@ def generate_beat_plan(
         "Use only the keys required by BeatPlanSkeletonDraft. "
         "Keep beats concrete and short."
     )
+    high_risk_retry_prompt = (
+        "Return one strict BeatPlanSkeletonDraft only. "
+        "Do not generalize. "
+        "Every beat must stay anchored to the domain-specific logistics or record pressure in author_context. "
+        f"{_beat_risk_guidance(focused_brief, story_frame)}"
+    )
     try:
-        skeleton_result = _invoke_json_with_prompt_retries(
+        skeleton_result = invoke_structured_generation_with_retries(
             gateway,
-            payload=payload,
-            prompts=(system_prompt, retry_prompt),
+            primary_payload=payload,
+            prompts=(system_prompt, retry_prompt, high_risk_retry_prompt),
             previous_response_id=previous_response_id,
-            max_output_tokens=_beat_plan_semantics_output_tokens(gateway),
-            parse_fn=lambda raw_payload: BeatPlanSkeletonDraft.model_validate(
-                _normalize_beat_plan_semantics_payload(
+            max_output_tokens=_beat_plan_skeleton_output_tokens(gateway),
+            operation_name="beat_plan_generate",
+            parse_value=lambda raw_payload: BeatPlanSkeletonDraft.model_validate(
+                _normalize_beat_plan_skeleton_payload(
                     gateway,
                     raw_payload,
                     focused_brief=focused_brief,
                     story_frame=story_frame,
                     cast_draft=cast_draft,
+                    primary_theme=resolved_primary_theme,
                 )
             ),
         )
@@ -623,8 +892,14 @@ def generate_beat_plan(
     except AuthorGatewayError:
         raise
     skeleton_response_id = skeleton_result.response_id
-    final_beat_plan = _compose_beat_plan_from_skeleton(gateway, skeleton)
-    return GatewayStructuredResponse(
+    final_beat_plan = _repair_beat_plan_draft_deterministically(
+        gateway,
+        _compose_beat_plan_from_skeleton(gateway, skeleton),
+        focused_brief=focused_brief,
+        story_frame=story_frame,
+        cast_draft=cast_draft,
+    )
+    return StructuredResponse(
         value=final_beat_plan,
         response_id=skeleton_response_id,
     )
@@ -637,8 +912,11 @@ def generate_beat_plan_conservative(
     cast_draft: CastDraft,
     *,
     previous_response_id: str | None = None,
+    primary_theme: str | None = None,
+    beat_plan_strategy: str | None = None,
 ):
     from rpg_backend.author.gateway import AuthorGatewayError
+    from rpg_backend.responses_transport import StructuredResponse
 
     context_packet = build_author_context_from_story(story_frame, cast_draft)
     payload: dict[str, Any] = {
@@ -646,35 +924,53 @@ def generate_beat_plan_conservative(
     }
     if not (gateway.use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
-    theme_decision = plan_story_theme(focused_brief, story_frame)
+    resolved_primary_theme = primary_theme or plan_story_theme(focused_brief, story_frame).primary_theme
     system_prompt = (
-        "You are the Beat Plan generator. Return one strict JSON object matching BeatPlanDraft. "
+        "You are the Beat Plan skeleton generator. Return one strict JSON object matching BeatPlanSkeletonDraft. "
         "Do not output markdown. Design 2-4 beats for a fixed mainline story with locally flexible play. "
-        "Each beat must include: title, goal, focus_names, conflict_pair, pressure_axis_id, milestone_kind, route_pivot_tag, required_truth_texts, detour_budget, progress_required, return_hooks, affordance_tags, blocked_affordances. "
+        "Each beat must include: title_seed, goal_seed, focus_names, conflict_pair, pressure_axis_id, milestone_kind, route_pivot_tag, required_truth_texts, detour_budget, progress_required, affordance_tags, blocked_affordances. "
         "Use cast names and truth texts that already exist in author_context. "
         "Affordance tags must come from: reveal_truth, build_trust, contain_chaos, shift_public_narrative, protect_civilians, secure_resources, unlock_ally, pay_cost. "
-        f"{_beat_theme_guidance(theme_decision.primary_theme)}"
+        f"{_beat_strategy_guidance(resolved_primary_theme, beat_plan_strategy)}"
     )
     retry_prompt = (
-        "Return only one JSON object matching BeatPlanDraft. "
+        "Return only one JSON object matching BeatPlanSkeletonDraft. "
         "No markdown, no explanation, no extra keys. "
         "Keep each beat compact and valid."
     )
-    return _invoke_json_with_prompt_retries(
+    high_risk_retry_prompt = (
+        "Return one strict BeatPlanSkeletonDraft only. "
+        "Do not generalize. "
+        "Repair missing beat structure while keeping the domain-specific crisis front and center. "
+        f"{_beat_risk_guidance(focused_brief, story_frame)}"
+    )
+    skeleton_result = invoke_structured_generation_with_retries(
         gateway,
-        payload=payload,
-        prompts=(system_prompt, retry_prompt),
+        primary_payload=payload,
+        prompts=(system_prompt, retry_prompt, high_risk_retry_prompt),
         previous_response_id=previous_response_id,
-        max_output_tokens=_beat_plan_semantics_output_tokens(gateway),
-        parse_fn=lambda raw_payload: BeatPlanDraft.model_validate(
-            _normalize_beat_plan_payload(
+        max_output_tokens=_beat_plan_skeleton_output_tokens(gateway),
+        operation_name="beat_plan_generate",
+        parse_value=lambda raw_payload: BeatPlanSkeletonDraft.model_validate(
+            _normalize_beat_plan_skeleton_payload(
                 gateway,
                 raw_payload,
                 focused_brief=focused_brief,
                 story_frame=story_frame,
                 cast_draft=cast_draft,
+                primary_theme=resolved_primary_theme,
             )
         ),
+    )
+    return StructuredResponse(
+        value=_repair_beat_plan_draft_deterministically(
+            gateway,
+            _compose_beat_plan_from_skeleton(gateway, skeleton_result.value),
+            focused_brief=focused_brief,
+            story_frame=story_frame,
+            cast_draft=cast_draft,
+        ),
+        response_id=skeleton_result.response_id,
     )
 
 
@@ -686,8 +982,11 @@ def glean_beat_plan(
     partial_beat_plan: BeatPlanDraft,
     *,
     previous_response_id: str | None = None,
+    primary_theme: str | None = None,
+    beat_plan_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
+    from rpg_backend.author.gateway import AuthorGatewayError
+    from rpg_backend.responses_transport import StructuredResponse
 
     context_packet = build_author_context_from_story(story_frame, cast_draft)
     payload: dict[str, Any] = {
@@ -697,33 +996,50 @@ def glean_beat_plan(
     if not (gateway.use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     system_prompt = (
-        "You are the Beat Plan repair generator. Return one strict JSON object matching BeatPlanDraft. "
-        "Improve partial_beat_plan instead of replacing it wholesale. "
+        "You are the Beat Plan skeleton repair generator. Return one strict JSON object matching BeatPlanSkeletonDraft. "
+        "Improve partial_beat_plan semantically instead of replacing it wholesale. "
         "Preserve useful titles and goals, but repair weak semantic fields. "
         "Every beat should identify a pressure_axis_id, a milestone_kind, a route_pivot_tag, and a conflict_pair when the cast allows it. "
         "Use only cast names, axis ids, and truth texts already present in author_context."
     )
     retry_prompt = (
-        "Return only one JSON object matching BeatPlanDraft. "
+        "Return only one JSON object matching BeatPlanSkeletonDraft. "
         "No markdown, no explanation, no extra keys. "
         "Repair missing structure and keep only valid beat fields."
     )
+    high_risk_retry_prompt = (
+        "Return one strict BeatPlanSkeletonDraft only. "
+        "Keep the repaired beats domain-specific and structurally valid. "
+        f"{_beat_risk_guidance(focused_brief, story_frame)}"
+    )
     try:
-        return _invoke_json_with_prompt_retries(
+        skeleton_result = invoke_structured_generation_with_retries(
             gateway,
-            payload=payload,
-            prompts=(system_prompt, retry_prompt),
+            primary_payload=payload,
+            prompts=(system_prompt, retry_prompt, high_risk_retry_prompt),
             previous_response_id=previous_response_id,
-            max_output_tokens=_beat_plan_semantics_output_tokens(gateway),
-            parse_fn=lambda raw_payload: BeatPlanDraft.model_validate(
-                _normalize_beat_plan_payload(
+            max_output_tokens=_beat_plan_repair_output_tokens(gateway),
+            operation_name="beat_plan_generate",
+            parse_value=lambda raw_payload: BeatPlanSkeletonDraft.model_validate(
+                _normalize_beat_plan_skeleton_payload(
                     gateway,
                     raw_payload,
                     focused_brief=focused_brief,
                     story_frame=story_frame,
                     cast_draft=cast_draft,
+                    primary_theme=primary_theme,
                 )
             ),
+        )
+        return StructuredResponse(
+            value=_repair_beat_plan_draft_deterministically(
+                gateway,
+                _compose_beat_plan_from_skeleton(gateway, skeleton_result.value),
+                focused_brief=focused_brief,
+                story_frame=story_frame,
+                cast_draft=cast_draft,
+            ),
+            response_id=skeleton_result.response_id,
         )
     except AuthorGatewayError:
         raise

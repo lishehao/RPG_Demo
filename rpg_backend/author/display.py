@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from rpg_backend.author.normalize import trim_ellipsis
 from rpg_backend.author.contracts import (
     AuthorCacheMetrics,
     AuthorJobProgress,
@@ -70,6 +71,17 @@ _BEAT_READY_STAGES = {
     "completed",
 }
 
+_STORY_FRAME_READY_STAGES = {
+    "story_frame_ready",
+    "theme_confirmed",
+    "cast_planned",
+    "cast_ready",
+    "beat_plan_ready",
+    "route_ready",
+    "ending_ready",
+    "completed",
+}
+
 
 def humanize_identifier(value: str) -> str:
     return value.replace("_", " ").strip().title()
@@ -129,58 +141,134 @@ def build_loading_cards(
     token_usage: AuthorCacheMetrics,
     token_cost_estimate: AuthorTokenCostEstimate | None,
 ) -> list[AuthorLoadingCard]:
-    if token_usage.total_tokens is None:
-        budget_value = "Waiting for first model call"
-    else:
-        budget_value = f"{token_usage.total_tokens} total tokens"
-        if token_cost_estimate is not None:
-            budget_value += f" · RMB {token_cost_estimate.estimated_total_cost_rmb:.6f} est."
-    return [
+    cards: list[AuthorLoadingCard] = [
         AuthorLoadingCard(card_id="theme", emphasis="stable", label="Theme", value=theme_label(preview.theme.primary_theme)),
-        AuthorLoadingCard(card_id="tone", emphasis="stable", label="Tone", value=preview.story.tone),
         AuthorLoadingCard(
             card_id="structure",
             emphasis="stable",
             label="Story Shape",
             value=topology_label(preview.structure.cast_topology),
         ),
-        AuthorLoadingCard(
-            card_id="cast_count",
-            emphasis="stable",
-            label="NPC Count",
-            value=cast_count_value(progress.stage, preview.structure.expected_npc_count),
-        ),
-        AuthorLoadingCard(
-            card_id="beat_count",
-            emphasis="stable",
-            label="Beat Count",
-            value=beat_count_value(progress.stage, preview.structure.expected_beat_count),
-        ),
-        AuthorLoadingCard(
-            card_id="working_title",
-            emphasis="draft",
-            label="Working Title",
-            value=preview.story.title,
-        ),
-        AuthorLoadingCard(
-            card_id="core_conflict",
-            emphasis="draft",
-            label="Core Conflict",
-            value=preview.focused_brief.core_conflict,
-        ),
-        AuthorLoadingCard(
-            card_id="generation_status",
-            emphasis="live",
-            label="Generation Status",
-            value=stage_status_message(progress.stage),
-        ),
-        AuthorLoadingCard(
-            card_id="token_budget",
-            emphasis="live",
-            label="Token Budget",
-            value=budget_value,
-        ),
     ]
+    if token_usage.total_tokens is None:
+        budget_value = "Waiting for first model call"
+    else:
+        budget_value = f"{token_usage.total_tokens} total tokens"
+        if token_cost_estimate is not None:
+            from rpg_backend.config import get_settings
+
+            usd_cost = token_cost_estimate.estimated_total_cost_rmb * get_settings().responses_usd_per_rmb
+            budget_value += f" · USD {usd_cost:.6f} est."
+    if progress.stage in _STORY_FRAME_READY_STAGES:
+        cards.extend(
+            [
+                AuthorLoadingCard(
+                    card_id="working_title",
+                    emphasis="draft",
+                    label="Working Title",
+                    value=preview.story.title,
+                ),
+                AuthorLoadingCard(
+                    card_id="tone",
+                    emphasis="stable",
+                    label="Tone",
+                    value=preview.story.tone,
+                ),
+                AuthorLoadingCard(
+                    card_id="story_premise",
+                    emphasis="draft",
+                    label="Story Premise",
+                    value=trim_ellipsis(preview.story.premise, 220),
+                ),
+                AuthorLoadingCard(
+                    card_id="story_stakes",
+                    emphasis="draft",
+                    label="Story Stakes",
+                    value=trim_ellipsis(preview.story.stakes, 220),
+                ),
+            ]
+        )
+    if progress.stage in _CAST_READY_STAGES:
+        anchor = preview.cast_slots[0] if preview.cast_slots else None
+        cards.extend(
+            [
+                AuthorLoadingCard(
+                    card_id="cast_count",
+                    emphasis="stable",
+                    label="NPC Count",
+                    value=cast_count_value(progress.stage, preview.structure.expected_npc_count),
+                ),
+                AuthorLoadingCard(
+                    card_id="cast_anchor",
+                    emphasis="draft",
+                    label="Cast Anchor",
+                    value=trim_ellipsis(
+                        (
+                            f"{anchor.slot_label} · {anchor.public_role}"
+                            if anchor is not None
+                            else "Awaiting cast release"
+                        ),
+                        220,
+                    ),
+                ),
+            ]
+        )
+    if progress.stage in _BEAT_READY_STAGES:
+        opening_beat = preview.beats[0] if preview.beats else None
+        final_beat = preview.beats[-1] if preview.beats else None
+        cards.extend(
+            [
+                AuthorLoadingCard(
+                    card_id="beat_count",
+                    emphasis="stable",
+                    label="Beat Count",
+                    value=beat_count_value(progress.stage, preview.structure.expected_beat_count),
+                ),
+                AuthorLoadingCard(
+                    card_id="opening_beat",
+                    emphasis="draft",
+                    label="Opening Beat",
+                    value=trim_ellipsis(
+                        (
+                            f"{opening_beat.title}: {opening_beat.goal}"
+                            if opening_beat is not None
+                            else "Awaiting beat release"
+                        ),
+                        220,
+                    ),
+                ),
+                AuthorLoadingCard(
+                    card_id="final_beat",
+                    emphasis="draft",
+                    label="Final Beat",
+                    value=trim_ellipsis(
+                        (
+                            f"{final_beat.title}: {final_beat.goal}"
+                            if final_beat is not None
+                            else "Awaiting beat release"
+                        ),
+                        220,
+                    ),
+                ),
+            ]
+        )
+    cards.extend(
+        [
+            AuthorLoadingCard(
+                card_id="generation_status",
+                emphasis="live",
+                label="Generation Status",
+                value=stage_status_message(progress.stage),
+            ),
+            AuthorLoadingCard(
+                card_id="token_budget",
+                emphasis="live",
+                label="Token Budget",
+                value=budget_value,
+            ),
+        ]
+    )
+    return cards
 
 
 def build_progress_snapshot(

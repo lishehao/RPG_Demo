@@ -5,7 +5,6 @@ import re
 from fastapi.testclient import TestClient
 
 from rpg_backend.author.jobs import AuthorJobService
-from rpg_backend.author.preview import build_generation_state_from_preview
 from rpg_backend.author.contracts import (
     AuthorCacheMetrics,
     AuthorJobProgress,
@@ -16,14 +15,19 @@ from rpg_backend.author.contracts import (
     AuthorPreviewFlashcard,
     AuthorPreviewResponse,
 )
+from rpg_backend.config import get_settings
 from rpg_backend.main import app
+from tests.author_fixtures import FakeGateway
+from tests.auth_helpers import ensure_authenticated_client
 
 
 class _FakeAuthorJobService:
-    def create_preview(self, payload):  # noqa: ANN001
+    def create_preview(self, payload, *, actor_user_id=None):  # noqa: ANN001
+        del actor_user_id
         return _preview_response(payload.prompt_seed)
 
-    def create_job(self, payload):  # noqa: ANN001
+    def create_job(self, payload, *, actor_user_id=None):  # noqa: ANN001
+        del actor_user_id
         return AuthorJobStatusResponse(
             job_id="job-123",
             status="queued",
@@ -51,7 +55,8 @@ class _FakeAuthorJobService:
             ),
         )
 
-    def get_job(self, job_id: str) -> AuthorJobStatusResponse:
+    def get_job(self, job_id: str, *, actor_user_id=None) -> AuthorJobStatusResponse:
+        del actor_user_id
         return AuthorJobStatusResponse(
             job_id=job_id,
             status="running",
@@ -79,7 +84,8 @@ class _FakeAuthorJobService:
             ),
         )
 
-    def get_job_result(self, job_id: str) -> AuthorJobResultResponse:
+    def get_job_result(self, job_id: str, *, actor_user_id=None) -> AuthorJobResultResponse:
+        del actor_user_id
         return AuthorJobResultResponse(
             job_id=job_id,
             status="completed",
@@ -114,8 +120,8 @@ class _FakeAuthorJobService:
             ),
         )
 
-    def stream_job_events(self, job_id: str, *, last_event_id: int | None = None, heartbeat_seconds: float = 15.0):  # noqa: ANN001
-        del job_id, last_event_id, heartbeat_seconds
+    def stream_job_events(self, job_id: str, *, actor_user_id=None, last_event_id: int | None = None, heartbeat_seconds: float = 15.0):  # noqa: ANN001
+        del job_id, actor_user_id, last_event_id, heartbeat_seconds
         yield (
             "id: 1\n"
             "event: job_started\n"
@@ -126,6 +132,12 @@ class _FakeAuthorJobService:
             "event: stage_changed\n"
             "data: {\"progress\":{\"stage\":\"story_frame_ready\"},\"progress_snapshot\":{\"primary_theme\":\"logistics_quarantine_crisis\",\"cast_topology\":\"four_slot\",\"completion_ratio\":0.3,\"stage_label\":\"Story frame drafted\",\"loading_cards\":[{\"card_id\":\"generation_status\",\"label\":\"Generation Status\",\"value\":\"Story frame drafted. Title, premise, and stakes are set.\",\"emphasis\":\"live\"},{\"card_id\":\"beat_count\",\"label\":\"Beat Count\",\"value\":\"3 planned beats\",\"emphasis\":\"stable\"}]},\"token_usage\":{\"total_tokens\":225},\"token_cost_estimate\":{\"estimated_total_cost_rmb\":0.00012}}\n\n"
         )
+
+    def get_publishable_job_source(self, job_id: str, *, actor_user_id=None):  # noqa: ANN001
+        del actor_user_id
+        from tests.test_story_library_api import _publish_source
+
+        return _publish_source(job_id)
 
 
 def _preview_response(prompt_seed: str) -> AuthorPreviewResponse:
@@ -147,9 +159,9 @@ def _preview_response(prompt_seed: str) -> AuthorPreviewResponse:
                 "router_reason": "matched_brief_logistics_quarantine_keywords",
             },
             "strategies": {
-                "story_frame_strategy": "logistics_story",
-                "cast_strategy": "logistics_cast",
-                "beat_plan_strategy": "single_semantic_compile",
+                "story_frame_strategy": "harbor_quarantine_story",
+                "cast_strategy": "harbor_quarantine_cast",
+                "beat_plan_strategy": "harbor_quarantine_compile",
             },
             "structure": {
                 "cast_topology": "four_slot",
@@ -175,10 +187,37 @@ def _preview_response(prompt_seed: str) -> AuthorPreviewResponse:
             ],
             "flashcards": [
                 AuthorPreviewFlashcard(card_id="theme", kind="stable", label="Theme", value="Logistics quarantine crisis").model_dump(mode="json"),
+                AuthorPreviewFlashcard(card_id="tone", kind="stable", label="Tone", value="tense civic fantasy").model_dump(mode="json"),
+                AuthorPreviewFlashcard(card_id="npc_count", kind="stable", label="NPC Count", value="4").model_dump(mode="json"),
+                AuthorPreviewFlashcard(card_id="beat_count", kind="stable", label="Beat Count", value="3").model_dump(mode="json"),
+                AuthorPreviewFlashcard(card_id="cast_topology", kind="stable", label="Cast Structure", value="4-slot civic web").model_dump(mode="json"),
+                AuthorPreviewFlashcard(card_id="title", kind="draft", label="Working Title", value="The Harbor Compact").model_dump(mode="json"),
+                AuthorPreviewFlashcard(
+                    card_id="conflict",
+                    kind="draft",
+                    label="Core Conflict",
+                    value="trade pressure and quarantine politics keep turning relief into factional leverage",
+                ).model_dump(mode="json"),
             ],
             "stage": "brief_parsed",
         }
     )
+
+
+def test_auth_session_and_me_route_reflect_logged_in_user() -> None:
+    client = TestClient(app)
+    ensure_authenticated_client(client, email="author-me@example.com", display_name="Alice")
+
+    session_response = client.get("/auth/session")
+    response = client.get("/me")
+
+    assert session_response.status_code == 200
+    assert session_response.json()["authenticated"] is True
+    assert session_response.json()["user"]["display_name"] == "Alice"
+    assert response.status_code == 200
+    assert response.json()["display_name"] == "Alice"
+    assert response.json()["email"] == "author-me@example.com"
+    assert response.json()["is_default"] is False
 
 
 def _contains_cjk(value: str) -> bool:
@@ -186,47 +225,103 @@ def _contains_cjk(value: str) -> bool:
 
 
 def _progress_snapshot(stage: str, stage_index: int, total_tokens: int) -> AuthorJobProgressSnapshot:
+    estimated_total_rmb = {
+        150: 0.00009,
+        225: 0.00012,
+        300: 0.000141,
+        360: 0.000141,
+        570: 0.000141,
+    }.get(total_tokens, 0.000141)
+    estimated_total_usd = estimated_total_rmb * get_settings().responses_usd_per_rmb
     loading_cards = [
-        AuthorLoadingCard(card_id="theme", emphasis="stable", label="Theme", value="Logistics quarantine crisis"),
-        AuthorLoadingCard(card_id="tone", emphasis="stable", label="Tone", value="Tense civic fantasy"),
         AuthorLoadingCard(card_id="structure", emphasis="stable", label="Story Shape", value="4-slot civic web"),
-        AuthorLoadingCard(
-            card_id="cast_count",
-            emphasis="stable",
-            label="NPC Count",
-            value="4 NPCs drafted" if stage in {"cast_ready", "beat_plan_ready", "completed"} else "4 planned NPCs",
-        ),
-        AuthorLoadingCard(
-            card_id="beat_count",
-            emphasis="stable",
-            label="Beat Count",
-            value="3 beats drafted" if stage in {"beat_plan_ready", "completed"} else "3 planned beats",
-        ),
-        AuthorLoadingCard(card_id="working_title", emphasis="draft", label="Working Title", value="The Harbor Compact"),
-        AuthorLoadingCard(
-            card_id="core_conflict",
-            emphasis="draft",
-            label="Core Conflict",
-            value="keep the harbor operating while quarantine politics escalate",
-        ),
-        AuthorLoadingCard(
-            card_id="generation_status",
-            emphasis="live",
-            label="Generation Status",
-            value=(
-                "Story frame drafted. Title, premise, and stakes are set."
-                if stage == "story_frame_ready"
-                else "Beat plan drafted. Main progression is mapped."
-                if stage == "beat_plan_ready"
-                else "Cast roster drafted. NPC tensions are in place."
-                if stage == "cast_ready"
-                else "Bundle complete. Story package is ready."
-                if stage == "completed"
-                else "Queued. Preparing generation graph."
-            ),
-        ),
-        AuthorLoadingCard(card_id="token_budget", emphasis="live", label="Token Budget", value=f"{total_tokens} total tokens"),
+        AuthorLoadingCard(card_id="theme", emphasis="stable", label="Theme", value="Logistics quarantine crisis"),
     ]
+    if stage in {"story_frame_ready", "cast_ready", "beat_plan_ready", "completed"}:
+        loading_cards.extend(
+            [
+                AuthorLoadingCard(card_id="working_title", emphasis="draft", label="Working Title", value="The Harbor Compact"),
+                AuthorLoadingCard(card_id="tone", emphasis="stable", label="Tone", value="Tense civic fantasy"),
+                AuthorLoadingCard(
+                    card_id="story_premise",
+                    emphasis="draft",
+                    label="Story Premise",
+                    value="In a harbor city under quarantine, an inspector must keep supply lines open before panic hardens into factional seizure.",
+                ),
+                AuthorLoadingCard(
+                    card_id="story_stakes",
+                    emphasis="draft",
+                    label="Story Stakes",
+                    value="If the harbor fails, the city fractures around scarcity and emergency power.",
+                ),
+            ]
+        )
+    if stage in {"cast_ready", "beat_plan_ready", "completed"}:
+        loading_cards.extend(
+            [
+                AuthorLoadingCard(
+                    card_id="cast_count",
+                    emphasis="stable",
+                    label="NPC Count",
+                    value="4 NPCs drafted",
+                ),
+                AuthorLoadingCard(
+                    card_id="cast_anchor",
+                    emphasis="draft",
+                    label="Cast Anchor",
+                    value="Mediator Anchor · Harbor inspector",
+                ),
+            ]
+        )
+    if stage in {"beat_plan_ready", "completed"}:
+        loading_cards.extend(
+            [
+                AuthorLoadingCard(
+                    card_id="beat_count",
+                    emphasis="stable",
+                    label="Beat Count",
+                    value="3 beats drafted",
+                ),
+                AuthorLoadingCard(
+                    card_id="opening_beat",
+                    emphasis="draft",
+                    label="Opening Beat",
+                    value="The Quarantine Line: Stabilize the harbor perimeter.",
+                ),
+                AuthorLoadingCard(
+                    card_id="final_beat",
+                    emphasis="draft",
+                    label="Final Beat",
+                    value="The Harbor Compact: Lock in a recovery bargain.",
+                ),
+            ]
+        )
+    loading_cards.extend(
+        [
+            AuthorLoadingCard(
+                card_id="generation_status",
+                emphasis="live",
+                label="Generation Status",
+                value=(
+                    "Story frame drafted. Title, premise, and stakes are set."
+                    if stage == "story_frame_ready"
+                    else "Beat plan drafted. Main progression is mapped."
+                    if stage == "beat_plan_ready"
+                    else "Cast roster drafted. NPC tensions are in place."
+                    if stage == "cast_ready"
+                    else "Bundle complete. Story package is ready."
+                    if stage == "completed"
+                    else "Queued. Preparing generation graph."
+                ),
+            ),
+            AuthorLoadingCard(
+                card_id="token_budget",
+                emphasis="live",
+                label="Token Budget",
+                value=f"{total_tokens} total tokens · USD {estimated_total_usd:.6f} est.",
+            ),
+        ]
+    )
     return AuthorJobProgressSnapshot(
         stage=stage,
         stage_label=(
@@ -257,11 +352,19 @@ def _progress_snapshot(stage: str, stage_index: int, total_tokens: int) -> Autho
 
 
 def test_story_preview_api_returns_preview_payload() -> None:
+    import rpg_backend.main as main_module
+
+    original = main_module.author_job_service
+    main_module.author_job_service = _FakeAuthorJobService()
     client = TestClient(app)
-    response = client.post(
-        "/author/story-previews",
-        json={"prompt_seed": "A harbor quarantine officer tries to stop a port city from collapsing into panic."},
-    )
+    try:
+        ensure_authenticated_client(client, email="author-preview@example.com", display_name="Author Preview")
+        response = client.post(
+            "/author/story-previews",
+            json={"prompt_seed": "A harbor quarantine officer tries to stop a port city from collapsing into panic."},
+        )
+    finally:
+        main_module.author_job_service = original
 
     assert response.status_code == 200
     body = response.json()
@@ -284,38 +387,58 @@ def test_story_preview_api_returns_preview_payload() -> None:
         assert not _contains_cjk(card["value"])
 
 
-def test_generation_state_is_locked_from_preview() -> None:
-    preview = _preview_response("seed")
-    state = build_generation_state_from_preview(preview)
-
-    assert state["brief_primary_theme"] == "logistics_quarantine_crisis"
-    assert state["story_frame_strategy"] == "logistics_story"
-    assert state["cast_strategy"] == "logistics_cast"
-    assert state["beat_plan_strategy"] == "single_semantic_compile"
-    assert state["cast_topology"] == "four_slot"
-
-
 def test_author_job_service_reuses_registered_preview(monkeypatch) -> None:
     import rpg_backend.author.jobs as jobs_module
 
-    class _FakeThread:
-        def __init__(self, target=None, args=None, daemon=None):  # noqa: ANN001
-            self.target = target
-            self.args = args or ()
-
-        def start(self) -> None:
-            return None
-
-    monkeypatch.setattr(jobs_module.threading, "Thread", _FakeThread)
+    original_gateway_factory = jobs_module.get_author_llm_gateway
+    jobs_module.get_author_llm_gateway = lambda: FakeGateway()
     service = AuthorJobService()
-    preview = service.create_preview(type("PreviewRequest", (), {"prompt_seed": "seed", "random_seed": None})())
-
-    response = service.create_job(
-        type("JobRequest", (), {"prompt_seed": "different-seed", "random_seed": None, "preview_id": preview.preview_id})()
-    )
+    monkeypatch.setattr(service, "_start_background_job", lambda job_id, resume_from_checkpoint: None)
+    preview = service.create_preview(type("PreviewRequest", (), {"prompt_seed": "seed", "random_seed": None})(), actor_user_id="usr_preview")
+    try:
+        response = service.create_job(
+            type("JobRequest", (), {"prompt_seed": "different-seed", "random_seed": None, "preview_id": preview.preview_id})(),
+            actor_user_id="usr_preview",
+        )
+    finally:
+        jobs_module.get_author_llm_gateway = original_gateway_factory
 
     assert response.preview.preview_id == preview.preview_id
     assert response.preview.prompt_seed == preview.prompt_seed
+    assert response.progress.stage == "cast_planned"
+    assert response.status == "running"
+
+
+def test_author_job_routes_are_scoped_to_actor(monkeypatch) -> None:
+    import rpg_backend.author.jobs as jobs_module
+    import rpg_backend.main as main_module
+
+    original_gateway_factory = jobs_module.get_author_llm_gateway
+    original_author_service = main_module.author_job_service
+    jobs_module.get_author_llm_gateway = lambda: FakeGateway()
+    service = AuthorJobService()
+    monkeypatch.setattr(service, "_start_background_job", lambda job_id, resume_from_checkpoint: None)
+    main_module.author_job_service = service
+    alice_client = TestClient(app)
+    bob_client = TestClient(app)
+    try:
+        ensure_authenticated_client(alice_client, email="alice-author@example.com", display_name="Alice")
+        ensure_authenticated_client(bob_client, email="bob-author@example.com", display_name="Bob")
+        preview = alice_client.post("/author/story-previews", json={"prompt_seed": "seed"})
+        created = alice_client.post(
+            "/author/jobs",
+            json={"prompt_seed": "seed", "preview_id": preview.json()["preview_id"]},
+        )
+        hidden = bob_client.get(f"/author/jobs/{created.json()['job_id']}")
+        visible = alice_client.get(f"/author/jobs/{created.json()['job_id']}")
+    finally:
+        main_module.author_job_service = original_author_service
+        jobs_module.get_author_llm_gateway = original_gateway_factory
+
+    assert preview.status_code == 200
+    assert created.status_code == 200
+    assert hidden.status_code == 404
+    assert visible.status_code == 200
 
 
 def test_author_job_service_event_payload_includes_token_snapshot() -> None:
@@ -324,6 +447,7 @@ def test_author_job_service_event_payload_includes_token_snapshot() -> None:
     service = AuthorJobService()
     service._jobs["job-123"] = jobs_module._AuthorJobRecord(
         job_id="job-123",
+        owner_user_id="local-dev",
         prompt_seed="seed",
         preview=_preview_response("seed"),
         status="running",
@@ -355,20 +479,22 @@ def test_author_job_service_event_payload_includes_token_snapshot() -> None:
     assert payload["progress_snapshot"]["stage_label"] == "Cast roster drafted"
     assert payload["progress_snapshot"]["primary_theme"] == "logistics_quarantine_crisis"
     assert payload["progress_snapshot"]["cast_topology"] == "four_slot"
-    assert [card["card_id"] for card in payload["progress_snapshot"]["loading_cards"]] == [
+    cards = {card["card_id"]: card for card in payload["progress_snapshot"]["loading_cards"]}
+    assert set(cards) == {
         "theme",
-        "tone",
         "structure",
-        "cast_count",
-        "beat_count",
         "working_title",
-        "core_conflict",
+        "tone",
+        "story_premise",
+        "story_stakes",
+        "cast_count",
+        "cast_anchor",
         "generation_status",
         "token_budget",
-    ]
-    assert payload["progress_snapshot"]["loading_cards"][3]["value"] == "4 NPCs drafted"
-    assert payload["progress_snapshot"]["loading_cards"][4]["value"] == "3 planned beats"
-    assert payload["progress_snapshot"]["loading_cards"][7]["value"] == "Cast roster drafted. NPC tensions are in place."
+    }
+    assert cards["cast_count"]["value"] == "4 NPCs drafted"
+    assert cards["cast_anchor"]["value"] == "Mediator Anchor · Harbor inspector"
+    assert cards["generation_status"]["value"] == "Cast roster drafted. NPC tensions are in place."
     assert payload["token_usage"]["total_tokens"] == 300
     assert payload["token_cost_estimate"]["estimated_total_cost_rmb"] > 0
 
@@ -401,6 +527,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             )
         return jobs_module._AuthorJobRecord(
             job_id=f"job-{stage}",
+            owner_user_id="local-dev",
             prompt_seed="seed",
             preview=_preview_response("seed"),
             status="running" if stage != "completed" else "completed",
@@ -409,63 +536,54 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
         )
 
     scenarios = [
-        ("queued", 1, None, "4 planned NPCs", "3 planned beats", "Queued. Preparing generation graph.", "Waiting for first model call"),
+        ("queued", 1, None, {"theme", "structure", "generation_status", "token_budget"}, "Queued. Preparing generation graph.", "Waiting for first model call"),
         (
             "story_frame_ready",
             3,
             225,
-            "4 planned NPCs",
-            "3 planned beats",
+            {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "generation_status", "token_budget"},
             "Story frame drafted. Title, premise, and stakes are set.",
-            "225 total tokens · RMB 0.000141 est.",
+            "225 total tokens · USD 0.000020 est.",
         ),
         (
             "cast_ready",
             6,
             300,
-            "4 NPCs drafted",
-            "3 planned beats",
+            {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "generation_status", "token_budget"},
             "Cast roster drafted. NPC tensions are in place.",
-            "300 total tokens · RMB 0.000141 est.",
+            "300 total tokens · USD 0.000020 est.",
         ),
         (
             "beat_plan_ready",
             7,
             360,
-            "4 NPCs drafted",
-            "3 beats drafted",
+            {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "beat_count", "opening_beat", "final_beat", "generation_status", "token_budget"},
             "Beat plan drafted. Main progression is mapped.",
-            "360 total tokens · RMB 0.000141 est.",
+            "360 total tokens · USD 0.000020 est.",
         ),
         (
             "completed",
             10,
             570,
-            "4 NPCs drafted",
-            "3 beats drafted",
+            {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "beat_count", "opening_beat", "final_beat", "generation_status", "token_budget"},
             "Bundle complete. Story package is ready.",
-            "570 total tokens · RMB 0.000141 est.",
+            "570 total tokens · USD 0.000020 est.",
         ),
     ]
 
-    for stage, stage_index, total_tokens, cast_value, beat_value, status_value, token_value in scenarios:
+    for stage, stage_index, total_tokens, expected_card_ids, status_value, token_value in scenarios:
         snapshot = service._progress_snapshot(build_record(stage, stage_index, total_tokens))
-        assert [card.card_id for card in snapshot.loading_cards] == [
-            "theme",
-            "tone",
-            "structure",
-            "cast_count",
-            "beat_count",
-            "working_title",
-            "core_conflict",
-            "generation_status",
-            "token_budget",
-        ]
         cards = {card.card_id: card for card in snapshot.loading_cards}
-        assert cards["cast_count"].value == cast_value
-        assert cards["beat_count"].value == beat_value
+        assert set(cards) == expected_card_ids
         assert cards["generation_status"].value == status_value
         assert cards["token_budget"].value == token_value
+        if stage in {"cast_ready", "beat_plan_ready", "completed"}:
+            assert cards["cast_count"].value == "4 NPCs drafted"
+            assert cards["cast_anchor"].value == "Mediator Anchor · Harbor inspector"
+        if stage in {"beat_plan_ready", "completed"}:
+            assert cards["beat_count"].value == "3 beats drafted"
+            assert cards["opening_beat"].value == "The Quarantine Line: Stabilize the harbor perimeter."
+            assert cards["final_beat"].value == "The Harbor Compact: Lock in a recovery bargain."
 
 
 def test_author_job_routes_use_job_service(monkeypatch) -> None:
@@ -475,6 +593,7 @@ def test_author_job_routes_use_job_service(monkeypatch) -> None:
     main_module.author_job_service = _FakeAuthorJobService()
     client = TestClient(app)
     try:
+        ensure_authenticated_client(client, email="author-job-routes@example.com", display_name="Author Routes")
         create_response = client.post(
             "/author/jobs",
             json={"prompt_seed": "港口检疫官阻止城市崩溃"},
@@ -489,8 +608,9 @@ def test_author_job_routes_use_job_service(monkeypatch) -> None:
     assert status_response.status_code == 200
     assert status_response.json()["status"] == "running"
     assert status_response.json()["cache_metrics"]["session_cache_enabled"] is True
-    assert status_response.json()["progress_snapshot"]["loading_cards"][0]["card_id"] == "theme"
-    assert status_response.json()["progress_snapshot"]["loading_cards"][7]["value"] == "Story frame drafted. Title, premise, and stakes are set."
+    stage_cards = {card["card_id"]: card for card in status_response.json()["progress_snapshot"]["loading_cards"]}
+    assert {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "generation_status", "token_budget"} <= set(stage_cards)
+    assert stage_cards["generation_status"]["value"] == "Story frame drafted. Title, premise, and stakes are set."
     assert result_response.status_code == 200
     assert result_response.json()["summary"]["title"] == "The Harbor Compact"
     assert result_response.json()["progress_snapshot"]["stage_label"] == "Bundle complete"
@@ -505,6 +625,7 @@ def test_author_job_events_route_streams_sse(monkeypatch) -> None:
     main_module.author_job_service = _FakeAuthorJobService()
     client = TestClient(app)
     try:
+        ensure_authenticated_client(client, email="author-events@example.com", display_name="Author Events")
         response = client.get("/author/jobs/job-123/events")
     finally:
         main_module.author_job_service = original
@@ -528,6 +649,7 @@ def test_product_api_loading_copy_is_english_only(monkeypatch) -> None:
     main_module.author_job_service = _FakeAuthorJobService()
     client = TestClient(app)
     try:
+        ensure_authenticated_client(client, email="author-copy@example.com", display_name="Author Copy")
         preview_response = client.post(
             "/author/story-previews",
             json={"prompt_seed": "A harbor quarantine officer tries to stop a port city from collapsing into panic."},

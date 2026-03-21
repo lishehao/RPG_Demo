@@ -448,10 +448,14 @@ class AuthorLoadingCard(BaseModel):
         "theme",
         "tone",
         "structure",
+        "story_premise",
+        "story_stakes",
         "cast_count",
+        "cast_anchor",
         "beat_count",
         "working_title",
-        "core_conflict",
+        "opening_beat",
+        "final_beat",
         "generation_status",
         "token_budget",
     ]
@@ -614,7 +618,7 @@ class AuthorJobProgressSnapshot(BaseModel):
     preview_title: str = Field(min_length=1, max_length=120)
     preview_premise: str = Field(min_length=1, max_length=320)
     flashcards: list[AuthorPreviewFlashcard] = Field(default_factory=list, max_length=16)
-    loading_cards: list[AuthorLoadingCard] = Field(default_factory=list, max_length=12)
+    loading_cards: list[AuthorLoadingCard] = Field(default_factory=list, max_length=16)
 
 
 class AuthorTokenCostEstimate(BaseModel):

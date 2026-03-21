@@ -9,6 +9,7 @@ from rpg_backend.author.compiler.routes import (
 )
 from rpg_backend.author.compiler.router import plan_bundle_theme
 from rpg_backend.author.generation.context import build_author_context_from_bundle
+from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
 from rpg_backend.author.normalize import coerce_int
 from rpg_backend.author.contracts import DesignBundle, RouteAffordancePackDraft, RouteOpportunityPlanDraft
 
@@ -35,54 +36,6 @@ def _route_theme_guidance(primary_theme: str) -> str:
         "generic_civic_crisis": "Bias unlock routes toward civic pressure and institutional consequence.",
     }
     return mapping.get(primary_theme, mapping["generic_civic_crisis"])
-
-
-def _invoke_route_opportunity_with_retry(
-    gateway: "AuthorLLMGateway",
-    *,
-    payload: dict[str, Any],
-    prompts: tuple[str, ...],
-    previous_response_id: str | None,
-    max_output_tokens: int,
-    design_bundle: DesignBundle,
-):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
-
-    retryable_codes = {"llm_invalid_json", "llm_schema_invalid"}
-    attempt_prev = previous_response_id
-    last_error: Exception | None = None
-    for index, prompt in enumerate(prompts):
-        try:
-            raw = gateway._invoke_json(
-                system_prompt=prompt,
-                user_payload=payload,
-                max_output_tokens=max_output_tokens,
-                previous_response_id=attempt_prev,
-                operation_name="route_opportunity_generate",
-            )
-        except AuthorGatewayError as exc:
-            last_error = exc
-            if exc.code not in retryable_codes or index == len(prompts) - 1:
-                raise
-            continue
-        try:
-            value = RouteOpportunityPlanDraft.model_validate(
-                _normalize_route_opportunity_plan_payload(gateway, raw.payload, design_bundle)
-            )
-        except Exception as exc:  # noqa: BLE001
-            last_error = AuthorGatewayError(
-                code="llm_schema_invalid",
-                message=str(exc),
-                status_code=502,
-            )
-            attempt_prev = raw.response_id or attempt_prev
-            if index == len(prompts) - 1:
-                raise last_error from exc
-            continue
-        return GatewayStructuredResponse(value=value, response_id=raw.response_id or attempt_prev)
-    if isinstance(last_error, AuthorGatewayError):
-        raise last_error
-    raise AuthorGatewayError(code="llm_schema_invalid", message=str(last_error or "route opportunity generation failed"), status_code=502)
 
 
 def _normalize_condition_payload(gateway: "AuthorLLMGateway", conditions: Any) -> dict[str, Any]:
@@ -255,8 +208,9 @@ def generate_route_opportunity_plan_result(
     design_bundle: DesignBundle,
     *,
     previous_response_id: str | None = None,
+    primary_theme: str | None = None,
 ):
-    theme_decision = plan_bundle_theme(design_bundle)
+    resolved_primary_theme = primary_theme or plan_bundle_theme(design_bundle).primary_theme
     context_packet = build_author_context_from_bundle(design_bundle)
     payload = {"author_context": context_packet}
     system_prompt = (
@@ -268,7 +222,7 @@ def generate_route_opportunity_plan_result(
         "Allowed trigger kinds are: truth, axis, stance, flag, event. "
         "Use only ids that already exist in author_context. "
         "Prefer concrete unlock opportunities with 1-2 meaningful triggers over vague coverage. "
-        f"{_route_theme_guidance(theme_decision.primary_theme)}"
+        f"{_route_theme_guidance(resolved_primary_theme)}"
     )
     retry_prompt = (
         "Return only one JSON object matching RouteOpportunityPlanDraft. "
@@ -279,13 +233,16 @@ def generate_route_opportunity_plan_result(
         "Output raw JSON only. Exactly one object with key opportunities. "
         "Each opportunity needs beat_id, unlock_route_id, unlock_affordance_tag, and triggers. No extra keys."
     )
-    return _invoke_route_opportunity_with_retry(
+    return invoke_structured_generation_with_retries(
         gateway,
-        payload=payload,
+        primary_payload=payload,
         prompts=(system_prompt, retry_prompt, final_retry_prompt),
         previous_response_id=previous_response_id,
-        max_output_tokens=_route_opportunity_output_tokens(gateway, theme_decision.primary_theme),
-        design_bundle=design_bundle,
+        max_output_tokens=_route_opportunity_output_tokens(gateway, resolved_primary_theme),
+        operation_name="route_opportunity_generate",
+        parse_value=lambda raw_payload: RouteOpportunityPlanDraft.model_validate(
+            _normalize_route_opportunity_plan_payload(gateway, raw_payload, design_bundle)
+        ),
     )
 
 
@@ -295,8 +252,6 @@ def generate_route_affordance_pack_result(
     *,
     previous_response_id: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
-
     context_packet = build_author_context_from_bundle(design_bundle)
     payload = {"author_context": context_packet}
     system_prompt = (
@@ -308,22 +263,23 @@ def generate_route_affordance_pack_result(
         "Required top-level keys: route_unlock_rules, affordance_effect_profiles. "
         "Keep rules compact, deterministic-friendly, and non-graphic."
     )
-    raw = gateway._invoke_json(
-        system_prompt=system_prompt,
-        user_payload=payload,
-        max_output_tokens=gateway.max_output_tokens_rulepack,
-        previous_response_id=previous_response_id,
+    retry_prompt = (
+        "Return only one JSON object matching RouteAffordancePackDraft. "
+        "No markdown, no explanation, no extra keys. "
+        "Use concise route ids and only ids that already exist in author_context."
     )
-    try:
-        return GatewayStructuredResponse(
-            value=RouteAffordancePackDraft.model_validate(
-                _normalize_route_affordance_payload(gateway, raw.payload, design_bundle)
-            ),
-            response_id=raw.response_id,
-        )
-    except Exception as exc:  # noqa: BLE001
-        raise AuthorGatewayError(
-            code="llm_schema_invalid",
-            message=str(exc),
-            status_code=502,
-        ) from exc
+    final_retry_prompt = (
+        "Output raw JSON only. Exactly one object with keys route_unlock_rules and affordance_effect_profiles. "
+        "No prose outside JSON. No code fences. No extra keys."
+    )
+    return invoke_structured_generation_with_retries(
+        gateway,
+        primary_payload=payload,
+        prompts=(system_prompt, retry_prompt, final_retry_prompt),
+        previous_response_id=previous_response_id,
+        max_output_tokens=gateway.max_output_tokens_rulepack,
+        operation_name="route_affordance_generate",
+        parse_value=lambda raw_payload: RouteAffordancePackDraft.model_validate(
+            _normalize_route_affordance_payload(gateway, raw_payload, design_bundle)
+        ),
+    )

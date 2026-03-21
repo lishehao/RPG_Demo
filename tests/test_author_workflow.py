@@ -53,7 +53,8 @@ def test_author_graph_can_checkpoint_state_snapshot() -> None:
     assert snapshot.values["quality_trace"]
     assert {item["stage"] for item in snapshot.values["quality_trace"]} >= {"story_frame", "beat_plan", "route_affordance", "ending"}
     assert snapshot.values["design_bundle"].story_bible.title
-    assert snapshot.values["rule_pack"].ending_rules
+    assert snapshot.values["design_bundle"].rule_pack.ending_rules
+    assert "rule_pack" not in snapshot.values
     assert snapshot.values["author_session_response_id"]
 
 
@@ -69,6 +70,34 @@ def test_author_graph_generates_dynamic_number_of_cast_members_from_cast_overvie
     assert len(result.state["cast_member_drafts"]) == 4
     assert len(result.bundle.story_bible.cast) == 4
     assert result.bundle.story_bible.cast[-1].name == "Lio Maren"
+
+
+def test_author_preview_can_be_built_from_cast_overview_partial_state() -> None:
+    from rpg_backend.author.preview import build_author_preview_from_state
+    from tests.author_fixtures import author_fixture_bundle
+
+    fixture = author_fixture_bundle()
+    preview = build_author_preview_from_state(
+        preview_id="preview-partial",
+        prompt_seed="A royal archivist must prove a buried warning is real before the city locks itself into denial.",
+        state={
+            "focused_brief": fixture.focused_brief,
+            "primary_theme": "truth_record_crisis",
+            "theme_modifiers": ["archive"],
+            "theme_router_reason": "test",
+            "story_frame_strategy": "warning_record_story",
+            "cast_strategy": "warning_record_cast",
+            "beat_plan_strategy": "warning_record_compile",
+            "story_frame_draft": fixture.story_frame,
+            "cast_overview_draft": fixture.cast_overview,
+            "cast_topology": "four_slot",
+        },
+    )
+
+    assert preview.stage == "cast_planned"
+    assert preview.cast_slots
+    assert preview.structure.expected_npc_count >= 3
+    assert preview.beats
 
 
 def test_author_bundle_falls_back_to_default_rulepack_when_rulepack_payload_is_malformed() -> None:
@@ -246,3 +275,33 @@ def test_author_bundle_falls_back_to_default_overview_when_overview_payload_is_m
 
     assert result.bundle.story_bible.title
     assert result.bundle.beat_spine
+
+
+def test_author_graph_records_gameplay_semantics_stage_in_quality_trace() -> None:
+    result = run_author_bundle(
+        AuthorBundleRequest(
+            raw_brief="A harbor inspector must keep the dock coalition alive after missing manifests threaten emergency rule during quarantine."
+        ),
+        gateway=FakeGateway(),
+    )
+
+    assert result.state["gameplay_semantics_source"] in {"accepted", "repaired"}
+    assert any(item["stage"] == "gameplay_semantics" for item in result.state["quality_trace"])
+
+
+def test_author_bundle_repairs_overcollapsed_gameplay_semantics_profiles() -> None:
+    result = run_author_bundle(
+        AuthorBundleRequest(
+            raw_brief="A royal archivist must prove a buried storm warning is real before the capital locks itself into denial."
+        ),
+        gateway=FakeGateway(),
+    )
+
+    pressure_axes = {
+        axis_id
+        for profile in result.bundle.rule_pack.affordance_effect_profiles
+        for axis_id, delta in profile.axis_deltas.items()
+        if delta > 0
+    }
+
+    assert len(pressure_axes) >= 2

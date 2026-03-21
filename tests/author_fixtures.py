@@ -398,6 +398,8 @@ class FakeGateway:
         self.responses_by_operation = responses_by_operation or default_transport_responses()
         self.max_output_tokens_overview = 700
         self.max_output_tokens_beat_plan = 900
+        self.max_output_tokens_beat_skeleton = 900
+        self.max_output_tokens_beat_repair = 700
         self.max_output_tokens_rulepack = 900
         self.use_session_cache = False
         self.call_trace: list[dict[str, object]] = []
@@ -530,9 +532,7 @@ def narrow_route_diversity_gateway() -> FakeGateway:
 class LowQualityStoryFrameGateway(FakeGateway):
     def __init__(self) -> None:
         responses = default_transport_responses()
-        responses["story_frame_glean"] = [
-            AuthorGatewayError(code="llm_invalid_json", message="provider returned empty content", status_code=502)
-        ]
+        responses["story_frame_glean"] = repeated_gateway_error("llm_invalid_json")
         super().__init__(responses)
 
     def _invoke_json(

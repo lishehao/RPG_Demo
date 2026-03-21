@@ -30,7 +30,9 @@ from rpg_backend.author.compiler.rules import (
     build_default_route_affordance_pack,
     build_default_route_opportunity_plan,
     build_default_rule_pack,
+    bundle_affordance_tags,
     compile_route_opportunity_plan,
+    default_story_function_for_tag,
     merge_rule_pack,
     normalize_ending_rules_draft,
     normalize_route_affordance_pack,
@@ -38,9 +40,9 @@ from rpg_backend.author.compiler.rules import (
 )
 from rpg_backend.author.compiler.story import build_default_story_frame_draft
 from rpg_backend.author.contracts import (
+    AffordanceEffectProfile,
     AuthorBundleRequest,
     BeatPlanDraft,
-    BeatSpec,
     CastDraft,
     CastOverviewDraft,
     DesignBundle,
@@ -50,9 +52,6 @@ from rpg_backend.author.contracts import (
     OverviewCastDraft,
     RouteAffordancePackDraft,
     RouteOpportunityPlanDraft,
-    RulePack,
-    StateSchema,
-    StoryBible,
     StoryFrameDraft,
 )
 from rpg_backend.author.gateway import AuthorGatewayError, AuthorLLMGateway, get_author_llm_gateway
@@ -77,6 +76,7 @@ from rpg_backend.author.quality.story import (
     story_frame_should_repair,
 )
 from rpg_backend.author.quality.telemetry import QualityTraceRecord, append_quality_trace
+from rpg_backend.story_profiles import play_runtime_profile_from_bundle
 
 
 class AuthorState(TypedDict, total=False):
@@ -106,15 +106,12 @@ class AuthorState(TypedDict, total=False):
     route_opportunity_plan_source: str
     route_affordance_source: str
     ending_source: str
+    gameplay_semantics_source: str
     quality_trace: list[QualityTraceRecord]
-    story_bible: StoryBible
-    state_schema: StateSchema
-    beat_spine: list[BeatSpec]
     route_opportunity_plan_draft: RouteOpportunityPlanDraft
     route_affordance_pack_draft: RouteAffordancePackDraft
     ending_intent_draft: EndingIntentDraft
     ending_rules_draft: EndingRulesDraft
-    rule_pack: RulePack
     design_bundle: DesignBundle
     llm_call_trace: list[dict[str, Any]]
 
@@ -124,6 +121,110 @@ def _resolved_session_response_id(
     next_response_id: str | None,
 ) -> str | None:
     return next_response_id or prior_response_id
+
+
+def _rule_pack_primary_pressure_axes(bundle: DesignBundle) -> list[str]:
+    pressure_axes = {axis.axis_id for axis in bundle.state_schema.axes if axis.kind == "pressure"}
+    return [
+        axis_id
+        for profile in bundle.rule_pack.affordance_effect_profiles
+        for axis_id, delta in profile.axis_deltas.items()
+        if delta > 0 and axis_id in pressure_axes
+    ]
+
+
+def _gameplay_semantics_quality_reasons(bundle: DesignBundle) -> list[str]:
+    reasons: list[str] = []
+    pressure_axes = _rule_pack_primary_pressure_axes(bundle)
+    if pressure_axes and len(set(pressure_axes)) < 2:
+        reasons.append("single_pressure_axis_dominance")
+    meaningful_profiles = [
+        profile
+        for profile in bundle.rule_pack.affordance_effect_profiles
+        if profile.axis_deltas or profile.stance_deltas
+    ]
+    if len(meaningful_profiles) < 4:
+        reasons.append("thin_affordance_semantics")
+    ending_ids = {rule.ending_id for rule in bundle.rule_pack.ending_rules}
+    if len(ending_ids) < 3:
+        reasons.append("ending_rule_coverage_narrow")
+    distinct_trigger_axes = {
+        axis_id
+        for rule in bundle.rule_pack.ending_rules
+        for axis_id in rule.conditions.min_axes
+    }
+    if distinct_trigger_axes and len(distinct_trigger_axes) < 2:
+        reasons.append("ending_axis_collapse")
+    return reasons
+
+
+def _repaired_affordance_profiles(bundle: DesignBundle) -> list[AffordanceEffectProfile]:
+    runtime_profile = play_runtime_profile_from_bundle(bundle).runtime_policy_profile
+    axes_by_id = {axis.axis_id: axis for axis in bundle.state_schema.axes}
+    pressure_axis_id = next((axis.axis_id for axis in bundle.state_schema.axes if axis.kind == "pressure"), bundle.state_schema.axes[0].axis_id)
+    public_axis_id = "public_panic" if "public_panic" in axes_by_id else pressure_axis_id
+    resource_axis_id = "resource_strain" if "resource_strain" in axes_by_id else next((axis.axis_id for axis in bundle.state_schema.axes if axis.kind == "resource"), pressure_axis_id)
+    leverage_axis_id = "political_leverage" if "political_leverage" in axes_by_id else next((axis.axis_id for axis in bundle.state_schema.axes if axis.kind == "relationship"), pressure_axis_id)
+    support_axis_id = "ally_trust" if "ally_trust" in axes_by_id else leverage_axis_id
+    exposure_axis_id = "exposure_risk" if "exposure_risk" in axes_by_id else pressure_axis_id
+    institutional_axis_id = "system_integrity" if "system_integrity" in axes_by_id else exposure_axis_id
+    authored_by_tag = {profile.affordance_tag: profile for profile in bundle.rule_pack.affordance_effect_profiles}
+    repaired: list[AffordanceEffectProfile] = []
+    for tag in bundle_affordance_tags(bundle):
+        authored = authored_by_tag.get(tag)
+        axis_deltas: dict[str, int]
+        if tag == "reveal_truth":
+            if runtime_profile == "warning_record_play":
+                axis_deltas = {exposure_axis_id: 1}
+            elif runtime_profile == "archive_vote_play":
+                axis_deltas = {institutional_axis_id: 1}
+            elif runtime_profile in {"bridge_ration_play", "harbor_quarantine_play"}:
+                axis_deltas = {resource_axis_id: 1}
+            elif runtime_profile in {"blackout_council_play", "public_order_play"}:
+                axis_deltas = {public_axis_id: 1}
+            else:
+                axis_deltas = {exposure_axis_id: 1}
+        elif tag in {"build_trust", "unlock_ally"}:
+            axis_deltas = {support_axis_id: 1}
+        elif tag in {"contain_chaos", "protect_civilians"}:
+            axis_deltas = {public_axis_id: -1, leverage_axis_id: 1}
+        elif tag == "secure_resources":
+            axis_deltas = {resource_axis_id: -1, leverage_axis_id: 1}
+        elif tag == "shift_public_narrative":
+            axis_deltas = {leverage_axis_id: 1}
+        elif tag == "pay_cost":
+            axis_deltas = {pressure_axis_id: 1, public_axis_id: 1}
+        else:
+            axis_deltas = {pressure_axis_id: 1}
+        repaired.append(
+            AffordanceEffectProfile(
+                affordance_tag=tag,
+                default_story_function=(authored.default_story_function if authored is not None else default_story_function_for_tag(tag)),  # type: ignore[arg-type]
+                axis_deltas=axis_deltas,
+                stance_deltas=(authored.stance_deltas if authored is not None else {}),
+                can_add_truth=bool(authored.can_add_truth if authored is not None else tag == "reveal_truth"),
+                can_add_event=bool(authored.can_add_event if authored is not None else tag in {"shift_public_narrative", "pay_cost", "secure_resources"}),
+            )
+        )
+    return repaired
+
+
+def _repair_gameplay_semantics_bundle(bundle: DesignBundle) -> DesignBundle:
+    normalized_route_affordance_pack = normalize_route_affordance_pack(
+        RouteAffordancePackDraft(
+            route_unlock_rules=bundle.rule_pack.route_unlock_rules,
+            affordance_effect_profiles=_repaired_affordance_profiles(bundle),
+        ),
+        bundle,
+    )
+    normalized_endings = normalize_ending_rules_draft(
+        EndingRulesDraft(ending_rules=bundle.rule_pack.ending_rules),
+        bundle,
+    )
+    if len({rule.ending_id for rule in normalized_endings.ending_rules}) < 3:
+        normalized_endings = build_default_ending_rules(bundle)
+    repaired_rule_pack = merge_rule_pack(normalized_route_affordance_pack, normalized_endings)
+    return bundle.model_copy(update={"rule_pack": repaired_rule_pack})
 
 
 def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=None):
@@ -245,11 +346,11 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
             state["story_frame_draft"],
         )
         return {
-            "primary_theme": decision.primary_theme,
-            "theme_modifiers": list(decision.modifiers),
-            "theme_router_reason": decision.router_reason,
-            "cast_strategy": decision.cast_strategy,
-            "beat_plan_strategy": decision.beat_plan_strategy,
+            "primary_theme": state.get("primary_theme") or decision.primary_theme,
+            "theme_modifiers": list(state.get("theme_modifiers") or list(decision.modifiers)),
+            "theme_router_reason": state.get("theme_router_reason") or decision.router_reason,
+            "cast_strategy": state.get("cast_strategy") or decision.cast_strategy,
+            "beat_plan_strategy": state.get("beat_plan_strategy") or decision.beat_plan_strategy,
         }
 
     def plan_brief_theme_node(state: AuthorState) -> dict[str, Any]:
@@ -260,6 +361,10 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
                 "brief_theme_router_reason": state.get("brief_theme_router_reason") or "preview_locked_theme",
                 "story_frame_strategy": state["story_frame_strategy"],
                 "cast_strategy": state["cast_strategy"],
+                "primary_theme": state.get("primary_theme") or state["brief_primary_theme"],
+                "theme_modifiers": list(state.get("theme_modifiers") or state.get("brief_theme_modifiers") or []),
+                "theme_router_reason": state.get("theme_router_reason") or state.get("brief_theme_router_reason") or "preview_locked_theme",
+                "beat_plan_strategy": state.get("beat_plan_strategy") or "conservative_direct_draft",
             }
         decision = plan_brief_theme(state["focused_brief"])
         return {
@@ -267,7 +372,9 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
             "brief_theme_modifiers": list(decision.modifiers),
             "brief_theme_router_reason": decision.router_reason,
             "story_frame_strategy": decision.story_frame_strategy,
-            "cast_strategy": decision.cast_strategy,
+            "primary_theme": decision.primary_theme,
+            "theme_modifiers": list(decision.modifiers),
+            "theme_router_reason": decision.router_reason,
         }
 
     def generate_cast_members_node(state: AuthorState) -> dict[str, Any]:
@@ -311,6 +418,7 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
                     slot_payload,
                     existing_payload,
                     previous_response_id=latest_response_id,
+                    cast_strategy=state.get("cast_strategy"),
                 )
                 latest_response_id = _resolved_session_response_id(latest_response_id, generated.response_id)
                 member_seed = generated.value
@@ -339,6 +447,7 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
                         existing_payload,
                         member_seed.model_dump(mode="json"),
                         previous_response_id=latest_response_id,
+                        cast_strategy=state.get("cast_strategy"),
                     )
                     latest_response_id = _resolved_session_response_id(latest_response_id, gleaned.response_id)
                     glean_reasons = cast_member_quality_reasons(gleaned.value, existing_names, slot)
@@ -401,6 +510,8 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
                 state["story_frame_draft"],
                 state["cast_draft"],
                 previous_response_id=prior_response_id,
+                primary_theme=state.get("primary_theme"),
+                beat_plan_strategy=state.get("beat_plan_strategy"),
             )
         except AuthorGatewayError as exc:
             if exc.code not in {"llm_invalid_json", "llm_schema_invalid"}:
@@ -438,6 +549,8 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
                     state["cast_draft"],
                     beat_plan_draft,
                     previous_response_id=latest_response_id,
+                    primary_theme=state.get("primary_theme"),
+                    beat_plan_strategy=state.get("beat_plan_strategy"),
                 )
                 latest_response_id = _resolved_session_response_id(latest_response_id, gleaned.response_id)
                 glean_reasons = beat_plan_quality_reasons(
@@ -490,12 +603,7 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
             state["beat_plan_draft"],
             state["focused_brief"],
         )
-        return {
-            "story_bible": bundle.story_bible,
-            "state_schema": bundle.state_schema,
-            "beat_spine": bundle.beat_spine,
-            "design_bundle": bundle,
-        }
+        return {"design_bundle": bundle}
 
     def generate_route_opportunity_plan_node(state: AuthorState) -> dict[str, Any]:
         design_bundle = state["design_bundle"]
@@ -505,6 +613,7 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
                 resolved_gateway,
                 design_bundle,
                 previous_response_id=prior_response_id,
+                primary_theme=state.get("primary_theme"),
             )
         except AuthorGatewayError as exc:
             if exc.code not in {"llm_invalid_json", "llm_schema_invalid"}:
@@ -570,6 +679,7 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
                 resolved_gateway,
                 design_bundle,
                 previous_response_id=prior_response_id,
+                primary_theme=state.get("primary_theme"),
             )
         except AuthorGatewayError as exc:
             if exc.code not in {"llm_invalid_json", "llm_schema_invalid"}:
@@ -608,6 +718,7 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
                     design_bundle,
                     generated.value,
                     previous_response_id=latest_response_id,
+                    primary_theme=state.get("primary_theme"),
                 )
                 latest_response_id = _resolved_session_response_id(latest_response_id, gleaned.response_id)
                 ending_intent = merge_ending_anchor_suggestions(
@@ -665,8 +776,34 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
             state["ending_rules_draft"],
         )
         return {
-            "rule_pack": rule_pack,
             "design_bundle": design_bundle.model_copy(update={"rule_pack": rule_pack}),
+        }
+
+    def repair_gameplay_semantics_node(state: AuthorState) -> dict[str, Any]:
+        design_bundle = state["design_bundle"]
+        reasons = _gameplay_semantics_quality_reasons(design_bundle)
+        if not reasons:
+            return {
+                "gameplay_semantics_source": "accepted",
+                "quality_trace": append_quality_trace(
+                    state.get("quality_trace"),
+                    stage="gameplay_semantics",
+                    source="compiled",
+                    outcome="accepted",
+                    reasons=[],
+                ),
+            }
+        repaired_bundle = _repair_gameplay_semantics_bundle(design_bundle)
+        return {
+            "design_bundle": repaired_bundle,
+            "gameplay_semantics_source": "repaired",
+            "quality_trace": append_quality_trace(
+                state.get("quality_trace"),
+                stage="gameplay_semantics",
+                source="compiled",
+                outcome="repaired",
+                reasons=reasons,
+            ),
         }
 
     graph = StateGraph(AuthorState)
@@ -683,6 +820,7 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
     graph.add_node("compile_route_affordance_pack", compile_route_affordance_pack_node)
     graph.add_node("generate_ending_rules", generate_ending_rules_node)
     graph.add_node("merge_rule_pack", merge_rule_pack_node)
+    graph.add_node("repair_gameplay_semantics", repair_gameplay_semantics_node)
     graph.add_edge(START, "focus_brief")
     graph.add_edge("focus_brief", "plan_brief_theme")
     graph.add_edge("plan_brief_theme", "generate_story_frame")
@@ -696,7 +834,8 @@ def build_author_graph(*, gateway: AuthorLLMGateway | None = None, checkpointer=
     graph.add_edge("generate_route_opportunity_plan", "compile_route_affordance_pack")
     graph.add_edge("compile_route_affordance_pack", "generate_ending_rules")
     graph.add_edge("generate_ending_rules", "merge_rule_pack")
-    graph.add_edge("merge_rule_pack", END)
+    graph.add_edge("merge_rule_pack", "repair_gameplay_semantics")
+    graph.add_edge("repair_gameplay_semantics", END)
     return graph.compile(checkpointer=checkpointer or get_author_checkpointer())
 
 

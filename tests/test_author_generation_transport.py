@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from rpg_backend.author.contracts import FocusedBrief
 from rpg_backend.author.gateway import AuthorGatewayError, AuthorLLMGateway
@@ -9,6 +10,7 @@ from rpg_backend.author.generation import cast as cast_generation
 from rpg_backend.author.generation import endings as ending_generation
 from rpg_backend.author.generation import routes as route_generation
 from rpg_backend.author.generation import story_frame as story_generation
+from rpg_backend.responses_transport import usage_to_dict
 from tests.author_fixtures import (
     FakeClient,
     author_fixture_bundle,
@@ -29,9 +31,52 @@ def _gateway(client: FakeClient) -> AuthorLLMGateway:
         timeout_seconds=20.0,
         max_output_tokens_overview=700,
         max_output_tokens_beat_plan=900,
+        max_output_tokens_beat_skeleton=900,
+        max_output_tokens_beat_repair=700,
         max_output_tokens_rulepack=900,
         use_session_cache=True,
     )
+
+
+def test_shared_transport_usage_normalizer_extracts_cache_fields() -> None:
+    usage = usage_to_dict(
+        {
+            "input_tokens": 120,
+            "output_tokens": 40,
+            "total_tokens": 160,
+            "output_tokens_details": {"reasoning_tokens": 12},
+            "x_details": [
+                {
+                    "x_billing_type": "response_api",
+                    "prompt_tokens_details": {
+                        "cached_tokens": 60,
+                        "cache_creation_input_tokens": 20,
+                        "cache_type": "ephemeral",
+                    },
+                }
+            ],
+        }
+    )
+
+    assert usage["input_tokens"] == 120
+    assert usage["cached_input_tokens"] == 60
+    assert usage["cache_creation_input_tokens"] == 20
+    assert usage["billing_type"] == "response_api"
+    assert usage["cache_type"] == "ephemeral"
+
+
+def test_shared_transport_is_single_usage_normalizer_definition() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    matches: list[str] = []
+    for path in (repo_root / "rpg_backend").rglob("*.py"):
+        if "def usage_to_dict" in path.read_text():
+            matches.append(path.relative_to(repo_root).as_posix())
+    assert matches == ["rpg_backend/responses_transport.py"]
+
+
+def test_play_router_module_removed_after_shared_story_profile_refactor() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    assert not (repo_root / "rpg_backend" / "play" / "router.py").exists()
 
 
 def test_gateway_formats_requests_and_parses_models() -> None:
@@ -72,7 +117,7 @@ def test_gateway_formats_requests_and_parses_models() -> None:
     assert cast.value.cast[0].name == "Envoy Iri"
     assert beat_plan.value.beats[0].title == "The First Nightfall"
     assert client.calls[0]["model"] == "demo-model"
-    assert client.calls[0]["max_output_tokens"] == 800
+    assert client.calls[0]["max_output_tokens"] == 900
     assert "Return one strict JSON object matching StoryFrameScaffoldDraft" in client.calls[0]["instructions"]
     assert "Return one strict JSON object matching CastOverviewDraft" in client.calls[1]["instructions"]
     assert "Return one strict JSON object matching CastDraft" in client.calls[2]["instructions"]
@@ -305,3 +350,69 @@ def test_rule_generation_uses_author_context_packets() -> None:
     assert "beat_spine" not in route_payload
     assert "author_context" in ending_payload
     assert "story_bible" not in ending_payload
+
+
+def test_gateway_retries_story_frame_glean_after_invalid_json() -> None:
+    client = FakeClient(
+        [
+            "not json at all",
+            story_frame_draft().model_dump(mode="json"),
+        ]
+    )
+    gateway = _gateway(client)
+    fixture = author_fixture_bundle()
+
+    repaired = story_generation.glean_story_frame(
+        gateway,
+        fixture.focused_brief,
+        fixture.story_frame,
+        previous_response_id="resp-start",
+    )
+
+    assert len(client.calls) == 2
+    assert repaired.value.title == fixture.story_frame.title
+    assert client.calls[0]["previous_response_id"] == "resp-start"
+    assert client.calls[1]["previous_response_id"] == "resp-start"
+
+
+def test_gateway_retries_route_affordance_generation_after_invalid_json() -> None:
+    fixture = author_fixture_bundle()
+    client = FakeClient(
+        [
+            "not json at all",
+            {
+                "route_unlock_rules": [
+                    {
+                        "rule_id": "b1_unlock",
+                        "beat_id": "b1",
+                        "conditions": {"required_truths": ["truth_1"]},
+                        "unlock_route_id": "b1_reveal_truth_route",
+                        "unlock_affordance_tag": "reveal_truth",
+                    }
+                ],
+                "affordance_effect_profiles": [
+                    {
+                        "affordance_tag": "reveal_truth",
+                        "default_story_function": "reveal",
+                        "axis_deltas": {"external_pressure": 1},
+                        "stance_deltas": {},
+                        "can_add_truth": True,
+                        "can_add_event": False,
+                    }
+                ],
+            },
+        ]
+    )
+    gateway = _gateway(client)
+
+    pack = route_generation.generate_route_affordance_pack_result(
+        gateway,
+        fixture.design_bundle,
+        previous_response_id="resp-route",
+    )
+
+    assert len(client.calls) == 2
+    assert pack.value.route_unlock_rules
+    assert pack.value.affordance_effect_profiles
+    assert client.calls[0]["previous_response_id"] == "resp-route"
+    assert client.calls[1]["previous_response_id"] == "resp-route"

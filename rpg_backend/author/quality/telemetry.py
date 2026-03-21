@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Literal, NotRequired, TypedDict
+from typing import Literal
+from typing_extensions import NotRequired, TypedDict
 
 
-StageName = Literal["story_frame", "cast_overview", "cast_member", "beat_plan", "route_affordance", "ending"]
+StageName = Literal["story_frame", "cast_overview", "cast_member", "beat_plan", "route_affordance", "ending", "gameplay_semantics"]
 SourceName = Literal["generated", "gleaned", "default", "compiled"]
 OutcomeName = Literal["accepted", "repaired", "rejected", "fallback"]
 

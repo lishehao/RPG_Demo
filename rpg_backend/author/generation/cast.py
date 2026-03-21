@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from rpg_backend.author.compiler.cast import compile_cast_member_semantics, is_legitimacy_broker_slot
 from rpg_backend.author.compiler.router import plan_story_theme
+from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
 from rpg_backend.author.contracts import (
     CastDraft,
     CastMemberSemanticsDraft,
@@ -23,7 +24,7 @@ def _cast_member_max_output_tokens(gateway: "AuthorLLMGateway", cast_strategy: s
     if budget is None:
         return 520
     floor = 420
-    if cast_strategy in {"legitimacy_cast", "public_order_cast"}:
+    if cast_strategy in {"legitimacy_cast", "public_order_cast", "blackout_referendum_cast", "archive_vote_cast"}:
         floor = 520
     return max(floor, min(int(budget), 760))
 
@@ -38,6 +39,11 @@ def _cast_overview_max_output_tokens(gateway: "AuthorLLMGateway", cast_strategy:
 
 def _cast_theme_guidance(cast_strategy: str) -> str:
     mapping = {
+        "bridge_ration_cast": "Bias the cast toward bridge stewards, quartermasters, ward delegates, and ration chokepoint bargaining.",
+        "harbor_quarantine_cast": "Bias the cast toward harbor wardens, manifest clerks, dock brokers, quarantine enforcers, and civic oversight witnesses.",
+        "blackout_referendum_cast": "Bias the cast toward ombudsman-facing delegates, blackout clerks, neighborhood council brokers, and rumor-bearing civic witnesses.",
+        "archive_vote_cast": "Bias the cast toward archivists, clerks, witnesses, certifying authorities, and actors who control chain of custody.",
+        "warning_record_cast": "Bias the cast toward observatory staff, chamber clerks, warning suppressors, and officials who fear public alarm.",
         "legitimacy_cast": "Bias the cast toward coalition bargaining, public mandates, procedural leverage, and visible civic responsibility.",
         "logistics_cast": "Bias the cast toward inspection authority, supply chokepoints, quarantine enforcement, and scarcity bargaining.",
         "truth_record_cast": "Bias the cast toward records, witnesses, testimony control, evidence custody, and procedural proof.",
@@ -267,53 +273,21 @@ def _generate_cast_member_semantics_result(
     cast_strategy: str,
     high_risk_slot: bool = False,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
-
-    retryable_codes = {"llm_invalid_json", "llm_schema_invalid"}
-    attempt_prev = previous_response_id
-    last_error: Exception | None = None
-    for index, prompt in enumerate(prompts):
-        payload = primary_payload if index < len(prompts) - 1 else final_retry_payload
-        try:
-            raw = gateway._invoke_json(
-                system_prompt=prompt,
-                user_payload=payload,
-                max_output_tokens=_cast_member_max_output_tokens(gateway, cast_strategy) + (180 if high_risk_slot else 0),
-                previous_response_id=attempt_prev,
-                operation_name="cast_member_semantics",
+    return invoke_structured_generation_with_retries(
+        gateway,
+        primary_payload=primary_payload,
+        final_retry_payload=final_retry_payload,
+        prompts=prompts,
+        previous_response_id=previous_response_id,
+        max_output_tokens=_cast_member_max_output_tokens(gateway, cast_strategy) + (180 if high_risk_slot else 0),
+        operation_name="cast_member_semantics",
+        parse_value=lambda raw_payload: CastMemberSemanticsDraft.model_validate(
+            _normalize_cast_member_semantics_payload(
+                gateway,
+                raw_payload,
+                slot_label=slot_label,
             )
-        except AuthorGatewayError as exc:
-            last_error = exc
-            if exc.code not in retryable_codes or index == len(prompts) - 1:
-                raise
-            continue
-        try:
-            semantics = CastMemberSemanticsDraft.model_validate(
-                _normalize_cast_member_semantics_payload(
-                    gateway,
-                    raw.payload,
-                    slot_label=slot_label,
-                )
-            )
-            return GatewayStructuredResponse(
-                value=semantics,
-                response_id=raw.response_id,
-            )
-        except Exception as exc:  # noqa: BLE001
-            last_error = exc
-            attempt_prev = raw.response_id or attempt_prev
-            if index == len(prompts) - 1:
-                raise AuthorGatewayError(
-                    code="llm_schema_invalid",
-                    message=str(exc),
-                    status_code=502,
-                ) from exc
-    if isinstance(last_error, AuthorGatewayError):
-        raise last_error
-    raise AuthorGatewayError(
-        code="llm_schema_invalid",
-        message=str(last_error or "cast member generation failed"),
-        status_code=502,
+        ),
     )
 
 
@@ -323,41 +297,33 @@ def generate_cast_overview(
     story_frame: StoryFrameDraft,
     *,
     previous_response_id: str | None = None,
+    cast_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
-
     payload: dict[str, Any] = {
         "story_frame": story_frame.model_dump(mode="json"),
     }
     if not (gateway.use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
-    theme_decision = plan_story_theme(focused_brief, story_frame)
+    resolved_cast_strategy = cast_strategy or plan_story_theme(focused_brief, story_frame).cast_strategy
     system_prompt = (
         "You are the Cast Overview generator. Return one strict JSON object matching CastOverviewDraft. "
         "Do not output markdown. Design 3-5 cast slots that describe the broad social and conflict structure before character specifics are written. "
         "Each cast slot must include: slot_label, public_role, relationship_to_protagonist, agenda_anchor, red_line_anchor, pressure_vector. "
         "Keep the slots distinct in function and pressure behavior. "
         "Also return 2-6 relationship_summary lines that explain the broad conflict web across the cast. "
-        f"{_cast_theme_guidance(theme_decision.cast_strategy)}"
+        f"{_cast_theme_guidance(resolved_cast_strategy)}"
     )
-    raw = gateway._invoke_json(
-        system_prompt=system_prompt,
-        user_payload=payload,
-        max_output_tokens=_cast_overview_max_output_tokens(gateway, theme_decision.cast_strategy),
+    return invoke_structured_generation_with_retries(
+        gateway,
+        primary_payload=payload,
+        prompts=(system_prompt,),
         previous_response_id=previous_response_id,
+        max_output_tokens=_cast_overview_max_output_tokens(gateway, resolved_cast_strategy),
         operation_name="cast_overview_generate",
+        parse_value=lambda raw_payload: CastOverviewDraft.model_validate(
+            _normalize_cast_overview_payload(gateway, raw_payload)
+        ),
     )
-    try:
-        return GatewayStructuredResponse(
-            value=CastOverviewDraft.model_validate(_normalize_cast_overview_payload(gateway, raw.payload)),
-            response_id=raw.response_id,
-        )
-    except Exception as exc:  # noqa: BLE001
-        raise AuthorGatewayError(
-            code="llm_schema_invalid",
-            message=str(exc),
-            status_code=502,
-        ) from exc
 
 
 def glean_cast_overview(
@@ -367,42 +333,34 @@ def glean_cast_overview(
     partial_cast_overview: CastOverviewDraft,
     *,
     previous_response_id: str | None = None,
+    cast_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
-
     payload: dict[str, Any] = {
         "story_frame": story_frame.model_dump(mode="json"),
         "partial_cast_overview": partial_cast_overview.model_dump(mode="json"),
     }
     if not (gateway.use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
-    theme_decision = plan_story_theme(focused_brief, story_frame)
+    resolved_cast_strategy = cast_strategy or plan_story_theme(focused_brief, story_frame).cast_strategy
     system_prompt = (
         "You are the Cast Overview repair generator. Return one strict JSON object matching CastOverviewDraft. "
         "Improve the existing partial_cast_overview instead of replacing it wholesale. "
         "Keep any specific useful slot labels, roles, and relationship structure that already fit the story. "
         "Replace placeholder or generic slot text with sharper conflict structure. "
         "Return a complete CastOverviewDraft with 3-5 cast slots and 2-6 relationship_summary lines. "
-        f"{_cast_theme_guidance(theme_decision.cast_strategy)}"
+        f"{_cast_theme_guidance(resolved_cast_strategy)}"
     )
-    raw = gateway._invoke_json(
-        system_prompt=system_prompt,
-        user_payload=payload,
-        max_output_tokens=_cast_overview_max_output_tokens(gateway, theme_decision.cast_strategy),
+    return invoke_structured_generation_with_retries(
+        gateway,
+        primary_payload=payload,
+        prompts=(system_prompt,),
         previous_response_id=previous_response_id,
+        max_output_tokens=_cast_overview_max_output_tokens(gateway, resolved_cast_strategy),
         operation_name="cast_overview_glean",
+        parse_value=lambda raw_payload: CastOverviewDraft.model_validate(
+            _normalize_cast_overview_payload(gateway, raw_payload)
+        ),
     )
-    try:
-        return GatewayStructuredResponse(
-            value=CastOverviewDraft.model_validate(_normalize_cast_overview_payload(gateway, raw.payload)),
-            response_id=raw.response_id,
-        )
-    except Exception as exc:  # noqa: BLE001
-        raise AuthorGatewayError(
-            code="llm_schema_invalid",
-            message=str(exc),
-            status_code=502,
-        ) from exc
 
 
 def generate_story_cast(
@@ -412,16 +370,15 @@ def generate_story_cast(
     cast_overview: CastOverviewDraft,
     *,
     previous_response_id: str | None = None,
+    cast_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
-
     payload: dict[str, Any] = {
         "story_frame": story_frame.model_dump(mode="json"),
         "cast_overview": cast_overview.model_dump(mode="json"),
     }
     if not (gateway.use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
-    theme_decision = plan_story_theme(focused_brief, story_frame)
+    resolved_cast_strategy = cast_strategy or plan_story_theme(focused_brief, story_frame).cast_strategy
     system_prompt = (
         "You are the NPC Ensemble generator. Return one strict JSON object matching CastDraft. "
         "Do not output markdown. Design 3-5 named civic actors with distinct agendas, red lines, and pressure signatures. "
@@ -429,26 +386,17 @@ def generate_story_cast(
         "Keep them specific to the existing story frame rather than generic archetypes. "
         "Agendas should realize agenda_anchor, red_line should realize red_line_anchor, "
         "and pressure_signature should realize pressure_vector in concrete character language. "
-        f"{_cast_theme_guidance(theme_decision.cast_strategy)}"
+        f"{_cast_theme_guidance(resolved_cast_strategy)}"
     )
-    raw = gateway._invoke_json(
-        system_prompt=system_prompt,
-        user_payload=payload,
-        max_output_tokens=_cast_overview_max_output_tokens(gateway, theme_decision.cast_strategy),
+    return invoke_structured_generation_with_retries(
+        gateway,
+        primary_payload=payload,
+        prompts=(system_prompt,),
         previous_response_id=previous_response_id,
+        max_output_tokens=_cast_overview_max_output_tokens(gateway, resolved_cast_strategy),
         operation_name="cast_generate_full",
+        parse_value=lambda raw_payload: CastDraft.model_validate(_normalize_cast_payload(gateway, raw_payload)),
     )
-    try:
-        return GatewayStructuredResponse(
-            value=CastDraft.model_validate(_normalize_cast_payload(gateway, raw.payload)),
-            response_id=raw.response_id,
-        )
-    except Exception as exc:  # noqa: BLE001
-        raise AuthorGatewayError(
-            code="llm_schema_invalid",
-            message=str(exc),
-            status_code=502,
-        ) from exc
 
 
 def generate_story_cast_member(
@@ -459,10 +407,12 @@ def generate_story_cast_member(
     existing_cast: list[dict[str, Any]],
     *,
     previous_response_id: str | None = None,
+    cast_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
+    from rpg_backend.author.gateway import AuthorGatewayError
+    from rpg_backend.responses_transport import StructuredResponse
 
-    theme_decision = plan_story_theme(focused_brief, story_frame)
+    resolved_cast_strategy = cast_strategy or plan_story_theme(focused_brief, story_frame).cast_strategy
     payload: dict[str, Any] = {
         "story_frame": story_frame.model_dump(mode="json"),
         "cast_slot": cast_slot,
@@ -474,13 +424,13 @@ def generate_story_cast_member(
             "cast_slot": cast_slot,
             "existing_cast": _slim_existing_cast(existing_cast),
             "theme_hint": {
-                "cast_strategy": theme_decision.cast_strategy,
+                "cast_strategy": resolved_cast_strategy,
             },
         }
     else:
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     slot = _cast_slot_from_payload(cast_slot)
-    high_risk_slot = is_legitimacy_broker_slot(theme_decision.cast_strategy, slot)
+    high_risk_slot = is_legitimacy_broker_slot(resolved_cast_strategy, slot)
     final_retry_payload = {
         "cast_slot": cast_slot,
         "existing_cast": existing_cast,
@@ -495,7 +445,7 @@ def generate_story_cast_member(
         "The new character must differ from existing_cast in tactic and pressure behavior. "
         "Avoid placeholder names and do not use the slot label or public role as the character name. "
         "Use cast_slot.counter_trait and cast_slot.pressure_tell to keep the details concrete. "
-        f"{_cast_theme_guidance(theme_decision.cast_strategy)}"
+        f"{_cast_theme_guidance(resolved_cast_strategy)}"
     )
     if high_risk_slot:
         system_prompt += (
@@ -525,10 +475,10 @@ def generate_story_cast_member(
             prompts=(system_prompt, retry_prompt, final_retry_prompt),
             slot_label=slot.slot_label,
             previous_response_id=previous_response_id,
-            cast_strategy=theme_decision.cast_strategy,
+            cast_strategy=resolved_cast_strategy,
             high_risk_slot=high_risk_slot,
         )
-        return GatewayStructuredResponse(
+        return StructuredResponse(
             value=compile_cast_member_semantics(
                 semantics_result.value,
                 slot,
@@ -557,10 +507,12 @@ def glean_story_cast_member(
     partial_member: dict[str, Any],
     *,
     previous_response_id: str | None = None,
+    cast_strategy: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
+    from rpg_backend.author.gateway import AuthorGatewayError
+    from rpg_backend.responses_transport import StructuredResponse
 
-    theme_decision = plan_story_theme(focused_brief, story_frame)
+    resolved_cast_strategy = cast_strategy or plan_story_theme(focused_brief, story_frame).cast_strategy
     payload: dict[str, Any] = {
         "story_frame": story_frame.model_dump(mode="json"),
         "cast_slot": cast_slot,
@@ -574,13 +526,13 @@ def glean_story_cast_member(
             "existing_cast": _slim_existing_cast(existing_cast),
             "partial_member": partial_member,
             "theme_hint": {
-                "cast_strategy": theme_decision.cast_strategy,
+                "cast_strategy": resolved_cast_strategy,
             },
         }
     else:
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     slot = _cast_slot_from_payload(cast_slot)
-    high_risk_slot = is_legitimacy_broker_slot(theme_decision.cast_strategy, slot)
+    high_risk_slot = is_legitimacy_broker_slot(resolved_cast_strategy, slot)
     final_retry_payload = {
         "cast_slot": cast_slot,
         "partial_member": partial_member,
@@ -594,7 +546,7 @@ def glean_story_cast_member(
         "Preserve any good person-like name if it fits the cast_slot. "
         "If the name is too close to cast_slot.slot_label or cast_slot.public_role, replace it with a person-like name. "
         "Sharpen vague details so the character becomes concrete and distinct. "
-        f"{_cast_theme_guidance(theme_decision.cast_strategy)}"
+        f"{_cast_theme_guidance(resolved_cast_strategy)}"
     )
     if high_risk_slot:
         system_prompt += (
@@ -623,10 +575,10 @@ def glean_story_cast_member(
             prompts=(system_prompt, retry_prompt, final_retry_prompt),
             slot_label=slot.slot_label,
             previous_response_id=previous_response_id,
-            cast_strategy=theme_decision.cast_strategy,
+            cast_strategy=resolved_cast_strategy,
             high_risk_slot=high_risk_slot,
         )
-        return GatewayStructuredResponse(
+        return StructuredResponse(
             value=compile_cast_member_semantics(
                 semantics_result.value,
                 slot,
@@ -655,8 +607,6 @@ def glean_story_cast(
     *,
     previous_response_id: str | None = None,
 ):
-    from rpg_backend.author.gateway import AuthorGatewayError, GatewayStructuredResponse
-
     payload: dict[str, Any] = {
         "story_frame": story_frame.model_dump(mode="json"),
         "cast_overview": cast_overview.model_dump(mode="json"),
@@ -671,21 +621,12 @@ def glean_story_cast(
         "Replace placeholder names and generic agenda, red_line, or pressure_signature text with concrete character language. "
         "Use cast_overview as the binding scaffold and return a complete CastDraft."
     )
-    raw = gateway._invoke_json(
-        system_prompt=system_prompt,
-        user_payload=payload,
-        max_output_tokens=gateway.max_output_tokens_overview,
+    return invoke_structured_generation_with_retries(
+        gateway,
+        primary_payload=payload,
+        prompts=(system_prompt,),
         previous_response_id=previous_response_id,
+        max_output_tokens=gateway.max_output_tokens_overview,
         operation_name="cast_glean_full",
+        parse_value=lambda raw_payload: CastDraft.model_validate(_normalize_cast_payload(gateway, raw_payload)),
     )
-    try:
-        return GatewayStructuredResponse(
-            value=CastDraft.model_validate(_normalize_cast_payload(gateway, raw.payload)),
-            response_id=raw.response_id,
-        )
-    except Exception as exc:  # noqa: BLE001
-        raise AuthorGatewayError(
-            code="llm_schema_invalid",
-            message=str(exc),
-            status_code=502,
-        ) from exc

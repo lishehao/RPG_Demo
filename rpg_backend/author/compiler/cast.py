@@ -212,6 +212,42 @@ def plan_cast_topology(
     )
 
 
+def _coerce_topology_plan(
+    topology_plan: CastTopologyPlan,
+    *,
+    focused_brief: FocusedBrief,
+    story_frame: StoryFrameDraft,
+    topology_override: str | None,
+) -> CastTopologyPlan:
+    if topology_override not in {"three_slot", "four_slot"}:
+        return topology_plan
+    if topology_override == topology_plan.topology:
+        return topology_plan
+    slot_archetypes = list(topology_plan.slot_archetypes[:3])
+    if len(slot_archetypes) < 3:
+        slot_archetypes.extend(["civic_mediator", "archive_guardian", "leverage_broker"][len(slot_archetypes):3])
+    if topology_override == "four_slot":
+        haystack = " ".join(
+            [
+                focused_brief.setting_signal,
+                focused_brief.core_conflict,
+                story_frame.title,
+                story_frame.premise,
+            ]
+        ).casefold()
+        fourth_slot = (
+            "dock_delegate"
+            if any(keyword in haystack for keyword in HARBOR_FOURTH_SLOT_KEYWORDS)
+            else "public_witness"
+        )
+        slot_archetypes.append(fourth_slot)
+    return CastTopologyPlan(
+        topology=topology_override,
+        slot_archetypes=tuple(slot_archetypes[:4] if topology_override == "four_slot" else slot_archetypes[:3]),
+        planner_reason="forced_topology_override",
+    )
+
+
 def derive_cast_overview_draft(
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
@@ -219,12 +255,12 @@ def derive_cast_overview_draft(
     topology_override: str | None = None,
 ) -> CastOverviewDraft:
     topology_plan = plan_cast_topology(focused_brief, story_frame)
-    if topology_override:
-        topology_plan = CastTopologyPlan(
-            topology=topology_override,
-            slot_archetypes=topology_plan.slot_archetypes,
-            planner_reason="forced_topology_override",
-        )
+    topology_plan = _coerce_topology_plan(
+        topology_plan,
+        focused_brief=focused_brief,
+        story_frame=story_frame,
+        topology_override=topology_override,
+    )
     cast_slots = [
         _build_cast_slot_from_archetype(topology_plan.slot_archetypes[0], "protagonist_bears_public_weight"),
         _build_cast_slot_from_archetype(topology_plan.slot_archetypes[1], "improvisation_vs_procedure"),

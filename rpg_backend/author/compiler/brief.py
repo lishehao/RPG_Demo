@@ -102,7 +102,12 @@ def _extract_tone_signal(text: str) -> str:
             fallback_terms.append(term)
     if fallback_terms:
         return " ".join(dict.fromkeys(fallback_terms))
-    return trim_ellipsis(text, 120)
+    lowered = text.casefold()
+    if any(term in lowered for term in ("archive", "record", "ledger", "audit", "vote", "council", "blackout")):
+        return "Tense procedural thriller"
+    if any(term in lowered for term in ("quarantine", "ration", "bridge", "flood", "harbor", "port", "convoy")):
+        return "Tense bureaucratic thriller"
+    return "Tense civic drama"
 
 
 def _split_protagonist_and_mission(text: str) -> tuple[str, str]:
