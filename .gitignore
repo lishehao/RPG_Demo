@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .env
+artifacts/
 artifacts/benchmarks/
 artifacts/*.json
 artifacts/*.sqlite3
