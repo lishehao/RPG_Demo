@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from rpg_backend.author.compiler.routes import (
     bundle_affordance_tags,
@@ -10,15 +10,15 @@ from rpg_backend.author.compiler.routes import (
 from rpg_backend.author.compiler.router import plan_bundle_theme
 from rpg_backend.author.generation.context import build_author_context_from_bundle
 from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
+from rpg_backend.content_language import resolve_content_prompt_profile
+from rpg_backend.generation_skill import ContextCard, GenerationSkillPacket
+from rpg_backend.llm_gateway import CapabilityGatewayCore
 from rpg_backend.author.normalize import coerce_int
 from rpg_backend.author.contracts import DesignBundle, RouteAffordancePackDraft, RouteOpportunityPlanDraft
 
-if TYPE_CHECKING:
-    from rpg_backend.author.gateway import AuthorLLMGateway
 
-
-def _route_opportunity_output_tokens(gateway: "AuthorLLMGateway", primary_theme: str) -> int:
-    budget = gateway.max_output_tokens_rulepack
+def _route_opportunity_output_tokens(gateway: CapabilityGatewayCore, primary_theme: str) -> int:
+    budget = gateway.text_policy("author.rulepack_generate").max_output_tokens
     if budget is None:
         return 1100 if primary_theme == "legitimacy_crisis" else 900
     floor = 900
@@ -38,7 +38,7 @@ def _route_theme_guidance(primary_theme: str) -> str:
     return mapping.get(primary_theme, mapping["generic_civic_crisis"])
 
 
-def _normalize_condition_payload(gateway: "AuthorLLMGateway", conditions: Any) -> dict[str, Any]:
+def _normalize_condition_payload(gateway: CapabilityGatewayCore, conditions: Any) -> dict[str, Any]:
     if not isinstance(conditions, dict):
         conditions = {}
     return {
@@ -67,7 +67,7 @@ def _default_route_trigger_payload(bundle: DesignBundle, beat_index: int) -> dic
 
 
 def _normalize_route_opportunity_plan_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
     bundle: DesignBundle,
 ) -> dict[str, Any]:
@@ -140,7 +140,7 @@ def _normalize_route_opportunity_plan_payload(
 
 
 def _normalize_route_affordance_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
     bundle: DesignBundle,
 ) -> dict[str, Any]:
@@ -204,7 +204,7 @@ def _normalize_route_affordance_payload(
 
 
 def generate_route_opportunity_plan_result(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     design_bundle: DesignBundle,
     *,
     previous_response_id: str | None = None,
@@ -213,6 +213,7 @@ def generate_route_opportunity_plan_result(
     resolved_primary_theme = primary_theme or plan_bundle_theme(design_bundle).primary_theme
     context_packet = build_author_context_from_bundle(design_bundle)
     payload = {"author_context": context_packet}
+    flow_plan = design_bundle.story_flow_plan
     system_prompt = (
         "You are the Author Route Opportunity generator. Return one strict JSON object matching RouteOpportunityPlanDraft. "
         "Identify 1-8 route opportunities across the beats in author_context. "
@@ -221,6 +222,7 @@ def generate_route_opportunity_plan_result(
         "Each trigger must include: kind, target_id, and optional min_value. "
         "Allowed trigger kinds are: truth, axis, stance, flag, event. "
         "Use only ids that already exist in author_context. "
+        f"{f'Honor a {flow_plan.branch_budget} branch budget and aim for about {flow_plan.route_unlock_budget} route unlocks. ' if flow_plan is not None else ''}"
         "Prefer concrete unlock opportunities with 1-2 meaningful triggers over vague coverage. "
         f"{_route_theme_guidance(resolved_primary_theme)}"
     )
@@ -233,13 +235,32 @@ def generate_route_opportunity_plan_result(
         "Output raw JSON only. Exactly one object with key opportunities. "
         "Each opportunity needs beat_id, unlock_route_id, unlock_affordance_tag, and triggers. No extra keys."
     )
+    skill_packet = GenerationSkillPacket(
+        skill_id="author.route_opportunity.generate",
+        skill_version="v1",
+        capability="author.rulepack_generate",
+        contract_mode="strict_json_schema",
+        role_style=resolve_content_prompt_profile(),
+        required_output_contract="Return exactly one RouteOpportunityPlanDraft JSON object.",
+        context_cards=(
+            ContextCard("author_context_card", context_packet, priority=10),
+            ContextCard("story_flow_card", flow_plan.model_dump(mode="json") if flow_plan is not None else {}, priority=20),
+        ),
+        task_brief=system_prompt,
+        repair_mode="schema_repair",
+        repair_note=retry_prompt,
+        final_contract_note=final_retry_prompt,
+        extra_payload=payload,
+    )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.rulepack_generate",
         primary_payload=payload,
         prompts=(system_prompt, retry_prompt, final_retry_prompt),
         previous_response_id=previous_response_id,
         max_output_tokens=_route_opportunity_output_tokens(gateway, resolved_primary_theme),
         operation_name="route_opportunity_generate",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: RouteOpportunityPlanDraft.model_validate(
             _normalize_route_opportunity_plan_payload(gateway, raw_payload, design_bundle)
         ),
@@ -247,18 +268,20 @@ def generate_route_opportunity_plan_result(
 
 
 def generate_route_affordance_pack_result(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     design_bundle: DesignBundle,
     *,
     previous_response_id: str | None = None,
 ):
     context_packet = build_author_context_from_bundle(design_bundle)
     payload = {"author_context": context_packet}
+    flow_plan = design_bundle.story_flow_plan
     system_prompt = (
         "You are the Author Route and Affordance generator. Return one strict JSON object matching RouteAffordancePackDraft. "
         "Create route unlock rules and one affordance effect profile for every affordance tag used in author_context.beats. "
         "Do not generate ending rules. "
         "Use only axis, stance, truth, event, and flag ids that already exist in author_context. "
+        f"{f'Honor a {flow_plan.branch_budget} branch budget and support about {flow_plan.route_unlock_budget} meaningful route unlocks. ' if flow_plan is not None else ''}"
         "Treat affordance tags as runtime semantics, not literary themes. Prefer tags that imply game-state changes rather than abstract mood words. "
         "Required top-level keys: route_unlock_rules, affordance_effect_profiles. "
         "Keep rules compact, deterministic-friendly, and non-graphic."
@@ -272,13 +295,32 @@ def generate_route_affordance_pack_result(
         "Output raw JSON only. Exactly one object with keys route_unlock_rules and affordance_effect_profiles. "
         "No prose outside JSON. No code fences. No extra keys."
     )
+    skill_packet = GenerationSkillPacket(
+        skill_id="author.route_affordance.generate",
+        skill_version="v1",
+        capability="author.rulepack_generate",
+        contract_mode="strict_json_schema",
+        role_style=resolve_content_prompt_profile(),
+        required_output_contract="Return exactly one RouteAffordancePackDraft JSON object.",
+        context_cards=(
+            ContextCard("author_context_card", context_packet, priority=10),
+            ContextCard("story_flow_card", flow_plan.model_dump(mode="json") if flow_plan is not None else {}, priority=20),
+        ),
+        task_brief=system_prompt,
+        repair_mode="schema_repair",
+        repair_note=retry_prompt,
+        final_contract_note=final_retry_prompt,
+        extra_payload=payload,
+    )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.rulepack_generate",
         primary_payload=payload,
         prompts=(system_prompt, retry_prompt, final_retry_prompt),
         previous_response_id=previous_response_id,
-        max_output_tokens=gateway.max_output_tokens_rulepack,
+        max_output_tokens=gateway.text_policy("author.rulepack_generate").max_output_tokens,
         operation_name="route_affordance_generate",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: RouteAffordancePackDraft.model_validate(
             _normalize_route_affordance_payload(gateway, raw_payload, design_bundle)
         ),

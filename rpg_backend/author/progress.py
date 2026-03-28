@@ -14,6 +14,19 @@ PUBLIC_STAGE_FLOW = [
     ("merge_rule_pack", "completed"),
 ]
 
+AUTHOR_LOADING_NODE_FLOW = (
+    "resume_from_preview_checkpoint",
+    "generate_cast_members",
+    "assemble_cast",
+    "generate_beat_plan",
+    "build_design_bundle",
+    "generate_route_opportunity_plan",
+    "compile_route_affordance_pack",
+    "generate_ending_rules",
+    "merge_rule_pack",
+    "repair_gameplay_semantics",
+)
+
 STAGE_INDEX_BY_NODE = {
     node_name: index + 1
     for index, (node_name, _public_stage) in enumerate(PUBLIC_STAGE_FLOW)
@@ -22,4 +35,9 @@ STAGE_INDEX_BY_NODE = {
 PUBLIC_STAGE_BY_NODE = {
     node_name: public_stage
     for node_name, public_stage in PUBLIC_STAGE_FLOW
+}
+
+AUTHOR_LOADING_STAGE_INDEX_BY_NODE = {
+    node_name: index + 1
+    for index, node_name in enumerate(AUTHOR_LOADING_NODE_FLOW)
 }

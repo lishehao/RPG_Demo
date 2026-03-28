@@ -85,13 +85,16 @@ Create the backend env file:
 cp /srv/rpg-demo/app/deploy/aws_ubuntu/.env.production.example /srv/rpg-demo/shared/.env.production
 ```
 
-Then edit `/srv/rpg-demo/shared/.env.production` and fill in the real Responses provider settings.
+Then edit `/srv/rpg-demo/shared/.env.production` and fill in the real gateway settings.
 
 Minimum required values:
 
-- `APP_RESPONSES_BASE_URL`
-- `APP_RESPONSES_API_KEY`
-- `APP_RESPONSES_MODEL`
+- `APP_GATEWAY_BASE_URL`
+- `APP_GATEWAY_API_KEY`
+- `APP_GATEWAY_MODEL`
+- `APP_GATEWAY_EMBEDDING_BASE_URL`
+- `APP_GATEWAY_EMBEDDING_API_KEY`
+- `APP_GATEWAY_EMBEDDING_MODEL`
 - `APP_STORY_LIBRARY_DB_PATH`
 - `APP_RUNTIME_STATE_DB_PATH`
 - `APP_ENABLE_BENCHMARK_API=0`
@@ -109,8 +112,6 @@ cd /srv/rpg-demo/app/frontend
 npm ci
 npm run build
 ```
-
-Do not set `VITE_API_MODE=placeholder` in production.
 
 For same-origin nginx serving, `VITE_API_BASE_URL` can stay unset.
 

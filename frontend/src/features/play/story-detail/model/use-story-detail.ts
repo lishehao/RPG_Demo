@@ -1,9 +1,24 @@
 import { useEffect, useState } from "react"
-import type { PublishedStoryDetailResponse, StoryVisibility } from "../../../../index"
+import type { PublishedStoryDetailResponse, StoryLanguage, StoryVisibility } from "../../../../index"
 import { useApiClient } from "../../../../app/providers/api-client-provider"
-import { toErrorMessage } from "../../../../shared/lib/errors"
+import type { FrontendApiClient } from "../../../../api/http-client"
+import { isAbortError, toErrorMessage } from "../../../../shared/lib/errors"
+import { deleteCachedValue, readCachedValue, writeCachedValue } from "../../../../shared/lib/resource-cache"
 
-export function useStoryDetail(storyId: string) {
+const STORY_DETAIL_CACHE_TTL_MS = 60_000
+const STORY_DETAIL_CACHE = new Map<string, { value: PublishedStoryDetailResponse; expiresAt: number }>()
+
+export async function prefetchStoryDetail(api: FrontendApiClient, storyId: string) {
+  const cached = readCachedValue(STORY_DETAIL_CACHE, storyId)
+  if (cached) {
+    return cached
+  }
+  const detail = await api.getStory(storyId)
+  writeCachedValue(STORY_DETAIL_CACHE, storyId, detail, STORY_DETAIL_CACHE_TTL_MS)
+  return detail
+}
+
+export function useStoryDetail(storyId: string, uiLanguage: StoryLanguage) {
   const api = useApiClient()
   const [detail, setDetail] = useState<PublishedStoryDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -14,20 +29,32 @@ export function useStoryDetail(storyId: string) {
 
   useEffect(() => {
     let active = true
+    const abortController = new AbortController()
 
     const loadDetail = async () => {
-      setLoading(true)
-      setDetail(null)
+      const cached = readCachedValue(STORY_DETAIL_CACHE, storyId)
+      if (cached) {
+        setDetail(cached)
+        setError(null)
+        setLoading(false)
+      } else {
+        setLoading(true)
+        setDetail(null)
+      }
       try {
-        const response = await api.getStory(storyId)
+        const response = await api.getStory(storyId, { signal: abortController.signal })
         if (active) {
+          writeCachedValue(STORY_DETAIL_CACHE, storyId, response, STORY_DETAIL_CACHE_TTL_MS)
           setDetail(response)
           setError(null)
         }
       } catch (nextError) {
+        if (isAbortError(nextError)) {
+          return
+        }
         if (active) {
           setDetail(null)
-          setError(toErrorMessage(nextError))
+          setError(toErrorMessage(nextError, uiLanguage))
         }
       } finally {
         if (active) {
@@ -40,8 +67,9 @@ export function useStoryDetail(storyId: string) {
 
     return () => {
       active = false
+      abortController.abort()
     }
-  }, [api, storyId])
+  }, [api, storyId, uiLanguage])
 
   const createPlaySession = async () => {
     setPlayLoading(true)
@@ -51,7 +79,7 @@ export function useStoryDetail(storyId: string) {
       const session = await api.createPlaySession({ story_id: storyId })
       return session.session_id
     } catch (nextError) {
-      setError(toErrorMessage(nextError))
+      setError(toErrorMessage(nextError, uiLanguage))
       return null
     } finally {
       setPlayLoading(false)
@@ -68,7 +96,7 @@ export function useStoryDetail(storyId: string) {
         if (!current) {
           return current
         }
-        return {
+        const nextDetail = {
           ...current,
           story: updatedStory,
           presentation: current.presentation
@@ -79,10 +107,12 @@ export function useStoryDetail(storyId: string) {
               }
             : current.presentation,
         }
+        writeCachedValue(STORY_DETAIL_CACHE, storyId, nextDetail, STORY_DETAIL_CACHE_TTL_MS)
+        return nextDetail
       })
       return updatedStory
     } catch (nextError) {
-      setError(toErrorMessage(nextError))
+      setError(toErrorMessage(nextError, uiLanguage))
       return null
     } finally {
       setVisibilityLoading(false)
@@ -94,10 +124,11 @@ export function useStoryDetail(storyId: string) {
     setError(null)
     try {
       await api.deleteStory(storyId)
+      deleteCachedValue(STORY_DETAIL_CACHE, storyId)
       setDetail(null)
       return true
     } catch (nextError) {
-      setError(toErrorMessage(nextError))
+      setError(toErrorMessage(nextError, uiLanguage))
       return false
     } finally {
       setDeleteLoading(false)

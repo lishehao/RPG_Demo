@@ -6,13 +6,13 @@ import re
 import sqlite3
 from pathlib import Path
 
-from rpg_backend.author.display import topology_label
-from rpg_backend.config import get_settings
 from rpg_backend.library.contracts import (
     PublishedStoryCard,
     PublishedStoryRecord,
     PublishedStoryThemeFacet,
 )
+from rpg_backend.library.search_text import build_pinyin_document
+from rpg_backend.sqlite_utils import require_sqlite_columns
 
 
 def _fts_query(value: str) -> str | None:
@@ -30,7 +30,38 @@ class StoryLibraryPage:
     next_offset: int | None
 
 
+@dataclass(frozen=True)
+class _LibraryScope:
+    actor_user_id: str | None
+    include_public: bool
+    public_only: bool
+    table_alias: str | None = None
+
+
+@dataclass(frozen=True)
+class _LibraryFilters:
+    query: str | None
+    theme: str | None
+    language: str | None
+
+
 class SQLiteStoryLibraryStorage:
+    _SEARCH_COLUMNS: tuple[str, ...] = (
+        "story_id",
+        "title",
+        "one_liner",
+        "premise",
+        "theme",
+        "tone",
+        "prompt_seed",
+        "title_pinyin",
+        "one_liner_pinyin",
+        "premise_pinyin",
+        "theme_pinyin",
+        "tone_pinyin",
+        "prompt_seed_pinyin",
+    )
+
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
         self._fts_enabled = True
@@ -56,6 +87,7 @@ class SQLiteStoryLibraryStorage:
                 story_id TEXT PRIMARY KEY,
                 source_job_id TEXT NOT NULL UNIQUE,
                 prompt_seed TEXT NOT NULL,
+                language TEXT NOT NULL DEFAULT 'en',
                 title TEXT NOT NULL DEFAULT '',
                 one_liner TEXT NOT NULL DEFAULT '',
                 premise TEXT NOT NULL DEFAULT '',
@@ -73,9 +105,30 @@ class SQLiteStoryLibraryStorage:
             )
             """
         )
-        self._migrate_story_columns(connection)
-        self._backfill_owner_visibility(connection)
-        self._backfill_story_cards(connection)
+        require_sqlite_columns(
+            connection,
+            table_name="published_stories",
+            required_columns=(
+                "story_id",
+                "source_job_id",
+                "prompt_seed",
+                "language",
+                "title",
+                "one_liner",
+                "premise",
+                "theme",
+                "tone",
+                "npc_count",
+                "beat_count",
+                "topology",
+                "owner_user_id",
+                "visibility",
+                "summary_json",
+                "preview_json",
+                "bundle_json",
+                "published_at",
+            ),
+        )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_published_stories_published_at ON published_stories (published_at DESC, story_id DESC)"
         )
@@ -85,58 +138,11 @@ class SQLiteStoryLibraryStorage:
         self._ensure_search_index(connection)
         connection.commit()
 
-    def _migrate_story_columns(self, connection: sqlite3.Connection) -> None:
-        required_columns = {
-            "title": "TEXT NOT NULL DEFAULT ''",
-            "one_liner": "TEXT NOT NULL DEFAULT ''",
-            "premise": "TEXT NOT NULL DEFAULT ''",
-            "theme": "TEXT NOT NULL DEFAULT ''",
-            "tone": "TEXT NOT NULL DEFAULT ''",
-            "npc_count": "INTEGER NOT NULL DEFAULT 0",
-            "beat_count": "INTEGER NOT NULL DEFAULT 0",
-            "topology": "TEXT NOT NULL DEFAULT ''",
-            "owner_user_id": f"TEXT NOT NULL DEFAULT '{get_settings().default_actor_id}'",
-            "visibility": "TEXT NOT NULL DEFAULT 'private'",
-        }
-        existing_columns = set()
-        for row in connection.execute("PRAGMA table_info(published_stories)").fetchall():
-            if isinstance(row, sqlite3.Row):
-                existing_columns.add(str(row["name"]))
-            else:
-                existing_columns.add(str(row[1]))
-        for column_name, definition in required_columns.items():
-            if column_name in existing_columns:
-                continue
-            try:
-                connection.execute(
-                    f"ALTER TABLE published_stories ADD COLUMN {column_name} {definition}"
-                )
-            except sqlite3.OperationalError as exc:
-                if "duplicate column name" not in str(exc).lower():
-                    raise
-
-    def _backfill_owner_visibility(self, connection: sqlite3.Connection) -> None:
-        default_actor_id = get_settings().default_actor_id
-        connection.execute(
-            """
-            UPDATE published_stories
-            SET owner_user_id = ?
-            WHERE owner_user_id IS NULL OR owner_user_id = ''
-            """,
-            (default_actor_id,),
-        )
-        connection.execute(
-            """
-            UPDATE published_stories
-            SET visibility = 'private'
-            WHERE visibility IS NULL OR visibility = ''
-            """
-        )
-
     @staticmethod
     def _row_card_payload(row: sqlite3.Row) -> dict[str, object]:
         return {
             "story_id": row["story_id"],
+            "language": row["language"],
             "title": row["title"],
             "one_liner": row["one_liner"],
             "premise": row["premise"],
@@ -168,85 +174,79 @@ class SQLiteStoryLibraryStorage:
             }
         )
 
-    @staticmethod
-    def _story_columns_from_payloads(
-        *,
-        summary_payload: dict[str, object],
-        preview_payload: dict[str, object],
-    ) -> dict[str, object]:
-        structure = preview_payload.get("structure") if isinstance(preview_payload, dict) else None
-        cast_topology = structure.get("cast_topology") if isinstance(structure, dict) else ""
-        return {
-            "title": summary_payload.get("title") or "",
-            "one_liner": summary_payload.get("one_liner") or "",
-            "premise": summary_payload.get("premise") or "",
-            "theme": summary_payload.get("theme") or "",
-            "tone": summary_payload.get("tone") or "",
-            "npc_count": int(summary_payload.get("npc_count") or 0),
-            "beat_count": int(summary_payload.get("beat_count") or 0),
-            "topology": topology_label(str(cast_topology)),
-        }
+    @classmethod
+    def _search_document_from_record(cls, record: PublishedStoryRecord) -> tuple[object, ...]:
+        return (
+            record.story.story_id,
+            record.story.title,
+            record.story.one_liner,
+            record.story.premise,
+            record.story.theme,
+            record.story.tone,
+            record.prompt_seed,
+            build_pinyin_document(record.story.title),
+            build_pinyin_document(record.story.one_liner),
+            build_pinyin_document(record.story.premise),
+            build_pinyin_document(record.story.theme),
+            build_pinyin_document(record.story.tone),
+            build_pinyin_document(record.prompt_seed),
+        )
 
-    def _backfill_story_cards(self, connection: sqlite3.Connection) -> None:
-        rows = connection.execute(
-            """
-            SELECT story_id, summary_json, preview_json
-            FROM published_stories
-            WHERE title = ''
-               OR one_liner = ''
-               OR premise = ''
-               OR theme = ''
-               OR tone = ''
-               OR npc_count = 0
-               OR beat_count = 0
-               OR topology = ''
-            """
-        ).fetchall()
-        for row in rows:
-            summary_payload = json.loads(str(row["summary_json"]))
-            preview_payload = json.loads(str(row["preview_json"]))
-            columns = self._story_columns_from_payloads(
-                summary_payload=summary_payload,
-                preview_payload=preview_payload,
-            )
+
+    def _replace_search_document(self, connection: sqlite3.Connection, *, story_id: str, record: PublishedStoryRecord) -> None:
+        if not self._fts_enabled:
+            return
+        try:
             connection.execute(
-                """
-                UPDATE published_stories
-                SET title = :title,
-                    one_liner = :one_liner,
-                    premise = :premise,
-                    theme = :theme,
-                    tone = :tone,
-                    npc_count = :npc_count,
-                    beat_count = :beat_count,
-                    topology = :topology
-                WHERE story_id = :story_id
-                """,
-                {
-                    "story_id": row["story_id"],
-                    **columns,
-                },
+                "DELETE FROM published_story_search WHERE story_id = ?",
+                (story_id,),
             )
+            self._insert_search_document(connection, record)
+        except sqlite3.OperationalError:
+            self._fts_enabled = False
+
+    @classmethod
+    def _search_schema_matches(cls, connection: sqlite3.Connection) -> bool:
+        rows = connection.execute("PRAGMA table_info(published_story_search)").fetchall()
+        if not rows:
+            return False
+        existing = tuple(str(row["name"]) if isinstance(row, sqlite3.Row) else str(row[1]) for row in rows)
+        return existing == cls._SEARCH_COLUMNS
+
+    @classmethod
+    def _create_search_index(cls, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS published_story_search
+            USING fts5(
+                story_id UNINDEXED,
+                title,
+                one_liner,
+                premise,
+                theme,
+                tone,
+                prompt_seed,
+                title_pinyin,
+                one_liner_pinyin,
+                premise_pinyin,
+                theme_pinyin,
+                tone_pinyin,
+                prompt_seed_pinyin,
+                tokenize = 'porter unicode61'
+            )
+            """
+        )
 
     def _ensure_search_index(self, connection: sqlite3.Connection) -> None:
         if not self._fts_enabled:
             return
         try:
-            connection.execute(
-                """
-                CREATE VIRTUAL TABLE IF NOT EXISTS published_story_search
-                USING fts5(
-                    story_id UNINDEXED,
-                    title,
-                    one_liner,
-                    premise,
-                    theme,
-                    tone,
-                    prompt_seed,
-                    tokenize = 'porter unicode61'
-                )
-                """
-            )
+            self._create_search_index(connection)
+            if not self._search_schema_matches(connection):
+                connection.execute("DROP TABLE IF EXISTS published_story_search")
+                self._create_search_index(connection)
+            if not self._search_schema_matches(connection):
+                raise sqlite3.OperationalError("published_story_search schema mismatch")
         except sqlite3.OperationalError:
             self._fts_enabled = False
             return
@@ -259,35 +259,20 @@ class SQLiteStoryLibraryStorage:
         if story_count == search_count:
             return
         connection.execute("DELETE FROM published_story_search")
-        connection.execute(
-            """
-            INSERT INTO published_story_search (
-                story_id, title, one_liner, premise, theme, tone, prompt_seed
-            )
-            SELECT story_id, title, one_liner, premise, theme, tone, prompt_seed
-            FROM published_stories
-            """
-        )
+        for row in connection.execute("SELECT * FROM published_stories").fetchall():
+            self._insert_search_document(connection, self._row_to_record(row))
 
     def _insert_search_document(self, connection: sqlite3.Connection, record: PublishedStoryRecord) -> None:
         if not self._fts_enabled:
             return
         try:
             connection.execute(
-                """
+                f"""
                 INSERT INTO published_story_search (
-                    story_id, title, one_liner, premise, theme, tone, prompt_seed
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    {', '.join(self._SEARCH_COLUMNS)}
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (
-                    record.story.story_id,
-                    record.story.title,
-                    record.story.one_liner,
-                    record.story.premise,
-                    record.story.theme,
-                    record.story.tone,
-                    record.prompt_seed,
-                ),
+                self._search_document_from_record(record),
             )
         except sqlite3.OperationalError:
             self._fts_enabled = False
@@ -333,12 +318,107 @@ class SQLiteStoryLibraryStorage:
         visibility_column = f"{table_alias}.visibility" if table_alias else "visibility"
         return f"{visibility_column} = 'public'"
 
+    @staticmethod
+    def _base_scope(scope: _LibraryScope) -> tuple[list[str], list[object]]:
+        if scope.public_only:
+            return [SQLiteStoryLibraryStorage._public_only_clause(table_alias=scope.table_alias)], []
+        if scope.actor_user_id is None:
+            raise ValueError("actor_user_id is required when public_only is false")
+        return [SQLiteStoryLibraryStorage._visibility_clause(include_public=scope.include_public, table_alias=scope.table_alias)], [scope.actor_user_id]
+
+    @staticmethod
+    def _append_theme_language_filters(
+        clauses: list[str],
+        params: list[object],
+        filters: _LibraryFilters,
+        *,
+        table_alias: str | None = None,
+    ) -> None:
+        theme_column = f"{table_alias}.theme" if table_alias else "theme"
+        language_column = f"{table_alias}.language" if table_alias else "language"
+        if filters.theme:
+            clauses.append(f"{theme_column} = ? COLLATE NOCASE")
+            params.append(filters.theme.strip())
+        if filters.language:
+            clauses.append(f"{language_column} = ?")
+            params.append(filters.language)
+
+    @staticmethod
+    def _build_where_parts(
+        scope: _LibraryScope,
+        filters: _LibraryFilters,
+        *,
+        query_mode: str | None = None,
+        table_alias: str | None = None,
+    ) -> tuple[list[str], list[object]]:
+        clauses, params = SQLiteStoryLibraryStorage._base_scope(scope)
+        if filters.query and query_mode is not None:
+            SQLiteStoryLibraryStorage._append_query_filter(
+                clauses,
+                params,
+                filters.query,
+                use_fts=query_mode == "fts",
+                table_alias=table_alias,
+            )
+        SQLiteStoryLibraryStorage._append_theme_language_filters(
+            clauses,
+            params,
+            _LibraryFilters(query=None, theme=filters.theme, language=filters.language),
+            table_alias=table_alias,
+        )
+        return clauses, params
+
+    @staticmethod
+    def _append_query_filter(
+        clauses: list[str],
+        params: list[object],
+        query: str,
+        *,
+        use_fts: bool,
+        table_alias: str | None = None,
+    ) -> None:
+        title_column = f"{table_alias}.title" if table_alias else "title"
+        one_liner_column = f"{table_alias}.one_liner" if table_alias else "one_liner"
+        premise_column = f"{table_alias}.premise" if table_alias else "premise"
+        theme_column = f"{table_alias}.theme" if table_alias else "theme"
+        tone_column = f"{table_alias}.tone" if table_alias else "tone"
+        prompt_seed_column = f"{table_alias}.prompt_seed" if table_alias else "prompt_seed"
+        if use_fts:
+            fts_query = _fts_query(query)
+            if fts_query:
+                clauses.append(
+                    """
+                    story_id IN (
+                        SELECT story_id
+                        FROM published_story_search
+                        WHERE published_story_search MATCH ?
+                    )
+                    """
+                )
+                params.append(fts_query)
+                return
+        like_value = f"%{query.strip()}%"
+        clauses.append(
+            f"""
+            (
+                {title_column} LIKE ? COLLATE NOCASE
+                OR {one_liner_column} LIKE ? COLLATE NOCASE
+                OR {premise_column} LIKE ? COLLATE NOCASE
+                OR {theme_column} LIKE ? COLLATE NOCASE
+                OR {tone_column} LIKE ? COLLATE NOCASE
+                OR {prompt_seed_column} LIKE ? COLLATE NOCASE
+            )
+            """
+        )
+        params.extend([like_value] * 6)
+
     def list_stories(
         self,
         *,
         actor_user_id: str | None,
         query: str | None = None,
         theme: str | None = None,
+        language: str | None = None,
         limit: int = 20,
         offset: int = 0,
         sort: str = "published_at_desc",
@@ -351,6 +431,7 @@ class SQLiteStoryLibraryStorage:
                 actor_user_id=actor_user_id,
                 query=query,
                 theme=theme,
+                language=language,
                 include_public=include_public,
                 public_only=public_only,
             )
@@ -358,6 +439,7 @@ class SQLiteStoryLibraryStorage:
                 connection,
                 actor_user_id=actor_user_id,
                 query=query,
+                language=language,
                 include_public=include_public,
                 public_only=public_only,
             )
@@ -366,6 +448,7 @@ class SQLiteStoryLibraryStorage:
                 actor_user_id=actor_user_id,
                 query=query,
                 theme=theme,
+                language=language,
                 limit=limit + 1,
                 offset=offset,
                 sort=sort,
@@ -389,49 +472,15 @@ class SQLiteStoryLibraryStorage:
         actor_user_id: str | None,
         query: str | None,
         theme: str | None,
+        language: str | None,
         include_public: bool,
         public_only: bool,
     ) -> int:
-        if public_only:
-            filters: list[str] = [self._public_only_clause()]
-            params: list[object] = []
-        else:
-            if actor_user_id is None:
-                raise ValueError("actor_user_id is required when public_only is false")
-            filters = [self._visibility_clause(include_public=include_public)]
-            params = [actor_user_id]
-        if query and self._fts_enabled:
-            fts_query = _fts_query(query)
-            if fts_query:
-                filters.append(
-                    """
-                    story_id IN (
-                        SELECT story_id
-                        FROM published_story_search
-                        WHERE published_story_search MATCH ?
-                    )
-                    """
-                )
-                params.append(fts_query)
-        elif query:
-            like_value = f"%{query.strip()}%"
-            filters.append(
-                """
-                (
-                    title LIKE ? COLLATE NOCASE
-                    OR one_liner LIKE ? COLLATE NOCASE
-                    OR premise LIKE ? COLLATE NOCASE
-                    OR theme LIKE ? COLLATE NOCASE
-                    OR tone LIKE ? COLLATE NOCASE
-                    OR prompt_seed LIKE ? COLLATE NOCASE
-                )
-                """
-            )
-            params.extend([like_value] * 6)
-        if theme:
-            filters.append("theme = ? COLLATE NOCASE")
-            params.append(theme.strip())
-        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        scope = _LibraryScope(actor_user_id=actor_user_id, include_public=include_public, public_only=public_only)
+        active_filters = _LibraryFilters(query=query, theme=theme, language=language)
+        query_mode = "fts" if self._fts_enabled else "like"
+        clauses, params = self._build_where_parts(scope, active_filters, query_mode=query_mode)
+        where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         row = connection.execute(
             f"SELECT COUNT(*) AS count FROM published_stories {where_clause}",
             params,
@@ -444,45 +493,15 @@ class SQLiteStoryLibraryStorage:
         *,
         actor_user_id: str | None,
         query: str | None,
+        language: str | None,
         include_public: bool,
         public_only: bool,
     ) -> list[PublishedStoryThemeFacet]:
-        if public_only:
-            params: list[object] = []
-            where_clause = f"WHERE {self._public_only_clause()}"
-        else:
-            if actor_user_id is None:
-                raise ValueError("actor_user_id is required when public_only is false")
-            params = [actor_user_id]
-            where_clause = f"WHERE {self._visibility_clause(include_public=include_public)}"
-        if query and self._fts_enabled:
-            fts_query = _fts_query(query)
-            if fts_query:
-                where_clause += (
-                    """
-                    AND story_id IN (
-                        SELECT story_id
-                        FROM published_story_search
-                        WHERE published_story_search MATCH ?
-                    )
-                    """
-                )
-                params.append(fts_query)
-        elif query:
-            like_value = f"%{query.strip()}%"
-            where_clause += (
-                """
-                AND (
-                    title LIKE ? COLLATE NOCASE
-                    OR one_liner LIKE ? COLLATE NOCASE
-                    OR premise LIKE ? COLLATE NOCASE
-                    OR theme LIKE ? COLLATE NOCASE
-                    OR tone LIKE ? COLLATE NOCASE
-                    OR prompt_seed LIKE ? COLLATE NOCASE
-                )
-                """
-            )
-            params.extend([like_value] * 6)
+        scope = _LibraryScope(actor_user_id=actor_user_id, include_public=include_public, public_only=public_only)
+        active_filters = _LibraryFilters(query=query, theme=None, language=language)
+        query_mode = "fts" if self._fts_enabled else "like"
+        clauses, params = self._build_where_parts(scope, active_filters, query_mode=query_mode)
+        where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         rows = connection.execute(
             f"""
             SELECT theme, COUNT(*) AS count
@@ -511,6 +530,7 @@ class SQLiteStoryLibraryStorage:
         actor_user_id: str | None,
         query: str | None,
         theme: str | None,
+        language: str | None,
         limit: int,
         offset: int,
         sort: str,
@@ -523,23 +543,17 @@ class SQLiteStoryLibraryStorage:
                 actor_user_id=actor_user_id,
                 query=query,
                 theme=theme,
+                language=language,
                 limit=limit,
                 offset=offset,
                 sort=sort,
                 include_public=include_public,
                 public_only=public_only,
             )
-        if public_only:
-            params: list[object] = []
-            where_clause = f"WHERE {self._public_only_clause()}"
-        else:
-            if actor_user_id is None:
-                raise ValueError("actor_user_id is required when public_only is false")
-            params = [actor_user_id]
-            where_clause = f"WHERE {self._visibility_clause(include_public=include_public)}"
-        if theme:
-            where_clause += " AND theme = ? COLLATE NOCASE"
-            params.append(theme.strip())
+        scope = _LibraryScope(actor_user_id=actor_user_id, include_public=include_public, public_only=public_only)
+        filters = _LibraryFilters(query=None, theme=theme, language=language)
+        clauses, params = self._build_where_parts(scope, filters)
+        where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         return connection.execute(
             f"""
             SELECT *
@@ -558,6 +572,7 @@ class SQLiteStoryLibraryStorage:
         actor_user_id: str | None,
         query: str,
         theme: str | None,
+        language: str | None,
         limit: int,
         offset: int,
         sort: str,
@@ -570,6 +585,7 @@ class SQLiteStoryLibraryStorage:
                 actor_user_id=actor_user_id,
                 query=query,
                 theme=theme,
+                language=language,
                 limit=limit,
                 offset=offset,
                 sort=sort,
@@ -594,31 +610,21 @@ class SQLiteStoryLibraryStorage:
             if sort == "relevance"
             else "stories.published_at DESC, stories.story_id DESC"
         )
-        if public_only:
-            params: list[object] = [fts_query]
-            scope_clause = self._public_only_clause(table_alias="stories")
-        else:
-            if actor_user_id is None:
-                raise ValueError("actor_user_id is required when public_only is false")
-            params = [fts_query, actor_user_id]
-            scope_clause = self._visibility_clause(include_public=include_public, table_alias="stories")
-        theme_clause = ""
-        if theme:
-            theme_clause = "AND stories.theme = ? COLLATE NOCASE"
-            params.append(theme.strip())
+        scope = _LibraryScope(actor_user_id=actor_user_id, include_public=include_public, public_only=public_only, table_alias="stories")
+        filters = _LibraryFilters(query=None, theme=theme, language=language)
+        clauses, params = self._build_where_parts(scope, filters, table_alias="stories")
+        where_clause = " AND ".join(["published_story_search MATCH ?", *clauses])
         return connection.execute(
             f"""
-            SELECT stories.*, bm25(published_story_search, 8.0, 4.0, 3.0, 1.5, 1.0, 0.5) AS rank
+            SELECT stories.*, bm25(published_story_search) AS rank
             FROM published_story_search
             JOIN published_stories AS stories
                 ON stories.story_id = published_story_search.story_id
-            WHERE published_story_search MATCH ?
-            AND {scope_clause}
-            {theme_clause}
+            WHERE {where_clause}
             ORDER BY {order_clause}
             LIMIT ? OFFSET ?
             """,
-            [*params, limit, offset],
+            [fts_query, *params, limit, offset],
         ).fetchall()
 
     def _search_rows_by_like(
@@ -628,6 +634,7 @@ class SQLiteStoryLibraryStorage:
         actor_user_id: str | None,
         query: str,
         theme: str | None,
+        language: str | None,
         limit: int,
         offset: int,
         sort: str,
@@ -635,18 +642,10 @@ class SQLiteStoryLibraryStorage:
         public_only: bool,
     ) -> list[sqlite3.Row]:
         like_value = f"%{query.strip()}%"
-        if public_only:
-            params: list[object] = [*([like_value] * 6)]
-            scope_clause = self._public_only_clause()
-        else:
-            if actor_user_id is None:
-                raise ValueError("actor_user_id is required when public_only is false")
-            params = [actor_user_id, *([like_value] * 6)]
-            scope_clause = self._visibility_clause(include_public=include_public)
-        theme_clause = ""
-        if theme:
-            theme_clause = "AND theme = ? COLLATE NOCASE"
-            params.append(theme.strip())
+        scope = _LibraryScope(actor_user_id=actor_user_id, include_public=include_public, public_only=public_only)
+        filters = _LibraryFilters(query=query, theme=theme, language=language)
+        clauses, params = self._build_where_parts(scope, filters, query_mode="like")
+        where_clause = " AND ".join(clauses)
         order_clause = (
             """
             (
@@ -667,16 +666,7 @@ class SQLiteStoryLibraryStorage:
             f"""
             SELECT *
             FROM published_stories
-            WHERE {scope_clause}
-            AND (
-                title LIKE ? COLLATE NOCASE
-                OR one_liner LIKE ? COLLATE NOCASE
-                OR premise LIKE ? COLLATE NOCASE
-                OR theme LIKE ? COLLATE NOCASE
-                OR tone LIKE ? COLLATE NOCASE
-                OR prompt_seed LIKE ? COLLATE NOCASE
-            )
-            {theme_clause}
+            WHERE {where_clause}
             ORDER BY {order_clause}
             LIMIT ? OFFSET ?
             """,
@@ -696,6 +686,7 @@ class SQLiteStoryLibraryStorage:
                     story_id,
                     source_job_id,
                     prompt_seed,
+                    language,
                     title,
                     one_liner,
                     premise,
@@ -710,12 +701,13 @@ class SQLiteStoryLibraryStorage:
                     preview_json,
                     bundle_json,
                     published_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.story.story_id,
                     record.source_job_id,
                     record.prompt_seed,
+                    record.story.language,
                     record.story.title,
                     record.story.one_liner,
                     record.story.premise,

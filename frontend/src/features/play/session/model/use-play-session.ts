@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react"
-import type { PlaySessionHistoryEntry, PlaySessionSnapshot, PlaySuggestedAction } from "../../../../index"
+import type { PlaySessionHistoryEntry, PlaySessionHistoryResponse, PlaySessionSnapshot, PlaySuggestedAction, StoryLanguage } from "../../../../index"
 import { useApiClient } from "../../../../app/providers/api-client-provider"
-import { toErrorMessage } from "../../../../shared/lib/errors"
+import { isAbortError, toErrorMessage } from "../../../../shared/lib/errors"
+import { readCachedValue, writeCachedValue } from "../../../../shared/lib/resource-cache"
+import { uiText } from "../../../../shared/lib/ui-language"
 
 type TranscriptEntry = {
   id: string
@@ -44,7 +46,12 @@ function optimisticTranscriptAppend(
   ]
 }
 
-export function usePlaySession(sessionId: string) {
+const PLAY_SESSION_SNAPSHOT_CACHE_TTL_MS = 30_000
+const PLAY_SESSION_HISTORY_CACHE_TTL_MS = 30_000
+const PLAY_SESSION_SNAPSHOT_CACHE = new Map<string, { value: PlaySessionSnapshot; expiresAt: number }>()
+const PLAY_SESSION_HISTORY_CACHE = new Map<string, { value: PlaySessionHistoryResponse; expiresAt: number }>()
+
+export function usePlaySession(sessionId: string, uiLanguage: StoryLanguage) {
   const api = useApiClient()
   const [snapshot, setSnapshot] = useState<PlaySessionSnapshot | null>(null)
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
@@ -57,26 +64,43 @@ export function usePlaySession(sessionId: string) {
 
   useEffect(() => {
     let active = true
+    const abortController = new AbortController()
 
     const loadSession = async () => {
-      setLoading(true)
-      setSnapshot(null)
-      setTranscript([])
+      const cachedSnapshot = readCachedValue(PLAY_SESSION_SNAPSHOT_CACHE, sessionId)
+      const cachedHistory = readCachedValue(PLAY_SESSION_HISTORY_CACHE, sessionId)
+      if (cachedSnapshot) {
+        setSnapshot(cachedSnapshot)
+        setError(null)
+      } else {
+        setSnapshot(null)
+      }
+      if (cachedHistory) {
+        setTranscript(transcriptFromHistory(cachedHistory.entries))
+      } else {
+        setTranscript([])
+      }
+      setLoading(!(cachedSnapshot && cachedHistory))
       try {
         const [nextSnapshot, nextHistory] = await Promise.all([
-          api.getPlaySession(sessionId),
-          api.getPlaySessionHistory(sessionId),
+          api.getPlaySession(sessionId, { signal: abortController.signal }),
+          api.getPlaySessionHistory(sessionId, { signal: abortController.signal }),
         ])
         if (active) {
+          writeCachedValue(PLAY_SESSION_SNAPSHOT_CACHE, sessionId, nextSnapshot, PLAY_SESSION_SNAPSHOT_CACHE_TTL_MS)
+          writeCachedValue(PLAY_SESSION_HISTORY_CACHE, sessionId, nextHistory, PLAY_SESSION_HISTORY_CACHE_TTL_MS)
           setSnapshot(nextSnapshot)
           setTranscript(transcriptFromHistory(nextHistory.entries))
           setError(null)
         }
       } catch (nextError) {
+        if (isAbortError(nextError)) {
+          return
+        }
         if (active) {
           setSnapshot(null)
           setTranscript([])
-          setError(toErrorMessage(nextError))
+          setError(toErrorMessage(nextError, uiLanguage))
         }
       } finally {
         if (active) {
@@ -89,8 +113,9 @@ export function usePlaySession(sessionId: string) {
 
     return () => {
       active = false
+      abortController.abort()
     }
-  }, [api, sessionId])
+  }, [api, sessionId, uiLanguage])
 
   const selectSuggestedAction = (action: PlaySuggestedAction) => {
     setSelectedSuggestionId(action.suggestion_id)
@@ -104,7 +129,12 @@ export function usePlaySession(sessionId: string) {
 
     const trimmedInput = inputText.trim()
     if (!trimmedInput) {
-      setError("Write your action before sending the turn.")
+      setError(
+        uiText(uiLanguage, {
+          en: "Write your action before sending the turn.",
+          zh: "请先写下这一回合要做什么。",
+        }),
+      )
       return
     }
 
@@ -118,6 +148,7 @@ export function usePlaySession(sessionId: string) {
         input_text: trimmedInput,
         selected_suggestion_id: selectedSuggestionId,
       })
+      writeCachedValue(PLAY_SESSION_SNAPSHOT_CACHE, sessionId, nextSnapshot, PLAY_SESSION_SNAPSHOT_CACHE_TTL_MS)
       setSnapshot(nextSnapshot)
       setPendingTurnInput(null)
       setSelectedSuggestionId(null)
@@ -131,13 +162,19 @@ export function usePlaySession(sessionId: string) {
 
       try {
         const nextHistory = await api.getPlaySessionHistory(sessionId)
+        writeCachedValue(PLAY_SESSION_HISTORY_CACHE, sessionId, nextHistory, PLAY_SESSION_HISTORY_CACHE_TTL_MS)
         setTranscript(transcriptFromHistory(nextHistory.entries))
         setError(null)
       } catch (historyError) {
-        setError(`Turn applied, but transcript refresh failed: ${toErrorMessage(historyError)}`)
+        setError(
+          uiText(uiLanguage, {
+            en: `Turn applied, but transcript refresh failed: ${toErrorMessage(historyError, uiLanguage)}`,
+            zh: `回合已经生效，但刷新文本记录失败：${toErrorMessage(historyError, uiLanguage)}`,
+          }),
+        )
       }
     } catch (nextError) {
-      setError(toErrorMessage(nextError))
+      setError(toErrorMessage(nextError, uiLanguage))
       setInputText(trimmedInput)
       setPendingTurnInput(null)
     } finally {

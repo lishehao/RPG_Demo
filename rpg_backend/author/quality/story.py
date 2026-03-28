@@ -4,6 +4,15 @@ import re
 
 from rpg_backend.author.contracts import FocusedBrief, StoryFrameDraft
 
+_CJK_PATTERN = re.compile(r"[\u4e00-\u9fff]")
+_GENERIC_ZH_TITLES = {
+    "公议协约",
+    "城市协约",
+    "公共协约",
+    "紧急议会",
+    "最终结算",
+}
+
 
 def _normalize(value: str) -> str:
     return " ".join((value or "").strip().split())
@@ -55,6 +64,13 @@ def story_frame_quality_reasons(
     focused_brief: FocusedBrief,
 ) -> list[str]:
     reasons: list[str] = []
+    if focused_brief.language == "zh":
+        normalized_premise = _normalize(story_frame.premise)
+        if len(re.findall(r"[A-Za-z]{4,}", normalized_premise)) >= 2:
+            reasons.append("premise_mixed_language_noise")
+        kernel_prefix = _normalize(focused_brief.story_kernel)[:20]
+        if kernel_prefix and normalized_premise.count(kernel_prefix) >= 2:
+            reasons.append("premise_repeats_story_kernel_multiple_times")
     if _normalize(story_frame.premise).casefold() == _normalize(focused_brief.story_kernel).casefold():
         reasons.append("premise_echoes_story_kernel")
     if story_frame.stakes.casefold().startswith("if the player fails"):
@@ -68,6 +84,8 @@ def story_frame_quality_reasons(
     }:
         reasons.append("truths_only_restate_brief")
     if _normalize(story_frame.title).casefold() in {"untitled crisis", _normalize(focused_brief.story_kernel).casefold()}:
+        reasons.append("title_generic_or_brief_echo")
+    if focused_brief.language == "zh" and _normalize(story_frame.title) in _GENERIC_ZH_TITLES:
         reasons.append("title_generic_or_brief_echo")
     if _has_bad_terminal_punctuation(story_frame.premise):
         reasons.append("premise_bad_terminal_punctuation")

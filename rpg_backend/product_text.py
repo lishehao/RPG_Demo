@@ -4,7 +4,13 @@ import re
 
 from rpg_backend.author.contracts import FocusedBrief
 from rpg_backend.author.compiler.story import sanitize_story_sentence
+from rpg_backend.content_language import localized_text
 from rpg_backend.author.normalize import normalize_whitespace, trim_ellipsis
+
+
+def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
+    lowered = text.casefold()
+    return any(keyword in lowered for keyword in keywords)
 
 
 _REPEATED_LOCATIVE_INTRO = re.compile(
@@ -55,14 +61,16 @@ def _duplicate_window_ratio(text: str, *, window_size: int = 4) -> float:
 
 
 def _dedupe_sentences(text: str) -> str:
-    sentences = re.split(r"(?<=[.!?])\s+", normalize_whitespace(text))
+    sentences = re.split(r"(?<=[.!?。！？])\s*", normalize_whitespace(text))
     ordered: list[str] = []
     seen: set[str] = set()
     for sentence in sentences:
         cleaned = sentence.strip()
         if not cleaned:
             continue
-        key = re.sub(r"[^a-z0-9]+", " ", cleaned.casefold()).strip()
+        key = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", " ", cleaned.casefold()).strip()
+        if not key and re.search(r"[\u4e00-\u9fff]", cleaned):
+            key = re.sub(r"\s+", "", cleaned)
         if not key or key in seen:
             continue
         seen.add(key)
@@ -110,12 +118,14 @@ def sanitize_product_story_sentence(
         fallback=cleaned_fallback or fallback,
         limit=limit,
     )
+    sanitized = _normalize_terminal_punctuation(sanitized)
     if _looks_noisy_product_copy(sanitized, echo_reference=echo_reference):
         fallback_sanitized = sanitize_story_sentence(
             cleaned_fallback or fallback,
             fallback=cleaned_fallback or fallback,
             limit=limit,
         )
+        fallback_sanitized = _normalize_terminal_punctuation(fallback_sanitized)
         if fallback_sanitized:
             return fallback_sanitized
     return sanitized
@@ -130,28 +140,28 @@ def sanitize_product_one_liner(*, premise: str, title: str, limit: int = 220) ->
 
 def sanitize_product_identity_summary(value: str, *, limit: int = 320) -> str:
     cleaned = _dedupe_sentences(_collapse_repeated_clauses(value))
-    return trim_ellipsis(cleaned, limit)
+    return trim_ellipsis(_normalize_terminal_punctuation(cleaned), limit)
 
 
 def sanitize_product_opening_narration(value: str, *, limit: int = 4000) -> str:
     cleaned = _dedupe_sentences(_collapse_repeated_clauses(value))
-    return trim_ellipsis(cleaned, limit)
+    return trim_ellipsis(_normalize_terminal_punctuation(cleaned), limit)
 
 
 def _product_setting_frame(*, primary_theme: str, prompt_seed: str, focused_brief: FocusedBrief) -> str:
     lowered = f"{prompt_seed} {focused_brief.setting_signal} {focused_brief.core_conflict}".casefold()
     if primary_theme == "logistics_quarantine_crisis":
-        if any(keyword in lowered for keyword in ("bridge", "flood", "ration", "ward", "district", "convoy", "infrastructure")):
-            return "a city under ration strain and infrastructure pressure"
-        if any(keyword in lowered for keyword in ("harbor", "port", "quarantine", "dock", "shipping")):
-            return "a harbor city strained by quarantine politics and supply fear"
-        return "a city where scarcity and emergency logistics keep turning relief into leverage"
+        if _contains_any(lowered, ("bridge", "flood", "ration", "ward", "district", "convoy", "infrastructure", "桥", "洪水", "配给", "街区")):
+            return localized_text(focused_brief.language, en="a city under ration strain and infrastructure pressure", zh="一座一边承受配给压力、一边被基础设施故障牵着走的城市")
+        if _contains_any(lowered, ("harbor", "port", "quarantine", "dock", "shipping", "港口", "码头", "检疫", "舱单")):
+            return localized_text(focused_brief.language, en="a harbor city strained by quarantine politics and supply fear", zh="一座被检疫封线与断供恐慌压到临界点的港城")
+        return localized_text(focused_brief.language, en="a city where scarcity and emergency logistics keep turning relief into leverage", zh="一座让短缺、物流与救济都沦为谈判筹码的城市")
     if primary_theme == "truth_record_crisis":
-        return "a city of archives where civic order depends on trusted records"
+        return localized_text(focused_brief.language, en="a city of archives where civic order depends on trusted records", zh="一座日常秩序全靠记录还值得相信的档案之城")
     if primary_theme == "public_order_crisis":
-        return "a city under blackout strain and escalating public panic"
+        return localized_text(focused_brief.language, en="a city under blackout strain and escalating public panic", zh="一座在停电余波与人心浮动中勉强维持秩序的城市")
     if primary_theme == "legitimacy_crisis":
-        return "a civic system where emergency authority is starting to outrun public legitimacy"
+        return localized_text(focused_brief.language, en="a civic system where emergency authority is starting to outrun public legitimacy", zh="一套紧急权力已经开始跑在公众认账之前的城市系统")
     return normalize_whitespace(focused_brief.setting_signal)
 
 
@@ -195,16 +205,16 @@ def _product_mandate(*, primary_theme: str, prompt_seed: str, focused_brief: Foc
 def _product_opposition_force(*, primary_theme: str, prompt_seed: str, focused_brief: FocusedBrief) -> str:
     lowered = f"{prompt_seed} {focused_brief.setting_signal} {focused_brief.core_conflict}".casefold()
     if primary_theme == "logistics_quarantine_crisis":
-        if any(keyword in lowered for keyword in ("bridge", "flood", "ration", "ward", "district", "convoy", "infrastructure")):
-            return "scarcity politics and emergency command keep turning logistics into political leverage"
-        return "trade pressure and quarantine politics keep turning relief into factional leverage"
+        if _contains_any(lowered, ("bridge", "flood", "ration", "ward", "district", "convoy", "infrastructure", "桥", "洪水", "配给", "街区")):
+            return localized_text(focused_brief.language, en="scarcity politics and emergency command keep turning logistics into political leverage", zh="短缺政治与紧急指挥，正在把物流调度改写成权力筹码")
+        return localized_text(focused_brief.language, en="trade pressure and quarantine politics keep turning relief into factional leverage", zh="贸易压力与检疫政治，正在把救济安排改写成派系筹码")
     if primary_theme == "truth_record_crisis":
-        return "forged records and procedural denial keep reshaping the public story"
+        return localized_text(focused_brief.language, en="forged records and procedural denial keep reshaping the public story", zh="伪造记录和程序性否认，正在改写公众最后会信哪一版说法")
     if primary_theme == "public_order_crisis":
-        return "panic, rumor, and emergency messaging keep pushing the city toward open disorder"
+        return localized_text(focused_brief.language, en="panic, rumor, and emergency messaging keep pushing the city toward open disorder", zh="恐慌、流言和紧急广播，正把整座城市往公开失序上推")
     if primary_theme == "legitimacy_crisis":
-        return "institutional panic and mandate politics turn every delay into leverage"
-    return "public pressure keeps turning delay into civic fracture"
+        return localized_text(focused_brief.language, en="institutional panic and mandate politics turn every delay into leverage", zh="机构恐慌和授权博弈，会把每一次拖延都炒成新的筹码")
+    return localized_text(focused_brief.language, en="public pressure keeps turning delay into civic fracture", zh="公众压力会把每一次拖延都推成新的裂口")
 
 
 def build_product_premise_fallback(
@@ -215,10 +225,32 @@ def build_product_premise_fallback(
     limit: int = 320,
 ) -> str:
     return trim_ellipsis(
-        (
-            f"In {_product_setting_frame(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)}, "
-            f"{_product_mandate(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)} "
-            f"while {_product_opposition_force(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)}."
+        localized_text(
+            focused_brief.language,
+            en=(
+                f"In {_product_setting_frame(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)}, "
+                f"{_product_mandate(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)} "
+                f"while {_product_opposition_force(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)}."
+            ),
+            zh=(
+                f"{_product_setting_frame(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)}里，"
+                f"{_product_mandate(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)}。"
+                f"与此同时，{_product_opposition_force(primary_theme=primary_theme, prompt_seed=prompt_seed, focused_brief=focused_brief)}。"
+            ),
         ),
         limit,
     )
+
+
+def _normalize_terminal_punctuation(value: str) -> str:
+    text = normalize_whitespace(value)
+    if not text:
+        return ""
+    text = re.sub(r"([。！？])\s+(?=[\u4e00-\u9fff])", r"\1", text)
+    text = text.replace("。.", "。").replace(".。", "。").replace("..", ".").replace("。。", "。")
+    if re.search(r"[\u4e00-\u9fff]", text):
+        text = text.rstrip(".")
+        if not text.endswith(("。", "！", "？")):
+            text = f"{text}。"
+        return text
+    return text

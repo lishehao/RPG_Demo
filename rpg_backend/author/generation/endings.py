@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from rpg_backend.author.compiler.router import plan_bundle_theme
 from rpg_backend.author.compiler.endings import (
@@ -9,14 +9,14 @@ from rpg_backend.author.compiler.endings import (
 from rpg_backend.author.contracts import DesignBundle, EndingAnchorSuggestionDraft
 from rpg_backend.author.generation.context import build_author_context_from_bundle
 from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
+from rpg_backend.content_language import resolve_content_prompt_profile
+from rpg_backend.generation_skill import ContextCard, GenerationSkillPacket
+from rpg_backend.llm_gateway import CapabilityGatewayCore
 from rpg_backend.author.normalize import normalize_id_list
 
-if TYPE_CHECKING:
-    from rpg_backend.author.gateway import AuthorLLMGateway
 
-
-def _ending_anchor_output_tokens(gateway: "AuthorLLMGateway", primary_theme: str) -> int:
-    budget = gateway.max_output_tokens_rulepack
+def _ending_anchor_output_tokens(gateway: CapabilityGatewayCore, primary_theme: str) -> int:
+    budget = gateway.text_policy("author.rulepack_generate").max_output_tokens
     if budget is None:
         return 980 if primary_theme == "legitimacy_crisis" else 760
     floor = 760
@@ -37,7 +37,7 @@ def _ending_theme_guidance(primary_theme: str) -> str:
 
 
 def _normalize_ending_anchor_suggestion_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     rows = []
@@ -74,7 +74,7 @@ def _normalize_ending_anchor_suggestion_payload(
 
 
 def generate_ending_anchor_suggestions(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     design_bundle: DesignBundle,
     *,
     previous_response_id: str | None = None,
@@ -83,6 +83,7 @@ def generate_ending_anchor_suggestions(
     resolved_primary_theme = primary_theme or plan_bundle_theme(design_bundle).primary_theme
     context_packet = build_author_context_from_bundle(design_bundle)
     skeleton = build_ending_skeleton(design_bundle)
+    flow_plan = design_bundle.story_flow_plan
     collapse = next(item for item in skeleton.ending_intents if item.ending_id == "collapse")
     pyrrhic = next(item for item in skeleton.ending_intents if item.ending_id == "pyrrhic")
     payload = {
@@ -107,6 +108,7 @@ def generate_ending_anchor_suggestions(
         "Use only axis, truth, event, and flag ids that already exist in author_context. "
         "Required top-level key: ending_anchor_suggestions. "
         "Keep the output terse, id-based, deterministic-friendly, and non-graphic. "
+        f"{f'For a {flow_plan.branch_budget} branch budget, make ending anchors reflect route/event divergence rather than only one state axis. ' if flow_plan is not None else ''}"
         f"{_ending_theme_guidance(resolved_primary_theme)}"
     )
     retry_prompt = (
@@ -118,13 +120,33 @@ def generate_ending_anchor_suggestions(
         "Output raw JSON only. Exactly one object with key ending_anchor_suggestions. "
         "Each suggestion may only contain ending_id, axis_ids, required_truth_ids, required_event_ids, required_flag_ids."
     )
+    skill_packet = GenerationSkillPacket(
+        skill_id="author.ending_anchor.generate",
+        skill_version="v1",
+        capability="author.rulepack_generate",
+        contract_mode="strict_json_schema",
+        role_style=resolve_content_prompt_profile(),
+        required_output_contract="Return exactly one EndingAnchorSuggestionDraft JSON object.",
+        context_cards=(
+            ContextCard("author_context_card", context_packet, priority=10),
+            ContextCard("ending_skeleton_card", payload["ending_anchor_seed"], priority=20),
+            ContextCard("story_flow_card", flow_plan.model_dump(mode="json") if flow_plan is not None else {}, priority=30),
+        ),
+        task_brief=system_prompt,
+        repair_mode="schema_repair",
+        repair_note=retry_prompt,
+        final_contract_note=final_retry_prompt,
+        extra_payload=payload,
+    )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.rulepack_generate",
         primary_payload=payload,
         prompts=(system_prompt, retry_prompt, final_retry_prompt),
         previous_response_id=previous_response_id,
         max_output_tokens=_ending_anchor_output_tokens(gateway, resolved_primary_theme),
         operation_name="ending_anchor_generate",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: EndingAnchorSuggestionDraft.model_validate(
             _normalize_ending_anchor_suggestion_payload(gateway, raw_payload)
         ),
@@ -132,7 +154,7 @@ def generate_ending_anchor_suggestions(
 
 
 def glean_ending_anchor_suggestions(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     design_bundle: DesignBundle,
     partial_ending_anchor_suggestions: EndingAnchorSuggestionDraft,
     *,
@@ -162,13 +184,32 @@ def glean_ending_anchor_suggestions(
         "Output raw JSON only. Exactly one object with key ending_anchor_suggestions. "
         "Each suggestion may only contain ending_id, axis_ids, required_truth_ids, required_event_ids, required_flag_ids."
     )
+    skill_packet = GenerationSkillPacket(
+        skill_id="author.ending_anchor.glean",
+        skill_version="v1",
+        capability="author.rulepack_generate",
+        contract_mode="strict_json_schema",
+        role_style=resolve_content_prompt_profile(),
+        required_output_contract="Return exactly one EndingAnchorSuggestionDraft JSON object.",
+        context_cards=(
+            ContextCard("author_context_card", context_packet, priority=10),
+            ContextCard("partial_ending_anchor_card", partial_ending_anchor_suggestions.model_dump(mode="json"), priority=20),
+        ),
+        task_brief=system_prompt,
+        repair_mode="schema_repair",
+        repair_note=retry_prompt,
+        final_contract_note=final_retry_prompt,
+        extra_payload=payload,
+    )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.rulepack_generate",
         primary_payload=payload,
         prompts=(system_prompt, retry_prompt, final_retry_prompt),
         previous_response_id=previous_response_id,
         max_output_tokens=_ending_anchor_output_tokens(gateway, resolved_primary_theme),
         operation_name="ending_anchor_generate",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: EndingAnchorSuggestionDraft.model_validate(
             _normalize_ending_anchor_suggestion_payload(gateway, raw_payload)
         ),

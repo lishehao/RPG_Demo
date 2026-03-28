@@ -30,21 +30,65 @@ class PlayRuntimePolicyDecision:
     guidance: str
 
 
+_AUTHOR_DECISION_BY_STORY_FRAME_STRATEGY: dict[str, tuple[str, str, str]] = {
+    "blackout_referendum_story": ("logistics_quarantine_crisis", "blackout_referendum_cast", "blackout_referendum_compile"),
+    "bridge_ration_story": ("logistics_quarantine_crisis", "bridge_ration_cast", "bridge_ration_compile"),
+    "harbor_quarantine_story": ("logistics_quarantine_crisis", "harbor_quarantine_cast", "harbor_quarantine_compile"),
+    "logistics_story": ("logistics_quarantine_crisis", "logistics_cast", "single_semantic_compile"),
+    "warning_record_story": ("truth_record_crisis", "warning_record_cast", "warning_record_compile"),
+    "archive_vote_story": ("truth_record_crisis", "archive_vote_cast", "archive_vote_compile"),
+    "truth_record_story": ("truth_record_crisis", "truth_record_cast", "single_semantic_compile"),
+    "legitimacy_story": ("legitimacy_crisis", "legitimacy_cast", "conservative_direct_draft"),
+    "public_order_story": ("public_order_crisis", "public_order_cast", "conservative_direct_draft"),
+    "generic_civic_story": ("generic_civic_crisis", "generic_civic_cast", "conservative_direct_draft"),
+}
+
+_GENERIC_AUTHOR_STORY_FRAME_STRATEGIES: set[str] = {
+    "generic_civic_story",
+    "logistics_story",
+    "truth_record_story",
+}
+
+
+def author_theme_from_story_frame_strategy(
+    story_frame_strategy: str,
+    *,
+    modifiers: tuple[str, ...] = (),
+    router_reason: str = "mapped_story_frame_strategy",
+) -> AuthorThemeDecision | None:
+    mapping = _AUTHOR_DECISION_BY_STORY_FRAME_STRATEGY.get(str(story_frame_strategy or ""))
+    if mapping is None:
+        return None
+    primary_theme, cast_strategy, beat_plan_strategy = mapping
+    return AuthorThemeDecision(
+        primary_theme=primary_theme,
+        modifiers=tuple(modifiers),
+        router_reason=router_reason,
+        story_frame_strategy=story_frame_strategy,
+        cast_strategy=cast_strategy,
+        beat_plan_strategy=beat_plan_strategy,
+    )
+
+
+def is_generic_author_story_frame_strategy(story_frame_strategy: str | None) -> bool:
+    return str(story_frame_strategy or "") in _GENERIC_AUTHOR_STORY_FRAME_STRATEGIES
+
+
 def _modifier_hits(haystack: str) -> tuple[str, ...]:
     modifiers: list[str] = []
-    if _has_any(haystack, ("blackout", "outage", "dimmed", "darkness")):
+    if _has_any(haystack, ("blackout", "outage", "dimmed", "darkness", "停电", "断电", "黑暗")):
         modifiers.append("blackout")
-    if _has_any(haystack, ("harbor", "port", "dock", "shipping")):
+    if _has_any(haystack, ("harbor", "port", "dock", "shipping", "港口", "码头", "航运")):
         modifiers.append("harbor")
-    if _has_any(haystack, ("bridge", "flood", "ration", "ward", "district")):
+    if _has_any(haystack, ("bridge", "flood", "ration", "ward", "district", "桥", "洪水", "配给", "街区")):
         modifiers.append("infrastructure")
-    if _has_any(haystack, ("archive", "ledger", "ledgers", "record", "records", "witness", "witnesses", "testimony", "testimonies", "evidence")):
+    if _has_any(haystack, ("archive", "ledger", "ledgers", "record", "records", "witness", "witnesses", "testimony", "testimonies", "evidence", "档案", "账本", "记录", "证词", "证据", "见证")):
         modifiers.append("archive")
-    if _has_any(haystack, ("quarantine", "cordon", "blockade")):
+    if _has_any(haystack, ("quarantine", "cordon", "blockade", "检疫", "封锁", "隔离")):
         modifiers.append("quarantine")
-    if _has_any(haystack, ("election", "succession", "vote", "mandate")):
+    if _has_any(haystack, ("election", "succession", "vote", "mandate", "选举", "继承", "投票", "授权")):
         modifiers.append("election")
-    if _has_any(haystack, ("panic", "riot", "curfew", "evacuation", "martial law")):
+    if _has_any(haystack, ("panic", "riot", "curfew", "evacuation", "martial law", "恐慌", "暴动", "宵禁", "疏散", "戒严")):
         modifiers.append("public_panic")
     return tuple(modifiers)
 
@@ -185,16 +229,16 @@ def play_runtime_profile_from_bundle(bundle: DesignBundle) -> PlayRuntimePolicyD
             bundle.story_bible.stakes,
         ]
     ).casefold()
-    if _has_any(haystack, ("observatory", "forecast", "warning", "warnings", "bulletin", "bulletins", "storm", "bells")):
+    if _has_any(haystack, ("observatory", "forecast", "warning", "warnings", "bulletin", "bulletins", "storm", "bells", "观测站", "预报", "警报", "公告", "风暴", "钟声")):
         profile, reason = "warning_record_play", "runtime_warning_record_keywords"
-    elif _has_any(haystack, ("archive", "ledger", "ledgers", "record", "records", "transcript", "transcripts", "witness", "witnesses")) and _has_any(haystack, ("vote", "election", "mandate", "certify", "certification")):
-        profile, reason = "archive_vote_play", "runtime_archive_vote_keywords"
-    elif _has_any(haystack, ("blackout", "referendum", "council", "councils", "neighborhood", "delegate", "delegates", "supply report", "supply reports")):
-        profile, reason = "blackout_council_play", "runtime_blackout_council_keywords"
-    elif _has_any(haystack, ("bridge", "flood", "ration", "ward", "district", "checkpoint", "allotment")):
-        profile, reason = "bridge_ration_play", "runtime_bridge_ration_keywords"
-    elif _has_any(haystack, ("harbor", "port", "trade", "shipping", "dock", "quarantine", "blockade", "manifest")):
+    elif _has_any(haystack, ("harbor", "port", "trade", "shipping", "dock", "quarantine", "blockade", "manifest", "港口", "码头", "贸易", "航运", "检疫", "封锁", "舱单")):
         profile, reason = "harbor_quarantine_play", "runtime_harbor_quarantine_keywords"
+    elif _has_any(haystack, ("blackout", "referendum", "council", "councils", "neighborhood", "delegate", "delegates", "supply report", "supply reports", "停电", "公投", "议会", "社区", "代表", "供给报告")):
+        profile, reason = "blackout_council_play", "runtime_blackout_council_keywords"
+    elif _has_any(haystack, ("bridge", "flood", "ration", "ward", "district", "checkpoint", "allotment", "桥", "洪水", "配给", "街区", "检查点", "配额")):
+        profile, reason = "bridge_ration_play", "runtime_bridge_ration_keywords"
+    elif _has_any(haystack, ("archive", "ledger", "ledgers", "record", "records", "transcript", "transcripts", "witness", "witnesses", "档案", "账本", "记录", "笔录", "见证")) and _has_any(haystack, ("vote", "election", "mandate", "certify", "certification", "投票", "选举", "授权", "认证", "核验")):
+        profile, reason = "archive_vote_play", "runtime_archive_vote_keywords"
     else:
         author_decision = author_theme_from_brief(bundle.focused_brief)
         strategy = author_decision.story_frame_strategy
@@ -203,6 +247,11 @@ def play_runtime_profile_from_bundle(bundle: DesignBundle) -> PlayRuntimePolicyD
             "public_order_story": ("public_order_play", "mapped_runtime_public_order"),
             "truth_record_story": ("warning_record_play", "mapped_runtime_truth_record"),
             "logistics_story": ("harbor_quarantine_play", "mapped_runtime_logistics"),
+            "warning_record_story": ("warning_record_play", "mapped_runtime_warning_record"),
+            "archive_vote_story": ("archive_vote_play", "mapped_runtime_archive_vote"),
+            "bridge_ration_story": ("bridge_ration_play", "mapped_runtime_bridge_ration"),
+            "harbor_quarantine_story": ("harbor_quarantine_play", "mapped_runtime_harbor_quarantine"),
+            "blackout_referendum_story": ("blackout_council_play", "mapped_runtime_blackout_council"),
         }
         profile, reason = mapping.get(strategy, ("generic_civic_play", "mapped_runtime_generic"))
     return PlayRuntimePolicyDecision(
@@ -214,15 +263,15 @@ def play_runtime_profile_from_bundle(bundle: DesignBundle) -> PlayRuntimePolicyD
 
 def _author_profile_from_haystack(haystack: str, *, router_reason_prefix: str) -> AuthorThemeDecision:
     modifiers = _modifier_hits(haystack)
-    logistics_keywords = ("harbor", "port", "trade", "quarantine", "supply", "blockade", "bridge", "flood", "ration", "ward", "district")
-    truth_keywords = ("archive", "ledger", "ledgers", "record", "records", "witness", "witnesses", "testimony", "testimonies", "evidence", "proof", "observatory", "forecast", "warning", "warnings", "bulletin", "bulletins")
-    legitimacy_keywords = ("succession", "election", "vote", "council", "coalition", "legitimacy", "settlement", "throne", "mandate")
-    public_order_keywords = ("blackout", "panic", "riot", "evacuation", "curfew", "breakdown", "martial law")
-    bridge_ration_keywords = ("bridge", "flood", "ration", "ward", "district", "checkpoint", "allotment")
-    harbor_quarantine_keywords = ("harbor", "port", "trade", "shipping", "dock", "quarantine", "blockade", "manifest")
-    blackout_referendum_keywords = ("blackout", "referendum", "council", "councils", "neighborhood", "delegate", "delegates", "supply report", "supply reports")
-    archive_vote_keywords = ("archive", "ledger", "ledgers", "record", "records", "transcript", "transcripts", "witness", "witnesses", "testimony", "testimonies", "vote", "election", "mandate", "certify", "certification")
-    warning_record_keywords = ("observatory", "forecast", "warning", "warnings", "bulletin", "bulletins", "storm", "bells", "evacuation")
+    logistics_keywords = ("harbor", "port", "trade", "quarantine", "supply", "blockade", "bridge", "flood", "ration", "ward", "district", "港口", "码头", "贸易", "检疫", "供给", "封锁", "桥", "洪水", "配给", "街区")
+    truth_keywords = ("archive", "ledger", "ledgers", "record", "records", "witness", "witnesses", "testimony", "testimonies", "evidence", "proof", "observatory", "forecast", "warning", "warnings", "bulletin", "bulletins", "档案", "账本", "记录", "见证", "证词", "证据", "证明", "观测站", "预报", "警报", "公告")
+    legitimacy_keywords = ("succession", "election", "vote", "council", "coalition", "legitimacy", "settlement", "throne", "mandate", "继承", "选举", "投票", "议会", "联盟", "合法性", "和解", "王位", "授权")
+    public_order_keywords = ("blackout", "panic", "riot", "evacuation", "curfew", "breakdown", "martial law", "停电", "恐慌", "暴动", "疏散", "宵禁", "失序", "戒严")
+    bridge_ration_keywords = ("bridge", "flood", "ration", "ward", "district", "checkpoint", "allotment", "桥", "洪水", "配给", "街区", "检查点", "配额")
+    harbor_quarantine_keywords = ("harbor", "port", "trade", "shipping", "dock", "quarantine", "blockade", "manifest", "港口", "码头", "贸易", "航运", "检疫", "封锁", "舱单")
+    blackout_referendum_keywords = ("blackout", "referendum", "council", "councils", "neighborhood", "delegate", "delegates", "supply report", "supply reports", "停电", "公投", "议会", "社区", "代表", "供给报告")
+    archive_vote_keywords = ("archive", "ledger", "ledgers", "record", "records", "transcript", "transcripts", "witness", "witnesses", "testimony", "testimonies", "vote", "election", "mandate", "certify", "certification", "档案", "账本", "记录", "笔录", "见证", "证词", "投票", "选举", "授权", "认证", "核验")
+    warning_record_keywords = ("observatory", "forecast", "warning", "warnings", "bulletin", "bulletins", "storm", "bells", "evacuation", "观测站", "预报", "警告", "公告", "风暴", "钟声", "疏散")
 
     if _has_any(haystack, logistics_keywords):
         if _has_any(haystack, blackout_referendum_keywords):

@@ -306,6 +306,35 @@ class FakeClient:
         self.responses = _Responses(self)
 
 
+class FakeChatClient:
+    def __init__(self, payloads: list[dict[str, object] | str]) -> None:
+        self.payloads = payloads
+        self.calls: list[dict[str, object]] = []
+
+        class _ChatCompletions:
+            def __init__(self, outer: FakeChatClient) -> None:
+                self.outer = outer
+
+            def create(self, **kwargs):  # noqa: ANN003
+                self.outer.calls.append(kwargs)
+                payload = self.outer.payloads.pop(0)
+                if isinstance(payload, str):
+                    content = payload
+                else:
+                    import json
+
+                    content = json.dumps(payload, ensure_ascii=False)
+                message = SimpleNamespace(content=content)
+                choice = SimpleNamespace(message=message)
+                return SimpleNamespace(choices=[choice], id=f"chat-{len(self.outer.calls)}")
+
+        class _Chat:
+            def __init__(self, outer: FakeChatClient) -> None:
+                self.completions = _ChatCompletions(outer)
+
+        self.chat = _Chat(self)
+
+
 def cast_member_semantics_payloads() -> list[dict[str, str]]:
     return [
         {
@@ -335,6 +364,47 @@ def cast_member_semantics_payloads() -> list[dict[str, str]]:
     ]
 
 
+def story_instance_variation_payloads() -> list[dict[str, str]]:
+    return [
+        {
+            "role": "Archive certifier",
+            "roster_public_summary": "A formal certifier who keeps the archive vote legible even when the chamber wants a quicker fiction.",
+            "agenda": "Keep the certification chain visible before the chamber closes around a false result.",
+            "red_line": "Will not validate a result that arrived through a compromised handoff.",
+            "pressure_signature": "Turns every missing seal into a sign that public trust is already being spent.",
+            "instance_experience_summary": "Has spent this crisis watching sealed handoffs arrive faster than honest paperwork can follow.",
+            "instance_personality_delta": "More openly impatient than usual, but still recognizably exacting and procedural.",
+        },
+        {
+            "role": "Gallery petitioner",
+            "roster_public_summary": "A public witness who keeps the gallery's memory inside the record instead of letting the chamber flatten it.",
+            "agenda": "Keep what the public saw and signed inside the official story before it is filed away.",
+            "red_line": "Will not let the chamber pretend the gallery was calmer than it was.",
+            "pressure_signature": "Turns omission into pressure by naming what the room is already trying to forget.",
+            "instance_experience_summary": "Spent the hearing carrying petition slips between the gallery rail and the counting floor.",
+            "instance_personality_delta": "Sharper and less patient in this crisis, but still recognizably public-facing rather than institutional.",
+        },
+        {
+            "role": "Mandate broker",
+            "roster_public_summary": "A mandate broker who treats the certified result as a bargaining surface rather than a clean ending.",
+            "agenda": "Translate the final result into leverage before anyone else can freeze the settlement.",
+            "red_line": "Will not leave the vote without shaping who claims the afterlife of the result.",
+            "pressure_signature": "Hears delay as opportunity and reads every sealed pause as negotiable space.",
+            "instance_experience_summary": "Entered the chamber with accord tabs ready for whichever result survived certification.",
+            "instance_personality_delta": "More visibly hungry for timing than usual, but still the same composed broker.",
+        },
+        {
+            "role": "Ward delegate",
+            "roster_public_summary": "A ward delegate who keeps blackout harm visible when officials want to reduce it to a technical inconvenience.",
+            "agenda": "Keep neighborhood testimony visible before the chamber turns outage harm into abstraction.",
+            "red_line": "Will not let the dark wards disappear from the public record.",
+            "pressure_signature": "Counts pressure through who stops speaking first and which names vanish from the room.",
+            "instance_experience_summary": "Spent the blackout hearing carrying the wards' missing names into the chamber one list at a time.",
+            "instance_personality_delta": "More confrontational in this story, but still recognizably civic and witness-led.",
+        },
+    ]
+
+
 def ending_anchor_suggestion_payload() -> dict[str, object]:
     return {
         "ending_anchor_suggestions": [
@@ -355,11 +425,23 @@ def ending_anchor_suggestion_payload() -> dict[str, object]:
 def default_transport_responses() -> dict[str, list[dict[str, object] | Exception]]:
     fixture_bundle = author_fixture_bundle()
     return {
+        "spark_seed_generate": [
+            {
+                "prompt_seed": "A civic archivist must restore one binding public record before an emergency mandate hardens around a forged ledger.",
+            }
+        ],
         "story_frame_semantics": [
             fixture_bundle.story_frame_scaffold.model_dump(mode="json"),
         ],
+        "cast_generate_full": [
+            fixture_bundle.cast_draft.model_dump(mode="json"),
+        ],
         "cast_member_semantics": list(cast_member_semantics_payloads()),
+        "character_instance_variation": list(story_instance_variation_payloads()),
         "beat_plan_generate": [
+            fixture_bundle.beat_plan_skeleton.model_dump(mode="json"),
+            fixture_bundle.beat_plan_skeleton.model_dump(mode="json"),
+            fixture_bundle.beat_plan_skeleton.model_dump(mode="json"),
             fixture_bundle.beat_plan_skeleton.model_dump(mode="json"),
         ],
         "route_opportunity_generate": [
@@ -402,8 +484,54 @@ class FakeGateway:
         self.max_output_tokens_beat_repair = 700
         self.max_output_tokens_rulepack = 900
         self.use_session_cache = False
+        self.transport_style = "responses"
+        self.model = "test-author-model"
         self.call_trace: list[dict[str, object]] = []
         self._response_index = 0
+
+    def text_policy(self, capability: str):
+        budget_by_capability = {
+            "author.story_frame_scaffold": self.max_output_tokens_overview,
+            "author.story_frame_finalize": self.max_output_tokens_overview,
+            "author.cast_member_generate": self.max_output_tokens_overview,
+            "author.cast_member_repair": self.max_output_tokens_overview,
+            "author.character_instance_variation": self.max_output_tokens_overview,
+            "author.spark_seed_generate": self.max_output_tokens_overview,
+            "author.beat_plan_generate": self.max_output_tokens_beat_plan,
+            "author.beat_skeleton_generate": self.max_output_tokens_beat_skeleton,
+            "author.beat_repair": self.max_output_tokens_beat_repair,
+            "author.rulepack_generate": self.max_output_tokens_rulepack,
+            "copilot.reply": self.max_output_tokens_overview,
+            "copilot.rewrite_plan": self.max_output_tokens_rulepack,
+        }
+        return SimpleNamespace(
+            capability=capability,
+            max_output_tokens=budget_by_capability.get(capability, self.max_output_tokens_overview),
+            transport_style=self.transport_style,
+            use_session_cache=self.use_session_cache,
+            enable_thinking=False,
+            model=self.model,
+        )
+
+    def invoke_text_capability(self, capability: str, request):
+        raw = self._invoke_json(
+            system_prompt=request.system_prompt,
+            user_payload=request.user_payload,
+            max_output_tokens=request.max_output_tokens,
+            previous_response_id=request.previous_response_id,
+            operation_name=request.operation_name,
+        )
+        return SimpleNamespace(
+            payload=raw.payload,
+            response_id=raw.response_id,
+            usage=raw.usage,
+            input_characters=raw.input_characters,
+            capability=capability,
+            provider="test",
+            model=self.model,
+            transport_style=self.transport_style,
+            fallback_source=getattr(raw, "fallback_source", None),
+        )
 
     def _invoke_json(
         self,

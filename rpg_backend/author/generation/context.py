@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from rpg_backend.author.contracts import CastDraft, DesignBundle, StoryFrameDraft
+from rpg_backend.author.contracts import CastDraft, DesignBundle, StoryFlowPlan, StoryFrameDraft, TonePlan
 
 
 def build_author_context_from_story(
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
+    *,
+    story_flow_plan: StoryFlowPlan | None = None,
+    tone_plan: TonePlan | None = None,
 ) -> dict[str, Any]:
     return {
         "title": story_frame.title,
@@ -37,6 +40,8 @@ def build_author_context_from_story(
         ],
         "flags": [item.label for item in story_frame.flags],
         "beats": [],
+        "story_flow_plan": story_flow_plan.model_dump(mode="json") if story_flow_plan is not None else None,
+        "tone_plan": tone_plan.model_dump(mode="json") if tone_plan is not None else None,
     }
 
 
@@ -90,4 +95,14 @@ def build_author_context_from_bundle(design_bundle: DesignBundle) -> dict[str, A
             }
             for item in design_bundle.beat_spine
         ],
+        "story_flow_plan": (
+            design_bundle.story_flow_plan.model_dump(mode="json")
+            if design_bundle.story_flow_plan is not None
+            else None
+        ),
+        "tone_plan": (
+            design_bundle.resolved_tone_plan.model_dump(mode="json")
+            if design_bundle.resolved_tone_plan is not None
+            else None
+        ),
     }

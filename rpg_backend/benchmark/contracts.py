@@ -20,7 +20,7 @@ class BenchmarkAuthorJobEvent(BaseModel):
     emitted_at: datetime
     status: str | None = Field(default=None, max_length=32)
     stage: str | None = Field(default=None, max_length=64)
-    stage_index: int | None = Field(default=None, ge=1)
+    stage_index: int | None = Field(default=None, ge=0)
     stage_total: int | None = Field(default=None, ge=1)
 
 
@@ -37,6 +37,7 @@ class BenchmarkAuthorJobDiagnosticsResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     job_id: str = Field(min_length=1)
+    content_prompt_profile: str = Field(min_length=1, max_length=32)
     status: Literal["queued", "running", "completed", "failed"]
     prompt_seed: str = Field(min_length=1, max_length=4000)
     created_at: datetime
@@ -49,6 +50,17 @@ class BenchmarkAuthorJobDiagnosticsResponse(BaseModel):
     llm_call_trace: list[dict[str, Any]] = Field(default_factory=list)
     quality_trace: list[dict[str, Any]] = Field(default_factory=list)
     source_summary: dict[str, str] = Field(default_factory=dict)
+    context_lock_violation_distribution: dict[str, int] = Field(default_factory=dict)
+    snapshot_stage_distribution: dict[str, int] = Field(default_factory=dict)
+    drift_repair_entry_count: int = Field(default=0, ge=0)
+    beat_runtime_shard_count: int = Field(default=0, ge=0)
+    beat_runtime_shard_fallback_count: int = Field(default=0, ge=0)
+    beat_runtime_shard_elapsed_ms: int = Field(default=0, ge=0)
+    beat_runtime_shard_drift_distribution: dict[str, int] = Field(default_factory=dict)
+    roster_catalog_version: str | None = None
+    roster_enabled: bool = False
+    roster_selection_count: int = Field(default=0, ge=0)
+    roster_retrieval_trace: list[dict[str, Any]] = Field(default_factory=list)
     stage_timings: list[BenchmarkStageTiming] = Field(default_factory=list)
     events: list[BenchmarkAuthorJobEvent] = Field(default_factory=list)
 
@@ -66,8 +78,26 @@ class BenchmarkPlayTraceSummary(BaseModel):
     ending_judge_source_distribution: dict[str, int] = Field(default_factory=dict)
     pyrrhic_critic_source_distribution: dict[str, int] = Field(default_factory=dict)
     render_source_distribution: dict[str, int] = Field(default_factory=dict)
+    render_primary_path_mode_distribution: dict[str, int] = Field(default_factory=dict)
+    render_failure_reason_distribution: dict[str, int] = Field(default_factory=dict)
+    interpret_failure_reason_distribution: dict[str, int] = Field(default_factory=dict)
+    capability_distribution: dict[str, int] = Field(default_factory=dict)
+    provider_distribution: dict[str, int] = Field(default_factory=dict)
     heuristic_interpret_turn_count: int = Field(ge=0)
+    ending_judge_failed_turn_count: int = Field(default=0, ge=0)
+    ending_judge_stage1_success_rate: float = Field(default=0.0, ge=0, le=1)
+    ending_judge_stage2_rescue_rate: float = Field(default=0.0, ge=0, le=1)
+    pyrrhic_critic_stage1_success_rate: float = Field(default=0.0, ge=0, le=1)
+    pyrrhic_critic_stage2_rescue_rate: float = Field(default=0.0, ge=0, le=1)
+    render_plan_stage1_success_rate: float = Field(default=0.0, ge=0, le=1)
+    render_plan_primary_success_rate: float = Field(default=0.0, ge=0, le=1)
+    render_plan_stage2_rescue_rate: float = Field(default=0.0, ge=0, le=1)
+    render_narration_stage1_success_rate: float = Field(default=0.0, ge=0, le=1)
+    render_narration_stage2_rescue_rate: float = Field(default=0.0, ge=0, le=1)
+    render_direct_primary_success_rate: float = Field(default=0.0, ge=0, le=1)
     render_fallback_turn_count: int = Field(ge=0)
+    render_repair_entry_rate: float = Field(default=0.0, ge=0, le=1)
+    render_stage1_contract_failure_distribution: dict[str, int] = Field(default_factory=dict)
     repair_turn_count: int = Field(ge=0)
     used_previous_response_turn_count: int = Field(ge=0)
     session_cache_enabled: bool = False
@@ -81,6 +111,7 @@ class BenchmarkPlaySessionDiagnosticsResponse(BaseModel):
 
     session_id: str = Field(min_length=1)
     story_id: str = Field(min_length=1)
+    content_prompt_profile: str = Field(min_length=1, max_length=32)
     status: Literal["active", "completed", "expired"]
     created_at: datetime
     expires_at: datetime

@@ -8,10 +8,13 @@ from datetime import datetime, timezone
 from threading import Lock
 from uuid import uuid4
 
-from rpg_backend.author.display import humanize_identifier, theme_label, topology_label
+from rpg_backend.content_language import ContentLanguage
 from rpg_backend.config import Settings, get_settings
 from rpg_backend.library.contracts import (
     PublishedStoryCard,
+    PublishedStoryCastEntry,
+    PublishedStoryCastManifest,
+    PublishedStoryBeatOutline,
     PublishedStoryDetailResponse,
     PublishedStoryListFacets,
     PublishedStoryListMeta,
@@ -21,11 +24,13 @@ from rpg_backend.library.contracts import (
     PublishedStoryListResponse,
     PublishedStoryListSort,
     PublishedStoryRecord,
+    PublishedStoryStructure,
     StoryVisibility,
     UpdateStoryVisibilityRequest,
 )
 from rpg_backend.library.storage import SQLiteStoryLibraryStorage
 from rpg_backend.play.compiler import compile_play_plan
+from rpg_backend.product_copy import runtime_profile_label, surface_phrase, theme_label, topology_label
 
 
 class LibraryServiceError(RuntimeError):
@@ -53,6 +58,7 @@ class StoryLibraryService:
     ) -> PublishedStoryCard:
         return PublishedStoryCard(
             story_id=story_id,
+            language=summary.language,
             title=summary.title,
             one_liner=summary.one_liner,
             premise=summary.premise,
@@ -60,7 +66,7 @@ class StoryLibraryService:
             tone=summary.tone,
             npc_count=summary.npc_count,
             beat_count=summary.beat_count,
-            topology=topology_label(preview.structure.cast_topology),
+            topology=topology_label(preview.structure.cast_topology, language=summary.language),
             visibility=visibility,
             viewer_can_manage=viewer_can_manage,
             published_at=published_at,
@@ -80,8 +86,8 @@ class StoryLibraryService:
         return PublishedStoryPresentation(
             dossier_ref=cls._build_dossier_ref(record.story.story_id),
             status="open_for_play",
-            status_label="Open for play",
-            classification_label=theme_label(record.preview.theme.primary_theme),
+            status_label=surface_phrase("story_open_for_play", language=record.story.language),
+            classification_label=theme_label(record.preview.theme.primary_theme, language=record.story.language),
             engine_label=engine_label,
             visibility=record.visibility,
             viewer_can_manage=record.story.viewer_can_manage,
@@ -105,17 +111,54 @@ class StoryLibraryService:
             story_id=record.story.story_id,
             bundle=record.bundle,
         )
-        runtime_profile_label = humanize_identifier(plan.runtime_policy_profile)
-        engine_label = "LangGraph play runtime"
+        runtime_label = runtime_profile_label(plan.runtime_policy_profile, language=plan.language)
+        engine_label = surface_phrase("play_engine_label", language=plan.language)
         return (
             PublishedStoryPlayOverview(
                 protagonist=plan.protagonist,
                 opening_narration=plan.opening_narration,
                 runtime_profile=plan.runtime_policy_profile,
-                runtime_profile_label=runtime_profile_label,
+                runtime_profile_label=runtime_label,
                 max_turns=plan.max_turns,
+                target_duration_minutes=plan.target_duration_minutes,
+                branch_budget=plan.branch_budget,
             ),
             engine_label,
+        )
+
+    @staticmethod
+    def _build_story_structure(record: PublishedStoryRecord) -> PublishedStoryStructure:
+        return PublishedStoryStructure(
+            topology_label=record.story.topology,
+            beat_outline=[
+                PublishedStoryBeatOutline(
+                    beat_id=beat.beat_id,
+                    title=beat.title,
+                    goal=beat.goal,
+                    milestone_kind=beat.milestone_kind,
+                )
+                for beat in record.bundle.beat_spine
+            ],
+        )
+
+    @staticmethod
+    def _build_cast_manifest(record: PublishedStoryRecord) -> PublishedStoryCastManifest:
+        return PublishedStoryCastManifest(
+            entries=[
+                PublishedStoryCastEntry(
+                    npc_id=member.npc_id,
+                    name=member.name,
+                    role=member.role,
+                    agenda=member.agenda,
+                    red_line=member.red_line,
+                    pressure_signature=member.pressure_signature,
+                    roster_character_id=member.roster_character_id,
+                    roster_public_summary=member.roster_public_summary,
+                    portrait_url=member.portrait_url,
+                    portrait_variants=member.portrait_variants,
+                )
+                for member in record.bundle.story_bible.cast
+            ]
         )
 
     def publish_story(
@@ -161,12 +204,16 @@ class StoryLibraryService:
                 return existing.story
         return inserted.story
 
+    def has_story_for_source_job(self, source_job_id: str) -> bool:
+        return self._storage.get_by_source_job_id(source_job_id) is not None
+
     @staticmethod
     def _decode_cursor(
         cursor: str | None,
         *,
         query: str | None,
         theme: str | None,
+        language: ContentLanguage | None,
         view: PublishedStoryListView,
         sort: PublishedStoryListSort,
     ) -> int:
@@ -183,6 +230,7 @@ class StoryLibraryService:
         if (
             payload.get("query") != (query or None)
             or payload.get("theme") != (theme or None)
+            or payload.get("language") != (language or None)
             or payload.get("view") != view
             or payload.get("sort") != sort
         ):
@@ -206,6 +254,7 @@ class StoryLibraryService:
         offset: int,
         query: str | None,
         theme: str | None,
+        language: ContentLanguage | None,
         view: PublishedStoryListView,
         sort: PublishedStoryListSort,
     ) -> str:
@@ -213,6 +262,7 @@ class StoryLibraryService:
             "offset": offset,
             "query": query or None,
             "theme": theme or None,
+            "language": language or None,
             "view": view,
             "sort": sort,
         }
@@ -224,6 +274,7 @@ class StoryLibraryService:
         actor_user_id: str | None = None,
         query: str | None = None,
         theme: str | None = None,
+        language: ContentLanguage | None = None,
         limit: int = 20,
         cursor: str | None = None,
         sort: PublishedStoryListSort | None = None,
@@ -237,6 +288,7 @@ class StoryLibraryService:
             )
         normalized_query = (query or "").strip() or None
         normalized_theme = (theme or "").strip() or None
+        normalized_language = language or None
         resolved_sort: PublishedStoryListSort = sort or ("relevance" if normalized_query else "published_at_desc")
         include_public = actor_user_id is not None and view != "mine"
         public_only = view == "public" or actor_user_id is None
@@ -244,6 +296,7 @@ class StoryLibraryService:
             cursor,
             query=normalized_query,
             theme=normalized_theme,
+            language=normalized_language,
             view=view,
             sort=resolved_sort,
         )
@@ -251,6 +304,7 @@ class StoryLibraryService:
             actor_user_id=actor_user_id,
             query=normalized_query,
             theme=normalized_theme,
+            language=normalized_language,
             limit=limit,
             offset=offset,
             sort=resolved_sort,
@@ -262,6 +316,7 @@ class StoryLibraryService:
                 offset=page.next_offset,
                 query=normalized_query,
                 theme=normalized_theme,
+                language=normalized_language,
                 view=view,
                 sort=resolved_sort,
             )
@@ -273,6 +328,7 @@ class StoryLibraryService:
             meta=PublishedStoryListMeta(
                 query=normalized_query,
                 theme=normalized_theme,
+                language=normalized_language,
                 view=view,
                 sort=resolved_sort,
                 limit=limit,
@@ -295,8 +351,9 @@ class StoryLibraryService:
         play_overview, engine_label = self._build_play_overview(visible_record)
         return PublishedStoryDetailResponse(
             story=visible_record.story,
-            preview=visible_record.preview,
             presentation=self._build_story_presentation(record=visible_record, engine_label=engine_label),
+            structure=self._build_story_structure(visible_record),
+            cast_manifest=self._build_cast_manifest(visible_record),
             play_overview=play_overview,
         )
 

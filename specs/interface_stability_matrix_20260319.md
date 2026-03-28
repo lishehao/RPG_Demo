@@ -107,6 +107,7 @@ Stable:
 - `job_id`
 - `status`
 - `summary`
+- `publishable`
 
 Additive:
 
@@ -114,9 +115,66 @@ Additive:
 - `cache_metrics`
 
 Internal-like:
+- none
 
-- `bundle`
-  This field remains exposed for compatibility, but product frontend must not bind to it.
+### `GET /author/jobs/{job_id}/editor-state`
+
+Stable:
+
+- `job_id`
+- `status`
+- `language`
+- `revision`
+- `publishable`
+- `focused_brief`
+- `summary`
+- `story_frame_view`
+- `cast_view`
+- `beat_view`
+- `rule_pack_view`
+- `play_profile_view`
+- `copilot_view`
+
+Additive:
+
+- future editor-only metadata that does not redefine the primary copilot workspace contract
+
+Internal-like:
+
+- none, as long as the route continues to expose curated editor projections rather than raw bundle payloads
+
+### `POST /author/jobs/{job_id}/copilot/proposals`
+### `GET /author/jobs/{job_id}/copilot/proposals/{proposal_id}`
+### `POST /author/jobs/{job_id}/copilot/proposals/{proposal_id}/preview`
+### `POST /author/jobs/{job_id}/copilot/proposals/{proposal_id}/apply`
+
+Stable:
+
+- `proposal_id`
+- `proposal_group_id`
+- `job_id`
+- `status`
+- `source`
+- `instruction`
+- `base_revision`
+- `variant_index`
+- `variant_label`
+- `supersedes_proposal_id`
+- `request_summary`
+- `patch_targets`
+- `operations`
+- `impact_summary`
+- `warnings`
+
+Additive:
+
+- future validation metadata
+- future human-review metadata
+
+Internal-like:
+
+- raw reasoning chains
+- raw model/tool traces if added later
 
 ### `GET /author/jobs/{job_id}/events`
 
@@ -150,6 +208,7 @@ Stable:
 - query params:
   - `q`
   - `theme`
+  - `language`
   - `limit`
   - `cursor`
   - `sort`
@@ -158,6 +217,7 @@ Additive:
 
 - `meta.query`
 - `meta.theme`
+- `meta.language`
 - `facets`
 - future safe list metadata
 
@@ -170,7 +230,8 @@ Internal-like:
 Stable:
 
 - `story`
-- `preview`
+- `structure`
+- `cast_manifest`
 
 Additive:
 

@@ -2,13 +2,25 @@ import {
   type AuthLoginRequest,
   type AuthRegisterRequest,
   type AuthSessionResponse,
+  type ApiRequestOptions,
   type AuthorJobCreateRequest,
+  type AuthorCopilotApplyResponse,
+  type AuthorCopilotUndoResponse,
+  type AuthorCopilotSessionCreateRequest,
+  type AuthorCopilotSessionMessageRequest,
+  type AuthorCopilotSessionResponse,
+  type AuthorCopilotPreviewResponse,
+  type AuthorCopilotProposalRequest,
+  type AuthorCopilotProposalResponse,
+  type AuthorEditorStateResponse,
   type AuthorJobEvent,
   type AuthorJobEventName,
   type AuthorJobResultResponse,
   type AuthorJobStatusResponse,
   type AuthorPreviewRequest,
   type AuthorPreviewResponse,
+  type AuthorStorySparkRequest,
+  type AuthorStorySparkResponse,
   type CurrentActorResponse,
   type DeleteStoryResponse,
   type FrontendApiError,
@@ -23,7 +35,39 @@ import {
   type UpdateStoryVisibilityRequest,
 } from "./contracts"
 import { BACKEND_ROUTE_MAP } from "./route-map"
-import type { FrontendApiClient } from "./placeholder-client"
+
+export type FrontendApiClient = {
+  getAuthSession(): Promise<AuthSessionResponse>
+  registerAuth(request: AuthRegisterRequest): Promise<AuthSessionResponse>
+  loginAuth(request: AuthLoginRequest): Promise<AuthSessionResponse>
+  logoutAuth(): Promise<void>
+  getCurrentActor(): Promise<CurrentActorResponse>
+  createStorySpark(request: AuthorStorySparkRequest): Promise<AuthorStorySparkResponse>
+  createStoryPreview(request: AuthorPreviewRequest): Promise<AuthorPreviewResponse>
+  createAuthorJob(request: AuthorJobCreateRequest): Promise<AuthorJobStatusResponse>
+  getAuthorJob(jobId: string): Promise<AuthorJobStatusResponse>
+  streamAuthorJobEvents(jobId: string, lastEventId?: number): AsyncGenerator<AuthorJobEvent, void, void>
+  getAuthorJobResult(jobId: string): Promise<AuthorJobResultResponse>
+  getAuthorJobEditorState(jobId: string): Promise<AuthorEditorStateResponse>
+  createAuthorCopilotSession(jobId: string, request: AuthorCopilotSessionCreateRequest): Promise<AuthorCopilotSessionResponse>
+  getAuthorCopilotSession(jobId: string, sessionId: string): Promise<AuthorCopilotSessionResponse>
+  appendAuthorCopilotSessionMessage(jobId: string, sessionId: string, request: AuthorCopilotSessionMessageRequest): Promise<AuthorCopilotSessionResponse>
+  createAuthorCopilotSessionProposal(jobId: string, sessionId: string): Promise<AuthorCopilotProposalResponse>
+  createAuthorCopilotProposal(jobId: string, request: AuthorCopilotProposalRequest): Promise<AuthorCopilotProposalResponse>
+  getAuthorCopilotProposal(jobId: string, proposalId: string): Promise<AuthorCopilotProposalResponse>
+  previewAuthorCopilotProposal(jobId: string, proposalId: string): Promise<AuthorCopilotPreviewResponse>
+  applyAuthorCopilotProposal(jobId: string, proposalId: string): Promise<AuthorCopilotApplyResponse>
+  undoAuthorCopilotProposal(jobId: string, proposalId: string): Promise<AuthorCopilotUndoResponse>
+  publishAuthorJob(jobId: string, visibility?: "private" | "public"): Promise<PublishedStoryCard>
+  listStories(params?: ListStoriesParams, options?: ApiRequestOptions): Promise<PublishedStoryListResponse>
+  getStory(storyId: string, options?: ApiRequestOptions): Promise<PublishedStoryDetailResponse>
+  updateStoryVisibility(storyId: string, request: UpdateStoryVisibilityRequest): Promise<PublishedStoryCard>
+  deleteStory(storyId: string): Promise<DeleteStoryResponse>
+  createPlaySession(request: PlaySessionCreateRequest): Promise<PlaySessionSnapshot>
+  getPlaySession(sessionId: string, options?: ApiRequestOptions): Promise<PlaySessionSnapshot>
+  getPlaySessionHistory(sessionId: string, options?: ApiRequestOptions): Promise<PlaySessionHistoryResponse>
+  submitPlayTurn(sessionId: string, request: PlayTurnRequest): Promise<PlaySessionSnapshot>
+}
 
 type RouteParams = Record<string, string | number>
 
@@ -104,6 +148,7 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       params?: RouteParams
       body?: unknown
       query?: Record<string, string | number | undefined>
+      signal?: AbortSignal
     } = {},
   ): Promise<TResponse> {
     const route = BACKEND_ROUTE_MAP[routeKey]
@@ -121,6 +166,7 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       headers: {
         ...(options.body ? { "Content-Type": "application/json" } : {}),
       },
+      signal: options.signal,
       body: options.body ? JSON.stringify(options.body) : undefined,
     })
 
@@ -164,6 +210,10 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
 
     getCurrentActor() {
       return requestJson<CurrentActorResponse>("getCurrentActor")
+    },
+
+    createStorySpark(request: AuthorStorySparkRequest) {
+      return requestJson<AuthorStorySparkResponse>("createStorySpark", { body: request })
     },
 
     createStoryPreview(request: AuthorPreviewRequest) {
@@ -233,6 +283,67 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       return requestJson<AuthorJobResultResponse>("getAuthorJobResult", { params: { job_id: jobId } })
     },
 
+    getAuthorJobEditorState(jobId: string) {
+      return requestJson<AuthorEditorStateResponse>("getAuthorJobEditorState", { params: { job_id: jobId } })
+    },
+
+    createAuthorCopilotSession(jobId: string, request: AuthorCopilotSessionCreateRequest) {
+      return requestJson<AuthorCopilotSessionResponse>("createAuthorCopilotSession", {
+        params: { job_id: jobId },
+        body: request,
+      })
+    },
+
+    getAuthorCopilotSession(jobId: string, sessionId: string) {
+      return requestJson<AuthorCopilotSessionResponse>("getAuthorCopilotSession", {
+        params: { job_id: jobId, session_id: sessionId },
+      })
+    },
+
+    appendAuthorCopilotSessionMessage(jobId: string, sessionId: string, request: AuthorCopilotSessionMessageRequest) {
+      return requestJson<AuthorCopilotSessionResponse>("appendAuthorCopilotSessionMessage", {
+        params: { job_id: jobId, session_id: sessionId },
+        body: request,
+      })
+    },
+
+    createAuthorCopilotSessionProposal(jobId: string, sessionId: string) {
+      return requestJson<AuthorCopilotProposalResponse>("createAuthorCopilotSessionProposal", {
+        params: { job_id: jobId, session_id: sessionId },
+      })
+    },
+
+    createAuthorCopilotProposal(jobId: string, request: AuthorCopilotProposalRequest) {
+      return requestJson<AuthorCopilotProposalResponse>("createAuthorCopilotProposal", {
+        params: { job_id: jobId },
+        body: request,
+      })
+    },
+
+    getAuthorCopilotProposal(jobId: string, proposalId: string) {
+      return requestJson<AuthorCopilotProposalResponse>("getAuthorCopilotProposal", {
+        params: { job_id: jobId, proposal_id: proposalId },
+      })
+    },
+
+    previewAuthorCopilotProposal(jobId: string, proposalId: string) {
+      return requestJson<AuthorCopilotPreviewResponse>("previewAuthorCopilotProposal", {
+        params: { job_id: jobId, proposal_id: proposalId },
+      })
+    },
+
+    applyAuthorCopilotProposal(jobId: string, proposalId: string) {
+      return requestJson<AuthorCopilotApplyResponse>("applyAuthorCopilotProposal", {
+        params: { job_id: jobId, proposal_id: proposalId },
+      })
+    },
+
+    undoAuthorCopilotProposal(jobId: string, proposalId: string) {
+      return requestJson<AuthorCopilotUndoResponse>("undoAuthorCopilotProposal", {
+        params: { job_id: jobId, proposal_id: proposalId },
+      })
+    },
+
     publishAuthorJob(jobId: string, visibility = "private") {
       return requestJson<PublishedStoryCard>("publishAuthorJob", {
         params: { job_id: jobId },
@@ -242,21 +353,26 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       })
     },
 
-    listStories(params: ListStoriesParams = {}) {
+    listStories(params: ListStoriesParams = {}, options: ApiRequestOptions = {}) {
       return requestJson<PublishedStoryListResponse>("listStories", {
         query: {
           q: params.q ?? undefined,
           theme: params.theme ?? undefined,
+          language: params.language ?? undefined,
           view: params.view ?? undefined,
           limit: params.limit ?? undefined,
           cursor: params.cursor ?? undefined,
           sort: params.sort ?? undefined,
         },
+        signal: options.signal,
       })
     },
 
-    getStory(storyId: string) {
-      return requestJson<PublishedStoryDetailResponse>("getStory", { params: { story_id: storyId } })
+    getStory(storyId: string, options: ApiRequestOptions = {}) {
+      return requestJson<PublishedStoryDetailResponse>("getStory", {
+        params: { story_id: storyId },
+        signal: options.signal,
+      })
     },
 
     updateStoryVisibility(storyId: string, request: UpdateStoryVisibilityRequest) {
@@ -276,13 +392,17 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       return requestJson<PlaySessionSnapshot>("createPlaySession", { body: request })
     },
 
-    getPlaySession(sessionId: string) {
-      return requestJson<PlaySessionSnapshot>("getPlaySession", { params: { session_id: sessionId } })
+    getPlaySession(sessionId: string, options: ApiRequestOptions = {}) {
+      return requestJson<PlaySessionSnapshot>("getPlaySession", {
+        params: { session_id: sessionId },
+        signal: options.signal,
+      })
     },
 
-    getPlaySessionHistory(sessionId: string) {
+    getPlaySessionHistory(sessionId: string, options: ApiRequestOptions = {}) {
       return requestJson<PlaySessionHistoryResponse>("getPlaySessionHistory", {
         params: { session_id: sessionId },
+        signal: options.signal,
       })
     },
 

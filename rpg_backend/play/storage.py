@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from rpg_backend.config import get_settings
-from rpg_backend.sqlite_utils import connect_sqlite
+from rpg_backend.sqlite_utils import connect_sqlite, require_sqlite_columns
 
 
 def _dump_json(value: Any) -> str:
@@ -58,7 +58,22 @@ class SQLitePlaySessionStorage:
             )
             """
         )
-        self._migrate_owner_column(connection)
+        require_sqlite_columns(
+            connection,
+            table_name="play_sessions",
+            required_columns=(
+                "session_id",
+                "owner_user_id",
+                "story_id",
+                "created_at",
+                "expires_at",
+                "finished_at",
+                "plan_json",
+                "state_json",
+                "history_json",
+                "turn_traces_json",
+            ),
+        )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_play_sessions_story_id ON play_sessions (story_id, created_at DESC)"
         )
@@ -66,22 +81,6 @@ class SQLitePlaySessionStorage:
             "CREATE INDEX IF NOT EXISTS idx_play_sessions_owner_created_at ON play_sessions (owner_user_id, created_at DESC)"
         )
         connection.commit()
-
-    def _migrate_owner_column(self, connection: sqlite3.Connection) -> None:
-        default_actor_id = get_settings().default_actor_id
-        existing_columns = {str(row["name"]) for row in connection.execute("PRAGMA table_info(play_sessions)").fetchall()}
-        if "owner_user_id" not in existing_columns:
-            connection.execute(
-                f"ALTER TABLE play_sessions ADD COLUMN owner_user_id TEXT NOT NULL DEFAULT '{default_actor_id}'"
-            )
-        connection.execute(
-            """
-            UPDATE play_sessions
-            SET owner_user_id = ?
-            WHERE owner_user_id IS NULL OR owner_user_id = ''
-            """,
-            (default_actor_id,),
-        )
 
     def save_session(self, payload: dict[str, Any]) -> None:
         resolved_owner_user_id = str(payload.get("owner_user_id") or get_settings().default_actor_id)

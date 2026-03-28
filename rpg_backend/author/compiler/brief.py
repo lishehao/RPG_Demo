@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import re
 
+from rpg_backend.content_language import normalize_content_language
 from rpg_backend.author.contracts import FocusedBrief
 from rpg_backend.author.normalize import normalize_whitespace, trim_ellipsis
+
+_CJK_PATTERN = re.compile(r"[\u4e00-\u9fff]")
 
 
 def _extract_tail_after_about(text: str) -> str:
@@ -89,6 +92,15 @@ def _extract_location_phrase(text: str) -> str:
 
 
 def _extract_tone_signal(text: str) -> str:
+    if _CJK_PATTERN.search(text):
+        lowered = text.casefold()
+        if any(term in lowered for term in ("程序", "档案", "记录", "账本", "证据", "舱单", "核实", "查清", "审计")):
+            return "档案程序悬疑"
+        if any(term in lowered for term in ("停电", "恐慌", "暴动", "宵禁", "疏散")):
+            return "高压失序悬疑"
+        if any(term in lowered for term in ("港口", "码头", "检疫", "配给", "物资", "桥", "洪水")):
+            return "封线政治惊悚"
+        return "城市压力剧"
     match = re.search(
         r"^(?:a|an|the)?\s*((?:hopeful|tense|grim|warm|political|civic|mystery|thriller|fantasy|science[- ]fiction|romantic|adventure|melancholic|optimistic|paranoid|urgent)(?:\s+(?:hopeful|tense|grim|warm|political|civic|mystery|thriller|fantasy|science[- ]fiction|romantic|adventure|melancholic|optimistic|paranoid|urgent))*)\s+about\b",
         text,
@@ -108,6 +120,59 @@ def _extract_tone_signal(text: str) -> str:
     if any(term in lowered for term in ("quarantine", "ration", "bridge", "flood", "harbor", "port", "convoy")):
         return "Tense bureaucratic thriller"
     return "Tense civic drama"
+
+
+def _zh_setting_signal(text: str) -> str:
+    lowered = text.casefold()
+    if any(term in lowered for term in ("港口", "码头", "舱单", "检疫", "航运")):
+        return "一座被检疫政治与物资压力撕扯的港口城市"
+    if any(term in lowered for term in ("档案", "记录", "账本", "证词", "证据")):
+        return "一座依赖公开记录维持秩序的城市"
+    if any(term in lowered for term in ("停电", "黑暗", "宵禁")):
+        return "一座在停电与公共不确定中运转的城市"
+    if any(term in lowered for term in ("桥", "洪水", "配给", "街区")):
+        return "一座被桥梁与配给压力撕扯的城市"
+    return "一座公共秩序正在承压的城市"
+
+
+def _zh_story_kernel(text: str) -> str:
+    normalized = normalize_whitespace(text).strip("。.!? ")
+    if not normalized:
+        return "一名公共事务负责人必须在局势失控前采取行动"
+    for marker in ("必须", "需要", "得", "要", "试图", "想要", "发现", "查清", "核实", "证明", "阻止", "恢复", "保护", "维持"):
+        index = normalized.find(marker)
+        if index > 0:
+            return trim_ellipsis(normalized[: index + len(marker)] + normalized[index + len(marker):], 220)
+    return trim_ellipsis(normalized, 220)
+
+
+def _zh_core_conflict(text: str, *, setting_signal: str) -> str:
+    lowered = text.casefold()
+    if any(term in lowered for term in ("港口", "码头", "舱单", "检疫", "救济")):
+        return "在救济投票前查清被篡改的舱单，阻止派系借检疫与物资分配操纵结果"
+    if any(term in lowered for term in ("档案", "记录", "账本", "核验", "投票", "表决", "委员会")):
+        return "在表决结果被宣布成定局前核清被改写的记录，把事实重新拉回公开程序"
+    if any(term in lowered for term in ("档案", "记录", "账本", "证词", "证据")):
+        return "在公众叙事彻底硬化前核实被篡改的记录，把事实重新拉回公开视野"
+    if any(term in lowered for term in ("停电", "恐慌", "宵禁")):
+        return "在停电与恐慌把城市彻底推向失序前，守住程序与公共信任"
+    if any(term in lowered for term in ("桥", "洪水", "配给", "街区")):
+        return "在配给与基础设施压力撕裂街区之前，查清被操纵的数据并稳住共同程序"
+    return f"在{setting_signal}中守住公共正当性，避免危机演变成公开裂痕"
+
+
+def _focus_brief_zh(raw_brief: str) -> FocusedBrief:
+    normalized = normalize_whitespace(raw_brief)
+    setting_signal = _zh_setting_signal(normalized)
+    return FocusedBrief(
+        language="zh",
+        story_kernel=_zh_story_kernel(normalized),
+        setting_signal=trim_ellipsis(setting_signal, 220),
+        core_conflict=trim_ellipsis(_zh_core_conflict(normalized, setting_signal=setting_signal), 220),
+        tone_signal=trim_ellipsis(_extract_tone_signal(normalized), 120),
+        hard_constraints=[],
+        forbidden_tones=["graphic cruelty", "sadistic evil"],
+    )
 
 
 def _split_protagonist_and_mission(text: str) -> tuple[str, str]:
@@ -186,7 +251,7 @@ def _infer_pressure_phrase(*, setting_signal: str, constraint_marker: str | None
     return f"while {fragments[0]} and {fragments[1]}"
 
 
-def focus_brief(raw_brief: str) -> FocusedBrief:
+def _focus_brief_en(raw_brief: str, *, language: str = "en") -> FocusedBrief:
     normalized = normalize_whitespace(raw_brief)
     tail = _extract_tail_after_about(normalized)
     kernel_head, _kernel_tail = _split_at_first_marker(
@@ -215,6 +280,7 @@ def focus_brief(raw_brief: str) -> FocusedBrief:
         if item and item.casefold() not in {existing.casefold() for existing in unique_constraints}:
             unique_constraints.append(item)
     return FocusedBrief(
+        language=normalize_content_language(language),
         story_kernel=trim_ellipsis(story_kernel, 220),
         setting_signal=trim_ellipsis(setting_signal, 220),
         core_conflict=trim_ellipsis(core_conflict, 220),
@@ -222,3 +288,10 @@ def focus_brief(raw_brief: str) -> FocusedBrief:
         hard_constraints=[trim_ellipsis(item, 160) for item in unique_constraints[:4]],
         forbidden_tones=["graphic cruelty", "sadistic evil"],
     )
+
+
+def focus_brief(raw_brief: str, *, language: str = "en") -> FocusedBrief:
+    normalized_language = normalize_content_language(language)
+    if normalized_language == "zh" and _CJK_PATTERN.search(raw_brief):
+        return _focus_brief_zh(raw_brief)
+    return _focus_brief_en(raw_brief, language=normalized_language)

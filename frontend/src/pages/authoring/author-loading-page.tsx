@@ -1,24 +1,34 @@
 import { useState } from "react"
+import { useAuthorCopilot } from "../../features/authoring/copilot/model/use-author-copilot"
 import { useAuthorLoading } from "../../features/authoring/loading/model/use-author-loading"
-import type { StoryVisibility } from "../../index"
+import type { StoryLanguage, StoryVisibility } from "../../index"
 import { AuthorLoadingDashboard } from "../../widgets/authoring/author-loading-dashboard"
 
 export function AuthorLoadingPage({
   jobId,
-  onOpenCreateStory,
-  onOpenLibrary,
+  uiLanguage,
+  onOpenStoryDetail,
 }: {
   jobId: string
-  onOpenCreateStory: () => void
-  onOpenLibrary: (storyId: string) => void
+  uiLanguage: StoryLanguage
+  onOpenStoryDetail: (storyId: string) => void
 }) {
-  const loading = useAuthorLoading(jobId)
+  const loading = useAuthorLoading(jobId, uiLanguage)
+  const copilot = useAuthorCopilot(jobId, Boolean(loading.result?.summary) && loading.result?.publishable !== false, {
+    onApplied: async () => {
+      await loading.refreshCompletedState()
+    },
+    onUndone: async () => {
+      await loading.refreshCompletedState()
+    },
+    uiLanguage,
+  })
   const [publishVisibility, setPublishVisibility] = useState<StoryVisibility>("private")
 
   const handlePublish = async () => {
     const storyId = await loading.publishStory(publishVisibility)
     if (storyId) {
-      onOpenLibrary(storyId)
+      onOpenStoryDetail(storyId)
     }
   }
 
@@ -28,6 +38,7 @@ export function AuthorLoadingPage({
         activeCard={loading.activeCard}
         cardPool={loading.cardPool}
         completionPercent={loading.completionPercent}
+        copilot={copilot}
         error={loading.error}
         job={loading.job}
         onPublishVisibilityChange={setPublishVisibility}
@@ -37,6 +48,7 @@ export function AuthorLoadingPage({
         publishVisibility={publishVisibility}
         publishLoading={loading.publishLoading}
         result={loading.result}
+        uiLanguage={uiLanguage}
       />
     </main>
   )

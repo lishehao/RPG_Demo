@@ -10,6 +10,9 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/newsreader": "^5.2.10",
+    "@fontsource/space-grotesk": "^5.2.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

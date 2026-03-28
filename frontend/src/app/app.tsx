@@ -1,82 +1,118 @@
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { getDefaultApiClient } from "./config/api-client"
 import { AuthProvider, useAuth } from "./providers/auth-provider"
 import { ApiClientProvider } from "./providers/api-client-provider"
-import { buildHash, type AppRoute, useAppRoute } from "./routes"
-import type { PublishedStoryListView } from "../index"
-import { AuthPage } from "../pages/auth/auth-page"
-import { CreateStoryPage } from "../pages/authoring/create-story-page"
-import { AuthorLoadingPage } from "../pages/authoring/author-loading-page"
-import { StoryLibraryPage } from "../pages/play/story-library-page"
-import { StoryDetailPage } from "../pages/play/story-detail-page"
-import { PlaySessionPage } from "../pages/play/play-session-page"
+import { buildHash, parseHashRoute, type AppRoute, useAppRoute } from "./routes"
+import { LazyAuthPage, LazyAuthorLoadingPage, LazyCreateStoryPage, LazyPlaySessionPage, LazyStoryDetailPage, LazyStoryLibraryPage, prefetchScene } from "./scene-modules"
+import type { PublishedStoryListView, StoryLanguage } from "../index"
 import { AppShell } from "../shared/ui/app-shell"
+import { SceneLoadingShell } from "../shared/ui/scene-loading-shell"
+import { readStoredUiLanguage, uiText, writeStoredUiLanguage } from "../shared/lib/ui-language"
+import { prefetchStoryDetail } from "../features/play/story-detail/model/use-story-detail"
 import { AppHeader } from "../widgets/chrome/app-header"
+
+function sceneKeyFor(route: AppRoute) {
+  switch (route.name) {
+    case "author-loading":
+      return `author-loading:${route.jobId}`
+    case "story-detail":
+      return `story-detail:${route.storyId}`
+    case "play-session":
+      return `play-session:${route.sessionId}`
+    default:
+      return route.name
+  }
+}
 
 function AppScene({
   route,
+  uiLanguage,
+  onUiLanguageChange,
   navigate,
   librarySearchQuery,
   libraryTheme,
   libraryView,
   openLibrary,
+  onLibrarySearchChange,
   onLibraryThemeChange,
   onLibraryViewChange,
   authenticated,
   onRequireAuth,
   onResolveAuth,
+  onPrefetchAuthorLoading,
+  onPrefetchCreateStory,
+  onPrefetchPlaySession,
+  onPrefetchStoryDetail,
+  onCreateDraftStateChange,
 }: {
   route: AppRoute
+  uiLanguage: StoryLanguage
+  onUiLanguageChange: (language: StoryLanguage) => void
   navigate: (nextRoute: AppRoute) => void
   librarySearchQuery: string
   libraryTheme: string | null
   libraryView: PublishedStoryListView
-  openLibrary: (selectedStoryId?: string, options?: { preserveFilters?: boolean }) => void
-  onLibraryThemeChange: (theme: string | null) => void
-  onLibraryViewChange: (view: PublishedStoryListView) => void
+  openLibrary: (options?: { preserveFilters?: boolean }) => void
+  onLibrarySearchChange: (value: string) => void
+  onLibraryThemeChange: (theme: string | null, queryOverride?: string) => void
+  onLibraryViewChange: (view: PublishedStoryListView, queryOverride?: string) => void
   authenticated: boolean
   onRequireAuth: (nextHash: string, mode?: "login" | "register") => void
   onResolveAuth: (nextHash?: string) => void
+  onPrefetchAuthorLoading: () => void
+  onPrefetchCreateStory: () => void
+  onPrefetchPlaySession: () => void
+  onPrefetchStoryDetail: (storyId: string) => void
+  onCreateDraftStateChange: (isDirty: boolean) => void
 }) {
   switch (route.name) {
     case "auth":
       return (
-        <AuthPage
+        <LazyAuthPage
+          uiLanguage={uiLanguage}
           mode={route.mode ?? "login"}
           nextHash={route.next}
-          onOpenLibrary={() => openLibrary(undefined, { preserveFilters: true })}
+          onModeChange={(mode) => navigate({ name: "auth", mode, next: route.next })}
+          onOpenLibrary={() => openLibrary({ preserveFilters: true })}
           onResolveAuth={onResolveAuth}
         />
       )
 
     case "create-story":
       return (
-        <CreateStoryPage
+        <LazyCreateStoryPage
+          key={`create-story:${uiLanguage}`}
+          uiLanguage={uiLanguage}
           onOpenAuthorJob={(jobId) => navigate({ name: "author-loading", jobId })}
-          onOpenLibrary={() => openLibrary(undefined, { preserveFilters: true })}
+          onOpenLibrary={() => openLibrary({ preserveFilters: true })}
+          onPrefetchAuthorLoading={onPrefetchAuthorLoading}
+          onDraftStateChange={onCreateDraftStateChange}
         />
       )
 
     case "author-loading":
       return (
-        <AuthorLoadingPage
+        <LazyAuthorLoadingPage
           jobId={route.jobId}
-          onOpenCreateStory={() => navigate({ name: "create-story" })}
-          onOpenLibrary={(storyId) => openLibrary(storyId, { preserveFilters: false })}
+          uiLanguage={uiLanguage}
+          onOpenStoryDetail={(storyId) => navigate({ name: "story-detail", storyId })}
         />
       )
 
     case "story-library":
       return (
-        <StoryLibraryPage
+        <LazyStoryLibraryPage
           authenticated={authenticated}
-          initialStoryId={route.selectedStoryId}
+          uiLanguage={uiLanguage}
           searchQuery={librarySearchQuery}
           selectedTheme={libraryTheme}
           selectedView={libraryView}
           onOpenCreateStory={() => navigate({ name: "create-story" })}
           onRequireAuth={() => onRequireAuth(buildHash({ name: "create-story" }))}
           onOpenStoryDetail={(storyId) => navigate({ name: "story-detail", storyId })}
+          onPrefetchCreateStory={onPrefetchCreateStory}
+          onPrefetchStoryDetail={onPrefetchStoryDetail}
+          onSearchChange={onLibrarySearchChange}
           onThemeChange={onLibraryThemeChange}
           onViewChange={onLibraryViewChange}
         />
@@ -84,21 +120,28 @@ function AppScene({
 
     case "story-detail":
       return (
-        <StoryDetailPage
+        <LazyStoryDetailPage
           isAuthenticated={authenticated}
           storyId={route.storyId}
-          onOpenLibrary={(storyId) => openLibrary(storyId, { preserveFilters: true })}
-          onDeleteToLibrary={() => openLibrary(undefined, { preserveFilters: true })}
+          uiLanguage={uiLanguage}
+          onUiLanguageChange={onUiLanguageChange}
+          onOpenLibrary={() => openLibrary({ preserveFilters: true })}
+          onDeleteToLibrary={() => openLibrary({ preserveFilters: true })}
           onOpenPlaySession={(sessionId) => navigate({ name: "play-session", sessionId })}
+          onPrefetchPlaySession={authenticated ? onPrefetchPlaySession : () => {
+            void prefetchScene("auth")
+          }}
           onRequireAuth={() => onRequireAuth(buildHash({ name: "story-detail", storyId: route.storyId }))}
         />
       )
 
     case "play-session":
       return (
-        <PlaySessionPage
+        <LazyPlaySessionPage
           sessionId={route.sessionId}
-          onOpenLibrary={(storyId) => openLibrary(storyId, { preserveFilters: true })}
+          uiLanguage={uiLanguage}
+          onUiLanguageChange={onUiLanguageChange}
+          onOpenLibrary={() => openLibrary({ preserveFilters: true })}
         />
       )
   }
@@ -108,10 +151,35 @@ function AppInner() {
   const auth = useAuth()
   const client = useMemo(() => getDefaultApiClient(), [])
   const { route, navigate } = useAppRoute()
+  const [uiLanguage, setUiLanguage] = useState<StoryLanguage>(() => readStoredUiLanguage())
   const [librarySearchQuery, setLibrarySearchQuery] = useState(route.name === "story-library" ? route.q ?? "" : "")
   const [libraryTheme, setLibraryTheme] = useState<string | null>(route.name === "story-library" ? route.theme ?? null : null)
   const [libraryView, setLibraryView] = useState<PublishedStoryListView>(route.name === "story-library" ? route.view ?? (auth.authenticated ? "accessible" : "public") : (auth.authenticated ? "accessible" : "public"))
+  const [isCreateDraftDirty, setIsCreateDraftDirty] = useState(false)
   const effectiveLibraryView: PublishedStoryListView = auth.authenticated ? libraryView : "public"
+
+  useEffect(() => {
+    const schedule = window.setTimeout(() => {
+      if (route.name === "story-library") {
+        void prefetchScene("create-story")
+        void prefetchScene("story-detail")
+      } else if (route.name === "create-story") {
+        void prefetchScene("author-loading")
+      } else if (route.name === "story-detail") {
+        void prefetchScene("play-session")
+      } else if (route.name === "auth") {
+        void prefetchScene("story-library")
+      }
+    }, 180)
+
+    return () => {
+      window.clearTimeout(schedule)
+    }
+  }, [route.name])
+
+  useEffect(() => {
+    writeStoredUiLanguage(uiLanguage)
+  }, [uiLanguage])
 
   useEffect(() => {
     if (route.name !== "story-library") {
@@ -121,6 +189,12 @@ function AppInner() {
     setLibraryTheme(route.theme ?? null)
     setLibraryView(route.view ?? (auth.authenticated ? "accessible" : "public"))
   }, [auth.authenticated, route])
+
+  useEffect(() => {
+    if (route.name !== "create-story") {
+      setIsCreateDraftDirty(false)
+    }
+  }, [route.name])
 
   useEffect(() => {
     if (auth.loading || auth.authenticated) {
@@ -135,11 +209,17 @@ function AppInner() {
     }
   }, [auth.authenticated, auth.loading, navigate, route])
 
-  const openLibrary = (selectedStoryId?: string, options?: { preserveFilters?: boolean }) => {
+  useEffect(() => {
+    if (auth.loading || !auth.authenticated || route.name !== "auth") {
+      return
+    }
+    resolveAuth(route.name === "auth" ? route.next : undefined)
+  }, [auth.authenticated, auth.loading, route])
+
+  const openLibrary = (options?: { preserveFilters?: boolean }) => {
     const preserveFilters = options?.preserveFilters ?? true
     navigate({
       name: "story-library",
-      selectedStoryId,
       q: preserveFilters ? librarySearchQuery.trim() || undefined : undefined,
       theme: preserveFilters ? libraryTheme ?? undefined : undefined,
       view: preserveFilters ? effectiveLibraryView : (auth.authenticated ? "accessible" : "public"),
@@ -155,7 +235,7 @@ function AppInner() {
   }
 
   const resolveAuth = (nextHash?: string) => {
-    window.location.hash = nextHash || buildHash({ name: "story-library", view: "accessible" })
+    navigate(parseHashRoute(nextHash || buildHash({ name: "story-library", view: "accessible" })))
   }
 
   const handleLibrarySearchChange = (value: string) => {
@@ -170,22 +250,24 @@ function AppInner() {
     })
   }
 
-  const handleLibraryThemeChange = (theme: string | null) => {
+  const handleLibraryThemeChange = (theme: string | null, queryOverride?: string) => {
     setLibraryTheme(theme)
+    const normalizedQuery = (queryOverride ?? librarySearchQuery).trim()
     navigate({
       name: "story-library",
-      q: librarySearchQuery.trim() || undefined,
+      q: normalizedQuery || undefined,
       theme: theme ?? undefined,
       view: effectiveLibraryView,
     })
   }
 
-  const handleLibraryViewChange = (view: PublishedStoryListView) => {
+  const handleLibraryViewChange = (view: PublishedStoryListView, queryOverride?: string) => {
+    const normalizedQuery = (queryOverride ?? librarySearchQuery).trim()
     if (!auth.authenticated) {
       setLibraryView("public")
       navigate({
         name: "story-library",
-        q: librarySearchQuery.trim() || undefined,
+        q: normalizedQuery || undefined,
         theme: libraryTheme ?? undefined,
         view: "public",
       })
@@ -194,7 +276,7 @@ function AppInner() {
     setLibraryView(view)
     navigate({
       name: "story-library",
-      q: librarySearchQuery.trim() || undefined,
+      q: normalizedQuery || undefined,
       theme: libraryTheme ?? undefined,
       view,
     })
@@ -211,7 +293,34 @@ function AppInner() {
   const handleLogout = async () => {
     await auth.logout()
     if (route.name === "create-story" || route.name === "author-loading" || route.name === "play-session") {
-      openLibrary(undefined, { preserveFilters: false })
+      openLibrary({ preserveFilters: false })
+    }
+  }
+
+  const handleUiLanguageChange = (nextLanguage: StoryLanguage) => {
+    if (nextLanguage === uiLanguage) {
+      return
+    }
+
+    if (route.name !== "create-story") {
+      setUiLanguage(nextLanguage)
+      return
+    }
+
+    if (!isCreateDraftDirty) {
+      setUiLanguage(nextLanguage)
+      return
+    }
+
+    const confirmed = window.confirm(
+      uiText(uiLanguage, {
+        en: "Switching language will clear the current seed and preview. Continue?",
+        zh: "切换语言会清空当前的种子和预览。要继续吗？",
+      }),
+    )
+
+    if (confirmed) {
+      setUiLanguage(nextLanguage)
     }
   }
 
@@ -227,29 +336,54 @@ function AppInner() {
           }}
           onOpenAuth={openAuth}
           routeName={route.name}
+          uiLanguage={uiLanguage}
+          onUiLanguageChange={handleUiLanguageChange}
           onOpenCreateStory={handleOpenCreateStory}
-          onOpenLibrary={() => openLibrary(undefined, { preserveFilters: true })}
-          onSearchChange={handleLibrarySearchChange}
-          searchEnabled={
-            route.name === "story-library" ||
-            route.name === "story-detail" ||
-            route.name === "play-session"
-          }
-          searchValue={librarySearchQuery}
+          onOpenLibrary={() => openLibrary({ preserveFilters: true })}
+          onPrefetchAuth={() => {
+            void prefetchScene("auth")
+          }}
+          onPrefetchCreateStory={() => {
+            void prefetchScene("create-story")
+          }}
+          onPrefetchLibrary={() => {
+            void prefetchScene("story-library")
+          }}
         />
-        <AppScene
-          authenticated={auth.authenticated}
-          librarySearchQuery={librarySearchQuery}
-          libraryTheme={libraryTheme}
-          libraryView={effectiveLibraryView}
-          navigate={navigate}
-          onLibraryThemeChange={handleLibraryThemeChange}
-          onLibraryViewChange={handleLibraryViewChange}
-          onRequireAuth={(nextHash, mode = "login") => openAuth(mode, nextHash)}
-          onResolveAuth={resolveAuth}
-          openLibrary={openLibrary}
-          route={route}
-        />
+        <Suspense fallback={<SceneLoadingShell routeName={route.name} uiLanguage={uiLanguage} />}>
+          <div className="studio-scene" data-route={route.name} key={sceneKeyFor(route)}>
+            <AppScene
+              authenticated={auth.authenticated}
+              uiLanguage={uiLanguage}
+              onUiLanguageChange={handleUiLanguageChange}
+              librarySearchQuery={librarySearchQuery}
+              libraryTheme={libraryTheme}
+              libraryView={effectiveLibraryView}
+              navigate={navigate}
+              onLibrarySearchChange={handleLibrarySearchChange}
+              onLibraryThemeChange={handleLibraryThemeChange}
+              onLibraryViewChange={handleLibraryViewChange}
+              onPrefetchAuthorLoading={() => {
+                void prefetchScene("author-loading")
+              }}
+              onPrefetchCreateStory={() => {
+                void prefetchScene("create-story")
+              }}
+              onPrefetchPlaySession={() => {
+                void prefetchScene("play-session")
+              }}
+              onPrefetchStoryDetail={(storyId) => {
+                void prefetchScene("story-detail")
+                void prefetchStoryDetail(client, storyId)
+              }}
+              onCreateDraftStateChange={setIsCreateDraftDirty}
+              onRequireAuth={(nextHash, mode = "login") => openAuth(mode, nextHash)}
+              onResolveAuth={resolveAuth}
+              openLibrary={openLibrary}
+              route={route}
+            />
+          </div>
+        </Suspense>
       </AppShell>
     </ApiClientProvider>
   )

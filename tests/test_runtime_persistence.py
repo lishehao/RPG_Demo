@@ -14,16 +14,15 @@ from rpg_backend.play.storage import SQLitePlaySessionStorage
 from tests.author_fixtures import FakeGateway
 from tests.test_author_product_api import _preview_response
 from tests.test_play_runtime import _no_gateway, _publish_story
+from rpg_backend.play.runtime import _ending_by_id, build_epilogue_reactions
 
 
 def test_author_job_service_resumes_running_job_after_restart(tmp_path) -> None:
     settings = Settings(runtime_state_db_path=str(tmp_path / "runtime.sqlite3"))
     storage = SQLiteAuthorJobStorage(settings.runtime_state_db_path)
-    original_gateway_factory = author_jobs_module.get_author_llm_gateway
-    author_jobs_module.get_author_llm_gateway = lambda: FakeGateway()
 
     try:
-        service = AuthorJobService(storage=storage, settings=settings)
+        service = AuthorJobService(storage=storage, settings=settings, gateway_factory=lambda _settings=None: FakeGateway())
         service._save_record(
             _AuthorJobRecord(
                 job_id="job-running",
@@ -35,7 +34,7 @@ def test_author_job_service_resumes_running_job_after_restart(tmp_path) -> None:
             )
         )
 
-        restarted = AuthorJobService(storage=storage, settings=settings)
+        restarted = AuthorJobService(storage=storage, settings=settings, gateway_factory=lambda _settings=None: FakeGateway())
         for _ in range(100):
             status = restarted.get_job("job-running")
             if status.status in {"completed", "failed"}:
@@ -45,7 +44,7 @@ def test_author_job_service_resumes_running_job_after_restart(tmp_path) -> None:
         assert status.status == "completed"
         assert restarted.get_job_result("job-running").summary is not None
     finally:
-        author_jobs_module.get_author_llm_gateway = original_gateway_factory
+        pass
 
 
 def test_play_session_service_restores_session_state_after_restart(tmp_path) -> None:
@@ -88,6 +87,43 @@ def test_play_session_service_restores_session_state_after_restart(tmp_path) -> 
     )
 
     assert continued.turn_index == updated.turn_index + 1
+
+
+def test_play_session_service_restores_completed_epilogue_reactions_after_restart(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    settings = Settings(
+        runtime_state_db_path=str(tmp_path / "runtime.sqlite3"),
+        play_session_ttl_seconds=900,
+    )
+    storage = SQLitePlaySessionStorage(settings.runtime_state_db_path)
+
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+        settings=settings,
+        storage=storage,
+    )
+    created = service.create_session(story.story_id)
+    record = service._sessions[created.session_id]
+    record.state.status = "completed"
+    record.state.ending = _ending_by_id(record.plan, record.state, "mixed")
+    record.state.epilogue_reactions = build_epilogue_reactions(record.plan, record.state)
+    record.finished_at = service._now()
+    service._save_record(record)
+
+    restarted = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+        settings=settings,
+        storage=storage,
+    )
+    restored = restarted.get_session(created.session_id)
+
+    assert restored.status == "completed"
+    assert restored.ending is not None
+    assert restored.epilogue_reactions is not None
+    assert len(restored.epilogue_reactions) == len(record.state.epilogue_reactions)
+    assert restored.epilogue_reactions[0].closing_line == record.state.epilogue_reactions[0].closing_line
 
 
 def test_sqlite_checkpoint_saver_restores_author_graph_snapshot(tmp_path) -> None:
@@ -158,10 +194,8 @@ def test_author_job_service_resumes_from_existing_checkpoint_after_restart(tmp_p
         }
     )
 
-    original_gateway_factory = author_jobs_module.get_author_llm_gateway
-    author_jobs_module.get_author_llm_gateway = lambda: FakeGateway()
     try:
-        restarted = AuthorJobService(storage=storage, settings=settings)
+        restarted = AuthorJobService(storage=storage, settings=settings, gateway_factory=lambda _settings=None: FakeGateway())
         for _ in range(100):
             status = restarted.get_job("checkpoint-job")
             if status.status in {"completed", "failed"}:
@@ -169,6 +203,9 @@ def test_author_job_service_resumes_from_existing_checkpoint_after_restart(tmp_p
             time.sleep(0.01)
 
         assert status.status == "completed"
-        assert restarted.get_job_result("checkpoint-job").bundle is not None
+        editor_state = restarted.get_job_editor_state("checkpoint-job")
+        assert editor_state.story_frame_view.title
+        assert editor_state.cast_view
+        assert editor_state.beat_view
     finally:
-        author_jobs_module.get_author_llm_gateway = original_gateway_factory
+        pass

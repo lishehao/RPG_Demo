@@ -1,7 +1,8 @@
-import type { PublishedStoryCard } from "../../index"
+import type { PublishedStoryCard, StoryLanguage } from "../../index"
+import { normalizeUiLanguage } from "./ui-language"
 
-export function formatPublishedAt(value: string): string {
-  return new Date(value).toLocaleString([], {
+export function formatPublishedAt(value: string, uiLanguage: StoryLanguage | string = "en"): string {
+  return new Date(value).toLocaleString(normalizeUiLanguage(uiLanguage) === "zh" ? "zh-CN" : "en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",

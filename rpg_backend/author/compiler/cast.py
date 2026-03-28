@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from rpg_backend.content_language import is_chinese_language, localized_text
 from rpg_backend.author.contracts import (
     CastDraft,
     CastMemberSemanticsDraft,
@@ -33,6 +34,36 @@ CAST_ARCHETYPE_LIBRARY: dict[str, dict[str, str]] = {
         "pressure_vector": "Treats every procedural gap as a point where panic and smuggling can rush in together.",
         "counter_trait": "methodical in public, personally restless under delay",
         "pressure_tell": "Starts inspecting details out loud and turning vague claims into hard checkpoints.",
+        "name_bucket": "protagonist",
+    },
+    "bridge_engineer": {
+        "slot_label": "Mediator Anchor",
+        "public_role": "Bridge engineer",
+        "agenda_anchor": "Keep the crossings operable without letting ration panic break the city into hostile districts.",
+        "red_line_anchor": "Will not let emergency engineering authority become a pretext for political seizure.",
+        "pressure_vector": "Treats every damaged crossing and forged count as a pressure point that can split the wards apart.",
+        "counter_trait": "publicly measured, privately obsessed with weak links and countdowns",
+        "pressure_tell": "Starts naming load limits, breakpoints, and closure windows until the room has to confront material constraints.",
+        "name_bucket": "protagonist",
+    },
+    "record_examiner": {
+        "slot_label": "Mediator Anchor",
+        "public_role": "Records examiner",
+        "agenda_anchor": "Keep the official record credible long enough to stop a false result from hardening into law.",
+        "red_line_anchor": "Will not let certification move forward on evidence they know has been altered.",
+        "pressure_vector": "Turns every procedural shortcut into a question of who benefits once the record becomes irreversible.",
+        "counter_trait": "publicly restrained, privately relentless once chain-of-custody starts to wobble",
+        "pressure_tell": "Starts reducing grand claims to timestamps, signatures, and who touched the record last.",
+        "name_bucket": "protagonist",
+    },
+    "ward_coordinator": {
+        "slot_label": "Mediator Anchor",
+        "public_role": "Ward coordinator",
+        "agenda_anchor": "Keep the neighborhoods inside one shared emergency process before outage panic turns into mutual blame.",
+        "red_line_anchor": "Will not let blackout improvisation replace public accountability.",
+        "pressure_vector": "Treats rumor spikes and local panic as signs that civic procedure is already starting to break apart.",
+        "counter_trait": "publicly conciliatory, privately ruthless about stopping spiral dynamics early",
+        "pressure_tell": "Starts narrowing the room toward concrete commitments before panic can multiply into factional stories.",
         "name_bucket": "protagonist",
     },
     "archive_guardian": {
@@ -95,6 +126,16 @@ CAST_ARCHETYPE_LIBRARY: dict[str, dict[str, str]] = {
         "pressure_tell": "Starts naming names, losses, and delays until the room can no longer hide behind abstractions.",
         "name_bucket": "witness",
     },
+    "resource_steward": {
+        "slot_label": "Material Steward",
+        "public_role": "Relief steward",
+        "agenda_anchor": "Keep relief channels materially workable after the speeches end and the real costs come due.",
+        "red_line_anchor": "Will not let a public settlement stand if no one has said how the city will actually carry it.",
+        "pressure_vector": "Turns every civic promise into a question of supply, labor, upkeep, and who is really paying.",
+        "counter_trait": "practical in public, quietly relentless about hidden cost transfer",
+        "pressure_tell": "Starts itemizing shortages, staffing gaps, and deferred repairs until the room has to price its own promises.",
+        "name_bucket": "witness",
+    },
 }
 
 CAST_RELATIONSHIP_DYNAMIC_LIBRARY: dict[str, str] = {
@@ -102,7 +143,143 @@ CAST_RELATIONSHIP_DYNAMIC_LIBRARY: dict[str, str] = {
     "improvisation_vs_procedure": "This figure needs the protagonist's flexibility but distrusts improvisation once legitimacy is already under strain.",
     "settlement_vs_leverage": "This figure tests whether the protagonist can stabilize the crisis without conceding who gets power after it.",
     "public_record_vs_private_bargain": "This figure turns private bargains into public accountability whenever the room starts deciding too much in secret.",
+    "material_cost_vs_public_order": "This figure forces the protagonist to translate every public promise into material delivery, maintenance, and who will actually bear the cost.",
 }
+
+CAST_RELATIONSHIP_DYNAMIC_LIBRARY_ZH: dict[str, str] = {
+    "protagonist_bears_public_weight": "主角并不站在危机之外，而是身处其内，所以每一次妥协都会变成他们必须亲自承担的公共负担。",
+    "improvisation_vs_procedure": "这个角色需要主角的灵活性，却不相信在公信力已经承压时还能继续靠临场应变撑过去。",
+    "settlement_vs_leverage": "这个角色会不断试探主角：究竟能不能在不让出权力分配的前提下稳住局势。",
+    "public_record_vs_private_bargain": "一旦房间里开始想在私下决定太多事情，这个角色就会把私下交易重新拽回公共问责之中。",
+    "material_cost_vs_public_order": "这个角色会逼主角把每一项公共承诺翻译成真正的供给、维护与买单对象。",
+}
+
+_CAST_ARCHETYPE_TRANSLATIONS_ZH: dict[str, dict[str, str]] = {
+    "civic_mediator": {
+        "slot_label": "调停锚点",
+        "public_role": "调停者",
+        "agenda_anchor": "维持紧急程序的正当性，直到城市不再继续裂开。",
+        "red_line_anchor": "不会让紧急压力抹去公众同意。",
+        "pressure_vector": "会在每一项保障都还没到位前，就先试着把敌对双方重新拉回同一张桌子。",
+        "counter_trait": "公开场合偏理想主义，执行时却带着安静的控制欲",
+        "pressure_tell": "一旦压力升高，说话会更快，选项会更少，也会开始盘点还有谁愿意留在房间里。",
+    },
+    "harbor_inspector": {
+        "slot_label": "调停锚点",
+        "public_role": "港务检察官",
+        "agenda_anchor": "在不让贸易政治撕裂港口的前提下，让检疫程序继续可执行。",
+        "red_line_anchor": "不会让紧急法令变成无人负责的夺取行为。",
+        "pressure_vector": "会把每一个程序缺口都看成恐慌与走私一起灌进来的入口。",
+        "counter_trait": "公开场合一丝不苟，私下里却被拖延折磨得焦躁不安",
+        "pressure_tell": "会开始把细节逐条念出来，把模糊说法压成一个个硬检查点。",
+    },
+    "bridge_engineer": {
+        "slot_label": "调停锚点",
+        "public_role": "桥务工程官",
+        "agenda_anchor": "在不让配给恐慌撕裂街区的前提下，让桥线与调度程序继续运转。",
+        "red_line_anchor": "不会让紧急工程权变成政治夺取的借口。",
+        "pressure_vector": "会把每一处受损桥线和异常台账都看成足以把上下游街区彻底扯开的断点。",
+        "counter_trait": "公开场合克制冷静，私下里却对结构弱点和倒计时近乎偏执",
+        "pressure_tell": "会开始不断报出承载上限、失稳节点和封桥窗口，逼着所有人正视物理约束。",
+    },
+    "record_examiner": {
+        "slot_label": "调停锚点",
+        "public_role": "档案核验官",
+        "agenda_anchor": "在虚假结果被写成定局前，守住官方记录的可信度。",
+        "red_line_anchor": "不会让认证程序在明知证据被改写的情况下继续推进。",
+        "pressure_vector": "会把每一次程序抄近路都改写成“谁会从不可逆记录里获利”的问题。",
+        "counter_trait": "公开场合克制寡言，一旦链条开始摇晃就会变得异常执拗",
+        "pressure_tell": "会把宏大说辞一条条压回时间戳、签名和最后接触记录的人。",
+    },
+    "ward_coordinator": {
+        "slot_label": "调停锚点",
+        "public_role": "社区协调员",
+        "agenda_anchor": "在停电恐慌变成互相甩锅前，把几个街区继续拴在同一套紧急程序里。",
+        "red_line_anchor": "不会让停电时的临时应对取代公共问责。",
+        "pressure_vector": "会把流言上升和街区恐慌都当成程序已经开始解体的征兆。",
+        "counter_trait": "公开场合愿意协调让步，私下里却对阻断失控连锁反应非常强硬",
+        "pressure_tell": "会在恐慌扩散前把房间迅速压缩到少数几个必须立刻兑现的承诺上。",
+    },
+    "archive_guardian": {
+        "slot_label": "制度守门人",
+        "public_role": "档案机构负责人",
+        "agenda_anchor": "守住仍然让这座城市可以被治理的制度与程序。",
+        "red_line_anchor": "没有公开可见的程序理由，就不会让出正式权威。",
+        "pressure_vector": "一旦恐慌、甩锅或不确定蔓延，就会把程序再收紧一层。",
+        "counter_trait": "公开场合严厉冷硬，私下里却极度在意那些正在流失的东西",
+        "pressure_tell": "随着房间越来越嘈杂，会把规则念得更细，也会把非正式出口一个个堵死。",
+    },
+    "port_guardian": {
+        "slot_label": "制度守门人",
+        "public_role": "港务机构负责人",
+        "agenda_anchor": "在让市民与商人都还能相信的规则下，维持港口继续运转。",
+        "red_line_anchor": "不会让紧急交通管制变成某一派的私人筹码。",
+        "pressure_vector": "每当恐慌再升一级，就会把流动、手续与准入条件再锁紧一层。",
+        "counter_trait": "公开场合僵硬强硬，私下里却对系统性崩塌怀着真实恐惧",
+        "pressure_tell": "会把舱单、配额和准入阈值一条条背出来，仿佛那是对抗混乱的盾牌。",
+    },
+    "leverage_broker": {
+        "slot_label": "筹码经纪人",
+        "public_role": "政治对手",
+        "agenda_anchor": "把危机变成筹码，改写危机之后谁来主导结算。",
+        "red_line_anchor": "绝不接受自己被排除在最终结算之外。",
+        "pressure_vector": "会把每一次紧急状况都说成“某些人该失去权力”的证据。",
+        "counter_trait": "公开场合极度算计，骨子里却非常害怕自己失去意义",
+        "pressure_tell": "会把每一次挫折都改写成“权力必须立刻重新分配”的证明。",
+    },
+    "trade_bloc_rival": {
+        "slot_label": "筹码经纪人",
+        "public_role": "贸易集团对手",
+        "agenda_anchor": "把检疫混乱转成对航运、信贷与重建分配权的谈判筹码。",
+        "red_line_anchor": "不会接受港口在削弱自己集团的条件下重开。",
+        "pressure_vector": "会把每一次供给震荡都改造成围绕权力分配的谈判，而不是围绕救济本身。",
+        "counter_trait": "公开场合礼貌精致，私下里却对被边缘化耿耿于怀",
+        "pressure_tell": "会开始提供看似务实的帮助，但每一份帮助都绑着新的让步条件。",
+    },
+    "public_witness": {
+        "slot_label": "公共见证者",
+        "public_role": "公众倡议者",
+        "agenda_anchor": "在压力不断升高时，强迫危机应对继续对公众负责。",
+        "red_line_anchor": "不会让精英程序抹去事情究竟如何发生的公共记录。",
+        "pressure_vector": "会把模糊、保密或程序漂移直接变成公共审视。",
+        "counter_trait": "公开场合有强烈的道德直觉，私下里则异常固执",
+        "pressure_tell": "会停止接受闭门保证，转而要求有人把真实代价当场说出来。",
+    },
+    "dock_delegate": {
+        "slot_label": "公共见证者",
+        "public_role": "码头代表",
+        "agenda_anchor": "不让工人和街区居民替他们从未同意过的检疫交易买单。",
+        "red_line_anchor": "不会让紧急港务规则掩埋“谁获利、谁被困住”的事实。",
+        "pressure_vector": "会把私下交易先变成码头流言，再把流言推成组织化压力。",
+        "counter_trait": "公开场合说话直白，私下里却对人群情绪的走向极度敏锐",
+        "pressure_tell": "会不断点名、点损失、点拖延，直到房间再也不能躲在抽象话术后面。",
+    },
+    "resource_steward": {
+        "slot_label": "物资守门人",
+        "public_role": "救济统筹员",
+        "agenda_anchor": "让救济渠道在口号之后仍然真的能运转下去，不让代价偷偷转移给最脆弱的人。",
+        "red_line_anchor": "如果没人说明这座城市究竟怎么承担成本，就不会承认这份公共结算已经成立。",
+        "pressure_vector": "会把每一项公共承诺都翻译成供给、维护、人手与最终由谁买单的问题。",
+        "counter_trait": "公开场合务实克制，私下里却对隐性成本转移异常执拗",
+        "pressure_tell": "会开始逐项报出短缺、人手缺口和被延期的修复工作，逼房间给自己的承诺标价。",
+    },
+}
+
+
+def _localized_cast_archetype_value(archetype_id: str, field: str, fallback: str, *, language: str) -> str:
+    translated = (_CAST_ARCHETYPE_TRANSLATIONS_ZH.get(archetype_id) or {}).get(field)
+    if translated and is_chinese_language(language):
+        return translated
+    return fallback
+
+
+def _localized_relationship_dynamic(relationship_dynamic_id: str, *, language: str) -> str:
+    if is_chinese_language(language):
+        return CAST_RELATIONSHIP_DYNAMIC_LIBRARY_ZH.get(
+            relationship_dynamic_id,
+            CAST_RELATIONSHIP_DYNAMIC_LIBRARY[relationship_dynamic_id],
+        )
+    return CAST_RELATIONSHIP_DYNAMIC_LIBRARY[relationship_dynamic_id]
 
 FOUR_SLOT_KEYWORDS: tuple[str, ...] = (
     "blackout",
@@ -115,6 +292,17 @@ FOUR_SLOT_KEYWORDS: tuple[str, ...] = (
     "public",
     "civic",
     "coalition",
+    "停电",
+    "继承",
+    "选举",
+    "投票",
+    "港口",
+    "码头",
+    "贸易",
+    "检疫",
+    "公众",
+    "城市",
+    "联盟",
 )
 
 HARBOR_FOURTH_SLOT_KEYWORDS: tuple[str, ...] = (
@@ -122,6 +310,11 @@ HARBOR_FOURTH_SLOT_KEYWORDS: tuple[str, ...] = (
     "port",
     "trade",
     "quarantine",
+    "港口",
+    "码头",
+    "贸易",
+    "检疫",
+    "舱单",
 )
 
 
@@ -135,33 +328,34 @@ class CastTopologyPlan:
 def _build_cast_slot_from_archetype(
     archetype_id: str,
     relationship_dynamic_id: str,
+    *,
+    language: str = "en",
 ) -> CastOverviewSlotDraft:
     archetype = CAST_ARCHETYPE_LIBRARY[archetype_id]
     return CastOverviewSlotDraft(
-        slot_label=archetype["slot_label"],
-        public_role=archetype["public_role"],
-        relationship_to_protagonist=CAST_RELATIONSHIP_DYNAMIC_LIBRARY[relationship_dynamic_id],
-        agenda_anchor=archetype["agenda_anchor"],
-        red_line_anchor=archetype["red_line_anchor"],
-        pressure_vector=archetype["pressure_vector"],
+        slot_label=_localized_cast_archetype_value(archetype_id, "slot_label", archetype["slot_label"], language=language),
+        public_role=_localized_cast_archetype_value(archetype_id, "public_role", archetype["public_role"], language=language),
+        relationship_to_protagonist=_localized_relationship_dynamic(relationship_dynamic_id, language=language),
+        agenda_anchor=_localized_cast_archetype_value(archetype_id, "agenda_anchor", archetype["agenda_anchor"], language=language),
+        red_line_anchor=_localized_cast_archetype_value(archetype_id, "red_line_anchor", archetype["red_line_anchor"], language=language),
+        pressure_vector=_localized_cast_archetype_value(archetype_id, "pressure_vector", archetype["pressure_vector"], language=language),
         archetype_id=archetype_id,
         relationship_dynamic_id=relationship_dynamic_id,
-        counter_trait=archetype["counter_trait"],
-        pressure_tell=archetype["pressure_tell"],
+        counter_trait=_localized_cast_archetype_value(archetype_id, "counter_trait", archetype["counter_trait"], language=language),
+        pressure_tell=_localized_cast_archetype_value(archetype_id, "pressure_tell", archetype["pressure_tell"], language=language),
     )
 
 
 def build_default_cast_overview_draft(focused_brief: FocusedBrief) -> CastOverviewDraft:
-    del focused_brief
     return CastOverviewDraft(
         cast_slots=[
-            _build_cast_slot_from_archetype("civic_mediator", "protagonist_bears_public_weight"),
-            _build_cast_slot_from_archetype("archive_guardian", "improvisation_vs_procedure"),
-            _build_cast_slot_from_archetype("leverage_broker", "settlement_vs_leverage"),
+            _build_cast_slot_from_archetype("civic_mediator", "protagonist_bears_public_weight", language=focused_brief.language),
+            _build_cast_slot_from_archetype("archive_guardian", "improvisation_vs_procedure", language=focused_brief.language),
+            _build_cast_slot_from_archetype("leverage_broker", "settlement_vs_leverage", language=focused_brief.language),
         ],
         relationship_summary=[
-            CAST_RELATIONSHIP_DYNAMIC_LIBRARY["improvisation_vs_procedure"],
-            CAST_RELATIONSHIP_DYNAMIC_LIBRARY["settlement_vs_leverage"],
+            _localized_relationship_dynamic("improvisation_vs_procedure", language=focused_brief.language),
+            _localized_relationship_dynamic("settlement_vs_leverage", language=focused_brief.language),
         ],
     )
 
@@ -169,6 +363,8 @@ def build_default_cast_overview_draft(focused_brief: FocusedBrief) -> CastOvervi
 def plan_cast_topology(
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
+    *,
+    preferred_count: int | None = None,
 ) -> CastTopologyPlan:
     haystack = " ".join(
         [
@@ -179,16 +375,27 @@ def plan_cast_topology(
         ]
     ).casefold()
     use_four_slot = any(keyword in haystack for keyword in FOUR_SLOT_KEYWORDS)
+    use_five_slot = bool(preferred_count is not None and preferred_count >= 5)
+    if preferred_count is not None and preferred_count <= 3:
+        use_four_slot = False
+    elif preferred_count is not None and preferred_count >= 4:
+        use_four_slot = True
     protagonist_archetype_id = "civic_mediator"
-    if any(keyword in haystack for keyword in ("inspector", "harbor inspector")):
+    if any(keyword in haystack for keyword in ("inspector", "harbor inspector", "港口", "检疫", "舱单", "码头")):
         protagonist_archetype_id = "harbor_inspector"
+    elif any(keyword in haystack for keyword in ("bridge", "flood", "ration", "checkpoint", "allotment", "桥", "洪水", "配给", "台账", "工程")):
+        protagonist_archetype_id = "bridge_engineer"
+    elif any(keyword in haystack for keyword in ("archive", "ledger", "record", "witness", "vote", "certify", "档案", "账本", "记录", "核验", "投票", "表决", "委员会")):
+        protagonist_archetype_id = "record_examiner"
+    elif any(keyword in haystack for keyword in ("blackout", "curfew", "neighborhood", "delegate", "停电", "社区", "协调员", "供给通报", "宵禁")):
+        protagonist_archetype_id = "ward_coordinator"
 
     guardian_archetype_id = "archive_guardian"
-    if any(keyword in haystack for keyword in ("harbor", "port", "trade")):
+    if any(keyword in haystack for keyword in ("harbor", "port", "trade", "港口", "码头", "贸易", "舱单")):
         guardian_archetype_id = "port_guardian"
 
     rival_archetype_id = "leverage_broker"
-    if any(keyword in haystack for keyword in ("quarantine", "accord", "trade")):
+    if any(keyword in haystack for keyword in ("quarantine", "accord", "trade", "检疫", "贸易", "舱单")):
         rival_archetype_id = "trade_bloc_rival"
 
     slot_archetypes = [
@@ -205,8 +412,16 @@ def plan_cast_topology(
             else "public_witness"
         )
         slot_archetypes.append(fourth_slot)
+    if use_five_slot:
+        planner_reason = "preferred_five_slot"
+        fifth_slot = (
+            "public_witness"
+            if "dock_delegate" in slot_archetypes
+            else "resource_steward"
+        )
+        slot_archetypes.append(fifth_slot)
     return CastTopologyPlan(
-        topology="four_slot" if use_four_slot else "three_slot",
+        topology="five_slot" if use_five_slot else "four_slot" if use_four_slot else "three_slot",
         slot_archetypes=tuple(slot_archetypes),
         planner_reason=planner_reason,
     )
@@ -219,14 +434,14 @@ def _coerce_topology_plan(
     story_frame: StoryFrameDraft,
     topology_override: str | None,
 ) -> CastTopologyPlan:
-    if topology_override not in {"three_slot", "four_slot"}:
+    if topology_override not in {"three_slot", "four_slot", "five_slot"}:
         return topology_plan
     if topology_override == topology_plan.topology:
         return topology_plan
     slot_archetypes = list(topology_plan.slot_archetypes[:3])
     if len(slot_archetypes) < 3:
         slot_archetypes.extend(["civic_mediator", "archive_guardian", "leverage_broker"][len(slot_archetypes):3])
-    if topology_override == "four_slot":
+    if topology_override in {"four_slot", "five_slot"}:
         haystack = " ".join(
             [
                 focused_brief.setting_signal,
@@ -241,9 +456,18 @@ def _coerce_topology_plan(
             else "public_witness"
         )
         slot_archetypes.append(fourth_slot)
+    if topology_override == "five_slot":
+        fifth_slot = "public_witness" if "dock_delegate" in slot_archetypes else "resource_steward"
+        slot_archetypes.append(fifth_slot)
     return CastTopologyPlan(
         topology=topology_override,
-        slot_archetypes=tuple(slot_archetypes[:4] if topology_override == "four_slot" else slot_archetypes[:3]),
+        slot_archetypes=tuple(
+            slot_archetypes[:5]
+            if topology_override == "five_slot"
+            else slot_archetypes[:4]
+            if topology_override == "four_slot"
+            else slot_archetypes[:3]
+        ),
         planner_reason="forced_topology_override",
     )
 
@@ -262,23 +486,46 @@ def derive_cast_overview_draft(
         topology_override=topology_override,
     )
     cast_slots = [
-        _build_cast_slot_from_archetype(topology_plan.slot_archetypes[0], "protagonist_bears_public_weight"),
-        _build_cast_slot_from_archetype(topology_plan.slot_archetypes[1], "improvisation_vs_procedure"),
-        _build_cast_slot_from_archetype(topology_plan.slot_archetypes[2], "settlement_vs_leverage"),
+        _build_cast_slot_from_archetype(topology_plan.slot_archetypes[0], "protagonist_bears_public_weight", language=focused_brief.language),
+        _build_cast_slot_from_archetype(topology_plan.slot_archetypes[1], "improvisation_vs_procedure", language=focused_brief.language),
+        _build_cast_slot_from_archetype(topology_plan.slot_archetypes[2], "settlement_vs_leverage", language=focused_brief.language),
     ]
     relationship_summary = [
-        CAST_RELATIONSHIP_DYNAMIC_LIBRARY["improvisation_vs_procedure"],
-        CAST_RELATIONSHIP_DYNAMIC_LIBRARY["settlement_vs_leverage"],
+        _localized_relationship_dynamic("improvisation_vs_procedure", language=focused_brief.language),
+        _localized_relationship_dynamic("settlement_vs_leverage", language=focused_brief.language),
     ]
     if topology_plan.topology == "four_slot":
         cast_slots.append(
             _build_cast_slot_from_archetype(
                 topology_plan.slot_archetypes[3],
                 "public_record_vs_private_bargain",
+                language=focused_brief.language,
             )
         )
         relationship_summary.append(
-            CAST_RELATIONSHIP_DYNAMIC_LIBRARY["public_record_vs_private_bargain"]
+            _localized_relationship_dynamic("public_record_vs_private_bargain", language=focused_brief.language)
+        )
+    if topology_plan.topology == "five_slot":
+        if len(cast_slots) < 4:
+            cast_slots.append(
+                _build_cast_slot_from_archetype(
+                    topology_plan.slot_archetypes[3],
+                    "public_record_vs_private_bargain",
+                    language=focused_brief.language,
+                )
+            )
+            relationship_summary.append(
+                _localized_relationship_dynamic("public_record_vs_private_bargain", language=focused_brief.language)
+            )
+        cast_slots.append(
+            _build_cast_slot_from_archetype(
+                topology_plan.slot_archetypes[4],
+                "material_cost_vs_public_order",
+                language=focused_brief.language,
+            )
+        )
+        relationship_summary.append(
+            _localized_relationship_dynamic("material_cost_vs_public_order", language=focused_brief.language)
         )
     return CastOverviewDraft(
         cast_slots=cast_slots[:5],
@@ -287,6 +534,31 @@ def derive_cast_overview_draft(
 
 
 def _name_palette_for_brief(focused_brief: FocusedBrief) -> dict[str, list[str]]:
+    if is_chinese_language(focused_brief.language):
+        setting = focused_brief.setting_signal.casefold()
+        if any(keyword in setting for keyword in ("archive", "archives", "ledger", "record", "script", "library", "档案", "记录", "账本", "证词")):
+            return {
+                "protagonist": ["岑港", "闻砚", "林栈", "顾潮"],
+                "guardian": ["沈册", "韩汀", "许衡", "周砚"],
+                "rival": ["邵津", "杜阙", "裴竞", "乔策"],
+                "civic": ["苏苇", "唐屿", "陆岚", "程堤"],
+                "witness": ["叶舟", "沈苇", "何栈", "白岚"],
+            }
+        if any(keyword in setting for keyword in ("harbor", "port", "trade", "quarantine", "republic", "dock", "港口", "码头", "贸易", "检疫", "舱单")):
+            return {
+                "protagonist": ["岑港", "顾潮", "林栈", "闻砚"],
+                "guardian": ["韩汀", "周衡", "沈策", "许阔"],
+                "rival": ["邵津", "杜阙", "裴渡", "乔竞"],
+                "civic": ["苏岚", "唐屿", "陆槐", "程渡"],
+                "witness": ["叶舟", "白汐", "何堤", "沈棠"],
+            }
+        return {
+            "protagonist": ["顾潮", "林栈", "闻砚", "岑港"],
+            "guardian": ["韩汀", "周衡", "许策", "沈册"],
+            "rival": ["邵津", "杜阙", "裴竞", "乔渡"],
+            "civic": ["苏岚", "唐屿", "陆槐", "程堤"],
+            "witness": ["叶舟", "白汐", "何栈", "沈棠"],
+        }
     setting = focused_brief.setting_signal.casefold()
     if any(keyword in setting for keyword in ("archive", "archives", "ledger", "record", "script", "library")):
         return {
@@ -317,7 +589,7 @@ def _cast_slot_bucket(slot: CastOverviewSlotDraft) -> str:
     if slot.archetype_id in {"public_witness", "dock_delegate"}:
         return "witness"
     text = f"{slot.slot_label} {slot.public_role}".casefold()
-    if any(keyword in text for keyword in ("mediator", "anchor", "player", "envoy", "inspector", "protagonist")):
+    if any(keyword in text for keyword in ("mediator", "anchor", "player", "envoy", "inspector", "protagonist", "调停", "检察官", "工程官", "核验官", "协调员")):
         return "protagonist"
     if any(keyword in text for keyword in ("institution", "guardian", "authority", "curator", "scribe", "warden")):
         return "guardian"
@@ -499,28 +771,29 @@ def compile_cast_member_semantics(
 
 
 def build_default_cast_draft(_: FocusedBrief) -> CastDraft:
+    focused_brief = _
     return CastDraft(
         cast=[
             OverviewCastDraft(
-                name="The Mediator",
-                role="Player anchor",
-                agenda="Hold the city together long enough to expose the truth.",
-                red_line="Will not deliberately sacrifice civilians for speed.",
-                pressure_signature="Feels every compromise as a public burden.",
+                name=localized_text(focused_brief.language, en="The Mediator", zh="调停者"),
+                role=localized_text(focused_brief.language, en="Player anchor", zh="局中调停者"),
+                agenda=localized_text(focused_brief.language, en="Hold the city together long enough to expose the truth.", zh="先稳住整座城市，再把真相揭出来。"),
+                red_line=localized_text(focused_brief.language, en="Will not deliberately sacrifice civilians for speed.", zh="不会为了追求速度而故意牺牲平民。"),
+                pressure_signature=localized_text(focused_brief.language, en="Feels every compromise as a public burden.", zh="会把每一次让步都当成必须向公众承担的负担。"),
             ),
             OverviewCastDraft(
-                name="Civic Authority",
-                role="Institutional power",
-                agenda="Preserve order and legitimacy.",
-                red_line="Will not publicly yield without visible cause.",
-                pressure_signature="Turns every crisis into a test of control.",
+                name=localized_text(focused_brief.language, en="Civic Authority", zh="公共机构代表"),
+                role=localized_text(focused_brief.language, en="Institutional power", zh="机构掌权者"),
+                agenda=localized_text(focused_brief.language, en="Preserve order and legitimacy.", zh="维护秩序与正当性。"),
+                red_line=localized_text(focused_brief.language, en="Will not publicly yield without visible cause.", zh="没有公开可见的理由时绝不会退让。"),
+                pressure_signature=localized_text(focused_brief.language, en="Turns every crisis into a test of control.", zh="会把每一次危机都变成控制力测试。"),
             ),
             OverviewCastDraft(
-                name="Opposition Broker",
-                role="Political rival",
-                agenda="Exploit the crisis to reshape power.",
-                red_line="Will not accept irrelevance.",
-                pressure_signature="Smiles while pressure spreads through the room.",
+                name=localized_text(focused_brief.language, en="Opposition Broker", zh="反对派经纪人"),
+                role=localized_text(focused_brief.language, en="Political rival", zh="政治对手"),
+                agenda=localized_text(focused_brief.language, en="Exploit the crisis to reshape power.", zh="利用危机重塑权力分配。"),
+                red_line=localized_text(focused_brief.language, en="Will not accept irrelevance.", zh="绝不接受自己被边缘化。"),
+                pressure_signature=localized_text(focused_brief.language, en="Smiles while pressure spreads through the room.", zh="会在压力蔓延全场时仍保持微笑。"),
             ),
         ]
     )

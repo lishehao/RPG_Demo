@@ -202,7 +202,8 @@ def build_default_route_opportunity_plan(bundle: DesignBundle) -> RouteOpportuni
         if any(existing["beat_id"] == row["beat_id"] for existing in primary_rows):
             continue
         primary_rows.append(row)
-    return RouteOpportunityPlanDraft.model_validate({"opportunities": primary_rows[:8]})
+    route_budget = bundle.story_flow_plan.route_unlock_budget if bundle.story_flow_plan is not None else 8
+    return RouteOpportunityPlanDraft.model_validate({"opportunities": primary_rows[: min(8, route_budget)]})
 
 
 def compile_route_opportunity_plan(
@@ -276,19 +277,26 @@ def compile_route_opportunity_plan(
 
     for opportunity in route_opportunity_plan.opportunities:
         _append_route_rule(opportunity)
-    required_beat_coverage = min(3, len(bundle.beat_spine))
-    required_tag_coverage = min(3, len(bundle.beat_spine), len(affordance_tags))
+    branch_budget = bundle.story_flow_plan.branch_budget if bundle.story_flow_plan is not None else "medium"
+    route_budget = bundle.story_flow_plan.route_unlock_budget if bundle.story_flow_plan is not None else 8
+    coverage_target_by_budget = {"low": 2, "medium": 3, "high": 4}
+    required_beat_coverage = min(coverage_target_by_budget[branch_budget], len(bundle.beat_spine))
+    required_tag_coverage = min(coverage_target_by_budget[branch_budget], len(bundle.beat_spine), len(affordance_tags))
     supplement_candidates = RouteOpportunityPlanDraft.model_validate({"opportunities": _route_supplement_candidate_rows(bundle)}).opportunities
-    for candidate in supplement_candidates:
-        if len(route_unlock_rules) >= 8:
-            break
-        covered_beats = {item.beat_id for item in route_unlock_rules}
-        covered_tags = {item.unlock_affordance_tag for item in route_unlock_rules}
-        needs_beat = len(covered_beats) < required_beat_coverage and candidate.beat_id not in covered_beats
-        needs_tag = len(covered_tags) < required_tag_coverage and candidate.unlock_affordance_tag not in covered_tags
-        if not needs_beat and not needs_tag:
-            continue
-        _append_route_rule(candidate)
+    for prioritize_beats in (True, False):
+        for candidate in supplement_candidates:
+            if len(route_unlock_rules) >= min(8, route_budget):
+                break
+            covered_beats = {item.beat_id for item in route_unlock_rules}
+            covered_tags = {item.unlock_affordance_tag for item in route_unlock_rules}
+            needs_beat = len(covered_beats) < required_beat_coverage and candidate.beat_id not in covered_beats
+            needs_tag = len(covered_tags) < required_tag_coverage and candidate.unlock_affordance_tag not in covered_tags
+            if prioritize_beats:
+                if not needs_beat:
+                    continue
+            elif not needs_tag:
+                continue
+            _append_route_rule(candidate)
     return RouteAffordancePackDraft(
         route_unlock_rules=route_unlock_rules,
         affordance_effect_profiles=build_deterministic_affordance_profiles(bundle),

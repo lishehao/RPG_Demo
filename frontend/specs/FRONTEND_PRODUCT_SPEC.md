@@ -4,13 +4,14 @@
 
 这个项目的产品目标不是“做一个通用内容平台”，而是一个明确的短循环：
 
-1. 用户输入一个英文 seed
+1. 用户输入一个 seed
 2. 后端生成 preview
-3. 用户触发 author job
+3. 用户触发 author job，生成完整 draft
 4. 前端展示等待态和生成进度
-5. 生成完成后发布进 story library
-6. 用户从 library 里选择故事开始游玩
-7. 游玩过程以自然语言输入为主，建议动作只是辅助
+5. 生成完成后进入 `Author Copilot` 主编辑工作区
+6. 用户在 copilot 工作区里调整 draft，再决定是否发布
+7. 用户从 library 里选择故事开始游玩
+8. 游玩过程以自然语言输入为主，建议动作只是辅助
 
 当前产品重点：
 
@@ -29,13 +30,16 @@
    用户想快速给一个主题或句子，看系统会把它理解成什么故事。
 2. `Watch it take shape`
    用户知道生成要花时间，所以等待页必须持续告诉他“故事正在怎么成型”。
-3. `Pick and play`
+3. `Steer the draft`
+   用户不该在生成完成后停在一个被动结果页，而是直接进入可编辑 draft，决定要不要继续推人物、结局和政治纹理。
+4. `Pick and play`
    用户把最终结果当作一个可玩的故事卡片，而不是一堆后台工件。
 
 前端要围绕这三个心智组织：
 
 - 输入页：像投一个 story concept
 - 等待页：像看故事骨架逐步成型
+- 完成页：像进入一个由 Copilot 驱动的 author studio，而不是只读结果页
 - library：像挑选要玩的 episode
 - play：像和 GM 对话，而不是点树状菜单
 
@@ -52,7 +56,9 @@
 2. `Author Loading`
    - 轮询 `GET /author/jobs/{job_id}` 或使用 `GET /author/jobs/{job_id}/events`
    - 主要展示 `progress_snapshot.loading_cards`
-   - 完成后调 `GET /author/jobs/{job_id}/result`
+   - 完成后以 `GET /author/jobs/{job_id}/editor-state` 作为主工作区数据源
+   - `GET /author/jobs/{job_id}/result` 只用于 summary / publishable / readiness 辅助，不再承载主编辑内容
+   - 用户通过 `POST /author/jobs/{job_id}/copilot/proposals` 等 Copilot 路由修改 draft
    - 用户点击发布时调 `POST /author/jobs/{job_id}/publish`
 
 3. `Story Library`
@@ -92,9 +98,14 @@ Interface governance source:
 | `createAuthorJob` | `POST /author/jobs` | 启动 author job |
 | `getAuthorJob` | `GET /author/jobs/{job_id}` | 轮询 job 状态 |
 | `streamAuthorJobEvents` | `GET /author/jobs/{job_id}/events` | SSE 进度流 |
-| `getAuthorJobResult` | `GET /author/jobs/{job_id}/result` | 取最终结果 |
+| `getAuthorJobResult` | `GET /author/jobs/{job_id}/result` | 取 summary / publishability 辅助状态 |
+| `getAuthorJobEditorState` | `GET /author/jobs/{job_id}/editor-state` | 取 author studio 主编辑状态 |
+| `createAuthorCopilotProposal` | `POST /author/jobs/{job_id}/copilot/proposals` | 让 Copilot 起草结构化 patch |
+| `getAuthorCopilotProposal` | `GET /author/jobs/{job_id}/copilot/proposals/{proposal_id}` | 读取 proposal |
+| `previewAuthorCopilotProposal` | `POST /author/jobs/{job_id}/copilot/proposals/{proposal_id}/preview` | 预览 patch 后 draft |
+| `applyAuthorCopilotProposal` | `POST /author/jobs/{job_id}/copilot/proposals/{proposal_id}/apply` | 应用 patch 到 draft |
 | `publishAuthorJob` | `POST /author/jobs/{job_id}/publish` | 发布进 library |
-| `listStories` | `GET /stories` | library 列表，支持 `q/theme/limit/cursor/sort` |
+| `listStories` | `GET /stories` | library 列表，支持 `q/theme/language/limit/cursor/sort` |
 | `getStory` | `GET /stories/{story_id}` | story 详情 |
 | `createPlaySession` | `POST /play/sessions` | 从 published story 开局 |
 | `getPlaySession` | `GET /play/sessions/{session_id}` | 取当前局面 |
@@ -109,6 +120,8 @@ Interface governance source:
 - 主要请求字段
 - 主要响应 shape
 - `preview` / `progress_snapshot` / `summary` / `story` / `play session snapshot`
+- `editor-state` 作为完成后 author 主视图
+- Copilot proposal 的 `proposal_group_id / variant_index / variant_label / supersedes_proposal_id`，用于实现 `Try another` 一类的版本切换
 - additive play fields:
   - `protagonist`
   - `feedback`
@@ -128,22 +141,6 @@ Interface governance source:
 - 任意内部 telemetry 字段
 - author bundle 内部细粒度结构
 - `/benchmark/*` 诊断路由的任何字段
-
-## Placeholder API 约束
-
-当前 placeholder API 的设计要求：
-
-- 方法名一一对应后端路由
-- 主要字段名与后端保持一致
-- placeholder job 会模拟阶段推进
-- placeholder story library 会预置少量 demo stories，同时支持从 author job 发布
-- placeholder play session 会返回 narration、state bars、suggested actions 和 ending
-
-占位层的目标不是完全复刻后台逻辑，而是：
-
-- 让前端页面可以先开发
-- 让页面流和字段依赖先稳定下来
-- 以后切换真实后端时不需要重写组件层调用方式
 
 ## 当前最适合前端先做的东西
 

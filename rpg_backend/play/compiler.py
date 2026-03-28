@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from rpg_backend.author.compiler.endings import build_default_ending_rules, normalize_ending_rules_draft
+from rpg_backend.author.planning import build_story_flow_plan
 from rpg_backend.author.compiler.routes import (
     build_default_route_affordance_pack,
     build_deterministic_affordance_profiles,
@@ -18,8 +19,9 @@ from rpg_backend.author.contracts import (
     EndingRulesDraft,
     RouteAffordancePackDraft,
 )
+from rpg_backend.content_language import is_chinese_language, localized_text
 from rpg_backend.author.normalize import normalize_whitespace, trim_ellipsis, unique_preserve
-from rpg_backend.play.contracts import PlayPlan, PlayProtagonist
+from rpg_backend.play.contracts import PlayBeatRuntimeHintCard, PlayBeatRuntimeShard, PlayPlan, PlayProtagonist
 from rpg_backend.product_text import (
     build_product_premise_fallback,
     sanitize_product_identity_summary,
@@ -146,6 +148,39 @@ _ROLE_DISCOVERY_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+_ZH_MANDATE_LEADING_CONTEXT = re.compile(r"^在[^，。]{2,80}(?:中|里)，")
+
+_ZH_MANDATE_TEMPLATES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (
+        ("港口", "码头", "检疫", "舱单", "投票"),
+        "在救济投票前查清被篡改的紧急舱单，阻止偏袒性分配被写成既成事实",
+    ),
+    (
+        ("港口", "码头", "检疫", "舱单"),
+        "在检疫秩序失控前查清被篡改的舱单，别让港口分配继续被人暗中改写",
+    ),
+    (
+        ("档案", "记录", "账本", "投票"),
+        "在表决结果被写成定局前核清被改写的记录",
+    ),
+    (
+        ("桥", "洪水", "配给", "街区"),
+        "在配给秩序撕裂街区前稳住调度程序，让桥线继续运转",
+    ),
+    (
+        ("停电", "公投", "议会", "社区"),
+        "在停电恐慌把议会谈判冲散前稳住各街区的共同程序",
+    ),
+    (
+        ("联盟", "议会", "调停", "授权"),
+        "在危机被人写成单方面授权前守住协商空间",
+    ),
+    (
+        ("警报", "公告", "预报", "观测站"),
+        "在警报失去公信力前证明预警属实",
+    ),
+)
+
 
 def _merge_affordance_profiles(bundle: DesignBundle) -> list[AffordanceEffectProfile]:
     authored_pack = normalize_route_affordance_pack(
@@ -231,7 +266,7 @@ def _compiled_axes(bundle: DesignBundle) -> list[AxisDefinition]:
 
 
 def _normalized_sentence_key(text: str) -> str:
-    return re.sub(r"[^a-z0-9]+", " ", text.casefold()).strip()
+    return re.sub(r"[^a-z0-9\u4e00-\u9fff]+", " ", text.casefold()).strip()
 
 
 def _clean_opening_line(raw: str, *, fallback: str | None = None, limit: int = 220) -> str:
@@ -325,7 +360,75 @@ def _opening_hook_line(bundle: DesignBundle, *, protagonist: PlayProtagonist) ->
     return templates[template_index]
 
 
+def _clean_opening_line_zh(raw: str, *, limit: int = 220) -> str:
+    text = normalize_whitespace(raw).strip().rstrip(".。")
+    if not text:
+        return ""
+    text = _ZH_MANDATE_LEADING_CONTEXT.sub("", text, count=1).strip(" ，；：")
+    text = re.sub(r"^如果", "一旦", text, count=1)
+    text = re.sub(r"^而", "", text, count=1).strip(" ，；：")
+    return trim_ellipsis(text, limit)
+
+
+def _opening_stakes_line_zh(bundle: DesignBundle, *, protagonist: PlayProtagonist) -> str:
+    mandate_key = _normalized_sentence_key(protagonist.mandate)
+    for raw in (bundle.story_bible.stakes, bundle.story_bible.premise, bundle.focused_brief.core_conflict):
+        cleaned = _clean_opening_line_zh(raw, limit=220)
+        if not cleaned:
+            continue
+        cleaned_key = _normalized_sentence_key(cleaned)
+        if cleaned_key == mandate_key:
+            continue
+        if protagonist.title in cleaned and mandate_key and mandate_key in cleaned_key:
+            continue
+        return cleaned
+    return ""
+
+
+def _opening_hook_line_zh(bundle: DesignBundle, *, protagonist: PlayProtagonist) -> str:
+    first_beat = bundle.beat_spine[0]
+    beat_title = trim_ellipsis(first_beat.title.rstrip(".。"), 80)
+    beat_goal = _clean_opening_line_zh(first_beat.goal, limit=180)
+    beat_key = _normalized_sentence_key(beat_title)
+    goal_key = _normalized_sentence_key(beat_goal)
+    mandate_key = _normalized_sentence_key(protagonist.mandate)
+    template_seed = f"{bundle.story_bible.title}|{beat_title}|{protagonist.title}"
+    template_index = sum(ord(char) for char in template_seed) % 3
+    if not beat_goal or goal_key in {beat_key, mandate_key}:
+        templates = (
+            f"今晚先顶到你面前的是{beat_title}，你得先看清谁在失控、谁又在借机拿筹码",
+            f"你一出手就撞上{beat_title}，局面已经开始往失控边缘倾斜",
+            f"眼前先爆开的就是{beat_title}，你得马上判断断裂点到底落在哪一环",
+        )
+        return templates[template_index]
+    templates = (
+        f"今晚先顶到你面前的是{beat_title}：{beat_goal}",
+        f"你一出手就撞上{beat_title}：{beat_goal}",
+        f"眼前先爆开的就是{beat_title}：{beat_goal}",
+    )
+    return templates[template_index]
+
+
 def _opening_narration(bundle: DesignBundle, *, protagonist: PlayProtagonist) -> str:
+    if is_chinese_language(bundle.focused_brief.language):
+        mandate = protagonist.mandate.rstrip(".。")
+        stakes_line = _opening_stakes_line_zh(bundle, protagonist=protagonist)
+        hook_line = _opening_hook_line_zh(bundle, protagonist=protagonist)
+        lead_templates = (
+            f"你是{protagonist.title}，现在得{mandate}",
+            f"轮到你以{protagonist.title}的身份出面了：{mandate}",
+            f"你眼下要做的，就是以{protagonist.title}的身份{mandate}",
+        )
+        lead_seed = sum(ord(char) for char in f"{bundle.story_bible.title}|{protagonist.title}|{mandate}") % len(lead_templates)
+        parts = [f"{lead_templates[lead_seed]}。"]
+        if stakes_line:
+            parts.append(f"{stakes_line}。")
+        if hook_line:
+            parts.append(f"{hook_line}。")
+        opening = sanitize_product_opening_narration("".join(part.strip() for part in parts if part.strip()), limit=4000)
+        if opening.strip():
+            return opening
+        return f"你是{protagonist.title}，现在得{mandate}。眼前的第一处压力点已经浮出来了。"
     title = protagonist.title.lower()
     identity = protagonist.identity_summary.rstrip(".")
     stakes_line = _opening_stakes_line(bundle, protagonist=protagonist)
@@ -356,7 +459,10 @@ def _opening_narration(bundle: DesignBundle, *, protagonist: PlayProtagonist) ->
         parts.append(f"{stakes_line}.")
     if hook_line:
         parts.append(hook_line)
-    return sanitize_product_opening_narration(" ".join(part.strip() for part in parts if part.strip()), limit=4000)
+    opening = sanitize_product_opening_narration(" ".join(part.strip() for part in parts if part.strip()), limit=4000)
+    if opening.strip():
+        return opening
+    return f"You are the {title}. Your mandate is to {protagonist.mandate.rstrip('.')}. The first pressure point is already in motion."
 
 
 def _extract_protagonist_title(bundle: DesignBundle) -> str:
@@ -371,6 +477,18 @@ def _extract_protagonist_title(bundle: DesignBundle) -> str:
         if part and part.strip()
     )
     lowered = kernel.casefold()
+    if bundle.focused_brief.language == "zh":
+        zh_role_patterns = [
+            ("港务检察官", "港务检察官"),
+            ("桥务工程官", "桥务工程官"),
+            ("桥梁工程官", "桥务工程官"),
+            ("档案核验官", "档案核验官"),
+            ("社区协调员", "社区协调员"),
+            ("调停者", "调停者"),
+        ]
+        for needle, title in zh_role_patterns:
+            if needle in kernel:
+                return title
     role_patterns = [
         ("archivist", "Archivist"),
         ("harbor inspector", "Harbor Inspector"),
@@ -445,6 +563,19 @@ def _is_malformed_protagonist_title(title: str) -> bool:
 
 def _fallback_protagonist_mandate(title: str, bundle: DesignBundle) -> str:
     lowered = f"{title} {bundle.focused_brief.story_kernel} {bundle.focused_brief.core_conflict}".casefold()
+    if bundle.focused_brief.language == "zh":
+        for keywords, template in _ZH_MANDATE_TEMPLATES:
+            if all(keyword in lowered for keyword in keywords):
+                return template
+        if any(keyword in lowered for keyword in ("港口", "检疫", "码头", "舱单")):
+            return "在检疫秩序失控前查清被篡改的舱单，别让港口分配继续被人暗中改写"
+        if any(keyword in lowered for keyword in ("档案", "记录", "账本")):
+            return "在公共叙事彻底定型前核清被改写的记录"
+        if any(keyword in lowered for keyword in ("桥", "洪水", "配给", "街区")):
+            return "在配给与基础设施压力撕裂街区前稳住共同程序"
+        if any(keyword in lowered for keyword in ("调停", "联盟", "议会")):
+            return "在危机被人写成既成裂痕前守住协商空间"
+        return "在危机硬化成公开裂痕前守住公共正当性"
     if "archivist" in lowered and "warning" in lowered:
         return "prove the warning is real before the record is buried"
     if "archivist" in lowered and any(keyword in lowered for keyword in ("ration", "roll", "ledger", "blackout")):
@@ -519,6 +650,32 @@ def _clean_mandate_candidate(raw: str) -> str:
     return trim_ellipsis(text, 220)
 
 
+def _clean_mandate_candidate_zh(raw: str) -> str:
+    text = normalize_whitespace(raw or "").strip().rstrip(".。")
+    if not text:
+        return ""
+    text = _ZH_MANDATE_LEADING_CONTEXT.sub("", text, count=1).strip(" ，；：")
+    lowered = text.casefold()
+    for keywords, template in _ZH_MANDATE_TEMPLATES:
+        if all(keyword in lowered for keyword in keywords):
+            return template
+    if all(keyword in lowered for keyword in ("港口", "舱单")) and any(keyword in lowered for keyword in ("投票", "救济", "偏袒", "忠诚街区", "优先照顾")):
+        return "在救济投票前查清被篡改的紧急舱单，阻止偏袒性分配被写成既成事实"
+    if all(keyword in lowered for keyword in ("档案", "记录")) and any(keyword in lowered for keyword in ("投票", "表决", "认证")):
+        return "在表决结果被写成定局前核清被改写的记录"
+    if any(keyword in lowered for keyword in ("桥", "洪水", "配给", "街区")):
+        return "在配给秩序撕裂街区前稳住调度程序，让桥线继续运转"
+    if any(keyword in lowered for keyword in ("议会", "联盟", "调停", "授权")):
+        return "在危机被人写成单方面授权前守住协商空间"
+    if any(keyword in lowered for keyword in ("警报", "公告", "预报", "观测站")):
+        return "在警报失去公信力前证明预警属实"
+    if re.match(r"^在[^。]{6,60}前", text) and any(
+        marker in text for marker in ("查清", "查明", "核实", "核清", "守住", "稳住", "证明", "逼出", "拿回")
+    ):
+        return trim_ellipsis(text, 80)
+    return ""
+
+
 def _protagonist_mandate(bundle: DesignBundle, *, title: str) -> str:
     default = _fallback_protagonist_mandate(title, bundle)
     candidates = [
@@ -530,6 +687,12 @@ def _protagonist_mandate(bundle: DesignBundle, *, title: str) -> str:
         text = _clean_mandate_candidate(raw or "")
         lowered = text.casefold()
         if not text:
+            continue
+        if is_chinese_language(bundle.focused_brief.language):
+            if len(re.findall(r"[A-Za-z]{4,}", text)) >= 2:
+                continue
+            if cleaned_zh := _clean_mandate_candidate_zh(raw or text):
+                return cleaned_zh
             continue
         if len(text.split()) > _MANDATE_MAX_WORDS:
             continue
@@ -550,24 +713,30 @@ def _compile_protagonist(bundle: DesignBundle) -> tuple[PlayProtagonist, str | N
     role_fallback = normalize_whitespace((protagonist_member.role if protagonist_member is not None else "") or "").strip()
     if _is_malformed_protagonist_title(title) and role_fallback:
         title = _normalize_protagonist_title(role_fallback)
-    title = title or "Civic Lead"
+    title = title or localized_text(bundle.focused_brief.language, en="Civic Lead", zh="临时主事人")
     mandate = _protagonist_mandate(bundle, title=title)
     overlap = any(
         member is not protagonist_member and title.casefold() in member.role.casefold()
         for member in bundle.story_bible.cast
     )
     if protagonist_name:
-        identity_summary = (
-            f"You are {protagonist_name}, the {title.lower()}. "
-            f"Your mandate is to {mandate.rstrip('.')}"
+        identity_summary = localized_text(
+            bundle.focused_brief.language,
+            en=f"You are {protagonist_name}, the {title.lower()}. Your mandate is to {mandate.rstrip('.')}",
+            zh=f"你是{protagonist_name}，以{title}的身份出面。你现在要{mandate.rstrip('.')}",
         )
     else:
-        identity_summary = (
-            f"You are the {title.lower()}. "
-            f"Your mandate is to {mandate.rstrip('.')}"
+        identity_summary = localized_text(
+            bundle.focused_brief.language,
+            en=f"You are the {title.lower()}. Your mandate is to {mandate.rstrip('.')}",
+            zh=f"你是{title}，现在要{mandate.rstrip('.')}",
         )
     if overlap:
-        identity_summary += ". The named NPCs are rival authorities and witnesses around you, not alternate player avatars"
+        identity_summary += localized_text(
+            bundle.focused_brief.language,
+            en=". The named NPCs are rival authorities and witnesses around you, not alternate player avatars",
+            zh="。这些具名角色是围着你行动的对手、机构代表和见证者，并不是别的玩家分身",
+        )
     identity_summary = sanitize_product_identity_summary(identity_summary, limit=320)
     return PlayProtagonist(
         title=title,
@@ -576,10 +745,21 @@ def _compile_protagonist(bundle: DesignBundle) -> tuple[PlayProtagonist, str | N
     ), protagonist_npc_id, protagonist_name
 
 
-def _compress_runtime_beats(bundle: DesignBundle) -> list[BeatSpec]:
+def _compress_runtime_beats(
+    bundle: DesignBundle,
+    *,
+    story_flow_plan=None,
+) -> list[BeatSpec]:
     beats = list(bundle.beat_spine)
     if len(beats) <= 1:
         return beats
+    if story_flow_plan is not None:
+        target_count = min(story_flow_plan.target_beat_count, len(beats))
+        scheduled_progress = list(story_flow_plan.progress_required_by_beat[:target_count])
+        return [
+            beat.model_copy(update={"progress_required": scheduled_progress[index]})
+            for index, beat in enumerate(beats[:target_count])
+        ]
 
     compressed_progress = [max(1, beat.progress_required) for beat in beats]
     compressed_progress[-1] = 1
@@ -604,11 +784,50 @@ def _compress_runtime_beats(bundle: DesignBundle) -> list[BeatSpec]:
     ]
 
 
+def _compiled_beat_runtime_shards(bundle: DesignBundle) -> list[PlayBeatRuntimeShard]:
+    return [
+        PlayBeatRuntimeShard(
+            beat_id=item.beat_id,
+            snapshot_id=item.snapshot_id,
+            snapshot_version=item.snapshot_version,
+            context_hash=item.context_hash,
+            required_invariants=dict(item.required_invariants),
+            focus_npc_ids=list(item.focus_npc_ids),
+            conflict_npc_ids=list(item.conflict_npc_ids),
+            pressure_axis_id=item.pressure_axis_id,
+            required_truth_ids=list(item.required_truth_ids),
+            required_event_ids=list(item.required_event_ids),
+            route_pivot_tag=item.route_pivot_tag,
+            affordance_tags=list(item.affordance_tags),
+            blocked_affordances=list(item.blocked_affordances),
+            progress_required=item.progress_required,
+            interpret_hint_cards=[
+                PlayBeatRuntimeHintCard(card_id=card.card_id, content=dict(card.content))
+                for card in item.interpret_hint_cards
+            ],
+            render_hint_cards=[
+                PlayBeatRuntimeHintCard(card_id=card.card_id, content=dict(card.content))
+                for card in item.render_hint_cards
+            ],
+            closeout_hint_cards=[
+                PlayBeatRuntimeHintCard(card_id=card.card_id, content=dict(card.content))
+                for card in item.closeout_hint_cards
+            ],
+            fallback_reason=item.fallback_reason,
+        )
+        for item in list(bundle.beat_runtime_shards or [])
+    ]
+
+
 def compile_play_plan(*, story_id: str, bundle: DesignBundle) -> PlayPlan:
     route_pack = _compiled_route_pack(bundle)
     closeout = play_closeout_profile_from_bundle(bundle)
     runtime_policy = play_runtime_profile_from_bundle(bundle)
     author_theme = author_theme_from_bundle(bundle)
+    story_flow_plan = bundle.story_flow_plan or build_story_flow_plan(
+        controls=bundle.generation_controls,
+        primary_theme=author_theme.primary_theme,
+    )
     fallback_story = build_default_story_frame_draft(bundle.focused_brief)
     protagonist, protagonist_npc_id, protagonist_name = _compile_protagonist(bundle)
     premise = sanitize_product_story_sentence(
@@ -623,11 +842,12 @@ def compile_play_plan(*, story_id: str, bundle: DesignBundle) -> PlayPlan:
         limit=320,
     )
     axes = _compiled_axes(bundle)
-    beats = _compress_runtime_beats(bundle)
-    max_turns = max(4, sum(beat.progress_required for beat in beats))
+    beats = _compress_runtime_beats(bundle, story_flow_plan=story_flow_plan)
+    max_turns = story_flow_plan.target_turn_count
     stances = [stance for stance in bundle.state_schema.stances if stance.npc_id != protagonist_npc_id]
     return PlayPlan(
         story_id=story_id,
+        language=bundle.focused_brief.language,
         story_title=bundle.story_bible.title,
         protagonist=protagonist,
         protagonist_name=protagonist_name,
@@ -646,10 +866,14 @@ def compile_play_plan(*, story_id: str, bundle: DesignBundle) -> PlayPlan:
         stances=stances,
         flags=bundle.state_schema.flags,
         beats=beats,
+        beat_runtime_shards=_compiled_beat_runtime_shards(bundle),
         route_unlock_rules=route_pack.route_unlock_rules,
         ending_rules=_compiled_ending_rules(bundle),
         affordance_effect_profiles=route_pack.affordance_effect_profiles,
         available_affordance_tags=[profile.affordance_tag for profile in route_pack.affordance_effect_profiles],
         max_turns=max_turns,
+        target_duration_minutes=story_flow_plan.target_duration_minutes,
+        branch_budget=story_flow_plan.branch_budget,
+        minimum_resolution_turn=story_flow_plan.minimum_resolution_turn,
         opening_narration=_opening_narration(bundle, protagonist=protagonist),
     )

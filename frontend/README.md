@@ -1,6 +1,6 @@
-# Frontend Handoff
+# Frontend Contract Mirror
 
-This directory is the frontend handoff surface for the current backend contract.
+This directory mirrors the current frontend-facing backend contract.
 
 ## Current Source Of Truth
 
@@ -19,12 +19,7 @@ Frontend should treat the following as the current mirror of backend product API
 
 ## Runtime Mode
 
-Current default dev mode is real HTTP.
-
-- `VITE_API_MODE=placeholder` switches the app to the in-memory placeholder client
-- otherwise the frontend uses the HTTP client by default
-
-This means placeholder mode is now a fallback development surface, not the primary integration path.
+Current and only supported dev mode is real HTTP.
 
 ## What Is In Here
 
@@ -38,8 +33,6 @@ This means placeholder mode is now a fallback development surface, not the prima
   One-to-one mapping from frontend client methods to backend routes.
 - `src/api/http-client.ts`
   Real HTTP client for the stable backend routes.
-- `src/api/placeholder-client.ts`
-  In-memory placeholder API mirroring the current product route surface.
 - `src/index.ts`
   Single entry export for frontend consumption.
 

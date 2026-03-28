@@ -50,6 +50,11 @@ They must not invent fields or field meanings that do not exist in backend contr
 - `GET /author/jobs/{job_id}`
 - `GET /author/jobs/{job_id}/events`
 - `GET /author/jobs/{job_id}/result`
+- `GET /author/jobs/{job_id}/editor-state`
+- `POST /author/jobs/{job_id}/copilot/proposals`
+- `GET /author/jobs/{job_id}/copilot/proposals/{proposal_id}`
+- `POST /author/jobs/{job_id}/copilot/proposals/{proposal_id}/preview`
+- `POST /author/jobs/{job_id}/copilot/proposals/{proposal_id}/apply`
 - `POST /author/jobs/{job_id}/publish`
 
 Public author responses are:
@@ -57,8 +62,16 @@ Public author responses are:
 - preview-oriented
 - progress-oriented
 - publish-oriented
+- editor-oriented
+- copilot proposal-oriented
 
-They must not expose raw author bundle internals beyond the currently declared `bundle` field on `AuthorJobResultResponse`.
+Rules:
+
+- `GET /author/jobs/{job_id}/result` is product-safe summary/publishability only
+- `GET /author/jobs/{job_id}/editor-state` is the stable editor-facing structure route and the canonical post-generation author surface
+- raw author bundle internals must not be a frontend product dependency
+- `Author Copilot` is no longer an auxiliary result-page widget; it is the primary editing path exposed through `editor-state`
+- proposal creation supports retry-style variant generation on the same draft revision rather than forcing frontend-only fake regenerate behavior
 
 ### Library domain
 
@@ -69,6 +82,7 @@ Current stable query shape for `GET /stories`:
 
 - `q`
 - `theme`
+- `language`
 - `limit`
 - `cursor`
 - `sort`
@@ -78,6 +92,14 @@ Current stable response shape:
 - `stories`
 - optional `meta`
 - optional `facets`
+
+Current stable response shape for `GET /stories/{story_id}`:
+
+- `story`
+- `presentation`
+- `structure`
+- `cast_manifest`
+- `play_overview`
 
 ### Play domain
 
@@ -179,7 +201,6 @@ This prevents benchmark instrumentation from leaking into the stable app contrac
 - view composition
 - optional use of stable additive fields
 - route transitions
-- placeholder compatibility for local UI work
 
 ### Architecture owner responsibilities
 
@@ -205,10 +226,12 @@ This prevents benchmark instrumentation from leaking into the stable app contrac
 - raw turn traces
 - provider/token/cache internals
 - internal closeout reasoning chain
+- raw `DesignBundle` as a product-facing route payload
 
 ### Still open
 
-- no known public API gap is currently blocking the main frontend flow
+- `Author Copilot` must build on `GET /author/jobs/{job_id}/editor-state`, not on raw `bundle`
+- post-generation author UX should keep converging toward `editor-state + copilot proposal` as the single mainline, with `result` limited to readiness/progress support
 
 ## Working Process
 

@@ -3,11 +3,17 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from rpg_backend.author.compiler.cast import derive_cast_overview_draft
+from rpg_backend.author.compiler.beats import build_default_beat_plan_draft
+from rpg_backend.author.compiler.cast import build_cast_draft_from_overview, derive_cast_overview_draft
 from rpg_backend.author.compiler.router import plan_story_theme
+from rpg_backend.author.compiler.story import build_default_story_frame_draft, sanitize_story_sentence
 from rpg_backend.author.preview import build_author_preview_from_seed, build_author_story_summary
 from rpg_backend.author.workflow import build_design_bundle, build_default_ending_rules, focus_brief
+from rpg_backend.author.normalize import slugify
 from rpg_backend.author.contracts import FocusedBrief, StoryFrameDraft
+from rpg_backend.author.quality.story import story_frame_quality_reasons
+from rpg_backend.roster.admin import build_runtime_catalog
+from rpg_backend.roster.loader import load_character_roster_source_catalog
 from rpg_backend.story_profiles import author_theme_from_bundle, play_closeout_profile_from_bundle
 from tests.author_fixtures import author_fixture_bundle
 
@@ -37,6 +43,18 @@ def test_focus_brief_splits_setting_and_conflict_from_single_sentence_prompt() -
     assert "hopeful political fantasy" in focused.tone_signal.casefold()
 
 
+def test_focus_brief_supports_zh_prompt() -> None:
+    focused = focus_brief(
+        "一名港口档案员发现紧急舱单被篡改，用来在救济投票前偏袒忠诚街区。",
+        language="zh",
+    )
+
+    assert focused.language == "zh"
+    assert "港口" in focused.setting_signal
+    assert "舱单" in focused.core_conflict
+    assert "悬疑" in focused.tone_signal
+
+
 def test_build_design_bundle_creates_state_schema_and_beat_spine() -> None:
     fixture = author_fixture_bundle()
     bundle = build_design_bundle(
@@ -52,6 +70,15 @@ def test_build_design_bundle_creates_state_schema_and_beat_spine() -> None:
     assert bundle.beat_spine[0].pressure_axis_id == "external_pressure"
     assert bundle.beat_spine[1].route_pivot_tag == "shift_public_narrative"
     assert bundle.beat_spine[1].required_events == ["b2.fracture"]
+
+
+def test_character_roster_catalog_preserves_explicit_gender_lock_metadata() -> None:
+    source_entries = load_character_roster_source_catalog(Path("data/character_roster/catalog.json"))
+    runtime_catalog = build_runtime_catalog(source_entries)
+
+    assert len(source_entries) >= 30
+    assert all(str(entry.gender_lock or "").strip() for entry in source_entries)
+    assert all(str(entry.gender_lock or "").strip() for entry in runtime_catalog.entries)
 
 
 def test_theme_router_classifies_harbor_quarantine_into_logistics_strategy() -> None:
@@ -188,6 +215,111 @@ def test_preview_rewrites_seed_echo_into_authored_summary() -> None:
     assert len(preview.story.tone.split()) <= 6
 
 
+def test_preview_supports_zh_story_language() -> None:
+    preview = build_author_preview_from_seed(
+        "A harbor inspector must keep quarantine from turning into private rule.",
+        language="zh",
+    )
+
+    assert preview.language == "zh"
+    assert preview.story.title == "港务协定"
+    assert preview.beats[0].title == "检疫封线"
+    assert preview.cast_slots[0].public_role == "港务检察官"
+    assert "。" in preview.story.stakes
+    assert "。." not in preview.story.stakes
+
+
+def test_sanitize_story_sentence_normalizes_zh_terminal_punctuation() -> None:
+    cleaned = sanitize_story_sentence(
+        "如果公民正当性在危机稳定前断裂，城市将公开分裂，而你的任务也会在众目睽睽下失败。.",
+        fallback="如果联盟失手，城市会公开分裂。",
+        limit=240,
+    )
+
+    assert cleaned.endswith("。")
+    assert "。." not in cleaned
+
+
+def test_slugify_generates_stable_ascii_ids_for_zh_names() -> None:
+    assert slugify("岑港") == "u5c91_u6e2f"
+    assert slugify("闻砚") == "u95fb_u781a"
+
+
+def test_zh_cast_generation_uses_chinese_names_and_unique_ids() -> None:
+    focused = focus_brief(
+        "一名港口档案员发现紧急舱单被篡改，用来在救济投票前偏袒忠诚街区。",
+        language="zh",
+    )
+    story_frame = build_default_story_frame_draft(focused)
+    cast_overview = derive_cast_overview_draft(focused, story_frame)
+    cast_draft = build_cast_draft_from_overview(cast_overview, focused)
+    beat_plan = build_default_beat_plan_draft(focused, story_frame=story_frame, cast_draft=cast_draft)
+    bundle = build_design_bundle(
+        story_frame,
+        cast_draft,
+        beat_plan,
+        focused,
+    )
+
+    assert all(re.search(r"[\u4e00-\u9fff]", member.name) for member in cast_draft.cast)
+    assert len({member.name for member in cast_draft.cast}) == len(cast_draft.cast)
+    assert len({member.npc_id for member in bundle.story_bible.cast}) == len(bundle.story_bible.cast)
+
+
+def test_zh_bridge_seed_uses_bridge_engineer_role() -> None:
+    preview = build_author_preview_from_seed(
+        "一名桥梁工程官发现配给台账被做了手脚，洪水压力正把上下游街区推向公开撕裂。",
+        language="zh",
+    )
+
+    assert preview.cast_slots[0].public_role == "桥务工程官"
+    assert preview.story.title == "桥线账本"
+
+
+def test_zh_archive_vote_seed_uses_record_examiner_role() -> None:
+    preview = build_author_preview_from_seed(
+        "一名档案核验官发现投票记录被偷偷改写，委员会正准备把结果宣布成定局。",
+        language="zh",
+    )
+
+    assert preview.cast_slots[0].public_role == "档案核验官"
+    assert preview.story.title != "港务协定"
+
+
+def test_zh_blackout_supply_seed_uses_ward_coordinator_role() -> None:
+    preview = build_author_preview_from_seed(
+        "一名社区协调员发现停电期间的供给通报是伪造的，几处街区正因恐慌开始互相甩锅。",
+        language="zh",
+    )
+
+    assert preview.cast_slots[0].public_role == "社区协调员"
+    assert preview.story.title == "断电通报"
+
+
+def test_story_frame_quality_flags_generic_zh_title() -> None:
+    focused = focus_brief(
+        "一名港口档案员发现紧急舱单被篡改，用来在救济投票前偏袒忠诚街区。",
+        language="zh",
+    )
+    draft = StoryFrameDraft.model_validate(
+        {
+            "title": "公议协约",
+            "premise": "在一座被检疫政治与供给恐慌撕扯的港口城市中，一名港口档案员必须在投票前查清被篡改的舱单。",
+            "tone": "封线政治惊悚",
+            "stakes": "如果公民正当性在危机稳定前断裂，城市将公开分裂。",
+            "style_guard": "保持故事紧张、清晰，并把重点放在公共后果上。",
+            "world_rules": ["可见秩序依赖公共正当性。", "主线会沿固定节拍推进。"],
+            "truths": [item.model_dump(mode="json") for item in author_fixture_bundle().story_frame.truths],
+            "state_axis_choices": [item.model_dump(mode="json") for item in author_fixture_bundle().story_frame.state_axis_choices],
+            "flags": [item.model_dump(mode="json") for item in author_fixture_bundle().story_frame.flags],
+        }
+    )
+
+    reasons = story_frame_quality_reasons(draft, focused)
+
+    assert "title_generic_or_brief_echo" in reasons
+
+
 def test_theme_router_classifies_bridge_ration_into_bridge_specific_strategy() -> None:
     decision = plan_story_theme(
         author_fixture_bundle().focused_brief.model_copy(
@@ -217,6 +349,40 @@ def test_theme_router_classifies_bridge_ration_into_bridge_specific_strategy() -
     assert decision.story_frame_strategy == "bridge_ration_story"
     assert decision.cast_strategy == "bridge_ration_cast"
     assert decision.beat_plan_strategy == "bridge_ration_compile"
+
+
+def test_theme_router_classifies_zh_harbor_seed_into_logistics_strategy() -> None:
+    decision = plan_story_theme(
+        author_fixture_bundle().focused_brief.model_copy(
+            update={
+                "language": "zh",
+                "story_kernel": "一名港口档案员必须在投票前查清被篡改的紧急舱单。",
+                "setting_signal": "港口城市在检疫与物资紧张中维持脆弱平衡",
+                "core_conflict": "在救济投票前查清被篡改的紧急舱单，阻止忠诚街区被优先照顾",
+                "tone_signal": "封线政治惊悚",
+            }
+        ),
+        StoryFrameDraft.model_validate(
+            {
+                "title": "舱单风波",
+                "premise": "在港口城市中，一名档案员必须在投票前核实被篡改的紧急舱单，而检疫政治与供给恐慌不断把救济扭成派系筹码。",
+                "tone": "封线政治惊悚",
+                "stakes": "如果程序失守，港口就会在公众眼前裂开。",
+                "style_guard": "保持故事紧张、清晰，并把重点放在公共后果上。",
+                "world_rules": ["可见秩序依赖公共正当性。", "主线会沿固定节拍推进。"],
+                "truths": [item.model_dump(mode="json") for item in author_fixture_bundle().story_frame.truths],
+                "state_axis_choices": [item.model_dump(mode="json") for item in author_fixture_bundle().story_frame.state_axis_choices],
+                "flags": [item.model_dump(mode="json") for item in author_fixture_bundle().story_frame.flags],
+            }
+        ),
+    )
+
+    assert decision.primary_theme == "logistics_quarantine_crisis"
+    assert decision.story_frame_strategy in {
+        "bridge_ration_story",
+        "harbor_quarantine_story",
+        "logistics_story",
+    }
 
 
 def test_theme_router_classifies_warning_record_into_warning_specific_strategy() -> None:

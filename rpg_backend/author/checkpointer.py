@@ -21,7 +21,11 @@ from langgraph.checkpoint.base import (
 )
 
 from rpg_backend.author.contracts import (
+    AuthorBeatSnapshot,
+    AuthorBundleSnapshot,
     BeatPlanDraft,
+    BeatRuntimeHintCard,
+    BeatRuntimeShard,
     BeatSpec,
     CastDraft,
     CastOverviewDraft,
@@ -34,8 +38,11 @@ from rpg_backend.author.contracts import (
     RouteOpportunityPlanDraft,
     RulePack,
     StateSchema,
+    StoryFlowPlan,
+    StoryGenerationControls,
     StoryBible,
     StoryFrameDraft,
+    TonePlan,
 )
 from rpg_backend.config import Settings, get_settings
 from rpg_backend.sqlite_utils import connect_sqlite
@@ -43,6 +50,13 @@ from rpg_backend.sqlite_utils import connect_sqlite
 
 AUTHOR_CHECKPOINT_ALLOWLIST = (
     FocusedBrief,
+    StoryGenerationControls,
+    StoryFlowPlan,
+    TonePlan,
+    BeatRuntimeHintCard,
+    AuthorBeatSnapshot,
+    AuthorBundleSnapshot,
+    BeatRuntimeShard,
     StoryFrameDraft,
     CastOverviewDraft,
     OverviewCastDraft,

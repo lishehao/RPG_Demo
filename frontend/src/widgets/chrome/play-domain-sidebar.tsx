@@ -1,7 +1,8 @@
 import type { ReactNode } from "react"
+import { StudioIcon } from "../../shared/ui/studio-icon"
 
 type SidebarItem = {
-  icon: string
+  icon: "menu_book" | "reorder" | "person" | "history_edu" | "settings" | "north_east"
   label: string
   active?: boolean
   disabled?: boolean
@@ -29,6 +30,7 @@ export function PlayDomainSidebar({
       <nav className="play-domain-sidebar__nav" aria-label={`${title} navigation`}>
         {items.map((item) => (
           <button
+            aria-current={item.active ? "location" : undefined}
             aria-disabled={item.disabled ? "true" : undefined}
             className={`play-domain-sidebar__item ${item.active ? "is-active" : ""} ${item.disabled ? "is-disabled" : ""}`}
             disabled={item.disabled}
@@ -37,9 +39,7 @@ export function PlayDomainSidebar({
             title={item.disabled ? `${item.label} coming soon` : undefined}
             type="button"
           >
-            <span aria-hidden="true" className="material-symbols-outlined play-domain-sidebar__icon">
-              {item.icon}
-            </span>
+            <StudioIcon className="play-domain-sidebar__icon" name={item.icon} />
             <span>{item.label}</span>
           </button>
         ))}

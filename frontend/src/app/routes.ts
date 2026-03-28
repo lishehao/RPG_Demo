@@ -5,11 +5,11 @@ export type AppRoute =
   | { name: "auth"; mode?: "login" | "register"; next?: string }
   | { name: "create-story" }
   | { name: "author-loading"; jobId: string }
-  | { name: "story-library"; selectedStoryId?: string; q?: string; theme?: string; view?: PublishedStoryListView }
+  | { name: "story-library"; q?: string; theme?: string; view?: PublishedStoryListView }
   | { name: "story-detail"; storyId: string }
   | { name: "play-session"; sessionId: string }
 
-function parseRoute(hash: string): AppRoute {
+export function parseHashRoute(hash: string): AppRoute {
   const raw = hash.replace(/^#/, "") || "/stories"
   const [pathname, search = ""] = raw.split("?")
   const segments = pathname.split("/").filter(Boolean)
@@ -35,7 +35,6 @@ function parseRoute(hash: string): AppRoute {
   if (segments[0] === "stories") {
     return {
       name: "story-library",
-      selectedStoryId: params.get("story") ?? undefined,
       q: params.get("q") ?? undefined,
       theme: params.get("theme") ?? undefined,
       view: (params.get("view") as PublishedStoryListView | null) ?? undefined,
@@ -68,9 +67,6 @@ export function buildHash(route: AppRoute): string {
 
     case "story-library": {
       const params = new URLSearchParams()
-      if (route.selectedStoryId) {
-        params.set("story", route.selectedStoryId)
-      }
       if (route.q) {
         params.set("q", route.q)
       }
@@ -96,14 +92,15 @@ export function buildHash(route: AppRoute): string {
 }
 
 export function useAppRoute() {
-  const [route, setRoute] = useState<AppRoute>(() => parseRoute(window.location.hash))
+  const [route, setRoute] = useState<AppRoute>(() => parseHashRoute(window.location.hash))
 
   useEffect(() => {
-    const handleHashChange = () => {
-      setRoute(parseRoute(window.location.hash))
+    const syncRoute = () => {
+      setRoute(parseHashRoute(window.location.hash))
     }
 
-    window.addEventListener("hashchange", handleHashChange)
+    window.addEventListener("hashchange", syncRoute)
+    window.addEventListener("popstate", syncRoute)
 
     if (!window.location.hash) {
       window.history.replaceState(null, "", buildHash({ name: "story-library" }))
@@ -111,7 +108,8 @@ export function useAppRoute() {
     }
 
     return () => {
-      window.removeEventListener("hashchange", handleHashChange)
+      window.removeEventListener("hashchange", syncRoute)
+      window.removeEventListener("popstate", syncRoute)
     }
   }, [])
 
@@ -121,7 +119,8 @@ export function useAppRoute() {
       setRoute(nextRoute)
       return
     }
-    window.location.hash = nextHash
+    window.history.pushState(null, "", nextHash)
+    setRoute(nextRoute)
   }
 
   return { route, navigate }

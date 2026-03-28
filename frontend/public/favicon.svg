@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#F4F1EC" />
+  <path
+    d="M11 17.5C11 16.6716 11.6716 16 12.5 16H26.5C30.3571 16 33.944 17.1644 36.9231 19.1583L38 19.8787L39.0769 19.1583C42.056 17.1644 45.6429 16 49.5 16H52.5C53.3284 16 54 16.6716 54 17.5V45.5C54 46.3284 53.3284 47 52.5 47H49.5C45.6429 47 42.056 48.1644 39.0769 50.1583L38 50.8787L36.9231 50.1583C33.944 48.1644 30.3571 47 26.5 47H12.5C11.6716 47 11 46.3284 11 45.5V17.5Z"
+    fill="#FFFDF8"
+    stroke="#18202D"
+    stroke-width="2.25"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M32 20V49"
+    stroke="#18202D"
+    stroke-width="2"
+    stroke-linecap="round"
+    opacity=".18"
+  />
+  <path
+    d="M18 18.5C21.9337 18.5 25.7222 19.9605 28.6353 22.5973L32 25.6429L35.3647 22.5973C38.2778 19.9605 42.0663 18.5 46 18.5H50.5V44.5H46C42.0663 44.5 38.2778 45.9605 35.3647 48.5973L32 51.6429L28.6353 48.5973C25.7222 45.9605 21.9337 44.5 18 44.5H14.5V18.5H18Z"
+    fill="url(#pageGlow)"
+    opacity=".45"
+  />
+  <text
+    x="32"
+    y="39.5"
+    text-anchor="middle"
+    font-size="24"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-weight="700"
+    fill="#18202D"
+  >N</text>
+  <path
+    d="M42.5 24.5L47.5 23V33.5L45 31.5L42.5 33.5V24.5Z"
+    fill="#C25B3C"
+  />
+  <path
+    d="M48 11L49.3178 14.6822L53 16L49.3178 17.3178L48 21L46.6822 17.3178L43 16L46.6822 14.6822L48 11Z"
+    fill="#E36D4A"
+  />
+  <defs>
+    <radialGradient id="pageGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(32 28) rotate(90) scale(24 28)">
+      <stop stop-color="#FFF8E9" />
+      <stop offset="1" stop-color="#FFF8E9" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+</svg>

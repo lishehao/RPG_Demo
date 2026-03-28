@@ -84,5 +84,14 @@ def normalize_id_list(
 
 
 def slugify(value: str) -> str:
-    normalized = re.sub(r"[^a-z0-9]+", "_", (value or "").casefold())
-    return normalized.strip("_") or "item"
+    text = (value or "").casefold()
+    normalized = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+    if normalized:
+        return normalized
+    unicode_parts = [
+        (char if char.isascii() and char.isalnum() else f"u{ord(char):x}")
+        for char in text
+        if not char.isspace()
+    ]
+    fallback = "_".join(unicode_parts).strip("_")
+    return fallback or "item"

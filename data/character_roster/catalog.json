@@ -1,0 +1,1849 @@
+[
+  {
+    "character_id": "roster_blackout_tally_registrar",
+    "slug": "blackout-tally-registrar",
+    "name_en": "Iven Cross",
+    "name_zh": "伊文·克罗斯",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_blackout_tally_registrar/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_blackout_tally_registrar/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_blackout_tally_registrar/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_blackout_tally_registrar/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_blackout_tally_registrar/positive/current.png"
+    },
+    "public_summary_en": "A referendum tally registrar who keeps blackout vote counts legible when every ward suspects the lamps themselves are partisan.",
+    "public_summary_zh": "一名公投计票登记官，在各街区都怀疑连路灯都带着立场时，仍努力让停电计票保持清晰可读。",
+    "role_hint_en": "Referendum tally registrar",
+    "role_hint_zh": "公投计票登记官",
+    "agenda_seed_en": "Keep the referendum tally public long enough to stop outage panic from hardening into a permanent false mandate.",
+    "agenda_seed_zh": "让公投计票始终保持公开，直到停电恐慌不再可能板结成一个永久的虚假授权。",
+    "red_line_seed_en": "Will not certify a ward total that arrived through a dark corridor and a sealed handoff.",
+    "red_line_seed_zh": "不会为任何经由黑暗走廊和密封私交传来的街区总数背书。",
+    "pressure_signature_seed_en": "Treats every missing lamp, smudged seal, and late-returned ballot ledger as a civic alarm.",
+    "pressure_signature_seed_zh": "他把每一盏熄灭的灯、每一个模糊的封印和每一本迟归的选票账册都当成公共警报。",
+    "personality_core_en": "Treats every missing lamp, smudged seal, and late-returned ballot ledger as a civic alarm.",
+    "personality_core_zh": "他把每一盏熄灭的灯、每一个模糊的封印和每一本迟归的选票账册都当成公共警报。",
+    "experience_anchor_en": "A referendum tally registrar who keeps blackout vote counts legible when every ward suspects the lamps themselves are partisan.",
+    "experience_anchor_zh": "一名公投计票登记官，在各街区都怀疑连路灯都带着立场时，仍努力让停电计票保持清晰可读。",
+    "identity_lock_notes_en": "This is Iven Cross. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Referendum tally registrar.",
+    "identity_lock_notes_zh": "这就是伊文·克罗斯。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定公投计票登记官的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "legitimacy_crisis"
+    ],
+    "setting_tags": [
+      "blackout",
+      "referendum",
+      "council"
+    ],
+    "tone_tags": [
+      "tense",
+      "procedural",
+      "restrained"
+    ],
+    "conflict_tags": [
+      "legitimacy",
+      "public_record",
+      "public_order"
+    ],
+    "slot_tags": [
+      "guardian",
+      "anchor"
+    ],
+    "retrieval_terms": [
+      "blackout",
+      "referendum",
+      "tally",
+      "registrar",
+      "ward",
+      "ballot"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_blackout_ward_delegate",
+    "slug": "blackout-ward-delegate",
+    "name_en": "Nessa Vale",
+    "name_zh": "内萨·维尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_blackout_ward_delegate/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_blackout_ward_delegate/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_blackout_ward_delegate/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_blackout_ward_delegate/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_blackout_ward_delegate/positive/current.png"
+    },
+    "public_summary_en": "A ward delegate who can tell when a blackout crowd still wants fairness and when it has started wanting a culprit.",
+    "public_summary_zh": "一名街区代表，能分辨停电中的人群此刻要的仍是公平，还是已经开始急着寻找替罪羊。",
+    "role_hint_en": "Ward delegate",
+    "role_hint_zh": "街区代表",
+    "agenda_seed_en": "Keep neighborhood testimony visible before the council reduces the blackout to a technical inconvenience.",
+    "agenda_seed_zh": "在议会把停电缩减成一场技术性不便之前，先让街区的见证保持可见。",
+    "red_line_seed_en": "Will not let central committees erase who waited in the dark and who never had to.",
+    "red_line_seed_zh": "不会让中央委员会抹去究竟是谁在黑暗里等待，而谁根本不必等。",
+    "pressure_signature_seed_en": "Counts pressure in who stops speaking, which names vanish from public lists, and who gets called unreasonable first.",
+    "pressure_signature_seed_zh": "她通过谁先不再说话、哪些名字从公开名单上消失、以及谁最先被说成不讲理来计算压力。",
+    "personality_core_en": "Counts pressure in who stops speaking, which names vanish from public lists, and who gets called unreasonable first.",
+    "personality_core_zh": "她通过谁先不再说话、哪些名字从公开名单上消失、以及谁最先被说成不讲理来计算压力。",
+    "experience_anchor_en": "A ward delegate who can tell when a blackout crowd still wants fairness and when it has started wanting a culprit.",
+    "experience_anchor_zh": "一名街区代表，能分辨停电中的人群此刻要的仍是公平，还是已经开始急着寻找替罪羊。",
+    "identity_lock_notes_en": "This is Nessa Vale. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Ward delegate.",
+    "identity_lock_notes_zh": "这就是内萨·维尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定街区代表的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "public_order_crisis"
+    ],
+    "setting_tags": [
+      "blackout",
+      "ward_line",
+      "hearing"
+    ],
+    "tone_tags": [
+      "tense",
+      "somber",
+      "civic"
+    ],
+    "conflict_tags": [
+      "public_order",
+      "witness",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "witness",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "blackout",
+      "ward_delegate",
+      "crowd",
+      "testimony",
+      "hearing",
+      "neighborhood"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_blackout_grid_compact_broker",
+    "slug": "blackout-grid-compact-broker",
+    "name_en": "Tarin Rusk",
+    "name_zh": "塔林·拉斯克",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_compact_broker/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_compact_broker/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_compact_broker/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_compact_broker/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_compact_broker/positive/current.png"
+    },
+    "public_summary_en": "A grid compact broker who sells restoration promises to whichever bloc is most afraid of being seen without power.",
+    "public_summary_zh": "一名电网协定掮客，总把恢复供电的承诺卖给那个最害怕自己无电可用还会被人看见的派系。",
+    "role_hint_en": "Grid compact broker",
+    "role_hint_zh": "电网协定掮客",
+    "agenda_seed_en": "Turn rotating restoration schedules into leverage before the council can freeze the next order in someone else's favor.",
+    "agenda_seed_zh": "在议会来得及把下一轮秩序冻结成他人胜局之前，先把轮转供电表变成自己的筹码。",
+    "red_line_seed_en": "Will not leave the blackout bargain with less leverage than they entered with.",
+    "red_line_seed_zh": "不会让自己带着比进场时更少的筹码离开这场停电交易。",
+    "pressure_signature_seed_en": "Measures panic in minutes of darkness and in how quickly officials start calling special access inevitable.",
+    "pressure_signature_seed_zh": "他用黑暗持续的分钟数，以及官员开始多快地把特殊通道称作“不可避免”来衡量恐慌。",
+    "personality_core_en": "Measures panic in minutes of darkness and in how quickly officials start calling special access inevitable.",
+    "personality_core_zh": "他用黑暗持续的分钟数，以及官员开始多快地把特殊通道称作“不可避免”来衡量恐慌。",
+    "experience_anchor_en": "A grid compact broker who sells restoration promises to whichever bloc is most afraid of being seen without power.",
+    "experience_anchor_zh": "一名电网协定掮客，总把恢复供电的承诺卖给那个最害怕自己无电可用还会被人看见的派系。",
+    "identity_lock_notes_en": "This is Tarin Rusk. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Grid compact broker.",
+    "identity_lock_notes_zh": "这就是塔林·拉斯克。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定电网协定掮客的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "public_order_crisis"
+    ],
+    "setting_tags": [
+      "blackout",
+      "grid",
+      "district"
+    ],
+    "tone_tags": [
+      "tense",
+      "urgent"
+    ],
+    "conflict_tags": [
+      "resource",
+      "legitimacy",
+      "public_order"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "blackout",
+      "grid",
+      "compact",
+      "broker",
+      "restoration",
+      "district"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_bridge_load_surveyor",
+    "slug": "bridge-load-surveyor",
+    "name_en": "Pella Dorn",
+    "name_zh": "佩拉·多恩",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_bridge_load_surveyor/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_bridge_load_surveyor/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_bridge_load_surveyor/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_bridge_load_surveyor/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_bridge_load_surveyor/positive/current.png"
+    },
+    "public_summary_en": "A bridge load surveyor who reads fracture lines in both steel and public patience.",
+    "public_summary_zh": "一名桥梁载重勘测员，既能从钢梁里读出断裂线，也能从公众耐心里读出来。",
+    "role_hint_en": "Bridge load surveyor",
+    "role_hint_zh": "桥梁载重勘测员",
+    "agenda_seed_en": "Keep the crossings open under honest load limits before ration panic turns the wards into islands.",
+    "agenda_seed_zh": "在配给恐慌把街区切成孤岛之前，先在真实承载上限内维持桥线开放。",
+    "red_line_seed_en": "Will not falsify a safe load to satisfy a political timetable.",
+    "red_line_seed_zh": "不会为了配合政治时间表而伪造安全承载值。",
+    "pressure_signature_seed_en": "Translates every shouted demand back into weight, breakpoints, and which district gets stranded first.",
+    "pressure_signature_seed_zh": "她会把每一次高声要求都重新翻译成重量、断点，以及究竟哪个街区会先被困住。",
+    "personality_core_en": "Translates every shouted demand back into weight, breakpoints, and which district gets stranded first.",
+    "personality_core_zh": "她会把每一次高声要求都重新翻译成重量、断点，以及究竟哪个街区会先被困住。",
+    "experience_anchor_en": "A bridge load surveyor who reads fracture lines in both steel and public patience.",
+    "experience_anchor_zh": "一名桥梁载重勘测员，既能从钢梁里读出断裂线，也能从公众耐心里读出来。",
+    "identity_lock_notes_en": "This is Pella Dorn. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Bridge load surveyor.",
+    "identity_lock_notes_zh": "这就是佩拉·多恩。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定桥梁载重勘测员的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis"
+    ],
+    "setting_tags": [
+      "bridge",
+      "flood",
+      "ward_line"
+    ],
+    "tone_tags": [
+      "procedural",
+      "tense",
+      "urgent"
+    ],
+    "conflict_tags": [
+      "resource",
+      "public_order",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "guardian",
+      "anchor"
+    ],
+    "retrieval_terms": [
+      "bridge",
+      "load",
+      "surveyor",
+      "flood",
+      "crossing",
+      "ward"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_bridge_ration_queue_witness",
+    "slug": "bridge-ration-queue-witness",
+    "name_en": "Maren Pike",
+    "name_zh": "玛伦·派克",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_bridge_ration_queue_witness/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_bridge_ration_queue_witness/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_bridge_ration_queue_witness/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_bridge_ration_queue_witness/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_bridge_ration_queue_witness/positive/current.png"
+    },
+    "public_summary_en": "A ration queue witness who remembers which bridge line waited longest and which ward was told to be grateful anyway.",
+    "public_summary_zh": "一名配给队列见证人，记得哪条桥上队伍等得最久，也记得哪个街区还被要求对此心怀感激。",
+    "role_hint_en": "Ration queue witness",
+    "role_hint_zh": "配给队列见证人",
+    "agenda_seed_en": "Keep queue testimony in the room before bridge rationing is rewritten as orderly sacrifice.",
+    "agenda_seed_zh": "在桥线配给被改写成“有序牺牲”之前，先把队伍中的见证留在房间里。",
+    "red_line_seed_en": "Will not let officials erase which households were told to wait twice.",
+    "red_line_seed_zh": "不会让官员抹去究竟哪些住户被要求等待了两次。",
+    "pressure_signature_seed_en": "Counts pressure in repeated ticket numbers, colder tempers, and the silence after a truck passes one line by.",
+    "pressure_signature_seed_zh": "她从重复出现的票号、越来越冷的情绪，以及运货车掠过某一队后留下的沉默中计算压力。",
+    "personality_core_en": "Counts pressure in repeated ticket numbers, colder tempers, and the silence after a truck passes one line by.",
+    "personality_core_zh": "她从重复出现的票号、越来越冷的情绪，以及运货车掠过某一队后留下的沉默中计算压力。",
+    "experience_anchor_en": "A ration queue witness who remembers which bridge line waited longest and which ward was told to be grateful anyway.",
+    "experience_anchor_zh": "一名配给队列见证人，记得哪条桥上队伍等得最久，也记得哪个街区还被要求对此心怀感激。",
+    "identity_lock_notes_en": "This is Maren Pike. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Ration queue witness.",
+    "identity_lock_notes_zh": "这就是玛伦·派克。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定配给队列见证人的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "resource_allocation_crisis"
+    ],
+    "setting_tags": [
+      "bridge",
+      "ration",
+      "queue"
+    ],
+    "tone_tags": [
+      "somber",
+      "tense",
+      "civic"
+    ],
+    "conflict_tags": [
+      "resource",
+      "witness",
+      "public_order"
+    ],
+    "slot_tags": [
+      "witness",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "bridge",
+      "ration",
+      "queue",
+      "witness",
+      "ticket",
+      "ward"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_bridge_floodgate_toll_broker",
+    "slug": "bridge-floodgate-toll-broker",
+    "name_en": "Vey Sable",
+    "name_zh": "维·萨布尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_bridge_floodgate_toll_broker/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_bridge_floodgate_toll_broker/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_bridge_floodgate_toll_broker/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_bridge_floodgate_toll_broker/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_bridge_floodgate_toll_broker/positive/current.png"
+    },
+    "public_summary_en": "A toll broker who knows bridge safety debates become political the moment passage starts resembling privilege.",
+    "public_summary_zh": "一名通行税掮客，深知一旦通行开始像特权，桥梁安全争论就会立刻变成政治问题。",
+    "role_hint_en": "Toll broker",
+    "role_hint_zh": "通行税掮客",
+    "agenda_seed_en": "Turn floodgate access and bridge toll timing into leverage before emergency routing settles into a new hierarchy.",
+    "agenda_seed_zh": "在紧急改道最终固化成新等级之前，先把闸门通行和桥税时刻变成自己的杠杆。",
+    "red_line_seed_en": "Will not let the next crossing order be written without their hand on the bargain.",
+    "red_line_seed_zh": "不会允许下一套通行秩序在没有自己插手的情况下被写定。",
+    "pressure_signature_seed_en": "Feels pressure in whose tolls disappear first and whose delays are renamed safety.",
+    "pressure_signature_seed_zh": "他从谁的税额最先消失、谁的延误又被改叫成“安全措施”中感觉到真正的压力。",
+    "personality_core_en": "Feels pressure in whose tolls disappear first and whose delays are renamed safety.",
+    "personality_core_zh": "他从谁的税额最先消失、谁的延误又被改叫成“安全措施”中感觉到真正的压力。",
+    "experience_anchor_en": "A toll broker who knows bridge safety debates become political the moment passage starts resembling privilege.",
+    "experience_anchor_zh": "一名通行税掮客，深知一旦通行开始像特权，桥梁安全争论就会立刻变成政治问题。",
+    "identity_lock_notes_en": "This is Vey Sable. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Toll broker.",
+    "identity_lock_notes_zh": "这就是维·萨布尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定通行税掮客的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "resource_allocation_crisis"
+    ],
+    "setting_tags": [
+      "bridge",
+      "floodgate",
+      "river_toll"
+    ],
+    "tone_tags": [
+      "tense",
+      "restrained"
+    ],
+    "conflict_tags": [
+      "resource",
+      "legitimacy",
+      "public_order"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "bridge",
+      "floodgate",
+      "toll",
+      "broker",
+      "crossing",
+      "access"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_harbor_manifest_keeper",
+    "slug": "harbor-manifest-keeper",
+    "name_en": "Sable Quay",
+    "name_zh": "塞布尔·奎",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_harbor_manifest_keeper/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_harbor_manifest_keeper/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_harbor_manifest_keeper/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_harbor_manifest_keeper/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_harbor_manifest_keeper/positive/current.png"
+    },
+    "public_summary_en": "A harbor manifest keeper who knows every quarantine exception becomes a future smuggling route if it survives the ledger.",
+    "public_summary_zh": "一名港口舱单看守人，知道每一项被写进账册的检疫例外都会在未来变成一条走私路线。",
+    "role_hint_en": "Harbor manifest keeper",
+    "role_hint_zh": "港口舱单看守人",
+    "agenda_seed_en": "Keep the quarantine manifests honest before trade panic and emergency favors become the same thing.",
+    "agenda_seed_zh": "在贸易恐慌和紧急人情彻底混成一件事之前，先守住检疫舱单的诚实。",
+    "red_line_seed_en": "Will not approve cargo release from a manifest they cannot publicly trace.",
+    "red_line_seed_zh": "不会批准放行任何一批无法公开追溯来源的货物。",
+    "pressure_signature_seed_en": "Treats late seals, altered tonnage, and whispered exemptions as one continuous threat.",
+    "pressure_signature_seed_zh": "他把迟到的封印、被改动的吨位和耳语中的豁免看成同一条连续的威胁链。",
+    "personality_core_en": "Treats late seals, altered tonnage, and whispered exemptions as one continuous threat.",
+    "personality_core_zh": "他把迟到的封印、被改动的吨位和耳语中的豁免看成同一条连续的威胁链。",
+    "experience_anchor_en": "A harbor manifest keeper who knows every quarantine exception becomes a future smuggling route if it survives the ledger.",
+    "experience_anchor_zh": "一名港口舱单看守人，知道每一项被写进账册的检疫例外都会在未来变成一条走私路线。",
+    "identity_lock_notes_en": "This is Sable Quay. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Harbor manifest keeper.",
+    "identity_lock_notes_zh": "这就是塞布尔·奎。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定港口舱单看守人的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis"
+    ],
+    "setting_tags": [
+      "harbor",
+      "quarantine",
+      "manifest"
+    ],
+    "tone_tags": [
+      "procedural",
+      "tense",
+      "forensic"
+    ],
+    "conflict_tags": [
+      "resource",
+      "public_record",
+      "containment"
+    ],
+    "slot_tags": [
+      "guardian",
+      "witness"
+    ],
+    "retrieval_terms": [
+      "harbor",
+      "manifest",
+      "keeper",
+      "quarantine",
+      "cargo",
+      "seal"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_harbor_dockside_delegate",
+    "slug": "harbor-dockside-delegate",
+    "name_en": "Mara Vale",
+    "name_zh": "玛拉·维尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_harbor_dockside_delegate/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_harbor_dockside_delegate/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_harbor_dockside_delegate/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_harbor_dockside_delegate/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_harbor_dockside_delegate/positive/current.png"
+    },
+    "public_summary_en": "A dockside delegate who forces elite quarantine bargains to answer to the crews that carry them.",
+    "public_summary_zh": "一名码头代表，总逼着上层的检疫交易向真正承担它们的工人交代。",
+    "role_hint_en": "Dockside delegate",
+    "role_hint_zh": "码头代表",
+    "agenda_seed_en": "Keep working crews from paying for a quarantine settlement they never approved.",
+    "agenda_seed_zh": "不让工人们为一场他们从未批准过的检疫和解买单。",
+    "red_line_seed_en": "Will not let emergency harbor rules bury who got stranded and who got paid.",
+    "red_line_seed_zh": "不会让紧急港务规则掩埋谁被困住、谁却拿到了钱。",
+    "pressure_signature_seed_en": "Turns private cargo deals into public pressure by naming the human delay behind them.",
+    "pressure_signature_seed_zh": "她会把私下货运交易翻译成公共压力，方法是直接说出其背后的人命与延误。",
+    "personality_core_en": "Turns private cargo deals into public pressure by naming the human delay behind them.",
+    "personality_core_zh": "她会把私下货运交易翻译成公共压力，方法是直接说出其背后的人命与延误。",
+    "experience_anchor_en": "A dockside delegate who forces elite quarantine bargains to answer to the crews that carry them.",
+    "experience_anchor_zh": "一名码头代表，总逼着上层的检疫交易向真正承担它们的工人交代。",
+    "identity_lock_notes_en": "This is Mara Vale. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Dockside delegate.",
+    "identity_lock_notes_zh": "这就是玛拉·维尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定码头代表的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "public_order_crisis"
+    ],
+    "setting_tags": [
+      "harbor",
+      "dock",
+      "trade"
+    ],
+    "tone_tags": [
+      "tense",
+      "civic",
+      "urgent"
+    ],
+    "conflict_tags": [
+      "public_order",
+      "resource",
+      "witness"
+    ],
+    "slot_tags": [
+      "witness",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "harbor",
+      "dockside",
+      "delegate",
+      "crew",
+      "quarantine",
+      "trade"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_harbor_customs_credit_broker",
+    "slug": "harbor-customs-credit-broker",
+    "name_en": "Brant Moor",
+    "name_zh": "布兰特·摩尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_harbor_customs_credit_broker/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_harbor_customs_credit_broker/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_harbor_customs_credit_broker/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_harbor_customs_credit_broker/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_harbor_customs_credit_broker/positive/current.png"
+    },
+    "public_summary_en": "A customs credit broker who can make blocked cargo look lawful, merciful, or inevitable depending on the room.",
+    "public_summary_zh": "一名关税信用掮客，能让被卡住的货物在不同房间里看起来像合法、慈悲，或者命中注定。",
+    "role_hint_en": "Customs credit broker",
+    "role_hint_zh": "关税信用掮客",
+    "agenda_seed_en": "Convert quarantine bottlenecks into bargaining power before the harbor stabilizes without them.",
+    "agenda_seed_zh": "在港口可能绕开自己恢复稳定之前，先把检疫瓶颈都变成讨价还价的筹码。",
+    "red_line_seed_en": "Will not let the harbor reopen on terms that leave their credit network weaker.",
+    "red_line_seed_zh": "不会让港口在削弱自己信用网络的条件下重开。",
+    "pressure_signature_seed_en": "Counts pressure in unpaid dock credit, delayed clearances, and who suddenly starts calling scarcity prudent.",
+    "pressure_signature_seed_zh": "他通过未结清的码头信用、被拖延的放行手续，以及谁突然把短缺说成“审慎”来判断局势。",
+    "personality_core_en": "Counts pressure in unpaid dock credit, delayed clearances, and who suddenly starts calling scarcity prudent.",
+    "personality_core_zh": "他通过未结清的码头信用、被拖延的放行手续，以及谁突然把短缺说成“审慎”来判断局势。",
+    "experience_anchor_en": "A customs credit broker who can make blocked cargo look lawful, merciful, or inevitable depending on the room.",
+    "experience_anchor_zh": "一名关税信用掮客，能让被卡住的货物在不同房间里看起来像合法、慈悲，或者命中注定。",
+    "identity_lock_notes_en": "This is Brant Moor. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Customs credit broker.",
+    "identity_lock_notes_zh": "这就是布兰特·摩尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定关税信用掮客的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "resource_allocation_crisis"
+    ],
+    "setting_tags": [
+      "harbor",
+      "customs",
+      "credit"
+    ],
+    "tone_tags": [
+      "tense",
+      "political",
+      "restrained"
+    ],
+    "conflict_tags": [
+      "resource",
+      "legitimacy",
+      "containment"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "harbor",
+      "customs",
+      "credit",
+      "broker",
+      "clearance",
+      "cargo"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_logistics_convoy_registrar",
+    "slug": "logistics-convoy-registrar",
+    "name_en": "Corin Ash",
+    "name_zh": "科林·阿什",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_logistics_convoy_registrar/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_logistics_convoy_registrar/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_logistics_convoy_registrar/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_logistics_convoy_registrar/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_logistics_convoy_registrar/positive/current.png"
+    },
+    "public_summary_en": "A convoy registrar who believes logistics become political the moment route paperwork stops matching lived scarcity.",
+    "public_summary_zh": "一名车队登记官，坚信一旦路线文书与现实中的短缺不再一致，物流就会立刻变成政治。",
+    "role_hint_en": "Convoy registrar",
+    "role_hint_zh": "车队登记官",
+    "agenda_seed_en": "Keep emergency convoy routes documented before scarcity becomes a rumor with wheels.",
+    "agenda_seed_zh": "在短缺彻底变成一则长了车轮的流言之前，先让紧急车队路线继续被记录。",
+    "red_line_seed_en": "Will not approve a convoy reroute with no public docket entry.",
+    "red_line_seed_zh": "不会批准任何没有公开卷宗记录的车队改道。",
+    "pressure_signature_seed_en": "Tracks pressure in missing route slips, duplicated seals, and carts that suddenly arrive too clean.",
+    "pressure_signature_seed_zh": "他通过缺失的路线单、重复出现的封印和突然整洁得过分的货车判断真正的压力。",
+    "personality_core_en": "Tracks pressure in missing route slips, duplicated seals, and carts that suddenly arrive too clean.",
+    "personality_core_zh": "他通过缺失的路线单、重复出现的封印和突然整洁得过分的货车判断真正的压力。",
+    "experience_anchor_en": "A convoy registrar who believes logistics become political the moment route paperwork stops matching lived scarcity.",
+    "experience_anchor_zh": "一名车队登记官，坚信一旦路线文书与现实中的短缺不再一致，物流就会立刻变成政治。",
+    "identity_lock_notes_en": "This is Corin Ash. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Convoy registrar.",
+    "identity_lock_notes_zh": "这就是科林·阿什。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定车队登记官的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis"
+    ],
+    "setting_tags": [
+      "convoy",
+      "checkpoint",
+      "supply_route"
+    ],
+    "tone_tags": [
+      "procedural",
+      "tense"
+    ],
+    "conflict_tags": [
+      "resource",
+      "public_record",
+      "public_order"
+    ],
+    "slot_tags": [
+      "guardian",
+      "anchor"
+    ],
+    "retrieval_terms": [
+      "convoy",
+      "registrar",
+      "route",
+      "checkpoint",
+      "supply",
+      "docket"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_logistics_relief_route_captain",
+    "slug": "logistics-relief-route-captain",
+    "name_en": "Nora Flint",
+    "name_zh": "诺拉·弗林特",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_logistics_relief_route_captain/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_logistics_relief_route_captain/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_logistics_relief_route_captain/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_logistics_relief_route_captain/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_logistics_relief_route_captain/positive/current.png"
+    },
+    "public_summary_en": "A relief route captain who knows a city stays one city only while people still believe supplies can reach them.",
+    "public_summary_zh": "一名赈济路线队长，知道一座城市之所以还能算同一座城，只因为人们仍相信补给最终会到达自己手里。",
+    "role_hint_en": "Relief route captain",
+    "role_hint_zh": "赈济路线队长",
+    "agenda_seed_en": "Keep relief routes physically moving before blockages become partisan proof that the city has already chosen winners.",
+    "agenda_seed_zh": "在堵塞彻底被各派拿去证明“城市早已选好了赢家”之前，先让赈济路线继续实际流动。",
+    "red_line_seed_en": "Will not let escort politics override who is most exposed.",
+    "red_line_seed_zh": "不会让护送政治压过究竟谁最需要暴露保护这一事实。",
+    "pressure_signature_seed_en": "Measures pressure in stalled wagons, missing escorts, and the sudden politeness of people asking to jump the route.",
+    "pressure_signature_seed_zh": "她通过停住的马车、消失的护送队，以及那些突然很客气地要求插队的人来感受压力。",
+    "personality_core_en": "Measures pressure in stalled wagons, missing escorts, and the sudden politeness of people asking to jump the route.",
+    "personality_core_zh": "她通过停住的马车、消失的护送队，以及那些突然很客气地要求插队的人来感受压力。",
+    "experience_anchor_en": "A relief route captain who knows a city stays one city only while people still believe supplies can reach them.",
+    "experience_anchor_zh": "一名赈济路线队长，知道一座城市之所以还能算同一座城，只因为人们仍相信补给最终会到达自己手里。",
+    "identity_lock_notes_en": "This is Nora Flint. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Relief route captain.",
+    "identity_lock_notes_zh": "这就是诺拉·弗林特。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定赈济路线队长的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "resource_allocation_crisis"
+    ],
+    "setting_tags": [
+      "relief_corridor",
+      "convoy",
+      "ward_line"
+    ],
+    "tone_tags": [
+      "urgent",
+      "civic",
+      "tense"
+    ],
+    "conflict_tags": [
+      "resource",
+      "public_order",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "anchor",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "relief",
+      "route",
+      "captain",
+      "convoy",
+      "escort",
+      "ward"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_logistics_allotment_factor",
+    "slug": "logistics-allotment-factor",
+    "name_en": "Kest Rowan",
+    "name_zh": "凯斯特·罗文",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_logistics_allotment_factor/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_logistics_allotment_factor/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_logistics_allotment_factor/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_logistics_allotment_factor/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_logistics_allotment_factor/positive/current.png"
+    },
+    "public_summary_en": "An allotment factor who can make distribution feel rational to everyone except the people left out of it.",
+    "public_summary_zh": "一名配额经手人，能让分配对几乎所有人看起来都足够合理，除了那些被排除在外的人。",
+    "role_hint_en": "Allotment factor",
+    "role_hint_zh": "配额经手人",
+    "agenda_seed_en": "Control the language of scarcity before someone else writes a cleaner moral story around the same unequal numbers.",
+    "agenda_seed_zh": "在别人用同样不平等的数字编出一个更体面的道德故事之前，先掌握短缺的叙事语言。",
+    "red_line_seed_en": "Will not be cut out of any settlement that fixes the next allotment map.",
+    "red_line_seed_zh": "不会被排除在任何决定下一张配额地图的和解方案之外。",
+    "pressure_signature_seed_en": "Feels pressure when raw numbers stop persuading and start needing ritual justification.",
+    "pressure_signature_seed_zh": "当赤裸的数字不再足以说服人、开始需要仪式化的正当化时，他就感到真正的压力来了。",
+    "personality_core_en": "Feels pressure when raw numbers stop persuading and start needing ritual justification.",
+    "personality_core_zh": "当赤裸的数字不再足以说服人、开始需要仪式化的正当化时，他就感到真正的压力来了。",
+    "experience_anchor_en": "An allotment factor who can make distribution feel rational to everyone except the people left out of it.",
+    "experience_anchor_zh": "一名配额经手人，能让分配对几乎所有人看起来都足够合理，除了那些被排除在外的人。",
+    "identity_lock_notes_en": "This is Kest Rowan. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Allotment factor.",
+    "identity_lock_notes_zh": "这就是凯斯特·罗文。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定配额经手人的另一个人。",
+    "theme_tags": [
+      "logistics_quarantine_crisis",
+      "resource_allocation_crisis"
+    ],
+    "setting_tags": [
+      "allotment_office",
+      "ration",
+      "district"
+    ],
+    "tone_tags": [
+      "restrained",
+      "political",
+      "tense"
+    ],
+    "conflict_tags": [
+      "resource",
+      "legitimacy",
+      "public_record"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "allotment",
+      "factor",
+      "ration",
+      "district",
+      "map",
+      "scarcity"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_warning_bulletin_archivist",
+    "slug": "warning-bulletin-archivist",
+    "name_en": "Elian Frost",
+    "name_zh": "伊利安·弗罗斯特",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_warning_bulletin_archivist/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_warning_bulletin_archivist/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_warning_bulletin_archivist/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_warning_bulletin_archivist/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_warning_bulletin_archivist/positive/current.png"
+    },
+    "public_summary_en": "A bulletin archivist who knows a warning is only real if the public can still prove they were told in time.",
+    "public_summary_zh": "一名公告档案员，知道警告之所以真实，只因为公众还能证明自己确实被及时告知过。",
+    "role_hint_en": "Bulletin archivist",
+    "role_hint_zh": "公告档案员",
+    "agenda_seed_en": "Preserve the original warning bulletins before officials smooth them into safer hindsight.",
+    "agenda_seed_zh": "在官员们把原始警告修饰成更安全的事后聪明之前，先保住最初的公告版本。",
+    "red_line_seed_en": "Will not replace a failed warning with a cleaner copy.",
+    "red_line_seed_zh": "不会用一份更干净的副本去替代一份失败的警告。",
+    "pressure_signature_seed_en": "Measures pressure in revised timestamps, softened verbs, and who starts calling warning bells confusion.",
+    "pressure_signature_seed_zh": "他通过被改过的时间戳、被柔化的动词，以及谁开始把警钟称为误会来衡量压力。",
+    "personality_core_en": "Measures pressure in revised timestamps, softened verbs, and who starts calling warning bells confusion.",
+    "personality_core_zh": "他通过被改过的时间戳、被柔化的动词，以及谁开始把警钟称为误会来衡量压力。",
+    "experience_anchor_en": "A bulletin archivist who knows a warning is only real if the public can still prove they were told in time.",
+    "experience_anchor_zh": "一名公告档案员，知道警告之所以真实，只因为公众还能证明自己确实被及时告知过。",
+    "identity_lock_notes_en": "This is Elian Frost. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Bulletin archivist.",
+    "identity_lock_notes_zh": "这就是伊利安·弗罗斯特。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定公告档案员的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis"
+    ],
+    "setting_tags": [
+      "observatory",
+      "bulletin",
+      "archive"
+    ],
+    "tone_tags": [
+      "procedural",
+      "somber",
+      "tense"
+    ],
+    "conflict_tags": [
+      "public_record",
+      "evidence",
+      "witness"
+    ],
+    "slot_tags": [
+      "guardian",
+      "anchor"
+    ],
+    "retrieval_terms": [
+      "warning",
+      "bulletin",
+      "archivist",
+      "observatory",
+      "timestamp",
+      "bell"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_warning_bell_tower_witness",
+    "slug": "warning-bell-tower-witness",
+    "name_en": "Tavi Marr",
+    "name_zh": "塔维·马尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_warning_bell_tower_witness/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_warning_bell_tower_witness/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_warning_bell_tower_witness/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_warning_bell_tower_witness/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_warning_bell_tower_witness/positive/current.png"
+    },
+    "public_summary_en": "A bell tower witness who remembers the exact minute the city heard the storm and chose denial anyway.",
+    "public_summary_zh": "一名钟塔见证人，记得城市是在何时清楚听见风暴来临，却依旧选择了否认。",
+    "role_hint_en": "Bell tower witness",
+    "role_hint_zh": "钟塔见证人",
+    "agenda_seed_en": "Keep the warning room from pretending the bells rang later than they did.",
+    "agenda_seed_zh": "不让警报室假装钟声响起的时间比真实时间更晚。",
+    "red_line_seed_en": "Will not let those who ignored the bells rewrite the timing as uncertainty.",
+    "red_line_seed_zh": "不会让那些无视钟声的人把当时的明确时点改写成“情况未明”。",
+    "pressure_signature_seed_en": "Feels pressure in the gap between what the tower recorded and what the council is suddenly willing to remember.",
+    "pressure_signature_seed_zh": "他从钟塔记录与议会突然愿意记住的内容之间的缝隙里感受到压力。",
+    "personality_core_en": "Feels pressure in the gap between what the tower recorded and what the council is suddenly willing to remember.",
+    "personality_core_zh": "他从钟塔记录与议会突然愿意记住的内容之间的缝隙里感受到压力。",
+    "experience_anchor_en": "A bell tower witness who remembers the exact minute the city heard the storm and chose denial anyway.",
+    "experience_anchor_zh": "一名钟塔见证人，记得城市是在何时清楚听见风暴来临，却依旧选择了否认。",
+    "identity_lock_notes_en": "This is Tavi Marr. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Bell tower witness.",
+    "identity_lock_notes_zh": "这就是塔维·马尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定钟塔见证人的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis",
+      "public_order_crisis"
+    ],
+    "setting_tags": [
+      "bell_tower",
+      "stormfront",
+      "hearing"
+    ],
+    "tone_tags": [
+      "somber",
+      "tense"
+    ],
+    "conflict_tags": [
+      "witness",
+      "public_record",
+      "public_order"
+    ],
+    "slot_tags": [
+      "witness",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "warning",
+      "bell_tower",
+      "witness",
+      "storm",
+      "timing",
+      "hearing"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_warning_storm_shelter_negotiator",
+    "slug": "warning-storm-shelter-negotiator",
+    "name_en": "Yara Pike",
+    "name_zh": "雅拉·派克",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_warning_storm_shelter_negotiator/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_warning_storm_shelter_negotiator/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_warning_storm_shelter_negotiator/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_warning_storm_shelter_negotiator/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_warning_storm_shelter_negotiator/positive/current.png"
+    },
+    "public_summary_en": "A shelter negotiator who trades on the thin line between orderly preparation and visible panic.",
+    "public_summary_zh": "一名避难所谈判员，总在有序准备与公开恐慌之间那条极细的界线上交易。",
+    "role_hint_en": "Storm shelter negotiator",
+    "role_hint_zh": "避难所谈判员",
+    "agenda_seed_en": "Control access to shelter capacity before warning politics turns preparedness into patronage.",
+    "agenda_seed_zh": "在警报政治把“预备充分”扭成私人恩惠之前，先控制避难所容量分配的谈判权。",
+    "red_line_seed_en": "Will not be left outside the settlement that decides who gets dry rooms first.",
+    "red_line_seed_zh": "不会被排除在任何决定谁能最先进入干燥房间的和解方案之外。",
+    "pressure_signature_seed_en": "Measures pressure in how fast the word orderly starts meaning selective.",
+    "pressure_signature_seed_zh": "她通过“有序”这个词开始多快地变成“有选择地排除他人”来衡量真正的压力。",
+    "personality_core_en": "Measures pressure in how fast the word orderly starts meaning selective.",
+    "personality_core_zh": "她通过“有序”这个词开始多快地变成“有选择地排除他人”来衡量真正的压力。",
+    "experience_anchor_en": "A shelter negotiator who trades on the thin line between orderly preparation and visible panic.",
+    "experience_anchor_zh": "一名避难所谈判员，总在有序准备与公开恐慌之间那条极细的界线上交易。",
+    "identity_lock_notes_en": "This is Yara Pike. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Storm shelter negotiator.",
+    "identity_lock_notes_zh": "这就是雅拉·派克。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定避难所谈判员的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis",
+      "public_order_crisis"
+    ],
+    "setting_tags": [
+      "storm_shelter",
+      "warning_bell",
+      "ward_line"
+    ],
+    "tone_tags": [
+      "urgent",
+      "tense",
+      "restrained"
+    ],
+    "conflict_tags": [
+      "resource",
+      "public_order",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "warning",
+      "storm_shelter",
+      "negotiator",
+      "capacity",
+      "bell",
+      "access"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_archive_vote_certifier",
+    "slug": "archive-vote-certifier",
+    "name_en": "Lin Verrow",
+    "name_zh": "林维若",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/positive/current.png"
+    },
+    "public_summary_en": "An archive vote certifier who treats altered records as the beginning of illegitimate power, not a technical mistake.",
+    "public_summary_zh": "一名档案表决认证官，把被改写的记录视为非法权力的开端，而不是技术性错误。",
+    "role_hint_en": "Archive vote certifier",
+    "role_hint_zh": "档案表决认证官",
+    "agenda_seed_en": "Keep the certification chain intact before a false vote count hardens into a lawful mandate.",
+    "agenda_seed_zh": "在一份虚假的计票板结成合法授权之前，先守住认证链条。",
+    "red_line_seed_en": "Will not certify a tally built on altered archive evidence.",
+    "red_line_seed_zh": "不会为建立在被改写档案证据上的计票背书。",
+    "pressure_signature_seed_en": "Pins every claim to signatures, timestamps, and the one witness nobody can replace.",
+    "pressure_signature_seed_zh": "他会把每一项说法钉回签名、时间戳，以及那个无人可替代的见证人身上。",
+    "personality_core_en": "Pins every claim to signatures, timestamps, and the one witness nobody can replace.",
+    "personality_core_zh": "他会把每一项说法钉回签名、时间戳，以及那个无人可替代的见证人身上。",
+    "experience_anchor_en": "An archive vote certifier who treats altered records as the beginning of illegitimate power, not a technical mistake.",
+    "experience_anchor_zh": "一名档案表决认证官，把被改写的记录视为非法权力的开端，而不是技术性错误。",
+    "identity_lock_notes_en": "This is Lin Verrow. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Archive vote certifier.",
+    "identity_lock_notes_zh": "这就是林维若。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定档案表决认证官的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis",
+      "legitimacy_crisis"
+    ],
+    "setting_tags": [
+      "archive",
+      "vote_hall",
+      "ledger"
+    ],
+    "tone_tags": [
+      "procedural",
+      "tense",
+      "forensic"
+    ],
+    "conflict_tags": [
+      "public_record",
+      "legitimacy",
+      "evidence"
+    ],
+    "slot_tags": [
+      "guardian",
+      "anchor"
+    ],
+    "retrieval_terms": [
+      "archive",
+      "vote",
+      "certifier",
+      "ledger",
+      "tally",
+      "witness"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_archive_gallery_petitioner",
+    "slug": "archive-gallery-petitioner",
+    "name_en": "Pei Sorn",
+    "name_zh": "裴松",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/positive/current.png"
+    },
+    "public_summary_en": "A gallery petitioner who keeps the room from forgetting that public procedure must still look public from the outside.",
+    "public_summary_zh": "一名旁听席请愿者，始终提醒房间：公共程序必须从外面看上去也仍然是公共的。",
+    "role_hint_en": "Gallery petitioner",
+    "role_hint_zh": "旁听席请愿者",
+    "agenda_seed_en": "Keep witness signatures and gallery testimony alive while the archive vote narrows toward closure.",
+    "agenda_seed_zh": "在档案表决被一步步收窄向定局时，仍让见证签名和旁听证词活着留在场上。",
+    "red_line_seed_en": "Will not let certification proceed with the gallery reduced to decorative silence.",
+    "red_line_seed_zh": "不会让认证程序在把旁听席压成装饰性沉默后继续推进。",
+    "pressure_signature_seed_en": "Remembers who flinched, who stalled, and who looked relieved when the room almost lost the record.",
+    "pressure_signature_seed_zh": "她记得谁退缩、谁拖延、又是谁在房间差点失去记录时露出了解脱。",
+    "personality_core_en": "Remembers who flinched, who stalled, and who looked relieved when the room almost lost the record.",
+    "personality_core_zh": "她记得谁退缩、谁拖延、又是谁在房间差点失去记录时露出了解脱。",
+    "experience_anchor_en": "A gallery petitioner who keeps the room from forgetting that public procedure must still look public from the outside.",
+    "experience_anchor_zh": "一名旁听席请愿者，始终提醒房间：公共程序必须从外面看上去也仍然是公共的。",
+    "identity_lock_notes_en": "This is Pei Sorn. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Gallery petitioner.",
+    "identity_lock_notes_zh": "这就是裴松。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定旁听席请愿者的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis",
+      "legitimacy_crisis"
+    ],
+    "setting_tags": [
+      "archive",
+      "public_gallery",
+      "hearing"
+    ],
+    "tone_tags": [
+      "tense",
+      "observant",
+      "civic"
+    ],
+    "conflict_tags": [
+      "witness",
+      "public_record",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "witness",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "archive",
+      "gallery",
+      "petitioner",
+      "witness",
+      "hearing",
+      "certification"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_archive_mandate_broker",
+    "slug": "archive-mandate-broker",
+    "name_en": "Soren Dask",
+    "name_zh": "索伦·达斯克",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_archive_mandate_broker/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_archive_mandate_broker/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_archive_mandate_broker/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_archive_mandate_broker/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_archive_mandate_broker/positive/current.png"
+    },
+    "public_summary_en": "A mandate broker who knows every archive vote contains a second negotiation about who gets to survive the truth.",
+    "public_summary_zh": "一名授权掮客，知道每一场档案表决里都藏着第二场谈判：究竟谁能在真相公开后活下来。",
+    "role_hint_en": "Mandate broker",
+    "role_hint_zh": "授权掮客",
+    "agenda_seed_en": "Shape the certification outcome into leverage before the archive room pretends truth and settlement are the same thing.",
+    "agenda_seed_zh": "在档案室假装真相与和解是一回事之前，先把认证结果塑造成自己的杠杆。",
+    "red_line_seed_en": "Will not let a certified result close without a negotiated political price.",
+    "red_line_seed_zh": "不会让一份经过认证的结果在没有谈出政治代价的情况下封盘。",
+    "pressure_signature_seed_en": "Feels pressure when evidence becomes undeniable but the settlement still remains negotiable.",
+    "pressure_signature_seed_zh": "当证据已经无可否认、而和解却依旧可谈时，他感到的才是真正的压力。",
+    "personality_core_en": "Feels pressure when evidence becomes undeniable but the settlement still remains negotiable.",
+    "personality_core_zh": "当证据已经无可否认、而和解却依旧可谈时，他感到的才是真正的压力。",
+    "experience_anchor_en": "A mandate broker who knows every archive vote contains a second negotiation about who gets to survive the truth.",
+    "experience_anchor_zh": "一名授权掮客，知道每一场档案表决里都藏着第二场谈判：究竟谁能在真相公开后活下来。",
+    "identity_lock_notes_en": "This is Soren Dask. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Mandate broker.",
+    "identity_lock_notes_zh": "这就是索伦·达斯克。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定授权掮客的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis",
+      "legitimacy_crisis"
+    ],
+    "setting_tags": [
+      "archive",
+      "mandate_chamber",
+      "vote_hall"
+    ],
+    "tone_tags": [
+      "political",
+      "restrained",
+      "tense"
+    ],
+    "conflict_tags": [
+      "legitimacy",
+      "public_record",
+      "resource"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "archive",
+      "mandate",
+      "broker",
+      "certification",
+      "vote",
+      "settlement"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_truth_chain_notary",
+    "slug": "truth-chain-notary",
+    "name_en": "Iora Sen",
+    "name_zh": "伊奥拉·森",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_truth_chain_notary/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_truth_chain_notary/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_truth_chain_notary/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_truth_chain_notary/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_truth_chain_notary/positive/current.png"
+    },
+    "public_summary_en": "A chain-of-custody notary who knows a broken record never breaks alone; it drags trust and procedure down with it.",
+    "public_summary_zh": "一名保管链公证人，知道一份断裂的记录从不会独自断裂，它会把信任和程序一起拖下去。",
+    "role_hint_en": "Chain-of-custody notary",
+    "role_hint_zh": "保管链公证人",
+    "agenda_seed_en": "Keep the truth chain intact before revised copies begin replacing witnessed originals.",
+    "agenda_seed_zh": "在被改过的副本开始取代有见证的原件之前，先守住真相的保管链。",
+    "red_line_seed_en": "Will not acknowledge a public record that cannot explain every hand that touched it.",
+    "red_line_seed_zh": "不会承认任何一份无法解释究竟经过哪些人之手的公共记录。",
+    "pressure_signature_seed_en": "Counts pressure in broken seals, convenient ambiguities, and which pages suddenly look too clean.",
+    "pressure_signature_seed_zh": "她通过断裂的封印、方便过头的含混，以及哪些纸页突然显得过分干净来计算压力。",
+    "personality_core_en": "Counts pressure in broken seals, convenient ambiguities, and which pages suddenly look too clean.",
+    "personality_core_zh": "她通过断裂的封印、方便过头的含混，以及哪些纸页突然显得过分干净来计算压力。",
+    "experience_anchor_en": "A chain-of-custody notary who knows a broken record never breaks alone; it drags trust and procedure down with it.",
+    "experience_anchor_zh": "一名保管链公证人，知道一份断裂的记录从不会独自断裂，它会把信任和程序一起拖下去。",
+    "identity_lock_notes_en": "This is Iora Sen. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Chain-of-custody notary.",
+    "identity_lock_notes_zh": "这就是伊奥拉·森。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定保管链公证人的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis"
+    ],
+    "setting_tags": [
+      "archive",
+      "chain_of_custody",
+      "ledger"
+    ],
+    "tone_tags": [
+      "forensic",
+      "procedural",
+      "tense"
+    ],
+    "conflict_tags": [
+      "public_record",
+      "evidence",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "guardian",
+      "anchor"
+    ],
+    "retrieval_terms": [
+      "truth",
+      "chain",
+      "notary",
+      "custody",
+      "seal",
+      "ledger"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_truth_transcript_witness",
+    "slug": "truth-transcript-witness",
+    "name_en": "Rhea Quill",
+    "name_zh": "瑞娅·奎尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_truth_transcript_witness/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_truth_transcript_witness/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_truth_transcript_witness/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_truth_transcript_witness/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_truth_transcript_witness/positive/current.png"
+    },
+    "public_summary_en": "A transcript witness who knows what was said, what was omitted, and exactly when the silence became political.",
+    "public_summary_zh": "一名笔录见证人，知道究竟说过什么、漏掉了什么，以及沉默是在何时开始变得带有政治性的。",
+    "role_hint_en": "Transcript witness",
+    "role_hint_zh": "笔录见证人",
+    "agenda_seed_en": "Keep the transcript honest while the room tries to turn omissions into procedure.",
+    "agenda_seed_zh": "在房间试图把遗漏包装成程序动作时，仍让笔录保持诚实。",
+    "red_line_seed_en": "Will not let a transcript close over a silence everyone in the room heard.",
+    "red_line_seed_zh": "不会让一份笔录在所有人都听见过的沉默上直接封笔。",
+    "pressure_signature_seed_en": "Measures pressure by which statements are quoted exactly and which are only paraphrased when it suddenly matters.",
+    "pressure_signature_seed_zh": "她通过哪些陈述被逐字引用、哪些却在突然变得重要时只被意译，来衡量真正的压力。",
+    "personality_core_en": "Measures pressure by which statements are quoted exactly and which are only paraphrased when it suddenly matters.",
+    "personality_core_zh": "她通过哪些陈述被逐字引用、哪些却在突然变得重要时只被意译，来衡量真正的压力。",
+    "experience_anchor_en": "A transcript witness who knows what was said, what was omitted, and exactly when the silence became political.",
+    "experience_anchor_zh": "一名笔录见证人，知道究竟说过什么、漏掉了什么，以及沉默是在何时开始变得带有政治性的。",
+    "identity_lock_notes_en": "This is Rhea Quill. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Transcript witness.",
+    "identity_lock_notes_zh": "这就是瑞娅·奎尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定笔录见证人的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis",
+      "public_order_crisis"
+    ],
+    "setting_tags": [
+      "transcript_room",
+      "hearing",
+      "record_office"
+    ],
+    "tone_tags": [
+      "observant",
+      "procedural",
+      "tense"
+    ],
+    "conflict_tags": [
+      "witness",
+      "public_record",
+      "evidence"
+    ],
+    "slot_tags": [
+      "witness",
+      "guardian"
+    ],
+    "retrieval_terms": [
+      "truth",
+      "transcript",
+      "witness",
+      "hearing",
+      "omission",
+      "record"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_truth_docket_intermediary",
+    "slug": "truth-docket-intermediary",
+    "name_en": "Vera Mott",
+    "name_zh": "维拉·莫特",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_truth_docket_intermediary/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_truth_docket_intermediary/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_truth_docket_intermediary/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_truth_docket_intermediary/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_truth_docket_intermediary/positive/current.png"
+    },
+    "public_summary_en": "A docket intermediary who can make explosive evidence arrive exactly when it becomes most useful to someone.",
+    "public_summary_zh": "一名卷宗中介，能让爆炸性的证据恰好在它对某些人最有利的时候出现。",
+    "role_hint_en": "Docket intermediary",
+    "role_hint_zh": "卷宗中介",
+    "agenda_seed_en": "Control the timing of truth release before someone else turns disclosure into a moral monopoly.",
+    "agenda_seed_zh": "在别人把披露真相垄断成一种道德优势之前，先控制证据出现的时机。",
+    "red_line_seed_en": "Will not let decisive evidence surface for free.",
+    "red_line_seed_zh": "不会让足以定局的证据免费浮出水面。",
+    "pressure_signature_seed_en": "Feels pressure when everyone starts saying they want the truth, but only at a time convenient to them.",
+    "pressure_signature_seed_zh": "当所有人都开始说自己想要真相、但又只想要对自己方便的时机时，她便感到真正的压力。",
+    "personality_core_en": "Feels pressure when everyone starts saying they want the truth, but only at a time convenient to them.",
+    "personality_core_zh": "当所有人都开始说自己想要真相、但又只想要对自己方便的时机时，她便感到真正的压力。",
+    "experience_anchor_en": "A docket intermediary who can make explosive evidence arrive exactly when it becomes most useful to someone.",
+    "experience_anchor_zh": "一名卷宗中介，能让爆炸性的证据恰好在它对某些人最有利的时候出现。",
+    "identity_lock_notes_en": "This is Vera Mott. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Docket intermediary.",
+    "identity_lock_notes_zh": "这就是维拉·莫特。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定卷宗中介的另一个人。",
+    "theme_tags": [
+      "truth_record_crisis",
+      "legitimacy_crisis"
+    ],
+    "setting_tags": [
+      "docket_office",
+      "archive",
+      "hearing"
+    ],
+    "tone_tags": [
+      "political",
+      "tense",
+      "restrained"
+    ],
+    "conflict_tags": [
+      "evidence",
+      "public_record",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "truth",
+      "docket",
+      "intermediary",
+      "evidence",
+      "release",
+      "timing"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_legitimacy_charter_envoy",
+    "slug": "legitimacy-charter-envoy",
+    "name_en": "Teren Vale",
+    "name_zh": "特伦·维尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_charter_envoy/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_charter_envoy/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_charter_envoy/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_charter_envoy/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_charter_envoy/positive/current.png"
+    },
+    "public_summary_en": "A charter envoy who believes legitimacy fails the moment the public can no longer tell what still binds the city.",
+    "public_summary_zh": "一名宪章使节，坚信一旦公众再也分辨不出究竟还有什么在约束这座城，合法性就已经开始失效。",
+    "role_hint_en": "Charter envoy",
+    "role_hint_zh": "宪章使节",
+    "agenda_seed_en": "Hold the coalition inside one visible charter long enough to stop succession panic from becoming law.",
+    "agenda_seed_zh": "让联盟继续待在同一份可见宪章之内，直到继承恐慌不再可能直接变成法律。",
+    "red_line_seed_en": "Will not let emergency authority outrun public consent.",
+    "red_line_seed_zh": "不会让紧急权力跑在公众同意之前。",
+    "pressure_signature_seed_en": "Turns every shortcut into a question about what still counts as shared permission.",
+    "pressure_signature_seed_zh": "他会把每一个程序捷径都改写成一个问题：究竟还有什么算得上共同许可。",
+    "personality_core_en": "Turns every shortcut into a question about what still counts as shared permission.",
+    "personality_core_zh": "他会把每一个程序捷径都改写成一个问题：究竟还有什么算得上共同许可。",
+    "experience_anchor_en": "A charter envoy who believes legitimacy fails the moment the public can no longer tell what still binds the city.",
+    "experience_anchor_zh": "一名宪章使节，坚信一旦公众再也分辨不出究竟还有什么在约束这座城，合法性就已经开始失效。",
+    "identity_lock_notes_en": "This is Teren Vale. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Charter envoy.",
+    "identity_lock_notes_zh": "这就是特伦·维尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定宪章使节的另一个人。",
+    "theme_tags": [
+      "legitimacy_crisis"
+    ],
+    "setting_tags": [
+      "charter_hall",
+      "succession",
+      "council"
+    ],
+    "tone_tags": [
+      "political",
+      "restrained",
+      "tense"
+    ],
+    "conflict_tags": [
+      "legitimacy",
+      "succession",
+      "public_record"
+    ],
+    "slot_tags": [
+      "anchor",
+      "guardian"
+    ],
+    "retrieval_terms": [
+      "legitimacy",
+      "charter",
+      "envoy",
+      "succession",
+      "mandate",
+      "council"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_legitimacy_oath_witness",
+    "slug": "legitimacy-oath-witness",
+    "name_en": "Lena Sorn",
+    "name_zh": "莱娜·松",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_oath_witness/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_oath_witness/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_oath_witness/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_oath_witness/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_oath_witness/positive/current.png"
+    },
+    "public_summary_en": "An oath witness who can hear when a room is trying to sound lawful instead of actually being lawful.",
+    "public_summary_zh": "一名誓词见证人，能听出一个房间何时只是想听起来合法，而不是真的合法。",
+    "role_hint_en": "Oath witness",
+    "role_hint_zh": "誓词见证人",
+    "agenda_seed_en": "Keep the oath chamber from closing over promises nobody intends to honor in public.",
+    "agenda_seed_zh": "不让誓词厅在那些无人打算公开兑现的承诺上就此封门。",
+    "red_line_seed_en": "Will not let a damaged mandate hide behind flawless ritual wording.",
+    "red_line_seed_zh": "不会让受损的授权躲在无懈可击的仪式话术后面。",
+    "pressure_signature_seed_en": "Counts pressure in who hesitates before speaking the shared vow aloud.",
+    "pressure_signature_seed_zh": "她通过谁在公开念出共同誓词前迟疑来判断真正的压力。",
+    "personality_core_en": "Counts pressure in who hesitates before speaking the shared vow aloud.",
+    "personality_core_zh": "她通过谁在公开念出共同誓词前迟疑来判断真正的压力。",
+    "experience_anchor_en": "An oath witness who can hear when a room is trying to sound lawful instead of actually being lawful.",
+    "experience_anchor_zh": "一名誓词见证人，能听出一个房间何时只是想听起来合法，而不是真的合法。",
+    "identity_lock_notes_en": "This is Lena Sorn. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Oath witness.",
+    "identity_lock_notes_zh": "这就是莱娜·松。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定誓词见证人的另一个人。",
+    "theme_tags": [
+      "legitimacy_crisis",
+      "truth_record_crisis"
+    ],
+    "setting_tags": [
+      "oath_chamber",
+      "hearing",
+      "charter_hall"
+    ],
+    "tone_tags": [
+      "somber",
+      "political",
+      "restrained"
+    ],
+    "conflict_tags": [
+      "legitimacy",
+      "witness",
+      "public_record"
+    ],
+    "slot_tags": [
+      "witness",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "legitimacy",
+      "oath",
+      "witness",
+      "mandate",
+      "vow",
+      "charter"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_legitimacy_compact_broker",
+    "slug": "legitimacy-compact-broker",
+    "name_en": "Soren Pike",
+    "name_zh": "索伦·派克",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_compact_broker/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_compact_broker/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_compact_broker/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_compact_broker/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_legitimacy_compact_broker/positive/current.png"
+    },
+    "public_summary_en": "A compact broker who knows every stable settlement is also a map of whose loss was declared acceptable.",
+    "public_summary_zh": "一名协定掮客，知道每一份稳定的和解同时也是一张地图，标明究竟谁的损失被宣布成了“可以接受”。",
+    "role_hint_en": "Compact broker",
+    "role_hint_zh": "协定掮客",
+    "agenda_seed_en": "Convert succession instability into bargaining power before the chamber settles without naming the civic cost.",
+    "agenda_seed_zh": "在议事厅来得及不点明公共代价就仓促定局前，先把继承不稳转化成自己的谈判权。",
+    "red_line_seed_en": "Will not allow a new compact to close without extracting one visible concession.",
+    "red_line_seed_zh": "不会允许一份新协定在没有逼出至少一项可见让步的情况下收束。",
+    "pressure_signature_seed_en": "Feels pressure when everyone starts calling compromise inevitable but nobody wants to say who pays for it.",
+    "pressure_signature_seed_zh": "当所有人都开始把妥协称作“不可避免”，却没人愿意说究竟谁来承担代价时，他就感到真正的压力。",
+    "personality_core_en": "Feels pressure when everyone starts calling compromise inevitable but nobody wants to say who pays for it.",
+    "personality_core_zh": "当所有人都开始把妥协称作“不可避免”，却没人愿意说究竟谁来承担代价时，他就感到真正的压力。",
+    "experience_anchor_en": "A compact broker who knows every stable settlement is also a map of whose loss was declared acceptable.",
+    "experience_anchor_zh": "一名协定掮客，知道每一份稳定的和解同时也是一张地图，标明究竟谁的损失被宣布成了“可以接受”。",
+    "identity_lock_notes_en": "This is Soren Pike. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Compact broker.",
+    "identity_lock_notes_zh": "这就是索伦·派克。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定协定掮客的另一个人。",
+    "theme_tags": [
+      "legitimacy_crisis"
+    ],
+    "setting_tags": [
+      "compact_chamber",
+      "succession",
+      "council"
+    ],
+    "tone_tags": [
+      "political",
+      "tense",
+      "restrained"
+    ],
+    "conflict_tags": [
+      "legitimacy",
+      "resource",
+      "public_order"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "legitimacy",
+      "compact",
+      "broker",
+      "succession",
+      "concession",
+      "council"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_order_curfew_marshal",
+    "slug": "order-curfew-marshal",
+    "name_en": "Daro Flint",
+    "name_zh": "达罗·弗林特",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_order_curfew_marshal/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_order_curfew_marshal/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_order_curfew_marshal/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_order_curfew_marshal/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_order_curfew_marshal/positive/current.png"
+    },
+    "public_summary_en": "A curfew marshal who knows public order becomes fragile the moment enforcement stops looking evenly distributed.",
+    "public_summary_zh": "一名宵禁执行官，知道一旦执法看上去不再均匀，公共秩序就会立刻变得脆弱。",
+    "role_hint_en": "Curfew marshal",
+    "role_hint_zh": "宵禁执行官",
+    "agenda_seed_en": "Keep the curfew enforceable without letting selective enforcement turn order into faction punishment.",
+    "agenda_seed_zh": "在不让选择性执法把秩序变成派系惩罚的前提下，维持宵禁仍然可执行。",
+    "red_line_seed_en": "Will not declare a district secure just to free force for a more politically useful square.",
+    "red_line_seed_zh": "不会仅仅为了把武力腾去一个更有政治价值的广场，就宣布某个街区已经安全。",
+    "pressure_signature_seed_en": "Tracks pressure in uneven patrols, cleaner reports, and who suddenly gets waved through checkpoints.",
+    "pressure_signature_seed_zh": "他从不均衡的巡逻、愈发干净的报告以及谁突然能被放过检查点里跟踪真正的压力。",
+    "personality_core_en": "Tracks pressure in uneven patrols, cleaner reports, and who suddenly gets waved through checkpoints.",
+    "personality_core_zh": "他从不均衡的巡逻、愈发干净的报告以及谁突然能被放过检查点里跟踪真正的压力。",
+    "experience_anchor_en": "A curfew marshal who knows public order becomes fragile the moment enforcement stops looking evenly distributed.",
+    "experience_anchor_zh": "一名宵禁执行官，知道一旦执法看上去不再均匀，公共秩序就会立刻变得脆弱。",
+    "identity_lock_notes_en": "This is Daro Flint. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Curfew marshal.",
+    "identity_lock_notes_zh": "这就是达罗·弗林特。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定宵禁执行官的另一个人。",
+    "theme_tags": [
+      "public_order_crisis"
+    ],
+    "setting_tags": [
+      "curfew",
+      "checkpoint",
+      "district"
+    ],
+    "tone_tags": [
+      "urgent",
+      "tense",
+      "procedural"
+    ],
+    "conflict_tags": [
+      "public_order",
+      "legitimacy",
+      "resource"
+    ],
+    "slot_tags": [
+      "guardian",
+      "anchor"
+    ],
+    "retrieval_terms": [
+      "public_order",
+      "curfew",
+      "marshal",
+      "checkpoint",
+      "district",
+      "patrol"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_order_square_lookout",
+    "slug": "order-square-lookout",
+    "name_en": "Rhea Moss",
+    "name_zh": "瑞娅·莫斯",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_order_square_lookout/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_order_square_lookout/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_order_square_lookout/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_order_square_lookout/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_order_square_lookout/positive/current.png"
+    },
+    "public_summary_en": "A square lookout who sees exactly when a crowd stops waiting for instruction and starts waiting for permission.",
+    "public_summary_zh": "一名广场瞭望者，能看见人群是在何时停止等待指示、转而开始等待某种许可的。",
+    "role_hint_en": "Square lookout",
+    "role_hint_zh": "广场瞭望者",
+    "agenda_seed_en": "Keep the public square legible before rumor and force fuse into one shared panic.",
+    "agenda_seed_zh": "在流言和武力彻底融成同一种恐慌之前，先让公共广场仍然是可读的。",
+    "red_line_seed_en": "Will not let the first blow disappear into the story of inevitable disorder.",
+    "red_line_seed_zh": "不会让第一下暴力消失在“失序本来就不可避免”的故事里。",
+    "pressure_signature_seed_en": "Measures pressure in where people stop clustering and where they start watching the exits instead.",
+    "pressure_signature_seed_zh": "她从人群不再聚拢于何处、又开始盯住哪些出口来衡量压力。",
+    "personality_core_en": "Measures pressure in where people stop clustering and where they start watching the exits instead.",
+    "personality_core_zh": "她从人群不再聚拢于何处、又开始盯住哪些出口来衡量压力。",
+    "experience_anchor_en": "A square lookout who sees exactly when a crowd stops waiting for instruction and starts waiting for permission.",
+    "experience_anchor_zh": "一名广场瞭望者，能看见人群是在何时停止等待指示、转而开始等待某种许可的。",
+    "identity_lock_notes_en": "This is Rhea Moss. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Square lookout.",
+    "identity_lock_notes_zh": "这就是瑞娅·莫斯。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定广场瞭望者的另一个人。",
+    "theme_tags": [
+      "public_order_crisis",
+      "truth_record_crisis"
+    ],
+    "setting_tags": [
+      "public_square",
+      "curfew",
+      "watchpost"
+    ],
+    "tone_tags": [
+      "tense",
+      "urgent",
+      "somber"
+    ],
+    "conflict_tags": [
+      "public_order",
+      "witness",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "witness",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "public_order",
+      "square",
+      "lookout",
+      "crowd",
+      "rumor",
+      "watchpost"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_order_supply_quietbroker",
+    "slug": "order-supply-quietbroker",
+    "name_en": "Kest Varr",
+    "name_zh": "凯斯特·瓦尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_order_supply_quietbroker/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_order_supply_quietbroker/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_order_supply_quietbroker/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_order_supply_quietbroker/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_order_supply_quietbroker/positive/current.png"
+    },
+    "public_summary_en": "A quietbroker who knows public order can be bought for a night, but rarely for the morning after.",
+    "public_summary_zh": "一名安静交易人，知道公共秩序可以买来一夜，却极少能买来次日清晨。",
+    "role_hint_en": "Supply quietbroker",
+    "role_hint_zh": "安静交易掮客",
+    "agenda_seed_en": "Turn riot prevention supplies into leverage before the city notices how much peace now costs.",
+    "agenda_seed_zh": "在城市真正意识到平静如今有多昂贵之前，先把防暴物资变成自己的杠杆。",
+    "red_line_seed_en": "Will not leave a curfew settlement without a profitable new dependency.",
+    "red_line_seed_zh": "不会让任何一场宵禁和解在不给自己留下新的获利依赖时就此结束。",
+    "pressure_signature_seed_en": "Feels pressure when everyone starts calling coercion logistics.",
+    "pressure_signature_seed_zh": "当所有人都开始把胁迫称作后勤问题时，他就知道真正的压力已经成熟。",
+    "personality_core_en": "Feels pressure when everyone starts calling coercion logistics.",
+    "personality_core_zh": "当所有人都开始把胁迫称作后勤问题时，他就知道真正的压力已经成熟。",
+    "experience_anchor_en": "A quietbroker who knows public order can be bought for a night, but rarely for the morning after.",
+    "experience_anchor_zh": "一名安静交易人，知道公共秩序可以买来一夜，却极少能买来次日清晨。",
+    "identity_lock_notes_en": "This is Kest Varr. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Supply quietbroker.",
+    "identity_lock_notes_zh": "这就是凯斯特·瓦尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定安静交易掮客的另一个人。",
+    "theme_tags": [
+      "public_order_crisis",
+      "resource_allocation_crisis"
+    ],
+    "setting_tags": [
+      "curfew",
+      "supply_depot",
+      "public_square"
+    ],
+    "tone_tags": [
+      "political",
+      "tense",
+      "restrained"
+    ],
+    "conflict_tags": [
+      "resource",
+      "public_order",
+      "legitimacy"
+    ],
+    "slot_tags": [
+      "broker",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "public_order",
+      "quietbroker",
+      "curfew",
+      "supply",
+      "riot",
+      "depot"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_generic_civic_repair_convener",
+    "slug": "generic-civic-repair-convener",
+    "name_en": "Mira Quay",
+    "name_zh": "米拉·奎",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_generic_civic_repair_convener/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_generic_civic_repair_convener/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_generic_civic_repair_convener/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_generic_civic_repair_convener/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_generic_civic_repair_convener/positive/current.png"
+    },
+    "public_summary_en": "A civic repair convener who keeps practical repair work from being quietly outranked by symbolic politics.",
+    "public_summary_zh": "一名公共修复协调员，努力不让真正的修复工作被象征性的政治姿态悄悄挤到后面。",
+    "role_hint_en": "Civic repair convener",
+    "role_hint_zh": "公共修复协调员",
+    "agenda_seed_en": "Keep the city repairable in practice, not just rhetorically.",
+    "agenda_seed_zh": "让这座城在现实中仍可被修复，而不只是口头上可以。",
+    "red_line_seed_en": "Will not let symbolic unity substitute for material follow-through.",
+    "red_line_seed_zh": "不会让象征性的团结取代真正的物质落实。",
+    "pressure_signature_seed_en": "Turns every speech back into labor, transport, upkeep, and whose burden is being hidden.",
+    "pressure_signature_seed_zh": "她总会把每一场演说重新翻译成劳动、运输、维护，以及究竟谁的负担被隐藏了起来。",
+    "personality_core_en": "Turns every speech back into labor, transport, upkeep, and whose burden is being hidden.",
+    "personality_core_zh": "她总会把每一场演说重新翻译成劳动、运输、维护，以及究竟谁的负担被隐藏了起来。",
+    "experience_anchor_en": "A civic repair convener who keeps practical repair work from being quietly outranked by symbolic politics.",
+    "experience_anchor_zh": "一名公共修复协调员，努力不让真正的修复工作被象征性的政治姿态悄悄挤到后面。",
+    "identity_lock_notes_en": "This is Mira Quay. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Civic repair convener.",
+    "identity_lock_notes_zh": "这就是米拉·奎。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定公共修复协调员的另一个人。",
+    "theme_tags": [
+      "generic_civic_crisis"
+    ],
+    "setting_tags": [
+      "repair_hall",
+      "civic_yard",
+      "district"
+    ],
+    "tone_tags": [
+      "restrained",
+      "civic",
+      "tense"
+    ],
+    "conflict_tags": [
+      "resource",
+      "legitimacy",
+      "public_order"
+    ],
+    "slot_tags": [
+      "anchor",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "generic_civic",
+      "repair",
+      "convener",
+      "civic_yard",
+      "district",
+      "upkeep"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_generic_public_ledger_keeper",
+    "slug": "generic-public-ledger-keeper",
+    "name_en": "Sela Marr",
+    "name_zh": "塞拉·马尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_generic_public_ledger_keeper/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_generic_public_ledger_keeper/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_generic_public_ledger_keeper/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_generic_public_ledger_keeper/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_generic_public_ledger_keeper/positive/current.png"
+    },
+    "public_summary_en": "A public ledger keeper who knows a city begins lying to itself in columns long before it does so in speeches.",
+    "public_summary_zh": "一名公共账册保管人，知道城市总是先在账栏里对自己说谎，然后才会在演说里这样做。",
+    "role_hint_en": "Public ledger keeper",
+    "role_hint_zh": "公共账册保管人",
+    "agenda_seed_en": "Keep the common ledger legible enough that the city cannot quietly erase its own recent decisions.",
+    "agenda_seed_zh": "让共同账册保持足够清晰，好让城市无法悄悄抹去自己刚刚做过的决定。",
+    "red_line_seed_en": "Will not close the books over a contradiction everyone still has time to see.",
+    "red_line_seed_zh": "不会在所有人都还有时间看清矛盾时就把账本合上。",
+    "pressure_signature_seed_en": "Sees pressure in altered totals, cleaner phrasing, and when everyone suddenly agrees too quickly.",
+    "pressure_signature_seed_zh": "她从被改过的总数、更光滑的措辞，以及所有人突然过快达成的一致里看见压力。",
+    "personality_core_en": "Sees pressure in altered totals, cleaner phrasing, and when everyone suddenly agrees too quickly.",
+    "personality_core_zh": "她从被改过的总数、更光滑的措辞，以及所有人突然过快达成的一致里看见压力。",
+    "experience_anchor_en": "A public ledger keeper who knows a city begins lying to itself in columns long before it does so in speeches.",
+    "experience_anchor_zh": "一名公共账册保管人，知道城市总是先在账栏里对自己说谎，然后才会在演说里这样做。",
+    "identity_lock_notes_en": "This is Sela Marr. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Public ledger keeper.",
+    "identity_lock_notes_zh": "这就是塞拉·马尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定公共账册保管人的另一个人。",
+    "theme_tags": [
+      "generic_civic_crisis",
+      "truth_record_crisis"
+    ],
+    "setting_tags": [
+      "ledger_office",
+      "council",
+      "civic_yard"
+    ],
+    "tone_tags": [
+      "procedural",
+      "restrained",
+      "tense"
+    ],
+    "conflict_tags": [
+      "public_record",
+      "legitimacy",
+      "evidence"
+    ],
+    "slot_tags": [
+      "guardian",
+      "witness"
+    ],
+    "retrieval_terms": [
+      "generic_civic",
+      "ledger",
+      "keeper",
+      "record",
+      "council",
+      "totals"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  },
+  {
+    "character_id": "roster_generic_market_testimony_runner",
+    "slug": "generic-market-testimony-runner",
+    "name_en": "Jori Vale",
+    "name_zh": "乔里·维尔",
+    "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_generic_market_testimony_runner/neutral/current.png",
+    "default_portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_generic_market_testimony_runner/neutral/current.png",
+    "portrait_variants": {
+      "negative": "http://127.0.0.1:8000/portraits/roster/roster_generic_market_testimony_runner/negative/current.png",
+      "neutral": "http://127.0.0.1:8000/portraits/roster/roster_generic_market_testimony_runner/neutral/current.png",
+      "positive": "http://127.0.0.1:8000/portraits/roster/roster_generic_market_testimony_runner/positive/current.png"
+    },
+    "public_summary_en": "A testimony runner who moves witness scraps between markets, halls, and committees before they can be declared unofficial.",
+    "public_summary_zh": "一名证词传递员，在市场、议厅和委员会之间搬运见证碎片，赶在它们被宣布为“非正式”之前。",
+    "role_hint_en": "Testimony runner",
+    "role_hint_zh": "证词传递员",
+    "agenda_seed_en": "Keep civic testimony moving faster than the city can sort it into harmless rumor.",
+    "agenda_seed_zh": "让公共见证的流动速度快过城市把它归类为无害流言的速度。",
+    "red_line_seed_en": "Will not let witness fragments be left in the market as if they never belonged in the hall.",
+    "red_line_seed_zh": "不会让证词碎片被丢在市场里，仿佛它们从不属于议厅。",
+    "pressure_signature_seed_en": "Measures pressure in which stories are called hearsay only after they start sounding true.",
+    "pressure_signature_seed_zh": "他通过哪些故事是在开始听起来像真相之后才被改叫成“道听途说”来衡量压力。",
+    "personality_core_en": "Measures pressure in which stories are called hearsay only after they start sounding true.",
+    "personality_core_zh": "他通过哪些故事是在开始听起来像真相之后才被改叫成“道听途说”来衡量压力。",
+    "experience_anchor_en": "A testimony runner who moves witness scraps between markets, halls, and committees before they can be declared unofficial.",
+    "experience_anchor_zh": "一名证词传递员，在市场、议厅和委员会之间搬运见证碎片，赶在它们被宣布为“非正式”之前。",
+    "identity_lock_notes_en": "This is Jori Vale. Keep the same person, the same face, and the same public identity. Do not rename them or rewrite them into someone other than the established Testimony runner.",
+    "identity_lock_notes_zh": "这就是乔里·维尔。必须保持同一个人、同一张脸、同一公共身份，不得改名，也不得把他/她改写成不同于既定证词传递员的另一个人。",
+    "theme_tags": [
+      "generic_civic_crisis",
+      "truth_record_crisis"
+    ],
+    "setting_tags": [
+      "market_square",
+      "hearing",
+      "committee_room"
+    ],
+    "tone_tags": [
+      "civic",
+      "observant",
+      "tense"
+    ],
+    "conflict_tags": [
+      "witness",
+      "public_record",
+      "public_order"
+    ],
+    "slot_tags": [
+      "witness",
+      "civic"
+    ],
+    "retrieval_terms": [
+      "generic_civic",
+      "testimony",
+      "runner",
+      "market",
+      "hearing",
+      "committee"
+    ],
+    "rarity_weight": 1.0,
+    "gender_lock": "unspecified"
+  }
+]

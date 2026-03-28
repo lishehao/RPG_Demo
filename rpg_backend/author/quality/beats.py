@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from rpg_backend.author.contracts import BeatPlanDraft, CastDraft, StoryFrameDraft
 
 
@@ -37,4 +39,22 @@ def beat_plan_quality_reasons(
         reasons.append("beat_missing_route_pivot")
     if any(not any(text in truth_texts for text in beat.required_truth_texts) for beat in beats):
         reasons.append("beat_missing_story_truth_alignment")
+    if _contains_cjk_text(" ".join((story_frame.title, story_frame.premise, story_frame.stakes))):
+        english_heavy_rows = 0
+        for beat in beats:
+            text = " ".join(
+                [
+                    beat.title,
+                    beat.goal,
+                    *beat.return_hooks,
+                ]
+            )
+            if len(re.findall(r"[A-Za-z]{4,}", text)) >= 3:
+                english_heavy_rows += 1
+        if english_heavy_rows >= max(1, len(beats) // 2):
+            reasons.append("beats_mixed_language_noise")
     return reasons
+
+
+def _contains_cjk_text(value: str) -> bool:
+    return bool(re.search(r"[\u4e00-\u9fff]", value))

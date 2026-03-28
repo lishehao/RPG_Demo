@@ -1,27 +1,45 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
+from threading import Barrier, Thread
 from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
-from rpg_backend.author.contracts import AuthorPreviewResponse
+from rpg_backend.author.contracts import AuthorBundleRequest, AuthorPreviewResponse
+from rpg_backend.author.contracts import CastStoryInstanceSnapshot, PortraitVariants, StoryGenerationControls
+from rpg_backend.author.planning import build_story_flow_plan
 from rpg_backend.author.preview import build_author_story_summary
+from rpg_backend.author.beat_shards import (
+    build_beat_runtime_shard_from_snapshot,
+    build_beat_snapshots,
+    build_bundle_snapshot,
+)
 from rpg_backend.config import Settings
 from rpg_backend.library.service import StoryLibraryService
 from rpg_backend.library.storage import SQLiteStoryLibraryStorage
+from rpg_backend.llm_gateway import GatewayCapabilityError
 from rpg_backend.main import app
+from rpg_backend.play.closeout_gate import determine_ending
 from rpg_backend.play.compiler import _opening_hook_line, compile_play_plan
+from rpg_backend.play.contracts import PlayResolutionEffect, PlayTurnTrace
 from rpg_backend.play.gateway import PlayGatewayError
 from rpg_backend.play.runtime import (
+    TurnEndingGateContext,
+    _ending_by_id,
     _update_feedback_ledgers,
     _update_collapse_pressure_streak,
+    available_affordance_tags,
     apply_turn_resolution,
+    build_epilogue_reactions,
     build_initial_session_state,
+    build_session_snapshot,
     build_suggested_actions,
     deterministic_narration,
     heuristic_turn_intent,
+    resolve_portrait_expression_for_stance,
 )
 from rpg_backend.play.service import PlayServiceError, PlaySessionService
 from rpg_backend.play.stages.render import (
@@ -30,6 +48,7 @@ from rpg_backend.play.stages.render import (
     _suggestions_target_protagonist,
     _text_mentions_protagonist,
 )
+from rpg_backend.product_copy import BANNED_ZH_REGISTER_PATTERNS, BANNED_ZH_SURFACE_TERMS
 from tests.auth_helpers import ensure_authenticated_client
 from tests.author_fixtures import author_fixture_bundle
 from tests.test_story_library_api import _FakeAuthorJobService, _publish_source
@@ -99,6 +118,38 @@ def _publish_story(tmp_path, *, bundle=None):
     return library_service, story
 
 
+def _bundle_with_runtime_shards(bundle):
+    snapshot = build_bundle_snapshot(
+        bundle=bundle,
+        primary_theme="legitimacy_crisis",
+        story_frame_strategy="legitimacy_story",
+        cast_strategy="legitimacy_cast",
+        beat_plan_strategy="single_semantic_compile",
+    )
+    beat_snapshots = build_beat_snapshots(bundle=bundle, bundle_snapshot=snapshot)
+    shards = [build_beat_runtime_shard_from_snapshot(item)[0] for item in beat_snapshots]
+    return bundle.model_copy(update={"beat_runtime_shards": shards})
+
+
+def test_resolve_portrait_expression_for_stance_uses_negative_neutral_positive_bands() -> None:
+    assert resolve_portrait_expression_for_stance(-2) == "negative"
+    assert resolve_portrait_expression_for_stance(-1) == "negative"
+    assert resolve_portrait_expression_for_stance(0) == "neutral"
+    assert resolve_portrait_expression_for_stance(1) == "neutral"
+    assert resolve_portrait_expression_for_stance(2) == "positive"
+    assert resolve_portrait_expression_for_stance(3) == "positive"
+
+
+def test_compile_play_plan_projects_beat_runtime_shards() -> None:
+    bundle = _bundle_with_runtime_shards(author_fixture_bundle().design_bundle)
+
+    plan = compile_play_plan(story_id="story-with-beat-shards", bundle=bundle)
+
+    assert len(plan.beat_runtime_shards) == len(plan.beats)
+    assert [item.beat_id for item in plan.beat_runtime_shards] == [beat.beat_id for beat in plan.beats]
+    assert all(not hasattr(item, "narration") for item in plan.beat_runtime_shards)
+
+
 class _FakePlayTransport:
     def __init__(self, responses_by_operation):
         self.responses_by_operation = responses_by_operation
@@ -110,8 +161,49 @@ class _FakePlayTransport:
         self.max_output_tokens_render = 420
         self.max_output_tokens_render_repair = 640
         self.use_session_cache = False
+        self.transport_style = "responses"
+        self.model = "test-play-model"
         self.call_trace = []
         self._response_index = 0
+
+    def text_policy(self, capability: str):
+        budget_by_capability = {
+            "play.interpret": self.max_output_tokens_interpret,
+            "play.interpret_repair": self.max_output_tokens_interpret_repair,
+            "play.ending_judge": self.max_output_tokens_ending_judge,
+            "play.pyrrhic_critic": self.max_output_tokens_pyrrhic_critic,
+            "play.render": self.max_output_tokens_render,
+            "play.render_repair": self.max_output_tokens_render_repair,
+        }
+        return SimpleNamespace(
+            capability=capability,
+            max_output_tokens=budget_by_capability.get(capability),
+            transport_style=self.transport_style,
+            use_session_cache=self.use_session_cache,
+            enable_thinking=False,
+            model=self.model,
+        )
+
+    def invoke_text_capability(self, capability: str, request):
+        raw = self._invoke_json(
+            system_prompt=request.system_prompt,
+            user_payload=request.user_payload,
+            max_output_tokens=request.max_output_tokens,
+            previous_response_id=request.previous_response_id,
+            operation_name=request.operation_name,
+        )
+        return SimpleNamespace(
+            payload=raw.payload,
+            response_id=raw.response_id,
+            usage=raw.usage,
+            input_characters=raw.input_characters,
+            capability=capability,
+            provider="test",
+            model=self.model,
+            transport_style=self.transport_style,
+            fallback_source=getattr(raw, "fallback_source", None),
+            raw_text=getattr(raw, "raw_text", None),
+        )
 
     def _invoke_json(
         self,
@@ -142,6 +234,15 @@ class _FakePlayTransport:
         )
         if isinstance(next_item, Exception):
             raise next_item
+        if isinstance(next_item, SimpleNamespace) and hasattr(next_item, "payload"):
+            return SimpleNamespace(
+                payload=next_item.payload,
+                response_id=getattr(next_item, "response_id", response_id),
+                usage=getattr(next_item, "usage", {}),
+                input_characters=getattr(next_item, "input_characters", len(str(user_payload))),
+                fallback_source=getattr(next_item, "fallback_source", None),
+                raw_text=getattr(next_item, "raw_text", None),
+            )
         return SimpleNamespace(
             payload=next_item,
             response_id=response_id,
@@ -171,9 +272,95 @@ def test_compile_play_plan_compresses_three_beat_story_to_short_runtime_budget()
 
     plan = compile_play_plan(story_id="story-short-runtime", bundle=bundle)
 
-    assert [beat.progress_required for beat in plan.beats] == [2, 1, 1]
-    assert plan.max_turns == 4
+    assert [beat.progress_required for beat in plan.beats] == [2, 2, 2]
+    assert plan.max_turns == 6
     assert plan.closeout_profile == "record_exposure_closeout"
+
+
+def test_determine_ending_blocks_pyrrhic_before_minimum_resolution_turn() -> None:
+    fixture = author_fixture_bundle()
+    controls = StoryGenerationControls(target_duration_minutes=25)
+    flow_plan = build_story_flow_plan(controls=controls, primary_theme="legitimacy_crisis")
+    bundle = fixture.design_bundle.model_copy(
+        update={
+            "generation_controls": controls,
+            "story_flow_plan": flow_plan,
+        }
+    )
+    plan = compile_play_plan(story_id="story-min-resolution", bundle=bundle)
+    state = build_initial_session_state(plan, session_id="session-min-resolution")
+    state.turn_index = plan.minimum_resolution_turn - 1
+    state.beat_index = len(plan.beats) - 1
+    state.axis_values.update(
+        {
+            axis_id: threshold
+            for axis_id, threshold in next(
+                rule.conditions.min_axes
+                for rule in plan.ending_rules
+                if rule.ending_id == "pyrrhic"
+            ).items()
+        }
+    )
+    pyrrhic_rule = next(rule for rule in plan.ending_rules if rule.ending_id == "pyrrhic")
+    state.discovered_truth_ids.extend(pyrrhic_rule.conditions.required_truths)
+    state.discovered_event_ids.extend(pyrrhic_rule.conditions.required_events)
+    for flag_id in pyrrhic_rule.conditions.required_flags:
+        state.flag_values[flag_id] = True
+
+    ending, reason = determine_ending(
+        plan,
+        state,
+        resolution=PlayResolutionEffect(
+            affordance_tag="build_trust",
+            risk_level="medium",
+            tactic_summary="Hold the coalition together.",
+            pressure_note="The settlement is still fragile.",
+        ),
+        final_beat_completed=True,
+        proposed_ending_id="pyrrhic",
+    )
+
+    assert ending is None
+    assert reason is None
+
+
+def test_high_branch_session_changes_suggested_action_language_between_opening_and_settlement() -> None:
+    from rpg_backend.author.workflow import run_author_bundle
+    from tests.author_fixtures import FakeGateway
+
+    bundle = run_author_bundle(
+        AuthorBundleRequest(
+            raw_brief="A harbor inspector must keep quarantine from turning into private rule.",
+            target_duration_minutes=25,
+        ),
+        gateway=FakeGateway(),
+    ).bundle
+    plan = compile_play_plan(story_id="story-high-branch-suggestions", bundle=bundle)
+    state = build_initial_session_state(plan, session_id="session-high-branch")
+
+    opening_suggestions = build_suggested_actions(plan, state)
+
+    state.turn_index = plan.minimum_resolution_turn
+    state.beat_index = len(plan.beats) - 1
+    settlement_tags = available_affordance_tags(plan, state)
+    settlement_suggestions = build_suggested_actions(plan, state)
+
+    assert plan.branch_budget == "high"
+    assert len(plan.beats) == 5
+    assert opening_suggestions[0].label in {
+        "Establish the record",
+        "Stabilize the bloc",
+        "Hold the perimeter",
+        "Protect the supply line",
+        "Expose the hidden pressure",
+    }
+    assert settlement_tags[0] in {"shift_public_narrative", "pay_cost", "unlock_ally", "build_trust"}
+    assert settlement_suggestions[0].label in {
+        "Lock the public story",
+        "Name the public price",
+        "Bind the final coalition",
+        "Keep the settlement intact",
+    }
 
 
 def test_compile_play_plan_routes_harbor_bundle_to_logistics_closeout_profile() -> None:
@@ -973,6 +1160,297 @@ def test_play_session_routes_return_initial_snapshot_and_turn_updates(tmp_path) 
     assert turned.json()["progress"]["display_percent"] > 0
 
 
+def test_play_session_turn_route_rejects_whitespace_input(tmp_path) -> None:
+    import rpg_backend.main as main_module
+
+    library_service, story = _publish_story(tmp_path)
+    play_service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: (_ for _ in ()).throw(
+            PlayGatewayError(code="play_llm_config_missing", message="missing", status_code=500)
+        ),
+    )
+    original_library_service = main_module.story_library_service
+    original_play_service = main_module.play_session_service
+    main_module.story_library_service = library_service
+    main_module.play_session_service = play_service
+    client = TestClient(app)
+    try:
+        ensure_authenticated_client(client, email="play-whitespace@example.com", display_name="Whitespace Guard")
+        created = client.post("/play/sessions", json={"story_id": story.story_id})
+        session_id = created.json()["session_id"]
+        rejected = client.post(
+            f"/play/sessions/{session_id}/turns",
+            json={"input_text": "   "},
+        )
+        history = client.get(f"/play/sessions/{session_id}/history")
+    finally:
+        main_module.story_library_service = original_library_service
+        main_module.play_session_service = original_play_service
+
+    assert rejected.status_code == 422
+    assert [entry["speaker"] for entry in history.json()["entries"]] == ["gm"]
+
+
+def test_build_session_snapshot_exposes_npc_visuals_from_stance_values(tmp_path) -> None:
+    fixture = author_fixture_bundle()
+    cast = list(fixture.design_bundle.story_bible.cast)
+    cast[1] = cast[1].model_copy(
+        update={
+            "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_archive_certifier__neutral.png",
+            "portrait_variants": PortraitVariants(
+                positive="http://127.0.0.1:8000/portraits/roster/roster_archive_certifier__positive.png",
+                neutral="http://127.0.0.1:8000/portraits/roster/roster_archive_certifier__neutral.png",
+                negative="http://127.0.0.1:8000/portraits/roster/roster_archive_certifier__negative.png",
+            ),
+        }
+    )
+    cast[2] = cast[2].model_copy(
+        update={
+            "portrait_url": "http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_broker__neutral.png",
+            "portrait_variants": PortraitVariants(
+                positive="http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_broker__positive.png",
+                neutral="http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_broker__neutral.png",
+                negative="http://127.0.0.1:8000/portraits/roster/roster_blackout_grid_broker__negative.png",
+            ),
+        }
+    )
+    bundle = fixture.design_bundle.model_copy(
+        update={"story_bible": fixture.design_bundle.story_bible.model_copy(update={"cast": cast})}
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: (_ for _ in ()).throw(
+            PlayGatewayError(code="play_llm_config_missing", message="missing", status_code=500)
+        ),
+    )
+
+    created = service.create_session(story.story_id)
+    snapshot = service.get_session(created.session_id)
+    npc_visuals = {item.npc_id: item for item in snapshot.npc_visuals}
+
+    assert len(snapshot.npc_visuals) == len(snapshot.state_bars) - len([bar for bar in snapshot.state_bars if bar.category == "axis"])
+    assert npc_visuals["archivist_sen"].current_expression == "neutral"
+    assert npc_visuals["archivist_sen"].current_portrait_url.endswith("__neutral.png")
+
+    record = service._sessions[created.session_id]
+    record.state.stance_values["archivist_sen_stance"] = -1
+    record.state.stance_values["broker_tal_stance"] = 2
+    shifted = build_session_snapshot(record.plan, record.state)
+    shifted_visuals = {item.npc_id: item for item in shifted.npc_visuals}
+
+    assert shifted_visuals["archivist_sen"].current_expression == "negative"
+    assert shifted_visuals["archivist_sen"].current_portrait_url.endswith("__negative.png")
+    assert shifted_visuals["broker_tal"].current_expression == "positive"
+    assert shifted_visuals["broker_tal"].current_portrait_url.endswith("__positive.png")
+
+
+def test_build_session_snapshot_falls_back_to_roster_portraits_when_cast_member_portrait_missing(tmp_path, monkeypatch) -> None:
+    fixture = author_fixture_bundle()
+    cast = list(fixture.design_bundle.story_bible.cast)
+    cast[1] = cast[1].model_copy(
+        update={
+            "roster_character_id": "roster_archive_certifier",
+            "portrait_url": None,
+            "portrait_variants": None,
+        }
+    )
+    bundle = fixture.design_bundle.model_copy(
+        update={"story_bible": fixture.design_bundle.story_bible.model_copy(update={"cast": cast})}
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: (_ for _ in ()).throw(
+            PlayGatewayError(code="play_llm_config_missing", message="missing", status_code=500)
+        ),
+    )
+
+    fake_entry = SimpleNamespace(
+        portrait_url="http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+        portrait_variants={
+            "positive": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/positive/current.png",
+            "neutral": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+            "negative": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/negative/current.png",
+        },
+    )
+    monkeypatch.setattr(
+        "rpg_backend.play.runtime.get_character_roster_service",
+        lambda: SimpleNamespace(get_entry_by_id=lambda character_id: fake_entry if character_id == "roster_archive_vote_certifier" else None),
+    )
+
+    created = service.create_session(story.story_id)
+    snapshot = service.get_session(created.session_id)
+    npc_visuals = {item.npc_id: item for item in snapshot.npc_visuals}
+
+    assert npc_visuals["archivist_sen"].current_portrait_url.endswith("/neutral/current.png")
+
+    record = service._sessions[created.session_id]
+    record.state.stance_values["archivist_sen_stance"] = -1
+    shifted = build_session_snapshot(record.plan, record.state)
+    shifted_visuals = {item.npc_id: item for item in shifted.npc_visuals}
+
+    assert shifted_visuals["archivist_sen"].current_portrait_url.endswith("/negative/current.png")
+
+
+def test_build_session_snapshot_falls_back_to_current_roster_portraits_from_stale_roster_id(tmp_path, monkeypatch) -> None:
+    fixture = author_fixture_bundle()
+    cast = list(fixture.design_bundle.story_bible.cast)
+    cast[1] = cast[1].model_copy(
+        update={
+            "roster_character_id": "roster_archive_certifier",
+            "portrait_url": None,
+            "portrait_variants": None,
+        }
+    )
+    bundle = fixture.design_bundle.model_copy(
+        update={"story_bible": fixture.design_bundle.story_bible.model_copy(update={"cast": cast})}
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: (_ for _ in ()).throw(
+            PlayGatewayError(code="play_llm_config_missing", message="missing", status_code=500)
+        ),
+    )
+
+    fake_entry = SimpleNamespace(
+        portrait_url="http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+        portrait_variants={
+            "positive": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/positive/current.png",
+            "neutral": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+            "negative": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/negative/current.png",
+        },
+    )
+    monkeypatch.setattr(
+        "rpg_backend.play.runtime.get_character_roster_service",
+        lambda: SimpleNamespace(get_entry_by_id=lambda character_id: fake_entry if character_id == "roster_archive_vote_certifier" else None),
+    )
+
+    created = service.create_session(story.story_id)
+    snapshot = service.get_session(created.session_id)
+    npc_visuals = {item.npc_id: item for item in snapshot.npc_visuals}
+
+    assert npc_visuals["archivist_sen"].current_portrait_url.endswith("/neutral/current.png")
+
+
+def test_build_session_snapshot_exposes_completed_epilogue_reactions(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    record = service._sessions[created.session_id]
+    record.state.status = "completed"
+    record.state.stance_values["archivist_sen_stance"] = 2
+    record.state.stance_values["broker_tal_stance"] = -1
+    record.state.ending = _ending_by_id(record.plan, record.state, "pyrrhic")
+    record.state.epilogue_reactions = build_epilogue_reactions(record.plan, record.state)
+
+    snapshot = build_session_snapshot(record.plan, record.state)
+    reactions = {item.npc_id: item for item in snapshot.epilogue_reactions or []}
+
+    assert created.epilogue_reactions is None
+    assert len(reactions) == len(snapshot.npc_visuals)
+    assert reactions["archivist_sen"].current_expression == "positive"
+    assert "trust" in reactions["archivist_sen"].closing_line.casefold()
+    assert reactions["broker_tal"].current_expression == "negative"
+    assert "do not ask me" in reactions["broker_tal"].closing_line.casefold()
+
+
+def test_completed_epilogue_reactions_fall_back_to_roster_portraits(tmp_path, monkeypatch) -> None:
+    fixture = author_fixture_bundle()
+    cast = list(fixture.design_bundle.story_bible.cast)
+    cast[1] = cast[1].model_copy(
+        update={
+            "roster_character_id": "roster_archive_certifier",
+            "portrait_url": None,
+            "portrait_variants": None,
+        }
+    )
+    bundle = fixture.design_bundle.model_copy(
+        update={"story_bible": fixture.design_bundle.story_bible.model_copy(update={"cast": cast})}
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+    )
+
+    fake_entry = SimpleNamespace(
+        portrait_url="http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+        portrait_variants={
+            "positive": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/positive/current.png",
+            "neutral": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/neutral/current.png",
+            "negative": "http://127.0.0.1:8000/portraits/roster/roster_archive_vote_certifier/negative/current.png",
+        },
+    )
+    monkeypatch.setattr(
+        "rpg_backend.play.runtime.get_character_roster_service",
+        lambda: SimpleNamespace(get_entry_by_id=lambda character_id: fake_entry if character_id == "roster_archive_vote_certifier" else None),
+    )
+
+    created = service.create_session(story.story_id)
+    record = service._sessions[created.session_id]
+    record.state.status = "completed"
+    record.state.stance_values["archivist_sen_stance"] = 2
+    record.state.ending = _ending_by_id(record.plan, record.state, "pyrrhic")
+    record.state.epilogue_reactions = build_epilogue_reactions(record.plan, record.state)
+
+    snapshot = build_session_snapshot(record.plan, record.state)
+    reactions = {item.npc_id: item for item in snapshot.epilogue_reactions or []}
+
+    assert reactions["archivist_sen"].current_portrait_url.endswith("/positive/current.png")
+
+
+def test_completed_epilogue_reactions_fall_back_from_stale_roster_id_alias(tmp_path, monkeypatch) -> None:
+    fixture = author_fixture_bundle()
+    cast = list(fixture.design_bundle.story_bible.cast)
+    cast[1] = cast[1].model_copy(
+        update={
+            "roster_character_id": "roster_courtyard_witness",
+            "portrait_url": None,
+            "portrait_variants": None,
+        }
+    )
+    bundle = fixture.design_bundle.model_copy(
+        update={"story_bible": fixture.design_bundle.story_bible.model_copy(update={"cast": cast})}
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+    )
+
+    fake_entry = SimpleNamespace(
+        portrait_url="http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/neutral/current.png",
+        portrait_variants={
+            "positive": "http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/positive/current.png",
+            "neutral": "http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/neutral/current.png",
+            "negative": "http://127.0.0.1:8000/portraits/roster/roster_archive_gallery_petitioner/negative/current.png",
+        },
+    )
+    monkeypatch.setattr(
+        "rpg_backend.play.runtime.get_character_roster_service",
+        lambda: SimpleNamespace(get_entry_by_id=lambda character_id: fake_entry if character_id == "roster_archive_gallery_petitioner" else None),
+    )
+
+    created = service.create_session(story.story_id)
+    record = service._sessions[created.session_id]
+    record.state.status = "completed"
+    record.state.stance_values["archivist_sen_stance"] = 2
+    record.state.ending = _ending_by_id(record.plan, record.state, "pyrrhic")
+    record.state.epilogue_reactions = build_epilogue_reactions(record.plan, record.state)
+
+    snapshot = build_session_snapshot(record.plan, record.state)
+    reactions = {item.npc_id: item for item in snapshot.epilogue_reactions or []}
+
+    assert reactions["archivist_sen"].current_portrait_url.endswith("/positive/current.png")
+
+
 def test_play_session_routes_are_scoped_to_actor(tmp_path) -> None:
     import rpg_backend.main as main_module
 
@@ -1009,6 +1487,20 @@ def test_play_session_routes_are_scoped_to_actor(tmp_path) -> None:
     assert created.status_code == 200
     assert hidden.status_code == 404
     assert visible.status_code == 200
+
+
+def test_play_service_can_disable_default_actor_fallback(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+        allow_default_actor_fallback=False,
+    )
+
+    with pytest.raises(PlayServiceError) as exc_info:
+        service.create_session(story.story_id)
+
+    assert exc_info.value.code == "auth_session_required"
 
 
 def test_deleting_story_removes_owned_play_sessions(tmp_path) -> None:
@@ -1151,6 +1643,132 @@ def test_play_service_closes_three_beat_story_within_four_turn_short_runtime(tmp
     assert snapshot.ending is not None
 
 
+def test_play_session_snapshot_preserves_zh_story_language(tmp_path) -> None:
+    fixture = author_fixture_bundle()
+    bundle = fixture.design_bundle.model_copy(
+        update={
+            "focused_brief": fixture.focused_brief.model_copy(update={"language": "zh"}),
+        },
+        deep=True,
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+    )
+
+    created = service.create_session(story.story_id)
+
+    assert created.language == "zh"
+    assert any(token in created.narration for token in ("你是", "你眼下要做的", "轮到你以"))
+    assert created.suggested_actions
+    assert any(
+        phrase in created.suggested_actions[0].label
+        for phrase in ("逼出隐藏的压力", "压住眼前的恐慌", "拿回城市所需资源", "稳住一段联盟")
+    )
+    history = service.get_session_history(created.session_id)
+    assert history.language == "zh"
+
+
+def test_play_session_snapshot_uses_natural_zh_mandate_and_opening(tmp_path) -> None:
+    fixture = author_fixture_bundle()
+    zh_cast = [
+        fixture.design_bundle.story_bible.cast[0].model_copy(update={"name": "岑港", "role": "港务检察官"}),
+        *fixture.design_bundle.story_bible.cast[1:],
+    ]
+    zh_beats = [
+        fixture.design_bundle.beat_spine[0].model_copy(
+            update={
+                "title": "检疫封线",
+                "goal": "查清是谁借检疫封线改写分配优先级，并把第一处断裂点钉死在台面上。",
+            }
+        ),
+        *fixture.design_bundle.beat_spine[1:],
+    ]
+    bundle = fixture.design_bundle.model_copy(
+        update={
+            "focused_brief": fixture.focused_brief.model_copy(
+                update={
+                    "language": "zh",
+                    "story_kernel": "一名港口档案员发现紧急舱单被篡改，用来在救济投票前偏袒忠诚街区。",
+                    "setting_signal": "港口城市在检疫与物资紧张中维持脆弱平衡。",
+                    "core_conflict": "在救济投票前查清被篡改的紧急舱单，阻止偏袒性分配被写成既成事实。",
+                    "tone_signal": "封线政治惊悚",
+                }
+            ),
+            "story_bible": fixture.design_bundle.story_bible.model_copy(
+                update={
+                    "title": "港务协定",
+                    "premise": "在一座被检疫政治与供给恐慌撕扯的港口城市中，一名港口档案员发现紧急舱单被篡改，用来在救济投票前偏袒忠诚街区。",
+                    "stakes": "如果港口检查权先失去公信力，码头会在正式秩序倒下前先被派系接管。",
+                    "cast": zh_cast,
+                }
+            ),
+            "beat_spine": zh_beats,
+        },
+        deep=True,
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+    )
+
+    created = service.create_session(story.story_id)
+
+    assert created.language == "zh"
+    assert created.protagonist is not None
+    assert created.protagonist.title == "港务检察官"
+    assert created.protagonist.mandate == "在救济投票前查清被篡改的紧急舱单，阻止偏袒性分配被写成既成事实"
+    assert "你的任务是" not in created.narration
+    assert "检疫封线" in created.narration
+    assert "偏袒性分配被写成既成事实" in created.narration
+
+
+def test_play_session_zh_surface_copy_avoids_banned_terms(tmp_path) -> None:
+    fixture = author_fixture_bundle()
+    bundle = fixture.design_bundle.model_copy(
+        update={
+            "focused_brief": fixture.focused_brief.model_copy(
+                update={
+                    "language": "zh",
+                    "story_kernel": "一名档案员必须在投票前救回被改写的紧急舱单。",
+                    "setting_signal": "港城已经被检疫封线与断供恐慌压到临界点。",
+                    "core_conflict": "在投票前救回被动过手脚的紧急舱单，别让偏袒性分配先被写成定局。",
+                    "tone_signal": "封线政治惊悚",
+                }
+            ),
+            "story_bible": fixture.design_bundle.story_bible.model_copy(
+                update={
+                    "title": "港务协定",
+                    "premise": "港城已经被检疫封线与断供恐慌压到临界点，而一名档案员必须赶在投票前救回被改写的紧急舱单。",
+                    "tone": "封线政治惊悚",
+                }
+            ),
+        },
+        deep=True,
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=_no_gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    payload = json.dumps(
+        {
+            "protagonist": created.protagonist.model_dump(mode="json"),
+            "suggested_actions": [item.model_dump(mode="json") for item in created.suggested_actions],
+        },
+        ensure_ascii=False,
+    ).casefold()
+
+    for term in BANNED_ZH_SURFACE_TERMS:
+        assert term not in payload
+    for pattern in BANNED_ZH_REGISTER_PATTERNS:
+        assert pattern not in payload
+
+
 def test_play_service_uses_heuristic_intent_when_interpret_llm_fails(tmp_path) -> None:
     library_service, story = _publish_story(tmp_path)
     gateway = _FakePlayTransport(
@@ -1232,9 +1850,57 @@ def test_play_service_uses_deterministic_narration_when_render_llm_fails(tmp_pat
     assert trace.render_response_id is None
     assert trace.resolution.affordance_tag == "reveal_truth"
     assert trace.render_failure_reason == "play_llm_invalid_json"
+    assert trace.render_primary_failure_reason == "play_llm_invalid_json"
+    assert trace.render_repair_failure_reason == "play_llm_invalid_json"
 
 
-def test_play_service_salvages_plaintext_render_without_remote_repair(tmp_path) -> None:
+def test_play_service_includes_beat_runtime_shard_card_in_interpret_and_render_requests(tmp_path) -> None:
+    bundle = _bundle_with_runtime_shards(author_fixture_bundle().design_bundle)
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "tactic_summary": "Press Sen for proof.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You force the archive table to stop pretending the record mismatch is procedural noise. The room's leverage shifts toward whoever can prove the original ledger chain. The delegates have to anchor their next move to one exposed document, and now someone has to admit who changed the ledger before the chamber fractures.",
+                    "suggested_actions": [
+                        {"label": "Name the handoff", "prompt": "You make the clerks name who touched the ledger last."},
+                        {"label": "Hold the chamber", "prompt": "You keep the hearing pinned to the verified record."},
+                        {"label": "Force a ruling", "prompt": "You demand the council choose which ledger governs now."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I demand proof from Archivist Sen.", "selected_suggestion_id": None})(),
+    )
+
+    interpret_call = next(item for item in gateway.call_trace if item["operation"] == "play_interpret_turn")
+    render_call = next(item for item in gateway.call_trace if item["operation"] == "play_render_turn")
+    interpret_cards = ((interpret_call["user_payload"] or {}).get("skill_context") or {}).get("context_cards") or []
+    render_cards = ((render_call["user_payload"] or {}).get("skill_context") or {}).get("context_cards") or []
+
+    assert any(card["card_id"] == "beat_runtime_shard_card" for card in interpret_cards)
+    assert any(card["card_id"] == "beat_runtime_shard_card" for card in render_cards)
+    assert not any(item["operation"] == "play_render_narration" for item in gateway.call_trace)
+
+
+def test_play_service_accepts_plaintext_primary_render_without_plan_stage(tmp_path) -> None:
     library_service, story = _publish_story(tmp_path)
     gateway = _FakePlayTransport(
         {
@@ -1263,10 +1929,335 @@ def test_play_service_salvages_plaintext_render_without_remote_repair(tmp_path) 
     )
 
     trace = service.get_turn_traces(created.session_id)[0]
-    assert updated.narration.startswith("You force the hidden ledger into the open")
+    assert updated.narration.startswith("You ")
     assert len(updated.suggested_actions) == 3
     assert trace.render_source == "llm"
+    assert trace.render_primary_path_mode == "direct_narration"
     assert trace.render_failure_reason is None
+    assert trace.render_primary_failure_reason is None
+    assert trace.render_primary_raw_excerpt is not None
+    assert "hidden ledger" in trace.render_primary_raw_excerpt
+    assert trace.render_repair_failure_reason is None
+
+
+def test_render_meta_wrapper_echo_falls_back_to_real_scene_text(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "public",
+                    "tactic_summary": "Expose the forged ledger in public.",
+                }
+            ],
+            "play_render_turn": [
+                SimpleNamespace(
+                    payload={},
+                    raw_text="Here is the JSON requested: Proof moved into the open.",
+                    fallback_source="raw_text_passthrough",
+                )
+            ],
+            "play_render_repair": [
+                PlayGatewayError(code="play_llm_invalid_json", message="repair failed", status_code=502),
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I expose the forged ledger before the chamber can bury it again.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.render_source in {"llm_repair", "fallback"}
+    assert trace.render_failure_reason == "meta_wrapper_echo"
+    assert "Here is the JSON requested" not in updated.narration
+    assert len(updated.narration.split()) >= 20
+
+
+def test_render_requested_output_wrapper_falls_back_to_real_scene_text(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "public",
+                    "tactic_summary": "Expose the forged ledger in public.",
+                }
+            ],
+            "play_render_turn": [
+                SimpleNamespace(
+                    payload={},
+                    raw_text="Requested output: The public ledger breaks the chamber's false calm.",
+                    fallback_source="raw_text_passthrough",
+                )
+            ],
+            "play_render_repair": [
+                PlayGatewayError(code="play_llm_invalid_json", message="repair failed", status_code=502),
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I expose the forged ledger before the chamber can bury it again.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.render_source in {"llm_repair", "fallback"}
+    assert trace.render_failure_reason == "meta_wrapper_echo"
+    assert "Requested output" not in updated.narration
+    assert len(updated.narration.split()) >= 20
+
+
+def test_render_repair_plan_wrapper_is_coerced_into_clean_narration(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "contain_chaos",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "procedural",
+                    "tactic_summary": "Hold the chamber together before the public story snaps.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "Brief line.",
+                    "suggested_actions": [
+                        {"label": "Press harder", "prompt": "You keep the pressure on."},
+                        {"label": "Hold the room", "prompt": "You hold the room together."},
+                        {"label": "Call witnesses", "prompt": "You call the witnesses in."},
+                    ],
+                }
+            ],
+            "play_render_repair": [
+                SimpleNamespace(
+                    payload={
+                        "narration": (
+                            "SCENE_REACTION: 你把房间里的慌乱按住，逼所有人把视线转回档案官身上。\n"
+                            "AXIS_PAYOFF: 原本快要散开的秩序重新被拉回桌面。\n"
+                            "STANCE_PAYOFF: 档案官意识到你不是来安抚场面，而是来逼出答案。\n"
+                            "IMMEDIATE_CONSEQUENCE: 这一下让会议室里每个人都得立刻重新站队。\n"
+                            "CLOSING_PRESSURE: 下一步，谁还敢继续替假账背书，马上就会见分晓。"
+                        )
+                    },
+                    raw_text=None,
+                    response_id="repair-1",
+                    usage={},
+                    input_characters=10,
+                    fallback_source=None,
+                    capability="play.render_repair",
+                    provider="openai_compatible",
+                    model="qwen3.5-flash",
+                    transport_style="responses",
+                )
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I lock the room down and force the archive officer to answer in public.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.render_source == "llm_repair"
+    assert trace.render_primary_path_mode == "direct_repair"
+    assert "SCENE_REACTION" not in updated.narration
+    assert "AXIS_PAYOFF" not in updated.narration
+    assert "STANCE_PAYOFF" not in updated.narration
+    assert "IMMEDIATE_CONSEQUENCE" not in updated.narration
+
+
+def test_render_repair_salvages_wrapper_echo_before_fallback(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "contain_chaos",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "procedural",
+                    "tactic_summary": "Hold the chamber together before the public story snaps.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "Brief line.",
+                    "suggested_actions": [
+                        {"label": "Repeat", "prompt": "Do it again."},
+                        {"label": "Repeat", "prompt": "Do it again."},
+                        {"label": "Repeat", "prompt": "Do it again."},
+                    ],
+                }
+            ],
+            "play_render_repair": [
+                {
+                    "narration": "SCENE_REACTION：会议室里一阵死寂。 AXIS_PAYOFF：秩序重新被拉回桌面。 STANCE_PAYOFF：档案官意识到你不是来安抚场面，而是来逼出答案。 IMMEDIATE_CONSEQUENCE：所有人都得立刻重新站队。 CLOSING_PRESSURE：下一步谁还敢替假账背书，很快就会见分晓。",
+                    "suggested_actions": [
+                        {"label": "Repeat", "prompt": "Do it again."},
+                        {"label": "Repeat", "prompt": "Do it again."},
+                        {"label": "Repeat", "prompt": "Do it again."},
+                    ],
+                },
+                {
+                    "narration": "You lock the room down and force everyone back onto the archive officer. The chamber's false calm breaks, and the balance in the room tilts back toward order. Even the people who wanted to hide behind the paperwork can see they have to declare themselves now.",
+                    "suggested_actions": [
+                        {"label": "Press harder", "prompt": "You keep the pressure on."},
+                        {"label": "Hold the room", "prompt": "You hold the room together."},
+                        {"label": "Call witnesses", "prompt": "You call the witnesses in."},
+                    ],
+                },
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I lock the room down and force the archive officer to answer in public.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.render_source == "llm_repair"
+    assert trace.render_primary_path_mode == "direct_repair"
+    assert "SCENE_REACTION" not in updated.narration
+    assert "AXIS_PAYOFF" not in updated.narration
+    assert len(updated.suggested_actions) == 3
+
+
+def test_play_turn_trace_records_involved_npc_template_versions_for_target_npc(tmp_path) -> None:
+    fixture = author_fixture_bundle()
+    cast = list(fixture.design_bundle.story_bible.cast)
+    cast[1] = cast[1].model_copy(
+        update={
+            "roster_character_id": "roster_archive_vote_certifier",
+            "template_version": "tpl-archive-v1",
+        }
+    )
+    cast[2] = cast[2].model_copy(
+        update={
+            "roster_character_id": "roster_archive_mandate_broker",
+            "template_version": "tpl-broker-v1",
+        }
+    )
+    bundle = fixture.design_bundle.model_copy(
+        update={
+            "story_bible": fixture.design_bundle.story_bible.model_copy(
+                update={"cast": cast}
+            )
+        }
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": [cast[1].npc_id],
+                    "risk_level": "medium",
+                    "execution_frame": "public",
+                    "tactic_summary": "Expose the compromised certification chain in public.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You force the certifier to compare the seals in public and the room recoils from the gap in the chain.",
+                    "suggested_actions": [
+                        {"label": "Press the certifier", "prompt": "You keep the certifier fixed on the broken chain."},
+                        {"label": "Hold the room", "prompt": "You keep the hearing from dissolving into rumor."},
+                        {"label": "Name the broker", "prompt": "You force the broker to answer for the pressure around the result."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I force the certifier to read the broken chain aloud.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.involved_npc_template_versions == {cast[1].npc_id: "tpl-archive-v1"}
+    assert cast[0].npc_id not in trace.involved_npc_template_versions
+
+
+def test_play_turn_trace_model_accepts_legacy_payload_without_template_versions(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "public",
+                    "tactic_summary": "Expose the forged ledger in public.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You force the forged ledger into public view and the hearing loses its practiced calm.",
+                    "suggested_actions": [
+                        {"label": "Press the room", "prompt": "You keep the hearing fixed on the record."},
+                        {"label": "Secure witnesses", "prompt": "You keep the witnesses from drifting into rumor."},
+                        {"label": "Demand a ruling", "prompt": "You force the chamber toward one answer."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+    created = service.create_session(story.story_id)
+    service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I force the forged ledger into public view.", "selected_suggestion_id": None})(),
+    )
+
+    trace_payload = service.get_turn_traces(created.session_id)[0].model_dump(mode="json")
+    trace_payload.pop("involved_npc_template_versions", None)
+
+    restored = PlayTurnTrace.model_validate(trace_payload)
+
+    assert restored.involved_npc_template_versions == {}
 
 
 def test_play_service_uses_interpret_repair_before_heuristic_fallback(tmp_path) -> None:
@@ -1312,6 +2303,241 @@ def test_play_service_uses_interpret_repair_before_heuristic_fallback(tmp_path) 
     assert trace.interpret_attempts == 2
     assert trace.interpret_response_id == "play-2"
     assert trace.resolution.affordance_tag == "build_trust"
+
+
+def test_play_service_salvages_interpret_from_raw_text_passthrough(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                SimpleNamespace(
+                    payload={},
+                    raw_text=(
+                        "Here is the JSON requested: "
+                        'affordance_tag: reveal_truth, risk_level: high, execution_frame: public, '
+                        'target_npc_ids: ["archivist_sen"], tactic_summary: expose the forged record in public'
+                    ),
+                    fallback_source="raw_text_passthrough",
+                ),
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You drag the forged record into public view and force Sen to answer for it in front of everyone else.",
+                    "suggested_actions": [
+                        {"label": "Press the room", "prompt": "You keep the chamber fixed on the evidence."},
+                        {"label": "Secure witnesses", "prompt": "You stop the witnesses from drifting into rumor."},
+                        {"label": "Name the saboteur", "prompt": "You point the room at the hand behind the forgery."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I expose the forged record before the whole chamber.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert updated.turn_index == 1
+    assert trace.interpret_source == "llm_salvage"
+    assert trace.interpret_failure_reason == "play_llm_invalid_json"
+    assert trace.execution_frame == "public"
+    assert trace.resolution.affordance_tag == "reveal_truth"
+
+
+def test_play_service_uses_selected_suggestion_prompt_when_id_matches(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "procedural",
+                    "tactic_summary": "Follow the exposed lead.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You follow the prompt's lead and drag the missing proof back under the chamber lights.",
+                    "suggested_actions": [
+                        {"label": "Name the saboteur", "prompt": "You pin the discrepancy on the rival in public."},
+                        {"label": "Secure the record", "prompt": "You lock the archive before the evidence moves again."},
+                        {"label": "Rebuild the coalition", "prompt": "You force the room back into one verified account."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    selected = created.suggested_actions[0]
+    service.submit_turn(
+        created.session_id,
+        type(
+            "TurnRequest",
+            (),
+            {"input_text": "I follow the strongest lead.", "selected_suggestion_id": selected.suggestion_id},
+        )(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    render_call = next(item for item in gateway.call_trace if item["operation"] == "play_render_turn")
+    render_cards = ((render_call["user_payload"] or {}).get("skill_context") or {}).get("context_cards") or []
+    resolution_card = next(card for card in render_cards if card["card_id"] == "resolution_card")
+    assert resolution_card["content"]["selected_suggestion_prompt"] == selected.prompt
+    assert trace.selected_suggestion_id == selected.suggestion_id
+
+
+def test_play_service_handles_stale_selected_suggestion_id_as_free_input(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "procedural",
+                    "tactic_summary": "Drive the proof into view.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You move without relying on the stale prompt and the room still has to answer the proof in front of it.",
+                    "suggested_actions": [
+                        {"label": "Press Sen", "prompt": "You keep Sen pinned to the surviving record."},
+                        {"label": "Calm the floor", "prompt": "You stop the chamber from breaking before the next move."},
+                        {"label": "Go public", "prompt": "You carry the verified proof into public view."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type(
+            "TurnRequest",
+            (),
+            {"input_text": "I force the room to answer the verified ledger.", "selected_suggestion_id": "stale_suggestion_id"},
+        )(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert updated.turn_index == 1
+    render_call = next(item for item in gateway.call_trace if item["operation"] == "play_render_turn")
+    render_cards = ((render_call["user_payload"] or {}).get("skill_context") or {}).get("context_cards") or []
+    resolution_card = next(card for card in render_cards if card["card_id"] == "resolution_card")
+    assert resolution_card["content"]["selected_suggestion_prompt"] is None
+    assert trace.selected_suggestion_id == "stale_suggestion_id"
+
+
+def test_play_service_maps_gateway_capability_error_before_interpret_repair(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                GatewayCapabilityError(
+                    code="gateway_text_provider_failed",
+                    message="provider timed out",
+                    status_code=502,
+                ),
+            ],
+            "play_interpret_repair": [
+                {
+                    "affordance_tag": "build_trust",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "low",
+                    "execution_frame": "coalition",
+                    "tactic_summary": "Stabilize Sen first.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You lower the room's temperature long enough to turn Sen into a usable ally.",
+                    "suggested_actions": [
+                        {"label": "Press the proof", "prompt": "You make the coalition carry the record into the open."},
+                        {"label": "Secure witnesses", "prompt": "You lock witnesses into one verified account."},
+                        {"label": "Name the rival", "prompt": "You identify the saboteur before the room resets."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I steady Sen before I push the proof wider.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.interpret_source == "llm_repair"
+    assert trace.interpret_failure_reason == "play_llm_provider_failed"
+    assert trace.resolution.execution_frame == "coalition"
+
+
+def test_play_service_falls_back_to_heuristic_when_interpret_repair_also_fails(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                PlayGatewayError(code="play_llm_invalid_json", message="bad json", status_code=502),
+            ],
+            "play_interpret_repair": [
+                PlayGatewayError(code="play_llm_invalid_json", message="repair bad json", status_code=502),
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You keep the pressure on and the room starts lining up around the strongest surviving record.",
+                    "suggested_actions": [
+                        {"label": "Press the ledger", "prompt": "You force the missing signatures back into the center of the room."},
+                        {"label": "Stabilize the floor", "prompt": "You stop the chamber from fracturing before the panic wins."},
+                        {"label": "Corner the rival", "prompt": "You make the other side answer for the blackout."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I investigate the blackout with Archivist Sen.", "selected_suggestion_id": None})(),
+    )
+
+    record = service._sessions[created.session_id]
+    assert updated.turn_index == 1
+    assert record.state.discovered_truth_ids == ["truth_1"]
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.interpret_source == "heuristic"
+    assert trace.interpret_attempts == 2
+    assert trace.interpret_failure_reason == "play_llm_invalid_json"
 
 
 def test_play_service_uses_render_repair_when_primary_render_is_low_quality(tmp_path) -> None:
@@ -1363,8 +2589,99 @@ def test_play_service_uses_render_repair_when_primary_render_is_low_quality(tmp_
     assert trace.render_source == "llm_repair"
     assert trace.render_attempts == 2
     assert trace.render_failure_reason == "deterministic_fallback_style"
+    assert trace.render_quality_reason_before_repair == "deterministic_fallback_style"
     assert trace.render_response_id == "play-3"
     assert "pin Sen's own records" in updated.narration
+
+
+def test_play_service_falls_back_when_render_primary_and_repair_are_schema_invalid(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "public",
+                    "tactic_summary": "Expose the proof now.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You act through reveal truth involving Archivist Sen.",
+                    "suggested_actions": [
+                        {"label": "Repeat", "prompt": "Do it again."},
+                        {"label": "Repeat", "prompt": "Do it again."},
+                        {"label": "Repeat", "prompt": "Do it again."},
+                    ],
+                }
+            ],
+            "play_render_repair": [
+                PlayGatewayError(code="play_llm_invalid_json", message="repair failed", status_code=502),
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I expose the proof before the chamber can bury it again.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.render_source == "fallback"
+    assert trace.render_failure_reason == "deterministic_fallback_style"
+    assert updated.narration.startswith("You ")
+
+
+def test_play_service_falls_back_when_render_repair_provider_times_out(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "public",
+                    "tactic_summary": "Expose the proof now.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You act through reveal truth involving Archivist Sen.",
+                    "suggested_actions": [
+                        {"label": "Repeat", "prompt": "Do it again."},
+                        {"label": "Repeat", "prompt": "Do it again."},
+                        {"label": "Repeat", "prompt": "Do it again."},
+                    ],
+                }
+            ],
+            "play_render_repair": [
+                GatewayCapabilityError(code="gateway_text_provider_failed", message="Request timed out.", status_code=502),
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I expose the proof before the chamber can bury it again.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.render_source == "fallback"
+    assert trace.render_failure_reason == "deterministic_fallback_style"
+    assert updated.narration.startswith("You ")
 
 
 def test_play_service_uses_ending_intent_judge_at_final_beat_handoff(tmp_path) -> None:
@@ -1710,6 +3027,126 @@ def test_play_service_uses_ending_judge_repair_when_primary_judge_fails(tmp_path
         "turn_cap_force:pyrrhic",
         "turn_cap_cost:pyrrhic",
     }
+
+
+def test_play_service_salvages_ending_judge_from_raw_text_passthrough(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "build_trust",
+                    "target_npc_ids": ["broker_tal"],
+                    "risk_level": "medium",
+                    "execution_frame": "coalition",
+                    "tactic_summary": "Lock the room in.",
+                }
+            ],
+            "play_ending_intent_judge": [
+                SimpleNamespace(
+                    payload={},
+                    raw_text="Requested output: ending_id: pyrrhic",
+                    fallback_source="raw_text_passthrough",
+                ),
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You force the last bargain into place and make the city absorb the cost in full public view.",
+                    "suggested_actions": [
+                        {"label": "Name the cost", "prompt": "You spell out what the city just paid."},
+                        {"label": "Secure witnesses", "prompt": "You make the settlement legible to the public."},
+                        {"label": "Close the chamber", "prompt": "You end the emergency sitting on your terms."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    record = service._sessions[created.session_id]
+    record.state.turn_index = record.plan.max_turns - 1
+    record.state.beat_index = len(record.plan.beats) - 2
+    record.state.beat_progress = record.plan.beats[record.state.beat_index].progress_required - 1
+    record.state.suggested_actions = []
+
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I force the final coalition handoff into public view.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert updated.status == "completed"
+    assert trace.ending_judge_source == "llm"
+    assert trace.ending_judge_stage1_success is True
+    assert updated.ending is not None
+    assert updated.ending.ending_id == "pyrrhic"
+
+
+def test_play_service_does_not_raise_when_judge_repair_also_hits_gateway_error(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "build_trust",
+                    "target_npc_ids": ["broker_tal"],
+                    "risk_level": "medium",
+                    "execution_frame": "coalition",
+                    "tactic_summary": "Hold the room together.",
+                }
+            ],
+            "play_ending_intent_judge": [
+                GatewayCapabilityError(
+                    code="gateway_text_invalid_json",
+                    message="primary judge invalid json",
+                    status_code=502,
+                ),
+            ],
+            "play_ending_intent_judge_repair": [
+                GatewayCapabilityError(
+                    code="gateway_text_invalid_json",
+                    message="repair judge invalid json",
+                    status_code=502,
+                ),
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You keep the bargain visible long enough for the room to settle around one imperfect answer.",
+                    "suggested_actions": [
+                        {"label": "Name the cost", "prompt": "You name what the city will still have to absorb."},
+                        {"label": "Secure witnesses", "prompt": "You make the settlement legible to every faction in the room."},
+                        {"label": "Close the chamber", "prompt": "You end the emergency session before it fractures again."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    record = service._sessions[created.session_id]
+    record.state.turn_index = record.plan.max_turns - 1
+    record.state.beat_index = len(record.plan.beats) - 2
+    record.state.beat_progress = record.plan.beats[record.state.beat_index].progress_required - 1
+    record.state.suggested_actions = []
+
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I force the final coalition handoff into public view.", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert updated.turn_index == record.plan.max_turns
+    assert trace.ending_judge_source == "failed"
+    assert trace.ending_judge_attempts == 2
+    assert trace.ending_judge_failure_reason == "play_llm_invalid_json"
 
 
 def test_pyrrhic_judge_relaxation_accepts_near_miss_at_final_beat(tmp_path) -> None:
@@ -3387,6 +4824,84 @@ def test_render_detects_protagonist_surname_in_suggestions_and_falls_back(tmp_pa
     assert not any("Iri" in suggestion.prompt for suggestion in updated.suggested_actions)
 
 
+def test_play_service_accepts_internal_story_instance_cast_metadata_for_multiple_turns(tmp_path) -> None:
+    fixture = author_fixture_bundle()
+    cast = list(fixture.design_bundle.story_bible.cast)
+    cast[1] = cast[1].model_copy(
+        update={
+            "roster_character_id": "roster_archive_vote_certifier",
+            "template_version": "tpl-archive-v2",
+            "gender_lock": "unspecified",
+            "story_instance": CastStoryInstanceSnapshot(
+                instance_experience_summary="This hearing pushed the certifier onto the chamber floor instead of leaving them behind the file.",
+                instance_personality_delta="More openly impatient in this crisis, but still recognizably exacting and procedural.",
+                materialization_source="generated",
+                gender_lock="unspecified",
+            ),
+        }
+    )
+    bundle = fixture.design_bundle.model_copy(
+        update={
+            "story_bible": fixture.design_bundle.story_bible.model_copy(update={"cast": cast})
+        }
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "tactic_summary": "Force the hearing to inspect the altered record in public.",
+                },
+                {
+                    "affordance_tag": "build_trust",
+                    "target_npc_ids": ["broker_tal"],
+                    "risk_level": "low",
+                    "tactic_summary": "Pull the factions back toward one visible civic process.",
+                },
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You force the altered record into the open, and the chamber recoils as the certification chain becomes the only fact anyone can argue about.",
+                    "suggested_actions": [
+                        {"label": "Press the witness", "prompt": "Demand the witness explain the missing seal before the room regroups."},
+                        {"label": "Secure the archive", "prompt": "Lock down the archive chain before anyone can swap the evidence."},
+                        {"label": "Call the tally", "prompt": "Force the tally forward under public scrutiny."},
+                    ],
+                },
+                {
+                    "narration": "You keep the process visible for one more beat, and the coalition has to bargain in the open instead of hiding behind procedural fog.",
+                    "suggested_actions": [
+                        {"label": "Bind the coalition", "prompt": "Make the coalition commit to one transparent process before panic returns."},
+                        {"label": "Audit the room", "prompt": "Audit the room for any second attempt to tamper with the record."},
+                        {"label": "Hold the floor", "prompt": "Hold the floor until the witness testimony is entered into the record."},
+                    ],
+                },
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    first = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I force the altered record into the open and demand the chamber inspect the certification chain now.", "selected_suggestion_id": None})(),
+    )
+    second = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I hold the process in public and push the coalition to commit to one visible procedure before panic closes the room again.", "selected_suggestion_id": None})(),
+    )
+
+    assert first.turn_index == 1
+    assert second.turn_index == 2
+    assert bundle.story_bible.cast[1].story_instance is not None
+
+
 def test_render_requires_state_payoff_language_and_falls_back_when_missing(tmp_path) -> None:
     library_service, story = _publish_story(tmp_path)
     gateway = _FakePlayTransport(
@@ -3402,7 +4917,10 @@ def test_render_requires_state_payoff_language_and_falls_back_when_missing(tmp_p
             ],
             "play_render_turn": [
                 {
-                    "narration": "You move carefully through the room and keep the scene from stalling.",
+                    "narration": (
+                        "You move carefully through the room and keep every witness fixed on the table, "
+                        "refusing to let the chamber break formation while the argument stretches on without anyone naming what changed."
+                    ),
                     "suggested_actions": [
                         {"label": "Press the room", "prompt": "You press the room for more answers."},
                         {"label": "Hold the record", "prompt": "You hold the record steady."},
@@ -3425,7 +4943,9 @@ def test_render_requires_state_payoff_language_and_falls_back_when_missing(tmp_p
 
     trace = service.get_turn_traces(created.session_id)[0]
     assert trace.render_source == "llm_repair"
+    assert trace.render_primary_path_mode == "direct_repair"
     assert trace.render_failure_reason == "missing_state_payoff"
+    assert trace.render_quality_reason_before_repair == "missing_state_payoff"
     assert "Proof moved into the open." in service.get_session(created.session_id).narration
 
 
@@ -3467,8 +4987,102 @@ def test_render_auto_repairs_missing_second_person_before_fallback(tmp_path) -> 
 
     trace = service.get_turn_traces(created.session_id)[0]
     assert trace.render_source == "llm_repair"
+    assert trace.render_primary_path_mode == "direct_repair"
     assert trace.render_failure_reason == "missing_second_person"
+    assert trace.render_quality_reason_before_repair == "missing_second_person"
     assert updated.narration.startswith("You ")
+
+
+def test_render_zh_strips_english_scaffold_before_persisting(tmp_path) -> None:
+    fixture = author_fixture_bundle()
+    bundle = fixture.design_bundle.model_copy(
+        update={"focused_brief": fixture.focused_brief.model_copy(update={"language": "zh"})},
+        deep=True,
+    )
+    library_service, story = _publish_story(tmp_path, bundle=bundle)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "public",
+                    "tactic_summary": "把记录逼回台面。",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": "You keep the scene moving with 佩拉·多恩 as the room reacts in real time. 佩拉·多恩的防线在你持续的逼问下崩塌，原始调度单当场滑到桌面中央。",
+                    "suggested_actions": [
+                        {"label": "逼她开口", "prompt": "继续逼她把剩下的链条说完。"},
+                        {"label": "稳住会场", "prompt": "先稳住会场，不让人把记录再拿走。"},
+                        {"label": "点名追责", "prompt": "把责任链一层层点出来。"},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "我逼她把原始调度单当场交出来。", "selected_suggestion_id": None})(),
+    )
+
+    trace = service.get_turn_traces(created.session_id)[0]
+    assert trace.render_source in {"llm", "llm_repair", "fallback"}
+    assert "You keep the scene moving" not in updated.narration
+    assert "你" in updated.narration
+
+
+def test_play_diagnostics_summary_aggregates_render_failure_reasons(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    gateway = _FakePlayTransport(
+        {
+            "play_interpret_turn": [
+                {
+                    "affordance_tag": "reveal_truth",
+                    "target_npc_ids": ["archivist_sen"],
+                    "risk_level": "medium",
+                    "execution_frame": "procedural",
+                    "tactic_summary": "Verify the ledger in private.",
+                }
+            ],
+            "play_render_turn": [
+                {
+                    "narration": (
+                        "You move carefully through the room and keep every witness fixed on the table, "
+                        "refusing to let the chamber break formation while the argument stretches on without anyone naming what changed."
+                    ),
+                    "suggested_actions": [
+                        {"label": "Press the room", "prompt": "You press the room for more answers."},
+                        {"label": "Hold the record", "prompt": "You hold the record steady."},
+                        {"label": "Advance the scene", "prompt": "You advance the scene with caution."},
+                    ],
+                }
+            ],
+        }
+    )
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: gateway,
+    )
+
+    created = service.create_session(story.story_id)
+    service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": "I verify the ledger in private before anyone can change it again.", "selected_suggestion_id": None})(),
+    )
+
+    diagnostics = service.get_session_diagnostics(created.session_id)
+    assert diagnostics.summary.render_failure_reason_distribution == {"missing_state_payoff": 1}
+    assert diagnostics.summary.interpret_failure_reason_distribution == {}
+    assert diagnostics.summary.render_primary_path_mode_distribution == {"direct_repair": 1}
 
 
 def test_feedback_uses_axis_specific_pressure_tags() -> None:
@@ -3541,6 +5155,49 @@ def test_deterministic_narration_carries_last_turn_consequence_into_ending_fallb
 
     assert "The public ledger breaks the chamber's false calm." in narration
     assert "The ending locks into" in narration
+
+
+@pytest.mark.parametrize(
+    ("ending_id", "expected_fragments"),
+    [
+        ("collapse", ("coordination breaks", "Your move leaves a mark")),
+        ("pyrrhic", ("You secure", "price stays in the record")),
+        ("mixed", ("but not cleanly", "inherit the compromise")),
+    ],
+)
+def test_runtime_ending_summary_becomes_story_specific_verdict(
+    ending_id: str,
+    expected_fragments: tuple[str, str],
+) -> None:
+    plan = compile_play_plan(story_id="story-runtime-ending-summary", bundle=author_fixture_bundle().design_bundle)
+    state = build_initial_session_state(plan, session_id=f"session-ending-{ending_id}")
+    state.success_ledger.update(
+        {
+            "proof_progress": 2,
+            "coalition_progress": 1,
+            "order_progress": 1,
+            "settlement_progress": 2 if ending_id != "collapse" else 1,
+        }
+    )
+    state.cost_ledger.update(
+        {
+            "public_cost": 2 if ending_id != "mixed" else 1,
+            "relationship_cost": 1,
+            "procedural_cost": 1 if ending_id == "pyrrhic" else 0,
+            "coercion_cost": 1 if ending_id == "collapse" else 0,
+        }
+    )
+    state.last_turn_consequences = ["The public ledger breaks the chamber's false calm."]
+
+    ending = _ending_by_id(plan, state, ending_id)
+
+    assert len(ending.summary) <= 220
+    assert ending.summary != next(item.summary for item in plan.endings if item.ending_id == ending_id)
+    assert expected_fragments[0] in ending.summary
+    if ending_id == "collapse":
+        assert expected_fragments[1] in ending.summary
+    else:
+        assert expected_fragments[1] in ending.summary or "Your move leaves a mark" in ending.summary
 
 
 def test_render_sanitization_repairs_possessive_you_glitch() -> None:
@@ -3751,3 +5408,114 @@ def test_play_session_expires_after_ttl(tmp_path) -> None:
             type("TurnRequest", (), {"input_text": "I keep pushing.", "selected_suggestion_id": None})(),
         )
     assert exc_info.value.code == "play_session_expired"
+
+
+def test_play_service_handles_max_length_multilingual_input(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: (_ for _ in ()).throw(
+            PlayGatewayError(code="play_llm_config_missing", message="missing", status_code=500)
+        ),
+    )
+
+    input_text = ("证据🙂 and records hold. " * 70).strip()
+    assert len(input_text) < 2000
+    created = service.create_session(story.story_id)
+    updated = service.submit_turn(
+        created.session_id,
+        type("TurnRequest", (), {"input_text": input_text, "selected_suggestion_id": None})(),
+    )
+
+    history = service.get_session_history(created.session_id)
+    assert updated.turn_index == 1
+    assert history.entries[1].text == input_text
+
+
+def test_play_service_rejects_blank_turn_input_at_service_boundary(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: (_ for _ in ()).throw(
+            PlayGatewayError(code="play_llm_config_missing", message="missing", status_code=500)
+        ),
+    )
+
+    created = service.create_session(story.story_id)
+
+    with pytest.raises(PlayServiceError) as exc_info:
+        service.submit_turn(
+            created.session_id,
+            type("TurnRequest", (), {"input_text": "   ", "selected_suggestion_id": None})(),
+        )
+
+    assert exc_info.value.code == "play_turn_input_empty"
+    assert exc_info.value.status_code == 422
+
+
+def test_submit_turn_after_completion_returns_play_session_completed(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: (_ for _ in ()).throw(
+            PlayGatewayError(code="play_llm_config_missing", message="missing", status_code=500)
+        ),
+    )
+
+    created = service.create_session(story.story_id)
+    record = service._sessions[created.session_id]
+    record.state.status = "completed"
+
+    with pytest.raises(PlayServiceError) as exc_info:
+        service.submit_turn(
+            created.session_id,
+            type("TurnRequest", (), {"input_text": "I push one more time.", "selected_suggestion_id": None})(),
+        )
+
+    assert exc_info.value.code == "play_session_completed"
+    assert exc_info.value.status_code == 409
+
+
+def test_concurrent_submit_turn_is_serialized_per_session(tmp_path) -> None:
+    library_service, story = _publish_story(tmp_path)
+    service = PlaySessionService(
+        story_library_service=library_service,
+        gateway_factory=lambda _settings=None: (_ for _ in ()).throw(
+            PlayGatewayError(code="play_llm_config_missing", message="missing", status_code=500)
+        ),
+    )
+
+    created = service.create_session(story.story_id)
+    barrier = Barrier(3)
+    results: list[int] = []
+    failures: list[Exception] = []
+
+    def _submit(text: str) -> None:
+        try:
+            barrier.wait()
+            snapshot = service.submit_turn(
+                created.session_id,
+                type("TurnRequest", (), {"input_text": text, "selected_suggestion_id": None})(),
+            )
+            results.append(snapshot.turn_index)
+        except Exception as exc:  # noqa: BLE001
+            failures.append(exc)
+
+    threads = [
+        Thread(target=_submit, args=("I force the first verified record into public view.",)),
+        Thread(target=_submit, args=("I lock the witnesses into the same account before rumor wins.",)),
+    ]
+    for thread in threads:
+        thread.start()
+    barrier.wait()
+    for thread in threads:
+        thread.join()
+
+    history = service.get_session_history(created.session_id)
+    final_snapshot = service.get_session(created.session_id)
+
+    assert not failures
+    assert sorted(results) == [1, 2]
+    assert final_snapshot.turn_index == 2
+    assert [entry.speaker for entry in history.entries] == ["gm", "player", "gm", "player", "gm"]
+    assert [entry.turn_index for entry in history.entries if entry.speaker == "player"] == [1, 2]

@@ -1,20 +1,34 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from rpg_backend.author.compiler.router import plan_brief_theme
 from rpg_backend.author.compiler.story import compile_story_frame, sanitize_story_frame_draft
 from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
-from rpg_backend.author.contracts import FocusedBrief, StoryFrameDraft, StoryFrameScaffoldDraft
+from rpg_backend.author.contracts import FocusedBrief, StoryFlowPlan, StoryFrameDraft, StoryFrameScaffoldDraft, TonePlan
+from rpg_backend.content_language import output_language_instruction, prompt_role_instruction
+from rpg_backend.generation_skill import ContextCard, GenerationSkillPacket, build_role_style_context
+from rpg_backend.llm_gateway import CapabilityGatewayCore
 from rpg_backend.author.normalize import coerce_int, trim_text, unique_preserve
 
-if TYPE_CHECKING:
-    from rpg_backend.author.gateway import AuthorLLMGateway
+
+def _preview_story_frame_semantics_output_tokens(gateway: CapabilityGatewayCore, strategy: str) -> int | None:
+    budget = gateway.text_policy("author.story_frame_scaffold").max_output_tokens
+    ceiling = 520
+    if strategy == "legitimacy_story":
+        ceiling = 560
+    elif strategy in {"blackout_referendum_story", "archive_vote_story", "warning_record_story"}:
+        ceiling = 540
+    if budget is None:
+        return ceiling
+    return max(min(int(budget), ceiling), 420)
 
 
-def _story_frame_semantics_output_tokens(gateway: "AuthorLLMGateway", strategy: str) -> int | None:
-    budget = gateway.max_output_tokens_overview
+def _story_frame_semantics_output_tokens(gateway: CapabilityGatewayCore, strategy: str, *, preview_mode: bool = False) -> int | None:
+    if preview_mode:
+        return _preview_story_frame_semantics_output_tokens(gateway, strategy)
+    budget = gateway.text_policy("author.story_frame_scaffold").max_output_tokens
     if budget is None:
         return 1100 if strategy == "legitimacy_story" else 900 if strategy in {"blackout_referendum_story", "archive_vote_story", "warning_record_story"} else 800
     floor = 800
@@ -26,7 +40,7 @@ def _story_frame_semantics_output_tokens(gateway: "AuthorLLMGateway", strategy: 
 
 
 def _normalize_story_frame_semantics_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
     *,
     fallback_truths: list[str],
@@ -117,7 +131,7 @@ def _normalize_story_frame_semantics_payload(
 
 
 def _normalize_story_frame_scaffold_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     normalized = _normalize_story_frame_semantics_payload(
@@ -152,7 +166,7 @@ def _normalize_story_frame_scaffold_payload(
 
 
 def _normalize_story_frame_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     normalized = _normalize_story_frame_semantics_payload(
@@ -289,11 +303,14 @@ def _stabilize_story_frame_scaffold(
 
 
 def generate_story_frame_semantics(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     *,
     previous_response_id: str | None = None,
     story_frame_strategy: str | None = None,
+    story_flow_plan: StoryFlowPlan | None = None,
+    tone_plan: TonePlan | None = None,
+    preview_mode: bool = False,
 ):
     from rpg_backend.author.gateway import AuthorGatewayError
     from rpg_backend.responses_transport import StructuredResponse
@@ -307,25 +324,59 @@ def generate_story_frame_semantics(
             "modifiers": list(theme_decision.modifiers),
         },
     }
+    if story_flow_plan is not None:
+        if preview_mode:
+            payload["story_flow_hint"] = {
+                "target_duration_minutes": story_flow_plan.target_duration_minutes,
+                "target_beat_count": story_flow_plan.target_beat_count,
+                "recommended_cast_count": story_flow_plan.recommended_cast_count,
+            }
+        else:
+            payload["story_flow_plan"] = story_flow_plan.model_dump(mode="json")
+    if tone_plan is not None and not preview_mode:
+        payload["tone_plan"] = tone_plan.model_dump(mode="json")
     final_retry_payload = {
         "focused_brief": focused_brief.model_dump(mode="json"),
         "theme_hint": {
             "primary_theme": theme_decision.primary_theme,
         },
     }
+    role_style, role_context = build_role_style_context(
+        language=focused_brief.language,
+        en_role="a senior civic-thriller story architect",
+        zh_role="资深中文叙事编辑兼世界观设计师",
+    )
     scaffold_prompt = (
         "You are the Story Frame semantic scaffold generator. Return one strict JSON object matching StoryFrameScaffoldDraft. "
         "Do not output markdown. Keep the world non-graphic and non-sadistic. "
         "Focus on semantic anchors instead of polished prose. "
-        "Interpret the focused_brief fields precisely: story_kernel is the protagonist plus immediate mission; "
-        "setting_signal is the place, system, and civic situation; core_conflict is the main blocker; "
-        "tone_signal is mood and genre only. "
+        f"{role_context} "
         "Return only: title_seed, setting_frame, protagonist_mandate, opposition_force, stakes_core, tone, world_rules, truths, state_axis_choices, flags. "
         "Use state_axis_choices instead of freeform axes. Allowed template_id values are: "
         "external_pressure, public_panic, political_leverage, resource_strain, system_integrity, ally_trust, exposure_risk, time_window. "
-        "Keep title_seed to 2-4 words and keep the other semantic fields concrete and compact. "
+        "Keep title_seed to 2-4 words and keep every other field compact, concrete, and compilable. "
         f"{_story_frame_theme_guidance(resolved_strategy)}"
     )
+    if preview_mode:
+        scaffold_prompt += (
+            " This is for preview only. Prefer the lightest valid scaffold that still supports downstream compilation. "
+            "Do not over-explain, ornament, or pad world rules and truths. "
+        )
+        if story_flow_plan is not None:
+            scaffold_prompt += (
+                f"Target duration is {story_flow_plan.target_duration_minutes} minutes with about {story_flow_plan.target_beat_count} beats "
+                f"and {story_flow_plan.recommended_cast_count} supporting cast members. "
+            )
+    else:
+        scaffold_prompt += (
+            " Interpret the focused_brief fields precisely: story_kernel is the protagonist plus immediate mission; "
+            "setting_signal is the place, system, and civic situation; core_conflict is the main blocker; "
+            "tone_signal is mood and genre only. "
+        )
+        if story_flow_plan is not None:
+            scaffold_prompt += f"Target duration is {story_flow_plan.target_duration_minutes} minutes with {story_flow_plan.target_beat_count} planned beats. "
+        if tone_plan is not None:
+            scaffold_prompt += f"{tone_plan.style_guard_guidance} "
     retry_prompt = (
         "Return only one JSON object matching StoryFrameScaffoldDraft. "
         "No markdown, no explanation, no extra keys. "
@@ -335,14 +386,47 @@ def generate_story_frame_semantics(
         "Output raw JSON only. Exactly one object matching StoryFrameScaffoldDraft. "
         "Keep all fields short. No prose outside JSON. No code fences. No extra keys."
     )
+    skill_packet = GenerationSkillPacket(
+        skill_id="author.story_frame.scaffold",
+        skill_version="v1",
+        capability="author.story_frame_scaffold",
+        contract_mode="strict_json_schema",
+        role_style=role_style,
+        required_output_contract=(
+            "Return exactly one StoryFrameScaffoldDraft JSON object with keys "
+            "title_seed, setting_frame, protagonist_mandate, opposition_force, stakes_core, tone, world_rules, truths, state_axis_choices, flags."
+        ),
+        context_cards=(
+            ContextCard("focused_brief_card", focused_brief.model_dump(mode="json"), priority=10),
+            ContextCard(
+                "theme_decision_card",
+                {
+                    "primary_theme": theme_decision.primary_theme,
+                    "modifiers": list(theme_decision.modifiers),
+                    "story_frame_strategy": resolved_strategy,
+                },
+                priority=20,
+            ),
+            ContextCard("story_flow_card", story_flow_plan.model_dump(mode="json") if story_flow_plan is not None else {}, priority=30),
+            ContextCard("tone_plan_card", tone_plan.model_dump(mode="json") if tone_plan is not None else {}, priority=40),
+        ),
+        task_brief=scaffold_prompt,
+        repair_mode="schema_repair",
+        repair_note=retry_prompt,
+        final_contract_note=final_retry_prompt,
+        extra_payload=payload,
+        final_retry_extra_payload=final_retry_payload,
+    )
     scaffold_result = invoke_structured_generation_with_retries(
         gateway,
+        capability="author.story_frame_scaffold",
         primary_payload=payload,
         final_retry_payload=final_retry_payload,
         prompts=(scaffold_prompt, retry_prompt, final_retry_prompt),
         previous_response_id=previous_response_id,
-        max_output_tokens=_story_frame_semantics_output_tokens(gateway, resolved_strategy),
+        max_output_tokens=_story_frame_semantics_output_tokens(gateway, resolved_strategy, preview_mode=preview_mode),
         operation_name="story_frame_semantics",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: StoryFrameScaffoldDraft.model_validate(
             _normalize_story_frame_scaffold_payload(gateway, raw_payload)
         ),
@@ -352,11 +436,14 @@ def generate_story_frame_semantics(
 
 
 def generate_story_frame(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     *,
     previous_response_id: str | None = None,
     story_frame_strategy: str | None = None,
+    story_flow_plan: StoryFlowPlan | None = None,
+    tone_plan: TonePlan | None = None,
+    preview_mode: bool = False,
 ):
     from rpg_backend.responses_transport import StructuredResponse
 
@@ -365,6 +452,9 @@ def generate_story_frame(
         focused_brief,
         previous_response_id=previous_response_id,
         story_frame_strategy=story_frame_strategy,
+        story_flow_plan=story_flow_plan,
+        tone_plan=tone_plan,
+        preview_mode=preview_mode,
     )
     return StructuredResponse(
         value=sanitize_story_frame_draft(
@@ -376,7 +466,7 @@ def generate_story_frame(
 
 
 def glean_story_frame(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     partial_story_frame: StoryFrameDraft,
     *,
@@ -387,14 +477,20 @@ def glean_story_frame(
     payload: dict[str, Any] = {
         "partial_story_frame": partial_story_frame.model_dump(mode="json"),
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if not (gateway.text_policy("author.story_frame_finalize").use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
+    role_style, role_context = build_role_style_context(
+        language=focused_brief.language,
+        en_role="a senior civic-thriller line editor",
+        zh_role="资深中文剧情统稿编辑",
+    )
     system_prompt = (
         "You are the Story Frame repair generator. Return one strict JSON object matching StoryFrameDraft. "
         "Improve partial_story_frame instead of replacing it wholesale. "
         "Keep any title, premise, or world rule that already fits the story. "
         "Repair generic or repetitive stakes, truths, and world rules so the frame becomes more specific and civic-facing. "
         "Fix malformed punctuation or broken sentence structure when present. "
+        f"{role_context} "
         "Return a complete StoryFrameDraft."
     )
     retry_prompt = (
@@ -406,13 +502,32 @@ def glean_story_frame(
         "Output raw JSON only. Exactly one object matching StoryFrameDraft. "
         "Keep every field compact. No prose outside JSON. No code fences. No extra keys."
     )
+    skill_packet = GenerationSkillPacket(
+        skill_id="author.story_frame.glean",
+        skill_version="v1",
+        capability="author.story_frame_finalize",
+        contract_mode="strict_json_schema",
+        role_style=role_style,
+        required_output_contract="Return exactly one complete StoryFrameDraft JSON object.",
+        context_cards=(
+            ContextCard("focused_brief_card", focused_brief.model_dump(mode="json"), priority=10),
+            ContextCard("partial_story_frame_card", partial_story_frame.model_dump(mode="json"), priority=20),
+        ),
+        task_brief=system_prompt,
+        repair_mode="schema_repair",
+        repair_note=retry_prompt,
+        final_contract_note=final_retry_prompt,
+        extra_payload=payload,
+    )
     result = invoke_structured_generation_with_retries(
         gateway,
+        capability="author.story_frame_finalize",
         primary_payload=payload,
         prompts=(system_prompt, retry_prompt, final_retry_prompt),
         previous_response_id=previous_response_id,
-        max_output_tokens=gateway.max_output_tokens_overview,
+        max_output_tokens=gateway.text_policy("author.story_frame_finalize").max_output_tokens,
         operation_name="story_frame_glean",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: sanitize_story_frame_draft(
             focused_brief,
             StoryFrameDraft.model_validate(_normalize_story_frame_payload(gateway, raw_payload)),

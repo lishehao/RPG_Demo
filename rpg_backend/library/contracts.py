@@ -9,7 +9,10 @@ from rpg_backend.author.contracts import (
     AuthorPreviewResponse,
     AuthorStorySummary,
     DesignBundle,
+    PortraitVariants,
+    StoryBranchBudget,
 )
+from rpg_backend.content_language import ContentLanguage
 from rpg_backend.play.contracts import PlayProtagonist
 
 StoryVisibility = Literal["private", "public"]
@@ -19,6 +22,7 @@ class PublishedStoryCard(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     story_id: str = Field(min_length=1)
+    language: ContentLanguage = "en"
     title: str = Field(min_length=1, max_length=120)
     one_liner: str = Field(min_length=1, max_length=220)
     premise: str = Field(min_length=1, max_length=320)
@@ -54,6 +58,7 @@ class PublishedStoryListMeta(BaseModel):
 
     query: str | None = Field(default=None, max_length=200)
     theme: str | None = Field(default=None, max_length=80)
+    language: ContentLanguage | None = None
     view: PublishedStoryListView = "accessible"
     sort: PublishedStoryListSort
     limit: int = Field(ge=1)
@@ -90,14 +95,54 @@ class PublishedStoryPlayOverview(BaseModel):
     runtime_profile: str = Field(min_length=1, max_length=80)
     runtime_profile_label: str = Field(min_length=1, max_length=120)
     max_turns: int = Field(ge=1)
+    target_duration_minutes: int | None = Field(default=None, ge=10, le=25)
+    branch_budget: StoryBranchBudget | None = None
+
+
+class PublishedStoryBeatOutline(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    beat_id: str = Field(min_length=1)
+    title: str = Field(min_length=1, max_length=120)
+    goal: str = Field(min_length=1, max_length=220)
+    milestone_kind: str = Field(min_length=1, max_length=32)
+
+
+class PublishedStoryStructure(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    topology_label: str = Field(min_length=1, max_length=80)
+    beat_outline: list[PublishedStoryBeatOutline] = Field(default_factory=list, max_length=5)
+
+
+class PublishedStoryCastEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    npc_id: str = Field(min_length=1)
+    name: str = Field(min_length=1, max_length=80)
+    role: str = Field(min_length=1, max_length=120)
+    agenda: str = Field(min_length=1, max_length=220)
+    red_line: str = Field(min_length=1, max_length=220)
+    pressure_signature: str = Field(min_length=1, max_length=220)
+    roster_character_id: str | None = None
+    roster_public_summary: str | None = Field(default=None, max_length=220)
+    portrait_url: str | None = Field(default=None, max_length=260)
+    portrait_variants: PortraitVariants | None = None
+
+
+class PublishedStoryCastManifest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    entries: list[PublishedStoryCastEntry] = Field(default_factory=list, max_length=5)
 
 
 class PublishedStoryDetailResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     story: PublishedStoryCard
-    preview: AuthorPreviewResponse
     presentation: PublishedStoryPresentation | None = None
+    structure: PublishedStoryStructure
+    cast_manifest: PublishedStoryCastManifest
     play_overview: PublishedStoryPlayOverview | None = None
 
 

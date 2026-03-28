@@ -23,17 +23,23 @@ def route_affordance_pack_quality_reasons(
     bundle: DesignBundle,
 ) -> list[str]:
     reasons: list[str] = []
+    branch_budget = bundle.story_flow_plan.branch_budget if bundle.story_flow_plan is not None else "medium"
+    coverage_target_by_budget = {"low": 2, "medium": 3, "high": 4}
     if not route_affordance_pack.route_unlock_rules:
         reasons.append("missing_route_unlock_rules")
         return reasons
     if not any(_has_condition_content(item.conditions) for item in route_affordance_pack.route_unlock_rules):
         reasons.append("route_conditions_empty")
     unique_beats = {item.beat_id for item in route_affordance_pack.route_unlock_rules}
-    required_beat_coverage = min(3, len(bundle.beat_spine))
+    required_beat_coverage = min(coverage_target_by_budget[branch_budget], len(bundle.beat_spine))
     if len(bundle.beat_spine) > 1 and len(unique_beats) < required_beat_coverage:
         reasons.append("route_beat_coverage_too_narrow")
     unique_tags = {item.unlock_affordance_tag for item in route_affordance_pack.route_unlock_rules}
-    required_tag_coverage = min(3, len(bundle.beat_spine), len(bundle_affordance_tags(bundle)))
+    required_tag_coverage = min(
+        coverage_target_by_budget[branch_budget],
+        len(bundle.beat_spine),
+        len(bundle_affordance_tags(bundle)),
+    )
     if len(unique_tags) < required_tag_coverage:
         reasons.append("route_tag_diversity_too_narrow")
     return reasons

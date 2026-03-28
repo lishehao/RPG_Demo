@@ -42,9 +42,17 @@ def build_ending_skeleton(bundle: DesignBundle) -> EndingIntentDraft:
         next((axis.axis_id for axis in bundle.state_schema.axes if axis.axis_id != pressure_axis), pressure_axis),
     )
     hints = _ending_story_specific_hints(bundle)
+    branch_budget = bundle.story_flow_plan.branch_budget if bundle.story_flow_plan is not None else "low"
     collapse_truths = [hints["primary_truth_id"]] if hints["primary_truth_id"] else []
     pyrrhic_truths = [hints["secondary_truth_id"]] if hints["secondary_truth_id"] else []
     pyrrhic_events = [hints["final_event_id"]] if hints["final_event_id"] else []
+    collapse_events = [hints["opening_event_id"]] if hints["opening_event_id"] else []
+    if branch_budget in {"medium", "high"} and hints["secondary_truth_id"] and hints["secondary_truth_id"] not in pyrrhic_truths:
+        pyrrhic_truths.append(hints["secondary_truth_id"])
+    if branch_budget == "high" and hints["final_event_id"] and hints["final_event_id"] not in collapse_events:
+        collapse_events.append(hints["final_event_id"])
+    if branch_budget == "high" and hints["opening_event_id"] and hints["opening_event_id"] not in pyrrhic_events:
+        pyrrhic_events.append(hints["opening_event_id"])
     pyrrhic_flags = [hints["primary_flag_id"]] if hints["primary_flag_id"] else []
     return EndingIntentDraft(
         ending_intents=[
@@ -53,13 +61,14 @@ def build_ending_skeleton(bundle: DesignBundle) -> EndingIntentDraft:
                 priority=1,
                 axis_ids=[pressure_axis],
                 required_truth_ids=collapse_truths,
+                required_event_ids=collapse_events[:2],
             ),
             EndingIntentSpec(
                 ending_id="pyrrhic",
                 priority=2,
                 axis_ids=[secondary_axis, pressure_axis] if secondary_axis != pressure_axis else [pressure_axis],
-                required_truth_ids=pyrrhic_truths,
-                required_event_ids=pyrrhic_events,
+                required_truth_ids=pyrrhic_truths[:2],
+                required_event_ids=pyrrhic_events[:2],
                 required_flag_ids=pyrrhic_flags,
             ),
             EndingIntentSpec(
@@ -231,8 +240,8 @@ def compile_ending_intent_draft(
                     priority=intent.priority,
                     conditions={
                         "min_axes": {chosen_axis: threshold},
-                        "required_truths": truth_ids[:1],
-                        "required_events": event_ids[:1],
+                        "required_truths": truth_ids[:2],
+                        "required_events": event_ids[:2],
                         "required_flags": flag_ids[:1],
                     },
                 )
@@ -249,8 +258,8 @@ def compile_ending_intent_draft(
                 priority=intent.priority,
                 conditions={
                     "min_axes": min_axes,
-                    "required_truths": truth_ids[:1],
-                    "required_events": event_ids[:1],
+                    "required_truths": truth_ids[:2],
+                    "required_events": event_ids[:2],
                     "required_flags": flag_ids[:1],
                 },
             )

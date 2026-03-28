@@ -1,13 +1,18 @@
-import type { PublishedStoryCard, PublishedStoryListView } from "../../index"
+import { useEffect, useRef, useState } from "react"
+import type { PublishedStoryCard, PublishedStoryListView, StoryLanguage } from "../../index"
 import { StoryLibraryCard } from "../../entities/story/ui/story-library-card"
-import { LibraryRail } from "../chrome/library-rail"
+import { formatThemeLabel } from "../../shared/lib/story-taxonomy"
+import { uiText } from "../../shared/lib/ui-language"
+import { getLibraryEmptyStateCopy, getLibraryResultsSummary, getLibraryViewOptionLabel } from "../../shared/lib/story-surface-copy"
+import { StudioIcon } from "../../shared/ui/studio-icon"
 import { StudioFooter } from "../chrome/studio-footer"
+
+const LIBRARY_SEARCH_DEBOUNCE_MS = 280
 
 export function StoryLibraryBrowser({
   authenticated,
+  uiLanguage,
   stories,
-  selectedStory,
-  selectedStoryId,
   query,
   theme,
   selectedTheme,
@@ -16,19 +21,21 @@ export function StoryLibraryBrowser({
   total,
   hasMore,
   loading,
+  refreshing,
   loadingMore,
   error,
-  onSelectStory,
   onOpenStoryDetail,
   onOpenCreateStory,
+  onPrefetchCreateStory,
+  onPrefetchStoryDetail,
+  onSearchChange,
   onThemeChange,
   onViewChange,
   onLoadMore,
 }: {
   authenticated: boolean
+  uiLanguage: StoryLanguage
   stories: PublishedStoryCard[]
-  selectedStory: PublishedStoryCard | null
-  selectedStoryId: string | null
   query: string
   theme: string | null
   selectedTheme: string | null
@@ -37,112 +44,183 @@ export function StoryLibraryBrowser({
   total: number
   hasMore: boolean
   loading: boolean
+  refreshing: boolean
   loadingMore: boolean
   error: string | null
-  onSelectStory: (storyId: string) => void
   onOpenStoryDetail: (storyId: string) => void
   onOpenCreateStory: () => void
-  onThemeChange: (theme: string | null) => void
-  onViewChange: (view: PublishedStoryListView) => void
+  onPrefetchCreateStory: () => void
+  onPrefetchStoryDetail: (storyId: string) => void
+  onSearchChange: (value: string) => void
+  onThemeChange: (theme: string | null, queryOverride?: string) => void
+  onViewChange: (view: PublishedStoryListView, queryOverride?: string) => void
   onLoadMore: () => void
 }) {
+  const [draftQuery, setDraftQuery] = useState(query)
+  const [isComposing, setIsComposing] = useState(false)
+  const debounceRef = useRef<number | null>(null)
   const hasActiveFilters = query.length > 0 || Boolean(theme)
   const viewLabel =
-    selectedView === "mine"
-      ? "my stories"
-      : selectedView === "public"
-        ? "public stories"
-        : "stories visible to me"
-  const createLabel = authenticated ? "New Dossier" : "Sign In to Create"
+    getLibraryResultsSummary(selectedView, uiLanguage, uiLanguage)
+  const emptyStateCopy = getLibraryEmptyStateCopy({
+    authenticated,
+    hasActiveFilters,
+    language: uiLanguage,
+    uiLanguage,
+    view: selectedView,
+  })
+  const createLabel = authenticated ? uiText(uiLanguage, { en: "Create Story", zh: "新建故事" }) : uiText(uiLanguage, { en: "Sign In to Create", zh: "登录后创作" })
+  const controlsHeading = uiText(uiLanguage, { en: "Pick a story", zh: "先选一篇故事" })
+  const controlsSupport = uiText(uiLanguage, {
+    en: "Search first, then narrow by shelf and theme.",
+    zh: "先搜索，再按范围和主题收窄。",
+  })
+  const refreshingLabel = uiText(uiLanguage, { en: "Updating results", zh: "正在更新结果" })
+
+  useEffect(() => {
+    setDraftQuery(query)
+  }, [query])
+
+  useEffect(() => {
+    if (isComposing || draftQuery === query) {
+      return
+    }
+    debounceRef.current = window.setTimeout(() => {
+      onSearchChange(draftQuery)
+    }, LIBRARY_SEARCH_DEBOUNCE_MS)
+
+    return () => {
+      if (debounceRef.current) {
+        window.clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
+    }
+  }, [draftQuery, isComposing, onSearchChange, query])
+
+  const flushDraftQuery = (nextValue: string) => {
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current)
+      debounceRef.current = null
+    }
+    if (nextValue !== query) {
+      onSearchChange(nextValue)
+    }
+  }
 
   return (
     <div className="editorial-page editorial-page--library">
       <div className="library-layout">
-        <LibraryRail />
-
         <section className="library-content">
           <header className="library-header">
             <div>
-              <p className="editorial-kicker">The Collections</p>
-              <h1 className="editorial-display editorial-display--library">Library</h1>
-              <p className="library-subtitle">A curated repository of speculative worlds, character studies, and structural narrative dossiers.</p>
+              <p className="editorial-kicker">{uiText(uiLanguage, { en: "The Collections", zh: "故事集合" })}</p>
+              <h1 className="editorial-display editorial-display--library">{uiText(uiLanguage, { en: "Library", zh: "故事库" })}</h1>
+              <p className="library-subtitle">{uiText(uiLanguage, { en: "Browse published stories, revisit your private work, and move straight into play when a world is ready.", zh: "浏览已发布故事，查看自己的作品，并在准备好时直接进入试玩。" })}</p>
             </div>
 
-            <div className="library-controls">
-              <label className="library-filter">
-                <span className="editorial-metadata-label">View</span>
-                <select
-                  onChange={(event) => onViewChange(event.target.value as PublishedStoryListView)}
-                  value={selectedView}
-                >
-                  {authenticated ? <option value="accessible">Accessible</option> : null}
-                  {authenticated ? <option value="mine">Mine</option> : null}
-                  <option value="public">Public</option>
-                </select>
+            <section aria-labelledby="library-controls-heading" className="library-controls">
+              <div className="library-controls__header">
+                <p className="editorial-metadata-label">{controlsHeading}</p>
+                <p className="library-controls__support" id="library-controls-heading">{controlsSupport}</p>
+              </div>
+              <label className="library-search-inline">
+                <span className="editorial-metadata-label">{uiText(uiLanguage, { en: "Search", zh: "搜索" })}</span>
+                <div className="library-search-inline__field">
+                  <StudioIcon className="library-search-inline__icon" name="search" />
+                  <input
+                    onBlur={() => {
+                      if (!isComposing) {
+                        flushDraftQuery(draftQuery)
+                      }
+                    }}
+                    onChange={(event) => {
+                      setDraftQuery(event.target.value)
+                    }}
+                    onCompositionEnd={(event) => {
+                      setIsComposing(false)
+                      setDraftQuery(event.currentTarget.value)
+                    }}
+                    onCompositionStart={() => {
+                      if (debounceRef.current) {
+                        window.clearTimeout(debounceRef.current)
+                        debounceRef.current = null
+                      }
+                      setIsComposing(true)
+                    }}
+                    placeholder={uiText(uiLanguage, { en: "Search library...", zh: "搜索故事库..." })}
+                    type="text"
+                    value={draftQuery}
+                  />
+                </div>
               </label>
-              <label className="library-filter">
-                <span className="editorial-metadata-label">Filter by Theme</span>
-                <select
-                  onChange={(event) => onThemeChange(event.target.value || null)}
-                  value={selectedTheme ?? ""}
-                >
-                  <option value="">All Themes</option>
-                  {themeFacets.map((facet) => (
-                    <option key={facet.theme} value={facet.theme}>
-                      {facet.theme} ({facet.count})
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="library-controls__filters">
+                <label className="library-filter">
+                  <span className="editorial-metadata-label">{uiText(uiLanguage, { en: "View", zh: "视图" })}</span>
+                  <select
+                    onChange={(event) => onViewChange(event.target.value as PublishedStoryListView, draftQuery)}
+                    value={selectedView}
+                  >
+                    {authenticated ? <option value="accessible">{getLibraryViewOptionLabel("accessible", uiLanguage)}</option> : null}
+                    {authenticated ? <option value="mine">{getLibraryViewOptionLabel("mine", uiLanguage)}</option> : null}
+                    <option value="public">{getLibraryViewOptionLabel("public", uiLanguage)}</option>
+                  </select>
+                </label>
+                <label className="library-filter">
+                  <span className="editorial-metadata-label">{uiText(uiLanguage, { en: "Filter by Theme", zh: "按主题筛选" })}</span>
+                  <select
+                    onChange={(event) => onThemeChange(event.target.value || null, draftQuery)}
+                    value={selectedTheme ?? ""}
+                  >
+                    <option value="">{uiText(uiLanguage, { en: "All Themes", zh: "全部主题" })}</option>
+                    {themeFacets.map((facet) => (
+                      <option key={facet.theme} value={facet.theme}>
+                        {formatThemeLabel(facet.theme, uiLanguage)} ({facet.count})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
-              <button className="studio-button studio-button--primary" onClick={onOpenCreateStory} type="button">
+              <button
+                className="studio-button studio-button--primary"
+                onClick={onOpenCreateStory}
+                onFocus={onPrefetchCreateStory}
+                onMouseEnter={onPrefetchCreateStory}
+                type="button"
+              >
                 {createLabel}
               </button>
-            </div>
+            </section>
           </header>
 
           {error ? <p className="editorial-error">{error}</p> : null}
           {!loading ? (
             <div className="library-results-meta">
-              <p className="editorial-metadata-label">Results: {total}</p>
-              <p className="library-results-meta__summary">Showing {viewLabel}</p>
-              {hasActiveFilters ? (
-                <div className="detail-header__chips">
-                  {query ? <span className="editorial-muted-chip">Query: {query}</span> : null}
-                  {theme ? <span className="editorial-chip">{theme}</span> : null}
-                  <span className="editorial-muted-chip">View: {selectedView}</span>
-                </div>
-              ) : null}
+              <p className="editorial-metadata-label">
+                {uiText(uiLanguage, {
+                  en: `${total} ${total === 1 ? "story" : "stories"}`,
+                  zh: `共 ${total} 篇`,
+                })}
+              </p>
+              <p className="library-results-meta__summary">{viewLabel}</p>
+              {refreshing ? <span className="editorial-badge is-loading">{refreshingLabel}</span> : null}
+              <div className="detail-header__chips">
+                {selectedView === "mine" ? <span className="editorial-muted-chip">{uiText(uiLanguage, { en: "Private and published stories under this account", zh: "这个账号下的私有与已发布故事" })}</span> : null}
+                {query ? <span className="editorial-muted-chip">{uiText(uiLanguage, { en: `Query: ${query}`, zh: `搜索：${query}` })}</span> : null}
+                {theme ? <span className="editorial-chip">{formatThemeLabel(theme, uiLanguage)}</span> : null}
+              </div>
             </div>
           ) : null}
 
           {loading ? (
             <div className="editorial-empty-state">
-              <h3>Loading library</h3>
-              <p>Fetching published stories from the library.</p>
+              <h3>{uiText(uiLanguage, { en: "Loading library", zh: "正在加载故事库" })}</h3>
+              <p>{uiText(uiLanguage, { en: "Loading stories and filters for the current library view.", zh: "正在加载当前语言和视图下的故事与筛选项。" })}</p>
             </div>
           ) : stories.length === 0 ? (
             <div className="editorial-empty-state">
-              <h3>
-                {hasActiveFilters
-                  ? "No stories match the current library search"
-                  : selectedView === "mine"
-                    ? "No owned stories yet"
-                    : selectedView === "public"
-                      ? "No public stories available"
-                      : "No visible stories yet"}
-              </h3>
-              <p>
-                {hasActiveFilters
-                  ? "Try a different keyword, change the view, or clear the active theme filter."
-                  : !authenticated
-                    ? "Sign in to create and manage your own stories. Public stories remain visible while logged out."
-                    : selectedView === "mine"
-                    ? "Publish a story under this account to build your private and public library."
-                    : selectedView === "public"
-                      ? "No public stories are visible to this account right now."
-                      : "This account does not currently have any visible stories."}
-              </p>
+              <h3>{emptyStateCopy.title}</h3>
+              <p>{emptyStateCopy.body}</p>
             </div>
           ) : (
             <>
@@ -150,32 +228,25 @@ export function StoryLibraryBrowser({
                 {stories.map((story) => (
                   <StoryLibraryCard
                     key={story.story_id}
-                    onSelect={() => {
-                      onSelectStory(story.story_id)
-                      onOpenStoryDetail(story.story_id)
-                    }}
-                    selected={selectedStoryId === story.story_id}
+                    onSelect={() => onOpenStoryDetail(story.story_id)}
+                    onPrefetch={() => onPrefetchStoryDetail(story.story_id)}
                     story={story}
+                    uiLanguage={uiLanguage}
                   />
                 ))}
-
-                <button className="library-placeholder-card" onClick={onOpenCreateStory} type="button">
-                  <span className="material-symbols-outlined">note_add</span>
-                  <span>{authenticated ? "Initiate New Narrative Chain" : "Sign In to Initiate a Narrative Chain"}</span>
-                </button>
               </div>
 
               {hasMore ? (
                 <div className="library-pagination">
                   <button className="studio-button studio-button--secondary" disabled={loadingMore} onClick={onLoadMore} type="button">
-                    {loadingMore ? "Loading More..." : "Load More from Library"}
+                    {loadingMore ? uiText(uiLanguage, { en: "Loading More...", zh: "加载更多中..." }) : uiText(uiLanguage, { en: "Load More from Library", zh: "加载更多故事" })}
                   </button>
                 </div>
               ) : null}
             </>
           )}
 
-          <StudioFooter />
+          <StudioFooter uiLanguage={uiLanguage} />
         </section>
       </div>
     </div>

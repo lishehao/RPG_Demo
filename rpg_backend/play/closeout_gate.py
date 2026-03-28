@@ -7,6 +7,7 @@ from rpg_backend.play.runtime import (
     _conditions_match,
     _ending_by_id,
     _highest_pressure_axis_value,
+    build_epilogue_reactions,
 )
 from rpg_backend.story_profiles import profile_prefers_pyrrhic_fallback
 
@@ -25,6 +26,7 @@ def determine_ending(
 ) -> tuple[PlayEnding | None, str | None]:
     current_on_final_beat = state.beat_index >= len(plan.beats) - 1
     closeout_reached = final_beat_completed or final_beat_handoff or turn_cap_reached
+    minimum_resolution_reached = state.turn_index >= plan.minimum_resolution_turn
     runtime_profile = plan.runtime_policy_profile
     collapse_ready = current_on_final_beat or state.collapse_pressure_streak >= (2 if use_tuned_ending_policy else 1)
     collapse_rule = next((rule for rule in plan.ending_rules if rule.ending_id == "collapse"), None)
@@ -227,6 +229,7 @@ def determine_ending(
         and coercion_cost == 0
         and (relationship_cost <= 1 or relationship_recovered)
     )
+    blocked_proposed_pyrrhic = proposed_ending_id == "pyrrhic" and not minimum_resolution_reached
 
     def collapse_allowed() -> bool:
         if collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal:
@@ -241,6 +244,8 @@ def determine_ending(
         return pressure_value >= pressure_axis.max_value and collapse_ready
 
     def pyrrhic_allowed() -> bool:
+        if not minimum_resolution_reached:
+            return False
         strict_match = (
             current_on_final_beat
             and pyrrhic_rule is not None
@@ -322,6 +327,8 @@ def determine_ending(
         )
 
     def mixed_allowed() -> bool:
+        if not minimum_resolution_reached:
+            return False
         if not current_on_final_beat or not closeout_reached:
             return False
         if recovered_binding_mixed_signal:
@@ -338,20 +345,20 @@ def determine_ending(
             return public_pressure_value <= 1 and pressure_safe and truth_signal and (strong_success_signal or success_ledger_high) and public_cost <= 1 and not cost_ledger_high
         return pressure_safe and (strong_success_signal or success_ledger_high) and truth_signal and not (strong_cost_signal or cost_ledger_high)
 
-    if proposed_ending_id == "collapse" and (collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal):
-        return _ending_by_id(plan, "pyrrhic"), "collapse_reframed:pyrrhic"
+    if proposed_ending_id == "collapse" and minimum_resolution_reached and (collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal):
+        return _ending_by_id(plan, state, "pyrrhic"), "collapse_reframed:pyrrhic"
     if proposed_ending_id == "collapse" and collapse_allowed():
-        return _ending_by_id(plan, "collapse"), "judge:collapse"
+        return _ending_by_id(plan, state, "collapse"), "judge:collapse"
     if proposed_ending_id == "pyrrhic" and pyrrhic_allowed():
         reason = "judge:pyrrhic"
         if pyrrhic_rule is None or not _conditions_match(pyrrhic_rule.conditions, plan, state):
             reason = "judge_relaxed:pyrrhic"
-        return _ending_by_id(plan, "pyrrhic"), reason
+        return _ending_by_id(plan, state, "pyrrhic"), reason
     if proposed_ending_id == "mixed" and mixed_allowed():
-        return _ending_by_id(plan, "mixed"), "judge:mixed"
-    if recovered_binding_mixed_signal:
+        return _ending_by_id(plan, state, "mixed"), "judge:mixed"
+    if minimum_resolution_reached and recovered_binding_mixed_signal:
         reason = "final_beat_handoff:mixed" if final_beat_handoff else "turn_cap:mixed" if turn_cap_reached else "final_beat_default:mixed"
-        return _ending_by_id(plan, "mixed"), reason
+        return _ending_by_id(plan, state, "mixed"), reason
 
     for rule in sorted(plan.ending_rules, key=lambda item: (item.priority, item.ending_id)):
         if rule.ending_id == "mixed":
@@ -360,61 +367,68 @@ def determine_ending(
             if collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal:
                 continue
             if _conditions_match(rule.conditions, plan, state) and collapse_ready:
-                return _ending_by_id(plan, "collapse"), "ending_rule:collapse"
+                return _ending_by_id(plan, state, "collapse"), "ending_rule:collapse"
             continue
         if not current_on_final_beat:
             continue
+        if rule.ending_id == "pyrrhic" and blocked_proposed_pyrrhic:
+            continue
         if _conditions_match(rule.conditions, plan, state):
-            return _ending_by_id(plan, rule.ending_id), f"ending_rule:{rule.ending_id}"
+            return _ending_by_id(plan, state, rule.ending_id), f"ending_rule:{rule.ending_id}"
     pressure_axis_id, pressure_value = _highest_pressure_axis_value(plan, state)
     pressure_axis = next(axis for axis in plan.axes if axis.axis_id == pressure_axis_id)
     if pressure_value >= pressure_axis.max_value and collapse_ready and not (collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal):
         reason = "pressure_streak:collapse" if use_tuned_ending_policy else "pressure_overflow:collapse"
-        return _ending_by_id(plan, "collapse"), reason
+        return _ending_by_id(plan, state, "collapse"), reason
     if final_beat_completed:
-        if collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal:
-            return _ending_by_id(plan, "pyrrhic"), "collapse_reframed:pyrrhic"
-        if recovered_binding_mixed_signal:
+        if minimum_resolution_reached and (collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal):
+            return _ending_by_id(plan, state, "pyrrhic"), "collapse_reframed:pyrrhic"
+        if minimum_resolution_reached and recovered_binding_mixed_signal:
             reason = "final_beat_handoff:mixed" if final_beat_handoff else "final_beat_default:mixed"
-            return _ending_by_id(plan, "mixed"), reason
-        for rule in plan.ending_rules:
-            if rule.ending_id == "pyrrhic" and _conditions_match(rule.conditions, plan, state):
-                return _ending_by_id(plan, "pyrrhic"), "ending_rule:pyrrhic"
-        if runtime_profile == "archive_vote_play" and mixed_allowed():
-            reason = "final_beat_handoff:mixed" if final_beat_handoff else "final_beat_default:mixed"
-            return _ending_by_id(plan, "mixed"), reason
-        if mixed_allowed():
-            reason = "final_beat_handoff:mixed" if final_beat_handoff else "final_beat_default:mixed"
-            return _ending_by_id(plan, "mixed"), reason
-        if profile_prefers_pyrrhic_fallback(
-            plan.closeout_profile,
-            success_signal=strong_success_signal or success_ledger_medium,
-            truth_signal=truth_signal,
-            moderate_cost_signal=moderate_cost_signal or cost_ledger_medium,
-            strong_cost_signal=strong_cost_signal or cost_ledger_high,
-            severe_pressure_signal=severe_pressure_signal,
-        ):
-            return _ending_by_id(plan, "pyrrhic"), "profile_closeout:pyrrhic"
-        if (strong_success_signal or success_ledger_high) and (strong_cost_signal or cost_ledger_high) and truth_signal:
-            return _ending_by_id(plan, "pyrrhic"), "final_beat_cost:pyrrhic"
+            return _ending_by_id(plan, state, "mixed"), reason
+        if minimum_resolution_reached:
+            for rule in plan.ending_rules:
+                if rule.ending_id == "pyrrhic" and _conditions_match(rule.conditions, plan, state):
+                    return _ending_by_id(plan, state, "pyrrhic"), "ending_rule:pyrrhic"
+            if runtime_profile == "archive_vote_play" and mixed_allowed():
+                reason = "final_beat_handoff:mixed" if final_beat_handoff else "final_beat_default:mixed"
+                return _ending_by_id(plan, state, "mixed"), reason
+            if mixed_allowed():
+                reason = "final_beat_handoff:mixed" if final_beat_handoff else "final_beat_default:mixed"
+                return _ending_by_id(plan, state, "mixed"), reason
+            if profile_prefers_pyrrhic_fallback(
+                plan.closeout_profile,
+                success_signal=strong_success_signal or success_ledger_medium,
+                truth_signal=truth_signal,
+                moderate_cost_signal=moderate_cost_signal or cost_ledger_medium,
+                strong_cost_signal=strong_cost_signal or cost_ledger_high,
+                severe_pressure_signal=severe_pressure_signal,
+            ):
+                return _ending_by_id(plan, state, "pyrrhic"), "profile_closeout:pyrrhic"
+            if (strong_success_signal or success_ledger_high) and (strong_cost_signal or cost_ledger_high) and truth_signal:
+                return _ending_by_id(plan, state, "pyrrhic"), "final_beat_cost:pyrrhic"
         if severe_pressure_signal or collapse_allowed():
-            return _ending_by_id(plan, "collapse"), "final_beat_pressure:collapse"
+            return _ending_by_id(plan, state, "collapse"), "final_beat_pressure:collapse"
+        if minimum_resolution_reached and final_beat_handoff and proposed_ending_id is None:
+            return _ending_by_id(plan, state, "collapse"), "final_beat_pressure:collapse"
     if turn_cap_reached:
-        if collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal:
-            return _ending_by_id(plan, "pyrrhic"), "collapse_reframed:pyrrhic"
+        if minimum_resolution_reached and (collapse_reframed_pyrrhic_signal or mandate_preserved_pyrrhic_signal):
+            return _ending_by_id(plan, state, "pyrrhic"), "collapse_reframed:pyrrhic"
+        if not minimum_resolution_reached:
+            return _ending_by_id(plan, state, "collapse"), "turn_cap_before_min_resolution:collapse"
         if severe_pressure_signal or collapse_allowed():
-            return _ending_by_id(plan, "collapse"), "turn_cap_pressure:collapse"
-        if recovered_binding_mixed_signal:
-            return _ending_by_id(plan, "mixed"), "turn_cap:mixed"
+            return _ending_by_id(plan, state, "collapse"), "turn_cap_pressure:collapse"
+        if minimum_resolution_reached and recovered_binding_mixed_signal:
+            return _ending_by_id(plan, state, "mixed"), "turn_cap:mixed"
         if mixed_allowed():
-            return _ending_by_id(plan, "mixed"), "turn_cap:mixed"
+            return _ending_by_id(plan, state, "mixed"), "turn_cap:mixed"
         if proposed_ending_id == "pyrrhic" and not collapse_allowed() and ((success_ledger_medium and cost_ledger_medium) or (truth_signal and cost_ledger_medium)):
-            return _ending_by_id(plan, "pyrrhic"), "turn_cap_judge:pyrrhic"
+            return _ending_by_id(plan, state, "pyrrhic"), "turn_cap_judge:pyrrhic"
         if current_on_final_beat and (strong_success_signal or success_ledger_high) and (strong_cost_signal or cost_ledger_high) and truth_signal:
-            return _ending_by_id(plan, "pyrrhic"), "turn_cap_cost:pyrrhic"
+            return _ending_by_id(plan, state, "pyrrhic"), "turn_cap_cost:pyrrhic"
         ending_id = "collapse" if not current_on_final_beat else "pyrrhic"
         reason = "turn_cap_force:collapse" if not current_on_final_beat else "turn_cap_force:pyrrhic"
-        return _ending_by_id(plan, ending_id), reason
+        return _ending_by_id(plan, state, ending_id), reason
     return None, None
 
 
@@ -442,6 +456,7 @@ def finalize_turn_ending(
     if ending is not None:
         state.status = "completed"
         state.ending = ending
+        state.epilogue_reactions = build_epilogue_reactions(plan, state)
         state.suggested_actions = []
     return resolution.model_copy(
         update={

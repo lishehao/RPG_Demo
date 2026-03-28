@@ -1,51 +1,59 @@
 import { useStoryLibrary } from "../../features/play/library/model/use-story-library"
-import type { PublishedStoryListView } from "../../index"
+import type { PublishedStoryListView, StoryLanguage } from "../../index"
 import { StoryLibraryBrowser } from "../../widgets/play/story-library-browser"
 
 export function StoryLibraryPage({
   authenticated,
-  initialStoryId,
+  uiLanguage,
   searchQuery,
   selectedTheme,
   selectedView,
   onOpenCreateStory,
+  onPrefetchCreateStory,
+  onPrefetchStoryDetail,
   onRequireAuth,
   onOpenStoryDetail,
+  onSearchChange,
   onThemeChange,
   onViewChange,
 }: {
   authenticated: boolean
-  initialStoryId?: string
+  uiLanguage: StoryLanguage
   searchQuery?: string
   selectedTheme?: string | null
   selectedView?: PublishedStoryListView
   onOpenCreateStory: () => void
+  onPrefetchCreateStory: () => void
+  onPrefetchStoryDetail: (storyId: string) => void
   onRequireAuth: () => void
   onOpenStoryDetail: (storyId: string) => void
-  onThemeChange: (theme: string | null) => void
-  onViewChange: (view: PublishedStoryListView) => void
+  onSearchChange: (value: string) => void
+  onThemeChange: (theme: string | null, queryOverride?: string) => void
+  onViewChange: (view: PublishedStoryListView, queryOverride?: string) => void
 }) {
-  const library = useStoryLibrary(initialStoryId, searchQuery, selectedTheme, selectedView ?? "accessible")
+  const library = useStoryLibrary(uiLanguage, searchQuery, selectedTheme, selectedView ?? "accessible")
 
   return (
     <main className="editorial-page-shell">
       <StoryLibraryBrowser
         authenticated={authenticated}
+        uiLanguage={uiLanguage}
         error={library.error}
         hasMore={library.hasMore}
         loading={library.loading}
+        refreshing={library.refreshing}
         loadingMore={library.loadingMore}
         onLoadMore={() => {
           void library.loadMore()
         }}
         onOpenCreateStory={authenticated ? onOpenCreateStory : onRequireAuth}
         onOpenStoryDetail={onOpenStoryDetail}
-        onSelectStory={library.selectStory}
+        onPrefetchCreateStory={onPrefetchCreateStory}
+        onPrefetchStoryDetail={onPrefetchStoryDetail}
+        onSearchChange={onSearchChange}
         onThemeChange={onThemeChange}
         onViewChange={onViewChange}
-        query={library.query}
-        selectedStory={library.selectedStory}
-        selectedStoryId={library.selectedStoryId}
+        query={searchQuery ?? library.query}
         selectedTheme={selectedTheme ?? null}
         selectedView={selectedView ?? "accessible"}
         stories={library.stories}

@@ -2,17 +2,22 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 from rpg_backend.author.contracts import FocusedBrief
-from rpg_backend.author.gateway import AuthorGatewayError, AuthorLLMGateway
+from rpg_backend.author.gateway import AuthorGatewayError
 from rpg_backend.author.generation import beats as beat_generation
 from rpg_backend.author.generation import cast as cast_generation
 from rpg_backend.author.generation import endings as ending_generation
 from rpg_backend.author.generation import routes as route_generation
 from rpg_backend.author.generation import story_frame as story_generation
-from rpg_backend.responses_transport import usage_to_dict
+from rpg_backend.llm_gateway import TextCapabilityRequest
+from rpg_backend.config import Settings
+import rpg_backend.responses_transport as responses_transport_module
+from rpg_backend.responses_transport import build_json_transport, usage_to_dict
 from tests.author_fixtures import (
     FakeClient,
+    FakeChatClient,
     author_fixture_bundle,
     cast_draft,
     cast_overview_draft,
@@ -24,17 +29,96 @@ from tests.author_fixtures import (
 )
 
 
-def _gateway(client: FakeClient) -> AuthorLLMGateway:
-    return AuthorLLMGateway(
-        client=client,  # type: ignore[arg-type]
+class _StaticGatewayCore:
+    def __init__(
+        self,
+        client,
+        *,
+        model: str,
+        transport_style: str,
+        use_session_cache: bool,
+    ) -> None:
+        self.client = client
+        self.model = model
+        self.transport_style = transport_style
+        self.use_session_cache = use_session_cache
+        self.call_trace: list[dict[str, object]] = []
+        self._budget_by_capability = {
+            "author.story_frame_scaffold": 700,
+            "author.story_frame_finalize": 700,
+            "author.cast_member_generate": 700,
+            "author.cast_member_repair": 700,
+            "author.character_instance_variation": 700,
+            "author.spark_seed_generate": 220,
+            "author.beat_plan_generate": 900,
+            "author.beat_skeleton_generate": 900,
+            "author.beat_repair": 700,
+            "author.rulepack_generate": 900,
+            "copilot.reply": 700,
+            "copilot.rewrite_plan": 900,
+        }
+        self._transport = build_json_transport(
+            style=transport_style,  # type: ignore[arg-type]
+            client=client,  # type: ignore[arg-type]
+            model=model,
+            timeout_seconds=20.0,
+            use_session_cache=use_session_cache,
+            temperature=0.2,
+            enable_thinking=False,
+            provider_failed_code="llm_provider_failed",
+            invalid_response_code="llm_invalid_response",
+            invalid_json_code="llm_invalid_json",
+            error_factory=lambda code, message, status_code: AuthorGatewayError(code=code, message=message, status_code=status_code),
+            call_trace=self.call_trace,  # type: ignore[arg-type]
+        )
+
+    def text_policy(self, capability: str):
+        return SimpleNamespace(
+            capability=capability,
+            max_output_tokens=self._budget_by_capability.get(capability),
+            transport_style=self.transport_style,
+            use_session_cache=self.use_session_cache,
+            enable_thinking=False,
+            model=self.model,
+        )
+
+    def invoke_text_capability(self, capability: str, request: TextCapabilityRequest):
+        raw = self._transport.invoke_json(
+            system_prompt=request.system_prompt,
+            user_payload=request.user_payload,
+            max_output_tokens=request.max_output_tokens,
+            previous_response_id=request.previous_response_id,
+            operation_name=request.operation_name,
+            plaintext_fallback_key=request.plaintext_fallback_key,
+        )
+        return SimpleNamespace(
+            payload=raw.payload,
+            response_id=raw.response_id,
+            usage=raw.usage,
+            input_characters=raw.input_characters,
+            capability=capability,
+            provider="test",
+            model=self.model,
+            transport_style=self.transport_style,
+            fallback_source=getattr(raw, "fallback_source", None),
+        )
+
+
+def _gateway(client: FakeClient) -> _StaticGatewayCore:
+    return _StaticGatewayCore(
+        client,
         model="demo-model",
-        timeout_seconds=20.0,
-        max_output_tokens_overview=700,
-        max_output_tokens_beat_plan=900,
-        max_output_tokens_beat_skeleton=900,
-        max_output_tokens_beat_repair=700,
-        max_output_tokens_rulepack=900,
+        transport_style="responses",
         use_session_cache=True,
+    )
+
+
+def _chat_gateway(client: FakeChatClient) -> _StaticGatewayCore:
+    return _StaticGatewayCore(
+        client,
+        model="gemini-2.5-pro",
+        transport_style="chat_completions",
+        use_session_cache=False,
     )
 
 
@@ -129,6 +213,117 @@ def test_gateway_formats_requests_and_parses_models() -> None:
     assert "author_context" in beat_skeleton_payload
     assert "story_frame" not in beat_skeleton_payload
     assert "cast" not in beat_skeleton_payload
+
+
+def test_build_openai_client_disables_sdk_retries_by_default(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class _FakeOpenAI:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr(responses_transport_module, "OpenAI", _FakeOpenAI)
+
+    responses_transport_module.build_openai_client(
+        base_url="https://example.com/v1",
+        api_key="test-key",
+        use_session_cache=False,
+        session_cache_header="x-cache",
+        session_cache_value="enable",
+    )
+
+    assert captured["max_retries"] == 0
+
+
+def test_build_openai_client_normalizes_full_responses_endpoint(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class _FakeOpenAI:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr(responses_transport_module, "OpenAI", _FakeOpenAI)
+
+    responses_transport_module.build_openai_client(
+        base_url="https://example.com/v1/responses",
+        api_key="test-key",
+        use_session_cache=False,
+        session_cache_header="x-cache",
+        session_cache_value="enable",
+    )
+
+    assert captured["base_url"] == "https://example.com/v1"
+
+
+def test_preview_mode_reduces_story_frame_scaffold_budget_and_prompt_weight() -> None:
+    client = FakeClient([story_frame_scaffold_draft().model_dump(mode="json")])
+    gateway = _gateway(client)
+    focused_brief = author_fixture_bundle().focused_brief
+
+    story_generation.generate_story_frame(
+        gateway,
+        focused_brief,
+        preview_mode=True,
+    )
+
+    assert client.calls[0]["max_output_tokens"] <= 560
+    assert "This is for preview only." in client.calls[0]["instructions"]
+
+
+def test_gateway_session_cache_respects_transport_style() -> None:
+    settings = Settings(
+        _env_file=None,
+        gateway_base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        gateway_api_key="test-key",
+        gateway_model="gemini-2.5-pro",
+    )
+
+    assert settings.resolved_gateway_use_session_cache(transport_style="chat_completions") is False
+    assert settings.resolved_gateway_use_session_cache(transport_style="responses") is False
+
+
+def test_chat_completion_gateway_formats_requests_and_parses_models() -> None:
+    client = FakeChatClient(
+        [
+            story_frame_scaffold_draft().model_dump(mode="json"),
+            cast_overview_draft().model_dump(mode="json"),
+            cast_draft().model_dump(mode="json"),
+            beat_plan_skeleton_draft().model_dump(mode="json"),
+        ]
+    )
+    gateway = _chat_gateway(client)
+    focused_brief = author_fixture_bundle().focused_brief
+
+    story_frame = story_generation.generate_story_frame(gateway, focused_brief)
+    cast_overview = cast_generation.generate_cast_overview(
+        gateway,
+        focused_brief,
+        story_frame.value,
+        previous_response_id=story_frame.response_id,
+    )
+    cast = cast_generation.generate_story_cast(
+        gateway,
+        focused_brief,
+        story_frame.value,
+        cast_overview.value,
+        previous_response_id=cast_overview.response_id or story_frame.response_id,
+    )
+    beat_plan = beat_generation.generate_beat_plan(
+        gateway,
+        focused_brief,
+        story_frame.value,
+        cast.value,
+        previous_response_id=cast.response_id or story_frame.response_id,
+    )
+
+    assert story_frame.value.title == "Archive Blackout"
+    assert cast.value.cast[0].name == "Envoy Iri"
+    assert beat_plan.value.beats[0].title == "The First Nightfall"
+    assert client.calls[0]["model"] == "gemini-2.5-pro"
+    assert client.calls[0]["response_format"] == {"type": "json_object"}
+    assert client.calls[0]["messages"][0]["role"] == "system"
+    assert client.calls[0]["messages"][1]["role"] == "user"
+    assert "previous_response_id" not in client.calls[1]
 
 
 def test_gateway_compiles_story_frame_from_semantics_without_second_llm_call() -> None:

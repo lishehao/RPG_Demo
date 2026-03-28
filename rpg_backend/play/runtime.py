@@ -3,13 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import re
 
-from rpg_backend.author.contracts import AffordanceTag, AxisDefinition, BeatSpec, ConditionBlock
+from rpg_backend.author.contracts import AffordanceTag, AxisDefinition, BeatSpec, ConditionBlock, PortraitExpression
+from rpg_backend.content_language import is_chinese_language, localized_text
 from rpg_backend.author.normalize import slugify, trim_ellipsis, unique_preserve
+from rpg_backend.roster.legacy_ids import resolve_legacy_roster_character_id
+from rpg_backend.roster.service import get_character_roster_service
 from rpg_backend.play.contracts import (
     PlayCostLedger,
     PlayEnding,
     PlayFeedbackSnapshot,
     PlayLedgerSnapshot,
+    PlayNpcEpilogueReaction,
+    PlayNpcVisualState,
     PlayPlan,
     PlayProtagonist,
     PlayResolutionEffect,
@@ -22,6 +27,7 @@ from rpg_backend.play.contracts import (
     PlaySuggestedAction,
     PlayTurnIntentDraft,
 )
+from rpg_backend.product_copy import surface_phrase
 
 
 SUGGESTION_TEMPLATES: dict[str, tuple[str, str]] = {
@@ -219,6 +225,7 @@ class PlaySessionState:
     narration: str = ""
     suggested_actions: list[PlaySuggestedAction] = field(default_factory=list)
     ending: PlayEnding | None = None
+    epilogue_reactions: list[PlayNpcEpilogueReaction] = field(default_factory=list)
     session_response_id: str | None = None
     collapse_pressure_streak: int = 0
     primary_axis_history: list[str] = field(default_factory=list)
@@ -237,11 +244,172 @@ def _current_beat(plan: PlayPlan, state: PlaySessionState) -> BeatSpec:
     return plan.beats[index]
 
 
-def _ending_by_id(plan: PlayPlan, ending_id: str) -> PlayEnding:
+def _dominant_success_key(state: PlaySessionState) -> str | None:
+    ordered_keys = (
+        "settlement_progress",
+        "proof_progress",
+        "coalition_progress",
+        "order_progress",
+    )
+    best_key = None
+    best_value = 0
+    for key in ordered_keys:
+        value = int(state.success_ledger.get(key, 0))
+        if value > best_value:
+            best_key = key
+            best_value = value
+    return best_key
+
+
+def _dominant_cost_key(state: PlaySessionState) -> str | None:
+    ordered_keys = (
+        "public_cost",
+        "procedural_cost",
+        "relationship_cost",
+        "coercion_cost",
+    )
+    best_key = None
+    best_value = 0
+    for key in ordered_keys:
+        value = int(state.cost_ledger.get(key, 0))
+        if value > best_value:
+            best_key = key
+            best_value = value
+    return best_key
+
+
+def _saved_clause(plan: PlayPlan, state: PlaySessionState) -> str:
+    success_key = _dominant_success_key(state)
+    if is_chinese_language(plan.language):
+        mapping = {
+            "proof_progress": "公开记录",
+            "coalition_progress": "联盟",
+            "order_progress": "公共秩序",
+            "settlement_progress": "一个还能执行的答案",
+        }
+        return mapping.get(success_key or "", "一个还能站住的答案")
+    mapping = {
+        "proof_progress": "the public record",
+        "coalition_progress": "the coalition",
+        "order_progress": "public order",
+        "settlement_progress": "a binding answer",
+    }
+    return mapping.get(success_key or "", "a usable answer")
+
+
+def _broken_clause(plan: PlayPlan, state: PlaySessionState) -> str:
+    cost_key = _dominant_cost_key(state)
+    if is_chinese_language(plan.language):
+        mapping = {
+            "public_cost": "公众信任",
+            "procedural_cost": "程序正当性",
+            "relationship_cost": "房间里的关系",
+            "coercion_cost": "干净的同意",
+        }
+        if cost_key in mapping:
+            return mapping[cost_key]
+        pressure_axis_id, _pressure_value = _highest_pressure_axis_value(plan, state)
+        return _axis_label(plan, pressure_axis_id)
+    mapping = {
+        "public_cost": "public trust",
+        "procedural_cost": "procedural legitimacy",
+        "relationship_cost": "the relationships around the room",
+        "coercion_cost": "clean consent",
+    }
+    if cost_key in mapping:
+        return mapping[cost_key]
+    pressure_axis_id, _pressure_value = _highest_pressure_axis_value(plan, state)
+    return _axis_label(plan, pressure_axis_id).casefold()
+
+
+def _player_impact_sentence(plan: PlayPlan, state: PlaySessionState) -> str | None:
+    generic_consequences = {
+        "The balance of the scene moved.",
+        "The crisis moved closer to a binding outcome.",
+        "A relationship shifted inside the coalition.",
+        "Visible public pressure rose.",
+        "Visible public pressure eased.",
+        "Institutional strain rose.",
+        "Resource strain rose.",
+        "The move came with procedural slippage.",
+        "At least one relationship took damage.",
+        "Progress came through a coercive or costly push.",
+    }
+    chosen = next(
+        (
+            item.rstrip(".")
+            for item in state.last_turn_consequences
+            if item and item not in generic_consequences
+        ),
+        None,
+    ) or next((item.rstrip(".") for item in state.last_turn_consequences if item), None)
+    if not chosen:
+        return None
+    if is_chinese_language(plan.language):
+        return trim_ellipsis(f"你最后这步留下了后果：{chosen}。", 84)
+    return trim_ellipsis(f"Your move leaves a mark: {chosen}.", 84)
+
+
+def _runtime_ending_summary(plan: PlayPlan, state: PlaySessionState, *, ending_id: str, fallback_summary: str) -> str:
+    saved = _saved_clause(plan, state)
+    broken = _broken_clause(plan, state)
+    impact_sentence = _player_impact_sentence(plan, state)
+    if is_chinese_language(plan.language):
+        if ending_id == "collapse":
+            base = (
+                f"你把局面逼向一个答案，但协调还是先崩开；{broken}失守，而整座城市在公开后果里吞下这次失败。"
+            )
+        elif ending_id == "pyrrhic":
+            base = (
+                f"你保住了{saved}，但代价是{broken}被写进记录；答案站住了，价格也会继续留档。"
+            )
+        elif ending_id == "mixed":
+            base = (
+                f"你保住了{saved}，却没把裂口补平；{broken}仍悬在那里，制度只能带着妥协继续运转。"
+            )
+        else:
+            base = fallback_summary
+    else:
+        if ending_id == "collapse":
+            base = (
+                f"You force the crisis toward an answer, but coordination breaks; {broken} gives way and the city takes the failure in full view."
+            )
+        elif ending_id == "pyrrhic":
+            base = (
+                f"You secure {saved}, but only by spending {broken}; the answer holds, and the price stays in the record."
+            )
+        elif ending_id == "mixed":
+            base = (
+                f"You secure {saved}, but not cleanly; {broken} remains unsettled, and the institutions around you inherit the compromise."
+            )
+        else:
+            base = fallback_summary
+    summary = trim_ellipsis(base, 220)
+    if impact_sentence:
+        combined = trim_ellipsis(f"{summary} {impact_sentence}", 220)
+        if len(combined) <= 220 and combined.count(".") + combined.count("。") <= 3:
+            summary = combined
+    return trim_ellipsis(summary or fallback_summary, 220)
+
+
+def _ending_by_id(plan: PlayPlan, state: PlaySessionState, ending_id: str) -> PlayEnding:
     item = next((entry for entry in plan.endings if entry.ending_id == ending_id), None)
     if item is None:
-        return PlayEnding(ending_id=ending_id, label=ending_id.replace("_", " ").title(), summary="The crisis resolves.")
-    return PlayEnding(ending_id=item.ending_id, label=item.label, summary=item.summary)
+        fallback_summary = localized_text(
+            plan.language,
+            en="The crisis resolves.",
+            zh="局势暂时稳住了。",
+        )
+        return PlayEnding(
+            ending_id=ending_id,
+            label=ending_id.replace("_", " ").title(),
+            summary=_runtime_ending_summary(plan, state, ending_id=ending_id, fallback_summary=fallback_summary),
+        )
+    return PlayEnding(
+        ending_id=item.ending_id,
+        label=item.label,
+        summary=_runtime_ending_summary(plan, state, ending_id=item.ending_id, fallback_summary=item.summary),
+    )
 
 
 def _conditions_match(conditions: ConditionBlock, plan: PlayPlan, state: PlaySessionState) -> bool:
@@ -277,12 +445,43 @@ def _route_unlocked_tags(plan: PlayPlan, state: PlaySessionState, beat: BeatSpec
     return unique_preserve(tags)
 
 
+def _runtime_phase(plan: PlayPlan, state: PlaySessionState) -> str:
+    if state.turn_index < max(2, plan.minimum_resolution_turn - 2):
+        return "opening"
+    if state.turn_index < plan.minimum_resolution_turn:
+        return "escalation"
+    return "settlement"
+
+
 def available_affordance_tags(plan: PlayPlan, state: PlaySessionState) -> list[str]:
     beat = _current_beat(plan, state)
+    unlocked_tags = _route_unlocked_tags(plan, state, beat)
+    phase = _runtime_phase(plan, state)
     ordered = [beat.route_pivot_tag] if beat.route_pivot_tag else []
-    ordered.extend(weight.tag for weight in beat.affordances)
-    ordered.extend(_route_unlocked_tags(plan, state, beat))
+    if phase == "escalation" and plan.branch_budget in {"medium", "high"}:
+        ordered.extend(unlocked_tags)
+        ordered.extend(weight.tag for weight in beat.affordances)
+    else:
+        ordered.extend(weight.tag for weight in beat.affordances)
+        ordered.extend(unlocked_tags)
     tags = unique_preserve([tag for tag in ordered if tag and tag not in beat.blocked_affordances])
+    if phase == "opening":
+        opening_allowed = {"reveal_truth", "build_trust", "contain_chaos", "protect_civilians", "secure_resources", "unlock_ally"}
+        opening_tags = [tag for tag in tags if tag in opening_allowed]
+        if opening_tags:
+            tags = opening_tags
+    elif phase == "settlement":
+        settlement_priority = [
+            "shift_public_narrative",
+            "pay_cost",
+            "unlock_ally",
+            "build_trust",
+            "reveal_truth",
+            "secure_resources",
+            "contain_chaos",
+            "protect_civilians",
+        ]
+        tags = [tag for tag in settlement_priority if tag in tags] + [tag for tag in tags if tag not in settlement_priority]
     if not tags:
         tags = list(plan.available_affordance_tags[:3])
     return tags
@@ -363,6 +562,27 @@ def _suggestion_template_for_tag(tag: str, state: PlaySessionState) -> tuple[str
     )
 
 
+def _phase_suggestion_template(plan: PlayPlan, state: PlaySessionState, tag: str) -> tuple[str, str] | None:
+    if plan.branch_budget != "high":
+        return None
+    phase = _runtime_phase(plan, state)
+    if phase == "opening":
+        return {
+            "reveal_truth": ("Establish the record", "You force {npc} to put the first usable record on the table before rumor spreads."),
+            "build_trust": ("Stabilize the bloc", "You get {npc} to commit before the coalition starts hedging in public."),
+            "contain_chaos": ("Hold the perimeter", "You keep the immediate disorder around {npc} from spilling wider."),
+            "secure_resources": ("Protect the supply line", "You force {npc} to keep the material channel open before panic hardens."),
+        }.get(tag)
+    if phase == "settlement":
+        return {
+            "shift_public_narrative": ("Lock the public story", "You force {npc} to live inside a public version of events that can survive the settlement."),
+            "pay_cost": ("Name the public price", "You make {npc} answer for who is paying to keep the settlement alive."),
+            "unlock_ally": ("Bind the final coalition", "You push {npc} to commit before the last settlement window closes."),
+            "build_trust": ("Keep the settlement intact", "You stop {npc} from walking away before the agreement can hold."),
+        }.get(tag)
+    return None
+
+
 def build_suggested_actions(plan: PlayPlan, state: PlaySessionState) -> list[PlaySuggestedAction]:
     if state.status != "active":
         return []
@@ -370,13 +590,22 @@ def build_suggested_actions(plan: PlayPlan, state: PlaySessionState) -> list[Pla
     target_names = _suggestion_target_names(plan, state, beat)
     suggestions: list[PlaySuggestedAction] = []
     for index, tag in enumerate(available_affordance_tags(plan, state)[:3], start=1):
-        label_template, prompt_template = _suggestion_template_for_tag(tag, state)
+        label_template, prompt_template = _phase_suggestion_template(plan, state, tag) or _suggestion_template_for_tag(tag, state)
         target_name = target_names[(index - 1) % len(target_names)]
         suggestions.append(
             PlaySuggestedAction(
                 suggestion_id=f"{slugify(tag)}_{index}",
-                label=label_template,
-                prompt=trim_ellipsis(prompt_template.format(npc=target_name), 220),
+                label=(
+                    _translate_suggestion_label(label_template)
+                    if is_chinese_language(plan.language)
+                    else label_template
+                ),
+                prompt=trim_ellipsis(
+                    _translate_suggestion_prompt(prompt_template, target_name)
+                    if is_chinese_language(plan.language)
+                    else prompt_template.format(npc=target_name),
+                    220,
+                ),
             )
         )
     while len(suggestions) < 3:
@@ -385,8 +614,15 @@ def build_suggested_actions(plan: PlayPlan, state: PlaySessionState) -> list[Pla
         suggestions.append(
             PlaySuggestedAction(
                 suggestion_id=f"advance_{index}",
-                label="Push for momentum",
-                prompt=trim_ellipsis(f"You force {target_name} to answer the crisis before the stalemate hardens.", 220),
+                label=surface_phrase("play_push_momentum", language=plan.language),
+                prompt=trim_ellipsis(
+                    localized_text(
+                        plan.language,
+                        en=f"You force {target_name} to answer the crisis before the stalemate hardens.",
+                        zh=f"你继续把{target_name}往公开表态上逼，不让僵局先一步板结。",
+                    ),
+                    220,
+                ),
             )
         )
     return suggestions[:3]
@@ -536,6 +772,156 @@ def build_state_bars(plan: PlayPlan, state: PlaySessionState) -> list[PlayStateB
     return bars
 
 
+def resolve_portrait_expression_for_stance(value: int) -> PortraitExpression:
+    if value <= -1:
+        return "negative"
+    if value >= 2:
+        return "positive"
+    return "neutral"
+
+
+def _resolved_portrait_url_for_expression(
+    portrait_url: str | None,
+    portrait_variants,
+    expression: PortraitExpression,
+) -> str | None:
+    variants_payload = (
+        portrait_variants.model_dump(mode="json")
+        if hasattr(portrait_variants, "model_dump")
+        else dict(portrait_variants or {})
+    )
+    if not variants_payload:
+        return portrait_url
+    return (
+        variants_payload.get(expression)
+        or variants_payload.get("neutral")
+        or portrait_url
+    )
+
+
+def _resolved_npc_portrait_sources(npc) -> tuple[str | None, object | None]:
+    portrait_url = npc.portrait_url
+    portrait_variants = npc.portrait_variants
+
+    if portrait_url or portrait_variants or not npc.roster_character_id:
+        return portrait_url, portrait_variants
+
+    roster_character_id = resolve_legacy_roster_character_id(npc.roster_character_id)
+    if not roster_character_id:
+        return portrait_url, portrait_variants
+
+    roster_entry = get_character_roster_service().get_entry_by_id(roster_character_id)
+    if roster_entry is None:
+        return portrait_url, portrait_variants
+
+    return roster_entry.portrait_url, roster_entry.portrait_variants
+
+
+def build_npc_visuals(plan: PlayPlan, state: PlaySessionState) -> list[PlayNpcVisualState]:
+    stances_by_npc_id = {stance.npc_id: stance for stance in plan.stances}
+    visuals: list[PlayNpcVisualState] = []
+    for npc in plan.cast:
+        if npc.npc_id == plan.protagonist_npc_id:
+            continue
+        stance = stances_by_npc_id.get(npc.npc_id)
+        if stance is None:
+            continue
+        stance_value = int(state.stance_values.get(stance.stance_id, stance.starting_value))
+        expression = resolve_portrait_expression_for_stance(stance_value)
+        portrait_url, portrait_variants = _resolved_npc_portrait_sources(npc)
+        visuals.append(
+            PlayNpcVisualState(
+                npc_id=npc.npc_id,
+                name=npc.name,
+                stance_value=stance_value,
+                current_expression=expression,
+                current_portrait_url=_resolved_portrait_url_for_expression(
+                    portrait_url,
+                    portrait_variants,
+                    expression,
+                ),
+                portrait_variants=portrait_variants,
+            )
+        )
+    return visuals
+
+
+def _npc_epilogue_line(
+    plan: PlayPlan,
+    state: PlaySessionState,
+    *,
+    expression: PortraitExpression,
+    ending_id: str,
+) -> str:
+    saved = _saved_clause(plan, state)
+    broken = _broken_clause(plan, state)
+    if is_chinese_language(plan.language):
+        lines = {
+            ("positive", "collapse"): f"我知道你当时还在硬撑着保住{saved}。就算{broken}已经断开，我也仍然相信你是在正面扛这件事。",
+            ("positive", "pyrrhic"): f"你到底还是把{saved}保住了，只是{broken}也被写进了代价里。我现在比刚开始时更愿意信你。",
+            ("positive", "mixed"): f"你让{saved}继续站住了，只是{broken}还没有真正补平。这还不干净，但已经够让我继续把门留给你。",
+            ("neutral", "collapse"): f"现在谁都看得出是{broken}先守不住了。我知道你想把局面拉回来，但这个结果比你的用意更难替你辩护。",
+            ("neutral", "pyrrhic"): f"你把{saved}保住了，可{broken}替这件事吞下了代价。这个结果我能接住，但还谈不上认同。",
+            ("neutral", "mixed"): f"你让{saved}勉强继续运转，可{broken}还挂在那里。你的做法我能理解，但还不足以让我点头。",
+            ("negative", "collapse"): f"是{broken}先断掉的，而你把这叫成了必要代价。我会记住这件事，先于我记住你给过的任何解释。",
+            ("negative", "pyrrhic"): f"你确实保住了{saved}，但你把{broken}当成了可以拿去交换的东西。别指望我把这也算成信任。",
+            ("negative", "mixed"): f"你让{broken}继续悬着，却把这个妥协叫成可用答案。我看得懂你的计算，但我不会因此靠近你。",
+        }
+    else:
+        lines = {
+            ("positive", "collapse"): f"I know you were still trying to hold {saved} in place. Even with {broken} giving way, I still trust that you faced this honestly.",
+            ("positive", "pyrrhic"): f"You kept {saved} from slipping away, even with {broken} written into the price. I trust you more now than I did at the start.",
+            ("positive", "mixed"): f"You kept {saved} standing, even if {broken} is still unsettled. It is not clean, but it leaves the door open between us.",
+            ("neutral", "collapse"): f"Anyone in the room can see that {broken} gave way first. I know what you were trying to do, but the result is harder to defend than the intent.",
+            ("neutral", "pyrrhic"): f"You kept {saved} in place, but {broken} absorbed the price. I can live with the result, even if I am not ready to praise the method.",
+            ("neutral", "mixed"): f"You kept {saved} in place, but {broken} is still carrying the compromise. I understand your move more than I approve it.",
+            ("negative", "collapse"): f"You let {broken} give way and called it necessity. I will remember that before I remember whatever argument got you there.",
+            ("negative", "pyrrhic"): f"You got {saved}, but you spent {broken} like it was expendable. Do not ask me to mistake that for trust.",
+            ("negative", "mixed"): f"You left {broken} unsettled and called the compromise workable. I can see the logic, but I am keeping my distance.",
+        }
+    fallback = localized_text(
+        plan.language,
+        en="The ending settles, but the room does not leave it without memory.",
+        zh="结局落了地，房间里的人却不会当作什么都没发生。",
+    )
+    return trim_ellipsis(lines.get((expression, ending_id), fallback), 240)
+
+
+def build_epilogue_reactions(plan: PlayPlan, state: PlaySessionState) -> list[PlayNpcEpilogueReaction]:
+    if state.status != "completed" or state.ending is None:
+        return []
+    stances_by_npc_id = {stance.npc_id: stance for stance in plan.stances}
+    reactions: list[PlayNpcEpilogueReaction] = []
+    for npc in plan.cast:
+        if npc.npc_id == plan.protagonist_npc_id:
+            continue
+        stance = stances_by_npc_id.get(npc.npc_id)
+        stance_value = int(state.stance_values.get(stance.stance_id, stance.starting_value)) if stance is not None else 0
+        expression = resolve_portrait_expression_for_stance(stance_value)
+        portrait_url, portrait_variants = _resolved_npc_portrait_sources(npc)
+        reactions.append(
+            PlayNpcEpilogueReaction(
+                npc_id=npc.npc_id,
+                name=npc.name,
+                stance_value=stance_value,
+                current_expression=expression,
+                current_portrait_url=_resolved_portrait_url_for_expression(
+                    portrait_url,
+                    portrait_variants,
+                    expression,
+                ),
+                portrait_variants=portrait_variants,
+                closing_line=_npc_epilogue_line(
+                    plan,
+                    state,
+                    expression=expression,
+                    ending_id=state.ending.ending_id,
+                ),
+            )
+        )
+    return reactions
+
+
 def _session_progress(plan: PlayPlan, state: PlaySessionState) -> PlaySessionProgress:
     total_beats = max(len(plan.beats), 1)
     current_beat = _current_beat(plan, state)
@@ -577,6 +963,7 @@ def build_session_snapshot(plan: PlayPlan, state: PlaySessionState) -> PlaySessi
     return PlaySessionSnapshot(
         session_id=state.session_id,
         story_id=state.story_id,
+        language=plan.language,
         status=state.status,  # type: ignore[arg-type]
         turn_index=state.turn_index,
         beat_index=state.beat_index + 1,
@@ -588,6 +975,8 @@ def build_session_snapshot(plan: PlayPlan, state: PlaySessionState) -> PlaySessi
         progress=_session_progress(plan, state),
         support_surfaces=_support_surfaces(),
         state_bars=build_state_bars(plan, state),
+        npc_visuals=build_npc_visuals(plan, state),
+        epilogue_reactions=list(state.epilogue_reactions) if state.epilogue_reactions else None,
         suggested_actions=list(state.suggested_actions),
         ending=state.ending,
     )
@@ -1547,6 +1936,41 @@ def deterministic_narration(
     state: PlaySessionState,
     resolution: PlayResolutionEffect,
 ) -> str:
+    if is_chinese_language(plan.language):
+        beat = _current_beat(plan, state)
+        target_names = [
+            npc.name
+            for npc in plan.cast
+            if npc.npc_id != plan.protagonist_npc_id and npc.npc_id in resolution.target_npc_ids
+        ]
+        target_clause = f"，并直接压向{ '、'.join(target_names) }" if target_names else ""
+        intro_templates = {
+            "build_trust": "你重新系紧一段正在松动的联盟",
+            "contain_chaos": "你在局势失控前抢先出手",
+            "pay_cost": "你接受代价，强行推动局面向前",
+            "protect_civilians": "你先把自己挡在最脆弱的人群前面",
+            "reveal_truth": "你把被掩埋的记录拖回明面",
+            "secure_resources": "你把稀缺资源重新拉回公共视野",
+            "shift_public_narrative": "你抢先改写了正在成形的公共叙事",
+            "unlock_ally": "你把摇摆中的盟友重新拉回桌面",
+        }
+        lines = [
+            f"{intro_templates.get(resolution.affordance_tag, '你逼着场面继续向前推进')}{target_clause}。",
+            resolution.pressure_note,
+        ]
+        if resolution.revealed_truth_ids:
+            truth = next((item.text for item in plan.truths if item.truth_id == resolution.revealed_truth_ids[0]), None)
+            if truth:
+                lines.append(f"一条被掩埋的事实被当场揭开：{truth}")
+        if state.last_turn_consequences:
+            consequence_line = state.last_turn_consequences[0].rstrip(".")
+            if consequence_line and consequence_line.casefold() not in " ".join(lines).casefold():
+                lines.append(f"后果立刻落地：{consequence_line}。")
+        if resolution.beat_completed and state.status != "completed":
+            lines.append(f"故事推进到“{beat.title}”，下一个压力点已经清晰浮出。")
+        if state.ending is not None:
+            lines.append(f"结局锁定为“{state.ending.label}”。{state.ending.summary}")
+        return trim_ellipsis(" ".join(lines), 4000)
     intro_templates = {
         "build_trust": "You tighten a fragile alliance",
         "contain_chaos": "You move before the room can tip into disorder",
@@ -1568,6 +1992,27 @@ def deterministic_narration(
         f"{intro_templates.get(resolution.affordance_tag, 'You force the scene to move')}{target_clause}.",
         resolution.pressure_note,
     ]
+    for axis_id, delta in resolution.axis_changes.items():
+        if delta == 0:
+            continue
+        axis = next((item for item in plan.axes if item.axis_id == axis_id), None)
+        if axis is None:
+            continue
+        direction = "rises" if delta > 0 else "eases"
+        lines.append(f"You can feel {axis.label.lower()} {direction} as the room recalculates around your move.")
+        break
+    for stance_id, delta in resolution.stance_changes.items():
+        if delta == 0:
+            continue
+        stance = next((item for item in plan.stances if item.stance_id == stance_id), None)
+        if stance is None:
+            continue
+        npc = next((item for item in plan.cast if item.npc_id == stance.npc_id), None)
+        if npc is None:
+            continue
+        relation = "hardens against you" if delta < 0 else "edges closer to your side"
+        lines.append(f"{npc.name} {relation}, and that shift is visible to everyone watching.")
+        break
     if resolution.revealed_truth_ids:
         truth = next((item.text for item in plan.truths if item.truth_id == resolution.revealed_truth_ids[0]), None)
         if truth:
@@ -1581,3 +2026,51 @@ def deterministic_narration(
     if state.ending is not None:
         lines.append(f"The ending locks into {state.ending.label.lower()}. {state.ending.summary}")
     return trim_ellipsis(" ".join(lines), 4000)
+
+
+def _translate_suggestion_label(label: str) -> str:
+    mapping = {
+        "Expose the hidden pressure": "逼出隐藏的压力",
+        "Stabilize an alliance": "稳住一段联盟",
+        "Contain the immediate panic": "压住眼前的恐慌",
+        "Take control of the public story": "掌握公共叙事",
+        "Protect the vulnerable flank": "护住最脆弱的一侧",
+        "Secure what the city needs": "拿回城市所需资源",
+        "Pull a reluctant ally in": "把迟疑的盟友拉进来",
+        "Force progress at a cost": "付出代价推进局面",
+        "Cool the crowd": "先稳住人群",
+        "Hold the calmer line": "守住刚稳定下来的局面",
+        "Lock the mandate in": "把授权锁定下来",
+        "Reframe the uproar": "改写眼前的喧哗",
+        "Consolidate the alliance": "巩固刚形成的联盟",
+        "Keep the ally inside": "别让盟友退出桌面",
+        "Reopen the supply line": "重新打通供给线",
+        "Protect the new flow": "守住刚恢复的流转",
+        "Pin the discrepancy down": "把差错钉死在记录上",
+        "Force the hidden record out": "把隐藏记录继续拖出来",
+    }
+    return mapping.get(label, "推动下一步")
+
+
+def _translate_suggestion_prompt(template: str, npc: str) -> str:
+    mapping = {
+        "You press {npc} until the concealed truth starts to surface.": f"你持续向{npc}施压，直到被掩盖的事实开始浮出水面。",
+        "You work to bring {npc} onto your side before the coalition slips further.": f"你试着在联盟继续滑落前把{npc}拉到你这一边。",
+        "You move fast to keep the crisis from spilling into open disorder around {npc}.": f"你迅速行动，防止危机在{npc}周围直接滑向失控。",
+        "You reframe events in public and force {npc} to answer to the broader city.": f"你在公开场合改写事件叙事，逼迫{npc}向更大的城市公众交代。",
+        "You prioritize civilian safety and make {npc} react to that moral pressure.": f"你优先保护平民安全，并迫使{npc}回应这层道义压力。",
+        "You push {npc} to release resources before scarcity turns political.": f"你逼迫{npc}在匮乏彻底政治化前释放资源。",
+        "You try to bring {npc} fully into the coalition before the next fracture.": f"你试着在下一次裂痕到来前把{npc}彻底拉进联盟。",
+        "You accept an ugly concession and make {npc} live with the fallout.": f"你接受一项难看的让步，并迫使{npc}承担随之而来的后果。",
+        "You cut through the surge before panic hardens around {npc}.": f"你抢在恐慌围绕{npc}彻底固化前切断这波情绪上冲。",
+        "You keep the room steady so the panic does not rebound through {npc}.": f"你稳住房间里的节奏，防止恐慌借着{npc}再次反扑。",
+        "You turn the latest leverage into a public line {npc} cannot easily escape.": f"你把最新的筹码变成一条公开表态，让{npc}很难再回避。",
+        "You redirect the public pressure so {npc} has to answer on your terms.": f"你重新引导公众压力，让{npc}只能按你的条件回应。",
+        "You make the new trust with {npc} stick before the coalition slips again.": f"你在联盟再次滑落前，把与{npc}之间刚建立的信任固定下来。",
+        "You turn the latest opening with {npc} into a durable commitment.": f"你把与{npc}之间刚出现的缺口，推进成更牢固的承诺。",
+        "You force a practical release from {npc} before the shortage narrative spreads.": f"你在短缺叙事扩散前，逼出{npc}手里一项实际资源释放。",
+        "You keep the reopened supply route from collapsing back under {npc}.": f"你防止刚恢复的供给线路在{npc}手里再次塌回去。",
+        "You make {npc} answer for the record gap before procedure closes over it.": f"你在程序把裂口重新封住前，逼迫{npc}正面回应记录差错。",
+        "You use the rising pressure to drag one more fact from {npc}.": f"你借着不断升高的压力，再从{npc}那里拖出一条事实。",
+    }
+    return mapping.get(template, f"你继续向{npc}施压，逼迫局面往前走。")

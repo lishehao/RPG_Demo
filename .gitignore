@@ -1,13 +1,16 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.DS_Store
 .env
 artifacts/benchmarks/
+artifacts/*.json
 artifacts/*.sqlite3
 artifacts/*.sqlite3-*
 artifacts/db_backups/
 .playwright-cli/
 output/
+tmp/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/

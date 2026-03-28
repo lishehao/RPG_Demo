@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from rpg_backend.author.compiler.cast import compile_cast_member_semantics, is_legitimacy_broker_slot
 from rpg_backend.author.compiler.router import plan_story_theme
 from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
+from rpg_backend.generation_skill import ContextCard, GenerationSkillPacket
 from rpg_backend.author.contracts import (
     CastDraft,
     CastMemberSemanticsDraft,
@@ -13,28 +14,27 @@ from rpg_backend.author.contracts import (
     FocusedBrief,
     StoryFrameDraft,
 )
+from rpg_backend.content_language import output_language_instruction, prompt_role_instruction, resolve_content_prompt_profile
+from rpg_backend.llm_gateway import CapabilityGatewayCore
 from rpg_backend.author.normalize import trim_text, unique_preserve
 
-if TYPE_CHECKING:
-    from rpg_backend.author.gateway import AuthorLLMGateway
 
-
-def _cast_member_max_output_tokens(gateway: "AuthorLLMGateway", cast_strategy: str = "generic_civic_cast") -> int:
-    budget = gateway.max_output_tokens_overview
+def _cast_member_max_output_tokens(gateway: CapabilityGatewayCore, cast_strategy: str = "generic_civic_cast") -> int:
+    budget = gateway.text_policy("author.cast_member_generate").max_output_tokens
     if budget is None:
-        return 520
-    floor = 420
+        return 360
+    floor = 280
     if cast_strategy in {"legitimacy_cast", "public_order_cast", "blackout_referendum_cast", "archive_vote_cast"}:
-        floor = 520
-    return max(floor, min(int(budget), 760))
+        floor = 340
+    return max(floor, min(int(budget), 520))
 
 
-def _cast_overview_max_output_tokens(gateway: "AuthorLLMGateway", cast_strategy: str = "generic_civic_cast") -> int:
-    budget = gateway.max_output_tokens_overview
+def _cast_overview_max_output_tokens(gateway: CapabilityGatewayCore, cast_strategy: str = "generic_civic_cast") -> int:
+    budget = gateway.text_policy("author.cast_member_generate").max_output_tokens
     if budget is None:
-        return 780
-    floor = 700 if cast_strategy == "generic_civic_cast" else 820
-    return max(floor, min(int(budget), 950))
+        return 420
+    floor = 360 if cast_strategy == "generic_civic_cast" else 420
+    return max(floor, min(int(budget), 560))
 
 
 def _cast_theme_guidance(cast_strategy: str) -> str:
@@ -51,6 +51,35 @@ def _cast_theme_guidance(cast_strategy: str) -> str:
         "generic_civic_cast": "Bias the cast toward civic procedure, public consequence, and institutional conflict.",
     }
     return mapping.get(cast_strategy, mapping["generic_civic_cast"])
+
+
+def _cast_skill_packet(
+    *,
+    skill_id: str,
+    capability: str,
+    required_output_contract: str,
+    task_brief: str,
+    extra_payload: dict[str, Any],
+    context_cards: tuple[ContextCard, ...],
+    repair_note: str | None = None,
+    final_contract_note: str | None = None,
+    final_retry_extra_payload: dict[str, Any] | None = None,
+) -> GenerationSkillPacket:
+    return GenerationSkillPacket(
+        skill_id=skill_id,
+        skill_version="v1",
+        capability=capability,
+        contract_mode="strict_json_schema",
+        role_style=resolve_content_prompt_profile(),
+        required_output_contract=required_output_contract,
+        context_cards=context_cards,
+        task_brief=task_brief,
+        repair_mode="schema_repair" if repair_note or final_contract_note else "none",
+        repair_note=repair_note,
+        final_contract_note=final_contract_note,
+        extra_payload=extra_payload,
+        final_retry_extra_payload=final_retry_extra_payload,
+    )
 
 
 def _slim_existing_cast(existing_cast: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -75,7 +104,7 @@ def _slim_story_frame(story_frame: StoryFrameDraft) -> dict[str, str]:
     }
 
 
-def _normalize_cast_overview_payload(gateway: "AuthorLLMGateway", payload: dict[str, Any]) -> dict[str, Any]:
+def _normalize_cast_overview_payload(gateway: CapabilityGatewayCore, payload: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(payload)
     slot_items = []
     for item in list(normalized.get("cast_slots") or normalized.get("roles") or normalized.get("cast") or [])[:5]:
@@ -142,7 +171,7 @@ def _normalize_cast_overview_payload(gateway: "AuthorLLMGateway", payload: dict[
     }
 
 
-def _normalize_cast_payload(gateway: "AuthorLLMGateway", payload: dict[str, Any]) -> dict[str, Any]:
+def _normalize_cast_payload(gateway: CapabilityGatewayCore, payload: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(payload)
     cast_items = []
     for item in list(normalized.get("cast") or [])[:5]:
@@ -185,7 +214,7 @@ def _normalize_cast_payload(gateway: "AuthorLLMGateway", payload: dict[str, Any]
 
 
 def _normalize_cast_member_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
     *,
     slot_label: str,
@@ -209,7 +238,7 @@ def _normalize_cast_member_payload(
 
 
 def _normalize_cast_member_semantics_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
     *,
     slot_label: str,
@@ -263,7 +292,7 @@ def _cast_slot_from_payload(slot: dict[str, Any]) -> CastOverviewSlotDraft:
 
 
 def _generate_cast_member_semantics_result(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     *,
     primary_payload: dict[str, Any],
     final_retry_payload: dict[str, Any],
@@ -273,14 +302,32 @@ def _generate_cast_member_semantics_result(
     cast_strategy: str,
     high_risk_slot: bool = False,
 ):
+    skill_packet = _cast_skill_packet(
+        skill_id="author.cast_member.semantics",
+        capability="author.cast_member_generate",
+        required_output_contract="Return exactly one CastMemberSemanticsDraft JSON object.",
+        task_brief=prompts[0],
+        extra_payload=primary_payload,
+        final_retry_extra_payload=final_retry_payload,
+        context_cards=(
+            ContextCard("cast_slot_card", primary_payload.get("cast_slot") or final_retry_payload.get("cast_slot") or {}, priority=10),
+            ContextCard("existing_cast_card", primary_payload.get("existing_cast") or [], priority=20),
+            ContextCard("focused_brief_card", primary_payload.get("focused_brief") or final_retry_payload.get("focused_brief") or {}, priority=30),
+            ContextCard("story_frame_hint_card", primary_payload.get("story_frame_hint") or {}, priority=40),
+        ),
+        repair_note=prompts[1] if len(prompts) > 1 else None,
+        final_contract_note=prompts[2] if len(prompts) > 2 else None,
+    )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.cast_member_generate",
         primary_payload=primary_payload,
         final_retry_payload=final_retry_payload,
         prompts=prompts,
         previous_response_id=previous_response_id,
         max_output_tokens=_cast_member_max_output_tokens(gateway, cast_strategy) + (180 if high_risk_slot else 0),
         operation_name="cast_member_semantics",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: CastMemberSemanticsDraft.model_validate(
             _normalize_cast_member_semantics_payload(
                 gateway,
@@ -292,7 +339,7 @@ def _generate_cast_member_semantics_result(
 
 
 def generate_cast_overview(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     *,
@@ -302,7 +349,7 @@ def generate_cast_overview(
     payload: dict[str, Any] = {
         "story_frame": story_frame.model_dump(mode="json"),
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if not (gateway.text_policy("author.cast_member_generate").use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     resolved_cast_strategy = cast_strategy or plan_story_theme(focused_brief, story_frame).cast_strategy
     system_prompt = (
@@ -311,15 +358,30 @@ def generate_cast_overview(
         "Each cast slot must include: slot_label, public_role, relationship_to_protagonist, agenda_anchor, red_line_anchor, pressure_vector. "
         "Keep the slots distinct in function and pressure behavior. "
         "Also return 2-6 relationship_summary lines that explain the broad conflict web across the cast. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior ensemble drama designer', zh_role='资深中文群像角色策划')} "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_cast_theme_guidance(resolved_cast_strategy)}"
+    )
+    skill_packet = _cast_skill_packet(
+        skill_id="author.cast_overview.generate",
+        capability="author.cast_member_generate",
+        required_output_contract="Return exactly one CastOverviewDraft JSON object.",
+        task_brief=system_prompt,
+        extra_payload=payload,
+        context_cards=(
+            ContextCard("story_frame_card", story_frame.model_dump(mode="json"), priority=10),
+            ContextCard("focused_brief_card", payload.get("focused_brief") or {}, priority=20),
+        ),
     )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.cast_member_generate",
         primary_payload=payload,
         prompts=(system_prompt,),
         previous_response_id=previous_response_id,
         max_output_tokens=_cast_overview_max_output_tokens(gateway, resolved_cast_strategy),
         operation_name="cast_overview_generate",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: CastOverviewDraft.model_validate(
             _normalize_cast_overview_payload(gateway, raw_payload)
         ),
@@ -327,7 +389,7 @@ def generate_cast_overview(
 
 
 def glean_cast_overview(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     partial_cast_overview: CastOverviewDraft,
@@ -339,7 +401,7 @@ def glean_cast_overview(
         "story_frame": story_frame.model_dump(mode="json"),
         "partial_cast_overview": partial_cast_overview.model_dump(mode="json"),
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if not (gateway.text_policy("author.cast_member_repair").use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     resolved_cast_strategy = cast_strategy or plan_story_theme(focused_brief, story_frame).cast_strategy
     system_prompt = (
@@ -348,15 +410,31 @@ def glean_cast_overview(
         "Keep any specific useful slot labels, roles, and relationship structure that already fit the story. "
         "Replace placeholder or generic slot text with sharper conflict structure. "
         "Return a complete CastOverviewDraft with 3-5 cast slots and 2-6 relationship_summary lines. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior ensemble drama editor', zh_role='资深中文角色结构编辑')} "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_cast_theme_guidance(resolved_cast_strategy)}"
+    )
+    skill_packet = _cast_skill_packet(
+        skill_id="author.cast_overview.glean",
+        capability="author.cast_member_repair",
+        required_output_contract="Return exactly one CastOverviewDraft JSON object.",
+        task_brief=system_prompt,
+        extra_payload=payload,
+        context_cards=(
+            ContextCard("story_frame_card", story_frame.model_dump(mode="json"), priority=10),
+            ContextCard("partial_cast_overview_card", partial_cast_overview.model_dump(mode="json"), priority=20),
+            ContextCard("focused_brief_card", payload.get("focused_brief") or {}, priority=30),
+        ),
     )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.cast_member_repair",
         primary_payload=payload,
         prompts=(system_prompt,),
         previous_response_id=previous_response_id,
         max_output_tokens=_cast_overview_max_output_tokens(gateway, resolved_cast_strategy),
         operation_name="cast_overview_glean",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: CastOverviewDraft.model_validate(
             _normalize_cast_overview_payload(gateway, raw_payload)
         ),
@@ -364,7 +442,7 @@ def glean_cast_overview(
 
 
 def generate_story_cast(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_overview: CastOverviewDraft,
@@ -376,7 +454,7 @@ def generate_story_cast(
         "story_frame": story_frame.model_dump(mode="json"),
         "cast_overview": cast_overview.model_dump(mode="json"),
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if not (gateway.text_policy("author.cast_member_generate").use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     resolved_cast_strategy = cast_strategy or plan_story_theme(focused_brief, story_frame).cast_strategy
     system_prompt = (
@@ -386,21 +464,37 @@ def generate_story_cast(
         "Keep them specific to the existing story frame rather than generic archetypes. "
         "Agendas should realize agenda_anchor, red_line should realize red_line_anchor, "
         "and pressure_signature should realize pressure_vector in concrete character language. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior character writer for civic thrillers', zh_role='擅长政治惊悚的资深中文角色编辑')} "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_cast_theme_guidance(resolved_cast_strategy)}"
+    )
+    skill_packet = _cast_skill_packet(
+        skill_id="author.cast_full.generate",
+        capability="author.cast_member_generate",
+        required_output_contract="Return exactly one CastDraft JSON object.",
+        task_brief=system_prompt,
+        extra_payload=payload,
+        context_cards=(
+            ContextCard("story_frame_card", story_frame.model_dump(mode="json"), priority=10),
+            ContextCard("cast_overview_card", cast_overview.model_dump(mode="json"), priority=20),
+            ContextCard("focused_brief_card", payload.get("focused_brief") or {}, priority=30),
+        ),
     )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.cast_member_generate",
         primary_payload=payload,
         prompts=(system_prompt,),
         previous_response_id=previous_response_id,
         max_output_tokens=_cast_overview_max_output_tokens(gateway, resolved_cast_strategy),
         operation_name="cast_generate_full",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: CastDraft.model_validate(_normalize_cast_payload(gateway, raw_payload)),
     )
 
 
 def generate_story_cast_member(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_slot: dict[str, Any],
@@ -418,7 +512,7 @@ def generate_story_cast_member(
         "cast_slot": cast_slot,
         "existing_cast": existing_cast,
     }
-    if gateway.use_session_cache and previous_response_id:
+    if gateway.text_policy("author.cast_member_generate").use_session_cache and previous_response_id:
         payload = {
             "story_frame_hint": _slim_story_frame(story_frame),
             "cast_slot": cast_slot,
@@ -435,7 +529,7 @@ def generate_story_cast_member(
         "cast_slot": cast_slot,
         "existing_cast": existing_cast,
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if not (gateway.text_policy("author.cast_member_generate").use_session_cache and previous_response_id):
         final_retry_payload["focused_brief"] = focused_brief.model_dump(mode="json")
     system_prompt = (
         "You are the NPC semantic generator. Return one strict JSON object matching CastMemberSemanticsDraft. "
@@ -445,6 +539,8 @@ def generate_story_cast_member(
         "The new character must differ from existing_cast in tactic and pressure behavior. "
         "Avoid placeholder names and do not use the slot label or public role as the character name. "
         "Use cast_slot.counter_trait and cast_slot.pressure_tell to keep the details concrete. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior character writer', zh_role='资深中文人物设定编辑')} "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_cast_theme_guidance(resolved_cast_strategy)}"
     )
     if high_risk_slot:
@@ -499,7 +595,7 @@ def generate_story_cast_member(
 
 
 def glean_story_cast_member(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_slot: dict[str, Any],
@@ -519,7 +615,7 @@ def glean_story_cast_member(
         "existing_cast": existing_cast,
         "partial_member": partial_member,
     }
-    if gateway.use_session_cache and previous_response_id:
+    if gateway.text_policy("author.cast_member_repair").use_session_cache and previous_response_id:
         payload = {
             "story_frame_hint": _slim_story_frame(story_frame),
             "cast_slot": cast_slot,
@@ -537,7 +633,7 @@ def glean_story_cast_member(
         "cast_slot": cast_slot,
         "partial_member": partial_member,
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if not (gateway.text_policy("author.cast_member_repair").use_session_cache and previous_response_id):
         final_retry_payload["focused_brief"] = focused_brief.model_dump(mode="json")
     system_prompt = (
         "You are the NPC semantic repair generator. Return one strict JSON object matching CastMemberSemanticsDraft. "
@@ -546,6 +642,8 @@ def glean_story_cast_member(
         "Preserve any good person-like name if it fits the cast_slot. "
         "If the name is too close to cast_slot.slot_label or cast_slot.public_role, replace it with a person-like name. "
         "Sharpen vague details so the character becomes concrete and distinct. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior character revision editor', zh_role='资深中文人物润色编辑')} "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_cast_theme_guidance(resolved_cast_strategy)}"
     )
     if high_risk_slot:
@@ -599,7 +697,7 @@ def glean_story_cast_member(
 
 
 def glean_story_cast(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_overview: CastOverviewDraft,
@@ -612,21 +710,38 @@ def glean_story_cast(
         "cast_overview": cast_overview.model_dump(mode="json"),
         "partial_cast": partial_cast.model_dump(mode="json"),
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if not (gateway.text_policy("author.cast_member_repair").use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     system_prompt = (
         "You are the NPC Ensemble repair generator. Return one strict JSON object matching CastDraft. "
         "Improve partial_cast instead of discarding it wholesale. "
         "Keep any specific useful names or roles that already fit the story. "
         "Replace placeholder names and generic agenda, red_line, or pressure_signature text with concrete character language. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior ensemble cast editor', zh_role='资深中文角色统稿编辑')} "
+        f"{output_language_instruction(focused_brief.language)} "
         "Use cast_overview as the binding scaffold and return a complete CastDraft."
+    )
+    skill_packet = _cast_skill_packet(
+        skill_id="author.cast_full.glean",
+        capability="author.cast_member_repair",
+        required_output_contract="Return exactly one CastDraft JSON object.",
+        task_brief=system_prompt,
+        extra_payload=payload,
+        context_cards=(
+            ContextCard("story_frame_card", story_frame.model_dump(mode="json"), priority=10),
+            ContextCard("cast_overview_card", cast_overview.model_dump(mode="json"), priority=20),
+            ContextCard("partial_cast_card", partial_cast.model_dump(mode="json"), priority=30),
+            ContextCard("focused_brief_card", payload.get("focused_brief") or {}, priority=40),
+        ),
     )
     return invoke_structured_generation_with_retries(
         gateway,
+        capability="author.cast_member_repair",
         primary_payload=payload,
         prompts=(system_prompt,),
         previous_response_id=previous_response_id,
-        max_output_tokens=gateway.max_output_tokens_overview,
+        max_output_tokens=gateway.text_policy("author.cast_member_repair").max_output_tokens,
         operation_name="cast_glean_full",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: CastDraft.model_validate(_normalize_cast_payload(gateway, raw_payload)),
     )

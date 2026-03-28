@@ -1,12 +1,11 @@
-import { createHttpApiClient, createPlaceholderApiClient, type FrontendApiClient } from "../../index"
+import { createHttpApiClient, type FrontendApiClient } from "../../index"
 
 let cachedClient: FrontendApiClient | null = null
 let cachedSignature = ""
 
 function clientSignature(): string {
-  const mode = import.meta.env.VITE_API_MODE === "placeholder" ? "placeholder" : "http"
   const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ""
-  return `${mode}:${baseUrl}`
+  return `http:${baseUrl}`
 }
 
 export function getDefaultApiClient(): FrontendApiClient {
@@ -15,10 +14,9 @@ export function getDefaultApiClient(): FrontendApiClient {
     return cachedClient
   }
 
-  const mode = import.meta.env.VITE_API_MODE === "placeholder" ? "placeholder" : "http"
   const baseUrl = import.meta.env.VITE_API_BASE_URL ?? window.location.origin
 
-  cachedClient = mode === "http" ? createHttpApiClient(baseUrl) : createPlaceholderApiClient()
+  cachedClient = createHttpApiClient(baseUrl)
   cachedSignature = signature
   return cachedClient
 }

@@ -109,12 +109,12 @@ def estimate_token_cost(metrics: AuthorCacheMetrics) -> AuthorTokenCostEstimate 
     cached_input_tokens = int(metrics.cached_input_tokens or 0)
     cache_creation_input_tokens = int(metrics.cache_creation_input_tokens or 0)
     uncached_input_tokens = max(input_tokens - cached_input_tokens - cache_creation_input_tokens, 0)
-    input_rate = settings.responses_input_price_per_million_tokens_rmb / 1_000_000
-    output_rate = settings.responses_output_price_per_million_tokens_rmb / 1_000_000
+    input_rate = settings.resolved_gateway_input_price_per_million_tokens_rmb() / 1_000_000
+    output_rate = settings.resolved_gateway_output_price_per_million_tokens_rmb() / 1_000_000
     estimated_input_cost = (
         (uncached_input_tokens * input_rate)
-        + (cached_input_tokens * input_rate * settings.responses_session_cache_hit_multiplier)
-        + (cache_creation_input_tokens * input_rate * settings.responses_session_cache_creation_multiplier)
+        + (cached_input_tokens * input_rate * settings.resolved_gateway_session_cache_hit_multiplier())
+        + (cache_creation_input_tokens * input_rate * settings.resolved_gateway_session_cache_creation_multiplier())
     )
     estimated_output_cost = output_tokens * output_rate
     notes: str | None = None
@@ -125,12 +125,12 @@ def estimate_token_cost(metrics: AuthorCacheMetrics) -> AuthorTokenCostEstimate 
         cache_creation_input_tokens = 0
         estimated_input_cost = uncached_input_tokens * input_rate
     return AuthorTokenCostEstimate(
-        model=settings.responses_model,
+        model=settings.resolved_gateway_model() or None,
         currency="RMB",
-        input_price_per_million_tokens_rmb=settings.responses_input_price_per_million_tokens_rmb,
-        output_price_per_million_tokens_rmb=settings.responses_output_price_per_million_tokens_rmb,
-        session_cache_hit_multiplier=settings.responses_session_cache_hit_multiplier,
-        session_cache_creation_multiplier=settings.responses_session_cache_creation_multiplier,
+        input_price_per_million_tokens_rmb=settings.resolved_gateway_input_price_per_million_tokens_rmb(),
+        output_price_per_million_tokens_rmb=settings.resolved_gateway_output_price_per_million_tokens_rmb(),
+        session_cache_hit_multiplier=settings.resolved_gateway_session_cache_hit_multiplier(),
+        session_cache_creation_multiplier=settings.resolved_gateway_session_cache_creation_multiplier(),
         uncached_input_tokens=uncached_input_tokens,
         cached_input_tokens=cached_input_tokens,
         cache_creation_input_tokens=cache_creation_input_tokens,

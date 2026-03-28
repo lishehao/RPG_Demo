@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from rpg_backend.author.compiler.beats import build_default_beat_plan_draft
 from rpg_backend.author.compiler.routes import normalize_affordance_tag
 from rpg_backend.author.compiler.router import plan_story_theme
 from rpg_backend.author.generation.context import build_author_context_from_story
 from rpg_backend.author.generation.runner import invoke_structured_generation_with_retries
+from rpg_backend.content_language import output_language_instruction, prompt_role_instruction, resolve_content_prompt_profile
+from rpg_backend.generation_skill import ContextCard, GenerationSkillPacket
+from rpg_backend.llm_gateway import CapabilityGatewayCore
 from rpg_backend.author.normalize import coerce_int, trim_text, unique_preserve
 from rpg_backend.author.contracts import (
     BeatDraftSpec,
@@ -14,38 +18,66 @@ from rpg_backend.author.contracts import (
     BeatSkeletonSpec,
     CastDraft,
     FocusedBrief,
+    StoryFlowPlan,
     StoryFrameDraft,
+    TonePlan,
 )
-
-if TYPE_CHECKING:
-    from rpg_backend.author.gateway import AuthorLLMGateway
-
-
-def _beat_plan_semantics_output_tokens(gateway: "AuthorLLMGateway") -> int:
-    budget = gateway.max_output_tokens_beat_plan
+def _beat_plan_semantics_output_tokens(gateway: CapabilityGatewayCore) -> int:
+    budget = gateway.text_policy("author.beat_plan_generate").max_output_tokens
     if budget is None:
         return 1800
     return max(int(budget), 1800)
 
 
-def _beat_plan_skeleton_output_tokens(gateway: "AuthorLLMGateway") -> int:
-    budget = getattr(gateway, "max_output_tokens_beat_skeleton", None)
+def _beat_plan_skeleton_output_tokens(gateway: CapabilityGatewayCore) -> int:
+    budget = gateway.text_policy("author.beat_skeleton_generate").max_output_tokens
     if budget is None:
         return 900
     return max(int(budget), 900)
 
 
-def _beat_plan_repair_output_tokens(gateway: "AuthorLLMGateway") -> int:
-    budget = getattr(gateway, "max_output_tokens_beat_repair", None)
+def _beat_plan_repair_output_tokens(gateway: CapabilityGatewayCore) -> int:
+    budget = gateway.text_policy("author.beat_repair").max_output_tokens
     if budget is None:
         return 700
     return max(int(budget), 700)
 
 
+def _beat_skill_packet(
+    *,
+    skill_id: str,
+    capability: str,
+    required_output_contract: str,
+    task_brief: str,
+    extra_payload: dict[str, Any],
+    context_cards: tuple[ContextCard, ...],
+    repair_note: str,
+    final_contract_note: str,
+) -> GenerationSkillPacket:
+    return GenerationSkillPacket(
+        skill_id=skill_id,
+        skill_version="v1",
+        capability=capability,
+        contract_mode="strict_json_schema",
+        role_style=resolve_content_prompt_profile(),
+        required_output_contract=required_output_contract,
+        context_cards=context_cards,
+        task_brief=task_brief,
+        repair_mode="schema_repair",
+        repair_note=repair_note,
+        final_contract_note=final_contract_note,
+        extra_payload=extra_payload,
+    )
+
+
 def _target_beat_count(
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
+    *,
+    story_flow_plan: StoryFlowPlan | None = None,
 ) -> int:
+    if story_flow_plan is not None:
+        return story_flow_plan.target_beat_count
     lowered = " ".join([story_frame.title, story_frame.premise, story_frame.stakes, *story_frame.world_rules]).casefold()
     if len(story_frame.state_axis_choices) >= 3 and len(cast_draft.cast) >= 3 and len(story_frame.truths) >= 2:
         return 3
@@ -129,7 +161,7 @@ def _beat_risk_guidance(focused_brief: FocusedBrief, story_frame: StoryFrameDraf
 
 
 def _default_beat_blueprints(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
 ) -> list[dict[str, Any]]:
@@ -493,28 +525,56 @@ def _is_generic_beat_goal_seed(value: str) -> bool:
 
 
 def _stabilize_beat_plan_semantics(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     beats: list[dict[str, Any]],
     *,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
+    focused_brief: FocusedBrief,
     primary_theme: str,
+    story_flow_plan: StoryFlowPlan | None = None,
 ) -> list[dict[str, Any]]:
-    blueprints = _default_beat_blueprints(gateway, story_frame, cast_draft)
-    target_count = min(_target_beat_count(story_frame, cast_draft), len(blueprints))
-    stabilized = [dict(item) for item in beats[:4]]
+    default_plan = build_default_beat_plan_draft(
+        focused_brief,
+        story_frame=story_frame,
+        cast_draft=cast_draft,
+        story_flow_plan=story_flow_plan,
+    )
+    blueprints = [
+        {
+            "title_seed": beat.title,
+            "goal_seed": beat.goal,
+            "focus_names": list(beat.focus_names),
+            "conflict_pair": list(beat.conflict_pair),
+            "pressure_axis_id": beat.pressure_axis_id,
+            "milestone_kind": beat.milestone_kind,
+            "route_pivot_tag": beat.route_pivot_tag,
+            "required_truth_texts": list(beat.required_truth_texts),
+            "detour_budget": beat.detour_budget,
+            "progress_required": beat.progress_required,
+            "affordance_tags": list(beat.affordance_tags),
+            "blocked_affordances": list(beat.blocked_affordances),
+        }
+        for beat in default_plan.beats
+    ]
+    target_count = len(default_plan.beats)
+    stabilized = [dict(item) for item in beats[:5]]
     for index in range(target_count):
-        blueprint = dict(blueprints[index])
+        blueprint = dict(blueprints[min(index, len(blueprints) - 1)])
         if index >= len(stabilized):
             stabilized.append(blueprint)
             continue
         beat = dict(stabilized[index])
         title_is_generic = _is_generic_beat_title_seed(str(beat.get("title_seed") or ""), index + 1)
         goal_is_generic = _is_generic_beat_goal_seed(str(beat.get("goal_seed") or ""))
+        blueprint_title_seed = str(blueprint.get("title_seed") or beat.get("title_seed") or f"Beat {index + 1}")
+        blueprint_goal_seed = str(
+            blueprint.get("goal_seed") or beat.get("goal_seed") or "Push the story toward a decisive civic turning point."
+        )
         if title_is_generic:
-            beat["title_seed"] = blueprint["title_seed"]
+            beat["title_seed"] = blueprint_title_seed
         if goal_is_generic:
-            beat["goal_seed"] = blueprint["goal_seed"]
+            beat["goal_seed"] = blueprint_goal_seed
         if title_is_generic and goal_is_generic:
             beat["pressure_axis_id"] = blueprint["pressure_axis_id"]
             beat["milestone_kind"] = blueprint["milestone_kind"]
@@ -535,7 +595,7 @@ def _stabilize_beat_plan_semantics(
         if len(list(beat.get("affordance_tags") or [])) < 2:
             beat["affordance_tags"] = blueprint["affordance_tags"]
         if " ".join(str(beat.get("title_seed") or "").strip().split()).casefold() == " ".join(str(beat.get("goal_seed") or "").strip().split()).casefold():
-            beat["title_seed"] = blueprint["title_seed"]
+            beat["title_seed"] = blueprint_title_seed
         stabilized[index] = beat
     while len(stabilized) < 2 and blueprints:
         stabilized.append(dict(blueprints[min(len(stabilized), len(blueprints) - 1)]))
@@ -549,17 +609,18 @@ def _stabilize_beat_plan_semantics(
                 stabilized[index]["pressure_axis_id"] = blueprint["pressure_axis_id"]
                 stabilized[index]["required_truth_texts"] = blueprint["required_truth_texts"]
                 stabilized[index]["affordance_tags"] = blueprint["affordance_tags"]
-    return stabilized[:4]
+    return stabilized[:5]
 
 
 def _normalize_beat_plan_semantics_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
     *,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
     primary_theme: str | None = None,
+    story_flow_plan: StoryFlowPlan | None = None,
 ) -> dict[str, Any]:
     resolved_primary_theme = primary_theme or plan_story_theme(focused_brief, story_frame).primary_theme
     cast_names = [item.name for item in cast_draft.cast]
@@ -569,7 +630,7 @@ def _normalize_beat_plan_semantics_payload(
     default_tags = ["reveal_truth", "build_trust", "contain_chaos", "shift_public_narrative", "pay_cost"]
     valid_milestones = {"reveal", "exposure", "fracture", "concession", "containment", "commitment"}
     beats = []
-    for index, item in enumerate(list(payload.get("beats") or [])[:4], start=1):
+    for index, item in enumerate(list(payload.get("beats") or [])[:5], start=1):
         if not isinstance(item, dict):
             continue
         focus_names = [trim_text(name, 80) for name in list(item.get("focus_names") or [])[:3]]
@@ -646,9 +707,11 @@ def _normalize_beat_plan_semantics_payload(
         beats,
         story_frame=story_frame,
         cast_draft=cast_draft,
+        focused_brief=focused_brief,
         primary_theme=resolved_primary_theme,
+        story_flow_plan=story_flow_plan,
     )
-    return {"beats": beats[:4]}
+    return {"beats": beats[:5]}
 
 
 def _default_return_hook_for_skeleton(beat: BeatSkeletonSpec, index: int) -> str:
@@ -667,7 +730,7 @@ def _default_return_hook_for_skeleton(beat: BeatSkeletonSpec, index: int) -> str
 
 
 def _compose_beat_plan_from_skeleton(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     skeleton: BeatPlanSkeletonDraft,
 ) -> BeatPlanDraft:
     beats = []
@@ -696,16 +759,41 @@ def _compose_beat_plan_from_skeleton(
 
 
 def _repair_beat_plan_draft_deterministically(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     beat_plan: BeatPlanDraft,
     *,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
+    story_flow_plan: StoryFlowPlan | None = None,
+    tone_plan: TonePlan | None = None,
 ) -> BeatPlanDraft:
-    blueprints = _default_beat_blueprints(gateway, story_frame, cast_draft)
-    target_count = min(_target_beat_count(story_frame, cast_draft), len(blueprints))
-    beats = [beat.model_dump(mode="json") for beat in beat_plan.beats[:4]]
+    target_plan = build_default_beat_plan_draft(
+        focused_brief,
+        story_frame=story_frame,
+        cast_draft=cast_draft,
+        story_flow_plan=story_flow_plan,
+        tone_plan=tone_plan,
+    )
+    blueprints = [
+        {
+            "title_seed": beat.title,
+            "goal_seed": beat.goal,
+            "focus_names": list(beat.focus_names),
+            "conflict_pair": list(beat.conflict_pair),
+            "pressure_axis_id": beat.pressure_axis_id,
+            "milestone_kind": beat.milestone_kind,
+            "route_pivot_tag": beat.route_pivot_tag,
+            "required_truth_texts": list(beat.required_truth_texts),
+            "detour_budget": beat.detour_budget,
+            "progress_required": beat.progress_required,
+            "affordance_tags": list(beat.affordance_tags),
+            "blocked_affordances": list(beat.blocked_affordances),
+        }
+        for beat in target_plan.beats
+    ]
+    target_count = len(target_plan.beats)
+    beats = [beat.model_dump(mode="json") for beat in beat_plan.beats[:5]]
     while len(beats) < target_count:
         blueprint = blueprints[min(len(beats), len(blueprints) - 1)]
         beats.append(
@@ -721,10 +809,14 @@ def _repair_beat_plan_draft_deterministically(
 
     for index, beat in enumerate(beats[:target_count]):
         blueprint = blueprints[min(index, len(blueprints) - 1)]
+        blueprint_title_seed = str(blueprint.get("title_seed") or beat.get("title") or beat.get("title_seed") or f"Beat {index + 1}")
+        blueprint_goal_seed = str(
+            blueprint.get("goal_seed") or beat.get("goal") or beat.get("goal_seed") or "Push the story toward a decisive civic turning point."
+        )
         if _is_generic_beat_title_seed(str(beat.get("title") or beat.get("title_seed") or ""), index + 1):
-            beat["title"] = trim_text(blueprint["title_seed"], 120)
+            beat["title"] = trim_text(blueprint_title_seed, 120)
         if _is_generic_beat_goal_seed(str(beat.get("goal") or beat.get("goal_seed") or "")):
-            beat["goal"] = trim_text(blueprint["goal_seed"], 220)
+            beat["goal"] = trim_text(blueprint_goal_seed, 220)
         if not list(beat.get("focus_names") or []):
             beat["focus_names"] = list(blueprint["focus_names"][:3])
         if len(list(beat.get("conflict_pair") or [])) < min(2, len(blueprint["conflict_pair"])):
@@ -738,6 +830,8 @@ def _repair_beat_plan_draft_deterministically(
         beat["required_truth_texts"] = [
             text for text in list(beat.get("required_truth_texts") or [])[:3] if text in truth_texts
         ] or list(blueprint["required_truth_texts"][:1])
+        beat["detour_budget"] = blueprint["detour_budget"]
+        beat["progress_required"] = blueprint["progress_required"]
         if len(list(beat.get("affordance_tags") or [])) < 2:
             beat["affordance_tags"] = list(blueprint["affordance_tags"][:6])
         if not list(beat.get("return_hooks") or []):
@@ -779,16 +873,19 @@ def _repair_beat_plan_draft_deterministically(
             beats[index]["route_pivot_tag"] = blueprint["route_pivot_tag"]
             beats[index]["affordance_tags"] = list(blueprint["affordance_tags"][:6])
 
-    return BeatPlanDraft.model_validate({"beats": beats[:4]})
+    repaired = BeatPlanDraft.model_validate({"beats": beats[:5]})
+    return repaired if tone_plan is None else repaired
 
 
 def _normalize_beat_plan_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
     *,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
+    story_flow_plan: StoryFlowPlan | None = None,
+    tone_plan: TonePlan | None = None,
 ) -> dict[str, Any]:
     skeleton = BeatPlanSkeletonDraft.model_validate(
         _normalize_beat_plan_semantics_payload(
@@ -797,19 +894,29 @@ def _normalize_beat_plan_payload(
             focused_brief=focused_brief,
             story_frame=story_frame,
             cast_draft=cast_draft,
+            story_flow_plan=story_flow_plan,
         )
     )
-    return _compose_beat_plan_from_skeleton(gateway, skeleton).model_dump(mode="json")
+    return _repair_beat_plan_draft_deterministically(
+        gateway,
+        _compose_beat_plan_from_skeleton(gateway, skeleton),
+        focused_brief=focused_brief,
+        story_frame=story_frame,
+        cast_draft=cast_draft,
+        story_flow_plan=story_flow_plan,
+        tone_plan=tone_plan,
+    ).model_dump(mode="json")
 
 
 def _normalize_beat_plan_skeleton_payload(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     payload: dict[str, Any],
     *,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
     primary_theme: str | None = None,
+    story_flow_plan: StoryFlowPlan | None = None,
 ) -> dict[str, Any]:
     skeleton = BeatPlanSkeletonDraft.model_validate(
         _normalize_beat_plan_semantics_payload(
@@ -819,13 +926,14 @@ def _normalize_beat_plan_skeleton_payload(
             story_frame=story_frame,
             cast_draft=cast_draft,
             primary_theme=primary_theme,
+            story_flow_plan=story_flow_plan,
         )
     )
     return skeleton.model_dump(mode="json")
 
 
 def generate_beat_plan(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
@@ -833,28 +941,42 @@ def generate_beat_plan(
     previous_response_id: str | None = None,
     primary_theme: str | None = None,
     beat_plan_strategy: str | None = None,
+    story_flow_plan: StoryFlowPlan | None = None,
+    tone_plan: TonePlan | None = None,
 ):
     from rpg_backend.author.gateway import AuthorGatewayError
     from rpg_backend.responses_transport import StructuredResponse
 
-    context_packet = build_author_context_from_story(story_frame, cast_draft)
+    context_packet = build_author_context_from_story(
+        story_frame,
+        cast_draft,
+        story_flow_plan=story_flow_plan,
+        tone_plan=tone_plan,
+    )
     payload: dict[str, Any] = {
         "author_context": context_packet,
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if story_flow_plan is not None:
+        payload["story_flow_plan"] = story_flow_plan.model_dump(mode="json")
+    if tone_plan is not None:
+        payload["tone_plan"] = tone_plan.model_dump(mode="json")
+    if not (gateway.text_policy("author.beat_skeleton_generate").use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     resolved_primary_theme = primary_theme or plan_story_theme(focused_brief, story_frame).primary_theme
     system_prompt = (
         "You are the Beat Plan skeleton generator. Return one strict JSON object matching BeatPlanSkeletonDraft. "
         "Do not output markdown. Design 2-4 beats for a fixed mainline story with locally flexible play. "
         "Focus on semantic structure first, not polished prose. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior plot architect for short-form civic drama', zh_role='资深中文剧情结构设计师')} "
         "Each beat must include: title_seed, goal_seed, focus_names, conflict_pair, pressure_axis_id, milestone_kind, route_pivot_tag, required_truth_texts, detour_budget, progress_required, affordance_tags, blocked_affordances. "
+        f"Design exactly {story_flow_plan.target_beat_count if story_flow_plan is not None else '2-4'} beats. "
         "Use cast names and truth texts that already exist in author_context. "
         "pressure_axis_id must come from author_context.axes. "
         "milestone_kind must be one of: reveal, exposure, fracture, concession, containment, commitment. "
         "Use conflict_pair to name the two characters whose clash or alliance defines the beat when possible. "
         "Affordance tags must come from: reveal_truth, build_trust, contain_chaos, shift_public_narrative, protect_civilians, secure_resources, unlock_ally, pay_cost. "
         "Keep title_seed short and concrete. Keep goal_seed under one sentence. "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_beat_strategy_guidance(resolved_primary_theme, beat_plan_strategy)}"
     )
     retry_prompt = (
@@ -867,16 +989,34 @@ def generate_beat_plan(
         "Return one strict BeatPlanSkeletonDraft only. "
         "Do not generalize. "
         "Every beat must stay anchored to the domain-specific logistics or record pressure in author_context. "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_beat_risk_guidance(focused_brief, story_frame)}"
+    )
+    skill_packet = _beat_skill_packet(
+        skill_id="author.beat_skeleton.generate",
+        capability="author.beat_skeleton_generate",
+        required_output_contract="Return exactly one BeatPlanSkeletonDraft JSON object.",
+        task_brief=system_prompt,
+        extra_payload=payload,
+        context_cards=(
+            ContextCard("author_context_card", context_packet, priority=10),
+            ContextCard("focused_brief_card", payload.get("focused_brief") or {}, priority=20),
+            ContextCard("story_flow_card", story_flow_plan.model_dump(mode="json") if story_flow_plan is not None else {}, priority=30),
+            ContextCard("tone_plan_card", tone_plan.model_dump(mode="json") if tone_plan is not None else {}, priority=40),
+        ),
+        repair_note=retry_prompt,
+        final_contract_note=high_risk_retry_prompt,
     )
     try:
         skeleton_result = invoke_structured_generation_with_retries(
             gateway,
+            capability="author.beat_skeleton_generate",
             primary_payload=payload,
             prompts=(system_prompt, retry_prompt, high_risk_retry_prompt),
             previous_response_id=previous_response_id,
             max_output_tokens=_beat_plan_skeleton_output_tokens(gateway),
             operation_name="beat_plan_generate",
+            skill_packet=skill_packet,
             parse_value=lambda raw_payload: BeatPlanSkeletonDraft.model_validate(
                 _normalize_beat_plan_skeleton_payload(
                     gateway,
@@ -885,6 +1025,7 @@ def generate_beat_plan(
                     story_frame=story_frame,
                     cast_draft=cast_draft,
                     primary_theme=resolved_primary_theme,
+                    story_flow_plan=story_flow_plan,
                 )
             ),
         )
@@ -898,6 +1039,8 @@ def generate_beat_plan(
         focused_brief=focused_brief,
         story_frame=story_frame,
         cast_draft=cast_draft,
+        story_flow_plan=story_flow_plan,
+        tone_plan=tone_plan,
     )
     return StructuredResponse(
         value=final_beat_plan,
@@ -906,7 +1049,7 @@ def generate_beat_plan(
 
 
 def generate_beat_plan_conservative(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
@@ -914,23 +1057,37 @@ def generate_beat_plan_conservative(
     previous_response_id: str | None = None,
     primary_theme: str | None = None,
     beat_plan_strategy: str | None = None,
+    story_flow_plan: StoryFlowPlan | None = None,
+    tone_plan: TonePlan | None = None,
 ):
     from rpg_backend.author.gateway import AuthorGatewayError
     from rpg_backend.responses_transport import StructuredResponse
 
-    context_packet = build_author_context_from_story(story_frame, cast_draft)
+    context_packet = build_author_context_from_story(
+        story_frame,
+        cast_draft,
+        story_flow_plan=story_flow_plan,
+        tone_plan=tone_plan,
+    )
     payload: dict[str, Any] = {
         "author_context": context_packet,
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if story_flow_plan is not None:
+        payload["story_flow_plan"] = story_flow_plan.model_dump(mode="json")
+    if tone_plan is not None:
+        payload["tone_plan"] = tone_plan.model_dump(mode="json")
+    if not (gateway.text_policy("author.beat_skeleton_generate").use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     resolved_primary_theme = primary_theme or plan_story_theme(focused_brief, story_frame).primary_theme
     system_prompt = (
         "You are the Beat Plan skeleton generator. Return one strict JSON object matching BeatPlanSkeletonDraft. "
         "Do not output markdown. Design 2-4 beats for a fixed mainline story with locally flexible play. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior plot architect for short-form civic drama', zh_role='资深中文节拍策划编辑')} "
         "Each beat must include: title_seed, goal_seed, focus_names, conflict_pair, pressure_axis_id, milestone_kind, route_pivot_tag, required_truth_texts, detour_budget, progress_required, affordance_tags, blocked_affordances. "
+        f"Design exactly {story_flow_plan.target_beat_count if story_flow_plan is not None else '2-4'} beats. "
         "Use cast names and truth texts that already exist in author_context. "
         "Affordance tags must come from: reveal_truth, build_trust, contain_chaos, shift_public_narrative, protect_civilians, secure_resources, unlock_ally, pay_cost. "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_beat_strategy_guidance(resolved_primary_theme, beat_plan_strategy)}"
     )
     retry_prompt = (
@@ -942,15 +1099,33 @@ def generate_beat_plan_conservative(
         "Return one strict BeatPlanSkeletonDraft only. "
         "Do not generalize. "
         "Repair missing beat structure while keeping the domain-specific crisis front and center. "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_beat_risk_guidance(focused_brief, story_frame)}"
+    )
+    skill_packet = _beat_skill_packet(
+        skill_id="author.beat_skeleton.generate_conservative",
+        capability="author.beat_skeleton_generate",
+        required_output_contract="Return exactly one BeatPlanSkeletonDraft JSON object.",
+        task_brief=system_prompt,
+        extra_payload=payload,
+        context_cards=(
+            ContextCard("author_context_card", context_packet, priority=10),
+            ContextCard("focused_brief_card", payload.get("focused_brief") or {}, priority=20),
+            ContextCard("story_flow_card", story_flow_plan.model_dump(mode="json") if story_flow_plan is not None else {}, priority=30),
+            ContextCard("tone_plan_card", tone_plan.model_dump(mode="json") if tone_plan is not None else {}, priority=40),
+        ),
+        repair_note=retry_prompt,
+        final_contract_note=high_risk_retry_prompt,
     )
     skeleton_result = invoke_structured_generation_with_retries(
         gateway,
+        capability="author.beat_skeleton_generate",
         primary_payload=payload,
         prompts=(system_prompt, retry_prompt, high_risk_retry_prompt),
         previous_response_id=previous_response_id,
         max_output_tokens=_beat_plan_skeleton_output_tokens(gateway),
         operation_name="beat_plan_generate",
+        skill_packet=skill_packet,
         parse_value=lambda raw_payload: BeatPlanSkeletonDraft.model_validate(
             _normalize_beat_plan_skeleton_payload(
                 gateway,
@@ -959,6 +1134,7 @@ def generate_beat_plan_conservative(
                 story_frame=story_frame,
                 cast_draft=cast_draft,
                 primary_theme=resolved_primary_theme,
+                story_flow_plan=story_flow_plan,
             )
         ),
     )
@@ -969,13 +1145,15 @@ def generate_beat_plan_conservative(
             focused_brief=focused_brief,
             story_frame=story_frame,
             cast_draft=cast_draft,
+            story_flow_plan=story_flow_plan,
+            tone_plan=tone_plan,
         ),
         response_id=skeleton_result.response_id,
     )
 
 
 def glean_beat_plan(
-    gateway: "AuthorLLMGateway",
+    gateway: CapabilityGatewayCore,
     focused_brief: FocusedBrief,
     story_frame: StoryFrameDraft,
     cast_draft: CastDraft,
@@ -984,22 +1162,35 @@ def glean_beat_plan(
     previous_response_id: str | None = None,
     primary_theme: str | None = None,
     beat_plan_strategy: str | None = None,
+    story_flow_plan: StoryFlowPlan | None = None,
+    tone_plan: TonePlan | None = None,
 ):
     from rpg_backend.author.gateway import AuthorGatewayError
     from rpg_backend.responses_transport import StructuredResponse
 
-    context_packet = build_author_context_from_story(story_frame, cast_draft)
+    context_packet = build_author_context_from_story(
+        story_frame,
+        cast_draft,
+        story_flow_plan=story_flow_plan,
+        tone_plan=tone_plan,
+    )
     payload: dict[str, Any] = {
         "author_context": context_packet,
         "partial_beat_plan": partial_beat_plan.model_dump(mode="json"),
     }
-    if not (gateway.use_session_cache and previous_response_id):
+    if story_flow_plan is not None:
+        payload["story_flow_plan"] = story_flow_plan.model_dump(mode="json")
+    if tone_plan is not None:
+        payload["tone_plan"] = tone_plan.model_dump(mode="json")
+    if not (gateway.text_policy("author.beat_repair").use_session_cache and previous_response_id):
         payload["focused_brief"] = focused_brief.model_dump(mode="json")
     system_prompt = (
         "You are the Beat Plan skeleton repair generator. Return one strict JSON object matching BeatPlanSkeletonDraft. "
         "Improve partial_beat_plan semantically instead of replacing it wholesale. "
         "Preserve useful titles and goals, but repair weak semantic fields. "
         "Every beat should identify a pressure_axis_id, a milestone_kind, a route_pivot_tag, and a conflict_pair when the cast allows it. "
+        f"{prompt_role_instruction(focused_brief.language, en_role='a senior beat structure editor', zh_role='资深中文剧情统稿编辑')} "
+        f"{output_language_instruction(focused_brief.language)} "
         "Use only cast names, axis ids, and truth texts already present in author_context."
     )
     retry_prompt = (
@@ -1010,16 +1201,34 @@ def glean_beat_plan(
     high_risk_retry_prompt = (
         "Return one strict BeatPlanSkeletonDraft only. "
         "Keep the repaired beats domain-specific and structurally valid. "
+        f"{output_language_instruction(focused_brief.language)} "
         f"{_beat_risk_guidance(focused_brief, story_frame)}"
+    )
+    skill_packet = _beat_skill_packet(
+        skill_id="author.beat_skeleton.repair",
+        capability="author.beat_repair",
+        required_output_contract="Return exactly one BeatPlanSkeletonDraft JSON object.",
+        task_brief=system_prompt,
+        extra_payload=payload,
+        context_cards=(
+            ContextCard("author_context_card", payload.get("author_context") or {}, priority=10),
+            ContextCard("partial_beat_plan_card", payload.get("partial_beat_plan") or {}, priority=20),
+            ContextCard("focused_brief_card", payload.get("focused_brief") or {}, priority=30),
+            ContextCard("story_flow_card", story_flow_plan.model_dump(mode="json") if story_flow_plan is not None else {}, priority=40),
+        ),
+        repair_note=retry_prompt,
+        final_contract_note=high_risk_retry_prompt,
     )
     try:
         skeleton_result = invoke_structured_generation_with_retries(
             gateway,
+            capability="author.beat_repair",
             primary_payload=payload,
             prompts=(system_prompt, retry_prompt, high_risk_retry_prompt),
             previous_response_id=previous_response_id,
             max_output_tokens=_beat_plan_repair_output_tokens(gateway),
             operation_name="beat_plan_generate",
+            skill_packet=skill_packet,
             parse_value=lambda raw_payload: BeatPlanSkeletonDraft.model_validate(
                 _normalize_beat_plan_skeleton_payload(
                     gateway,
@@ -1028,6 +1237,7 @@ def glean_beat_plan(
                     story_frame=story_frame,
                     cast_draft=cast_draft,
                     primary_theme=primary_theme,
+                    story_flow_plan=story_flow_plan,
                 )
             ),
         )
@@ -1038,6 +1248,8 @@ def glean_beat_plan(
                 focused_brief=focused_brief,
                 story_frame=story_frame,
                 cast_draft=cast_draft,
+                story_flow_plan=story_flow_plan,
+                tone_plan=tone_plan,
             ),
             response_id=skeleton_result.response_id,
         )

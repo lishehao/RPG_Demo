@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from rpg_backend.content_language import localized_text
 from rpg_backend.author.compiler.beats import (
     compiled_affordance_tags_for_beat,
     event_id_for_beat,
 )
+from rpg_backend.author.planning import ending_summary_for_tone
 from rpg_backend.author.contracts import (
     AffordanceEffectProfile,
     AffordanceWeight,
@@ -19,8 +21,11 @@ from rpg_backend.author.contracts import (
     OverviewFlagDraft,
     RulePack,
     StateSchema,
+    StoryFlowPlan,
+    StoryGenerationControls,
     StoryBible,
     StoryFrameDraft,
+    TonePlan,
     TruthItem,
 )
 from rpg_backend.author.normalize import slugify, trim_ellipsis, unique_preserve
@@ -35,6 +40,17 @@ AXIS_TEMPLATE_CATALOG: dict[str, dict[str, str | int]] = {
     "ally_trust": {"label": "Ally Trust", "kind": "relationship", "min_value": 0, "max_value": 5},
     "exposure_risk": {"label": "Exposure Risk", "kind": "exposure", "min_value": 0, "max_value": 5},
     "time_window": {"label": "Time Window", "kind": "time", "min_value": 0, "max_value": 5},
+}
+
+AXIS_TEMPLATE_CATALOG_ZH: dict[str, str] = {
+    "external_pressure": "外部压力",
+    "public_panic": "公众恐慌",
+    "political_leverage": "政治筹码",
+    "resource_strain": "资源紧张",
+    "system_integrity": "系统完整性",
+    "ally_trust": "盟友信任",
+    "exposure_risk": "曝光风险",
+    "time_window": "时间窗口",
 }
 
 DEFAULT_AXIS_ORDER: tuple[AxisTemplateId, ...] = (
@@ -53,6 +69,10 @@ def build_design_bundle(
     cast_draft: CastDraft,
     beat_plan_draft: BeatPlanDraft,
     focused_brief: FocusedBrief,
+    *,
+    generation_controls: StoryGenerationControls | None = None,
+    story_flow_plan: StoryFlowPlan | None = None,
+    resolved_tone_plan: TonePlan | None = None,
 ) -> DesignBundle:
     cast = [
         CastMember(
@@ -62,6 +82,12 @@ def build_design_bundle(
             agenda=trim_ellipsis(item.agenda, 220),
             red_line=trim_ellipsis(item.red_line, 220),
             pressure_signature=trim_ellipsis(item.pressure_signature, 220),
+            roster_character_id=item.roster_character_id,
+            roster_public_summary=item.roster_public_summary,
+            portrait_url=item.portrait_url,
+            portrait_variants=item.portrait_variants,
+            template_version=item.template_version,
+            story_instance=item.story_instance,
         )
         for item in cast_draft.cast
     ]
@@ -87,7 +113,15 @@ def build_design_bundle(
         axis_rows.append(
             {
                 "axis_id": axis.template_id,
-                "label": trim_ellipsis(axis.story_label or str(template["label"]), 80),
+                "label": trim_ellipsis(
+                    axis.story_label
+                    or localized_text(
+                        focused_brief.language,
+                        en=str(template["label"]),
+                        zh=AXIS_TEMPLATE_CATALOG_ZH.get(axis.template_id, str(template["label"])),
+                    ),
+                    80,
+                ),
                 "kind": template["kind"],
                 "min_value": int(template["min_value"]),
                 "max_value": int(template["max_value"]),
@@ -101,7 +135,11 @@ def build_design_bundle(
         axis_rows.append(
             {
                 "axis_id": axis_id,
-                "label": str(template["label"]),
+                "label": localized_text(
+                    focused_brief.language,
+                    en=str(template["label"]),
+                    zh=AXIS_TEMPLATE_CATALOG_ZH.get(axis_id, str(template["label"])),
+                ),
                 "kind": template["kind"],
                 "min_value": int(template["min_value"]),
                 "max_value": int(template["max_value"]),
@@ -118,7 +156,11 @@ def build_design_bundle(
                 {
                     "stance_id": f"{_npc_id(item.name)}_stance",
                     "npc_id": _npc_id(item.name),
-                    "label": f"{trim_ellipsis(item.name, 60)} Stance",
+                    "label": localized_text(
+                        focused_brief.language,
+                        en=f"{trim_ellipsis(item.name, 60)} Stance",
+                        zh=f"{trim_ellipsis(item.name, 60)}立场",
+                    ),
                     "min_value": -2,
                     "max_value": 3,
                     "starting_value": 0,
@@ -145,9 +187,48 @@ def build_design_bundle(
         world_rules=[trim_ellipsis(item, 180) for item in story_frame.world_rules],
         truth_catalog=truths,
         ending_catalog=[
-            EndingItem(ending_id="mixed", label="Mixed Outcome", summary="The city survives, but trust and stability remain damaged."),
-            EndingItem(ending_id="pyrrhic", label="Pyrrhic Outcome", summary="Success arrives only through a steep civic or personal cost."),
-            EndingItem(ending_id="collapse", label="Collapse", summary="The crisis outruns coordination and the city pays the price."),
+            EndingItem(
+                ending_id="mixed",
+                label=localized_text(focused_brief.language, en="Mixed Outcome", zh="混合结局"),
+                summary=ending_summary_for_tone(
+                    ending_id="mixed",
+                    language=focused_brief.language,
+                    tone_plan=resolved_tone_plan,
+                )
+                or localized_text(
+                    focused_brief.language,
+                    en="The city survives, but trust and stability remain damaged.",
+                    zh="城市保住了，但信任与稳定都已经受损。",
+                ),
+            ),
+            EndingItem(
+                ending_id="pyrrhic",
+                label=localized_text(focused_brief.language, en="Pyrrhic Outcome", zh="惨胜结局"),
+                summary=ending_summary_for_tone(
+                    ending_id="pyrrhic",
+                    language=focused_brief.language,
+                    tone_plan=resolved_tone_plan,
+                )
+                or localized_text(
+                    focused_brief.language,
+                    en="Success arrives only through a steep civic or personal cost.",
+                    zh="局面稳住时，沉重的公共或个人代价也已经摆到台前。",
+                ),
+            ),
+            EndingItem(
+                ending_id="collapse",
+                label=localized_text(focused_brief.language, en="Collapse", zh="崩溃结局"),
+                summary=ending_summary_for_tone(
+                    ending_id="collapse",
+                    language=focused_brief.language,
+                    tone_plan=resolved_tone_plan,
+                )
+                or localized_text(
+                    focused_brief.language,
+                    en="The crisis outruns coordination and the city pays the price.",
+                    zh="危机最终跑赢了协调能力，而整座城市为此付出代价。",
+                ),
+            ),
         ],
     )
     cast_names = {item.name for item in cast_draft.cast}
@@ -189,6 +270,9 @@ def build_design_bundle(
         )
     return DesignBundle(
         focused_brief=focused_brief,
+        generation_controls=generation_controls,
+        story_flow_plan=story_flow_plan,
+        resolved_tone_plan=resolved_tone_plan,
         story_bible=bible,
         state_schema=state_schema,
         beat_spine=beat_spine,
