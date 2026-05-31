@@ -5963,6 +5963,9 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 12.5,
     fontWeight: 700,
     lineHeight: 1.35,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    textAlign: "left" as const,
   },
   advisorInlineAction: {
     height: "auto",
