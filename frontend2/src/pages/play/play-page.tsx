@@ -4093,6 +4093,8 @@ function AdvisorSidechat({
             <button
               key={suggestion}
               type="button"
+              aria-label={t("play.advisor_suggestion_apply_title", { question: suggestion })}
+              title={t("play.advisor_suggestion_apply_title", { question: suggestion })}
               style={{
                 ...ppStyles.advisorSuggestionChip,
                 ...(variant === "empty" ? ppStyles.advisorSuggestionChipEmpty : null),
