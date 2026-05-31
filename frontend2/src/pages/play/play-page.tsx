@@ -4460,9 +4460,6 @@ function AdvisorSidechat({
                   style={m.role === "player" ? ppStyles.advisorRowPlayer : ppStyles.advisorRowAdvisor}
                 >
                   {isOracle ? (
-                    <div style={ppStyles.oracleBadge}>{t("play.oracle_badge")}</div>
-                  ) : null}
-                  {isOracle ? (
                     <div style={{ ...ppStyles.advisorTranscriptLine, ...ppStyles.advisorTranscriptLineOracle }}>
                       <span style={{ ...ppStyles.advisorTranscriptSpeaker, ...ppStyles.oracleBadge }}>
                         {t("play.oracle_badge")}
@@ -4544,6 +4541,11 @@ function AdvisorSidechat({
                     after: oracleBudgetAfter,
                   })}
                 </span>
+                {isCommitmentActive ? (
+                  <span style={ppStyles.oracleInlineKeepMove}>
+                    {t("play.oracle_inline_keep_move")}
+                  </span>
+                ) : null}
                 <div style={ppStyles.oracleInlineActions}>
                   <button
                     ref={oracleConfirmRef}
@@ -7985,6 +7987,14 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 11.5,
     lineHeight: 1.35,
     fontWeight: 600,
+  },
+  oracleInlineKeepMove: {
+    minWidth: 0,
+    flex: "1 1 220px",
+    color: "rgba(232,218,205,0.52)",
+    fontSize: 11.2,
+    lineHeight: 1.35,
+    fontWeight: 620,
   },
   oracleInlineActions: {
     marginTop: 0,
