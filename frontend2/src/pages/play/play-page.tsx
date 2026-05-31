@@ -2182,28 +2182,46 @@ function outcomeReceiptToneStyle(tone?: OutcomeReceiptTone): CSSProperties | nul
 
 function OutcomeReceipt({ items, compact = false }: { items: OutcomeReceiptItem[]; compact?: boolean }) {
   const t = useT()
+  const compactLayout = useCompactLayout("(max-width: 520px)")
   if (items.length === 0) return null
+  const rootStyle = compact
+    ? {
+        ...ppStyles.outcomeReceiptInline,
+        ...(compactLayout ? ppStyles.outcomeReceiptInlineMobile : null),
+      }
+    : {
+        ...ppStyles.outcomeReceipt,
+        ...(compactLayout ? ppStyles.outcomeReceiptMobile : null),
+      }
+  const sentenceStyle = {
+    ...ppStyles.outcomeReceiptSentence,
+    ...(compact ? ppStyles.outcomeReceiptSentenceCompact : null),
+    ...(compactLayout ? ppStyles.outcomeReceiptSentenceMobile : null),
+  }
+  const phraseStyle = {
+    ...ppStyles.outcomeReceiptPhrase,
+    ...(compactLayout ? ppStyles.outcomeReceiptPhraseMobile : null),
+  }
+  const valueStyleBase = {
+    ...ppStyles.outcomeReceiptValue,
+    ...(compactLayout ? ppStyles.outcomeReceiptValueMobile : null),
+  }
   const content = (
     <>
       <span style={compact ? ppStyles.outcomeReceiptInlineLabel : ppStyles.outcomeReceiptKicker}>
         {compact ? t("play.outcome_inline_label") : t("play.outcome_kicker")}
       </span>
-      <span
-        style={{
-          ...ppStyles.outcomeReceiptSentence,
-          ...(compact ? ppStyles.outcomeReceiptSentenceCompact : null),
-        }}
-      >
-        {items.map((item, index) => (
+      <span style={sentenceStyle}>
+        {items.map((item) => (
           <span
             key={`${item.label}:${item.value}`}
-            style={ppStyles.outcomeReceiptPhrase}
+            style={phraseStyle}
             title={`${item.label}: ${item.value}`}
           >
             <span style={ppStyles.outcomeReceiptItemLabel}>{item.label}</span>
             <strong
               style={{
-                ...ppStyles.outcomeReceiptValue,
+                ...valueStyleBase,
                 ...(outcomeReceiptToneStyle(item.tone) ?? {}),
               }}
             >
@@ -2219,7 +2237,7 @@ function OutcomeReceipt({ items, compact = false }: { items: OutcomeReceiptItem[
       initial={{ opacity: 0, y: 6, scale: 0.99 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.1, ...itemTransition }}
-      style={compact ? ppStyles.outcomeReceiptInline : ppStyles.outcomeReceipt}
+      style={rootStyle}
       aria-label={compact ? t("play.outcome_inline_label") : t("play.outcome_label")}
     >
       {content}
@@ -5136,6 +5154,11 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 6,
     flexWrap: "wrap" as const,
   },
+  outcomeReceiptMobile: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    rowGap: 5,
+  },
   outcomeReceiptInline: {
     marginTop: 6,
     paddingTop: 0,
@@ -5145,6 +5168,11 @@ const ppStyles: Record<string, CSSProperties> = {
     columnGap: 10,
     rowGap: 4,
     flexWrap: "wrap" as const,
+  },
+  outcomeReceiptInlineMobile: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    rowGap: 5,
   },
   outcomeReceiptKicker: {
     color: "rgba(245,210,140,0.84)",
@@ -5176,12 +5204,25 @@ const ppStyles: Record<string, CSSProperties> = {
   outcomeReceiptSentenceCompact: {
     columnGap: 7,
   },
+  outcomeReceiptSentenceMobile: {
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    rowGap: 4,
+  },
   outcomeReceiptPhrase: {
     minWidth: 0,
     display: "inline-flex",
     alignItems: "baseline",
     gap: 5,
     maxWidth: "100%",
+  },
+  outcomeReceiptPhraseMobile: {
+    display: "grid",
+    gridTemplateColumns: "52px minmax(0, 1fr)",
+    columnGap: 8,
+    rowGap: 2,
+    alignItems: "baseline",
   },
   outcomeReceiptItemLabel: {
     flexShrink: 0,
@@ -5202,6 +5243,12 @@ const ppStyles: Record<string, CSSProperties> = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap" as const,
+  },
+  outcomeReceiptValueMobile: {
+    whiteSpace: "normal" as const,
+    overflow: "visible",
+    textOverflow: "clip",
+    lineHeight: 1.3,
   },
   outcomeReceiptChipSafe: {
     color: "rgba(190,235,210,0.92)",
