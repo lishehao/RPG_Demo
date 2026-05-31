@@ -2875,6 +2875,12 @@ function ActionArea({
               detail: t("play.turn_guide_free_detail"),
               tone: ppStyles.turnGuideFree,
             }
+          : options.length === 0
+            ? {
+                title: t("play.turn_guide_free_title"),
+                detail: t("play.turn_guide_no_options_detail"),
+                tone: ppStyles.turnGuideFree,
+              }
           : isFinalTurn
             ? {
                 title: t("play.turn_guide_final_title"),
