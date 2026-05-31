@@ -3160,7 +3160,7 @@ function ActionArea({
       <div style={ppStyles.diaryBox}>
         <div style={ppStyles.diaryHeader}>
           <span style={ppStyles.diaryKicker}>{t("play.diary_inner_label")}</span>
-          <span style={ppStyles.diaryMeta}>{t("play.move_packet_private_hint")}</span>
+          <span style={ppStyles.diaryMeta}>{t("play.private_intent_hint")}</span>
         </div>
         <textarea
           className="play-diary-textarea"
@@ -6764,8 +6764,8 @@ const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 760,
   },
   diaryMeta: {
-    color: "rgba(226,214,246,0.42)",
-    fontSize: 11,
+    color: "rgba(226,214,246,0.58)",
+    fontSize: 11.2,
     lineHeight: 1.25,
     fontWeight: 620,
   },
@@ -6775,14 +6775,14 @@ const ppStyles: Record<string, CSSProperties> = {
     border: "none",
     borderBottom: "1px solid rgba(222,202,255,0.22)",
     borderRadius: 0,
-    fontSize: 13,
+    fontSize: 13.5,
     lineHeight: 1.45,
     color: "rgba(238,228,252,0.97)",
-    padding: "1px 0 5px",
+    padding: "2px 0 6px",
     resize: "none" as const,
     outline: "none",
     fontFamily: "var(--font-narrative)",
-    minHeight: 38,
+    minHeight: 42,
   },
   diaryActions: {
     display: "flex",
