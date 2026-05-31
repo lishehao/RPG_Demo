@@ -64,6 +64,12 @@ type ActionCommitmentSummary = {
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
 
+function fitTextareaToContent(node: HTMLTextAreaElement | null) {
+  if (!node) return
+  node.style.height = "auto"
+  node.style.height = `${node.scrollHeight}px`
+}
+
 function leverageCardId(roleId: string | undefined, lev: NarrativePlayerLeverageOverNPC, index: number): string {
   return `lev:${roleId || "role"}:${lev.npc_id}:${index}`
 }
@@ -2904,6 +2910,7 @@ function ActionArea({
     const focusFreeTextarea = () => {
       const node = freeTextareaRef.current
       if (!node || node.disabled) return
+      fitTextareaToContent(node)
       node.focus({ preventScroll: true })
       const cursor = node.value.length
       node.setSelectionRange(cursor, cursor)
@@ -2917,6 +2924,14 @@ function ActionArea({
       timers.forEach((timer) => window.clearTimeout(timer))
     }
   }, [busy, freeComposerOpen])
+
+  useEffect(() => {
+    if (!freeComposerOpen) return
+    const frame = window.requestAnimationFrame(() => {
+      fitTextareaToContent(freeTextareaRef.current)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [freeComposerOpen, freeInput])
 
   const isFinalTurn = turnsRemaining <= 1
   const isEndgameTurn = turnsRemaining <= 2
@@ -3124,6 +3139,7 @@ function ActionArea({
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       const node = diaryTextareaRef.current
       if (!node || node.disabled) return
+      fitTextareaToContent(node)
       node.focus({ preventScroll: true })
       const cursor = node.value.length
       node.setSelectionRange(cursor, cursor)
@@ -3139,6 +3155,14 @@ function ActionArea({
       timers.forEach((timer) => window.clearTimeout(timer))
     }
   }, [busy, diaryContext, showDiary])
+
+  useEffect(() => {
+    if (!showDiary || diaryContext === "idle") return
+    const frame = window.requestAnimationFrame(() => {
+      fitTextareaToContent(diaryTextareaRef.current)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [diary, diaryContext, showDiary])
 
   const renderDiaryAttachPreview = (context: "leverage" | "option" | "free") => {
     const isEditingThisContext = showDiary && diaryContext === context
@@ -6751,7 +6775,9 @@ const ppStyles: Record<string, CSSProperties> = {
     lineHeight: 1.6,
     color: "var(--text)",
     resize: "none" as const,
+    overflowY: "hidden",
     outline: "none",
+    boxSizing: "border-box" as const,
     minHeight: 42,
     padding: "3px 0 7px",
   },
@@ -6869,7 +6895,9 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(238,228,252,0.97)",
     padding: "2px 0 6px",
     resize: "none" as const,
+    overflowY: "hidden",
     outline: "none",
+    boxSizing: "border-box" as const,
     fontFamily: "var(--font-narrative)",
     minHeight: 42,
   },
