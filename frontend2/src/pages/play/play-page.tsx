@@ -2886,7 +2886,9 @@ function ActionArea({
                 }
               : {
                   title: t("play.turn_guide_idle_title"),
-                  detail: t("play.turn_guide_idle_detail"),
+                  detail: playableLeverageCards.length > 0
+                    ? t("play.turn_guide_idle_detail_with_leverage")
+                    : t("play.turn_guide_idle_detail"),
                   tone: null,
                 }
   const showActionTelemetry = !commitmentSurfaceOpen && !showPickedReflection && options.length === 0
@@ -2996,8 +2998,7 @@ function ActionArea({
       : showFreeInput || options.length === 0
         ? "free"
         : "idle"
-  const showTurnGuide =
-    !showPickedReflection && (commitmentSurfaceOpen || isEndgameTurn || options.length === 0)
+  const showTurnGuide = !showPickedReflection
 
   useEffect(() => {
     if (actionSubmissionInFlight) return
