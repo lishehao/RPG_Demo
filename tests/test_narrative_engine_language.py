@@ -1,3 +1,4 @@
+from rpg_backend.narrative.contracts import STORY_OPTION_LABEL_MAX_LENGTH
 from rpg_backend.narrative.engine import _parse_options
 
 
@@ -33,7 +34,7 @@ def test_parse_options_normalizes_english_intent_tags_for_chinese_templates() ->
     ]
 
 
-def test_parse_options_clips_long_labels_at_word_boundary() -> None:
+def test_parse_options_preserves_complete_english_action_labels() -> None:
     options = _parse_options(
         [
             {
@@ -45,5 +46,27 @@ def test_parse_options_clips_long_labels_at_word_boundary() -> None:
         language="en",
     )
 
-    assert options[0].label == "[Counter] Threaten to leak Chen's embezzlement evidence..."
-    assert len(options[0].label) <= 60
+    assert options[0].label == "[Counter] Threaten to leak Chen's embezzlement evidence publicly at the podium"
+    assert len(options[0].label) <= STORY_OPTION_LABEL_MAX_LENGTH
+
+
+def test_parse_options_clips_very_long_labels_at_word_boundary() -> None:
+    options = _parse_options(
+        [
+            {
+                "label": (
+                    "[Counter] Threaten to leak Chen's embezzlement evidence publicly at the podium "
+                    "while forcing the board chair to answer on camera before Jules can regain control"
+                ),
+                "hint": "High risk",
+                "handle": "leak evidence",
+            }
+        ],
+        language="en",
+    )
+
+    assert options[0].label == (
+        "[Counter] Threaten to leak Chen's embezzlement evidence publicly at the podium "
+        "while forcing the board chair to answer on..."
+    )
+    assert len(options[0].label) <= STORY_OPTION_LABEL_MAX_LENGTH

@@ -127,10 +127,13 @@ class NPCPulse(BaseModel):
     reason: str | None = Field(default=None, max_length=80)
 
 
+STORY_OPTION_LABEL_MAX_LENGTH = 128
+
+
 class StoryOption(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    label: str = Field(min_length=1, max_length=60)
+    label: str = Field(min_length=1, max_length=STORY_OPTION_LABEL_MAX_LENGTH)
     hint: str = Field(default="", max_length=120)
     # Short "memory handle" for the option — 2-6 characters in the
     # template's locale, distilling the action to something a player

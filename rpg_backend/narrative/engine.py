@@ -17,6 +17,7 @@ from rpg_backend.narrative.contracts import (
     PlayerRole,
     StoryMessage,
     StoryOption,
+    STORY_OPTION_LABEL_MAX_LENGTH,
     TemplateLanguage,
 )
 from rpg_backend.narrative.gateway import NarrativeGatewayError, NarrativeLLMGateway
@@ -54,6 +55,9 @@ _LANGUAGE_DIRECTIVE_EN = (
     "for the option (e.g. 'show recording', 'push back', 'step away') "
     "— short enough that a player can later say 'I picked show "
     "recording that turn.' Don't repeat the [Intent] bracket prefix.\n"
+    "- English options[].label values should be complete 5-12 word "
+    "player actions. Do not end them with ellipses or leave them "
+    "visibly unfinished.\n"
     "- advisor_persona (the entire description of the friend the player "
     "can call): ENGLISH. Pick a plausible English/Western name and write "
     "the persona description in English.\n"
@@ -2261,7 +2265,7 @@ def _parse_options(raw: Any, *, language: TemplateLanguage | None = None) -> lis
             if not text:
                 continue
             text = _normalize_option_label_language(text, language)
-            options.append(StoryOption(label=_clip_text(text, 60), hint="", handle=""))
+            options.append(StoryOption(label=_clip_text(text, STORY_OPTION_LABEL_MAX_LENGTH), hint="", handle=""))
             continue
         if not isinstance(item, dict):
             continue
@@ -2272,7 +2276,11 @@ def _parse_options(raw: Any, *, language: TemplateLanguage | None = None) -> lis
         hint = str(item.get("hint") or "").strip()
         handle = str(item.get("handle") or "").strip()
         options.append(
-            StoryOption(label=_clip_text(label, 60), hint=_clip_text(hint, 120), handle=handle[:12])
+            StoryOption(
+                label=_clip_text(label, STORY_OPTION_LABEL_MAX_LENGTH),
+                hint=_clip_text(hint, 120),
+                handle=handle[:12],
+            )
         )
         if len(options) >= 5:
             break
