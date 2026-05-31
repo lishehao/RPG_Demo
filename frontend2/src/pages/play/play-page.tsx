@@ -3204,6 +3204,9 @@ function ActionArea({
                 }}
                 onClick={onOpenAdvisor}
                 disabled={actionControlsDisabled}
+                aria-haspopup="dialog"
+                aria-label={t("play.ask_friend_open_title")}
+                title={t("play.ask_friend_open_title")}
               >
                 {t("play.ask_friend_inline")}
               </button>
@@ -3447,6 +3450,9 @@ function ActionArea({
                     }}
                     onClick={onOpenAdvisor}
                     disabled={actionControlsDisabled}
+                    aria-haspopup="dialog"
+                    aria-label={t("play.ask_friend_open_title")}
+                    title={t("play.ask_friend_open_title")}
                   >
                     {t("play.ask_friend_inline")}
                   </button>
@@ -3670,6 +3676,9 @@ function ActionArea({
                       }}
                       onClick={onOpenAdvisor}
                       disabled={actionControlsDisabled}
+                      aria-haspopup="dialog"
+                      aria-label={t("play.ask_friend_open_title")}
+                      title={t("play.ask_friend_open_title")}
                     >
                       {t("play.ask_friend_inline")}
                     </button>
@@ -3732,6 +3741,9 @@ function ActionArea({
               }}
               onClick={onOpenAdvisor}
               disabled={actionControlsDisabled}
+              aria-haspopup="dialog"
+              aria-label={t("play.ask_friend_open_title")}
+              title={t("play.ask_friend_open_title")}
             >
               <span style={ppStyles.alternateActionLabel}>{t("play.ask_friend_inline")}</span>
               <span style={ppStyles.alternateActionHint}>{t("play.ask_friend_inline_hint")}</span>
@@ -3774,8 +3786,9 @@ function AdvisorFab({
         ...(compactFab ? ppStyles.fabCompact : null),
       }}
       onClick={onOpen}
-      title={persona}
+      title={t("play.fab_title", { persona })}
       aria-label={t("play.fab_label")}
+      aria-haspopup="dialog"
       type="button"
     >
       <span className="advisor-fab__label" style={ppStyles.fabLabel}>
@@ -4018,6 +4031,7 @@ function AdvisorSidechat({
         animate="animate"
         exit="exit"
         transition={compactAdvisor ? transitions.snap : slideInRightTransition}
+        role="dialog"
         aria-label={t("play.advisor_title")}
       >
         <header

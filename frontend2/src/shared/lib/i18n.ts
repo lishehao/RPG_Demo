@@ -553,8 +553,10 @@ export const STRINGS_ZH = {
 
   // Play page — advisor sidechat (FAB + panel)
   "play.fab_label": "问朋友",
+  "play.fab_title": "问朋友：{persona}",
   "play.ask_friend_inline": "问朋友",
   "play.ask_friend_inline_hint": "先让旁观者帮你判断。",
+  "play.ask_friend_open_title": "打开朋友建议面板",
   "play.advisor_title": "你的局外人朋友",
   "play.advisor_commitment_notice_kicker": "当前行动已保留",
   "play.advisor_commitment_notice_body": "当前行动会留在原位。",
@@ -1146,8 +1148,10 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.diary_attach_edit_title": "Edit inner motive: {motive}",
 
   "play.fab_label": "Ask friend",
+  "play.fab_title": "Ask friend: {persona}",
   "play.ask_friend_inline": "Ask friend",
   "play.ask_friend_inline_hint": "Get a second read before choosing.",
+  "play.ask_friend_open_title": "Open friend advice panel",
   "play.advisor_title": "Your outsider friend",
   "play.advisor_commitment_notice_kicker": "Current move preserved",
   "play.advisor_commitment_notice_body": "Your prepared move stays in place.",
