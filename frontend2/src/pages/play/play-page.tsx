@@ -4164,11 +4164,9 @@ function AdvisorSidechat({
           ...(variant === "empty" ? ppStyles.advisorSuggestionBlockEmpty : null),
         }}
       >
-        {variant === "composer" ? (
-          <span style={ppStyles.advisorSuggestionLabel}>
-            {t("play.advisor_suggestions_label")}
-          </span>
-        ) : null}
+        <span style={ppStyles.advisorSuggestionLabel}>
+          {t("play.advisor_suggestions_label")}
+        </span>
         <div
           style={{
             ...ppStyles.advisorSuggestionRow,
@@ -7291,11 +7289,11 @@ const ppStyles: Record<string, CSSProperties> = {
     top: 0,
     right: 0,
     bottom: 0,
-    width: "min(330px, 88vw)",
+    width: "min(380px, 92vw)",
     paddingLeft: 0,
     boxSizing: "border-box",
     background:
-      "linear-gradient(90deg, rgba(12,10,10,0) 0%, rgba(12,10,10,0.22) 22%, rgba(12,10,10,0.72) 72%, rgba(12,10,10,0.86) 100%)",
+      "linear-gradient(90deg, rgba(12,10,10,0.76) 0%, rgba(12,10,10,0.86) 48%, rgba(12,10,10,0.94) 100%)",
     backdropFilter: "none",
     WebkitBackdropFilter: "none",
     borderLeft: "none",
@@ -7368,7 +7366,7 @@ const ppStyles: Record<string, CSSProperties> = {
     padding: 4,
   },
   advisorContextLine: {
-    margin: "4px 22px 0 20px",
+    margin: "4px 22px 0 42px",
     minWidth: 0,
     display: "flex",
     alignItems: "baseline",
@@ -7397,10 +7395,10 @@ const ppStyles: Record<string, CSSProperties> = {
   advisorMessages: {
     flex: 1,
     overflowY: "auto",
-    paddingTop: 16,
+    paddingTop: 18,
     paddingRight: 22,
     paddingBottom: 20,
-    paddingLeft: 20,
+    paddingLeft: 42,
   },
   advisorMessagesCompact: {
     paddingTop: 5,
@@ -7410,7 +7408,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   advisorMessagesEmpty: {
     flex: "0 0 auto",
-    paddingBottom: 12,
+    paddingBottom: 14,
   },
   advisorRowPlayer: {
     display: "flex",
@@ -7525,7 +7523,7 @@ const ppStyles: Record<string, CSSProperties> = {
     paddingTop: 10,
     paddingRight: 22,
     paddingBottom: 16,
-    paddingLeft: 20,
+    paddingLeft: 42,
     borderTop: "none",
     display: "flex",
     flexDirection: "column" as const,
@@ -7552,7 +7550,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   advisorSuggestionBlockEmpty: {
     display: "grid",
-    gap: 6,
+    gap: 9,
     alignItems: "stretch",
   },
   advisorSuggestionLabel: {
@@ -7571,7 +7569,7 @@ const ppStyles: Record<string, CSSProperties> = {
   advisorSuggestionRowEmpty: {
     display: "grid",
     gridTemplateColumns: "1fr",
-    gap: 6,
+    gap: 9,
     borderTop: "none",
   },
   advisorSuggestionChip: {
@@ -7592,12 +7590,12 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   advisorSuggestionChipEmpty: {
     width: "100%",
-    padding: "5px 0 7px",
+    padding: "6px 0 8px",
     borderBottom: "none",
     color: "rgba(255,238,214,0.82)",
     fontFamily: "var(--font-narrative)",
-    fontSize: 13.5,
-    lineHeight: 1.45,
+    fontSize: 13,
+    lineHeight: 1.42,
   },
   advisorComposer: {
     display: "flex",
