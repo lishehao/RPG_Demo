@@ -4332,7 +4332,8 @@ function AdvisorSidechat({
               onClick={() => applySuggestion(suggestion)}
               disabled={busy || !!pendingOracleQuestion}
             >
-              {suggestion}
+              <span style={ppStyles.advisorSuggestionText}>{suggestion}</span>
+              <span aria-hidden="true" style={ppStyles.advisorSuggestionArrow}>→</span>
             </button>
           ))}
         </div>
@@ -7866,6 +7867,9 @@ const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "inherit",
     textAlign: "left" as const,
     cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "baseline",
+    gap: 5,
   },
   advisorSuggestionChipEmpty: {
     width: "100%",
@@ -7875,6 +7879,8 @@ const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "var(--font-narrative)",
     fontSize: 13,
     lineHeight: 1.42,
+    justifyContent: "space-between",
+    gap: 12,
   },
   advisorSuggestionChipComposerCompact: {
     width: "100%",
@@ -7882,6 +7888,15 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(255,238,214,0.78)",
     fontSize: 12,
     lineHeight: 1.38,
+  },
+  advisorSuggestionText: {
+    minWidth: 0,
+  },
+  advisorSuggestionArrow: {
+    flexShrink: 0,
+    color: "rgba(245,200,120,0.82)",
+    fontSize: 12,
+    lineHeight: 1,
   },
   advisorComposer: {
     display: "flex",
