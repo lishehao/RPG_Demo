@@ -3034,59 +3034,6 @@ function ActionArea({
       </button>
     )
   }
-  const renderActionCommitLine = ({
-    context,
-    publicMove,
-    publicHint,
-    publicHintTone = "neutral",
-    showPublic = true,
-  }: {
-    context: "leverage" | "option" | "free"
-    publicMove: string
-    publicHint?: string
-    publicHintTone?: "neutral" | "risk"
-    showPublic?: boolean
-  }) => {
-    const publicCopy = publicMove.trim()
-    return (
-      <>
-        <div
-          style={{
-            ...ppStyles.actionCommitLine,
-            ...(!showPublic ? ppStyles.actionCommitLinePrivateOnly : null),
-            ...(compactActionChrome ? ppStyles.actionCommitLineCompact : null),
-          }}
-        >
-          {showPublic ? (
-            <div style={ppStyles.actionCommitPublic}>
-              <span style={ppStyles.actionCommitLabel}>{t("play.move_packet_public_label")}</span>
-              <strong
-                style={{
-                  ...ppStyles.actionCommitText,
-                  ...(publicCopy ? null : ppStyles.actionCommitTextMuted),
-                }}
-              >
-                {publicCopy || t("play.move_packet_public_empty")}
-              </strong>
-              <span
-                style={{
-                  ...ppStyles.actionCommitHint,
-                  ...(publicHintTone === "risk" ? ppStyles.actionCommitHintRisk : null),
-                }}
-              >
-                {publicHint ?? t("play.public_move_hint")}
-              </span>
-            </div>
-          ) : null}
-          <div style={ppStyles.actionCommitPrivate}>
-            <span style={ppStyles.actionCommitLabel}>{t("play.move_packet_private_label")}</span>
-            {renderDiaryAttachPreview(context)}
-          </div>
-        </div>
-        {renderDiaryEditor(context)}
-      </>
-    )
-  }
   const renderDiaryEditor = (context: "leverage" | "option" | "free") =>
     showDiary && diaryContext === context ? (
       <div style={ppStyles.diaryBox}>
@@ -5926,65 +5873,6 @@ const ppStyles: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap" as const,
   },
-  actionCommitLine: {
-    marginTop: 8,
-    paddingTop: 0,
-    borderTop: "none",
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1.05fr) minmax(0, 0.95fr)",
-    columnGap: 18,
-    rowGap: 8,
-  },
-  actionCommitLineCompact: {
-    gridTemplateColumns: "1fr",
-  },
-  actionCommitLinePrivateOnly: {
-    gridTemplateColumns: "minmax(0, 1fr)",
-  },
-  actionCommitPublic: {
-    minWidth: 0,
-    display: "grid",
-    gap: 4,
-  },
-  actionCommitPrivate: {
-    minWidth: 0,
-    display: "grid",
-    gap: 3,
-  },
-  actionCommitLabel: {
-    color: "rgba(246,221,176,0.74)",
-    fontSize: 10.5,
-    lineHeight: 1.1,
-    fontWeight: 720,
-    letterSpacing: 0,
-    textTransform: "none" as const,
-  },
-  actionCommitText: {
-    color: "rgba(255,245,230,0.92)",
-    fontSize: 12.5,
-    lineHeight: 1.38,
-    fontWeight: 700,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap" as const,
-  },
-  actionCommitTextMuted: {
-    color: "var(--text-faint)",
-    fontWeight: 600,
-    fontStyle: "italic" as const,
-  },
-  actionCommitHint: {
-    width: "fit-content",
-    color: "var(--text-faint)",
-    fontSize: 10.5,
-    lineHeight: 1.2,
-    fontWeight: 800,
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-  },
-  actionCommitHintRisk: {
-    color: "rgba(255,205,190,0.88)",
-    borderBottom: "1px solid rgba(220,95,70,0.24)",
-  },
   leverageRevealActions: {
     display: "flex",
     flexWrap: "wrap" as const,
@@ -6130,8 +6018,10 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 12.5,
     lineHeight: 1.35,
     overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap" as const,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical" as const,
+    whiteSpace: "normal" as const,
   },
   optionConfirmActions: {
     display: "flex",
