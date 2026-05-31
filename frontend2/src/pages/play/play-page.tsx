@@ -890,28 +890,35 @@ function RuntimeInspector({
   liveInventory: string[]
 }) {
   const { lang } = useLanguage()
+  const t = useT()
   const upcomingTurn = Math.min(story.session.turn_budget - 1, story.session.turn_count + 1)
-  const stage = stageDisplayName(stageForLocal(upcomingTurn, story.session.turn_budget))
+  const stageKey = stageForLocal(upcomingTurn, story.session.turn_budget)
+  const stageLabelKey = `stage_bar.${stageKey === "pre_finale_open" ? "pre_finale" : stageKey}` as Parameters<typeof t>[0]
+  const stage = t(stageLabelKey, stageDisplayName(stageKey))
   const playerTurns = story.messages.filter((m) => m.role === "player").length
   const endingLabel = ending
     ? displayEndingLabel(ending.label, lang)
     : story.session.ending_label
       ? displayEndingLabel(story.session.ending_label, lang)
-      : "Pending"
-  const language = story.template.language === "zh" ? "Chinese" : "English"
+      : t("play.runtime_pending")
+  const language = story.template.language === "zh" ? t("play.runtime_language_zh") : t("play.runtime_language_en")
+  const inventoryState =
+    liveInventory.length === 1
+      ? t("play.status_item_one")
+      : t("play.status_item_many", { count: liveInventory.length })
 
   const summaryRows = [
-    { label: "Current stage", value: stage },
-    { label: "Turns played", value: `${playerTurns} / ${story.session.turn_budget}` },
-    { label: "Live options", value: String(lastNarrator?.options.length ?? 0) },
-    { label: "Inventory state", value: `${liveInventory.length} item${liveInventory.length === 1 ? "" : "s"}` },
-    { label: "Ending compiler", value: endingLabel },
+    { label: t("play.runtime_current_stage"), value: stage },
+    { label: t("play.runtime_turns_played"), value: `${playerTurns} / ${story.session.turn_budget}` },
+    { label: t("play.runtime_live_options"), value: String(lastNarrator?.options.length ?? 0) },
+    { label: t("play.runtime_inventory_state"), value: inventoryState },
+    { label: t("play.runtime_ending_compiler"), value: endingLabel },
   ]
   const detailRows = [
-    { label: "Seed", value: story.template.title },
-    { label: "Language", value: language },
-    { label: "Player role", value: story.session.player_role?.label ?? "Auto-selected" },
-    { label: "Turns left", value: String(turnsRemaining) },
+    { label: t("play.runtime_seed"), value: story.template.title },
+    { label: t("play.runtime_language"), value: language },
+    { label: t("play.runtime_player_role"), value: story.session.player_role?.label ?? t("play.runtime_auto_selected") },
+    { label: t("play.runtime_turns_left"), value: String(turnsRemaining) },
   ]
 
   return (
@@ -920,11 +927,11 @@ function RuntimeInspector({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={itemTransition}
-      aria-label="Runtime inspector"
+      aria-label={t("play.runtime_inspector_label")}
     >
       <div style={ppStyles.runtimeInspectorHeader}>
-        <span style={ppStyles.runtimeInspectorKicker}>Reviewer runtime inspector</span>
-        <strong>System lens</strong>
+        <span style={ppStyles.runtimeInspectorKicker}>{t("play.runtime_inspector_kicker")}</span>
+        <strong>{t("play.runtime_inspector_title")}</strong>
       </div>
       <div style={ppStyles.runtimeInspectorGrid}>
         {summaryRows.map((row) => (
@@ -936,7 +943,7 @@ function RuntimeInspector({
       </div>
       <details style={ppStyles.runtimeInspectorDetails}>
         <summary style={ppStyles.runtimeInspectorDetailsSummary}>
-          Seed → role → state → choice → ending
+          {t("play.runtime_inspector_summary")}
         </summary>
         <div style={ppStyles.runtimeInspectorDetailGrid}>
           {detailRows.map((row) => (
