@@ -863,6 +863,27 @@ function RunContextPanel({
     0,
     Math.min(100, (turnsCompleted / Math.max(turnBudget, 1)) * 100),
   )
+  const visibleInventory = liveInventory.slice(0, 3)
+  const hiddenInventoryCount = Math.max(0, liveInventory.length - visibleInventory.length)
+  const renderInventoryLine = () =>
+    visibleInventory.length > 0 ? (
+      <div style={ppStyles.runInventoryLine}>
+        <span style={ppStyles.runInventoryKicker}>{t("play.run_assets_label")}</span>
+        <span style={ppStyles.runInventoryItems}>
+          {visibleInventory.map((item, index) => (
+            <span key={`${item}-${index}`} style={ppStyles.runInventoryItem}>
+              {index > 0 ? <span style={ppStyles.runInventoryDivider}>·</span> : null}
+              <span>{item}</span>
+            </span>
+          ))}
+          {hiddenInventoryCount > 0 ? (
+            <span style={ppStyles.runInventoryMore}>
+              {t("play.run_assets_more", { count: hiddenInventoryCount })}
+            </span>
+          ) : null}
+        </span>
+      </div>
+    ) : null
   const renderRunProgress = () =>
     !isComplete ? (
       <span
@@ -905,6 +926,7 @@ function RunContextPanel({
             </strong>
           </div>
         ) : null}
+        {renderInventoryLine()}
         {renderRunProgress()}
       </motion.section>
     )
@@ -933,6 +955,7 @@ function RunContextPanel({
           <strong style={ppStyles.runContextObjectiveText}>{role.hidden_objective}</strong>
         </div>
       ) : null}
+      {renderInventoryLine()}
       {renderRunProgress()}
     </motion.section>
   )
@@ -4850,6 +4873,48 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.42,
     fontWeight: 500,
+  },
+  runInventoryLine: {
+    marginTop: 6,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 8,
+    rowGap: 3,
+    flexWrap: "wrap" as const,
+    minWidth: 0,
+    color: "rgba(232,218,205,0.58)",
+    fontSize: 11.5,
+    lineHeight: 1.35,
+  },
+  runInventoryKicker: {
+    flexShrink: 0,
+    color: "rgba(245,200,120,0.72)",
+    fontSize: 10.5,
+    fontWeight: 760,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+  },
+  runInventoryItems: {
+    minWidth: 0,
+    display: "inline-flex",
+    alignItems: "baseline",
+    columnGap: 6,
+    rowGap: 2,
+    flexWrap: "wrap" as const,
+  },
+  runInventoryItem: {
+    display: "inline-flex",
+    alignItems: "baseline",
+    columnGap: 6,
+    color: "rgba(255,245,230,0.70)",
+    fontWeight: 650,
+  },
+  runInventoryDivider: {
+    color: "rgba(255,255,255,0.22)",
+  },
+  runInventoryMore: {
+    color: "rgba(232,218,205,0.44)",
+    fontWeight: 650,
   },
   runContextGrid: {
     display: "grid",
