@@ -3182,6 +3182,10 @@ function ActionArea({
           ...(showDiary && diaryContext === "option" ? ppStyles.optionConfirmPanelWriting : null),
         }}
       >
+        <div style={ppStyles.optionConfirmSummary}>
+          <span style={ppStyles.optionConfirmSummaryLabel}>{t("play.option_selected_label")}</span>
+          <span style={ppStyles.optionConfirmSummaryText}>{selectedOptionParsed.body}</span>
+        </div>
         <div
           style={{
             ...ppStyles.optionConfirmActions,
@@ -6106,6 +6110,35 @@ const ppStyles: Record<string, CSSProperties> = {
     marginBottom: 6,
     paddingTop: 0,
     gap: 4,
+  },
+  optionConfirmSummary: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 8,
+    rowGap: 3,
+    flexWrap: "wrap" as const,
+    color: "rgba(255,245,230,0.78)",
+  },
+  optionConfirmSummaryLabel: {
+    flexShrink: 0,
+    color: "rgba(212,168,83,0.72)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 760,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+  },
+  optionConfirmSummaryText: {
+    minWidth: 0,
+    flex: "1 1 240px",
+    color: "rgba(255,245,230,0.76)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 12.5,
+    lineHeight: 1.35,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
   },
   optionConfirmActions: {
     display: "flex",
