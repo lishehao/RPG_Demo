@@ -2939,6 +2939,7 @@ function ActionArea({
       : showFreeInput || options.length === 0
         ? "free"
         : "idle"
+  const isWritingOptionDiary = showDiary && diaryContext === "option"
   const diaryScopeKey = armedCard
     ? `leverage:${armedCard.card_id}`
     : selectedOptionIndex !== null && pickedIndex === null && !busy
@@ -3179,40 +3180,39 @@ function ActionArea({
         ref={setCommitFocusNode}
         style={{
           ...ppStyles.optionConfirmPanel,
-          ...(showDiary && diaryContext === "option" ? ppStyles.optionConfirmPanelWriting : null),
+          ...(isWritingOptionDiary ? ppStyles.optionConfirmPanelWriting : null),
         }}
       >
         <div style={ppStyles.optionConfirmSummary}>
           <span style={ppStyles.optionConfirmSummaryLabel}>{t("play.option_selected_label")}</span>
           <span style={ppStyles.optionConfirmSummaryText}>{selectedOptionParsed.body}</span>
         </div>
-        <div
-          style={{
-            ...ppStyles.optionConfirmActions,
-            ...(compactActionChrome ? ppStyles.optionConfirmActionsCompact : null),
-            ...(showDiary && diaryContext === "option" ? ppStyles.optionConfirmActionsWriting : null),
-          }}
-        >
-          {showDiary && diaryContext === "option" ? null : (
-            <button
-              style={{
-                ...ppStyles.actionPrimaryLine,
-                ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
-              }}
-              type="button"
-              onClick={() => {
-                if (selectedOptionIndex !== null) {
-                  handleOptionCommit(selectedOptionIndex)
-                }
-              }}
-              disabled={actionControlsDisabled}
-            >
-              {t("play.option_confirm_cta")}
-            </button>
-          )}
-          {renderDiaryAttachPreview("option")}
-          {showDiary && diaryContext === "option" ? null : (
-            <>
+        {isWritingOptionDiary ? null : (
+          <div
+            style={{
+              ...ppStyles.optionConfirmActions,
+              ...(compactActionChrome ? ppStyles.optionConfirmActionsCompact : null),
+            }}
+          >
+            <div style={ppStyles.optionConfirmPrimaryActions}>
+              <button
+                style={{
+                  ...ppStyles.actionPrimaryLine,
+                  ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
+                }}
+                type="button"
+                onClick={() => {
+                  if (selectedOptionIndex !== null) {
+                    handleOptionCommit(selectedOptionIndex)
+                  }
+                }}
+                disabled={actionControlsDisabled}
+              >
+                {t("play.option_confirm_cta")}
+              </button>
+              {renderDiaryAttachPreview("option")}
+            </div>
+            <div style={ppStyles.optionConfirmSecondaryActions}>
               <button
                 type="button"
                 style={ppStyles.advisorInlineAction}
@@ -3229,9 +3229,9 @@ function ActionArea({
               >
                 {t("play.option_change_cta")}
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
         {renderDiaryEditor("option")}
       </div>
     ) : null
@@ -6143,9 +6143,10 @@ const ppStyles: Record<string, CSSProperties> = {
   optionConfirmActions: {
     display: "flex",
     alignItems: "baseline",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
     flexWrap: "wrap" as const,
-    gap: "4px 13px",
+    columnGap: 18,
+    rowGap: 5,
   },
   optionConfirmActionsCompact: {
     display: "flex",
@@ -6154,9 +6155,22 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
     gap: "5px 11px",
   },
-  optionConfirmActionsWriting: {
-    gridTemplateColumns: "minmax(0, 1fr)",
-    gap: 4,
+  optionConfirmPrimaryActions: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "baseline",
+    flexWrap: "wrap" as const,
+    columnGap: 13,
+    rowGap: 4,
+  },
+  optionConfirmSecondaryActions: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "flex-end",
+    flexWrap: "wrap" as const,
+    columnGap: 13,
+    rowGap: 4,
+    marginLeft: "auto",
   },
   diaryAttachPreview: {
     width: "fit-content",
