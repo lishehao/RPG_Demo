@@ -84,6 +84,13 @@ select:focus-visible {
   box-shadow: 0 0 0 4px rgba(245, 200, 120, 0.10);
 }
 
+[data-play-action-area="true"] .play-free-textarea:focus-visible,
+[data-play-action-area="true"] .play-diary-textarea:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: inset 0 -1px 0 rgba(245, 200, 120, 0.68) !important;
+}
+
 /* ------ scrollbar (webkit + firefox) ------ */
 * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 *::-webkit-scrollbar { width: 10px; height: 10px; }

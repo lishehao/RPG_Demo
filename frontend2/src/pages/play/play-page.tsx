@@ -3697,6 +3697,7 @@ function ActionArea({
             style={ppStyles.freeInputBox}
           >
             <textarea
+              className="play-free-textarea"
               ref={freeTextareaRef}
               style={ppStyles.freeTextarea}
               value={freeInput}
@@ -3735,7 +3736,7 @@ function ActionArea({
               >
                 <div ref={setFreeActionNode} style={ppStyles.freeInputActions}>
                   {freeActionDraft ? (
-                    <div style={ppStyles.commitPrimaryActions}>
+                    <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.freeCommitPrimaryActions }}>
                       <button
                         style={{
                           ...ppStyles.actionPrimaryLine,
@@ -3753,13 +3754,14 @@ function ActionArea({
                       {renderDiaryAttachPreview("free")}
                     </div>
                   ) : (
-                    <div style={ppStyles.commitPrimaryActions}>
+                    <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.freeCommitPrimaryActions }}>
                       <span style={ppStyles.freeEmptyHint}>{t("play.free_empty_hint")}</span>
                     </div>
                   )}
                   <div
                     style={{
                       ...ppStyles.commitSecondaryActions,
+                      ...ppStyles.freeCommitSecondaryActions,
                       ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
                     }}
                   >
@@ -6671,10 +6673,17 @@ const ppStyles: Record<string, CSSProperties> = {
   freeInputActions: {
     display: "flex",
     alignItems: "baseline",
-    justifyContent: "space-between",
-    columnGap: 18,
+    justifyContent: "flex-start",
+    columnGap: 14,
     rowGap: 5,
     flexWrap: "wrap" as const,
+  },
+  freeCommitPrimaryActions: {
+    flex: "0 1 auto",
+  },
+  freeCommitSecondaryActions: {
+    marginLeft: 0,
+    justifyContent: "flex-start",
   },
   alternateActionRow: {
     display: "flex",
