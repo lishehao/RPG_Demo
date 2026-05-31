@@ -6566,10 +6566,10 @@ const ppStyles: Record<string, CSSProperties> = {
   // Picked state stays typographic so the action list does not read as
   // boxed UI stacked inside the story.
   optionBtnSelected: {
-    background: "rgba(245,200,120,0.035)",
+    background: "transparent",
     color: "rgba(255,238,205,0.98)",
     borderLeftColor: "rgba(245,200,120,0.78)",
-    borderBottomColor: "rgba(245,200,120,0.16)",
+    borderBottomColor: "rgba(245,200,120,0.24)",
   },
   optionBtnExpanded: {
     color: "rgba(255,238,205,0.98)",
@@ -6580,10 +6580,10 @@ const ppStyles: Record<string, CSSProperties> = {
     borderLeftColor: "rgba(212,168,83,0.10)",
   },
   optionBtnPicked: {
-    background: "rgba(245,200,120,0.045)",
+    background: "transparent",
     color: "rgba(255,238,205,0.98)",
     borderLeftColor: "rgba(245,200,120,0.86)",
-    borderBottomColor: "rgba(245,200,120,0.18)",
+    borderBottomColor: "rgba(245,200,120,0.24)",
   },
   optionConfirmPanel: {
     marginTop: -1,
