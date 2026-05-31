@@ -3011,7 +3011,10 @@ function ActionArea({
           onClick={() => setShowDiary(true)}
           disabled={actionControlsDisabled}
         >
-          <span style={ppStyles.diaryAttachEmptyText}>{t("play.diary_attach_empty")}</span>
+          <span style={ppStyles.diaryAttachEmptyCopy}>
+            <span style={ppStyles.diaryAttachEmptyText}>{t("play.diary_attach_empty")}</span>
+            <span style={ppStyles.diaryAttachEmptyHint}>{t("play.diary_attach_empty_hint")}</span>
+          </span>
         </button>
       )
     }
@@ -6081,6 +6084,14 @@ const ppStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     gap: 0,
   },
+  diaryAttachEmptyCopy: {
+    minWidth: 0,
+    display: "inline-flex",
+    alignItems: "baseline",
+    columnGap: 6,
+    rowGap: 2,
+    flexWrap: "wrap" as const,
+  },
   diaryAttachTag: {
     color: "rgba(222,202,255,0.94)",
     fontSize: 10.5,
@@ -6110,6 +6121,12 @@ const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 750,
     lineHeight: 1.35,
     whiteSpace: "nowrap" as const,
+  },
+  diaryAttachEmptyHint: {
+    color: "rgba(232,222,245,0.44)",
+    fontSize: 11.5,
+    lineHeight: 1.35,
+    fontWeight: 620,
   },
   // Reflective banner shown right under the options after the user
   // picks one — bridges the 5-8s LLM wait with a "yes, we got it"
