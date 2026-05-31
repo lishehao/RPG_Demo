@@ -16,6 +16,32 @@ from rpg_backend.author_v3.contracts import (
 from rpg_backend.author_v3.gateway import AuthorV3LLMGateway
 
 
+_DETERMINISTIC_SHELL_KEYWORDS: dict[StoryShellId, tuple[str, ...]] = {
+    "wealth_families": ("豪门", "联姻", "继承", "遗嘱", "婚约", "订婚", "家宴", "私生", "旧爱", "律师"),
+    "office_power": ("董事会", "并购", "黑账", "上司", "法务", "发布会", "升职", "空降", "总裁"),
+    "entertainment_scandal": ("娱乐圈", "热搜", "颁奖", "颁奖礼", "直播", "绯闻", "代言", "黑料", "偷拍视频"),
+    "campus_romance": ("校园", "校庆", "奖学金", "导师", "评审", "学生会", "录音"),
+    "urban_supernatural": ("异能", "夜巡", "契约", "怪谈", "灵媒", "旧债"),
+}
+
+_DETERMINISTIC_SHELL_SETTINGS: dict[StoryShellId, tuple[str, str, tuple[str, ...]]] = {
+    "wealth_families": ("继承委员会与家宴并行推进的继承夜", "跨夜听证与豪门家宴", ("继承", "联姻", "秘密")),
+    "office_power": ("科技公司总部大楼", "董事会与高管闭门博弈", ("权力", "背叛", "秘密")),
+    "entertainment_scandal": ("颁奖礼直播后台", "红毯、镜头与热搜同步施压", ("热搜", "镜头", "隐恋")),
+    "campus_romance": ("校庆筹备夜的学生会会议室", "奖学金投票与旧录音公开前夜", ("校园", "站队", "旧录音")),
+    "urban_supernatural": ("夜巡契约重启的旧城区", "秘密契约与旧债交换现场", ("契约", "旧债", "保护")),
+}
+
+
+def _infer_deterministic_shell(seed_text: str, shell_hint: StoryShellId | None = None) -> StoryShellId:
+    if shell_hint is not None:
+        return shell_hint
+    for shell_id, keywords in _DETERMINISTIC_SHELL_KEYWORDS.items():
+        if any(keyword in seed_text for keyword in keywords):
+            return shell_id
+    return "office_power"
+
+
 _SEED_PARSE_SYSTEM_PROMPT = """
 你是剧情世界构建器的第一阶段。
 目标：把用户种子解析为 WorldSeed JSON。
@@ -116,12 +142,6 @@ class _CharacterBatchResponse(BaseModel):
     story_shell_id: StoryShellId | None = None
 
 
-class _RelationshipNegotiationResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    relationship_edges: list[RelationshipEdge] = Field(min_length=3)
-
-
 def forge_world(
     seed_text: str,
     *,
@@ -131,7 +151,7 @@ def forge_world(
     validation_retry: int = 0,
 ) -> WorldConfiguration:
     if gateway is None:
-        config = _forge_world_deterministic()
+        config = _forge_world_deterministic(seed_text=seed_text, shell_hint=shell_hint)
         return config
     config = _forge_world_with_gateway(
         seed_text=seed_text,
@@ -144,22 +164,28 @@ def forge_world(
     return config
 
 
-def _forge_world_deterministic() -> WorldConfiguration:
+def _forge_world_deterministic(
+    *,
+    seed_text: str = "董事会权力斗争",
+    shell_hint: StoryShellId | None = None,
+) -> WorldConfiguration:
+    shell_id = _infer_deterministic_shell(seed_text, shell_hint)
+    setting, social_arena, theme_keywords = _DETERMINISTIC_SHELL_SETTINGS[shell_id]
     seed = WorldSeed(
-        raw_seed="董事会权力斗争",
-        detected_shell="office_power",
-        setting_description="科技公司总部大楼",
+        raw_seed=seed_text,
+        detected_shell=shell_id,
+        setting_description=setting,
         tone="紧张压抑",
         character_count=5,
-        theme_keywords=["权力", "背叛", "秘密"],
+        theme_keywords=list(theme_keywords),
     )
     characters = _build_deterministic_characters()
     relationship_edges = _build_deterministic_relationship_edges()
     config = WorldConfiguration(
         seed=seed,
-        setting="科技公司总部大楼",
-        social_arena="董事会与高管闭门博弈",
-        story_shell_id="office_power",
+        setting=setting,
+        social_arena=social_arena,
+        story_shell_id=shell_id,
         characters=characters,
         relationship_edges=relationship_edges,
         protagonist_id="zhang_hao",
@@ -207,7 +233,6 @@ def _forge_world_with_gateway(
         user_payload={"characters": [character.dict() for character in characters]},
         max_output_tokens=gateway.max_output_tokens_world_forge,
         operation_name="author_v3.world_forge.relationship_negotiation",
-        response_model=_RelationshipNegotiationResponse,
         max_retries=3,
     )
     relationship_edges = _parse_relationship_payload(relationships_response.payload)
@@ -282,9 +307,9 @@ _NUMERIC_STANCE_FIELDS = ("trust_level", "dependency_level", "power_asymmetry")
 def _coerce_float_field(value: Any, *, default: float, lo: float, hi: float) -> float:
     """Best-effort coercion of an LLM-emitted value into a clamped float.
 
-    qwen3.5-flash routinely fills numeric stance fields with prose
+    Some OpenAI-compatible models fill numeric stance fields with prose
     ("李伟占据绝对权力优势...") instead of a number. Pydantic's float_parsing
-    then fails the whole edge, retries don't fix it, and the author job dies
+    then fails the whole edge, retries may not fix it, and the author job dies
     before world_forge completes. We accept a string only if it looks like a
     parseable float; otherwise fall back to `default`. Bounds-clamp to [lo, hi].
     """

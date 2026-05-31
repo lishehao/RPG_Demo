@@ -5,10 +5,8 @@ import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
 import { LoadingShim } from "../../shared/ui/loading-shim"
 import { EmptyState } from "../../shared/ui/empty-state"
-import { Truncated } from "../../shared/ui/truncated"
 import {
   getAdvisorAvatar,
-  getAvatarForCastMember,
   getCoverForTemplate,
   getEndingIllustration,
 } from "../../shared/lib/webtoon-assets"
@@ -34,10 +32,9 @@ export function ReplayPage({
   const { lang } = useLanguage()
   const [replay, setReplay] = useState<NarrativePublicReplayResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showAdvisor, setShowAdvisor] = useState(true)
   // Entry mode for shared replay links:
-  //   "preview" — hero + 5 highlight cards in a horizontal carousel +
-  //   CTA. The default. Friends arriving from a shared link see the
+  //   "preview" — hero + 5 highlight records + CTA. The default.
+  //   Friends arriving from a shared link see the
   //   shape of the story at a glance, decide if they want to dive in.
   //   "full"    — the original 12-beat read, with skim toggle.
   // Switching is a single tap; preference is per-tab (not persisted).
@@ -84,7 +81,7 @@ export function ReplayPage({
             hint={error}
             action={
               <button
-                className="ts-btn ts-btn--primary"
+                style={rpStyles.primaryAction}
                 type="button"
                 onClick={onBackHome}
               >
@@ -116,6 +113,8 @@ export function ReplayPage({
   const endingSubtitleText = replay.ending
     ? lang === "en" ? `"${replay.ending.subtitle}"` : `「${replay.ending.subtitle}」`
     : ""
+  const castLine = replay.cast.map((c) => c.display_name).join(" · ")
+  const hasPreviewHighlights = Boolean(replay.ending?.highlights && replay.ending.highlights.length > 0)
 
   return (
     <div style={rpStyles.page}>
@@ -133,6 +132,18 @@ export function ReplayPage({
           <div style={rpStyles.replayBadge}>{t("replay.badge")}</div>
           <h1 style={rpStyles.title}>{replay.template_title}</h1>
           <p style={rpStyles.heroSeed}>"{replay.template_seed}"</p>
+          <div style={rpStyles.heroMetaLine}>
+            {castLine ? <span>{castLine}</span> : null}
+            {castLine ? <span style={rpStyles.heroMetaDot}>·</span> : null}
+            <span>
+              {replay.completed
+                ? t("replay.completed_meta")
+                : t("replay.turns_meta", {
+                    current: replay.turn_count,
+                    total: replay.turn_budget,
+                  })}
+            </span>
+          </div>
           {replay.completed && replay.ending ? (
             <div style={rpStyles.heroEnding}>
               <div style={rpStyles.heroEndingLabel}>
@@ -148,57 +159,38 @@ export function ReplayPage({
               })}
             </div>
           )}
+          <div style={rpStyles.heroActions}>
+            <button
+              style={rpStyles.primaryAction}
+              onClick={() => replay.template_forkable ? onOpenTemplate(replay.template_id) : onBackHome()}
+              type="button"
+            >
+              {replay.template_forkable ? t("replay.cta_play_template") : t("replay.cta_back_plaza")}
+            </button>
+          </div>
         </div>
       </div>
 
       <main style={rpStyles.main}>
-        {/* Cast row */}
-        <section style={rpStyles.section}>
-          <div style={rpStyles.sectionLabel}>{t("replay.cast_label")}</div>
-          <div style={rpStyles.castRow}>
-            {replay.cast.map((c) => (
-              <div key={c.character_id} style={rpStyles.castChip}>
-                <img
-                  src={getAvatarForCastMember(sessionId, c)}
-                  alt={c.display_name}
-                  style={rpStyles.castAvatar}
-                  loading="lazy"
-                />
-                <div style={{ minWidth: 0, maxWidth: 140 }}>
-                  <Truncated style={rpStyles.castName}>{c.display_name}</Truncated>
-                  <Truncated style={rpStyles.castRole}>{c.role}</Truncated>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Preview / Full view-mode toggle. Hidden when there are no
             highlights to preview (incomplete run or LLM failure) —
             in that case "full" is the only sensible mode anyway. */}
-        {replay.ending?.highlights && replay.ending.highlights.length > 0 ? (
+        {hasPreviewHighlights ? (
           <div style={rpStyles.viewModeRow}>
+            <span style={rpStyles.viewModeLabel}>
+              {viewMode === "preview" ? t("replay.view_preview") : t("replay.view_full")}
+            </span>
             <button
               type="button"
-              style={{
-                ...rpStyles.viewModeBtn,
-                ...(viewMode === "preview" ? rpStyles.viewModeBtnActive : null),
-              }}
-              onClick={() => setViewMode("preview")}
-              aria-pressed={viewMode === "preview"}
+              style={rpStyles.viewModeAction}
+              onClick={() => setViewMode(viewMode === "preview" ? "full" : "preview")}
+              aria-label={
+                viewMode === "preview"
+                  ? t("replay.view_full")
+                  : t("replay.view_preview")
+              }
             >
-              {t("replay.view_preview")}
-            </button>
-            <button
-              type="button"
-              style={{
-                ...rpStyles.viewModeBtn,
-                ...(viewMode === "full" ? rpStyles.viewModeBtnActive : null),
-              }}
-              onClick={() => setViewMode("full")}
-              aria-pressed={viewMode === "full"}
-            >
-              {t("replay.view_full")}
+              {viewMode === "preview" ? t("replay.view_full") : t("replay.view_preview")}
             </button>
           </div>
         ) : null}
@@ -216,50 +208,35 @@ export function ReplayPage({
               <p style={rpStyles.previewHint}>{t("replay.preview_hint")}</p>
               <div style={rpStyles.highlightCarousel}>
                 {replay.ending.highlights.map((h, i) => (
-                  <article key={`${h.beat_ord}-${i}`} style={rpStyles.previewCard}>
-                    <div style={rpStyles.previewCardIndex}>
-                      {String(i + 1).padStart(2, "0")}
+                  <article key={`${h.beat_ord}-${i}`} style={rpStyles.previewRecord}>
+                    <div style={rpStyles.previewRecordIndex}>{i + 1}.</div>
+                    <div style={rpStyles.previewRecordText}>
+                      <h3 style={rpStyles.previewRecordHeadline}>{h.headline}</h3>
+                      <p style={rpStyles.previewRecordBody}>{h.body_excerpt}</p>
+                      <p style={rpStyles.previewRecordWhy}>{h.why_pivotal}</p>
                     </div>
-                    <h3 style={rpStyles.previewCardHeadline}>{h.headline}</h3>
-                    <p style={rpStyles.previewCardBody}>{h.body_excerpt}</p>
-                    <p style={rpStyles.previewCardWhy}>{h.why_pivotal}</p>
                   </article>
                 ))}
               </div>
             </section>
-
-            {/* Ending splash sits below the carousel as the punctuation. */}
-            {replay.ending ? (
-              <section style={rpStyles.section}>
-                <div style={rpStyles.endingDivider}>
-                  <span style={rpStyles.endingDividerLabel}>{t("replay.ending_divider")}</span>
-                </div>
-                <div style={rpStyles.endingCard}>
-                  <div style={rpStyles.endingLabelChip}>
-                    {ENDING_LABEL_DISPLAY[lang][replay.ending.label] ?? replay.ending.label}
-                  </div>
-                  <h2 style={rpStyles.endingSubtitle}>{endingSubtitleText}</h2>
-                </div>
-              </section>
-            ) : null}
 
             {/* CTA — switch to full read or play yourself. */}
             <div style={rpStyles.cta}>
               <p style={rpStyles.ctaHint}>{t("replay.preview_cta_hint")}</p>
               <div style={rpStyles.ctaRow}>
                 <button
-                  className="ts-btn ts-btn--secondary ts-btn--lg"
-                  onClick={() => setViewMode("full")}
-                  type="button"
-                >
-                  {t("replay.preview_cta_full")}
-                </button>
-                <button
-                  className="ts-btn ts-btn--primary ts-btn--lg"
+                  style={rpStyles.primaryAction}
                   onClick={() => replay.template_forkable ? onOpenTemplate(replay.template_id) : onBackHome()}
                   type="button"
                 >
                   {replay.template_forkable ? t("replay.cta_play_template") : t("replay.cta_back_plaza")}
+                </button>
+                <button
+                  style={rpStyles.ctaTextButton}
+                  onClick={() => setViewMode("full")}
+                  type="button"
+                >
+                  {t("replay.preview_cta_full")}
                 </button>
               </div>
             </div>
@@ -269,39 +246,6 @@ export function ReplayPage({
         {/* FULL MODE — advisor toggle + story column + ending. */}
         {viewMode === "full" || !replay.ending?.highlights || replay.ending.highlights.length === 0 ? (
         <>
-        {/* Advisor toggle */}
-        {replay.advisor_messages.length > 0 ? (
-          <section style={rpStyles.advisorToggleSection}>
-            <button
-              style={rpStyles.advisorToggleBtn}
-              onClick={() => setShowAdvisor((v) => !v)}
-              type="button"
-            >
-              <img
-                src={advisorAvatar}
-                alt=""
-                style={rpStyles.advisorToggleAvatar}
-                loading="lazy"
-              />
-              <div style={{ flex: 1 }}>
-                <div style={rpStyles.advisorToggleTitle}>
-                  {showAdvisor
-                    ? t("replay.advisor_toggle_prefix_showing")
-                    : t("replay.advisor_toggle_prefix_view")}
-                  <span style={{ color: "var(--accent)" }}>
-                    {t("replay.advisor_toggle_advisor_word")}
-                  </span>
-                  {t("replay.advisor_toggle_suffix", {
-                    count: replay.advisor_messages.length / 2,
-                  })}
-                </div>
-                <div style={rpStyles.advisorTogglePersona}>{replay.advisor_persona}</div>
-              </div>
-              <span style={rpStyles.advisorToggleArrow}>{showAdvisor ? "▾" : "▸"}</span>
-            </button>
-          </section>
-        ) : null}
-
         {/* Story column with optional inline advisor messages */}
         <section style={rpStyles.storyColumn}>
           {/* Skim toggle — friends landing on a shared replay don't
@@ -310,31 +254,20 @@ export function ReplayPage({
               preview; click any beat to expand. Default is "skim"
               because that matches the entry behavior of someone
               who just opened a link. */}
-          <div style={rpStyles.skimToggleRow}>
+          <div style={rpStyles.readModeLine}>
+            <span style={rpStyles.readModeLabel}>
+              {skimMode ? t("replay.skim_compact") : t("replay.skim_full")}
+            </span>
             <button
               type="button"
-              style={{
-                ...rpStyles.skimToggle,
-                ...(skimMode ? null : rpStyles.skimToggleActive),
-              }}
-              onClick={() => setSkimMode(false)}
+              style={rpStyles.readModeAction}
+              onClick={() => setSkimMode((current) => !current)}
               aria-pressed={!skimMode}
             >
-              {t("replay.skim_full")}
-            </button>
-            <button
-              type="button"
-              style={{
-                ...rpStyles.skimToggle,
-                ...(skimMode ? rpStyles.skimToggleActive : null),
-              }}
-              onClick={() => setSkimMode(true)}
-              aria-pressed={skimMode}
-            >
-              {t("replay.skim_compact")}
+              {skimMode ? t("replay.skim_full") : t("replay.skim_compact")}
             </button>
           </div>
-          {renderInterleavedStream(replay, showAdvisor, advisorAvatar, t, skimMode, expandedOrds, toggleBeat)}
+          {renderInterleavedStream(replay, advisorAvatar, t, skimMode, expandedOrds, toggleBeat)}
 
           {/* Ending block at the very bottom */}
           {replay.ending ? (
@@ -357,7 +290,7 @@ export function ReplayPage({
           <p style={rpStyles.ctaHint}>{t("replay.cta_hint")}</p>
           {replay.template_forkable ? (
             <button
-              className="ts-btn ts-btn--primary ts-btn--lg"
+              style={rpStyles.primaryAction}
               onClick={() => onOpenTemplate(replay.template_id)}
               type="button"
             >
@@ -365,7 +298,7 @@ export function ReplayPage({
             </button>
           ) : null}
           <button
-            className="ts-btn ts-btn--ghost ts-btn--lg"
+            style={rpStyles.ctaTextButtonMuted}
             onClick={onBackHome}
             type="button"
           >
@@ -382,13 +315,12 @@ export function ReplayPage({
 /**
  * The advisor messages are timestamp-less in the replay payload — we don't
  * know exactly which story turn they correspond to. For v1 we render the
- * full advisor track separately from the main story, but show it via a
- * collapsible bar so it doesn't dominate. A future enhancement would be
- * to interleave by ord-correlation; for now keep it readable.
+ * full advisor track separately from the main story, but keep it as
+ * transcript content instead of another control panel. A future enhancement
+ * would be to interleave by ord-correlation; for now keep it readable.
  */
 function renderInterleavedStream(
   replay: NarrativePublicReplayResponse,
-  showAdvisor: boolean,
   advisorAvatar: string,
   t: ReturnType<typeof useT>,
   skimMode: boolean,
@@ -433,6 +365,7 @@ function renderInterleavedStream(
                 {m.chosen_option_index != null && m.options.length > 0 ? (
                   <div style={rpStyles.chosenChip}>
                     <span style={rpStyles.chosenLabel}>{t("replay.chosen_label")}</span>
+                    {" "}
                     <span style={rpStyles.chosenText}>
                       {m.options[m.chosen_option_index]?.label ?? "?"}
                     </span>
@@ -452,7 +385,7 @@ function renderInterleavedStream(
       {/* Advisor block (collapsed/expanded). Rendered below the main story
           stream as a separate vertical track, since we can't reliably
           interleave by turn without additional ord metadata. */}
-      {showAdvisor && replay.advisor_messages.length > 0 ? (
+      {replay.advisor_messages.length > 0 ? (
         <section style={rpStyles.advisorTrack}>
           <div style={rpStyles.advisorTrackHeader}>
             <img
@@ -470,14 +403,26 @@ function renderInterleavedStream(
                 m.role === "player" ? rpStyles.advisorRowPlayer : rpStyles.advisorRowAdvisor
               }
             >
-              <div
-                style={
-                  m.role === "player"
-                    ? rpStyles.advisorBubblePlayer
-                    : rpStyles.advisorBubbleAdvisor
-                }
-              >
-                {m.content}
+              <div style={rpStyles.advisorTranscriptLine}>
+                <span
+                  style={{
+                    ...rpStyles.advisorSpeaker,
+                    ...(m.role === "player" ? rpStyles.advisorSpeakerPlayer : null),
+                  }}
+                >
+                  {m.role === "player"
+                    ? t("replay.advisor_speaker_player")
+                    : t("replay.advisor_speaker_advisor")}
+                </span>
+                <div
+                  style={
+                    m.role === "player"
+                      ? rpStyles.advisorBubblePlayer
+                      : rpStyles.advisorBubbleAdvisor
+                  }
+                >
+                  {m.content}
+                </div>
               </div>
             </div>
           ))}
@@ -512,25 +457,27 @@ const rpStyles: Record<string, CSSProperties> = {
     padding: "32px 32px 60px",
   },
   crumb: {
-    background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.18)",
+    display: "block",
+    width: "fit-content",
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.22)",
     color: "white",
     fontSize: 12.5,
     cursor: "pointer",
-    padding: "5px 12px",
-    borderRadius: 999,
+    padding: "0 0 4px",
+    borderRadius: 0,
     marginBottom: 18,
-    backdropFilter: "blur(6px)",
   },
   replayBadge: {
     display: "inline-block",
-    padding: "4px 12px",
-    background: "var(--accent)",
-    color: "white",
-    borderRadius: 4,
-    fontSize: 12,
-    letterSpacing: "0.16em",
-    fontWeight: 600,
+    padding: 0,
+    background: "transparent",
+    color: "var(--accent)",
+    borderRadius: 0,
+    fontSize: 12.5,
+    letterSpacing: 0,
+    fontWeight: 650,
     marginBottom: 14,
   },
   title: {
@@ -546,25 +493,37 @@ const rpStyles: Record<string, CSSProperties> = {
     fontSize: 14,
     color: "rgba(255,255,255,0.78)",
     fontStyle: "italic",
-    margin: "0 0 22px",
+    margin: "0 0 10px",
     lineHeight: 1.6,
+  },
+  heroMetaLine: {
+    display: "flex",
+    alignItems: "baseline",
+    flexWrap: "wrap" as const,
+    gap: 7,
+    marginBottom: 22,
+    color: "rgba(255,255,255,0.62)",
+    fontSize: 12,
+    lineHeight: 1.4,
+  },
+  heroMetaDot: {
+    color: "rgba(245,200,120,0.70)",
   },
   heroEnding: {
     display: "inline-flex",
     flexDirection: "column",
     gap: 6,
-    padding: "14px 20px",
-    background: "rgba(0,0,0,0.4)",
-    border: "1px solid rgba(255,255,255,0.18)",
-    borderRadius: "var(--radius-md)",
-    backdropFilter: "blur(8px)",
+    padding: "4px 0 0",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
   },
   heroEndingLabel: {
     display: "inline-block",
-    padding: "3px 10px",
-    background: "var(--accent)",
-    color: "white",
-    borderRadius: 999,
+    padding: 0,
+    background: "transparent",
+    color: "var(--accent)",
+    borderRadius: 0,
     fontSize: 12,
     fontWeight: 600,
     width: "fit-content",
@@ -577,109 +536,105 @@ const rpStyles: Record<string, CSSProperties> = {
   },
   heroIncomplete: {
     display: "inline-block",
-    padding: "8px 14px",
-    background: "rgba(0,0,0,0.4)",
-    border: "1px solid rgba(255,255,255,0.18)",
-    borderRadius: 999,
+    padding: "4px 0 0",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
     fontSize: 13,
     color: "rgba(255,255,255,0.85)",
   },
-
+  heroActions: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap" as const,
+    gap: 14,
+    marginTop: 18,
+  },
+  primaryAction: {
+    width: "fit-content",
+    padding: "5px 0 6px",
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.44)",
+    borderRadius: 0,
+    color: "rgba(255,226,172,0.96)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 850,
+    lineHeight: 1.2,
+    textAlign: "left",
+  },
   main: { maxWidth: 720, margin: "-40px auto 0", padding: "0 32px 80px", position: "relative", zIndex: 2 },
 
   section: { marginBottom: 28 },
   sectionLabel: {
-    fontSize: 11,
-    color: "var(--text-faint)",
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
+    fontSize: 12.5,
+    color: "var(--text-muted)",
+    letterSpacing: 0,
+    fontWeight: 650,
     marginBottom: 10,
   },
-  castRow: { display: "flex", gap: 8, flexWrap: "wrap" },
-  castChip: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "6px 12px 6px 6px",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: 999,
-  },
-  castAvatar: { width: 30, height: 30, borderRadius: "50%", objectFit: "cover" },
-  castName: { fontSize: 13, fontWeight: 500, color: "var(--text)" },
-  castRole: { fontSize: 11, color: "var(--text-faint)", marginTop: 2 },
-
-  advisorToggleSection: { marginBottom: 24 },
-  advisorToggleBtn: {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "12px 16px",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: "var(--radius-sm)",
-    cursor: "pointer",
-    textAlign: "left",
-  },
-  advisorToggleAvatar: { width: 36, height: 36, borderRadius: "50%", objectFit: "cover" },
-  advisorToggleTitle: { fontSize: 14, color: "var(--text)" },
-  advisorTogglePersona: { fontSize: 11, color: "var(--text-faint)", marginTop: 3 },
-  advisorToggleArrow: { color: "var(--text-faint)", fontSize: 12 },
-
   storyColumn: {},
-  // View-mode toggle (preview vs full) — same pill-segmented look
-  // as the skim toggle below, but at the page level.
   viewModeRow: {
-    display: "inline-flex",
-    gap: 0,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 10,
+    rowGap: 5,
+    flexWrap: "wrap" as const,
     margin: "0 0 24px",
-    padding: 2,
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: 999,
-  },
-  viewModeBtn: {
+    padding: 0,
     background: "transparent",
     border: "none",
+    borderRadius: 0,
+  },
+  viewModeLabel: {
+    color: "rgba(245,200,120,0.78)",
+    fontSize: 12.5,
+    lineHeight: 1.25,
+    fontWeight: 720,
+  },
+  viewModeAction: {
+    background: "transparent",
+    borderTop: "none",
+    borderRight: "none",
+    borderLeft: "none",
     color: "var(--text-muted)",
     fontSize: 12.5,
-    padding: "6px 16px",
-    borderRadius: 999,
-    letterSpacing: "0.04em",
+    padding: "0 0 3px",
+    borderRadius: 0,
+    borderBottom: "1px solid rgba(255,255,255,0.14)",
+    letterSpacing: 0,
     cursor: "pointer",
-    transition: "background 160ms, color 160ms",
+    fontFamily: "inherit",
+    fontWeight: 650,
   },
-  viewModeBtnActive: {
-    background: "var(--accent-soft)",
-    color: "var(--accent)",
-    fontWeight: 500,
-  },
-  // Highlight carousel — horizontal scroll with snap-to-card on
-  // mobile, stack-of-3 on desktop. Entry experience for shared links.
   highlightCarousel: {
     display: "grid",
     gridAutoFlow: "row",
-    gap: 12,
+    gap: 18,
     marginTop: 12,
   },
-  previewCard: {
-    padding: "18px 22px",
-    background: "linear-gradient(180deg, rgba(245,200,120,0.08), rgba(245,200,120,0.02))",
-    border: "1px solid rgba(245,200,120,0.28)",
-    borderRadius: "var(--radius-md)",
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 10,
+  previewRecord: {
+    padding: "4px 0 10px",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    display: "grid",
+    gridTemplateColumns: "44px minmax(0, 1fr)",
+    gap: 16,
   },
-  previewCardIndex: {
+  previewRecordIndex: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 11.5,
-    fontWeight: 700,
-    letterSpacing: "0.16em",
-    color: "rgba(245,200,120,0.78)",
+    fontSize: 13,
+    fontWeight: 500,
+    letterSpacing: 0,
+    color: "rgba(245,200,120,0.62)",
   },
-  previewCardHeadline: {
+  previewRecordText: {
+    minWidth: 0,
+  },
+  previewRecordHeadline: {
     fontFamily: "var(--font-narrative)",
     fontSize: 19,
     fontWeight: 500,
@@ -687,7 +642,7 @@ const rpStyles: Record<string, CSSProperties> = {
     lineHeight: 1.3,
     margin: 0,
   },
-  previewCardBody: {
+  previewRecordBody: {
     fontFamily: "var(--font-narrative)",
     fontSize: 14.5,
     lineHeight: 1.7,
@@ -695,7 +650,7 @@ const rpStyles: Record<string, CSSProperties> = {
     margin: 0,
     fontStyle: "italic" as const,
   },
-  previewCardWhy: {
+  previewRecordWhy: {
     fontSize: 12.5,
     lineHeight: 1.55,
     color: "var(--text-muted)",
@@ -709,34 +664,39 @@ const rpStyles: Record<string, CSSProperties> = {
   },
   ctaRow: {
     display: "flex",
-    gap: 10,
+    gap: 20,
     flexWrap: "wrap" as const,
     alignItems: "center",
+    justifyContent: "flex-start",
   },
-  // Skim toggle row pinned at the top of the story column.
-  skimToggleRow: {
-    display: "inline-flex",
-    gap: 0,
+  readModeLine: {
     marginBottom: 24,
-    padding: 2,
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: 999,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 10,
+    rowGap: 5,
+    flexWrap: "wrap" as const,
   },
-  skimToggle: {
+  readModeLabel: {
+    color: "rgba(245,200,120,0.78)",
+    fontSize: 12,
+    lineHeight: 1.25,
+    fontWeight: 720,
+  },
+  readModeAction: {
     background: "transparent",
-    border: "none",
+    borderTop: "none",
+    borderRight: "none",
+    borderLeft: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: 0,
     color: "var(--text-muted)",
     fontSize: 12,
-    padding: "5px 14px",
-    borderRadius: 999,
-    letterSpacing: "0.04em",
+    padding: "0 0 3px",
+    letterSpacing: 0,
     cursor: "pointer",
-    transition: "background 160ms, color 160ms",
-  },
-  skimToggleActive: {
-    background: "var(--accent-soft)",
-    color: "var(--accent)",
+    fontFamily: "inherit",
+    fontWeight: 650,
   },
   narratorBeat: { marginBottom: 28 },
   narratorText: {
@@ -760,30 +720,29 @@ const rpStyles: Record<string, CSSProperties> = {
     fontSize: 11.5,
     color: "var(--accent)",
     marginTop: 8,
-    letterSpacing: "0.04em",
+    letterSpacing: 0,
     cursor: "pointer",
   },
   chosenChip: {
     marginTop: 12,
     fontSize: 12,
     color: "var(--text-faint)",
-    display: "inline-flex",
-    alignItems: "center",
+    display: "block",
     gap: 8,
-    padding: "5px 12px",
-    border: "1px solid var(--line)",
-    borderRadius: 999,
-    background: "var(--bg-elev)",
+    padding: "5px 0",
+    border: "none",
+    borderRadius: 0,
+    background: "transparent",
   },
-  chosenLabel: { letterSpacing: "0.06em" },
+  chosenLabel: { letterSpacing: 0, fontWeight: 650, marginRight: 6 },
   chosenText: { color: "var(--text-muted)" },
 
-  playerBeat: { marginBottom: 24, paddingLeft: 16, borderLeft: "2px solid var(--accent)" },
+  playerBeat: { marginBottom: 24, paddingLeft: 0 },
   playerLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: "var(--accent)",
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
+    letterSpacing: 0,
+    fontWeight: 650,
     marginBottom: 4,
   },
   playerText: {
@@ -794,74 +753,92 @@ const rpStyles: Record<string, CSSProperties> = {
   },
 
   advisorTrack: {
-    marginTop: 36,
-    padding: "20px 22px",
-    background: "var(--bg-elev)",
-    borderRadius: "var(--radius-md)",
-    border: "1px solid var(--line)",
+    marginTop: 42,
+    padding: "18px 0 0",
+    background: "transparent",
+    borderRadius: 0,
+    border: "none",
+    borderTop: "1px solid rgba(255,255,255,0.075)",
   },
   advisorTrackHeader: {
     display: "flex",
     alignItems: "center",
     gap: 10,
     marginBottom: 16,
-    paddingBottom: 14,
-    borderBottom: "1px dashed var(--line)",
+    paddingBottom: 4,
   },
   advisorTrackAvatar: { width: 32, height: 32, borderRadius: "50%", objectFit: "cover" },
-  advisorTrackTitle: { fontSize: 13, color: "var(--text)", letterSpacing: "0.04em" },
-  advisorRowPlayer: { display: "flex", justifyContent: "flex-end", marginBottom: 10 },
-  advisorRowAdvisor: { display: "flex", justifyContent: "flex-start", marginBottom: 10 },
+  advisorTrackTitle: { fontSize: 13, color: "var(--text)", letterSpacing: 0, fontWeight: 650 },
+  advisorRowPlayer: { display: "block", marginBottom: 12 },
+  advisorRowAdvisor: { display: "block", marginBottom: 12 },
+  advisorTranscriptLine: {
+    display: "grid",
+    gridTemplateColumns: "72px minmax(0, 1fr)",
+    alignItems: "baseline",
+    gap: 12,
+  },
+  advisorSpeaker: {
+    color: "var(--text-faint)",
+    fontSize: 11.5,
+    lineHeight: 1.4,
+    fontWeight: 650,
+    letterSpacing: 0,
+  },
+  advisorSpeakerPlayer: {
+    color: "rgba(212,168,83,0.72)",
+  },
   advisorBubblePlayer: {
-    background: "var(--accent)",
-    color: "white",
-    padding: "8px 12px",
-    borderRadius: "14px 14px 4px 14px",
+    background: "transparent",
+    color: "rgba(255,236,198,0.90)",
+    padding: 0,
+    borderRadius: 0,
     fontSize: 13,
     lineHeight: 1.55,
-    maxWidth: "82%",
+    maxWidth: "100%",
   },
   advisorBubbleAdvisor: {
-    background: "var(--bg)",
+    background: "transparent",
     color: "var(--text)",
-    padding: "8px 12px",
-    borderRadius: "14px 14px 14px 4px",
+    padding: 0,
+    borderRadius: 0,
     fontSize: 13,
     lineHeight: 1.6,
-    maxWidth: "82%",
-    border: "1px solid var(--line)",
+    maxWidth: "100%",
+    border: "none",
   },
 
   endingDivider: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    margin: "40px 0 28px",
+    justifyContent: "flex-start",
+    margin: "40px 0 18px",
+    paddingTop: 18,
+    borderTop: "1px solid rgba(255,255,255,0.085)",
   },
   endingDividerLabel: {
-    background: "var(--bg)",
-    padding: "0 16px",
-    fontSize: 12,
-    color: "var(--text-faint)",
-    letterSpacing: "0.16em",
-    textTransform: "uppercase",
+    background: "transparent",
+    padding: 0,
+    fontSize: 12.5,
+    color: "var(--text-muted)",
+    letterSpacing: 0,
+    fontWeight: 650,
   },
   endingCard: {
-    padding: "32px 28px",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: "var(--radius-lg)",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+    padding: "20px 0",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    boxShadow: "none",
   },
   endingLabelChip: {
     display: "inline-block",
-    padding: "5px 14px",
-    background: "var(--accent-soft)",
+    padding: 0,
+    background: "transparent",
     color: "var(--accent)",
-    borderRadius: 999,
+    borderRadius: 0,
     fontSize: 13,
-    fontWeight: 600,
-    letterSpacing: "0.06em",
+    fontWeight: 650,
+    letterSpacing: 0,
     marginBottom: 16,
   },
   endingSubtitle: {
@@ -882,13 +859,36 @@ const rpStyles: Record<string, CSSProperties> = {
 
   cta: {
     marginTop: 56,
-    padding: "32px 0 0",
-    borderTop: "1px dashed var(--line)",
-    textAlign: "center",
+    padding: "24px 0 0",
+    textAlign: "left",
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 14,
+  },
+  ctaTextButton: {
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.32)",
+    borderRadius: 0,
+    color: "var(--accent)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 700,
+    padding: "4px 0",
+  },
+  ctaTextButtonMuted: {
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 0,
+    color: "var(--text-muted)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 650,
+    padding: "4px 0",
   },
   ctaHint: { fontSize: 13, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 },
 }

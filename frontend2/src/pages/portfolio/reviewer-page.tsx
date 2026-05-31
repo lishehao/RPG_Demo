@@ -72,14 +72,14 @@ export function ReviewerPage({
           <blockquote>"{REVIEWER_DEMO_SEED}"</blockquote>
           <div className="reviewer-actions">
             <button
-              className="ts-btn ts-btn--primary ts-btn--lg"
+              className="reviewer-action reviewer-action--primary"
               type="button"
               onClick={() => void handleStart()}
               disabled={busy || auth.loading}
             >
               {busy ? "Launching demo..." : "Start curated run"}
             </button>
-            <button className="ts-btn ts-btn--ghost ts-btn--lg" type="button" onClick={onOpenCreate} disabled={busy}>
+            <button className="reviewer-action reviewer-action--secondary" type="button" onClick={onOpenCreate} disabled={busy}>
               Use normal author flow
             </button>
           </div>

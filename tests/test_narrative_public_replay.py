@@ -7,6 +7,7 @@ from rpg_backend.narrative.contracts import (
     CastMember,
     FailureCondition,
     NPCLeverageOverNPC,
+    PlayedLeverageCard,
     PlayerGoal,
     PlayerLeverageOverNPC,
     PlayerRole,
@@ -72,7 +73,7 @@ def _create_template_and_session(
                 leverages_over_npcs=[
                     PlayerLeverageOverNPC(
                         npc_id="evan",
-                        leverage="Evan accepted a private severance term.",
+                        leverage="Proof that Evan signed the side letter first.",
                     )
                 ],
                 starting_assets=["sealed audit packet"],
@@ -240,3 +241,60 @@ def test_advance_validation_rejects_out_of_range_option_before_llm(tmp_path) -> 
         )
 
     assert excinfo.value.code == "option_out_of_range"
+
+
+def test_played_leverage_card_round_trips_on_story_messages(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(
+        repo,
+        template_id="tmpl_leverage_roundtrip",
+        session_id="sess_leverage_roundtrip",
+    )
+
+    card = PlayedLeverageCard(
+        card_id="lev:founder:evan:0",
+        npc_id="evan",
+        leverage="Proof that Evan signed the side letter first.",
+        action="reveal",
+    )
+    repo.append_story_message(
+        "sess_leverage_roundtrip",
+        StoryMessage(
+            ord=1,
+            role="player",
+            content="I reveal the signed side letter.",
+            options=[],
+            played_leverage=card,
+        ),
+    )
+
+    messages = repo.list_story_messages("sess_leverage_roundtrip")
+
+    assert messages[-1].played_leverage == card
+
+
+def test_played_leverage_validation_rejects_unowned_card(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+    _create_template_and_session(
+        repo,
+        template_id="tmpl_leverage_validation",
+        session_id="sess_leverage_validation",
+    )
+
+    with pytest.raises(NarrativeServiceError) as excinfo:
+        service.validate_advance_request(
+            "sess_leverage_validation",
+            AdvanceTurnRequest(
+                free_input="I reveal leverage nobody gave me.",
+                played_leverage=PlayedLeverageCard(
+                    card_id="lev:founder:mira:0",
+                    npc_id="mira",
+                    leverage="A forged claim that is not on my role card.",
+                    action="reveal",
+                ),
+            ),
+            player_user_id="local-dev",
+        )
+
+    assert excinfo.value.code == "leverage_not_available"

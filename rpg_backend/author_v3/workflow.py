@@ -21,7 +21,7 @@ from rpg_backend.author_v3.storylet_compiler import (
     compile_storylet_pool,
     map_storylets_to_segments,
 )
-from rpg_backend.author_v3.tension_weaver import TensionWeb, weave_secrets
+from rpg_backend.author_v3.tension_weaver import TensionWeaverError, TensionWeb, weave_secrets
 from rpg_backend.author_v3.world_forge import _WORLDLY_DESIRE_VALIDATION_ERRORS, forge_world
 from rpg_backend.config import Settings, get_settings
 
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 # Errors that signal "LLM produced unusable output"; we swallow these per-stage and
 # fall back to deterministic so the author job still completes.
-_STAGE_FALLBACK_EXCEPTIONS = (AuthorV3GatewayError, ValidationError, ValueError, KeyError, TypeError)
+_STAGE_FALLBACK_EXCEPTIONS = (AuthorV3GatewayError, TensionWeaverError, ValidationError, ValueError, KeyError, TypeError)
 
 
 class AuthorV3PipelineError(RuntimeError):

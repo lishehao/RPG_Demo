@@ -58,7 +58,7 @@ export function HeaderUserMenu({
 
   if (!user) {
     return (
-      <button className="ts-btn ts-btn--ghost" onClick={handleLogin}>
+      <button style={humStyles.loginAction} onClick={handleLogin} type="button">
         {t("header.login")}
       </button>
     )
@@ -119,23 +119,36 @@ export function HeaderUserMenu({
 
 const humStyles: Record<string, CSSProperties> = {
   wrap: { position: "relative" },
+  loginAction: {
+    height: "auto",
+    padding: "0 0 6px",
+    border: "none",
+    borderBottom: "1px solid transparent",
+    borderRadius: 0,
+    background: "transparent",
+    color: "var(--text-muted)",
+    fontSize: 13,
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
   trigger: {
     display: "inline-flex",
     alignItems: "center",
     gap: 8,
     height: 36,
-    padding: "0 10px 0 6px",
-    border: "1px solid var(--line)",
-    borderRadius: 999,
+    padding: "0 0 6px",
+    border: "none",
+    borderBottom: "1px solid var(--line)",
+    borderRadius: 0,
     color: "var(--text)",
     fontSize: 13,
-    transition: "background 160ms",
+    transition: "color 160ms, border-color 160ms",
   },
   avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 999,
-    background: "var(--accent-soft)",
+    width: "auto",
+    height: "auto",
+    borderRadius: 0,
+    background: "transparent",
     color: "var(--accent)",
     display: "flex",
     alignItems: "center",
@@ -146,14 +159,16 @@ const humStyles: Record<string, CSSProperties> = {
   name: { fontFamily: "var(--font-ui)" },
   menu: {
     position: "absolute",
-    top: "calc(100% + 6px)",
+    top: "calc(100% + 10px)",
     right: 0,
     minWidth: 180,
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line-strong)",
-    borderRadius: 12,
-    padding: 6,
-    boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+    background: "rgba(12,12,16,0.96)",
+    border: "none",
+    borderTop: "1px solid var(--line-strong)",
+    borderBottom: "1px solid var(--line-strong)",
+    borderRadius: 0,
+    padding: "6px 0",
+    boxShadow: "none",
     animation: "tsFadeUp 160ms ease",
     zIndex: 10,
   },
@@ -162,11 +177,11 @@ const humStyles: Record<string, CSSProperties> = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "9px 12px",
-    borderRadius: 8,
+    padding: "9px 0",
+    borderRadius: 0,
     fontSize: 13,
     color: "var(--text)",
-    transition: "background 140ms",
+    transition: "color 140ms",
   },
   itemMeta: { fontSize: 11, color: "var(--text-faint)", fontVariantNumeric: "tabular-nums" },
   divider: { height: 1, background: "var(--line)", margin: "4px 0" },

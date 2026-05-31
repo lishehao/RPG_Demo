@@ -19,7 +19,7 @@ from rpg_backend.play_v2.runtime import build_initial_world_state, build_suggest
 
 _AUTHOR_SEED = "办公室权力斗争"
 _AUTHOR_REQUESTED_RUN_MODE = "live"
-_AUTHOR_FALLBACK_RUN_MODE = "live_gpt_5_4_mini"
+_AUTHOR_FALLBACK_RUN_MODE = "live_deepseek_v4_flash"
 
 
 def _count_chinese_characters(text: str) -> int:

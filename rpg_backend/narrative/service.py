@@ -21,6 +21,7 @@ from rpg_backend.narrative.contracts import (
     NarrativeSessionSummary,
     NarrativeTemplate,
     NarrativeTemplateSummary,
+    PlayedLeverageCard,
     PlayerRole,
     PublicReplayResponse,
     SessionListResponse,
@@ -330,6 +331,8 @@ class NarrativeService:
                 message="The last narrator beat already has a player choice; refresh and continue.",
                 status_code=409,
             )
+        active_role = _resolve_player_role(template, session.selected_player_role_id)
+        played_leverage = self._resolve_played_leverage(request, active_role)
         player_action_text, chosen_index = self._resolve_player_action(
             request, last_narrator
         )
@@ -349,6 +352,7 @@ class NarrativeService:
             options=[],
             chosen_option_index=chosen_index,
             diary=diary_text,
+            played_leverage=played_leverage,
         )
 
         # turn_index = the index of the new narrator beat we're about to write.
@@ -357,7 +361,6 @@ class NarrativeService:
         upcoming_turn_index = session.turn_count + 1
         is_final_turn = upcoming_turn_index >= session.turn_budget
 
-        active_role = _resolve_player_role(template, session.selected_player_role_id)
         # Walk history to derive the sticky inventory the LLM should see
         # this turn. Source of truth = role.starting_assets + Σ(narrator
         # inventory deltas). Walk-on-read so we never desync from the
@@ -381,6 +384,7 @@ class NarrativeService:
                 player_role=active_role,
                 current_inventory=current_inventory or None,
                 player_diary=diary_text,
+                played_leverage=played_leverage,
                 language=template.language,
             )
         except NarrativeGatewayError as exc:
@@ -467,6 +471,7 @@ class NarrativeService:
                 message="这一局故事已经走完了——去看你的结局吧。",
                 status_code=409,
             )
+        template = self._repo.get_template(session.template_id)
         history = self._repo.list_story_messages(session_id)
         if not history:
             raise NarrativeServiceError(
@@ -484,6 +489,10 @@ class NarrativeService:
                 status_code=409,
             )
         self._resolve_player_action(request, last_narrator)
+        self._resolve_played_leverage(
+            request,
+            _resolve_player_role(template, session.selected_player_role_id),
+        )
 
     def estimate_advance_llm_operation_cost(
         self,
@@ -1064,6 +1073,31 @@ class NarrativeService:
             )
         option = last_narrator.options[idx]
         return option.label, idx
+
+    @staticmethod
+    def _resolve_played_leverage(
+        request: AdvanceTurnRequest, active_role: PlayerRole | None
+    ) -> PlayedLeverageCard | None:
+        if request.played_leverage is None:
+            return None
+        if active_role is None:
+            raise NarrativeServiceError(
+                code="leverage_not_available",
+                message="This session has no player role leverage cards.",
+                status_code=422,
+            )
+        card = request.played_leverage
+        owned = any(
+            item.npc_id == card.npc_id and item.leverage == card.leverage
+            for item in active_role.leverages_over_npcs
+        )
+        if not owned:
+            raise NarrativeServiceError(
+                code="leverage_not_available",
+                message="That leverage card is not available to this player role.",
+                status_code=422,
+            )
+        return card
 
 
 def _resolve_player_role(

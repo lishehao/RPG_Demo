@@ -18,6 +18,7 @@ from rpg_backend.narrative.contracts import (
     NarrativeSession,
     NarrativeTemplate,
     NPCPulse,
+    PlayedLeverageCard,
     PlayerGoal,
     PlayerRole,
     StoryMessage,
@@ -143,6 +144,10 @@ class NarrativeRepository:
         if "diary" not in existing_msg_cols:
             connection.execute(
                 "ALTER TABLE narrative_story_messages ADD COLUMN diary TEXT"
+            )
+        if "played_leverage_json" not in existing_msg_cols:
+            connection.execute(
+                "ALTER TABLE narrative_story_messages ADD COLUMN played_leverage_json TEXT"
             )
         connection.execute(
             """
@@ -531,13 +536,16 @@ class NarrativeRepository:
         delta_json: str | None = None
         if message.inventory_delta is not None:
             delta_json = json.dumps(message.inventory_delta.model_dump(), ensure_ascii=False)
+        leverage_json: str | None = None
+        if message.played_leverage is not None:
+            leverage_json = json.dumps(message.played_leverage.model_dump(), ensure_ascii=False)
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO narrative_story_messages
                 (session_id, ord, role, content, options_json, chosen_option_index,
-                 npc_pulse_json, inventory_delta_json, diary)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 npc_pulse_json, inventory_delta_json, diary, played_leverage_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     session_id,
@@ -549,6 +557,7 @@ class NarrativeRepository:
                     json.dumps([p.model_dump() for p in message.npc_pulse], ensure_ascii=False),
                     delta_json,
                     message.diary,
+                    leverage_json,
                 ),
             )
             conn.commit()
@@ -558,7 +567,7 @@ class NarrativeRepository:
             rows = conn.execute(
                 """
                 SELECT ord, role, content, options_json, chosen_option_index,
-                       npc_pulse_json, inventory_delta_json, diary
+                       npc_pulse_json, inventory_delta_json, diary, played_leverage_json
                 FROM narrative_story_messages
                 WHERE session_id = ?
                 ORDER BY ord ASC
@@ -782,6 +791,17 @@ def _row_to_story_message(row: sqlite3.Row) -> StoryMessage:
     diary_val: str | None = None
     if "diary" in keys and row["diary"]:
         diary_val = str(row["diary"])[:600]
+    played_leverage: PlayedLeverageCard | None = None
+    if "played_leverage_json" in keys and row["played_leverage_json"]:
+        try:
+            leverage_raw = json.loads(row["played_leverage_json"])
+            if isinstance(leverage_raw, dict):
+                try:
+                    played_leverage = PlayedLeverageCard.model_validate(leverage_raw)
+                except Exception:  # noqa: BLE001
+                    played_leverage = None
+        except Exception:  # noqa: BLE001
+            pass
     return StoryMessage(
         ord=int(row["ord"]),
         role=row["role"],
@@ -791,4 +811,5 @@ def _row_to_story_message(row: sqlite3.Row) -> StoryMessage:
         npc_pulse=pulse,
         inventory_delta=delta,
         diary=diary_val,
+        played_leverage=played_leverage,
     )

@@ -11,14 +11,12 @@ from rpg_backend.responses_transport import ResponsesJSONResponse, ResponsesJSON
 
 logger = logging.getLogger(__name__)
 
-ConcreteAuthorV3LiveMode = Literal["live_gpt_5_4_mini"]
+ConcreteAuthorV3LiveMode = Literal["live_deepseek_v4_flash"]
 AuthorV3RunMode = Literal[
     "deterministic",
-    "live_priority",
-    "pure_gpt",
-    "live_gpt_5_4_mini",
+    "live_deepseek_v4_flash",
 ]
-AUTHOR_V3_PRIORITY_CHAIN: tuple[ConcreteAuthorV3LiveMode, ...] = ("live_gpt_5_4_mini",)
+AUTHOR_V3_PRIORITY_CHAIN: tuple[ConcreteAuthorV3LiveMode, ...] = ("live_deepseek_v4_flash",)
 
 
 class AuthorV3GatewayError(RuntimeError):
@@ -99,7 +97,7 @@ class AuthorV3LLMGateway:
                 use_session_cache=self.use_session_cache,
                 temperature=0.2,
                 enable_thinking=False,
-                explicit_disable_thinking=self.model.startswith("qwen"),
+                explicit_disable_thinking=self.model.startswith("deepseek"),
                 json_content_type_hint=self.json_content_type_hint,
                 json_object_prompt_only=self.json_object_prompt_only,
                 provider_failed_code="llm_provider_failed",
@@ -132,6 +130,8 @@ class AuthorV3LLMGateway:
         resolved_response_format = response_format_type
         if resolved_response_format is None:
             resolved_response_format = "json_schema" if isinstance(effective_schema, dict) else "json_object"
+        if self.model.startswith("deepseek") and resolved_response_format == "json_schema":
+            resolved_response_format = "json_object"
 
         original_system_prompt = system_prompt
         original_user_payload = dict(user_payload)
@@ -208,18 +208,22 @@ class AuthorV3LLMGateway:
 def resolve_author_v3_live_mode_chain(mode: AuthorV3RunMode) -> tuple[ConcreteAuthorV3LiveMode, ...]:
     if mode == "deterministic":
         return ()
-    if mode in {"live_priority", "pure_gpt"}:
+    if mode == "live_deepseek_v4_flash":
         return AUTHOR_V3_PRIORITY_CHAIN
-    return (mode,)
+    raise AuthorV3GatewayError(
+        code="llm_mode_invalid",
+        message=f"author_v3 only supports deterministic or live_deepseek_v4_flash, got mode={mode}",
+        status_code=400,
+    )
 
 
 def _resolved_profile_settings(mode: ConcreteAuthorV3LiveMode, settings: Settings) -> tuple[str, str, str, bool]:
-    if mode == "live_gpt_5_4_mini":
+    if mode == "live_deepseek_v4_flash":
         return (
-            settings.resolved_responses_base_url(),
-            settings.resolved_responses_api_key(),
-            settings.resolved_author_responses_model() or "gpt-5.4-mini",
-            settings.resolved_responses_use_session_cache(),
+            settings.resolved_author_responses_base_url(),
+            settings.resolved_author_responses_api_key(),
+            settings.resolved_author_responses_model() or "deepseek-v4-flash",
+            settings.resolved_author_responses_use_session_cache(),
         )
     raise AuthorV3GatewayError(
         code="llm_mode_invalid",
@@ -249,7 +253,7 @@ def get_author_v3_llm_gateway(
     client = build_openai_client(
         base_url=base_url,
         api_key=api_key,
-        api_keys=resolved.responses_api_key_pool(),
+        api_keys=resolved.author_responses_api_key_pool(),
         use_session_cache=bool(use_session_cache),
         session_cache_header=resolved.responses_session_cache_header,
         session_cache_value=resolved.responses_session_cache_value,

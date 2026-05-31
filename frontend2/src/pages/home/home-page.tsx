@@ -16,7 +16,7 @@ import {
 } from "../../shared/lib/webtoon-assets"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
-import { hoverLift, itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
+import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
 
 type Tab = "plaza" | "my-templates"
 
@@ -32,11 +32,14 @@ export function HomePage({
   const api = useApi()
   const auth = useAuth()
   const t = useT()
+  const compactHome = useCompactLayout()
   const [tab, setTab] = useState<Tab>("plaza")
   const [publicTemplates, setPublicTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
   const [myTemplates, setMyTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
   const [mySessions, setMySessions] = useState<NarrativeSessionSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const showTemplateTabs = !auth.isAnonymous
+  const activeTemplateTab: Tab = showTemplateTabs ? tab : "plaza"
 
   useEffect(() => {
     let cancelled = false
@@ -86,9 +89,9 @@ export function HomePage({
 
   return (
     <div style={hpStyles.page}>
-      <Header onHome={() => {}} onCreate={onOpenCreate} />
+      <Header onHome={() => {}} onCreate={onOpenCreate} createVariant="link" />
 
-      <main style={hpStyles.main}>
+      <main style={{ ...hpStyles.main, ...(compactHome ? hpStyles.mainCompact : null) }}>
         {/* Webtoon-cinematic hero — full-bleed splash background, text
             left-aligned over a vertical fade. Style brief: like Naver
             webtoon / Solo Leveling landing — single sustained scene
@@ -96,23 +99,23 @@ export function HomePage({
             "how it works" rail under plaza so the hero stays as a
             single dramatic beat. */}
         <motion.section
-          style={hpStyles.hero}
+          style={{ ...hpStyles.hero, ...(compactHome ? hpStyles.heroCompact : null) }}
           initial="initial"
           animate="animate"
           transition={{ staggerChildren: 0.08, delayChildren: 0.05 }}
         >
-          <div style={hpStyles.heroInner}>
+          <div style={{ ...hpStyles.heroInner, ...(compactHome ? hpStyles.heroInnerCompact : null) }}>
             <motion.div
               variants={itemVariants}
               transition={itemTransition}
-              style={hpStyles.heroTagline}
+              style={{ ...hpStyles.heroTagline, ...(compactHome ? hpStyles.heroTaglineCompact : null) }}
             >
               {t("home.hero_tagline")}
             </motion.div>
             <motion.h1
               variants={itemVariants}
               transition={itemTransition}
-              style={hpStyles.heroTitle}
+              style={{ ...hpStyles.heroTitle, ...(compactHome ? hpStyles.heroTitleCompact : null) }}
             >
               {t("home.hero_title_l1")}
               <br />
@@ -121,35 +124,37 @@ export function HomePage({
             <motion.p
               variants={itemVariants}
               transition={itemTransition}
-              style={hpStyles.heroSub}
+              style={{ ...hpStyles.heroSub, ...(compactHome ? hpStyles.heroSubCompact : null) }}
             >
               {t("home.hero_sub")}
             </motion.p>
             <motion.div
               variants={itemVariants}
               transition={itemTransition}
-              style={hpStyles.heroActions}
+              style={{ ...hpStyles.heroActions, ...(compactHome ? hpStyles.heroActionsCompact : null) }}
             >
               <motion.button
-                className="ts-btn ts-btn--primary ts-btn--lg"
+                style={hpStyles.heroPrimaryAction}
                 onClick={onOpenCreate}
                 type="button"
-                whileHover={{ scale: 1.03 }}
+                whileHover={{ x: 2 }}
                 whileTap={tapPress}
               >
                 {t("home.cta_create")}
               </motion.button>
-              <motion.button
-                className="ts-btn ts-btn--ghost ts-btn--lg"
-                onClick={() => {
-                  window.location.hash = "#/portfolio"
-                }}
-                type="button"
-                whileHover={{ scale: 1.03 }}
-                whileTap={tapPress}
-              >
-                {t("home.cta_portfolio")}
-              </motion.button>
+              {!compactHome ? (
+                <motion.button
+                  style={hpStyles.heroSecondaryAction}
+                  onClick={() => {
+                    window.location.hash = "#/portfolio"
+                  }}
+                  type="button"
+                  whileHover={{ x: 2 }}
+                  whileTap={tapPress}
+                >
+                  {t("home.cta_portfolio")}
+                </motion.button>
+              ) : null}
             </motion.div>
           </div>
         </motion.section>
@@ -157,52 +162,61 @@ export function HomePage({
         {/* My sessions split into in-progress + completed groups. Only
             shown when signed in and at least one exists. */}
         {!auth.isAnonymous && mySessions && mySessions.length > 0 ? (
-          <MySessionsSection sessions={mySessions} onOpenPlay={onOpenPlay} />
+          <MySessionsSection
+            sessions={mySessions}
+            compact={compactHome}
+            onOpenPlay={onOpenPlay}
+          />
         ) : null}
 
-        <section style={hpStyles.section}>
-          <div style={hpStyles.tabs} role="tablist">
-            <button
-              style={{ ...hpStyles.tab, ...(tab === "plaza" ? hpStyles.tabActive : {}) }}
-              onClick={() => setTab("plaza")}
-              type="button"
-              role="tab"
-              aria-selected={tab === "plaza"}
-            >
-              {t("home.tab_plaza")}
-            </button>
-            {!auth.isAnonymous ? (
+        <section style={{ ...hpStyles.section, ...(compactHome ? hpStyles.sectionCompact : null) }}>
+          {showTemplateTabs ? (
+            <div style={hpStyles.tabs} role="tablist">
+              <button
+                style={{ ...hpStyles.tab, ...(activeTemplateTab === "plaza" ? hpStyles.tabActive : {}) }}
+                onClick={() => setTab("plaza")}
+                type="button"
+                role="tab"
+                aria-selected={activeTemplateTab === "plaza"}
+              >
+                {t("home.tab_plaza")}
+              </button>
               <button
                 style={{
                   ...hpStyles.tab,
-                  ...(tab === "my-templates" ? hpStyles.tabActive : {}),
+                  ...(activeTemplateTab === "my-templates" ? hpStyles.tabActive : {}),
                 }}
                 onClick={() => setTab("my-templates")}
                 type="button"
                 role="tab"
-                aria-selected={tab === "my-templates"}
+                aria-selected={activeTemplateTab === "my-templates"}
               >
                 {t("home.tab_my")}
               </button>
-            ) : null}
-          </div>
+            </div>
+          ) : (
+            <div style={hpStyles.plazaHeader}>
+              <span style={hpStyles.plazaLabel}>{t("home.tab_plaza")}</span>
+            </div>
+          )}
 
           {/* Cross-fade between plaza ↔ my-templates so switching feels
               like a sibling pivot, not a layout swap. mode="wait"
               keeps the height stable during the transition. */}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={tab}
+              key={activeTemplateTab}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={transitions.snap}
             >
-              {tab === "plaza" ? (
+              {activeTemplateTab === "plaza" ? (
                 <TemplateGrid
                   templates={publicTemplates}
                   error={error}
                   emptyText={t("home.empty_plaza")}
+                  compact={compactHome}
                   onOpenTemplate={onOpenTemplate}
                 />
               ) : (
@@ -210,6 +224,7 @@ export function HomePage({
                   templates={myTemplates}
                   error={null}
                   emptyText={t("home.empty_my")}
+                  compact={compactHome}
                   onOpenTemplate={onOpenTemplate}
                 />
               )}
@@ -254,6 +269,19 @@ export function HomePage({
   )
 }
 
+function useCompactLayout(query = "(max-width: 720px)") {
+  const [compact, setCompact] = useState(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const media = window.matchMedia(query)
+    const update = () => setCompact(media.matches)
+    update()
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [query])
+  return compact
+}
+
 function SectionHeader({ title }: { title: string }) {
   return (
     <div style={hpStyles.sectionHeader}>
@@ -264,30 +292,40 @@ function SectionHeader({ title }: { title: string }) {
 
 function MySessionsSection({
   sessions,
+  compact,
   onOpenPlay,
 }: {
   sessions: NarrativeSessionSummary[]
+  compact: boolean
   onOpenPlay: (sessionId: string) => void
 }) {
   const t = useT()
   // Split: in-progress (no ending) above, completed (has ending) below.
   const inProgress = sessions.filter((s) => !s.ending_label)
   const completed = sessions.filter((s) => Boolean(s.ending_label))
+  const primarySession = inProgress[0]
+  const queuedSessions = inProgress.slice(1, 5)
   return (
     <>
       {inProgress.length > 0 ? (
-        <section style={hpStyles.section}>
-          <SectionHeader title={t("home.section_in_progress")} />
-          <div style={hpStyles.sessionRow}>
-            {inProgress.slice(0, 6).map((s, idx) => (
-              <SessionCard
-                key={s.session_id}
-                session={s}
-                index={idx}
-                onClick={() => onOpenPlay(s.session_id)}
-              />
-            ))}
-          </div>
+        <section style={hpStyles.resumeSection}>
+          <ContinueRunSpotlight
+            session={primarySession}
+            compact={compact}
+            onClick={() => onOpenPlay(primarySession.session_id)}
+          />
+          {queuedSessions.length > 0 ? (
+            <div style={hpStyles.resumeQueue} aria-label={t("home.more_in_progress")}>
+              {queuedSessions.map((s, idx) => (
+                <SessionCard
+                  key={s.session_id}
+                  session={s}
+                  index={idx}
+                  onClick={() => onOpenPlay(s.session_id)}
+                />
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
       {completed.length > 0 ? (
@@ -322,6 +360,54 @@ function MySessionsSection({
   )
 }
 
+function ContinueRunSpotlight({
+  session,
+  compact,
+  onClick,
+}: {
+  session: NarrativeSessionSummary
+  compact: boolean
+  onClick: () => void
+}) {
+  const t = useT()
+  const safeBudget = Math.max(session.turn_budget, 1)
+  const turnsPlayed = Math.min(Math.max(session.turn_count, 0), safeBudget)
+  const progress = Math.min(1, Math.max(0, turnsPlayed / safeBudget))
+  const roleLabel = session.player_role?.label ? t("home.resume_role", { role: session.player_role.label }) : null
+  return (
+    <motion.button
+      style={{ ...hpStyles.resumeButton, ...(compact ? hpStyles.resumeButtonCompact : null) }}
+      onClick={onClick}
+      type="button"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={itemTransition}
+      whileHover={{ x: 2 }}
+      whileTap={tapPress}
+    >
+      <div style={hpStyles.resumeCopy}>
+        <span style={hpStyles.resumeKicker}>{t("home.resume_kicker")}</span>
+        <Truncated lines={2} style={hpStyles.resumeTitle}>{session.template_title}</Truncated>
+        <div style={hpStyles.resumeMeta}>
+          {t("home.session_progress_meta", {
+            current: turnsPlayed,
+            total: session.turn_budget,
+          })}
+          {" · "}
+          {formatRelative(session.last_active_at, t)}
+          {roleLabel ? ` · ${roleLabel}` : ""}
+        </div>
+      </div>
+      <div style={hpStyles.resumeProgress} aria-hidden>
+        <span style={{ ...hpStyles.resumeProgressFill, width: `${progress * 100}%` }} />
+      </div>
+      <span style={{ ...hpStyles.resumeCta, ...(compact ? hpStyles.resumeCtaCompact : null) }}>
+        {t("home.resume_cta")}
+      </span>
+    </motion.button>
+  )
+}
+
 function SessionCard({
   session,
   onClick,
@@ -339,6 +425,8 @@ function SessionCard({
   const { lang } = useLanguage()
   const t = useT()
   const completed = Boolean(session.ending_label)
+  const safeBudget = Math.max(session.turn_budget, 1)
+  const turnsPlayed = Math.min(Math.max(session.turn_count, 0), safeBudget)
   const endingLabelDisplay = session.ending_label
     ? ENDING_LABEL_DISPLAY[lang]?.[session.ending_label] ?? session.ending_label
     : null
@@ -368,7 +456,7 @@ function SessionCard({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, ...itemTransition }}
-      whileHover={hoverLift}
+      whileHover={{ x: 2 }}
       whileTap={tapPress}
     >
       {archiveNumber != null ? (
@@ -395,7 +483,7 @@ function SessionCard({
       ) : (
         <div style={hpStyles.sessionMeta}>
           {t("home.session_progress_meta", {
-            current: session.turn_count + 1,
+            current: turnsPlayed,
             total: session.turn_budget,
           })}{" "}
           · {formatRelative(session.last_active_at, t)}
@@ -409,11 +497,13 @@ function TemplateGrid({
   templates,
   error,
   emptyText,
+  compact,
   onOpenTemplate,
 }: {
   templates: NarrativeTemplateSummary[] | null
   error: string | null
   emptyText: string
+  compact: boolean
   onOpenTemplate: (templateId: string) => void
 }) {
   if (error) {
@@ -441,12 +531,13 @@ function TemplateGrid({
     )
   }
   return (
-    <div style={hpStyles.grid}>
+    <div style={{ ...hpStyles.grid, ...(compact ? hpStyles.gridCompact : null) }}>
       {templates.map((t, idx) => (
         <TemplateCard
           key={t.template_id}
           template={t}
           index={idx}
+          compact={compact}
           onClick={() => onOpenTemplate(t.template_id)}
         />
       ))}
@@ -458,35 +549,35 @@ function TemplateCard({
   template,
   onClick,
   index = 0,
+  compact,
 }: {
   template: NarrativeTemplateSummary
   onClick: () => void
   index?: number
+  compact: boolean
 }) {
   const t = useT()
   const cover = getCoverForTemplate(template)
   return (
     <motion.button
-      style={hpStyles.card}
+      style={{ ...hpStyles.card, ...(compact ? hpStyles.cardCompact : null) }}
       onClick={onClick}
       type="button"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, ...itemTransition }}
-      whileHover={hoverLift}
+      whileHover={{ x: 2 }}
       whileTap={tapPress}
     >
       <div
         style={{
           ...hpStyles.cardCover,
-          // Stronger 3-stop gradient: top stays clear (let the
-          // illustration breathe), middle drops in, bottom is near-
-          // black so the serif title reads cleanly. Manhwa-panel
-          // convention for title cards.
-          backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0) 0%, rgba(12,12,16,0) 38%, rgba(12,12,16,0.55) 70%, rgba(12,12,16,0.94) 100%), url(${cover})`,
+          ...(compact ? hpStyles.cardCoverCompact : null),
+          backgroundImage: `url(${cover})`,
         }}
-      >
-        <div style={hpStyles.cardCoverFade}>
+      />
+      <div style={{ ...hpStyles.cardBody, ...(compact ? hpStyles.cardBodyCompact : null) }}>
+        <div>
           <Truncated lines={2} style={hpStyles.cardTitle}>
             {template.title}
           </Truncated>
@@ -494,15 +585,21 @@ function TemplateCard({
             {template.cast.map((c) => c.display_name).join(" · ")}
           </Truncated>
         </div>
-      </div>
-      <div style={hpStyles.cardBody}>
-        <Truncated lines={2} style={hpStyles.cardSeed}>{`"${template.seed}"`}</Truncated>
-        <div style={hpStyles.cardFooter}>
+        <Truncated
+          lines={compact ? 3 : 2}
+          style={{ ...hpStyles.cardSeed, ...(compact ? hpStyles.cardSeedCompact : null) }}
+        >
+          {`"${template.seed}"`}
+        </Truncated>
+        <div style={{ ...hpStyles.cardFooter, ...(compact ? hpStyles.cardFooterCompact : null) }}>
           <span style={hpStyles.cardBadge}>{visibilityLabel(template.visibility, t)}</span>
           <span style={hpStyles.cardPlays}>{t("home.played_count", { count: template.play_count })}</span>
           {template.is_owner ? (
             <span style={hpStyles.cardOwnerBadge}>{t("home.is_owner")}</span>
           ) : null}
+          <span style={{ ...hpStyles.cardAction, ...(compact ? hpStyles.cardActionCompact : null) }}>
+            {t("home.card_action")}
+          </span>
         </div>
       </div>
     </motion.button>
@@ -530,13 +627,16 @@ function formatRelative(isoString: string, t: ReturnType<typeof useT>): string {
 
 const hpStyles: Record<string, CSSProperties> = {
   page: { minHeight: "100%", background: "var(--bg)" },
-  main: { maxWidth: 1100, margin: "0 auto", padding: "48px 32px 80px" },
+  main: { maxWidth: 1100, margin: "0 auto", padding: "32px 32px 80px" },
+  mainCompact: {
+    padding: "18px 32px 64px",
+  },
 
   hero: {
     position: "relative",
-    minHeight: 480,
+    minHeight: 360,
     padding: 0,
-    borderRadius: "var(--radius-lg)",
+    borderRadius: 0,
     overflow: "hidden",
     // Vertical gradient: keep the upper half of the splash visible,
     // fade to product bg at the bottom so cards slide up underneath
@@ -547,52 +647,135 @@ const hpStyles: Record<string, CSSProperties> = {
     backgroundSize: "cover",
     backgroundPosition: "center 30%",
     color: "white",
-    marginBottom: 32,
+    marginBottom: 22,
     display: "flex",
     alignItems: "center",
   },
+  heroCompact: {
+    minHeight: 392,
+    marginBottom: 16,
+    backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.94) 0%, rgba(12,12,16,0.62) 48%, rgba(12,12,16,0.16) 100%), linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.38) 72%, var(--bg) 100%), url(${PAGE_BG.splash})`,
+    backgroundPosition: "center 33%",
+    alignItems: "flex-end",
+  },
   heroInner: {
     width: "100%",
-    maxWidth: 720,
-    padding: "88px 56px 96px",
+    maxWidth: 640,
+    padding: "58px 56px 64px",
     textAlign: "left" as const,
+  },
+  heroInnerCompact: {
+    padding: "42px 28px 34px",
+    maxWidth: 420,
   },
   heroTagline: {
     display: "inline-block",
-    fontSize: 11,
-    letterSpacing: "0.22em",
-    textTransform: "uppercase" as const,
+    fontSize: 12.5,
+    letterSpacing: 0,
+    textTransform: "none" as const,
     color: "var(--accent)",
-    marginBottom: 24,
-    fontWeight: 600,
+    marginBottom: 18,
+    fontWeight: 650,
+  },
+  heroTaglineCompact: {
+    fontSize: 11.5,
+    letterSpacing: 0,
+    marginBottom: 12,
+    maxWidth: 250,
+    lineHeight: 1.35,
   },
   heroTitle: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 56,
+    fontSize: 52,
     lineHeight: 1.08,
     fontWeight: 400,
-    margin: "0 0 22px",
+    margin: "0 0 18px",
     color: "white",
     textShadow: "0 2px 28px rgba(0,0,0,0.55)",
-    letterSpacing: "-0.01em",
+    letterSpacing: 0,
+  },
+  heroTitleCompact: {
+    fontSize: 36,
+    lineHeight: 1.03,
+    margin: "0 0 14px",
   },
   heroSub: {
     fontSize: 16,
     lineHeight: 1.65,
     color: "rgba(244,239,230,0.82)",
     maxWidth: 540,
-    margin: "0 0 32px",
+    margin: "0 0 24px",
     fontWeight: 400,
   },
-  heroActions: { display: "flex", justifyContent: "flex-start", gap: 12, flexWrap: "wrap" },
+  heroSubCompact: {
+    fontSize: 14.5,
+    lineHeight: 1.5,
+    margin: "0 0 18px",
+    maxWidth: 280,
+  },
+  heroActions: {
+    display: "flex",
+    justifyContent: "flex-start",
+    alignItems: "baseline",
+    columnGap: 18,
+    rowGap: 8,
+    flexWrap: "wrap",
+  },
+  heroActionsCompact: {
+    columnGap: 0,
+    rowGap: 0,
+  },
+  heroPrimaryAction: {
+    width: "fit-content",
+    minHeight: 34,
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.38)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,178,0.98)",
+    fontSize: 15,
+    fontWeight: 880,
+    lineHeight: 1.25,
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  heroSecondaryAction: {
+    height: "auto",
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(244,239,230,0.74)",
+    fontSize: 14,
+    fontWeight: 650,
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
 
-  section: { marginTop: 56 },
+  section: { marginTop: 34 },
+  sectionCompact: { marginTop: 18 },
   sectionHeader: { marginBottom: 20 },
   sectionTitle: {
     fontFamily: "var(--font-narrative)",
     fontSize: 22,
     fontWeight: 500,
     margin: 0,
+  },
+  plazaHeader: {
+    marginBottom: 26,
+    paddingBottom: 0,
+    borderBottom: "none",
+  },
+  plazaLabel: {
+    display: "inline-block",
+    paddingBottom: 0,
+    color: "var(--text-muted)",
+    borderBottom: "none",
+    fontSize: 13,
+    lineHeight: 1.2,
+    fontWeight: 650,
   },
 
   tabs: {
@@ -613,30 +796,98 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   tabActive: {
     color: "var(--text)",
-    borderBottomColor: "var(--accent)",
+    borderBottom: "2px solid var(--accent)",
+  },
+
+  resumeSection: {
+    marginTop: 28,
+  },
+  resumeButton: {
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(90px, 18%) auto",
+    alignItems: "center",
+    gap: 18,
+    padding: "22px 0",
+    textAlign: "left",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    color: "var(--text)",
+    cursor: "pointer",
+    transition: "opacity 160ms, transform 160ms",
+  },
+  resumeButtonCompact: {
+    gridTemplateColumns: "1fr",
+    gap: 12,
+    padding: "18px 0",
+  },
+  resumeCopy: {
+    minWidth: 0,
+  },
+  resumeKicker: {
+    display: "block",
+    marginBottom: 6,
+    color: "var(--accent)",
+    fontSize: 12,
+    fontWeight: 650,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+  },
+  resumeTitle: {
+    fontFamily: "var(--font-narrative)",
+    fontSize: 24,
+    lineHeight: 1.18,
+    fontWeight: 500,
+    color: "var(--text)",
+  },
+  resumeMeta: {
+    marginTop: 7,
+    color: "var(--text-faint)",
+    fontSize: 12,
+  },
+  resumeProgress: {
+    height: 1,
+    background: "var(--line-strong)",
+    overflow: "hidden",
+  },
+  resumeProgressFill: {
+    display: "block",
+    height: "100%",
+    background: "var(--accent)",
+  },
+  resumeCta: {
+    color: "var(--accent)",
+    fontSize: 13,
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  },
+  resumeCtaCompact: {
+    justifySelf: "start",
+  },
+  resumeQueue: {
+    marginTop: 14,
   },
 
   sessionRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-    gap: 12,
+    gridTemplateColumns: "1fr",
+    gap: 10,
   },
   sessionCard: {
+    width: "100%",
+    display: "block",
     textAlign: "left",
-    padding: "14px 16px",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: "var(--radius-md)",
+    padding: "10px 0",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
     cursor: "pointer",
-    transition: "all 160ms",
+    transition: "opacity 160ms, transform 160ms",
     position: "relative",
   },
-  // Archive treatment for completed runs — slightly heavier border,
-  // top-right "#N" badge. Reads as a stamped catalog entry rather
-  // than just a hover-able card.
   sessionCardArchive: {
-    borderColor: "var(--line-strong)",
-    background: "linear-gradient(180deg, var(--bg-elev), rgba(255,255,255,0.01))",
+    paddingBottom: 12,
   },
   archiveHeader: {
     display: "flex",
@@ -646,42 +897,33 @@ const hpStyles: Record<string, CSSProperties> = {
     gap: 16,
   },
   archiveCount: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: "var(--text-faint)",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase" as const,
+    letterSpacing: 0,
+    textTransform: "none" as const,
     fontVariantNumeric: "tabular-nums",
   },
   archiveBadge: {
     position: "absolute",
-    top: 10,
-    right: 12,
+    top: 16,
+    right: 18,
     fontSize: 10.5,
     color: "var(--text-faint)",
     fontVariantNumeric: "tabular-nums",
-    letterSpacing: "0.06em",
+    letterSpacing: 0,
   },
   endingChipGlyph: {
     marginRight: 4,
     fontSize: 11,
   },
-  // Tier-colored ending chips. Each one signals the broad category
-  // (win / muddied / disaster) at a glance, so a list of completed
-  // runs reads as a record of varied outcomes, not a uniform pill row.
   endingChipVictory: {
-    background: "linear-gradient(90deg, rgba(212,168,83,0.32), rgba(212,168,83,0.18))",
     color: "rgba(245,210,140,0.96)",
-    border: "1px solid rgba(212,168,83,0.4)",
   },
   endingChipCompromised: {
-    background: "rgba(255,255,255,0.08)",
     color: "var(--text)",
-    border: "1px solid var(--line-strong)",
   },
   endingChipCollapsed: {
-    background: "rgba(220,80,60,0.18)",
     color: "rgba(245,180,170,0.95)",
-    border: "1px solid rgba(220,80,60,0.42)",
   },
   sessionTitle: {
     fontSize: 14.5,
@@ -697,10 +939,10 @@ const hpStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap",
   },
   sessionEndingLabel: {
-    padding: "2px 8px",
-    background: "var(--accent-soft)",
+    padding: 0,
+    background: "transparent",
     color: "var(--accent)",
-    borderRadius: 999,
+    borderRadius: 0,
     fontSize: 11,
     fontWeight: 600,
     whiteSpace: "nowrap",
@@ -714,60 +956,67 @@ const hpStyles: Record<string, CSSProperties> = {
     minWidth: 0,
   },
 
-  // Manhwa-panel grid: tighter cards (200-240 wide) so 4-5 fit per
-  // row on a typical desktop, like a webtoon platform's catalog
-  // landing. Cover-dominant aspect (~9:11) reads as a vertical
-  // panel, not a square thumbnail.
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-    gap: 14,
+    gridTemplateColumns: "1fr",
+    gap: 18,
+  },
+  gridCompact: {
+    gap: 28,
   },
   card: {
     textAlign: "left",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: "var(--radius-md)",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
     cursor: "pointer",
-    transition: "all 220ms",
-    display: "flex",
-    flexDirection: "column",
+    transition: "opacity 180ms, transform 180ms",
+    display: "grid",
+    gridTemplateColumns: "clamp(132px, 22vw, 220px) minmax(0, 1fr)",
+    minHeight: 158,
     overflow: "hidden",
     padding: 0,
   },
-  // Cover takes the visual majority of the card (240px tall).
-  // Title sits in a strong gradient mask at the bottom, white
-  // serif on near-black — webtoon catalog aesthetic.
+  cardCompact: {
+    gridTemplateColumns: "1fr",
+    minHeight: 0,
+  },
   cardCover: {
-    height: 240,
+    height: "100%",
+    minHeight: 158,
     backgroundSize: "cover",
     backgroundPosition: "center",
-    display: "flex",
-    alignItems: "flex-end",
-    padding: "14px 14px 12px",
+    display: "block",
+    padding: 0,
     position: "relative" as const,
   },
-  cardCoverFade: {
-    width: "100%",
-    position: "relative" as const,
-    zIndex: 1,
+  cardCoverCompact: {
+    height: "auto",
+    minHeight: 0,
+    aspectRatio: "16 / 9",
   },
   cardBody: {
-    padding: "10px 14px 12px",
+    padding: "20px 0 18px 18px",
     display: "flex",
     flexDirection: "column",
-    gap: 8,
-    background: "var(--bg-elev)",
+    justifyContent: "center",
+    gap: 14,
+    background: "transparent",
+  },
+  cardBodyCompact: {
+    padding: "12px 0 0",
+    gap: 10,
+    justifyContent: "flex-start",
   },
   cardTitle: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 17,
+    fontSize: 20,
     lineHeight: 1.25,
     fontWeight: 500,
-    color: "white",
-    textShadow: "0 2px 14px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.6)",
-    marginBottom: 3,
-    letterSpacing: "-0.005em",
+    color: "var(--text)",
+    textShadow: "none",
+    marginBottom: 5,
+    letterSpacing: 0,
   },
   cardSeed: {
     fontSize: 12.5,
@@ -775,60 +1024,83 @@ const hpStyles: Record<string, CSSProperties> = {
     fontStyle: "italic",
     lineHeight: 1.5,
   },
+  cardSeedCompact: {
+    fontSize: 13,
+    lineHeight: 1.55,
+  },
   cardCast: {
     fontSize: 11,
-    color: "rgba(255,255,255,0.72)",
-    textShadow: "0 1px 6px rgba(0,0,0,0.85)",
-    letterSpacing: "0.02em",
+    color: "var(--text-faint)",
+    textShadow: "none",
+    letterSpacing: 0,
   },
   cardFooter: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
+    columnGap: 8,
+    rowGap: 5,
+    flexWrap: "wrap" as const,
     fontSize: 11,
     color: "var(--text-faint)",
-    paddingTop: 10,
-    borderTop: "1px dashed var(--line)",
+    paddingTop: 0,
+    borderTop: "none",
+  },
+  cardFooterCompact: {
+    rowGap: 7,
   },
   cardBadge: {
-    padding: "3px 8px",
-    background: "var(--bg)",
-    border: "1px solid var(--line)",
-    borderRadius: 999,
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    textTransform: "none" as const,
+    letterSpacing: 0,
   },
   cardPlays: { fontSize: 11 },
   cardOwnerBadge: {
-    marginLeft: "auto",
-    padding: "3px 8px",
-    background: "var(--accent-soft)",
+    padding: 0,
+    background: "transparent",
     color: "var(--accent)",
-    borderRadius: 999,
     fontSize: 11,
+    textTransform: "none" as const,
+    letterSpacing: 0,
+  },
+  cardAction: {
+    marginLeft: 0,
+    color: "rgba(245,200,120,0.88)",
+    fontSize: 11.5,
+    fontWeight: 720,
+    letterSpacing: 0,
+    whiteSpace: "nowrap" as const,
+  },
+  cardActionCompact: {
+    flexBasis: "100%",
+    marginTop: 1,
   },
 
   errorBox: {
-    padding: 20,
-    background: "rgba(220,80,80,0.08)",
-    border: "1px solid rgba(220,80,80,0.25)",
-    borderRadius: "var(--radius-md)",
+    padding: "12px 0",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
     color: "var(--warn)",
     fontSize: 14,
   },
   loading: { padding: 40, textAlign: "center", color: "var(--text-faint)", fontSize: 14 },
   empty: {
-    padding: 40,
-    textAlign: "center",
+    padding: "28px 0",
+    textAlign: "left",
     color: "var(--text-faint)",
     fontSize: 14,
     fontStyle: "italic",
-    background: "var(--bg-elev)",
-    borderRadius: "var(--radius-md)",
-    border: "1px dashed var(--line)",
+    background: "transparent",
+    borderRadius: 0,
+    border: "none",
   },
   emptyCard: {
-    background: "var(--bg-elev)",
-    borderRadius: "var(--radius-md)",
-    border: "1px solid var(--line)",
+    background: "transparent",
+    borderRadius: 0,
+    border: "none",
     overflow: "hidden",
   },
   emptyHero: {

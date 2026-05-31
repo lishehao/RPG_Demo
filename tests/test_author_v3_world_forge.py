@@ -6,7 +6,7 @@ import pytest
 
 from rpg_backend.author_v3.contracts import ForgedCharacter, RelationshipMatrix, WorldConfiguration
 from rpg_backend.author_v3.relationship_matrix import build_relationship_matrix
-from rpg_backend.author_v3.world_forge import forge_world
+from rpg_backend.author_v3.world_forge import _parse_relationship_payload, forge_world
 
 
 @pytest.fixture
@@ -49,6 +49,44 @@ def test_forge_world_deterministic_all_characters_have_required_fields(config: W
 
 def test_forge_world_deterministic_relationship_edges_count(config: WorldConfiguration) -> None:
     assert len(config.relationship_edges) == 10
+
+
+def test_relationship_payload_sanitizes_prose_numeric_stance_fields() -> None:
+    edges = _parse_relationship_payload(
+        {
+            "relationship_edges": [
+                {
+                    "character_a_id": "a",
+                    "character_b_id": "b",
+                    "public_facade": "公开合作",
+                    "hidden_truth": "私下互相试探",
+                    "tension_score": "强烈拉扯",
+                    "hooks": ["旧账"],
+                    "stance_a_to_b": {
+                        "trust_level": "信任很低",
+                        "dependency_level": "0.7",
+                        "hidden_dynamic": "控制与试探",
+                        "tension_source": "旧账",
+                        "power_asymmetry": "a掌握资源",
+                    },
+                    "stance_b_to_a": {
+                        "trust_level": 0.4,
+                        "dependency_level": "依赖对方",
+                        "hidden_dynamic": "戒备",
+                        "tension_source": "把柄",
+                        "power_asymmetry": -0.2,
+                    },
+                }
+            ]
+        }
+    )
+
+    assert len(edges) == 1
+    assert edges[0].tension_score == 0.5
+    assert edges[0].stance_a_to_b.trust_level == 0.5
+    assert edges[0].stance_a_to_b.dependency_level == 0.7
+    assert edges[0].stance_a_to_b.power_asymmetry == 0.0
+    assert edges[0].stance_b_to_a.dependency_level == 0.5
 
 
 def test_forge_world_deterministic_tension_scores_in_range(config: WorldConfiguration) -> None:

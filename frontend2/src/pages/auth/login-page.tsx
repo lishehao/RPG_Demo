@@ -1,9 +1,10 @@
-import { type CSSProperties, type FormEvent, useEffect, useState } from "react"
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion, useAnimationControls } from "motion/react"
 import { useAuth } from "../../app/auth-context"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { useT } from "../../shared/lib/i18n"
 import { itemTransition } from "../../shared/lib/motion-presets"
+import { PAGE_BG } from "../../shared/lib/webtoon-assets"
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{2,20}$/
 
@@ -21,9 +22,18 @@ export function LoginPage({
   void _onOpenCreate
   const auth = useAuth()
   const t = useT()
+  const compactLayout = useCompactLayout()
   const [name, setName] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isCreateEntry = next === "create"
+  const [customOpen, setCustomOpen] = useState(!isCreateEntry)
+  useEffect(() => {
+    setCustomOpen(!isCreateEntry)
+  }, [isCreateEntry])
+  const showCustomName = !isCreateEntry || customOpen || Boolean(name.trim()) || Boolean(error) || submitting
+  const showNameSubmit = !isCreateEntry || Boolean(name.trim()) || submitting
+  const guestHandle = useMemo(() => `guest_${Math.random().toString(36).slice(2, 8)}`, [])
   // Shake the input row when an error fires, so the user's eye is
   // drawn to the field that needs fixing without us blocking with a
   // modal. Triggered each time `error` becomes truthy — even if the
@@ -38,10 +48,9 @@ export function LoginPage({
     })
   }, [error, inputControls])
 
-  const submit = async (e?: FormEvent<HTMLFormElement>) => {
-    e?.preventDefault?.()
+  const submitName = async (rawName: string) => {
     if (submitting) return
-    const trimmed = name.trim()
+    const trimmed = rawName.trim()
     if (!USERNAME_PATTERN.test(trimmed)) {
       setError(t("login.error_username_format"))
       return
@@ -56,10 +65,14 @@ export function LoginPage({
       setSubmitting(false)
     }
   }
+  const submit = async (e?: FormEvent<HTMLFormElement>) => {
+    e?.preventDefault?.()
+    await submitName(name)
+  }
 
   return (
-    <div style={lpStyles.page}>
-      <header style={lpStyles.header}>
+    <div style={{ ...lpStyles.page, ...(compactLayout ? lpStyles.pageCompact : null) }}>
+      <header style={{ ...lpStyles.header, ...(compactLayout ? lpStyles.headerCompact : null) }}>
         <button style={lpStyles.brandLink} onClick={onBackHome}>
           <span
             style={{
@@ -76,36 +89,72 @@ export function LoginPage({
         </button>
       </header>
 
-      <main style={lpStyles.main}>
+      <main style={{ ...lpStyles.main, ...(compactLayout ? lpStyles.mainCompact : null) }}>
         <motion.form
-          style={lpStyles.card}
+          style={{ ...lpStyles.card, ...(compactLayout ? lpStyles.cardCompact : null) }}
           onSubmit={submit}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={itemTransition}
         >
-          <span className="ts-tag" style={{ marginBottom: 24 }}>
+          <span className="ts-tag" style={lpStyles.kicker}>
             {t("login.tag")}
           </span>
-          <h1 style={lpStyles.title}>{t("login.title")}</h1>
-          <p style={lpStyles.sub}>{t("login.sub")}</p>
+          <h1 style={{ ...lpStyles.title, ...(compactLayout ? lpStyles.titleCompact : null) }}>
+            {isCreateEntry ? t("login.title_create") : t("login.title")}
+          </h1>
+          <p style={{ ...lpStyles.sub, ...(compactLayout ? lpStyles.subCompact : null) }}>
+            {isCreateEntry ? t("login.sub_create") : t("login.sub")}
+          </p>
 
-          <motion.div style={lpStyles.inputWrap} animate={inputControls}>
-            <span style={lpStyles.at}>@</span>
-            <input
-              style={lpStyles.input}
-              placeholder={t("login.placeholder")}
-              value={name}
-              onChange={(e) => {
-                if (error) setError(null) // clear on retype
-                setName(e.target.value.replace(/^@+/, ""))
-              }}
-              autoFocus
-              spellCheck={false}
-              autoComplete="off"
-              disabled={submitting}
-            />
-          </motion.div>
+          {isCreateEntry ? (
+            <>
+              <button
+                type="button"
+                style={{
+                  ...lpStyles.quickStartButton,
+                  ...(compactLayout ? lpStyles.quickStartButtonCompact : null),
+                }}
+                onClick={() => {
+                  setName(guestHandle)
+                  void submitName(guestHandle)
+                }}
+                disabled={submitting}
+              >
+                <span style={lpStyles.quickStartLabel}>{t("login.guest_primary", { name: guestHandle })}</span>
+                <span style={lpStyles.quickStartArrow} aria-hidden>→</span>
+              </button>
+              {!showCustomName ? (
+                <button
+                  type="button"
+                  style={lpStyles.customNameToggle}
+                  onClick={() => setCustomOpen(true)}
+                  disabled={submitting}
+                >
+                  {t("login.custom_label")}
+                </button>
+              ) : null}
+            </>
+          ) : null}
+
+          {showCustomName ? (
+            <motion.div style={lpStyles.inputWrap} animate={inputControls}>
+              <span style={lpStyles.at}>@</span>
+              <input
+                style={lpStyles.input}
+                placeholder={t("login.placeholder")}
+                value={name}
+                onChange={(e) => {
+                  if (error) setError(null) // clear on retype
+                  setName(e.target.value.replace(/^@+/, ""))
+                }}
+                autoFocus
+                spellCheck={false}
+                autoComplete="off"
+                disabled={submitting}
+              />
+            </motion.div>
+          ) : null}
 
           <AnimatePresence>
             {error ? (
@@ -122,42 +171,89 @@ export function LoginPage({
             ) : null}
           </AnimatePresence>
 
-          <button
-            type="submit"
-            className="ts-btn ts-btn--primary ts-btn--lg"
-            style={{
-              width: "100%",
-              marginTop: 14,
-              opacity: !name.trim() || submitting ? 0.5 : 1,
-              pointerEvents: !name.trim() || submitting ? "none" : "auto",
-            }}
-          >
-            {submitting ? t("login.submit_busy") : t("login.submit_idle")}
-          </button>
+          <AnimatePresence initial={false}>
+            {showNameSubmit ? (
+              <motion.button
+                key="name-submit"
+                type="submit"
+                style={{
+                  ...lpStyles.submitAction,
+                  alignSelf: "flex-start",
+                  marginTop: 14,
+                  opacity: !name.trim() || submitting ? 0.5 : 1,
+                  pointerEvents: !name.trim() || submitting ? "none" : "auto",
+                }}
+                initial={isCreateEntry ? { opacity: 0, y: -4, height: 0, marginTop: 0 } : false}
+                animate={{ opacity: !name.trim() || submitting ? 0.5 : 1, y: 0, height: "auto", marginTop: 14 }}
+                exit={isCreateEntry ? { opacity: 0, y: -4, height: 0, marginTop: 0 } : undefined}
+                transition={itemTransition}
+              >
+                {submitting
+                  ? t("login.submit_busy")
+                  : isCreateEntry
+                    ? t("login.submit_create")
+                    : t("login.submit_idle")}
+              </motion.button>
+            ) : null}
+          </AnimatePresence>
 
-          <p style={lpStyles.note}>{t("login.note")}</p>
+          {!isCreateEntry || showCustomName ? (
+            <p style={{ ...lpStyles.note, ...(compactLayout ? lpStyles.noteCompact : null) }}>
+              {isCreateEntry ? t("login.note_create") : t("login.note")}
+            </p>
+          ) : null}
         </motion.form>
       </main>
     </div>
   )
 }
 
+function useCompactLayout(query = "(max-width: 720px)") {
+  const [compact, setCompact] = useState(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const media = window.matchMedia(query)
+    const update = () => setCompact(media.matches)
+    update()
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [query])
+  return compact
+}
+
 const lpStyles: Record<string, CSSProperties> = {
-  page: { minHeight: "100%", background: "var(--bg)" },
-  header: { padding: "18px 40px", borderBottom: "1px solid var(--line)" },
+  page: {
+    minHeight: "100%",
+    background: `linear-gradient(90deg, rgba(12,12,16,0.96) 0%, rgba(12,12,16,0.82) 46%, rgba(12,12,16,0.55) 100%), linear-gradient(180deg, rgba(12,12,16,0.14) 0%, var(--bg) 92%), url(${PAGE_BG.login})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  },
+  pageCompact: {
+    backgroundPosition: "58% top",
+  },
+  header: { padding: "18px 40px", borderBottom: "1px solid rgba(255,255,255,0.10)" },
+  headerCompact: { padding: "16px 30px" },
   brandLink: { display: "inline-flex", alignItems: "center", gap: 8 },
 
   main: {
     display: "flex",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "flex-start",
-    padding: "120px 24px 80px",
+    maxWidth: 1100,
+    margin: "0 auto",
+    padding: "120px 40px 80px",
+  },
+  mainCompact: {
+    padding: "72px 30px 56px",
   },
   card: {
     width: "100%",
-    maxWidth: 360,
+    maxWidth: 420,
     display: "flex",
     flexDirection: "column",
+  },
+  cardCompact: {
+    maxWidth: "100%",
   },
   title: {
     fontFamily: "var(--font-narrative)",
@@ -165,17 +261,120 @@ const lpStyles: Record<string, CSSProperties> = {
     lineHeight: 1.2,
     fontWeight: 400,
     margin: "0 0 10px",
-    letterSpacing: "-0.005em",
+    letterSpacing: 0,
+    color: "white",
   },
-  sub: { fontSize: 14, color: "var(--text-muted)", margin: "0 0 28px", lineHeight: 1.55 },
+  titleCompact: {
+    fontSize: 25,
+    lineHeight: 1.18,
+  },
+  kicker: {
+    display: "inline-block",
+    marginBottom: 24,
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+  },
+  sub: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.68)",
+    margin: "0 0 22px",
+    lineHeight: 1.55,
+  },
+  subCompact: {
+    fontSize: 13.5,
+    maxWidth: 320,
+  },
+  quickStartButton: {
+    width: "100%",
+    marginBottom: 8,
+    padding: "6px 0 8px",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    color: "rgba(255,230,184,0.96)",
+    cursor: "pointer",
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    alignItems: "baseline",
+    columnGap: 8,
+    fontFamily: "inherit",
+    textAlign: "left" as const,
+  },
+  quickStartButtonCompact: {
+    gridTemplateColumns: "minmax(0, 1fr) 18px",
+    columnGap: 7,
+  },
+  quickStartIndex: {
+    color: "rgba(245,200,120,0.64)",
+    fontFamily: "var(--font-ui)",
+    fontSize: 11,
+    lineHeight: 1.25,
+    fontWeight: 780,
+  },
+  quickStartLabel: {
+    minWidth: 0,
+    fontSize: 13.5,
+    fontWeight: 800,
+    lineHeight: 1.35,
+  },
+  quickStartArrow: {
+    flexShrink: 0,
+    color: "rgba(245,200,120,0.84)",
+    fontSize: 14,
+    lineHeight: 1,
+  },
+  customNameToggle: {
+    width: "fit-content",
+    marginBottom: 14,
+    padding: "2px 0 4px",
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.16)",
+    borderRadius: 0,
+    color: "rgba(255,255,255,0.56)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: 12,
+    fontWeight: 680,
+    lineHeight: 1.35,
+    letterSpacing: 0,
+    textAlign: "left",
+  },
+  orLine: {
+    display: "grid",
+    gridTemplateColumns: "22px minmax(0, 1fr)",
+    alignItems: "baseline",
+    columnGap: 8,
+    marginBottom: 12,
+  },
+  orIndex: {
+    color: "rgba(245,200,120,0.44)",
+    fontFamily: "var(--font-ui)",
+    fontSize: 11,
+    lineHeight: 1.25,
+    fontWeight: 780,
+  },
+  orLabel: {
+    color: "rgba(255,255,255,0.54)",
+    fontSize: 12,
+    lineHeight: 1.35,
+    fontWeight: 680,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+  },
 
   inputWrap: {
     position: "relative",
     display: "flex",
     alignItems: "center",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: "var(--radius-md)",
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.24)",
+    borderRadius: 0,
     transition: "border-color 200ms",
   },
   at: {
@@ -192,21 +391,38 @@ const lpStyles: Record<string, CSSProperties> = {
     background: "transparent",
     border: "none",
     outline: "none",
-    color: "var(--text)",
+    color: "white",
     fontSize: 16,
   },
-
   error: {
     fontSize: 12,
     color: "var(--warn)",
     overflow: "hidden",
   },
+  submitAction: {
+    width: "fit-content",
+    padding: "6px 0 7px",
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.42)",
+    borderRadius: 0,
+    color: "rgba(255,226,172,0.96)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 850,
+    letterSpacing: 0,
+    textAlign: "left",
+  },
 
   note: {
     marginTop: 18,
     fontSize: 12,
-    color: "var(--text-faint)",
+    color: "rgba(255,255,255,0.48)",
     lineHeight: 1.6,
-    textAlign: "center",
+    textAlign: "left",
+  },
+  noteCompact: {
+    maxWidth: 320,
   },
 }

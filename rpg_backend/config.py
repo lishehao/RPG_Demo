@@ -73,8 +73,6 @@ class Settings(BaseSettings):
     responses_author_requests_per_minute: int | None = Field(default=None, ge=1)
     responses_timeout_seconds: float = Field(default=20.0, gt=0)
     responses_timeout_seconds_llm_text_audit: float = Field(default=120.0, gt=0)
-    responses_timeout_seconds_author_v2_qwen: float = Field(default=45.0, gt=0)
-    responses_author_qwen_requests_per_minute: int | None = Field(default=None, ge=1)
     responses_author_use_session_cache: bool | None = None
     responses_play_use_session_cache: bool | None = None
     responses_use_session_cache: bool | None = None

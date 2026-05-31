@@ -17,7 +17,7 @@ def _make_gateway(transport: MagicMock) -> AuthorV3LLMGateway:
     gateway = AuthorV3LLMGateway(
         client=object(),
         model="test-model",
-        profile_id="pure_gpt",
+        profile_id="live_deepseek_v4_flash",
         timeout_seconds=1.0,
     )
     object.__setattr__(gateway, "_transport", transport)

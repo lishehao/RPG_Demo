@@ -1,9 +1,8 @@
 import { useEffect } from "react"
-import { AnimatePresence, motion } from "motion/react"
 import { ApiProvider } from "./api-context"
 import { AuthProvider } from "./auth-context"
 import { LanguageProvider } from "../shared/lib/i18n"
-import { type AppRoute, type NavDirection, useAppRoute } from "./routes"
+import { type AppRoute, useAppRoute } from "./routes"
 import { HomePage } from "../pages/home/home-page"
 import { CreatePage } from "../pages/create/create-page"
 import { PlayPage } from "../pages/play/play-page"
@@ -13,13 +12,35 @@ import { ReplayPage } from "../pages/replay/replay-page"
 import { TemplateDetailPage } from "../pages/world/world-detail-page"
 import { PortfolioPage } from "../pages/portfolio/portfolio-page"
 import { ReviewerPage } from "../pages/portfolio/reviewer-page"
-import { pageTransition } from "../shared/lib/motion-presets"
 
 function NotFoundRedirect({ navigate }: { navigate: (next: AppRoute) => void }) {
   useEffect(() => {
     navigate({ name: "home" })
   }, [navigate])
   return null
+}
+
+function routeFromLoginNext(next?: string): AppRoute {
+  if (!next) return { name: "home" }
+  const normalized = next.replace(/^#/, "").replace(/^\//, "")
+  const [pathname, search = ""] = normalized.split("?")
+  const segments = pathname.split("/").filter(Boolean)
+  const params = new URLSearchParams(search)
+
+  if (segments[0] === "create") return { name: "create" }
+  if (segments[0] === "template" && segments[1]) {
+    return { name: "template", templateId: segments[1] }
+  }
+  if (segments[0] === "play" && segments[1]) {
+    return { name: "play", sessionId: segments[1], reviewer: params.get("reviewer") === "1" }
+  }
+  if (segments[0] === "replay" && segments[1]) {
+    return { name: "replay", sessionId: segments[1] }
+  }
+  if (segments[0] === "reviewer") return { name: "reviewer" }
+  if (segments[0] === "portfolio") return { name: "portfolio" }
+  if (segments[0] === "about") return { name: "about" }
+  return { name: "home" }
 }
 
 function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
@@ -38,10 +59,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
           next={route.next}
           onBackHome={() => navigate({ name: "home" })}
           onOpenCreate={() => navigate({ name: "create" })}
-          onLoggedIn={(next) => {
-            if (next === "create") navigate({ name: "create" })
-            else navigate({ name: "home" })
-          }}
+          onLoggedIn={(next) => navigate(routeFromLoginNext(next))}
         />
       )
     case "create":
@@ -117,22 +135,8 @@ function routeKey(route: AppRoute): string {
   }
 }
 
-// Direction-aware page transitions. The router tells us whether
-// the user is going deeper (forward) or coming back (backward) and
-// we slide pages on the y-axis accordingly: forward pushes up out
-// of view (12px → 0 → -12), backward pulls down (-12 → 0 → 12).
-// Subtle but readable spatial cue.
-function pageVariantsFor(direction: NavDirection) {
-  const isForward = direction === "forward"
-  return {
-    initial: { opacity: 0, y: isForward ? 12 : -12 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: isForward ? -12 : 12 },
-  }
-}
-
 function Router() {
-  const { route, navigate, direction } = useAppRoute()
+  const { route, navigate } = useAppRoute()
   const key = routeKey(route)
   // Reset scroll on every navigation. AnimatePresence handles the
   // mount/unmount choreography but doesn't touch window scroll, so
@@ -142,23 +146,14 @@ function Router() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" })
   }, [key])
-  // mode="popLayout" lets the new page enter while the outgoing page
-  // is still fading — overlapping ~280ms instead of waiting through
-  // exit-then-enter (560ms total). The outgoing element is popped
-  // from layout flow immediately so the two don't stack.
+  // Route changes intentionally skip exit animation. The previous
+  // `AnimatePresence`/`popLayout` version looked smoother, but left
+  // invisible old route controls in the browser-visible DOM. Immediate
+  // unmount keeps click and accessibility targeting deterministic.
   return (
-    <AnimatePresence mode="popLayout" custom={direction}>
-      <motion.div
-        key={key}
-        variants={pageVariantsFor(direction)}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        transition={pageTransition}
-      >
-        {renderRoute(route, navigate)}
-      </motion.div>
-    </AnimatePresence>
+    <div key={key}>
+      {renderRoute(route, navigate)}
+    </div>
   )
 }
 

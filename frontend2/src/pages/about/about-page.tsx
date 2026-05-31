@@ -40,7 +40,7 @@ export function AboutPage({
         ))}
         <div style={apStyles.footer}>
           <button
-            className="ts-btn ts-btn--ghost"
+            style={apStyles.backAction}
             onClick={onBackHome}
             type="button"
           >
@@ -93,6 +93,18 @@ const apStyles: Record<string, CSSProperties> = {
     paddingTop: 32,
     borderTop: "1px dashed var(--line)",
     marginTop: 24,
+  },
+  backAction: {
+    padding: "0 0 5px",
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid var(--line-strong)",
+    borderRadius: 0,
+    color: "var(--text-muted)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 700,
   },
 }
 

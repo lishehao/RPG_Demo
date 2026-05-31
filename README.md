@@ -20,6 +20,7 @@
   · <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">MP4</a>
   · <a href="#innovation">Innovation</a>
   · <a href="#architecture">Architecture</a>
+  · <a href="#evaluation-v3">Evaluation</a>
   · <a href="./docs/CURRENT_SYSTEM_MAP.md">System map</a>
   · <a href="./docs/CASE_STUDY.md">Case study</a>
   · <a href="#run-locally">Run locally</a>
@@ -220,21 +221,36 @@ Key engineering decisions:
 
 ---
 
+## Evaluation v3
+
+The old gold/self-play/light-ab benchmark stack has been removed. The
+new eval direction is environment-first: case catalog, player policy,
+episode trace, deterministic oracles, and separated release gates for
+author validity, runtime validity, agency, trajectory, quality review,
+and ops reliability.
+
+Start here:
+
+- [Eval v3 redesign](./docs/eval/EVAL_V3_REDESIGN.md)
+- `python -m tools.rpg_eval.runner --dry-run --output-dir artifacts/eval_v3/dry_run`
+
+---
+
 ## Run Locally
 
 Requirements:
 
 - Python 3.11+
 - Node 18+
-- An OpenAI-compatible chat/completions endpoint
+- A DeepSeek V4 Flash chat/completions endpoint
 
 ```bash
 pip install -e ".[dev]"
 cp .env.example .env
 # Fill:
-#   APP_RESPONSES_PLAY_BASE_URL=...
+#   APP_RESPONSES_PLAY_BASE_URL=https://api.deepseek.com
 #   APP_RESPONSES_PLAY_API_KEY=...
-#   APP_RESPONSES_PLAY_MODEL=...
+#   APP_RESPONSES_PLAY_MODEL=deepseek-v4-flash
 
 uvicorn rpg_backend.main:app --reload
 ```

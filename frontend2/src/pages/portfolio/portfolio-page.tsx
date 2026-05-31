@@ -42,10 +42,10 @@ export function PortfolioPage({
               replayable branches.
             </p>
             <div className="portfolio-hero__actions">
-              <button className="ts-btn ts-btn--primary ts-btn--lg" type="button" onClick={onOpenReviewer}>
+              <button className="portfolio-action portfolio-action--primary" type="button" onClick={onOpenReviewer}>
                 Launch reviewer demo
               </button>
-              <button className="ts-btn ts-btn--ghost ts-btn--lg" type="button" onClick={onOpenCreate}>
+              <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenCreate}>
                 Try a custom seed
               </button>
             </div>
@@ -146,7 +146,7 @@ export function PortfolioPage({
             explainable progression, visual polish, and an artifact someone can
             replay or evaluate.
           </p>
-          <button className="ts-btn ts-btn--primary ts-btn--lg" type="button" onClick={onOpenReviewer}>
+          <button className="portfolio-action portfolio-action--primary" type="button" onClick={onOpenReviewer}>
             Run the curated demo
           </button>
         </section>
