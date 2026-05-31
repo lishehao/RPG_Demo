@@ -215,20 +215,38 @@ export function TemplateDetailPage({
                             disabled={busy}
                             aria-pressed={isActive}
                           >
-                            <span style={tdStyles.roleChoiceIndex}>{idx + 1}.</span>
+                            <span
+                              style={{
+                                ...tdStyles.roleChoiceIndex,
+                                ...(isActive ? tdStyles.roleChoiceIndexActive : null),
+                              }}
+                            >
+                              {idx + 1}.
+                            </span>
                             <span style={tdStyles.roleChoiceCopy}>
-                              <Truncated style={tdStyles.roleChoiceName}>{role.label}</Truncated>
+                              <span style={tdStyles.roleChoiceTopline}>
+                                <Truncated style={tdStyles.roleChoiceName}>{role.label}</Truncated>
+                                {isActive ? (
+                                  <span style={tdStyles.roleChoiceSelected}>
+                                    {t("world.role_chosen_badge")}
+                                  </span>
+                                ) : null}
+                              </span>
                               <span style={tdStyles.roleChoiceMeta}>
                                 {t("world.role_launch_stats", {
                                   cards: role.leverages_over_npcs.length,
                                   items: role.starting_assets.length,
                                 })}
                               </span>
-                              {!isActive ? (
-                                <Truncated lines={2} style={tdStyles.roleChoiceObjective}>
-                                  {role.hidden_objective}
-                                </Truncated>
-                              ) : null}
+                              <Truncated
+                                lines={2}
+                                style={{
+                                  ...tdStyles.roleChoiceObjective,
+                                  ...(isActive ? tdStyles.roleChoiceObjectiveActive : null),
+                                }}
+                              >
+                                {role.hidden_objective}
+                              </Truncated>
                             </span>
                           </button>
                         )
@@ -1058,16 +1076,34 @@ const tdStyles: Record<string, CSSProperties> = {
     letterSpacing: 0,
     lineHeight: 1.2,
   },
+  roleChoiceIndexActive: {
+    color: "rgba(255,226,178,0.94)",
+  },
   roleChoiceCopy: {
     minWidth: 0,
     display: "flex",
     flexDirection: "column" as const,
     gap: 5,
   },
+  roleChoiceTopline: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
   roleChoiceName: {
+    minWidth: 0,
+    flex: "0 1 auto",
     fontFamily: "var(--font-narrative)",
     fontSize: 16,
     lineHeight: 1.2,
+  },
+  roleChoiceSelected: {
+    flexShrink: 0,
+    color: "rgba(255,226,178,0.9)",
+    fontSize: 10.5,
+    fontWeight: 820,
+    lineHeight: 1,
   },
   roleChoiceMeta: {
     color: "rgba(246,221,176,0.58)",
@@ -1081,6 +1117,9 @@ const tdStyles: Record<string, CSSProperties> = {
     fontSize: 12,
     lineHeight: 1.42,
     fontFamily: "var(--font-narrative)",
+  },
+  roleChoiceObjectiveActive: {
+    color: "rgba(255,245,230,0.76)",
   },
   roleLaunchPanel: {
     marginTop: 0,
