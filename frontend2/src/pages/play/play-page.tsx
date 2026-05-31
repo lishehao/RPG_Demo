@@ -3868,6 +3868,7 @@ function AdvisorSidechat({
   const panelRef = useRef<HTMLElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const oracleConfirmRef = useRef<HTMLButtonElement | null>(null)
   const initialFocusDoneRef = useRef(false)
   const compactAdvisor = useCompactLayout("(max-width: 520px)")
   const isEmptyAdvisor = messages.length === 0 && !busy
@@ -3881,6 +3882,11 @@ function AdvisorSidechat({
         exit: { opacity: 0, x: 0, y: 18 },
       }
     : slideInRightVariants
+
+  const cancelPendingOracle = useCallback(() => {
+    setPendingOracleQuestion(null)
+    setDraftFocusToken((token) => token + 1)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -3910,11 +3916,11 @@ function AdvisorSidechat({
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return
       e.preventDefault()
-      setPendingOracleQuestion(null)
+      cancelPendingOracle()
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [busy, pendingOracleQuestion])
+  }, [busy, cancelPendingOracle, pendingOracleQuestion])
 
   useEffect(() => {
     if (pendingOracleQuestion || busy) return
@@ -3964,6 +3970,21 @@ function AdvisorSidechat({
       timers.forEach((timer) => window.clearTimeout(timer))
     }
   }, [busy, draftFocusToken, focusAdvisorTextarea, pendingOracleQuestion])
+
+  useEffect(() => {
+    if (!pendingOracleQuestion || busy) return
+    const focusConfirm = () => {
+      const node = oracleConfirmRef.current
+      if (!node || node.disabled) return
+      node.focus({ preventScroll: true })
+    }
+    const frame = window.requestAnimationFrame(focusConfirm)
+    const timers = [90, 220].map((delay) => window.setTimeout(focusConfirm, delay))
+    return () => {
+      window.cancelAnimationFrame(frame)
+      timers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [busy, pendingOracleQuestion])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -4274,6 +4295,7 @@ function AdvisorSidechat({
                 </span>
                 <div style={ppStyles.oracleInlineActions}>
                   <button
+                    ref={oracleConfirmRef}
                     style={ppStyles.advisorSendBtn}
                     type="button"
                     onClick={() => void submitAsk(pendingOracleQuestion, true)}
@@ -4284,8 +4306,10 @@ function AdvisorSidechat({
                   <button
                     style={ppStyles.oracleInlineCancelBtn}
                     type="button"
-                    onClick={() => setPendingOracleQuestion(null)}
+                    onClick={cancelPendingOracle}
                     disabled={busy}
+                    aria-keyshortcuts="Escape"
+                    title={t("play.shortcut_escape_cancel")}
                   >
                     {t("play.oracle_inline_cancel")}
                   </button>
