@@ -2200,7 +2200,7 @@ function OutcomeReceipt({ items, compact = false }: { items: OutcomeReceiptItem[
             style={ppStyles.outcomeReceiptPhrase}
             title={`${item.label}: ${item.value}`}
           >
-            {index > 0 ? <span style={ppStyles.outcomeReceiptDivider} aria-hidden>·</span> : null}
+            <span style={ppStyles.outcomeReceiptItemLabel}>{item.label}</span>
             <strong
               style={{
                 ...ppStyles.outcomeReceiptValue,
@@ -5164,14 +5164,18 @@ const ppStyles: Record<string, CSSProperties> = {
     minWidth: 0,
     display: "inline-flex",
     alignItems: "baseline",
-    gap: 8,
+    gap: 5,
     maxWidth: "100%",
   },
-  outcomeReceiptDivider: {
-    color: "rgba(255,255,255,0.18)",
-    fontSize: 11,
-    fontWeight: 900,
+  outcomeReceiptItemLabel: {
     flexShrink: 0,
+    color: "rgba(232,218,205,0.44)",
+    fontSize: 10.2,
+    lineHeight: 1.15,
+    fontWeight: 720,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+    whiteSpace: "nowrap" as const,
   },
   outcomeReceiptValue: {
     minWidth: 0,
