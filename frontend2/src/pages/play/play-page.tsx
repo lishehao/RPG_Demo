@@ -3003,11 +3003,16 @@ function ActionArea({
     if (isEditingThisContext) {
       return null
     }
+    const diaryAttachTitle = diaryDraft
+      ? t("play.diary_attach_edit_title", { motive: diaryDraft })
+      : t("play.diary_attach_add_title")
 
     if (!diaryDraft) {
       return (
         <button
           type="button"
+          aria-label={diaryAttachTitle}
+          title={diaryAttachTitle}
           style={{
             ...ppStyles.diaryAttachPreview,
             ...ppStyles.diaryAttachPreviewEmpty,
@@ -3027,6 +3032,8 @@ function ActionArea({
     return (
       <button
         type="button"
+        aria-label={diaryAttachTitle}
+        title={diaryAttachTitle}
         style={{
           ...ppStyles.diaryAttachPreview,
           ...ppStyles.diaryAttachPreviewFilled,

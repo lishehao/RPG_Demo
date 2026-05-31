@@ -548,6 +548,8 @@ export const STRINGS_ZH = {
   "play.diary_attached_label": "动机已写",
   "play.diary_attach_empty": "内心动机",
   "play.diary_attach_empty_hint": "补上这一步背后的真实动机。",
+  "play.diary_attach_add_title": "添加内心动机",
+  "play.diary_attach_edit_title": "编辑内心动机：{motive}",
 
   // Play page — advisor sidechat (FAB + panel)
   "play.fab_label": "问朋友",
@@ -1140,6 +1142,8 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.diary_attached_label": "Motive added",
   "play.diary_attach_empty": "Inner motive",
   "play.diary_attach_empty_hint": "Add the motive behind your move.",
+  "play.diary_attach_add_title": "Add inner motive",
+  "play.diary_attach_edit_title": "Edit inner motive: {motive}",
 
   "play.fab_label": "Ask friend",
   "play.ask_friend_inline": "Ask friend",
