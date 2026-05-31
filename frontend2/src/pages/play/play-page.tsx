@@ -3394,15 +3394,15 @@ function ActionArea({
               <span style={ppStyles.leverageSummaryMain}>
                 <span style={ppStyles.leverageSummaryEyebrow}>{t("play.leverage_resource_label")}</span>
                 <strong style={ppStyles.leverageSummaryText}>{leverageSummaryText}</strong>
-                <span
-                  style={{
-                    ...ppStyles.leverageSummaryToggle,
-                    ...(compactActionChrome ? ppStyles.leverageSummaryToggleCompact : null),
-                  }}
-                >
-                  {leverageSummaryToggleText}
-                </span>
                 <span style={ppStyles.leverageSummaryMeta} title={leverageSummaryMetaText}>{leverageSummaryMetaText}</span>
+              </span>
+              <span
+                style={{
+                  ...ppStyles.leverageSummaryToggle,
+                  ...(compactActionChrome ? ppStyles.leverageSummaryToggleCompact : null),
+                }}
+              >
+                {leverageSummaryToggleText}
               </span>
             </button>
           )}
@@ -5889,7 +5889,11 @@ const ppStyles: Record<string, CSSProperties> = {
   leverageSummaryButton: {
     width: "100%",
     maxWidth: "100%",
-    display: "block",
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    alignItems: "baseline",
+    columnGap: 12,
+    rowGap: 4,
     padding: "7px 0 8px",
     background: "transparent",
     border: "none",
@@ -5900,7 +5904,8 @@ const ppStyles: Record<string, CSSProperties> = {
     outline: "none",
   },
   leverageSummaryButtonCompact: {
-    padding: "7px 0 8px",
+    gridTemplateColumns: "1fr",
+    padding: "7px 0 9px",
   },
   leverageSummaryButtonOpen: {
     color: "rgba(255,236,198,0.96)",
@@ -5926,11 +5931,11 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   leverageSummaryMain: {
     minWidth: 0,
-    display: "flex",
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr)",
     alignItems: "baseline",
     columnGap: 7,
-    rowGap: 2,
-    flexWrap: "wrap" as const,
+    rowGap: 3,
   },
   leverageSummaryEyebrow: {
     color: "rgba(212,168,83,0.82)",
@@ -5943,7 +5948,7 @@ const ppStyles: Record<string, CSSProperties> = {
   leverageSummaryText: {
     minWidth: 0,
     color: "rgba(255,245,230,0.95)",
-    fontSize: 12.5,
+    fontSize: 13.5,
     lineHeight: 1.18,
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -5951,7 +5956,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   leverageSummaryMeta: {
     minWidth: 0,
-    flexBasis: "100%",
+    gridColumn: "1 / -1",
     color: "rgba(232,218,205,0.60)",
     fontSize: 11.5,
     lineHeight: 1.28,
@@ -5962,13 +5967,16 @@ const ppStyles: Record<string, CSSProperties> = {
     overflow: "hidden",
   },
   leverageSummaryToggle: {
-    color: "rgba(212,168,83,0.78)",
-    fontSize: 11,
-    fontWeight: 760,
+    justifySelf: "end",
+    color: "rgba(255,222,160,0.94)",
+    fontSize: 11.5,
+    fontWeight: 820,
     letterSpacing: 0,
     whiteSpace: "nowrap" as const,
   },
   leverageSummaryToggleCompact: {
+    justifySelf: "start",
+    marginTop: 1,
     whiteSpace: "nowrap" as const,
   },
   leverageCardsRow: {
