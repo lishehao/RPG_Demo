@@ -4380,9 +4380,15 @@ function AdvisorSidechat({
 // Bouncing 3-dot typing indicator. Used in advisor sidechat while waiting
 // for the LLM response. Pure CSS keyframes via inline animation.
 function TypingDots() {
+  const t = useT()
   return (
-    <div style={ppStyles.typingRow}>
-      <div style={ppStyles.typingBubble}>
+    <div
+      style={ppStyles.typingRow}
+      role="status"
+      aria-live="polite"
+      aria-label={t("play.advisor_typing_status")}
+    >
+      <div style={ppStyles.typingBubble} aria-hidden>
         {[0, 1, 2].map((i) => (
           <motion.span
             key={i}
