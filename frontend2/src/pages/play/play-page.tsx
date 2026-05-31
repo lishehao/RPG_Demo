@@ -412,10 +412,11 @@ export function PlayPage({
 
           {story.messages.map((m, idx) => {
             // For player messages that picked an option, find the
-            // previous narrator beat and look up the option's handle.
-            // Using this in StoryBeat lets us render "you picked: 亮录音"
-            // as a memory anchor instead of the full intent-tagged sentence.
+            // previous narrator beat and look up the displayed option.
+            // Using this in StoryBeat lets us render the exact option the
+            // player chose instead of a terse backend handle like "let him".
             let pickedHandle: string | undefined
+            let pickedActionText: string | undefined
             let previousPlayerMessage: NarrativeStoryMessage | undefined
             const hasFollowingPlayerEcho =
               m.role === "narrator" && story.messages[idx + 1]?.role === "player"
@@ -424,9 +425,12 @@ export function PlayPage({
               if (
                 prev?.role === "narrator" &&
                 prev.chosen_option_index != null &&
-                prev.options[prev.chosen_option_index]?.handle
+                prev.options[prev.chosen_option_index]
               ) {
-                pickedHandle = prev.options[prev.chosen_option_index].handle
+                const pickedOption = prev.options[prev.chosen_option_index]
+                const parsedPickedOption = parseOptionLabel(pickedOption.label)
+                pickedHandle = parsedPickedOption.tag || undefined
+                pickedActionText = parsedPickedOption.body || pickedOption.label
               }
             }
             if (m.role === "narrator" && idx > 0) {
@@ -448,6 +452,7 @@ export function PlayPage({
                 }
                 sceneUrl={m.role === "narrator" ? getPeakCloseUp(m.ord) : undefined}
                 pickedHandle={pickedHandle}
+                pickedActionText={pickedActionText}
                 isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}
                 hasFollowingPlayerEcho={hasFollowingPlayerEcho}
                 isBookmarked={m.role === "narrator" && bookmarkedOrds.has(m.ord)}
@@ -1504,6 +1509,7 @@ function StoryBeat({
   intensity = "calm",
   sceneUrl,
   pickedHandle,
+  pickedActionText,
   isLatestNarrator,
   hasFollowingPlayerEcho,
   isBookmarked,
@@ -1515,9 +1521,10 @@ function StoryBeat({
   intensity?: "calm" | "rising" | "peak"
   sceneUrl?: string
   /** When this player message was an option pick, the option's
-   *  short memory handle. Used to render a leading chip so users
-   *  remember "I picked X" rather than re-parsing the full sentence. */
+   *  readable label/tag. Used so players can remember exactly
+   *  which action they committed. */
   pickedHandle?: string
+  pickedActionText?: string
   isLatestNarrator?: boolean
   hasFollowingPlayerEcho?: boolean
   /** True if the user has bookmarked this narrator beat. */
@@ -1776,7 +1783,7 @@ function StoryBeat({
   const played = message.played_leverage
   const playedTarget = played ? (castNameById?.[played.npc_id] ?? played.npc_id) : ""
   const parsedPlayerMove = parseOptionLabel(message.content)
-  const playerMoveBody = parsedPlayerMove.body || message.content
+  const playerMoveBody = pickedActionText ?? (parsedPlayerMove.body || message.content)
   const playerMoveHandle = pickedHandle ?? parsedPlayerMove.tag
   return (
     <motion.article
