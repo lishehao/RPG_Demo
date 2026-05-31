@@ -2754,6 +2754,7 @@ function ActionArea({
 
   const actionSubmissionInFlight = pickedIndex !== null || submittedFree || isRevealingLeverage
   const actionControlsDisabled = busy || actionSubmissionInFlight
+  const inlineActionDisabledStyle = actionControlsDisabled ? ppStyles.inlineActionDisabled : null
   const showPickedReflection = actionSubmissionInFlight
   const pickedOption = pickedIndex !== null ? options[pickedIndex] : null
   const pickedOptionParsed = pickedOption ? parseOptionLabel(pickedOption.label) : null
@@ -3007,6 +3008,7 @@ function ActionArea({
           style={{
             ...ppStyles.diaryAttachPreview,
             ...ppStyles.diaryAttachPreviewEmpty,
+            ...inlineActionDisabledStyle,
           }}
           onClick={() => setShowDiary(true)}
           disabled={actionControlsDisabled}
@@ -3025,6 +3027,7 @@ function ActionArea({
         style={{
           ...ppStyles.diaryAttachPreview,
           ...ppStyles.diaryAttachPreviewFilled,
+          ...inlineActionDisabledStyle,
         }}
         onClick={() => setShowDiary(true)}
         disabled={actionControlsDisabled}
@@ -3108,7 +3111,10 @@ function ActionArea({
             onClick={() => setShowDiary(false)}
             disabled={actionControlsDisabled}
             type="button"
-            style={ppStyles.diaryTextButton}
+            style={{
+              ...ppStyles.diaryTextButton,
+              ...inlineActionDisabledStyle,
+            }}
           >
             {t("play.diary_keep")}
           </button>
@@ -3120,7 +3126,10 @@ function ActionArea({
               }}
               disabled={actionControlsDisabled}
               type="button"
-              style={ppStyles.diaryTextButton}
+              style={{
+                ...ppStyles.diaryTextButton,
+                ...inlineActionDisabledStyle,
+              }}
             >
               {t("play.diary_remove")}
             </button>
@@ -3171,7 +3180,10 @@ function ActionArea({
             <div style={ppStyles.commitSecondaryActions}>
               <button
                 type="button"
-                style={ppStyles.advisorInlineAction}
+                style={{
+                  ...ppStyles.advisorInlineAction,
+                  ...inlineActionDisabledStyle,
+                }}
                 onClick={onOpenAdvisor}
                 disabled={actionControlsDisabled}
               >
@@ -3179,7 +3191,10 @@ function ActionArea({
               </button>
               <button
                 type="button"
-                style={ppStyles.commitTextButton}
+                style={{
+                  ...ppStyles.commitTextButton,
+                  ...inlineActionDisabledStyle,
+                }}
                 onClick={() => setSelectedOptionIndex(null)}
                 disabled={actionControlsDisabled}
               >
@@ -3400,7 +3415,10 @@ function ActionArea({
                 <div style={ppStyles.commitSecondaryActions}>
                   <button
                     type="button"
-                    style={ppStyles.advisorInlineAction}
+                    style={{
+                      ...ppStyles.advisorInlineAction,
+                      ...inlineActionDisabledStyle,
+                    }}
                     onClick={onOpenAdvisor}
                     disabled={actionControlsDisabled}
                   >
@@ -3408,7 +3426,10 @@ function ActionArea({
                   </button>
                   <button
                     type="button"
-                    style={ppStyles.commitTextButton}
+                    style={{
+                      ...ppStyles.commitTextButton,
+                      ...inlineActionDisabledStyle,
+                    }}
                     onClick={() => {
                       setArmedCardId(null)
                       setLeverageExpanded(false)
@@ -3596,7 +3617,10 @@ function ActionArea({
                   <div style={ppStyles.commitSecondaryActions}>
                     <button
                       type="button"
-                      style={ppStyles.advisorInlineAction}
+                      style={{
+                        ...ppStyles.advisorInlineAction,
+                        ...inlineActionDisabledStyle,
+                      }}
                       onClick={onOpenAdvisor}
                       disabled={actionControlsDisabled}
                     >
@@ -3604,7 +3628,10 @@ function ActionArea({
                     </button>
                     {options.length > 0 ? (
                       <button
-                        style={ppStyles.commitTextButton}
+                        style={{
+                          ...ppStyles.commitTextButton,
+                          ...inlineActionDisabledStyle,
+                        }}
                         onClick={() => {
                           setShowFreeInput(false)
                           if (!freeActionDraft) {
@@ -3630,7 +3657,10 @@ function ActionArea({
         <div style={ppStyles.alternateActionRow}>
           {showFreeActionToggle ? (
             <button
-              style={ppStyles.alternateActionButton}
+              style={{
+                ...ppStyles.alternateActionButton,
+                ...inlineActionDisabledStyle,
+              }}
               onClick={() => {
                 setSelectedOptionIndex(null)
                 setArmedCardId(null)
@@ -3647,7 +3677,10 @@ function ActionArea({
           {showIdleAdvisorLine ? (
             <button
               type="button"
-              style={ppStyles.alternateActionButton}
+              style={{
+                ...ppStyles.alternateActionButton,
+                ...inlineActionDisabledStyle,
+              }}
               onClick={onOpenAdvisor}
               disabled={actionControlsDisabled}
             >
@@ -5914,6 +5947,11 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(232,218,205,0.46)",
     opacity: 0.58,
     cursor: "default",
+  },
+  inlineActionDisabled: {
+    opacity: 0.52,
+    cursor: "default",
+    borderBottomColor: "rgba(232,218,205,0.12)",
   },
   commitTextButton: {
     height: "auto",
