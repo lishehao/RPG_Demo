@@ -3324,7 +3324,6 @@ function ActionArea({
           aria-label={t("play.turn_guide_kicker")}
         >
           <div style={ppStyles.turnGuideCopy}>
-            <span style={ppStyles.turnGuideKicker}>{t("play.turn_guide_kicker")}</span>
             <strong style={ppStyles.turnGuideTitle}>{turnGuide.title}</strong>
             <span style={ppStyles.turnGuideDetail}>{turnGuide.detail}</span>
           </div>
@@ -3678,10 +3677,6 @@ function ActionArea({
             ref={setCommitFocusNode}
             style={ppStyles.freeInputBox}
           >
-            <div style={ppStyles.freeComposerHeader}>
-              <span style={ppStyles.freeComposerKicker}>{t("play.free_action_title")}</span>
-              <span style={ppStyles.freeComposerMeta}>{t("play.free_action_meta")}</span>
-            </div>
             <textarea
               ref={freeTextareaRef}
               style={ppStyles.freeTextarea}
@@ -5745,7 +5740,7 @@ const ppStyles: Record<string, CSSProperties> = {
     zIndex: 1,
   },
   turnGuide: {
-    marginBottom: 12,
+    marginBottom: 8,
     paddingTop: 0,
     paddingRight: 0,
     paddingBottom: 4,
@@ -5756,7 +5751,8 @@ const ppStyles: Record<string, CSSProperties> = {
     background: "transparent",
   },
   turnGuideCompact: {
-    paddingBottom: 4,
+    marginBottom: 7,
+    paddingBottom: 3,
   },
   turnGuideSelected: {
     background: "transparent",
@@ -5783,16 +5779,9 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 3,
     flexWrap: "wrap" as const,
   },
-  turnGuideKicker: {
-    color: "rgba(212,168,83,0.78)",
-    fontSize: 10.5,
-    fontWeight: 720,
-    letterSpacing: 0,
-    textTransform: "none" as const,
-  },
   turnGuideTitle: {
     color: "rgba(255,245,230,0.95)",
-    fontSize: 12.5,
+    fontSize: 13,
     lineHeight: 1.2,
     flexShrink: 0,
   },
@@ -6606,28 +6595,8 @@ const ppStyles: Record<string, CSSProperties> = {
     background: "transparent",
     border: "none",
     borderRadius: 0,
-    marginTop: 10,
-    padding: "6px 0 0",
-  },
-  freeComposerHeader: {
-    display: "flex",
-    alignItems: "baseline",
-    columnGap: 10,
-    rowGap: 3,
-    flexWrap: "wrap" as const,
-    marginBottom: 5,
-  },
-  freeComposerKicker: {
-    color: "rgba(255,236,198,0.94)",
-    fontSize: 12,
-    lineHeight: 1.2,
-    fontWeight: 850,
-  },
-  freeComposerMeta: {
-    color: "rgba(232,218,205,0.50)",
-    fontSize: 11.5,
-    lineHeight: 1.25,
-    fontWeight: 700,
+    marginTop: 5,
+    padding: "2px 0 0",
   },
   freeTextarea: {
     width: "100%",
@@ -6728,13 +6697,13 @@ const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 700,
   },
   diaryBox: {
-    marginTop: 5,
+    marginTop: 3,
     padding: "1px 0 0",
     background: "transparent",
     borderLeft: "none",
     display: "flex",
     flexDirection: "column" as const,
-    gap: 5,
+    gap: 4,
   },
   diaryHeader: {
     display: "flex",
@@ -6744,16 +6713,16 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   diaryKicker: {
-    color: "rgba(222,202,255,0.96)",
-    fontSize: 12,
+    color: "rgba(222,202,255,0.82)",
+    fontSize: 11.5,
     lineHeight: 1.2,
-    fontWeight: 850,
+    fontWeight: 760,
   },
   diaryMeta: {
-    color: "rgba(226,214,246,0.52)",
-    fontSize: 11.5,
+    color: "rgba(226,214,246,0.42)",
+    fontSize: 11,
     lineHeight: 1.25,
-    fontWeight: 700,
+    fontWeight: 620,
   },
   diaryTextarea: {
     width: "100%",
@@ -6761,10 +6730,10 @@ const ppStyles: Record<string, CSSProperties> = {
     border: "none",
     borderBottom: "1px solid rgba(222,202,255,0.22)",
     borderRadius: 0,
-    fontSize: 13.5,
+    fontSize: 13,
     lineHeight: 1.45,
     color: "rgba(238,228,252,0.97)",
-    padding: "2px 0 6px",
+    padding: "1px 0 5px",
     resize: "none" as const,
     outline: "none",
     fontFamily: "var(--font-narrative)",
