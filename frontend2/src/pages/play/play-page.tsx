@@ -3037,8 +3037,14 @@ function ActionArea({
       </button>
     )
   }
-  const renderDiaryEditor = (context: "leverage" | "option" | "free") =>
-    showDiary && diaryContext === context ? (
+  const renderDiaryEditor = (context: "leverage" | "option" | "free") => {
+    const diarySubmitDisabled =
+      actionControlsDisabled ||
+      (context === "option" && selectedOptionIndex === null) ||
+      (context === "leverage" && !armedCard) ||
+      (context === "free" && !freeInput.trim())
+
+    return showDiary && diaryContext === context ? (
       <div style={ppStyles.diaryBox}>
         <div style={ppStyles.diaryHeader}>
           <span style={ppStyles.diaryKicker}>{t("play.diary_inner_label")}</span>
@@ -3079,6 +3085,7 @@ function ActionArea({
             style={{
               ...ppStyles.actionPrimaryLine,
               ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
+              ...(diarySubmitDisabled ? ppStyles.actionPrimaryLineDisabled : null),
             }}
             onClick={() => {
               const currentDiary = diary.trim()
@@ -3090,12 +3097,7 @@ function ActionArea({
                 handleSubmitFreeWithReflect(currentDiary)
               }
             }}
-            disabled={
-              actionControlsDisabled ||
-              (context === "option" && selectedOptionIndex === null) ||
-              (context === "leverage" && !armedCard) ||
-              (context === "free" && !freeInput.trim())
-            }
+            disabled={diarySubmitDisabled}
             type="button"
           >
             {context === "leverage"
@@ -3126,6 +3128,7 @@ function ActionArea({
         </div>
       </div>
     ) : null
+  }
   const renderSelectedOptionConfirm = () =>
     selectedOption && selectedOptionParsed && selectedOptionIndex !== null && pickedIndex === null && !actionControlsDisabled ? (
       <div
@@ -3151,6 +3154,7 @@ function ActionArea({
                 style={{
                   ...ppStyles.actionPrimaryLine,
                   ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
+                  ...(actionControlsDisabled ? ppStyles.actionPrimaryLineDisabled : null),
                 }}
                 type="button"
                 onClick={() => {
@@ -3383,6 +3387,7 @@ function ActionArea({
                     style={{
                       ...ppStyles.actionPrimaryLine,
                       ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
+                      ...(actionControlsDisabled ? ppStyles.actionPrimaryLineDisabled : null),
                     }}
                     type="button"
                     onClick={() => handleLeverageReveal(armedCard)}
@@ -3573,8 +3578,7 @@ function ActionArea({
                         style={{
                           ...ppStyles.actionPrimaryLine,
                           ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
-                          opacity: actionControlsDisabled ? 0.5 : 1,
-                          pointerEvents: actionControlsDisabled ? "none" : "auto",
+                          ...(actionControlsDisabled ? ppStyles.actionPrimaryLineDisabled : null),
                         }}
                         onClick={() => handleSubmitFreeWithReflect()}
                         disabled={actionControlsDisabled}
@@ -5908,6 +5912,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   actionPrimaryLineDisabled: {
     color: "rgba(232,218,205,0.46)",
+    opacity: 0.58,
     cursor: "default",
   },
   commitTextButton: {
