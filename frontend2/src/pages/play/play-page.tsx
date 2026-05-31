@@ -67,7 +67,10 @@ function leverageCardId(roleId: string | undefined, lev: NarrativePlayerLeverage
   return `lev:${roleId || "role"}:${lev.npc_id}:${index}`
 }
 
-function leveragePlayInput(card: LeverageCardView): string {
+function leveragePlayInput(card: LeverageCardView, language: NarrativeStoryHistoryResponse["template"]["language"]): string {
+  if (language === "zh") {
+    return `我亮出手里针对 ${card.target_name} 的把柄：${card.leverage}`
+  }
   return `I reveal the leverage I hold over ${card.target_name}: ${card.leverage}`
 }
 
@@ -577,7 +580,7 @@ export function PlayPage({
               }
               onPlayLeverage={(card, diaryOverride) =>
                 void handleAdvance({
-                  free_input: leveragePlayInput(card),
+                  free_input: leveragePlayInput(card, story.template.language),
                   diary: (diaryOverride ?? diary).trim() || undefined,
                   played_leverage: {
                     card_id: card.card_id,
