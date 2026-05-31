@@ -2538,15 +2538,28 @@ function ResolvingTurnPanel({
   target?: string
 }) {
   const t = useT()
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const privateIntentCopy = privateIntent?.trim()
   const moveMeta = moveTag?.trim()
+  const progressCopy =
+    elapsedSeconds > 0
+      ? t("play.resolve_progress_elapsed", { seconds: elapsedSeconds })
+      : t("play.resolve_progress")
   const resolveStatus = target
     ? t("play.resolve_status_target", { target })
     : t("play.resolve_status_room")
   const moveCopy = moveText || t("play.resolve_custom_move")
-  const resolvingAriaLabel = [t("play.resolve_title"), moveMeta, moveCopy, resolveStatus, t("play.resolve_progress")]
+  const resolvingAriaLabel = [t("play.resolve_title"), moveMeta, moveCopy, resolveStatus, progressCopy]
     .filter(Boolean)
     .join(". ")
+  useEffect(() => {
+    setElapsedSeconds(0)
+    const startedAt = Date.now()
+    const id = window.setInterval(() => {
+      setElapsedSeconds(Math.max(1, Math.floor((Date.now() - startedAt) / 1000)))
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [moveCopy])
   return (
     <motion.div
       key="turn-resolving"
@@ -2568,7 +2581,7 @@ function ResolvingTurnPanel({
         </strong>
         <span style={ppStyles.resolvingInlineStatus}>
           <span style={ppStyles.resolvingStatus}>{resolveStatus}</span>
-          <span style={ppStyles.resolvingProgressText}>{t("play.resolve_progress")}</span>
+          <span style={ppStyles.resolvingProgressText}>{progressCopy}</span>
           <span style={ppStyles.resolvingDots} aria-hidden>
             {[0, 1, 2].map((i) => (
               <motion.span
