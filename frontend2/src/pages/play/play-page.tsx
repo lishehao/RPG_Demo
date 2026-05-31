@@ -2517,9 +2517,7 @@ function ActionArea({
   const [submittedFree, setSubmittedFree] = useState(false)
   const [submittedLeverageLabel, setSubmittedLeverageLabel] = useState<string | null>(null)
   const [submittedLeverageTarget, setSubmittedLeverageTarget] = useState<string | null>(null)
-  const [leverageExpanded, setLeverageExpanded] = useState(
-    () => leverageCards.filter((card) => !card.used).length > 1,
-  )
+  const [leverageExpanded, setLeverageExpanded] = useState(false)
   const [revealingLeverageCardId, setRevealingLeverageCardId] = useState<string | null>(null)
   const leverageRevealTimerRef = useRef<number | null>(null)
   const actionSubmitLockedRef = useRef(false)
