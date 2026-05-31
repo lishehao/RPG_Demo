@@ -3865,6 +3865,7 @@ function AdvisorSidechat({
   const [error, setError] = useState<string | null>(null)
   const [pendingOracleQuestion, setPendingOracleQuestion] = useState<string | null>(null)
   const [draftFocusToken, setDraftFocusToken] = useState(0)
+  const panelRef = useRef<HTMLElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const initialFocusDoneRef = useRef(false)
@@ -3963,6 +3964,42 @@ function AdvisorSidechat({
       timers.forEach((timer) => window.clearTimeout(timer))
     }
   }, [busy, draftFocusToken, focusAdvisorTextarea, pendingOracleQuestion])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return
+      const panel = panelRef.current
+      if (!panel) return
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          [
+            "button:not([disabled])",
+            "textarea:not([disabled])",
+            "input:not([disabled])",
+            "select:not([disabled])",
+            "a[href]",
+            "[tabindex]:not([tabindex='-1'])",
+          ].join(","),
+        ),
+      ).filter((node) => node.offsetParent !== null)
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey && active === first) {
+        e.preventDefault()
+        last.focus({ preventScroll: true })
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault()
+        first.focus({ preventScroll: true })
+      } else if (active instanceof Node && !panel.contains(active)) {
+        e.preventDefault()
+        first.focus({ preventScroll: true })
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
 
   const submitAsk = async (question: string, oracle: boolean) => {
     setBusy(true)
@@ -4064,6 +4101,7 @@ function AdvisorSidechat({
         transition={fadeTransition}
       />
       <motion.aside
+        ref={panelRef}
         style={{
           ...ppStyles.advisorPanel,
           ...(compactAdvisor ? ppStyles.advisorPanelCompact : null),
@@ -4074,6 +4112,7 @@ function AdvisorSidechat({
         exit="exit"
         transition={compactAdvisor ? transitions.snap : slideInRightTransition}
         role="dialog"
+        aria-modal="true"
         aria-label={t("play.advisor_title")}
       >
         <header
