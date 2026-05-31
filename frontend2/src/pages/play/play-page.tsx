@@ -3845,6 +3845,7 @@ function AdvisorSidechat({
   const [draftFocusToken, setDraftFocusToken] = useState(0)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const initialFocusDoneRef = useRef(false)
   const compactAdvisor = useCompactLayout("(max-width: 520px)")
   const isEmptyAdvisor = messages.length === 0 && !busy
   const hasAdvisorDraft = draft.trim().length > 0
@@ -3919,6 +3920,17 @@ function AdvisorSidechat({
     const cursor = node.value.length
     node.setSelectionRange(cursor, cursor)
   }, [])
+
+  useEffect(() => {
+    if (initialFocusDoneRef.current || busy || pendingOracleQuestion) return
+    initialFocusDoneRef.current = true
+    const frame = window.requestAnimationFrame(focusAdvisorTextarea)
+    const timers = [90, 220].map((delay) => window.setTimeout(focusAdvisorTextarea, delay))
+    return () => {
+      window.cancelAnimationFrame(frame)
+      timers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [busy, focusAdvisorTextarea, pendingOracleQuestion])
 
   useEffect(() => {
     if (!draftFocusToken || busy || pendingOracleQuestion) return
