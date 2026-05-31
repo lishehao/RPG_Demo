@@ -898,8 +898,8 @@ function RuntimeInspector({
       <div style={ppStyles.runtimeInspectorGrid}>
         {summaryRows.map((row) => (
           <div style={ppStyles.runtimeInspectorRow} key={row.label}>
-            <span>{row.label}</span>
-            <strong>{row.value}</strong>
+            <span style={ppStyles.runtimeInspectorRowLabel}>{row.label}</span>
+            <strong style={ppStyles.runtimeInspectorRowValue}>{row.value}</strong>
           </div>
         ))}
       </div>
@@ -910,8 +910,8 @@ function RuntimeInspector({
         <div style={ppStyles.runtimeInspectorDetailGrid}>
           {detailRows.map((row) => (
             <div style={ppStyles.runtimeInspectorDetailRow} key={row.label}>
-              <span>{row.label}</span>
-              <strong>{row.value}</strong>
+              <span style={ppStyles.runtimeInspectorRowLabel}>{row.label}</span>
+              <strong style={ppStyles.runtimeInspectorRowValue}>{row.value}</strong>
             </div>
           ))}
         </div>
@@ -1456,7 +1456,7 @@ function StoryBeat({
     const showDetailedOutcome =
       outcomeItems.length > 0 && (isLatestNarrator || hasBroken || intensity === "peak")
     const showDetailedImpactEvidence =
-      impactPulses.length > 0 && (shouldOpenImpactEvidence || intensity === "peak")
+      impactPulses.length > 0 && (shouldOpenImpactEvidence || (isLatestNarrator && intensity === "peak"))
     const inlineImpactPulses = [...impactPulses]
       .sort((a, b) => outcomePriority(b.shift) - outcomePriority(a.shift))
       .slice(0, 3)
@@ -4699,11 +4699,11 @@ const ppStyles: Record<string, CSSProperties> = {
   runCastRole: { fontSize: 10, color: "rgba(244,239,230,0.50)", marginTop: 1 },
   runtimeInspector: {
     margin: "0 0 24px",
-    padding: "12px 0",
+    padding: "10px 0 12px",
     background: "transparent",
     border: "none",
     borderTop: "1px solid rgba(212,168,83,0.20)",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    borderBottom: "none",
     borderRadius: 0,
     boxShadow: "none",
   },
@@ -4722,48 +4722,67 @@ const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 700,
   },
   runtimeInspectorGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-    gap: "0 18px",
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 18,
+    rowGap: 7,
+    flexWrap: "wrap" as const,
   },
   runtimeInspectorRow: {
     minWidth: 0,
-    padding: "8px 0",
+    padding: 0,
     border: "none",
-    borderBottom: "1px solid rgba(255,255,255,0.075)",
     borderRadius: 0,
     background: "transparent",
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 3,
+    display: "inline-flex",
+    alignItems: "baseline",
+    gap: 6,
+  },
+  runtimeInspectorRowLabel: {
+    color: "rgba(232,218,205,0.46)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 700,
+    whiteSpace: "nowrap" as const,
+  },
+  runtimeInspectorRowValue: {
+    minWidth: 0,
+    color: "rgba(255,245,230,0.82)",
+    fontSize: 12,
+    lineHeight: 1.25,
+    fontWeight: 760,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
   },
   runtimeInspectorDetails: {
     marginTop: 10,
-    borderTop: "1px solid rgba(255,255,255,0.075)",
+    borderTop: "none",
   },
   runtimeInspectorDetailsSummary: {
-    paddingTop: 10,
+    paddingTop: 4,
     cursor: "pointer",
     fontSize: 12.5,
     color: "var(--text-muted)",
     lineHeight: 1.5,
   },
   runtimeInspectorDetailGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-    gap: "0 18px",
-    paddingTop: 10,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 18,
+    rowGap: 7,
+    flexWrap: "wrap" as const,
+    paddingTop: 8,
   },
   runtimeInspectorDetailRow: {
     minWidth: 0,
-    padding: "8px 0",
+    padding: 0,
     border: "none",
-    borderBottom: "1px solid rgba(255,255,255,0.060)",
     borderRadius: 0,
     background: "transparent",
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 3,
+    display: "inline-flex",
+    alignItems: "baseline",
+    gap: 6,
   },
 
   roleInvAcquired: {

@@ -233,16 +233,16 @@ export function TemplateDetailPage({
                           </button>
                         )
                       })}
-                      {selectedRole && selectedRoleIndex !== null ? (
-                        <SelectedRoleLaunchPanel
-                          role={selectedRole}
-                          cast={template.cast}
-                          busy={busy}
-                          hasAlternates
-                          onStart={() => void handleStart(selectedRoleIndex)}
-                        />
-                      ) : null}
                     </div>
+                    {selectedRole && selectedRoleIndex !== null ? (
+                      <SelectedRoleLaunchPanel
+                        role={selectedRole}
+                        cast={template.cast}
+                        busy={busy}
+                        hasAlternates
+                        onStart={() => void handleStart(selectedRoleIndex)}
+                      />
+                    ) : null}
                   </div>
                 ) : null}
                 {!hasMultipleRoles && selectedRole && selectedRoleIndex !== null ? (
@@ -987,14 +987,14 @@ const tdStyles: Record<string, CSSProperties> = {
   },
   roleChooserLayout: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr)",
-    gap: 0,
+    gridTemplateColumns: "minmax(220px, 0.58fr) minmax(0, 1fr)",
+    gap: 28,
     alignItems: "start",
     marginTop: 2,
   },
   roleChooserLayoutCompact: {
     gridTemplateColumns: "1fr",
-    gap: 0,
+    gap: 8,
   },
   roleChoiceList: {
     display: "flex",
@@ -1064,7 +1064,7 @@ const tdStyles: Record<string, CSSProperties> = {
     fontFamily: "var(--font-narrative)",
   },
   roleLaunchPanel: {
-    marginTop: 8,
+    marginTop: 0,
     marginBottom: 14,
     padding: "18px 0 18px",
     borderTopWidth: 1,
@@ -1079,6 +1079,7 @@ const tdStyles: Record<string, CSSProperties> = {
     alignItems: "start",
   },
   roleLaunchPanelCompact: {
+    marginTop: 8,
     gap: 10,
     padding: "18px 0 18px",
   },
