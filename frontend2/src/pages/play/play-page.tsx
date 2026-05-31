@@ -3986,6 +3986,7 @@ function AdvisorSidechat({
   const [draftFocusToken, setDraftFocusToken] = useState(0)
   const panelRef = useRef<HTMLElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const latestMessageRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const oracleConfirmRef = useRef<HTMLButtonElement | null>(null)
   const initialFocusDoneRef = useRef(false)
@@ -4043,8 +4044,14 @@ function AdvisorSidechat({
 
   useEffect(() => {
     const el = scrollerRef.current
-    if (!el) return
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
+    const latest = latestMessageRef.current
+    if (!el || !latest) return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const top = Math.max(0, latest.offsetTop - el.offsetTop)
+    const frame = window.requestAnimationFrame(() => {
+      el.scrollTo({ top, behavior: prefersReducedMotion ? "auto" : "smooth" })
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [messages.length])
 
   useEffect(() => {
@@ -4212,6 +4219,7 @@ function AdvisorSidechat({
         style={{
           ...ppStyles.advisorSuggestionBlock,
           ...(variant === "empty" ? ppStyles.advisorSuggestionBlockEmpty : null),
+          ...(variant === "composer" && compactAdvisor ? ppStyles.advisorSuggestionBlockComposerCompact : null),
         }}
       >
         <span style={ppStyles.advisorSuggestionLabel}>
@@ -4221,6 +4229,7 @@ function AdvisorSidechat({
           style={{
             ...ppStyles.advisorSuggestionRow,
             ...(variant === "empty" ? ppStyles.advisorSuggestionRowEmpty : null),
+            ...(variant === "composer" && compactAdvisor ? ppStyles.advisorSuggestionRowComposerCompact : null),
           }}
         >
           {visibleSuggestions.map((suggestion) => (
@@ -4232,6 +4241,7 @@ function AdvisorSidechat({
               style={{
                 ...ppStyles.advisorSuggestionChip,
                 ...(variant === "empty" ? ppStyles.advisorSuggestionChipEmpty : null),
+                ...(variant === "composer" && compactAdvisor ? ppStyles.advisorSuggestionChipComposerCompact : null),
               }}
               onClick={() => applySuggestion(suggestion)}
               disabled={busy || !!pendingOracleQuestion}
@@ -4352,10 +4362,12 @@ function AdvisorSidechat({
           {messages.length === 0 ? (
             hasAdvisorDraft ? null : renderSuggestionBlock("empty")
           ) : (
-            messages.map((m) => {
+            messages.map((m, index) => {
               const isOracle = m.role === "advisor" && oracleOrds.has(m.ord)
+              const isLatestMessage = index === messages.length - 1
               return (
                 <motion.div
+                  ref={isLatestMessage ? latestMessageRef : undefined}
                   key={`${m.role}-${m.ord}`}
                   layout
                   initial={{ opacity: 0, y: 8 }}
@@ -7657,6 +7669,11 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 9,
     alignItems: "stretch",
   },
+  advisorSuggestionBlockComposerCompact: {
+    display: "grid",
+    alignItems: "stretch",
+    gap: 6,
+  },
   advisorSuggestionLabel: {
     color: "rgba(232,218,205,0.48)",
     fontSize: 11,
@@ -7675,6 +7692,11 @@ const ppStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "1fr",
     gap: 9,
     borderTop: "none",
+  },
+  advisorSuggestionRowComposerCompact: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: 6,
   },
   advisorSuggestionChip: {
     width: "auto",
@@ -7700,6 +7722,13 @@ const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "var(--font-narrative)",
     fontSize: 13,
     lineHeight: 1.42,
+  },
+  advisorSuggestionChipComposerCompact: {
+    width: "100%",
+    padding: "2px 0",
+    color: "rgba(255,238,214,0.78)",
+    fontSize: 12,
+    lineHeight: 1.38,
   },
   advisorComposer: {
     display: "flex",
