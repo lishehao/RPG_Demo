@@ -3385,15 +3385,15 @@ function ActionArea({
               <span style={ppStyles.leverageSummaryMain}>
                 <span style={ppStyles.leverageSummaryEyebrow}>{t("play.leverage_resource_label")}</span>
                 <strong style={ppStyles.leverageSummaryText}>{leverageSummaryText}</strong>
+                <span
+                  style={{
+                    ...ppStyles.leverageSummaryToggle,
+                    ...(compactActionChrome ? ppStyles.leverageSummaryToggleCompact : null),
+                  }}
+                >
+                  {leverageSummaryToggleText}
+                </span>
                 <span style={ppStyles.leverageSummaryMeta} title={leverageSummaryMetaText}>{leverageSummaryMetaText}</span>
-              </span>
-              <span
-                style={{
-                  ...ppStyles.leverageSummaryToggle,
-                  ...(compactActionChrome ? ppStyles.leverageSummaryToggleCompact : null),
-                }}
-              >
-                {leverageSummaryToggleText}
               </span>
             </button>
           )}
@@ -3515,7 +3515,7 @@ function ActionArea({
             ) : null}
             {isWritingLeverageDiary ? null : (
               <div style={ppStyles.leverageRevealActions}>
-                <div style={ppStyles.commitPrimaryActions}>
+                <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.leverageCommitPrimaryActions }}>
                   <button
                     style={{
                       ...ppStyles.actionPrimaryLine,
@@ -3535,6 +3535,7 @@ function ActionArea({
                 <div
                   style={{
                     ...ppStyles.commitSecondaryActions,
+                    ...ppStyles.leverageCommitSecondaryActions,
                     ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
                   }}
                 >
@@ -5877,10 +5878,7 @@ const ppStyles: Record<string, CSSProperties> = {
   leverageSummaryButton: {
     width: "100%",
     maxWidth: "100%",
-    display: "inline-grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    alignItems: "center",
-    gap: 10,
+    display: "block",
     padding: "7px 0 8px",
     background: "transparent",
     border: "none",
@@ -5891,9 +5889,6 @@ const ppStyles: Record<string, CSSProperties> = {
     outline: "none",
   },
   leverageSummaryButtonCompact: {
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    alignItems: "center",
-    gap: 9,
     padding: "7px 0 8px",
   },
   leverageSummaryButtonOpen: {
@@ -5960,9 +5955,9 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 11,
     fontWeight: 760,
     letterSpacing: 0,
+    whiteSpace: "nowrap" as const,
   },
   leverageSummaryToggleCompact: {
-    justifySelf: "end",
     whiteSpace: "nowrap" as const,
   },
   leverageCardsRow: {
@@ -6172,10 +6167,17 @@ const ppStyles: Record<string, CSSProperties> = {
     display: "flex",
     flexWrap: "wrap" as const,
     alignItems: "baseline",
-    justifyContent: "space-between",
-    columnGap: 18,
+    justifyContent: "flex-start",
+    columnGap: 14,
     rowGap: 5,
     marginTop: 10,
+  },
+  leverageCommitPrimaryActions: {
+    flex: "0 1 auto",
+  },
+  leverageCommitSecondaryActions: {
+    marginLeft: 0,
+    justifyContent: "flex-start",
   },
   actionPrimaryLine: {
     width: "fit-content",
