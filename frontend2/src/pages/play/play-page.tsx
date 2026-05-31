@@ -155,9 +155,19 @@ export function PlayPage({
   // The page uses native document scroll for a less pane-like reading
   // feel, but this still tolerates older nested-scroll layouts.
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const previousScrollStoryRef = useRef<{ sessionId: string; messageCount: number } | null>(null)
   useEffect(() => {
     const el = scrollerRef.current
     if (!el || !story || story.session.ending_label) return
+    const messageCount = story.messages.length
+    const previousScrollStory = previousScrollStoryRef.current
+    const shouldRevealLatestBeat =
+      previousScrollStory?.sessionId === story.session.session_id &&
+      messageCount > previousScrollStory.messageCount
+    previousScrollStoryRef.current = {
+      sessionId: story.session.session_id,
+      messageCount,
+    }
 
     const prefersReducedMotion =
       typeof window !== "undefined" &&
@@ -170,10 +180,14 @@ export function PlayPage({
       if (canScrollColumn) {
         el.scrollTo({ top: el.scrollHeight, behavior })
       }
+      const latestBeat = shouldRevealLatestBeat
+        ? document.querySelector<HTMLElement>("[data-play-latest-narrator='true']")
+        : null
       const actionArea = document.querySelector<HTMLElement>("[data-play-action-area='true']")
-      if (!actionArea) return
+      const scrollTarget = latestBeat ?? actionArea
+      if (!scrollTarget) return
       const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
-      const rect = actionArea.getBoundingClientRect()
+      const rect = scrollTarget.getBoundingClientRect()
       const viewportBottom = window.innerHeight - 24
       if (rect.top >= headerHeight + 8 && rect.bottom <= viewportBottom) return
       const root = document.scrollingElement ?? document.documentElement
@@ -1590,6 +1604,7 @@ function StoryBeat({
           position: "relative",
           ...(isBookmarked ? ppStyles.narratorBeatBookmarked : null),
         }}
+        data-play-latest-narrator={isLatestNarrator ? "true" : undefined}
       >
         {/* Bookmark toggle — top-right of every narrator beat while
             the run is active. Lets the user mark "this is the
