@@ -129,6 +129,7 @@ export function CreatePage({
   const [storyLanguage, setStoryLanguage] = useState<NarrativeTemplateLanguage>(uiLang)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
   // guarantee that — React batches state updates, so two clicks within
@@ -138,7 +139,7 @@ export function CreatePage({
   const seedExamples = useMemo(() => SEED_EXAMPLE_KEYS.map((k) => t(k)), [t])
   const visibleSeedExamples = compactLayout ? seedExamples.slice(0, 3) : seedExamples
   const hasSeed = Boolean(seed.trim())
-  const showCreateAction = hasSeed || busy
+  const showCreateAction = true
   const showBackAction = hasSeed || busy
   const showSeedExamples = !hasSeed && !busy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
@@ -232,6 +233,7 @@ export function CreatePage({
 
           <div style={cpStyles.textareaWrap}>
             <textarea
+              ref={seedTextareaRef}
               style={{
                 ...cpStyles.textarea,
                 ...(compactLayout ? cpStyles.textareaCompact : {}),
@@ -320,7 +322,15 @@ export function CreatePage({
                       key={example}
                       style={cpStyles.exampleLine}
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => setSeed(example)}
+                      onClick={() => {
+                        setSeed(example)
+                        window.requestAnimationFrame(() => {
+                          const node = seedTextareaRef.current
+                          if (!node) return
+                          node.focus({ preventScroll: true })
+                          node.setSelectionRange(example.length, example.length)
+                        })
+                      }}
                       disabled={busy}
                       type="button"
                     >
