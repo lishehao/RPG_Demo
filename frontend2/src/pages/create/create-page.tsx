@@ -162,6 +162,10 @@ export function CreatePage({
     busyElapsedSeconds > 0
       ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
       : t("create.building_label")
+  const busyStageIndex = Math.min(
+    BUSY_STAGE_KEYS.length - 1,
+    Math.max(0, Math.floor(busyElapsedSeconds / 3)),
+  )
 
   // Author flow requires a real account.
   useEffect(() => {
@@ -514,25 +518,9 @@ export function CreatePage({
               >
                 <div style={cpStyles.busySignal}>
                   <span style={cpStyles.busyLabel}>{busyLabel}</span>
-                  <div style={cpStyles.busyDots} aria-hidden>
-                    {[0, 1, 2, 3].map((i) => (
-                      <motion.span
-                        key={i}
-                        style={cpStyles.busyDot}
-                        animate={{
-                          opacity: [0.25, 1, 0.25],
-                          scale: [0.85, 1.1, 0.85],
-                        }}
-                        transition={{
-                          duration: 1.4,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: i * 0.16,
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <span style={cpStyles.busySignalLine} aria-hidden />
                 </div>
+                <BusyStages activeIndex={busyStageIndex} compact={compactLayout} />
                 <BusyTip />
               </motion.div>
             ) : null}
@@ -567,6 +555,47 @@ const BUSY_TIP_KEYS: StringKey[] = [
   "create.busy_tip_5",
 ]
 
+const BUSY_STAGE_KEYS: StringKey[] = [
+  "create.busy_stage_cast",
+  "create.busy_stage_leverage",
+  "create.busy_stage_opening",
+  "create.busy_stage_ready",
+]
+
+function BusyStages({ activeIndex, compact }: { activeIndex: number; compact: boolean }) {
+  const t = useT()
+  return (
+    <div
+      style={{
+        ...busyStageStyles.rail,
+        ...(compact ? busyStageStyles.railCompact : null),
+      }}
+      aria-label={t("create.busy_stage_aria")}
+    >
+      {BUSY_STAGE_KEYS.map((key, index) => {
+        const complete = index < activeIndex
+        const active = index === activeIndex
+        return (
+          <span
+            key={key}
+            style={{
+              ...busyStageStyles.stage,
+              ...(compact ? busyStageStyles.stageCompact : null),
+              ...(complete ? busyStageStyles.stageComplete : null),
+              ...(active ? busyStageStyles.stageActive : null),
+            }}
+          >
+            <span style={busyStageStyles.stageMark} aria-hidden>
+              {complete ? "✓" : index + 1}
+            </span>
+            <span style={busyStageStyles.stageText}>{t(key)}</span>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
 function BusyTip() {
   const t = useT()
   const [idx, setIdx] = useState(0)
@@ -598,6 +627,58 @@ const busyTipStyles: Record<string, CSSProperties> = {
     fontStyle: "italic" as const,
     textAlign: "left" as const,
     fontFamily: "var(--font-narrative)",
+  },
+}
+
+const busyStageStyles: Record<string, CSSProperties> = {
+  rail: {
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: 0,
+    borderTop: "1px solid rgba(255,255,255,0.12)",
+    borderBottom: "1px solid rgba(255,255,255,0.09)",
+  },
+  railCompact: {
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  },
+  stage: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "baseline",
+    gap: 6,
+    padding: "8px 10px 8px 0",
+    color: "rgba(255,255,255,0.42)",
+    borderTop: "1px solid transparent",
+    transform: "translateY(-1px)",
+  },
+  stageCompact: {
+    padding: "7px 8px 7px 0",
+  },
+  stageActive: {
+    color: "rgba(255,226,178,0.96)",
+    borderTop: "1px solid rgba(245,200,120,0.76)",
+  },
+  stageComplete: {
+    color: "rgba(255,255,255,0.68)",
+  },
+  stageMark: {
+    flex: "0 0 auto",
+    width: 13,
+    fontSize: 10,
+    lineHeight: 1,
+    fontWeight: 820,
+    color: "rgba(245,200,120,0.72)",
+    fontFamily: "var(--font-ui)",
+  },
+  stageText: {
+    minWidth: 0,
+    fontSize: 11,
+    lineHeight: 1.25,
+    fontWeight: 720,
+    whiteSpace: "nowrap" as const,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
 }
 
@@ -1059,6 +1140,7 @@ const cpStyles: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 10,
     color: "rgba(255,226,178,0.92)",
+    width: "100%",
   },
   busyLabel: {
     fontSize: 11.5,
@@ -1067,16 +1149,10 @@ const cpStyles: Record<string, CSSProperties> = {
     letterSpacing: 0,
     textTransform: "none" as const,
   },
-  busyDots: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 5,
-  },
-  busyDot: {
-    width: 4,
-    height: 4,
-    borderRadius: "50%",
-    background: "rgba(245,210,140,0.68)",
-    display: "inline-block",
+  busySignalLine: {
+    height: 1,
+    flex: "1 1 auto",
+    background: "linear-gradient(90deg, rgba(245,200,120,0.56), rgba(245,200,120,0.04))",
+    transform: "translateY(1px)",
   },
 }
