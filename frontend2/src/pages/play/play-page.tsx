@@ -3099,6 +3099,8 @@ function ActionArea({
           value={diary}
           placeholder={t("play.diary_placeholder")}
           aria-label={t("play.diary_inner_label")}
+          aria-keyshortcuts="Meta+Enter Control+Enter Escape"
+          title={`${t("play.shortcut_mod_enter_submit")} · ${t("play.shortcut_escape_cancel")}`}
           onChange={(e) => setDiary(e.target.value)}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -3641,6 +3643,8 @@ function ActionArea({
               value={freeInput}
               placeholder={t("play.action_free_placeholder")}
               aria-label={t("play.free_action_title")}
+              aria-keyshortcuts="Meta+Enter Control+Enter Escape"
+              title={`${t("play.shortcut_mod_enter_submit")} · ${t("play.shortcut_escape_cancel")}`}
               onChange={(e) => setFreeInput(e.target.value)}
               onKeyDown={(e) => {
                 // Cmd/Ctrl + Enter submits — the standard "send" pattern
@@ -4279,6 +4283,8 @@ function AdvisorSidechat({
               value={draft}
               placeholder={t("play.advisor_textarea_placeholder")}
               aria-label={t("play.advisor_textarea_placeholder")}
+              aria-keyshortcuts="Meta+Enter Control+Enter"
+              title={t("play.shortcut_mod_enter_submit")}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
