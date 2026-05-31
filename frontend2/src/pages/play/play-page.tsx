@@ -3313,6 +3313,7 @@ function ActionArea({
             >
               {playableLeverageCards.map((card) => {
                 const isPrepared = armedCardId === card.card_id && !card.used
+                const leverageCardTitle = `${t("play.leverage_card_target", { target: card.target_name })}: ${card.leverage}`
                 return (
                   <button
                     key={card.card_id}
@@ -3333,9 +3334,10 @@ function ActionArea({
                     }}
                     disabled={actionControlsDisabled || card.used}
                     aria-pressed={isPrepared}
-                    aria-label={`${t("play.leverage_card_target", { target: card.target_name })}: ${card.leverage}`}
+                    aria-label={leverageCardTitle}
+                    title={leverageCardTitle}
                   >
-                    <strong style={ppStyles.leverageMiniTarget}>{card.target_name}</strong>
+                    <strong style={ppStyles.leverageMiniTarget} title={card.target_name}>{card.target_name}</strong>
                     <span style={ppStyles.leverageMiniActionHint}>
                       {isPrepared ? t("play.leverage_mini_prepared_hint") : t("play.leverage_mini_cta")}
                     </span>
@@ -3344,6 +3346,7 @@ function ActionArea({
                         ...ppStyles.leverageMiniText,
                         ...(compactLeverage ? ppStyles.leverageMiniTextCompact : null),
                       }}
+                      title={card.leverage}
                     >
                       {card.leverage}
                     </span>
@@ -3355,7 +3358,7 @@ function ActionArea({
           {spentLeverageCards.length > 0 && playableLeverageCards.length > 0 ? (
             <div style={ppStyles.leverageSpentRow} aria-label={t("play.leverage_spent_group")}>
               <span style={ppStyles.leverageSpentLabel}>{t("play.leverage_spent_group")}</span>
-              <span style={ppStyles.leverageSpentTargets}>
+              <span style={ppStyles.leverageSpentTargets} title={spentLeverageTargets}>
                 {spentLeverageTargets}
               </span>
             </div>
