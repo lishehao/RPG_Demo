@@ -72,6 +72,18 @@ select:focus-visible {
   outline-offset: 1px;
 }
 
+/* Play actions use inline, text-like buttons to keep the scene readable.
+   Some of those inline styles deliberately clear `outline`; restore a
+   keyboard-only focus marker in the action surface so tab navigation
+   never disappears into plain text. */
+[data-play-action-area="true"] button:focus-visible,
+[data-play-action-area="true"] textarea:focus-visible,
+.advisor-fab:focus-visible {
+  outline: 2px solid rgba(245, 200, 120, 0.86) !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 0 4px rgba(245, 200, 120, 0.10);
+}
+
 /* ------ scrollbar (webkit + firefox) ------ */
 * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
