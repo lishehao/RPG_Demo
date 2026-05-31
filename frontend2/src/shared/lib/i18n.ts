@@ -421,7 +421,7 @@ export const STRINGS_ZH = {
   "play.beat_leverage_tag": "打出反将牌 · {target}",
   "play.bookmark_add_title": "标记这一段",
   "play.bookmark_remove_title": "已标记 · 点击取消",
-  "play.bookmark_user_mark_label": "你标记的时刻",
+  "play.bookmark_user_mark_label": "已加入结局回顾",
 
   // Play page — action area (options + free input + diary)
   "play.action_no_options": "（这一段没给选项，写下你想做的事）",
@@ -1058,7 +1058,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.beat_leverage_tag": "Trump card played · {target}",
   "play.bookmark_add_title": "Bookmark this beat",
   "play.bookmark_remove_title": "Bookmarked — click to remove",
-  "play.bookmark_user_mark_label": "Bookmarked by you",
+  "play.bookmark_user_mark_label": "Bookmarked for ending recap",
 
   "play.action_no_options": "(No options this turn — write what you want to do.)",
   "play.action_free_placeholder": "Say or do something others can hear and answer.",

@@ -1694,6 +1694,17 @@ function StoryBeat({
           </motion.div>
         ) : null}
         <div style={textStyle}>{message.content}</div>
+        {isBookmarked ? (
+          <motion.div
+            initial={{ opacity: 0, y: -3 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, ...itemTransition }}
+            style={ppStyles.beatBookmarkInline}
+          >
+            <span style={ppStyles.beatBookmarkInlineMark}>★</span>
+            <span>{t("play.bookmark_user_mark_label")}</span>
+          </motion.div>
+        ) : null}
         {playedLeverage ? (
           <LeveragePayoff
             played={playedLeverage}
@@ -5764,6 +5775,21 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   beatBookmarkBtnActive: {
     color: "var(--accent)",
+  },
+  beatBookmarkInline: {
+    marginTop: 8,
+    display: "inline-flex",
+    alignItems: "baseline",
+    columnGap: 6,
+    color: "rgba(246,221,176,0.80)",
+    fontSize: 11.2,
+    lineHeight: 1.25,
+    fontWeight: 720,
+  },
+  beatBookmarkInlineMark: {
+    color: "var(--accent)",
+    fontSize: 11,
+    lineHeight: 1,
   },
   narratorBeatRising: {
     marginBottom: 38,
