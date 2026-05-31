@@ -3177,7 +3177,12 @@ function ActionArea({
               </button>
               {renderDiaryAttachPreview("option")}
             </div>
-            <div style={ppStyles.commitSecondaryActions}>
+            <div
+              style={{
+                ...ppStyles.commitSecondaryActions,
+                ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
+              }}
+            >
               <button
                 type="button"
                 style={{
@@ -3412,7 +3417,12 @@ function ActionArea({
                   </button>
                   {renderDiaryAttachPreview("leverage")}
                 </div>
-                <div style={ppStyles.commitSecondaryActions}>
+                <div
+                  style={{
+                    ...ppStyles.commitSecondaryActions,
+                    ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
+                  }}
+                >
                   <button
                     type="button"
                     style={{
@@ -3614,7 +3624,12 @@ function ActionArea({
                       <span style={ppStyles.freeEmptyHint}>{t("play.free_empty_hint")}</span>
                     </div>
                   )}
-                  <div style={ppStyles.commitSecondaryActions}>
+                  <div
+                    style={{
+                      ...ppStyles.commitSecondaryActions,
+                      ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
+                    }}
+                  >
                     <button
                       type="button"
                       style={{
@@ -6089,6 +6104,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   commitPrimaryActions: {
     minWidth: 0,
+    flex: "1 1 260px",
     display: "flex",
     alignItems: "baseline",
     flexWrap: "wrap" as const,
@@ -6096,6 +6112,7 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 4,
   },
   commitSecondaryActions: {
+    minWidth: 0,
     display: "flex",
     alignItems: "baseline",
     justifyContent: "flex-end",
@@ -6103,6 +6120,11 @@ const ppStyles: Record<string, CSSProperties> = {
     columnGap: 13,
     rowGap: 4,
     marginLeft: "auto",
+  },
+  commitSecondaryActionsCompact: {
+    flexBasis: "100%",
+    justifyContent: "flex-start",
+    marginLeft: 0,
   },
   diaryAttachPreview: {
     width: "fit-content",
