@@ -354,6 +354,7 @@ export function CreatePage({
                     >
                       <span style={cpStyles.exampleLineIndex}>{index + 1}.</span>
                       <span style={cpStyles.exampleLineText}>{example}</span>
+                      <span style={cpStyles.exampleLineUse}>{t("create.example_use")}</span>
                     </button>
                   ))}
                 </div>
@@ -715,9 +716,10 @@ const cpStyles: Record<string, CSSProperties> = {
     width: "100%",
     minWidth: 0,
     display: "grid",
-    gridTemplateColumns: "20px minmax(0, 1fr)",
+    gridTemplateColumns: "20px minmax(0, 1fr) auto",
     alignItems: "baseline",
-    gap: 7,
+    columnGap: 7,
+    rowGap: 2,
     padding: "5px 0 6px",
     background: "transparent",
     border: "none",
@@ -739,6 +741,14 @@ const cpStyles: Record<string, CSSProperties> = {
     color: "rgba(255,255,255,0.78)",
     fontSize: 12.6,
     lineHeight: 1.42,
+  },
+  exampleLineUse: {
+    color: "rgba(245,200,120,0.76)",
+    fontFamily: "var(--font-ui)",
+    fontSize: 10.5,
+    lineHeight: 1.25,
+    fontWeight: 780,
+    whiteSpace: "nowrap" as const,
   },
   textarea: {
     width: "100%",
