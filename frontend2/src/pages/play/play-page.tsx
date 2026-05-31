@@ -3667,35 +3667,38 @@ function ActionArea({
             </div>
             {freeActionDraft ? renderDiaryEditor("free") : null}
           </div>
-        ) : showFreeActionToggle ? (
-          <button
-            style={ppStyles.freeInputToggle}
-            onClick={() => {
-              setSelectedOptionIndex(null)
-              setArmedCardId(null)
-              setShowFreeInput(true)
-            }}
-            disabled={actionControlsDisabled}
-            type="button"
-          >
-            <span style={ppStyles.freeInputToggleCopy}>
-              <span style={ppStyles.freeInputToggleLabel}>{freeActionToggleText}</span>
-              <span style={ppStyles.freeInputToggleHint}>{freeActionToggleHint}</span>
-            </span>
-          </button>
         ) : null
       ) : null}
 
-      {showIdleAdvisorLine ? (
-        <div style={ppStyles.idleAdvisorLine}>
-          <button
-            type="button"
-            style={ppStyles.advisorInlineAction}
-            onClick={onOpenAdvisor}
-            disabled={actionControlsDisabled}
-          >
-            {t("play.ask_friend_inline")}
-          </button>
+      {showFreeActionToggle || showIdleAdvisorLine ? (
+        <div style={ppStyles.alternateActionRow}>
+          {showFreeActionToggle ? (
+            <button
+              style={ppStyles.alternateActionButton}
+              onClick={() => {
+                setSelectedOptionIndex(null)
+                setArmedCardId(null)
+                setShowFreeInput(true)
+              }}
+              disabled={actionControlsDisabled}
+              type="button"
+            >
+              <span style={ppStyles.alternateActionLabel}>{freeActionToggleText}</span>
+              <span style={ppStyles.alternateActionHint}>{freeActionToggleHint}</span>
+            </button>
+          ) : null}
+          {showFreeActionToggle && showIdleAdvisorLine ? <span style={ppStyles.alternateActionDivider} /> : null}
+          {showIdleAdvisorLine ? (
+            <button
+              type="button"
+              style={ppStyles.alternateActionButton}
+              onClick={onOpenAdvisor}
+              disabled={actionControlsDisabled}
+            >
+              <span style={ppStyles.alternateActionLabel}>{t("play.ask_friend_inline")}</span>
+              <span style={ppStyles.alternateActionHint}>{t("play.ask_friend_inline_hint")}</span>
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -6448,46 +6451,46 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 12,
     flexWrap: "wrap" as const,
   },
-  freeInputToggle: {
+  alternateActionRow: {
     display: "flex",
     alignItems: "baseline",
-    gap: 7,
-    marginTop: 0,
-    background: "none",
-    border: "none",
-    color: "rgba(246,221,176,0.82)",
-    padding: "8px 0 8px",
-    cursor: "pointer",
-    textAlign: "left",
-    outline: "none",
-    width: "100%",
-    maxWidth: "100%",
-    fontFamily: "inherit",
+    columnGap: 10,
+    rowGap: 4,
+    flexWrap: "wrap" as const,
+    paddingTop: 4,
   },
-  freeInputToggleCopy: {
-    minWidth: 0,
+  alternateActionButton: {
     display: "inline-flex",
     alignItems: "baseline",
     columnGap: 7,
     rowGap: 2,
     flexWrap: "wrap" as const,
+    minWidth: 0,
+    background: "none",
+    border: "none",
+    color: "rgba(246,221,176,0.82)",
+    padding: 0,
+    cursor: "pointer",
+    textAlign: "left",
+    outline: "none",
+    fontFamily: "inherit",
   },
-  freeInputToggleLabel: {
+  alternateActionLabel: {
     color: "rgba(246,221,176,0.76)",
     fontSize: 12.5,
     lineHeight: 1.25,
     fontWeight: 780,
   },
-  freeInputToggleHint: {
+  alternateActionHint: {
     color: "rgba(232,218,205,0.44)",
     fontSize: 11.5,
     lineHeight: 1.35,
   },
-  idleAdvisorLine: {
-    display: "flex",
-    alignItems: "baseline",
-    gap: 12,
-    paddingTop: 2,
+  alternateActionDivider: {
+    width: 1,
+    height: 10,
+    background: "rgba(236,209,159,0.18)",
+    flex: "0 0 auto",
   },
 
   diaryLaneEdit: {
