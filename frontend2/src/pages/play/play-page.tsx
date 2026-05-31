@@ -3662,7 +3662,6 @@ function ActionArea({
                             }}
                             title={opt.hint}
                           >
-                            {compactActionChrome ? null : <span aria-hidden>·</span>}
                             {opt.hint}
                           </span>
                         ) : null}
@@ -3831,7 +3830,6 @@ function ActionArea({
               <span style={ppStyles.alternateActionHint}>{freeActionToggleHint}</span>
             </button>
           ) : null}
-          {showFreeActionToggle && showIdleAdvisorLine ? <span style={ppStyles.alternateActionDivider} /> : null}
           {showIdleAdvisorLine ? (
             <button
               type="button"
@@ -6677,7 +6675,7 @@ const ppStyles: Record<string, CSSProperties> = {
   alternateActionRow: {
     display: "flex",
     alignItems: "baseline",
-    columnGap: 10,
+    columnGap: 20,
     rowGap: 4,
     flexWrap: "wrap" as const,
     paddingTop: 4,
@@ -6709,12 +6707,6 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(232,218,205,0.44)",
     fontSize: 11.5,
     lineHeight: 1.35,
-  },
-  alternateActionDivider: {
-    width: 1,
-    height: 10,
-    background: "rgba(236,209,159,0.18)",
-    flex: "0 0 auto",
   },
 
   diaryLaneEdit: {
@@ -7269,11 +7261,12 @@ const ppStyles: Record<string, CSSProperties> = {
   advisorBackdrop: {
     position: "fixed",
     inset: 0,
-    background: "transparent",
+    background:
+      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.08) 58%, rgba(0,0,0,0.30) 100%)",
     zIndex: 30,
   },
   advisorBackdropCompact: {
-    background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.13) 100%)",
+    background: "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.42) 100%)",
   },
   advisorPanel: {
     position: "fixed",
@@ -7284,14 +7277,14 @@ const ppStyles: Record<string, CSSProperties> = {
     paddingLeft: 0,
     boxSizing: "border-box",
     background:
-      "linear-gradient(90deg, rgba(12,10,10,0.76) 0%, rgba(12,10,10,0.86) 48%, rgba(12,10,10,0.94) 100%)",
+      "linear-gradient(90deg, rgba(10,9,9,0.34) 0%, rgba(10,9,9,0.84) 22%, rgba(10,9,9,0.97) 100%)",
     backdropFilter: "none",
     WebkitBackdropFilter: "none",
     borderLeft: "none",
     display: "flex",
     flexDirection: "column",
     zIndex: 31,
-    boxShadow: "none",
+    boxShadow: "-30px 0 72px rgba(0,0,0,0.26)",
     overflow: "hidden",
   },
   advisorPanelCompact: {
@@ -7304,7 +7297,8 @@ const ppStyles: Record<string, CSSProperties> = {
     paddingLeft: 0,
     borderLeft: "none",
     borderTop: "none",
-    background: "var(--bg)",
+    background: "linear-gradient(180deg, rgba(10,9,9,0.995) 0%, rgba(8,7,7,0.995) 100%)",
+    boxShadow: "0 -32px 72px rgba(0,0,0,0.48)",
   },
   advisorHeader: {
     display: "flex",
