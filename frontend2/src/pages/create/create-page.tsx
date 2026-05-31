@@ -128,6 +128,7 @@ export function CreatePage({
   // (you can browse in English but write a Chinese story, etc.).
   const [storyLanguage, setStoryLanguage] = useState<NarrativeTemplateLanguage>(uiLang)
   const [busy, setBusy] = useState(false)
+  const [busyElapsedSeconds, setBusyElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
@@ -157,6 +158,10 @@ export function CreatePage({
     if (typeof navigator === "undefined") return "Ctrl"
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
   }, [])
+  const busyLabel =
+    busyElapsedSeconds > 0
+      ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
+      : t("create.building_label")
 
   // Author flow requires a real account.
   useEffect(() => {
@@ -165,6 +170,19 @@ export function CreatePage({
       window.location.hash = "#/login?next=create"
     }
   }, [auth.loading, auth.isAnonymous])
+
+  useEffect(() => {
+    if (!busy) {
+      setBusyElapsedSeconds(0)
+      return
+    }
+    setBusyElapsedSeconds(0)
+    const startedAt = Date.now()
+    const id = window.setInterval(() => {
+      setBusyElapsedSeconds(Math.max(1, Math.floor((Date.now() - startedAt) / 1000)))
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [busy])
 
   const handleCreate = async () => {
     const trimmed = seed.trim()
@@ -494,7 +512,7 @@ export function CreatePage({
                 style={cpStyles.busyCard}
               >
                 <div style={cpStyles.busySignal}>
-                  <span style={cpStyles.busyLabel}>{t("create.building_label")}</span>
+                  <span style={cpStyles.busyLabel}>{busyLabel}</span>
                   <div style={cpStyles.busyDots} aria-hidden>
                     {[0, 1, 2, 3].map((i) => (
                       <motion.span
