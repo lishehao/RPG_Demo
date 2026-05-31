@@ -2735,6 +2735,7 @@ function ActionArea({
   const isRevealingLeverage = revealingLeverageCardId !== null
   const showLeverageCards = leverageExpanded || !!armedCard
   const hasSinglePlayableLeverage = playableLeverageCards.length === 1
+  const hasMultiplePlayableLeverage = playableLeverageCards.length > 1
   const primaryLeverageCard = armedCard ?? playableLeverageCards[0] ?? null
   const playableLeverageTargetText = (() => {
     const names = playableLeverageCards.map((card) => card.target_name)
@@ -2763,6 +2764,9 @@ function ActionArea({
   const leverageEmptyMetaText = spentLeverageTargets
     ? t("play.leverage_empty_meta", { targets: spentLeverageTargets })
     : t("play.leverage_summary_meta_empty")
+  const leverageConfirmCancelText = hasMultiplePlayableLeverage
+    ? t("play.leverage_confirm_choose_another")
+    : t("play.leverage_confirm_cancel")
   const commitmentSurfaceOpen =
     selectedOptionIndex !== null ||
     armedCardId !== null ||
@@ -3712,13 +3716,13 @@ function ActionArea({
                     }}
                     onClick={() => {
                       setArmedCardId(null)
-                      setLeverageExpanded(false)
+                      setLeverageExpanded(hasMultiplePlayableLeverage)
                     }}
                     disabled={actionControlsDisabled}
-                    aria-keyshortcuts="Escape"
-                    title={t("play.shortcut_escape_cancel")}
+                    aria-keyshortcuts={hasMultiplePlayableLeverage ? undefined : "Escape"}
+                    title={hasMultiplePlayableLeverage ? t("play.leverage_confirm_choose_another") : t("play.shortcut_escape_cancel")}
                   >
-                    {t("play.leverage_confirm_cancel")}
+                    {leverageConfirmCancelText}
                   </button>
                 </div>
               </div>
