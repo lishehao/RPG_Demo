@@ -106,6 +106,7 @@ export function PlayPage({
   const [diary, setDiary] = useState("")
   const [showDiary, setShowDiary] = useState(false)
   const [advisorOpen, setAdvisorOpen] = useState(false)
+  const advisorReturnFocusRef = useRef<HTMLElement | null>(null)
   const [actionCommitmentActive, setActionCommitmentActive] = useState(false)
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
@@ -237,7 +238,28 @@ export function PlayPage({
   )
 
   const openAdvisor = useCallback(() => {
+    if (typeof document !== "undefined") {
+      const active = document.activeElement
+      advisorReturnFocusRef.current = active instanceof HTMLElement ? active : null
+    }
     setAdvisorOpen(true)
+  }, [])
+  const closeAdvisor = useCallback(() => {
+    setAdvisorOpen(false)
+    if (typeof window === "undefined" || typeof document === "undefined") return
+    const restoreFocus = () => {
+      const previous = advisorReturnFocusRef.current
+      if (previous?.isConnected && !previous.hasAttribute("disabled")) {
+        previous.focus({ preventScroll: true })
+        return
+      }
+      document.querySelector<HTMLElement>(".advisor-fab")?.focus({ preventScroll: true })
+    }
+    const frame = window.requestAnimationFrame(restoreFocus)
+    window.setTimeout(() => {
+      window.cancelAnimationFrame(frame)
+      restoreFocus()
+    }, 90)
   }, [])
 
   const lastNarrator = story
@@ -598,7 +620,7 @@ export function PlayPage({
             isCommitmentActive={actionCommitmentActive}
             commitmentSummary={actionCommitmentSummary}
             suggestions={advisorSuggestions}
-            onClose={() => setAdvisorOpen(false)}
+            onClose={closeAdvisor}
             onOracleConsumed={(newBudget) => {
               // Update local session budget so the header chip updates
               // immediately and the oracle button respects the new
