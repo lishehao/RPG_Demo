@@ -4263,11 +4263,21 @@ function AdvisorSidechat({
         </header>
 
         {isCommitmentActive ? (
-          <div style={ppStyles.advisorContextLine}>
+          <div
+            style={{
+              ...ppStyles.advisorContextLine,
+              ...(compactAdvisor ? ppStyles.advisorContextLineCompact : null),
+            }}
+          >
             <span style={ppStyles.advisorContextKicker}>
               {commitmentSummary?.kicker ?? t("play.advisor_commitment_notice_kicker")}
             </span>
-            <span style={ppStyles.advisorContextText}>
+            <span
+              style={{
+                ...ppStyles.advisorContextText,
+                ...(compactAdvisor ? ppStyles.advisorContextTextCompact : null),
+              }}
+            >
               {commitmentSummary
                 ? [
                     commitmentSummary.title,
@@ -7376,6 +7386,12 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 2,
     flexWrap: "wrap" as const,
   },
+  advisorContextLineCompact: {
+    margin: "2px 16px 0",
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    rowGap: 3,
+  },
   advisorContextKicker: {
     flexShrink: 0,
     color: "rgba(245,210,140,0.78)",
@@ -7393,6 +7409,15 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
     overflow: "hidden",
     textOverflow: "ellipsis",
+  },
+  advisorContextTextCompact: {
+    flex: "unset",
+    whiteSpace: "normal" as const,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical" as const,
+    color: "rgba(245,235,224,0.66)",
+    lineHeight: 1.42,
   },
   advisorMessages: {
     flex: 1,
