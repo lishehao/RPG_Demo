@@ -3101,6 +3101,8 @@ function ActionArea({
               }
             }}
             disabled={diarySubmitDisabled}
+            aria-keyshortcuts="Meta+Enter Control+Enter"
+            title={t("play.shortcut_mod_enter_submit")}
             type="button"
           >
             {context === "leverage"
@@ -3166,6 +3168,8 @@ function ActionArea({
                   ...(actionControlsDisabled ? ppStyles.actionPrimaryLineDisabled : null),
                 }}
                 type="button"
+                aria-keyshortcuts="Enter"
+                title={t("play.shortcut_enter_submit")}
                 onClick={() => {
                   if (selectedOptionIndex !== null) {
                     handleOptionCommit(selectedOptionIndex)
@@ -3410,6 +3414,8 @@ function ActionArea({
                       ...(actionControlsDisabled ? ppStyles.actionPrimaryLineDisabled : null),
                     }}
                     type="button"
+                    aria-keyshortcuts="Enter"
+                    title={t("play.shortcut_enter_submit")}
                     onClick={() => handleLeverageReveal(armedCard)}
                     disabled={actionControlsDisabled}
                   >
@@ -3613,6 +3619,8 @@ function ActionArea({
                         }}
                         onClick={() => handleSubmitFreeWithReflect()}
                         disabled={actionControlsDisabled}
+                        aria-keyshortcuts="Meta+Enter Control+Enter"
+                        title={t("play.shortcut_mod_enter_submit")}
                         type="button"
                       >
                         {actionControlsDisabled ? t("play.action_busy") : t("play.action_submit")}
