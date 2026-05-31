@@ -2816,9 +2816,10 @@ function ActionArea({
     ? findActionTarget(freeActionDraft, undefined, castNameById, latestNpcPulses)
     : null
   const freeActionTargetName = freeActionTarget?.name ?? ""
+  const freeComposerOpen = showFreeInput || options.length === 0
 
   useEffect(() => {
-    if (busy || !showFreeInput || !freeActionReady) return
+    if (busy || !freeComposerOpen || !freeActionReady) return
     const frame = window.requestAnimationFrame(() => {
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       freeActionRef.current?.scrollIntoView({
@@ -2827,10 +2828,10 @@ function ActionArea({
       })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [busy, freeActionReady, showFreeInput])
+  }, [busy, freeActionReady, freeComposerOpen])
 
   useEffect(() => {
-    if (busy || !showFreeInput) return
+    if (busy || !freeComposerOpen) return
     const focusFreeTextarea = () => {
       const node = freeTextareaRef.current
       if (!node || node.disabled) return
@@ -2846,7 +2847,7 @@ function ActionArea({
       window.cancelAnimationFrame(frame)
       timers.forEach((timer) => window.clearTimeout(timer))
     }
-  }, [busy, showFreeInput])
+  }, [busy, freeComposerOpen])
 
   const isFinalTurn = turnsRemaining <= 1
   const isEndgameTurn = turnsRemaining <= 2
@@ -2904,7 +2905,7 @@ function ActionArea({
   const showLeverageCardPicker =
     showLeverageCards && playableLeverageCards.length > 0 && !armedCard && !hasSinglePlayableLeverage
   const showFreeActionSurface = !armedCard && selectedOptionIndex === null && !showPickedReflection
-  const showFreeComposer = showFreeActionSurface && (showFreeInput || options.length === 0)
+  const showFreeComposer = showFreeActionSurface && freeComposerOpen
   const showStandardOptions = !armedCard && !showFreeComposer
   const showLeverageRail = leverageCards.length > 0 && !commitmentSurfaceOpen
   const showFreeActionToggle =
@@ -2961,7 +2962,7 @@ function ActionArea({
         motive,
       }
     }
-    if (showFreeInput && freeActionDraft) {
+    if (freeComposerOpen && freeActionDraft) {
       return {
         kicker: t("play.advisor_commitment_kind_free"),
         title: freeActionDraft,
@@ -2984,7 +2985,7 @@ function ActionArea({
     selectedOptionBody,
     selectedOptionHint,
     selectedOptionIndex,
-    showFreeInput,
+    freeComposerOpen,
     t,
   ])
   useEffect(() => {
@@ -2994,7 +2995,7 @@ function ActionArea({
     ? "leverage"
     : selectedOption && selectedOptionParsed && pickedIndex === null && !busy
       ? "option"
-      : showFreeInput || options.length === 0
+      : freeComposerOpen
         ? "free"
         : "idle"
   const isWritingOptionDiary = showDiary && diaryContext === "option"
@@ -3004,7 +3005,7 @@ function ActionArea({
     ? `leverage:${armedCard.card_id}`
     : selectedOptionIndex !== null && pickedIndex === null && !busy
       ? `option:${selectedOptionIndex}`
-      : showFreeInput || options.length === 0
+      : freeComposerOpen
         ? "free"
         : "idle"
   const showTurnGuide = !showPickedReflection
