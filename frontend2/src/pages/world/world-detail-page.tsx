@@ -366,13 +366,13 @@ function StoryBriefingRail({
 
   return (
     <aside style={tdStyles.launchRail}>
-      <section style={tdStyles.railPanel}>
+      <section style={tdStyles.briefingRail}>
         <div style={tdStyles.sectionLabel}>{t("world.section_briefing")}</div>
         <div style={tdStyles.seedQuote}>"{template.seed}"</div>
-      </section>
 
-      <section style={tdStyles.railPanel}>
-        <div style={tdStyles.sectionLabel}>{t("world.section_cast")}</div>
+        <div style={tdStyles.railDivider} />
+
+        <div style={tdStyles.briefingSubhead}>{t("world.section_cast")}</div>
         <div style={tdStyles.castList}>
           {template.cast.map((c) => {
             const interLevs = c.leverages_over_other_npcs ?? []
@@ -398,90 +398,89 @@ function StoryBriefingRail({
             )
           })}
         </div>
-      </section>
 
-      {edges.length > 0 ? (
-        <details style={tdStyles.railDetails}>
-          <summary style={tdStyles.railDetailsSummary}>{t("world.network_label")}</summary>
-          <p style={tdStyles.networkHint}>
-            {t("world.network_hint")}
-          </p>
-          <ul style={tdStyles.networkList}>
-            {edges.map((e, i) => (
-              <li key={i} style={tdStyles.networkRow}>
-                <Truncated style={tdStyles.networkHolder}>{e.holder}</Truncated>
-                <span style={tdStyles.networkArrow}>→</span>
-                <Truncated style={tdStyles.networkTarget}>{e.target}</Truncated>
-                <span style={tdStyles.networkColon}>:</span>
-                <Truncated lines={2} style={tdStyles.networkLeverage}>{e.leverage}</Truncated>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-
-      {template.failure_conditions && template.failure_conditions.length > 0 ? (
-        <details style={tdStyles.railDetails}>
-          <summary style={tdStyles.railDetailsSummary}>{t("world.section_failure")}</summary>
-          <p style={tdStyles.failureHint}>
-            {t("world.failure_hint")}
-          </p>
-          <ul style={tdStyles.failureList}>
-            {template.failure_conditions.map((fc, i) => (
-              <li key={i} style={tdStyles.failureRow}>
-                <Truncated style={tdStyles.failureLabel}>{`! ${fc.label}`}</Truncated>
-                <Truncated lines={2} style={tdStyles.failureDesc}>{fc.description}</Truncated>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-
-      <section style={tdStyles.railPanel}>
-        <div style={tdStyles.sectionLabel}>{t("world.section_advisor")}</div>
         <div style={tdStyles.advisorBlock}>
           <img src={advisorAvatar} alt="" style={tdStyles.advisorAvatar} loading="lazy" />
           <span style={tdStyles.advisorText}>{template.advisor_persona}</span>
         </div>
-      </section>
 
-      {distribution && distribution.total_completed > 0 ? (
-        <section style={tdStyles.railPanel}>
-          <div style={tdStyles.sectionLabel}>
-            {t("world.section_endings", { count: distribution.total_completed })}
-          </div>
-          <div style={tdStyles.distributionList}>
-            {distribution.entries.map((entry, idx) => {
-              const pct = (entry.count / distribution.total_completed) * 100
-              return (
-                <motion.div
-                  key={entry.label}
-                  style={tdStyles.distributionRow}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * idx + 0.15, ...itemTransition }}
-                >
-                  <Truncated style={tdStyles.distributionLabel}>
-                    {displayEndingLabel(entry.label, lang)}
-                  </Truncated>
-                  <div style={tdStyles.distributionBarTrack}>
+        <div style={tdStyles.railDetailsGroup}>
+          {edges.length > 0 ? (
+            <details style={tdStyles.railDetails}>
+              <summary style={tdStyles.railDetailsSummary}>{t("world.network_label")}</summary>
+              <p style={tdStyles.networkHint}>
+                {t("world.network_hint")}
+              </p>
+              <ul style={tdStyles.networkList}>
+                {edges.map((e, i) => (
+                  <li key={i} style={tdStyles.networkRow}>
+                    <Truncated style={tdStyles.networkHolder}>{e.holder}</Truncated>
+                    <span style={tdStyles.networkArrow}>→</span>
+                    <Truncated style={tdStyles.networkTarget}>{e.target}</Truncated>
+                    <span style={tdStyles.networkColon}>:</span>
+                    <Truncated lines={2} style={tdStyles.networkLeverage}>{e.leverage}</Truncated>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+
+          {template.failure_conditions && template.failure_conditions.length > 0 ? (
+            <details style={tdStyles.railDetails}>
+              <summary style={tdStyles.railDetailsSummary}>{t("world.section_failure")}</summary>
+              <p style={tdStyles.failureHint}>
+                {t("world.failure_hint")}
+              </p>
+              <ul style={tdStyles.failureList}>
+                {template.failure_conditions.map((fc, i) => (
+                  <li key={i} style={tdStyles.failureRow}>
+                    <Truncated style={tdStyles.failureLabel}>{`! ${fc.label}`}</Truncated>
+                    <Truncated lines={2} style={tdStyles.failureDesc}>{fc.description}</Truncated>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+
+          {distribution && distribution.total_completed > 0 ? (
+            <details style={tdStyles.railDetails}>
+              <summary style={tdStyles.railDetailsSummary}>
+                {t("world.section_endings", { count: distribution.total_completed })}
+              </summary>
+              <div style={tdStyles.distributionList}>
+                {distribution.entries.map((entry, idx) => {
+                  const pct = (entry.count / distribution.total_completed) * 100
+                  return (
                     <motion.div
-                      style={tdStyles.distributionBarFill}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      transition={{ delay: cascadeDelay(idx, 0.05, 0.25), ...transitions.slow }}
-                    />
-                  </div>
-                  <div style={tdStyles.distributionCount}>x{entry.count}</div>
-                </motion.div>
-              )
-            })}
-          </div>
-          <p style={tdStyles.distributionHint}>
-            {t("world.endings_hint")}
-          </p>
-        </section>
-      ) : null}
+                      key={entry.label}
+                      style={tdStyles.distributionRow}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 * idx + 0.15, ...itemTransition }}
+                    >
+                      <Truncated style={tdStyles.distributionLabel}>
+                        {displayEndingLabel(entry.label, lang)}
+                      </Truncated>
+                      <div style={tdStyles.distributionBarTrack}>
+                        <motion.div
+                          style={tdStyles.distributionBarFill}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ delay: cascadeDelay(idx, 0.05, 0.25), ...transitions.slow }}
+                        />
+                      </div>
+                      <div style={tdStyles.distributionCount}>x{entry.count}</div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+              <p style={tdStyles.distributionHint}>
+                {t("world.endings_hint")}
+              </p>
+            </details>
+          ) : null}
+        </div>
+      </section>
     </aside>
   )
 }
@@ -691,11 +690,14 @@ const tdStyles: Record<string, CSSProperties> = {
     flexDirection: "column" as const,
     gap: 24,
   },
-  railPanel: {
+  briefingRail: {
     padding: 0,
     background: "transparent",
     border: "none",
     borderRadius: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 18,
   },
   railDetails: {
     padding: 0,
@@ -710,6 +712,23 @@ const tdStyles: Record<string, CSSProperties> = {
     letterSpacing: 0,
     textTransform: "none" as const,
     fontWeight: 680,
+  },
+  railDetailsGroup: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 12,
+  },
+  railDivider: {
+    height: 1,
+    background: "rgba(255,255,255,0.075)",
+  },
+  briefingSubhead: {
+    fontSize: 11.5,
+    color: "var(--text-faint)",
+    letterSpacing: 0,
+    textTransform: "none" as const,
+    fontWeight: 680,
+    marginBottom: -4,
   },
   sectionLabel: {
     fontSize: 11.5,

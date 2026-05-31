@@ -86,14 +86,14 @@ export function ReviewerPage({
           {error ? <div className="reviewer-error">{error}</div> : null}
         </motion.section>
 
-        <section className="reviewer-checklist" aria-label="Reviewer path">
+        <ol className="reviewer-checklist" aria-label="Reviewer path">
           {REVIEWER_DEMO_ACTIONS.map((item, idx) => (
-            <article key={item}>
+            <li key={item}>
               <span>{String(idx + 1).padStart(2, "0")}</span>
               <p>{item}</p>
-            </article>
+            </li>
           ))}
-        </section>
+        </ol>
       </main>
     </div>
   )

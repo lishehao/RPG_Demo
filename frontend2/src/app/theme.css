@@ -713,13 +713,15 @@ kbd {
 }
 .reviewer-checklist {
   margin-top: 20px;
+  padding-left: 0;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.075);
+  list-style: none;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 18px;
 }
-.reviewer-checklist article {
+.reviewer-checklist li {
   min-height: 110px;
   padding: 0;
   background: transparent;
