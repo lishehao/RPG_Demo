@@ -3275,6 +3275,7 @@ function ActionArea({
               disabled={actionControlsDisabled}
               aria-expanded={showLeverageCards}
               aria-keyshortcuts="T"
+              title={t("play.leverage_shortcut_title")}
             >
               <span style={ppStyles.leverageSummaryMain}>
                 <span style={ppStyles.leverageSummaryEyebrow}>{t("play.leverage_resource_label")}</span>
