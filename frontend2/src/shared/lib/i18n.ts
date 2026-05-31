@@ -302,6 +302,7 @@ export const STRINGS_ZH = {
   "play.status_trump_many": "{count} 张反将牌",
   "play.status_item_one": "1 件物品",
   "play.status_item_many": "{count} 件物品",
+  "play.run_context_label": "本局状态",
 
   // Play page — pulse legend (NPC mood chips)
   "play.pulse_reason_prefix": "因为：{reason}",
@@ -911,6 +912,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.status_trump_many": "{count} trump cards",
   "play.status_item_one": "1 item",
   "play.status_item_many": "{count} items",
+  "play.run_context_label": "Run context",
 
   "play.pulse_reason_prefix": "because: {reason}",
   "play.outcome_label": "Impact",

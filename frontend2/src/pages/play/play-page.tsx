@@ -783,7 +783,9 @@ function RunContextPanel({
   const compactRunContext = useCompactLayout("(max-width: 680px)")
   const role = story.session.player_role
   const upcomingTurn = Math.min(turnBudget - 1, turnsCompleted + 1)
-  const stage = stageDisplayName(stageForLocal(upcomingTurn, turnBudget))
+  const stageKey = stageForLocal(upcomingTurn, turnBudget)
+  const stageLabelKey = `stage_bar.${stageKey === "pre_finale_open" ? "pre_finale" : stageKey}` as Parameters<typeof t>[0]
+  const stage = t(stageLabelKey, stageDisplayName(stageKey))
   const trumpResourceText =
     leverageCards.length === 1
       ? t("play.status_trump_one")
@@ -802,6 +804,11 @@ function RunContextPanel({
     ? t("play.status_done")
     : t("play.status_turns_left", { count: turnsRemaining })
   const runMetaText = [stage, runStatusText, privateResourceText].filter(Boolean).join(" · ")
+  const runProgressLabel = t("stage_bar.aria", {
+    turn: turnsCompleted,
+    total: turnBudget,
+    stage,
+  })
 
   if (compactRunContext) {
     return (
@@ -810,7 +817,7 @@ function RunContextPanel({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={itemTransition}
-        aria-label="Run context"
+        aria-label={t("play.run_context_label")}
       >
         <div style={ppStyles.runCompactHeader}>
           <span style={ppStyles.runCompactRoleTag}>{t("play.run_identity_prefix")}</span>
@@ -829,7 +836,7 @@ function RunContextPanel({
         {!isComplete ? (
           <span
             style={ppStyles.runProgressA11y}
-            aria-label={`Turn ${turnsCompleted} of ${turnBudget}, current stage: ${stage}`}
+            aria-label={runProgressLabel}
           />
         ) : null}
       </motion.section>
@@ -845,7 +852,7 @@ function RunContextPanel({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={itemTransition}
-      aria-label="Run context"
+      aria-label={t("play.run_context_label")}
     >
       <div style={ppStyles.runContextHeader}>
         <span style={ppStyles.runKicker}>{t("play.run_identity_prefix")}</span>
@@ -862,7 +869,7 @@ function RunContextPanel({
       {!isComplete ? (
         <span
           style={ppStyles.runProgressA11y}
-          aria-label={`Turn ${turnsCompleted} of ${turnBudget}, current stage: ${stage}`}
+          aria-label={runProgressLabel}
         />
       ) : null}
     </motion.section>
