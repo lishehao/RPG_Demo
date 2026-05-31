@@ -836,12 +836,15 @@ function RunContextPanel({
   const stageKey = stageForLocal(upcomingTurn, turnBudget)
   const stageLabelKey = `stage_bar.${stageKey === "pre_finale_open" ? "pre_finale" : stageKey}` as Parameters<typeof t>[0]
   const stage = t(stageLabelKey, stageDisplayName(stageKey))
+  const availableLeverageCards = leverageCards.filter((card) => !card.used)
   const trumpResourceText =
-    leverageCards.length === 1
+    availableLeverageCards.length === 1
       ? t("play.status_trump_one")
-      : leverageCards.length > 1
-        ? t("play.status_trump_many", { count: leverageCards.length })
-        : ""
+      : availableLeverageCards.length > 1
+        ? t("play.status_trump_many", { count: availableLeverageCards.length })
+        : leverageCards.length > 0
+          ? t("play.status_trump_empty")
+          : ""
   const itemResourceText =
     liveInventory.length === 1
       ? t("play.status_item_one")
