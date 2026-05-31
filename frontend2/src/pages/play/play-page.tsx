@@ -2303,7 +2303,7 @@ function OutcomeReceipt({ items, compact = false }: { items: OutcomeReceiptItem[
             style={phraseStyle}
             title={`${item.label}: ${item.value}`}
           >
-            <span style={ppStyles.outcomeReceiptItemLabel}>{item.label}</span>
+            <span style={ppStyles.outcomeReceiptItemLabel}>{item.label}:</span>
             <strong
               style={{
                 ...valueStyleBase,
@@ -5345,9 +5345,9 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   outcomeReceiptMobile: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    rowGap: 5,
+    alignItems: "flex-start",
+    columnGap: 0,
+    rowGap: 6,
   },
   outcomeReceiptInline: {
     marginTop: 6,
@@ -5360,9 +5360,9 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   outcomeReceiptInlineMobile: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    rowGap: 5,
+    alignItems: "flex-start",
+    columnGap: 0,
+    rowGap: 6,
   },
   outcomeReceiptKicker: {
     color: "rgba(245,210,140,0.84)",
@@ -5396,23 +5396,27 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   outcomeReceiptSentenceMobile: {
     width: "100%",
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    rowGap: 4,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 11,
+    rowGap: 5,
+    flexWrap: "wrap" as const,
   },
   outcomeReceiptPhrase: {
     minWidth: 0,
     display: "inline-flex",
     alignItems: "baseline",
-    gap: 5,
+    columnGap: 5,
+    rowGap: 2,
     maxWidth: "100%",
   },
   outcomeReceiptPhraseMobile: {
-    display: "grid",
-    gridTemplateColumns: "52px minmax(0, 1fr)",
-    columnGap: 8,
+    display: "inline-flex",
+    columnGap: 6,
     rowGap: 2,
     alignItems: "baseline",
+    width: "auto",
+    maxWidth: "100%",
   },
   outcomeReceiptItemLabel: {
     flexShrink: 0,
