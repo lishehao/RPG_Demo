@@ -3063,8 +3063,11 @@ function ActionArea({
   const freeActionToggleText = freeInput.trim()
     ? t("play.action_resume_free")
     : t("play.action_open_free")
+  const freeActionDraftPreview = freeActionDraft
+    ? truncateRecoveryText(freeActionDraft, 72)
+    : ""
   const freeActionToggleHint = freeInput.trim()
-    ? t("play.action_resume_free_hint")
+    ? t("play.action_resume_free_hint", { draft: freeActionDraftPreview })
     : t("play.action_open_free_hint")
   const freeActionToggleTitle = freeInput.trim()
     ? t("play.action_resume_free_title")
