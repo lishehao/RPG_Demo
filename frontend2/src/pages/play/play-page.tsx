@@ -3117,6 +3117,8 @@ function ActionArea({
             onClick={() => setShowDiary(false)}
             disabled={actionControlsDisabled}
             type="button"
+            aria-keyshortcuts="Escape"
+            title={t("play.shortcut_escape_cancel")}
             style={{
               ...ppStyles.diaryTextButton,
               ...inlineActionDisabledStyle,
@@ -3210,6 +3212,8 @@ function ActionArea({
                 }}
                 onClick={() => setSelectedOptionIndex(null)}
                 disabled={actionControlsDisabled}
+                aria-keyshortcuts="Escape"
+                title={t("play.shortcut_escape_cancel")}
               >
                 {t("play.option_change_cta")}
               </button>
@@ -3454,6 +3458,8 @@ function ActionArea({
                       setLeverageExpanded(false)
                     }}
                     disabled={actionControlsDisabled}
+                    aria-keyshortcuts="Escape"
+                    title={t("play.shortcut_escape_cancel")}
                   >
                     {t("play.leverage_confirm_cancel")}
                   </button>
@@ -3678,6 +3684,8 @@ function ActionArea({
                         }}
                         disabled={actionControlsDisabled}
                         type="button"
+                        aria-keyshortcuts="Escape"
+                        title={t("play.shortcut_escape_cancel")}
                       >
                         {freeActionDraft ? t("play.action_hide_free") : t("play.action_cancel")}
                       </button>
