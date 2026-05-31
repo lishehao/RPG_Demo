@@ -121,7 +121,10 @@ export function LoginPage({
                 }}
                 disabled={submitting}
               >
-                <span style={lpStyles.quickStartLabel}>{t("login.guest_primary", { name: guestHandle })}</span>
+                <span style={lpStyles.quickStartCopy}>
+                  <span style={lpStyles.quickStartLabel}>{t("login.guest_primary")}</span>
+                  <span style={lpStyles.quickStartMeta}>{t("login.guest_meta", { name: guestHandle })}</span>
+                </span>
                 <span style={lpStyles.quickStartArrow} aria-hidden>→</span>
               </button>
               {!showCustomName ? (
@@ -320,6 +323,21 @@ const lpStyles: Record<string, CSSProperties> = {
     fontSize: 13.5,
     fontWeight: 800,
     lineHeight: 1.35,
+  },
+  quickStartCopy: {
+    minWidth: 0,
+    display: "grid",
+    rowGap: 3,
+  },
+  quickStartMeta: {
+    minWidth: 0,
+    color: "rgba(255,255,255,0.48)",
+    fontSize: 11.5,
+    lineHeight: 1.32,
+    fontWeight: 620,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
   },
   quickStartArrow: {
     flexShrink: 0,
