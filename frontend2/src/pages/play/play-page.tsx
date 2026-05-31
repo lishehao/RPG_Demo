@@ -1,4 +1,4 @@
-import { Fragment, type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react"
 import type {
   NarrativeAdvisorMessage,
@@ -3262,7 +3262,7 @@ function ActionArea({
               ...(compactActionChrome ? ppStyles.optionConfirmActionsCompact : null),
             }}
           >
-            <div style={ppStyles.commitPrimaryActions}>
+            <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.optionCommitPrimaryActions }}>
               <button
                 style={{
                   ...ppStyles.actionPrimaryLine,
@@ -3286,6 +3286,7 @@ function ActionArea({
             <div
               style={{
                 ...ppStyles.commitSecondaryActions,
+                ...ppStyles.optionCommitSecondaryActions,
                 ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
               }}
             >
@@ -3596,7 +3597,7 @@ function ActionArea({
                 const isChoiceDimmed =
                   selectedOptionIndex !== null && !isSelected && pickedIndex === null
                 return (
-                  <Fragment key={i}>
+                  <div key={i} style={ppStyles.optionChoiceShell}>
                     <button
                       style={{
                         ...ppStyles.optionBtn,
@@ -3665,12 +3666,12 @@ function ActionArea({
                         ) : null}
                       </div>
                     </button>
-                  </Fragment>
+                    {isSelected && pickedIndex === null ? renderSelectedOptionConfirm() : null}
+                  </div>
                 )
               })
             )}
           </div>
-          {selectedOptionIndex !== null ? renderSelectedOptionConfirm() : null}
         </>
       ) : null}
 
@@ -6245,6 +6246,12 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   optionsList: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 4 },
   optionsListCompact: { gap: 7, marginBottom: 4 },
+  optionChoiceShell: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 3,
+  },
   optionBtn: {
     textAlign: "left",
     padding: "8px 0 9px 10px",
@@ -6284,12 +6291,12 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(255,238,205,0.98)",
   },
   optionConfirmPanel: {
-    marginTop: 1,
-    marginBottom: 9,
+    marginTop: -1,
+    marginBottom: 3,
     paddingTop: 0,
     paddingRight: 0,
     paddingBottom: 0,
-    paddingLeft: 0,
+    paddingLeft: 28,
     borderTop: "none",
     background: "transparent",
     display: "flex",
@@ -6304,9 +6311,9 @@ const ppStyles: Record<string, CSSProperties> = {
   optionConfirmActions: {
     display: "flex",
     alignItems: "baseline",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     flexWrap: "wrap" as const,
-    columnGap: 18,
+    columnGap: 14,
     rowGap: 5,
   },
   optionConfirmActionsCompact: {
@@ -6325,6 +6332,9 @@ const ppStyles: Record<string, CSSProperties> = {
     columnGap: 13,
     rowGap: 4,
   },
+  optionCommitPrimaryActions: {
+    flex: "0 1 auto",
+  },
   commitSecondaryActions: {
     minWidth: 0,
     display: "flex",
@@ -6334,6 +6344,10 @@ const ppStyles: Record<string, CSSProperties> = {
     columnGap: 13,
     rowGap: 4,
     marginLeft: "auto",
+  },
+  optionCommitSecondaryActions: {
+    marginLeft: 0,
+    justifyContent: "flex-start",
   },
   commitSecondaryActionsCompact: {
     flexBasis: "100%",
