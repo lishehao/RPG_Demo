@@ -2940,6 +2940,8 @@ function ActionArea({
         ? "free"
         : "idle"
   const isWritingOptionDiary = showDiary && diaryContext === "option"
+  const isWritingLeverageDiary = showDiary && diaryContext === "leverage"
+  const isWritingFreeDiary = showDiary && diaryContext === "free"
   const diaryScopeKey = armedCard
     ? `leverage:${armedCard.card_id}`
     : selectedOptionIndex !== null && pickedIndex === null && !busy
@@ -3194,7 +3196,7 @@ function ActionArea({
               ...(compactActionChrome ? ppStyles.optionConfirmActionsCompact : null),
             }}
           >
-            <div style={ppStyles.optionConfirmPrimaryActions}>
+            <div style={ppStyles.commitPrimaryActions}>
               <button
                 style={{
                   ...ppStyles.actionPrimaryLine,
@@ -3212,7 +3214,7 @@ function ActionArea({
               </button>
               {renderDiaryAttachPreview("option")}
             </div>
-            <div style={ppStyles.optionConfirmSecondaryActions}>
+            <div style={ppStyles.commitSecondaryActions}>
               <button
                 type="button"
                 style={ppStyles.advisorInlineAction}
@@ -3424,42 +3426,46 @@ function ActionArea({
                 ))}
               </motion.div>
             ) : null}
-            <div style={ppStyles.leverageRevealIntent}>
-              {renderDiaryAttachPreview("leverage")}
-            </div>
+            {isWritingLeverageDiary ? null : (
+              <div style={ppStyles.leverageRevealActions}>
+                <div style={ppStyles.commitPrimaryActions}>
+                  <button
+                    style={{
+                      ...ppStyles.actionPrimaryLine,
+                      ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
+                    }}
+                    type="button"
+                    onClick={() => handleLeverageReveal(armedCard)}
+                    disabled={actionControlsDisabled}
+                  >
+                    {isRevealingLeverage ? t("play.leverage_revealing") : t("play.leverage_confirm_cta")}
+                  </button>
+                  {renderDiaryAttachPreview("leverage")}
+                </div>
+                <div style={ppStyles.commitSecondaryActions}>
+                  <button
+                    type="button"
+                    style={ppStyles.commitTextButton}
+                    onClick={() => {
+                      setArmedCardId(null)
+                      setLeverageExpanded(false)
+                    }}
+                    disabled={actionControlsDisabled}
+                  >
+                    {t("play.leverage_confirm_cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    style={ppStyles.advisorInlineAction}
+                    onClick={onOpenAdvisor}
+                    disabled={actionControlsDisabled}
+                  >
+                    {t("play.ask_friend_inline")}
+                  </button>
+                </div>
+              </div>
+            )}
             {renderDiaryEditor("leverage")}
-            <div style={ppStyles.leverageRevealActions}>
-              <button
-                style={{
-                  ...ppStyles.actionPrimaryLine,
-                  ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
-                }}
-                type="button"
-                onClick={() => handleLeverageReveal(armedCard)}
-                disabled={actionControlsDisabled}
-              >
-                {isRevealingLeverage ? t("play.leverage_revealing") : t("play.leverage_confirm_cta")}
-              </button>
-              <button
-                type="button"
-                style={ppStyles.commitTextButton}
-                onClick={() => {
-                  setArmedCardId(null)
-                  setLeverageExpanded(false)
-                }}
-                disabled={actionControlsDisabled}
-              >
-                {t("play.leverage_confirm_cancel")}
-              </button>
-              <button
-                type="button"
-                style={ppStyles.advisorInlineAction}
-                onClick={onOpenAdvisor}
-                disabled={actionControlsDisabled}
-              >
-                {t("play.ask_friend_inline")}
-              </button>
-            </div>
           </section>
         ) : null}
 
@@ -3603,16 +3609,16 @@ function ActionArea({
               autoFocus
               rows={2}
             />
-            <div
-              style={{
-                ...ppStyles.freeCommitDock,
-                ...(compactActionChrome ? ppStyles.freeCommitDockCompact : null),
-              }}
-            >
-              {showDiary && diaryContext === "free" ? null : (
+            {isWritingFreeDiary ? null : (
+              <div
+                style={{
+                  ...ppStyles.freeCommitDock,
+                  ...(compactActionChrome ? ppStyles.freeCommitDockCompact : null),
+                }}
+              >
                 <div ref={setFreeActionNode} style={ppStyles.freeInputActions}>
                   {freeActionDraft ? (
-                    <>
+                    <div style={ppStyles.commitPrimaryActions}>
                       <button
                         style={{
                           ...ppStyles.actionPrimaryLine,
@@ -3627,46 +3633,40 @@ function ActionArea({
                         {actionControlsDisabled ? t("play.action_busy") : t("play.action_submit")}
                       </button>
                       {renderDiaryAttachPreview("free")}
-                      <button
-                        type="button"
-                        style={ppStyles.advisorInlineAction}
-                        onClick={onOpenAdvisor}
-                        disabled={actionControlsDisabled}
-                      >
-                        {t("play.ask_friend_inline")}
-                      </button>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div style={ppStyles.commitPrimaryActions}>
                       <span style={ppStyles.freeEmptyHint}>{t("play.free_empty_hint")}</span>
-                      <button
-                        type="button"
-                        style={ppStyles.advisorInlineAction}
-                        onClick={onOpenAdvisor}
-                        disabled={actionControlsDisabled}
-                      >
-                        {t("play.ask_friend_inline")}
-                      </button>
-                    </>
+                    </div>
                   )}
-                  {options.length > 0 ? (
+                  <div style={ppStyles.commitSecondaryActions}>
                     <button
-                      style={ppStyles.commitTextButton}
-                      onClick={() => {
-                        setShowFreeInput(false)
-                        if (!freeActionDraft) {
-                          setFreeInput("")
-                        }
-                      }}
-                      disabled={actionControlsDisabled}
                       type="button"
+                      style={ppStyles.advisorInlineAction}
+                      onClick={onOpenAdvisor}
+                      disabled={actionControlsDisabled}
                     >
-                      {freeActionDraft ? t("play.action_hide_free") : t("play.action_cancel")}
+                      {t("play.ask_friend_inline")}
                     </button>
-                  ) : null}
+                    {options.length > 0 ? (
+                      <button
+                        style={ppStyles.commitTextButton}
+                        onClick={() => {
+                          setShowFreeInput(false)
+                          if (!freeActionDraft) {
+                            setFreeInput("")
+                          }
+                        }}
+                        disabled={actionControlsDisabled}
+                        type="button"
+                      >
+                        {freeActionDraft ? t("play.action_hide_free") : t("play.action_cancel")}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             {freeActionDraft ? renderDiaryEditor("free") : null}
           </div>
         ) : null
@@ -5926,14 +5926,6 @@ const ppStyles: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap" as const,
   },
-  leverageRevealIntent: {
-    marginTop: 7,
-    minWidth: 0,
-    display: "flex",
-    alignItems: "baseline",
-    gap: 8,
-    flexWrap: "wrap" as const,
-  },
   actionCommitLine: {
     marginTop: 8,
     paddingTop: 0,
@@ -5996,9 +5988,10 @@ const ppStyles: Record<string, CSSProperties> = {
   leverageRevealActions: {
     display: "flex",
     flexWrap: "wrap" as const,
-    alignItems: "center",
-    columnGap: 16,
-    rowGap: 6,
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    columnGap: 18,
+    rowGap: 5,
     marginTop: 10,
   },
   actionPrimaryLine: {
@@ -6155,7 +6148,7 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
     gap: "5px 11px",
   },
-  optionConfirmPrimaryActions: {
+  commitPrimaryActions: {
     minWidth: 0,
     display: "flex",
     alignItems: "baseline",
@@ -6163,7 +6156,7 @@ const ppStyles: Record<string, CSSProperties> = {
     columnGap: 13,
     rowGap: 4,
   },
-  optionConfirmSecondaryActions: {
+  commitSecondaryActions: {
     display: "flex",
     alignItems: "baseline",
     justifyContent: "flex-end",
@@ -6492,8 +6485,9 @@ const ppStyles: Record<string, CSSProperties> = {
   freeInputActions: {
     display: "flex",
     alignItems: "baseline",
-    justifyContent: "flex-start",
-    gap: 12,
+    justifyContent: "space-between",
+    columnGap: 18,
+    rowGap: 5,
     flexWrap: "wrap" as const,
   },
   alternateActionRow: {
