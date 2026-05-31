@@ -1293,7 +1293,7 @@ function EndingScreen({
                   <div style={ppStyles.highlightHeader}>
                     <span style={ppStyles.highlightIndex}>{i + 1}</span>
                     {h.userMarked ? (
-                      <span style={ppStyles.highlightUserMark} aria-label="bookmarked by you">
+                      <span style={ppStyles.highlightUserMark} aria-label={t("play.bookmark_user_mark_label")}>
                         ★
                       </span>
                     ) : null}
@@ -1543,7 +1543,7 @@ function StoryBeat({
           <button
             type="button"
             onClick={onToggleBookmark}
-            aria-label={isBookmarked ? "Bookmarked — click to remove" : "Bookmark this beat"}
+            aria-label={isBookmarked ? t("play.bookmark_remove_title") : t("play.bookmark_add_title")}
             aria-pressed={!!isBookmarked}
             style={{
               ...ppStyles.beatBookmarkBtn,
