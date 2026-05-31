@@ -2439,6 +2439,10 @@ function ResolvingTurnPanel({
   const resolveStatus = target
     ? t("play.resolve_status_target", { target })
     : t("play.resolve_status_room")
+  const moveCopy = moveText || t("play.resolve_custom_move")
+  const resolvingAriaLabel = [t("play.resolve_title"), moveMeta, moveCopy, resolveStatus, t("play.resolve_progress")]
+    .filter(Boolean)
+    .join(". ")
   return (
     <motion.div
       key="turn-resolving"
@@ -2450,31 +2454,32 @@ function ResolvingTurnPanel({
       role="status"
       aria-live="polite"
       aria-atomic="true"
+      aria-label={resolvingAriaLabel}
     >
       <div style={ppStyles.resolvingLine}>
         <span style={ppStyles.resolvingTitle}>{t("play.resolve_title")}</span>
         {moveMeta ? <span style={ppStyles.resolvingReceiptMeta}>{moveMeta}</span> : null}
-        <strong style={ppStyles.resolvingMoveText} title={moveText || t("play.resolve_custom_move")}>
-          {moveText || t("play.resolve_custom_move")}
+        <strong style={ppStyles.resolvingMoveText} title={moveCopy}>
+          {moveCopy}
         </strong>
-      </div>
-      <div style={ppStyles.resolvingProgressLine}>
-        <span style={ppStyles.resolvingStatus}>{resolveStatus}</span>
-        <span style={ppStyles.resolvingProgressText}>{t("play.resolve_progress")}</span>
-        <span style={ppStyles.resolvingDots} aria-hidden>
-          {[0, 1, 2].map((i) => (
-            <motion.span
-              key={i}
-              style={ppStyles.resolvingDot}
-              animate={{ opacity: [0.28, 1, 0.28] }}
-              transition={{
-                duration: 1.1,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.14,
-              }}
-            />
-          ))}
+        <span style={ppStyles.resolvingInlineStatus}>
+          <span style={ppStyles.resolvingStatus}>{resolveStatus}</span>
+          <span style={ppStyles.resolvingProgressText}>{t("play.resolve_progress")}</span>
+          <span style={ppStyles.resolvingDots} aria-hidden>
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                style={ppStyles.resolvingDot}
+                animate={{ opacity: [0.24, 1, 0.24] }}
+                transition={{
+                  duration: 1.1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: i * 0.14,
+                }}
+              />
+            ))}
+          </span>
         </span>
       </div>
       {privateIntentCopy ? (
@@ -6446,7 +6451,7 @@ const ppStyles: Record<string, CSSProperties> = {
     background: "transparent",
     boxShadow: "none",
     display: "grid",
-    gap: 3,
+    gap: 2,
   },
   resolvingTitle: {
     flexShrink: 0,
@@ -6460,9 +6465,9 @@ const ppStyles: Record<string, CSSProperties> = {
   resolvingLine: {
     minWidth: 0,
     display: "flex",
-    alignItems: "baseline",
-    columnGap: 7,
-    rowGap: 3,
+    alignItems: "center",
+    columnGap: 8,
+    rowGap: 4,
     flexWrap: "wrap" as const,
   },
   resolvingReceiptMeta: {
@@ -6475,7 +6480,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   resolvingMoveText: {
     minWidth: 0,
-    flex: "1 1 220px",
+    flex: "1 1 180px",
     color: "rgba(255,245,230,0.80)",
     fontFamily: "var(--font-narrative)",
     fontSize: 13,
@@ -6485,6 +6490,14 @@ const ppStyles: Record<string, CSSProperties> = {
     WebkitBoxOrient: "vertical" as const,
     overflow: "hidden",
   },
+  resolvingInlineStatus: {
+    minWidth: 0,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    flex: "0 1 auto",
+    color: "rgba(246,221,176,0.64)",
+  },
   resolvingStatus: {
     flexShrink: 0,
     color: "rgba(232,218,205,0.50)",
@@ -6492,14 +6505,6 @@ const ppStyles: Record<string, CSSProperties> = {
     lineHeight: 1.25,
     fontWeight: 700,
     fontStyle: "italic" as const,
-  },
-  resolvingProgressLine: {
-    minWidth: 0,
-    display: "flex",
-    alignItems: "center",
-    columnGap: 8,
-    rowGap: 3,
-    flexWrap: "wrap" as const,
   },
   resolvingProgressText: {
     color: "rgba(246,221,176,0.66)",
@@ -6510,11 +6515,11 @@ const ppStyles: Record<string, CSSProperties> = {
   resolvingDots: {
     display: "inline-flex",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
   },
   resolvingDot: {
-    width: 4,
-    height: 4,
+    width: 3.5,
+    height: 3.5,
     borderRadius: "50%",
     background: "rgba(245,210,140,0.70)",
     display: "inline-block",
