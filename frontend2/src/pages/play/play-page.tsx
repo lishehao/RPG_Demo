@@ -2871,6 +2871,9 @@ function ActionArea({
   const freeActionToggleHint = freeInput.trim()
     ? t("play.action_resume_free_hint")
     : t("play.action_open_free_hint")
+  const freeActionToggleTitle = freeInput.trim()
+    ? t("play.action_resume_free_title")
+    : t("play.action_open_free_title")
   const resolvingMoveTag =
     pickedOptionParsed?.tag ??
     (submittedLeverageLabel ? t("play.leverage_option_tag") : submittedFree ? t("play.preview_approach_custom") : "")
@@ -3728,6 +3731,8 @@ function ActionArea({
                 setShowFreeInput(true)
               }}
               disabled={actionControlsDisabled}
+              aria-label={freeActionToggleTitle}
+              title={freeActionToggleTitle}
               type="button"
             >
               <span style={ppStyles.alternateActionLabel}>{freeActionToggleText}</span>
