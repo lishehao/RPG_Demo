@@ -3539,12 +3539,12 @@ function ActionArea({
                         ) : null}
                       </div>
                     </button>
-                    {isSelected && selectedOptionIndex !== null ? renderSelectedOptionConfirm() : null}
                   </Fragment>
                 )
               })
             )}
           </div>
+          {selectedOptionIndex !== null ? renderSelectedOptionConfirm() : null}
         </>
       ) : null}
 
@@ -6090,7 +6090,7 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(255,238,205,0.98)",
   },
   optionConfirmPanel: {
-    marginTop: -2,
+    marginTop: 1,
     marginBottom: 9,
     paddingTop: 0,
     paddingRight: 0,
