@@ -3272,7 +3272,7 @@ function ActionArea({
               ...inlineActionDisabledStyle,
             }}
           >
-            {t("play.diary_keep")}
+            {diaryDraft ? t("play.diary_keep") : t("play.diary_skip")}
           </button>
           {diaryDraft ? (
             <button
