@@ -168,6 +168,7 @@ export function PlayPage({
       sessionId: story.session.session_id,
       messageCount,
     }
+    if (!shouldRevealLatestBeat) return
 
     const prefersReducedMotion =
       typeof window !== "undefined" &&
@@ -180,9 +181,7 @@ export function PlayPage({
       if (canScrollColumn) {
         el.scrollTo({ top: el.scrollHeight, behavior })
       }
-      const latestBeat = shouldRevealLatestBeat
-        ? document.querySelector<HTMLElement>("[data-play-latest-narrator='true']")
-        : null
+      const latestBeat = document.querySelector<HTMLElement>("[data-play-latest-narrator='true']")
       const actionArea = document.querySelector<HTMLElement>("[data-play-action-area='true']")
       const scrollTarget = latestBeat ?? actionArea
       if (!scrollTarget) return
