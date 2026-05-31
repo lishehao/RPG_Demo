@@ -4164,6 +4164,8 @@ function AdvisorSidechat({
             onClick={onClose}
             type="button"
             aria-label={t("play.advisor_close")}
+            aria-keyshortcuts="Escape"
+            title={t("play.shortcut_escape_cancel")}
           >
             ✕
           </button>
@@ -4336,6 +4338,8 @@ function AdvisorSidechat({
                       onClick={() => handleAsk(false)}
                       disabled={busy}
                       type="button"
+                      aria-keyshortcuts="Meta+Enter Control+Enter"
+                      title={t("play.shortcut_mod_enter_submit")}
                     >
                       {t("play.advisor_send")}
                     </button>
