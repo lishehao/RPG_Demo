@@ -66,25 +66,29 @@ export const CASE_STUDY_POINTS = [
   },
 ] as const
 
-export const ASSET_GALLERY = [
+export const INTERACTION_LOOP = [
   {
-    src: "/webtoons/shells/office_power-02.jpg",
-    title: "Office power shell",
-    note: "Boardroom stakes and corporate betrayal.",
+    eyebrow: "Seed",
+    title: "A dense conflict starts the run",
+    body: "The reviewer does not browse a gallery first; they enter through a single high-pressure premise with public stakes and private evidence.",
+    artifact: "secret merger · awards livestream · ex with proof",
   },
   {
-    src: "/webtoons/shells/entertainment_scandal-02.jpg",
-    title: "Entertainment shell",
-    note: "Awards livestream, public collapse, reputation pressure.",
+    eyebrow: "Role",
+    title: "The player gets a position to defend",
+    body: "The generated role gives the player a public persona, private objective, trump cards, and items before the first turn.",
+    artifact: "identity · objective · leverage · assets",
   },
   {
-    src: "/webtoons/segments/reveal.jpg",
-    title: "Reveal segment",
-    note: "The moment private leverage becomes visible.",
+    eyebrow: "Turn",
+    title: "Choices create visible consequences",
+    body: "Each move updates the story, relationship pulse, inventory and reviewer inspector without turning the play surface into a dashboard.",
+    artifact: "option / free text · pulse · inventory · advisor",
   },
   {
-    src: "/webtoons/endings/v2/loner.jpg",
-    title: "Lone Wolf ending",
-    note: "A clean portfolio-friendly conclusion for the demo path.",
+    eyebrow: "Ending",
+    title: "The run becomes a replayable artifact",
+    body: "The ending compiler turns a live playthrough into a labeled result with highlights and alternate branches.",
+    artifact: "label · subtitle · highlights · branches",
   },
 ] as const

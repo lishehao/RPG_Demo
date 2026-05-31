@@ -2,8 +2,8 @@ import { useState } from "react"
 import { motion } from "motion/react"
 import { Header } from "../../shared/ui/header"
 import {
-  ASSET_GALLERY,
   CASE_STUDY_POINTS,
+  INTERACTION_LOOP,
   PIPELINE_STEPS,
   PORTFOLIO_METRICS,
   REVIEWER_DEMO_ACTIONS,
@@ -116,16 +116,27 @@ export function PortfolioPage({
           </div>
         </section>
 
-        <section className="portfolio-gallery" aria-label="Korean webtoon visual system">
-          {ASSET_GALLERY.map((asset) => (
-            <article className="portfolio-gallery__item" key={asset.src}>
-              <img src={asset.src} alt="" loading="lazy" />
-              <div>
-                <h3>{asset.title}</h3>
-                <p>{asset.note}</p>
-              </div>
-            </article>
-          ))}
+        <section className="portfolio-loop" aria-label="Playable demo loop">
+          <div className="portfolio-loop__visual">
+            <span className="portfolio-kicker">Playable loop</span>
+            <h2>One reviewed path, four product states.</h2>
+            <p>
+              The portfolio read is strongest when the evaluator can follow the
+              product loop, not just admire generated images.
+            </p>
+          </div>
+          <ol className="portfolio-loop__steps">
+            {INTERACTION_LOOP.map((item) => (
+              <li key={item.eyebrow}>
+                <span>{item.eyebrow}</span>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                  <em>{item.artifact}</em>
+                </div>
+              </li>
+            ))}
+          </ol>
         </section>
 
         <section className="portfolio-section portfolio-case-grid">

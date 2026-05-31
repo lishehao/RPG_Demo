@@ -621,36 +621,88 @@ kbd {
   padding-top: 0;
 }
 
-.portfolio-gallery {
+.portfolio-loop {
   margin-top: 72px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
+  grid-template-columns: minmax(0, 0.92fr) minmax(320px, 1.08fr);
+  gap: 38px;
+  align-items: stretch;
 }
-.portfolio-gallery__item {
+.portfolio-loop__visual {
+  min-height: 420px;
+  padding: 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   overflow: hidden;
-  background: transparent;
   border: none;
   border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(12,12,16,0.08), rgba(12,12,16,0.86)),
+    url("/webtoons/segments/reveal_hidden_usb.jpg");
+  background-size: cover;
+  background-position: center;
 }
-.portfolio-gallery__item img {
-  width: 100%;
-  height: 240px;
-  display: block;
-  object-fit: cover;
+.portfolio-loop__visual h2 {
+  max-width: 520px;
+  font-family: var(--font-narrative);
+  font-size: 38px;
+  line-height: 1.08;
+  font-weight: 400;
+  margin: 0 0 14px;
 }
-.portfolio-gallery__item div {
-  padding: 14px 0 18px;
-}
-.portfolio-gallery__item h3 {
-  margin: 0 0 6px;
-  font-size: 14px;
-}
-.portfolio-gallery__item p {
+.portfolio-loop__visual p {
+  max-width: 520px;
   margin: 0;
+  color: rgba(244,239,230,0.74);
+  font-size: 15px;
+  line-height: 1.65;
+}
+.portfolio-loop__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+}
+.portfolio-loop__steps li {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.075);
+}
+.portfolio-loop__steps li:first-child {
+  border-top: 1px solid rgba(255,255,255,0.075);
+}
+.portfolio-loop__steps span {
+  color: rgba(245,200,120,0.82);
+  font-size: 11px;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-top: 4px;
+}
+.portfolio-loop__steps h3 {
+  margin: 0 0 7px;
+  font-family: var(--font-narrative);
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 500;
+}
+.portfolio-loop__steps p {
+  margin: 0 0 8px;
   color: var(--text-muted);
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.portfolio-loop__steps em {
+  color: rgba(245,200,120,0.62);
+  font-style: normal;
+  font-size: 11.5px;
+  line-height: 1.4;
 }
 
 .portfolio-case-grid {
@@ -1166,7 +1218,7 @@ kbd {
     font-size: 15px;
   }
   .portfolio-proofbar,
-  .portfolio-gallery,
+  .portfolio-loop,
   .portfolio-case-grid,
   .reviewer-checklist {
     grid-template-columns: 1fr;
@@ -1178,6 +1230,14 @@ kbd {
   .portfolio-section--two,
   .portfolio-inspector {
     grid-template-columns: 1fr;
+  }
+  .portfolio-loop__visual {
+    min-height: 360px;
+    padding: 28px 22px;
+  }
+  .portfolio-loop__steps li {
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 14px;
   }
   .portfolio-section h2,
   .portfolio-final h2 {
