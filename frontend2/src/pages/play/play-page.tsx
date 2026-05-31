@@ -660,8 +660,29 @@ function buildAdvisorSuggestions({
 }): string[] {
   const language = story.template.language
   const cast = story.template.cast
-  const focalNpc = cast[0]?.display_name ?? (language === "zh" ? "对方" : "the other side")
   const openLeverage = leverageCards.find((card) => !card.used)
+  const fallbackName = language === "zh" ? "对方" : "the other side"
+  const castById = new Map(cast.map((member) => [member.character_id, member.display_name]))
+  const playerRole = story.session.player_role
+  const isLikelyPlayerCast = (member: NarrativeStoryHistoryResponse["template"]["cast"][number]): boolean => {
+    const relation = member.relation_to_protagonist.toLowerCase()
+    const roleText = `${playerRole?.label ?? ""} ${playerRole?.public_persona ?? ""}`.toLowerCase()
+    if (relation.includes("you are") || relation.includes("主角") || relation.includes("玩家")) return true
+    return Boolean(roleText && `${member.role} ${member.relation_to_protagonist}`.toLowerCase().includes(roleText))
+  }
+  const pulseTarget = (lastNarrator?.npc_pulse ?? [])
+    .map((pulse) => {
+      const member = cast.find((item) => item.character_id === pulse.npc_id)
+      return member && !isLikelyPlayerCast(member) ? castById.get(pulse.npc_id) : null
+    })
+    .find((name): name is string => Boolean(name))
+  const focalNpc =
+    pulseTarget ??
+    openLeverage?.target_name ??
+    cast.find((member) => !isLikelyPlayerCast(member))?.display_name ??
+    cast[1]?.display_name ??
+    cast[0]?.display_name ??
+    fallbackName
   const hasRiskyOption = Boolean(lastNarrator?.options.some((option) => /risk|风险/i.test(option.hint ?? "")))
   const suggestions: string[] = []
 
