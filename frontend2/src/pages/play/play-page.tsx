@@ -813,6 +813,28 @@ function RunContextPanel({
     total: turnBudget,
     stage,
   })
+  const runProgressPercent = Math.max(
+    0,
+    Math.min(100, (turnsCompleted / Math.max(turnBudget, 1)) * 100),
+  )
+  const renderRunProgress = () =>
+    !isComplete ? (
+      <span
+        style={ppStyles.runProgressTrack}
+        role="progressbar"
+        aria-label={runProgressLabel}
+        aria-valuemin={0}
+        aria-valuemax={turnBudget}
+        aria-valuenow={turnsCompleted}
+      >
+        <span
+          style={{
+            ...ppStyles.runProgressFill,
+            width: `${runProgressPercent}%`,
+          }}
+        />
+      </span>
+    ) : null
 
   if (compactRunContext) {
     return (
@@ -837,12 +859,7 @@ function RunContextPanel({
             </strong>
           </div>
         ) : null}
-        {!isComplete ? (
-          <span
-            style={ppStyles.runProgressA11y}
-            aria-label={runProgressLabel}
-          />
-        ) : null}
+        {renderRunProgress()}
       </motion.section>
     )
   }
@@ -870,12 +887,7 @@ function RunContextPanel({
           <strong style={ppStyles.runContextObjectiveText}>{role.hidden_objective}</strong>
         </div>
       ) : null}
-      {!isComplete ? (
-        <span
-          style={ppStyles.runProgressA11y}
-          aria-label={runProgressLabel}
-        />
-      ) : null}
+      {renderRunProgress()}
     </motion.section>
   )
 }
@@ -4830,7 +4842,10 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runProgressTrack: {
     position: "relative" as const,
+    display: "block",
     marginTop: 10,
+    width: "100%",
+    maxWidth: 680,
     height: 2,
     background: "rgba(255,255,255,0.12)",
     overflow: "hidden",
@@ -4840,14 +4855,6 @@ const ppStyles: Record<string, CSSProperties> = {
     inset: "0 auto 0 0",
     display: "block",
     background: "rgba(212,168,83,0.76)",
-  },
-  runProgressA11y: {
-    position: "absolute" as const,
-    width: 1,
-    height: 1,
-    overflow: "hidden",
-    clip: "rect(0 0 0 0)",
-    whiteSpace: "nowrap" as const,
   },
   runPrivateSummary: {
     marginTop: 9,
