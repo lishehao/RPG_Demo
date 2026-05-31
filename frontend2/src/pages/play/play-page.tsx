@@ -3481,6 +3481,7 @@ function ActionArea({
                 const isSelected = selectedOptionIndex === i
                 const isPicked = pickedIndex === i
                 const isUnpicked = pickedIndex !== null && pickedIndex !== i
+                const optionShortcutKey = i < 9 ? String(i + 1) : null
                 const isChoiceDimmed =
                   selectedOptionIndex !== null && !isSelected && pickedIndex === null
                 return (
@@ -3502,6 +3503,12 @@ function ActionArea({
                       disabled={actionControlsDisabled}
                       type="button"
                       aria-pressed={isSelected}
+                      aria-keyshortcuts={optionShortcutKey ?? undefined}
+                      title={
+                        optionShortcutKey
+                          ? t("play.option_shortcut_title", { key: optionShortcutKey })
+                          : undefined
+                      }
                     >
                       <div
                         style={{
@@ -3514,9 +3521,12 @@ function ActionArea({
                             edge so it reads as "shortcut: 1, then this
                             action." Hidden on the small handful of options
                             beyond 9 (we cap at the first 9 for sanity). */}
-                        {i < 9 ? (
-                          <kbd style={ppStyles.optionKbd} aria-label={`Press ${i + 1}`}>
-                            {i + 1}
+                        {optionShortcutKey ? (
+                          <kbd
+                            style={ppStyles.optionKbd}
+                            aria-label={t("play.option_shortcut_title", { key: optionShortcutKey })}
+                          >
+                            {optionShortcutKey}
                           </kbd>
                         ) : null}
                         {parsed.tag ? (
