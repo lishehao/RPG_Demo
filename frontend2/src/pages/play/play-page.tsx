@@ -3400,6 +3400,14 @@ function ActionArea({
                 <div style={ppStyles.commitSecondaryActions}>
                   <button
                     type="button"
+                    style={ppStyles.advisorInlineAction}
+                    onClick={onOpenAdvisor}
+                    disabled={actionControlsDisabled}
+                  >
+                    {t("play.ask_friend_inline")}
+                  </button>
+                  <button
+                    type="button"
                     style={ppStyles.commitTextButton}
                     onClick={() => {
                       setArmedCardId(null)
@@ -3408,14 +3416,6 @@ function ActionArea({
                     disabled={actionControlsDisabled}
                   >
                     {t("play.leverage_confirm_cancel")}
-                  </button>
-                  <button
-                    type="button"
-                    style={ppStyles.advisorInlineAction}
-                    onClick={onOpenAdvisor}
-                    disabled={actionControlsDisabled}
-                  >
-                    {t("play.ask_friend_inline")}
                   </button>
                 </div>
               </div>
