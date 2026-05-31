@@ -2415,12 +2415,14 @@ function ResolvingTurnPanel({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={transitions.snap}
+      role="status"
       aria-live="polite"
+      aria-atomic="true"
     >
       <div style={ppStyles.resolvingLine}>
         <span style={ppStyles.resolvingTitle}>{t("play.resolve_title")}</span>
         {moveMeta ? <span style={ppStyles.resolvingReceiptMeta}>{moveMeta}</span> : null}
-        <strong style={ppStyles.resolvingMoveText}>
+        <strong style={ppStyles.resolvingMoveText} title={moveText || t("play.resolve_custom_move")}>
           {moveText || t("play.resolve_custom_move")}
         </strong>
       </div>
@@ -2446,7 +2448,7 @@ function ResolvingTurnPanel({
       {privateIntentCopy ? (
         <span style={ppStyles.resolvingPrivateLine}>
           <span style={ppStyles.resolvingPrivateLabel}>{t("play.move_packet_private_label")}</span>
-          <span style={ppStyles.resolvingPrivateCopy}>{privateIntentCopy}</span>
+          <span style={ppStyles.resolvingPrivateCopy} title={privateIntentCopy}>{privateIntentCopy}</span>
         </span>
       ) : null}
     </motion.div>
