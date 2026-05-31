@@ -55,6 +55,7 @@ type LeverageCardView = {
 }
 
 type ActionCommitmentSummary = {
+  kind: "option" | "leverage" | "free"
   kicker: string
   title: string
   detail?: string
@@ -2948,6 +2949,7 @@ function ActionArea({
     const motive = diaryDraft || undefined
     if (armedCardId && armedCardTargetName) {
       return {
+        kind: "leverage",
         kicker: t("play.advisor_commitment_kind_leverage"),
         title: t("play.leverage_confirm_title", { target: armedCardTargetName }),
         detail: armedCardLeverage,
@@ -2956,6 +2958,7 @@ function ActionArea({
     }
     if (selectedOptionIndex !== null && selectedOptionBody && pickedIndex === null && !busy) {
       return {
+        kind: "option",
         kicker: t("play.advisor_commitment_kind_option"),
         title: selectedOptionBody,
         detail: selectedOptionHint || undefined,
@@ -2964,6 +2967,7 @@ function ActionArea({
     }
     if (freeComposerOpen && freeActionDraft) {
       return {
+        kind: "free",
         kicker: t("play.advisor_commitment_kind_free"),
         title: freeActionDraft,
         detail: freeActionTargetName
@@ -2974,6 +2978,7 @@ function ActionArea({
     }
     if (freeComposerOpen) {
       return {
+        kind: "free",
         kicker: t("play.advisor_commitment_kind_free"),
         title: t("play.advisor_commitment_free_empty_title"),
         detail: t("play.advisor_commitment_free_empty_detail"),
@@ -3916,6 +3921,23 @@ function AdvisorSidechat({
   const hasAdvisorDraft = draft.trim().length > 0
   const canUseOracle = !isComplete && turnsRemaining > 1
   const oracleBudgetAfter = Math.max(1, turnsRemaining - 1)
+  const visibleSuggestions = useMemo(() => {
+    const contextual =
+      commitmentSummary?.kind === "option"
+        ? [t("play.advisor_suggest_option_backfire"), t("play.advisor_suggest_option_improve")]
+        : commitmentSummary?.kind === "leverage"
+          ? [t("play.advisor_suggest_leverage_timing"), t("play.advisor_suggest_leverage_value")]
+          : commitmentSummary?.kind === "free"
+            ? [t("play.advisor_suggest_free_target"), t("play.advisor_suggest_free_wording")]
+            : []
+    const deduped = [...contextual]
+    for (const suggestion of suggestions) {
+      if (!deduped.includes(suggestion)) {
+        deduped.push(suggestion)
+      }
+    }
+    return deduped.slice(0, 4)
+  }, [commitmentSummary?.kind, suggestions, t])
   const advisorPanelVariants = compactAdvisor
     ? {
         initial: { opacity: 0, x: 0, y: 24 },
@@ -4112,7 +4134,7 @@ function AdvisorSidechat({
   }
 
   const renderSuggestionBlock = (variant: "empty" | "composer") =>
-    suggestions.length > 0 ? (
+    visibleSuggestions.length > 0 ? (
       <div
         style={{
           ...ppStyles.advisorSuggestionBlock,
@@ -4130,7 +4152,7 @@ function AdvisorSidechat({
             ...(variant === "empty" ? ppStyles.advisorSuggestionRowEmpty : null),
           }}
         >
-          {suggestions.map((suggestion) => (
+          {visibleSuggestions.map((suggestion) => (
             <button
               key={suggestion}
               type="button"
