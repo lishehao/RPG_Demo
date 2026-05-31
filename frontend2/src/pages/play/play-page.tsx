@@ -3192,6 +3192,7 @@ function ActionArea({
             style={{
               ...ppStyles.actionPrimaryLine,
               ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
+              ...ppStyles.inlineCommitPrimaryActions,
               ...(diarySubmitDisabled ? ppStyles.actionPrimaryLineDisabled : null),
             }}
             onClick={() => {
