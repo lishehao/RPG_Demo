@@ -3262,7 +3262,7 @@ function ActionArea({
               ...(compactActionChrome ? ppStyles.optionConfirmActionsCompact : null),
             }}
           >
-            <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.optionCommitPrimaryActions }}>
+            <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.inlineCommitPrimaryActions }}>
               <button
                 style={{
                   ...ppStyles.actionPrimaryLine,
@@ -3286,7 +3286,7 @@ function ActionArea({
             <div
               style={{
                 ...ppStyles.commitSecondaryActions,
-                ...ppStyles.optionCommitSecondaryActions,
+                ...ppStyles.inlineCommitSecondaryActions,
                 ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
               }}
             >
@@ -3515,7 +3515,7 @@ function ActionArea({
             ) : null}
             {isWritingLeverageDiary ? null : (
               <div style={ppStyles.leverageRevealActions}>
-                <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.leverageCommitPrimaryActions }}>
+                <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.inlineCommitPrimaryActions }}>
                   <button
                     style={{
                       ...ppStyles.actionPrimaryLine,
@@ -3535,7 +3535,7 @@ function ActionArea({
                 <div
                   style={{
                     ...ppStyles.commitSecondaryActions,
-                    ...ppStyles.leverageCommitSecondaryActions,
+                    ...ppStyles.inlineCommitSecondaryActions,
                     ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
                   }}
                 >
@@ -3736,7 +3736,7 @@ function ActionArea({
               >
                 <div ref={setFreeActionNode} style={ppStyles.freeInputActions}>
                   {freeActionDraft ? (
-                    <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.freeCommitPrimaryActions }}>
+                    <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.inlineCommitPrimaryActions }}>
                       <button
                         style={{
                           ...ppStyles.actionPrimaryLine,
@@ -3754,14 +3754,14 @@ function ActionArea({
                       {renderDiaryAttachPreview("free")}
                     </div>
                   ) : (
-                    <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.freeCommitPrimaryActions }}>
+                    <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.inlineCommitPrimaryActions }}>
                       <span style={ppStyles.freeEmptyHint}>{t("play.free_empty_hint")}</span>
                     </div>
                   )}
                   <div
                     style={{
                       ...ppStyles.commitSecondaryActions,
-                      ...ppStyles.freeCommitSecondaryActions,
+                      ...ppStyles.inlineCommitSecondaryActions,
                       ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
                     }}
                   >
@@ -6172,13 +6172,6 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 5,
     marginTop: 10,
   },
-  leverageCommitPrimaryActions: {
-    flex: "0 1 auto",
-  },
-  leverageCommitSecondaryActions: {
-    marginLeft: 0,
-    justifyContent: "flex-start",
-  },
   actionPrimaryLine: {
     width: "fit-content",
     minHeight: 34,
@@ -6334,7 +6327,7 @@ const ppStyles: Record<string, CSSProperties> = {
     columnGap: 13,
     rowGap: 4,
   },
-  optionCommitPrimaryActions: {
+  inlineCommitPrimaryActions: {
     flex: "0 1 auto",
   },
   commitSecondaryActions: {
@@ -6347,7 +6340,7 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 4,
     marginLeft: "auto",
   },
-  optionCommitSecondaryActions: {
+  inlineCommitSecondaryActions: {
     marginLeft: 0,
     justifyContent: "flex-start",
   },
@@ -6675,13 +6668,6 @@ const ppStyles: Record<string, CSSProperties> = {
     columnGap: 14,
     rowGap: 5,
     flexWrap: "wrap" as const,
-  },
-  freeCommitPrimaryActions: {
-    flex: "0 1 auto",
-  },
-  freeCommitSecondaryActions: {
-    marginLeft: 0,
-    justifyContent: "flex-start",
   },
   alternateActionRow: {
     display: "flex",
