@@ -2927,6 +2927,13 @@ function ActionArea({
   const freeActionToggleTitle = freeInput.trim()
     ? t("play.action_resume_free_title")
     : t("play.action_open_free_title")
+  const freeTextareaCanClose = options.length > 0
+  const freeTextareaKeyShortcuts = freeTextareaCanClose
+    ? "Meta+Enter Control+Enter Escape"
+    : "Meta+Enter Control+Enter"
+  const freeTextareaTitle = freeTextareaCanClose
+    ? `${t("play.shortcut_mod_enter_submit")} · ${t("play.shortcut_escape_cancel")}`
+    : t("play.shortcut_mod_enter_submit")
   const resolvingMoveTag =
     pickedOptionParsed?.tag ??
     (submittedLeverageLabel ? t("play.leverage_option_tag") : submittedFree ? t("play.preview_approach_custom") : "")
@@ -3681,8 +3688,8 @@ function ActionArea({
               value={freeInput}
               placeholder={t("play.action_free_placeholder")}
               aria-label={t("play.free_action_title")}
-              aria-keyshortcuts="Meta+Enter Control+Enter Escape"
-              title={`${t("play.shortcut_mod_enter_submit")} · ${t("play.shortcut_escape_cancel")}`}
+              aria-keyshortcuts={freeTextareaKeyShortcuts}
+              title={freeTextareaTitle}
               onChange={(e) => setFreeInput(e.target.value)}
               onKeyDown={(e) => {
                 // Cmd/Ctrl + Enter submits — the standard "send" pattern
