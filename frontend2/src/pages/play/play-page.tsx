@@ -2835,6 +2835,14 @@ function ActionArea({
     : null
   const freeActionTargetName = freeActionTarget?.name ?? ""
   const freeComposerOpen = showFreeInput || options.length === 0
+  const selectedOptionGuideTitle = selectedOptionParsed?.tag
+    ? t("play.turn_guide_selected_named_title", { tag: selectedOptionParsed.tag })
+    : t("play.turn_guide_selected_title")
+  const selectedOptionGuideDetail = selectedOptionParsed?.body
+    ? t("play.turn_guide_selected_named_detail", {
+        action: truncateRecoveryText(selectedOptionParsed.body, 72),
+      })
+    : t("play.turn_guide_selected_detail")
 
   useEffect(() => {
     if (busy || !freeComposerOpen || !freeActionReady) return
@@ -2878,8 +2886,8 @@ function ActionArea({
         }
       : selectedOptionParsed
         ? {
-            title: t("play.turn_guide_selected_title"),
-            detail: t("play.turn_guide_selected_detail"),
+            title: selectedOptionGuideTitle,
+            detail: selectedOptionGuideDetail,
             tone: ppStyles.turnGuideSelected,
           }
         : showFreeInput && freeActionReady
@@ -6319,7 +6327,8 @@ const ppStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "none",
     alignItems: "baseline",
     flexWrap: "wrap" as const,
-    gap: "5px 11px",
+    columnGap: 11,
+    rowGap: 5,
   },
   commitPrimaryActions: {
     minWidth: 0,
