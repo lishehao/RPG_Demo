@@ -467,7 +467,7 @@ export function PlayPage({
                   {failedActionRecovery?.chips.length ? (
                     <span style={ppStyles.errorInlineChips}>
                       {failedActionRecovery.chips.map((chip) => (
-                        <span key={chip} style={ppStyles.errorInlineChip}>{chip}</span>
+                        <span key={chip} style={ppStyles.errorInlineChip} title={chip}>{chip}</span>
                       ))}
                     </span>
                   ) : null}
@@ -476,6 +476,8 @@ export function PlayPage({
                   <button
                     type="button"
                     style={ppStyles.errorInlineRetry}
+                    aria-label={t("play.recovery_retry_same_title")}
+                    title={t("play.recovery_retry_same_title")}
                     onClick={() => {
                       const a = lastFailedActionRef.current
                       if (!a) return
