@@ -2582,6 +2582,9 @@ function ActionArea({
         ? t("play.leverage_summary_prepare")
         : t("play.leverage_expand")
   const spentLeverageTargets = spentLeverageCards.map((card) => card.target_name).join(" · ")
+  const leverageEmptyMetaText = spentLeverageTargets
+    ? t("play.leverage_empty_meta", { targets: spentLeverageTargets })
+    : t("play.leverage_summary_meta_empty")
   const commitmentSurfaceOpen =
     selectedOptionIndex !== null ||
     armedCardId !== null ||
@@ -3033,7 +3036,7 @@ function ActionArea({
         disabled={actionControlsDisabled}
       >
         <span style={ppStyles.diaryAttachTag}>{t("play.diary_attached_label")}</span>
-        <span style={ppStyles.diaryAttachText}>{diaryPreview}</span>
+        <span style={ppStyles.diaryAttachText} title={diaryDraft}>{diaryPreview}</span>
         <span style={ppStyles.diaryAttachEdit}>
           {t("play.diary_lane_edit")}
         </span>
@@ -3152,7 +3155,7 @@ function ActionArea({
       >
         <div style={ppStyles.optionConfirmSummary}>
           <span style={ppStyles.optionConfirmSummaryLabel}>{t("play.option_selected_label")}</span>
-          <span style={ppStyles.optionConfirmSummaryText}>{selectedOptionParsed.body}</span>
+          <span style={ppStyles.optionConfirmSummaryText} title={selectedOptionParsed.body}>{selectedOptionParsed.body}</span>
         </div>
         {isWritingOptionDiary ? null : (
           <div
@@ -3256,10 +3259,8 @@ function ActionArea({
               <span style={ppStyles.leverageSummaryMain}>
                 <span style={ppStyles.leverageSummaryEyebrow}>{t("play.leverage_resource_label")}</span>
                 <strong style={ppStyles.leverageSummaryText}>{t("play.leverage_empty_title")}</strong>
-                <span style={ppStyles.leverageSummaryMeta}>
-                  {spentLeverageTargets
-                    ? t("play.leverage_empty_meta", { targets: spentLeverageTargets })
-                    : t("play.leverage_summary_meta_empty")}
+                <span style={ppStyles.leverageSummaryMeta} title={leverageEmptyMetaText}>
+                  {leverageEmptyMetaText}
                 </span>
               </span>
               <span style={ppStyles.leverageEmptyBadge}>{t("play.leverage_spent")}</span>
@@ -3281,7 +3282,7 @@ function ActionArea({
               <span style={ppStyles.leverageSummaryMain}>
                 <span style={ppStyles.leverageSummaryEyebrow}>{t("play.leverage_resource_label")}</span>
                 <strong style={ppStyles.leverageSummaryText}>{leverageSummaryText}</strong>
-                <span style={ppStyles.leverageSummaryMeta}>{leverageSummaryMetaText}</span>
+                <span style={ppStyles.leverageSummaryMeta} title={leverageSummaryMetaText}>{leverageSummaryMetaText}</span>
               </span>
               <span
                 style={{
@@ -3546,6 +3547,7 @@ function ActionArea({
                               ...ppStyles.optionHintInline,
                               ...(compactActionChrome ? ppStyles.optionHintInlineCompact : null),
                             }}
+                            title={opt.hint}
                           >
                             {compactActionChrome ? null : <span aria-hidden>·</span>}
                             {opt.hint}
