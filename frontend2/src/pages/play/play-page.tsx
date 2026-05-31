@@ -3059,6 +3059,7 @@ function ActionArea({
           style={ppStyles.diaryTextarea}
           value={diary}
           placeholder={t("play.diary_placeholder")}
+          aria-label={t("play.diary_inner_label")}
           onChange={(e) => setDiary(e.target.value)}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -3580,6 +3581,7 @@ function ActionArea({
               style={ppStyles.freeTextarea}
               value={freeInput}
               placeholder={t("play.action_free_placeholder")}
+              aria-label={t("play.free_action_title")}
               onChange={(e) => setFreeInput(e.target.value)}
               onKeyDown={(e) => {
                 // Cmd/Ctrl + Enter submits — the standard "send" pattern
@@ -4129,6 +4131,7 @@ function AdvisorSidechat({
               style={ppStyles.advisorTextarea}
               value={draft}
               placeholder={t("play.advisor_textarea_placeholder")}
+              aria-label={t("play.advisor_textarea_placeholder")}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
