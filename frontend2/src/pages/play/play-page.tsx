@@ -2750,7 +2750,7 @@ function ActionArea({
   const leverageSummaryMetaText = armedCard
     ? t("play.leverage_summary_meta_target", { target: armedCard.target_name })
     : hasSinglePlayableLeverage && primaryLeverageCard
-      ? primaryLeverageCard.leverage
+      ? `${t("play.leverage_summary_meta_target", { target: primaryLeverageCard.target_name })} · ${primaryLeverageCard.leverage}`
       : `${t("play.leverage_summary_count", { count: playableLeverageCards.length })} · ${t("play.leverage_rail_hint")}`
   const leverageSummaryToggleText = leverageExpanded
     ? t("play.leverage_collapse")
@@ -6162,7 +6162,8 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 4,
     padding: "8px 0 10px 11px",
     background: "transparent",
-    border: "none",
+    borderTop: "none",
+    borderRight: "none",
     borderLeftWidth: 2,
     borderLeftStyle: "solid",
     borderLeftColor: "rgba(212,168,83,0.18)",
