@@ -4311,6 +4311,7 @@ function AdvisorSidechat({
         style={{
           ...ppStyles.advisorPanel,
           ...(compactAdvisor ? ppStyles.advisorPanelCompact : null),
+          ...(compactAdvisor && (messages.length > 0 || busy) ? ppStyles.advisorPanelCompactReading : null),
         }}
         variants={advisorPanelVariants}
         initial="initial"
@@ -7458,6 +7459,9 @@ const ppStyles: Record<string, CSSProperties> = {
     borderTop: "none",
     background: "linear-gradient(180deg, rgba(10,9,9,0.995) 0%, rgba(8,7,7,0.995) 100%)",
     boxShadow: "0 -32px 72px rgba(0,0,0,0.48)",
+  },
+  advisorPanelCompactReading: {
+    maxHeight: "min(68dvh, calc(100dvh - 64px))",
   },
   advisorHeader: {
     display: "flex",
