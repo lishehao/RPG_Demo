@@ -2799,6 +2799,10 @@ function ActionArea({
     const handler = (e: KeyboardEvent) => {
       const tgt = e.target as HTMLElement | null
       if (!tgt) return
+      // When the advisor drawer or any other modal is open, its buttons
+      // and composer own the keyboard. The play-surface shortcuts must
+      // not leak through and arm/submit an action behind the dialog.
+      if (document.querySelector("[role='dialog'][aria-modal='true']")) return
       const inEditable =
         tgt.tagName === "TEXTAREA" ||
         tgt.tagName === "INPUT" ||
@@ -4264,6 +4268,11 @@ function AdvisorSidechat({
         animate="animate"
         exit="exit"
         transition={compactAdvisor ? transitions.snap : slideInRightTransition}
+        onAnimationComplete={() => {
+          if (!busy && !pendingOracleQuestion) {
+            focusAdvisorTextarea()
+          }
+        }}
         role="dialog"
         aria-modal="true"
         aria-label={t("play.advisor_title")}
