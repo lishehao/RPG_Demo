@@ -2972,6 +2972,14 @@ function ActionArea({
         motive,
       }
     }
+    if (freeComposerOpen) {
+      return {
+        kicker: t("play.advisor_commitment_kind_free"),
+        title: t("play.advisor_commitment_free_empty_title"),
+        detail: t("play.advisor_commitment_free_empty_detail"),
+        motive,
+      }
+    }
     return null
   }, [
     armedCardId,
