@@ -1124,9 +1124,19 @@ function RuntimeInspector({
           ))}
         </div>
       </details>
-      <details style={ppStyles.agentTraceDetails}>
-        <summary style={ppStyles.runtimeInspectorDetailsSummary}>
-          {t("play.agent_trace_summary")}
+      <details style={ppStyles.agentTraceDetails} open={agentPlan ? true : undefined}>
+        <summary
+          style={{
+            ...ppStyles.runtimeInspectorDetailsSummary,
+            ...(agentPlan ? ppStyles.agentTraceDetailsSummaryReady : null),
+          }}
+        >
+          <span>{t("play.agent_trace_summary")}</span>
+          {agentPlan ? (
+            <span style={ppStyles.agentTraceSummaryCue}>
+              {t("play.agent_trace_available_cue")}
+            </span>
+          ) : null}
         </summary>
         {agentPlan ? (
           <div style={ppStyles.agentTraceGrid}>
@@ -5477,6 +5487,18 @@ const ppStyles: Record<string, CSSProperties> = {
   agentTraceDetails: {
     marginTop: 6,
     borderTop: "1px solid rgba(255,255,255,0.08)",
+  },
+  agentTraceDetailsSummaryReady: {
+    display: "inline-flex",
+    alignItems: "baseline",
+    gap: 8,
+    flexWrap: "wrap" as const,
+  },
+  agentTraceSummaryCue: {
+    color: "rgba(245,200,120,0.88)",
+    fontSize: 11,
+    lineHeight: 1.35,
+    fontWeight: 720,
   },
   agentTraceGrid: {
     display: "flex",
