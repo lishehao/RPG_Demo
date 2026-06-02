@@ -4,12 +4,16 @@ from dataclasses import dataclass
 from typing import Any
 
 from rpg_backend.narrative.contracts import (
+    AgentPlan,
     AdvisorMessage,
     BranchHypothetical,
     CastMember,
+    DirectorDecision,
     FailureCondition,
     Highlight,
     InventoryDelta,
+    MemorySnapshot,
+    NPCIntent,
     NPCPulse,
     PlayedLeverageCard,
     PlayerGoal,
@@ -633,6 +637,7 @@ class OpeningResult:
 @dataclass(frozen=True)
 class TurnResult:
     narrator_message: StoryMessage
+    agent_plan: AgentPlan
 
 
 @dataclass(frozen=True)
@@ -874,6 +879,150 @@ def _extract_passage_for_opening(payload: dict[str, Any]) -> str:
 _PASSAGE_KEY_ALIASES = ("passage", "narration", "next_passage", "continuation", "text", "content")
 
 
+def _pressure_for_agent_plan(
+    *,
+    stage_phase: str,
+    agenda: list[dict[str, str]],
+    twist: dict[str, str] | None,
+) -> str:
+    if twist is not None:
+        return "turning_point"
+    if stage_phase in ("climax", "pre_finale", "pre_finale_open"):
+        return "high"
+    if agenda:
+        return "medium"
+    return "low"
+
+
+def _reason_for_agent_plan(
+    *,
+    stage_phase: str,
+    agenda: list[dict[str, str]],
+    twist: dict[str, str] | None,
+) -> str:
+    if twist is not None:
+        return f"{stage_phase} stage requires a visible inflection: {twist.get('kind', 'twist')}"
+    if agenda:
+        names = ", ".join(item.get("display_name") or item.get("npc_id") or "NPC" for item in agenda)
+        return f"{stage_phase} stage schedules active pressure from {names}."
+    if stage_phase == "hook":
+        return "Hook stage keeps NPCs mostly reactive while the player enters the situation."
+    return f"{stage_phase} stage proceeds without an active NPC agenda this turn."
+
+
+def _intent_from_agenda_entry(
+    entry: dict[str, str],
+    *,
+    cast_by_id: dict[str, CastMember],
+) -> NPCIntent:
+    npc_id = entry.get("npc_id", "")
+    npc = cast_by_id.get(npc_id)
+    leverage = npc.leverage_over_player if npc and entry.get("intent") == "leverage" else None
+    return NPCIntent(
+        npc_id=npc_id,
+        display_name=entry.get("display_name") or (npc.display_name if npc else npc_id),
+        intent=entry.get("intent") or "act",
+        intent_brief=entry.get("intent_brief") or "",
+        leverage=leverage,
+    )
+
+
+def _played_leverage_snapshot(
+    played_leverage: PlayedLeverageCard | None,
+) -> dict[str, str]:
+    if played_leverage is None:
+        return {}
+    return {
+        "card_id": played_leverage.card_id,
+        "npc_id": played_leverage.npc_id,
+        "action": played_leverage.action,
+        "leverage": played_leverage.leverage[:200],
+    }
+
+
+def _recent_consequences_from_plan(plan: AgentPlan) -> dict[str, Any]:
+    summary: dict[str, Any] = {}
+    if plan.memory.last_player_action:
+        summary["last_player_action"] = plan.memory.last_player_action
+    if plan.memory.npc_pulse_trend:
+        summary["npc_pulse_trend"] = plan.memory.npc_pulse_trend
+    if plan.memory.unused_leverage:
+        summary["unused_leverage"] = plan.memory.unused_leverage
+    return summary
+
+
+def build_agent_plan(
+    *,
+    cast: list[CastMember],
+    history: list[StoryMessage],
+    turn_index: int,
+    turn_budget: int,
+    difficulty: str,
+    player_role: PlayerRole | None = None,
+    current_inventory: list[str] | None = None,
+    played_leverage: PlayedLeverageCard | None = None,
+    narrator_ord: int,
+) -> AgentPlan:
+    """Build the compact deterministic trace that drives this turn.
+
+    This mirrors the payload-shaping decisions used by `advance_turn`:
+    stage selection, active NPC agenda, twist directive, and recent
+    consequence summary. It intentionally avoids full prompt/history dumps.
+    """
+    stage_phase = _stage_for(turn_index, turn_budget)
+    agenda = _pick_npc_agenda(
+        stage_phase=stage_phase,
+        turn_index=turn_index,
+        cast=cast,
+        history=history,
+        difficulty=difficulty,
+    )
+    twist = _pick_twist_directive(
+        stage_phase=stage_phase,
+        turn_index=turn_index,
+        cast=cast,
+        player_role=player_role,
+        difficulty=difficulty,
+    )
+    consequences = _summarize_recent_consequences(history, cast)
+    cast_by_id = {member.character_id: member for member in cast}
+    npc_intents = [
+        _intent_from_agenda_entry(entry, cast_by_id=cast_by_id)
+        for entry in agenda
+        if entry.get("npc_id")
+    ]
+    inventory = list(current_inventory or [])
+    director = DirectorDecision(
+        stage_phase=stage_phase,
+        difficulty=difficulty,
+        active_npc_ids=[intent.npc_id for intent in npc_intents],
+        twist_kind=twist.get("kind") if twist else None,
+        expected_pressure=_pressure_for_agent_plan(
+            stage_phase=stage_phase, agenda=agenda, twist=twist,
+        ),
+        reason=_reason_for_agent_plan(
+            stage_phase=stage_phase, agenda=agenda, twist=twist,
+        ),
+    )
+    memory = MemorySnapshot(
+        last_player_action=consequences.get("last_player_action") or {},
+        npc_pulse_trend=consequences.get("npc_pulse_trend") or {},
+        unused_leverage=consequences.get("unused_leverage") or [],
+        current_inventory_count=len(inventory),
+        current_inventory_preview=inventory[:4],
+        played_leverage=_played_leverage_snapshot(played_leverage),
+    )
+    return AgentPlan(
+        turn_index=turn_index,
+        turn_budget=turn_budget,
+        narrator_ord=narrator_ord,
+        director=director,
+        npc_intents=npc_intents,
+        memory=memory,
+        twist_directive=twist,
+    )
+
+
 def advance_turn(
     *,
     gateway: NarrativeLLMGateway,
@@ -894,7 +1043,18 @@ def advance_turn(
     language: TemplateLanguage = "en",
 ) -> TurnResult:
     """Advance one turn."""
-    stage_phase = _stage_for(turn_index, turn_budget)
+    agent_plan = build_agent_plan(
+        cast=cast,
+        history=history,
+        turn_index=turn_index,
+        turn_budget=turn_budget,
+        difficulty=difficulty,
+        player_role=player_role,
+        current_inventory=current_inventory,
+        played_leverage=played_leverage,
+        narrator_ord=next_ord,
+    )
+    stage_phase = agent_plan.director.stage_phase
     rendered_history = _render_history(history)
     user_payload: dict[str, Any] = {
         "seed": seed,
@@ -922,13 +1082,15 @@ def advance_turn(
 
     # Active scheduling: tell the LLM which NPC should actively push their
     # agenda this turn. Empty in story mode and during the hook phase.
-    agenda = _pick_npc_agenda(
-        stage_phase=stage_phase,
-        turn_index=turn_index,
-        cast=cast,
-        history=history,
-        difficulty=difficulty,
-    )
+    agenda = [
+        {
+            "npc_id": intent.npc_id,
+            "display_name": intent.display_name,
+            "intent": intent.intent,
+            "intent_brief": intent.intent_brief,
+        }
+        for intent in agent_plan.npc_intents
+    ]
     if agenda:
         user_payload["npc_agenda_this_turn"] = agenda
 
@@ -936,19 +1098,13 @@ def advance_turn(
     # (betrayal / inter-leverage exposed / persona crack / new arrival /
     # external event) — not just "more pressure". None outside reversal
     # or in story mode.
-    twist = _pick_twist_directive(
-        stage_phase=stage_phase,
-        turn_index=turn_index,
-        cast=cast,
-        player_role=player_role,
-        difficulty=difficulty,
-    )
+    twist = agent_plan.twist_directive
     if twist is not None:
         user_payload["twist_directive"] = twist
 
     # Action echo: structured snapshot of the player's last move + NPC
     # pulse trends + unused leverage. Empty on the opening turn.
-    consequences = _summarize_recent_consequences(history, cast)
+    consequences = _recent_consequences_from_plan(agent_plan)
     if consequences:
         user_payload["recent_consequences"] = consequences
 
@@ -992,7 +1148,8 @@ def advance_turn(
             chosen_option_index=None,
             npc_pulse=npc_pulse,
             inventory_delta=inventory_delta,
-        )
+        ),
+        agent_plan=agent_plan,
     )
 
 

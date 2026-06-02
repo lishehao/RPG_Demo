@@ -13,7 +13,9 @@ from rpg_backend.auth import (
     AuthUserResponse,
     AuthenticatedSession,
     CurrentActorResponse,
+    RequestUser,
 )
+from rpg_backend.auth.permissions import can_view_agent_trace
 from rpg_backend.author.contracts import (
     AuthorJobCreateRequest,
     AuthorJobResultResponse,
@@ -179,6 +181,25 @@ def _clear_session_cookie(response: Response) -> None:
     )
 
 
+def _auth_session_response(session: AuthenticatedSession | None) -> AuthSessionResponse:
+    response = auth_service.build_session_response(session)
+    if session is None:
+        return response
+    return response.model_copy(
+        update={"can_view_agent_trace": can_view_agent_trace(session.user)}
+    )
+
+
+def require_agent_trace_access(user: RequestUser) -> None:
+    if can_view_agent_trace(user):
+        return
+    raise NarrativeServiceError(
+        code="agent_trace_forbidden",
+        message="Agent trace is available only to authorized reviewer/admin sessions.",
+        status_code=403,
+    )
+
+
 def get_optional_request_session(request: Request) -> AuthenticatedSession | None:
     return auth_service.resolve_session(request)
 
@@ -286,11 +307,12 @@ def get_auth_session(session: AuthenticatedSession | None = Depends(get_optional
     # so the public/unlisted browse + play paths don't require sign-in. Authoring routes
     # still gate with require_session.
     if session is not None:
-        return auth_service.build_session_response(session)
+        return _auth_session_response(session)
     user = _anonymous_request_user()
     return AuthSessionResponse(
         authenticated=True,
         user=AuthUserResponse(user_id=user.user_id, display_name=user.display_name),
+        can_view_agent_trace=False,
     )
 
 
@@ -298,7 +320,7 @@ def get_auth_session(session: AuthenticatedSession | None = Depends(get_optional
 def login_auth_user(payload: AuthLoginRequest, response: Response) -> AuthSessionResponse:
     session = auth_service.login(payload)
     _apply_session_cookie(response, session)
-    return auth_service.build_session_response(session)
+    return _auth_session_response(session)
 
 
 @app.post("/auth/logout", status_code=204)
@@ -315,6 +337,7 @@ def get_current_actor(user=Depends(get_required_request_user)) -> CurrentActorRe
         user_id=user.user_id,
         display_name=user.display_name,
         is_default=user.user_id == (settings.default_actor_id or "anonymous"),
+        can_view_agent_trace=can_view_agent_trace(user),
     )
 
 
@@ -632,9 +655,16 @@ def start_narrative_session(
 @app.get("/narrative/sessions/{session_id}/story", response_model=StoryHistoryResponse)
 def get_narrative_story(
     session_id: str,
+    agent_trace: bool = Query(default=False),
     user=Depends(get_required_request_user),
 ) -> StoryHistoryResponse:
-    return narrative_service.get_story_history(session_id, player_user_id=user.user_id)
+    if agent_trace:
+        require_agent_trace_access(user)
+    return narrative_service.get_story_history(
+        session_id,
+        player_user_id=user.user_id,
+        include_agent_trace=agent_trace,
+    )
 
 
 @app.post(
@@ -645,8 +675,11 @@ def advance_narrative_turn(
     session_id: str,
     payload: AdvanceTurnRequest,
     request: Request,
+    agent_trace: bool = Query(default=False),
     user=Depends(get_required_request_user),
 ) -> AdvanceTurnResponse:
+    if agent_trace:
+        require_agent_trace_access(user)
     narrative_service.validate_advance_request(
         session_id,
         payload,
@@ -657,7 +690,12 @@ def advance_narrative_turn(
         player_user_id=user.user_id,
     )
     _enforce_llm_quota(request, user_id=user.user_id, operation_cost=operation_cost)
-    return narrative_service.advance(session_id, payload, player_user_id=user.user_id)
+    return narrative_service.advance(
+        session_id,
+        payload,
+        player_user_id=user.user_id,
+        include_agent_trace=agent_trace,
+    )
 
 
 @app.post(

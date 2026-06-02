@@ -1,6 +1,8 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react"
 import type {
+  NarrativeAgentEvent,
+  NarrativeAgentPlan,
   NarrativeAdvisorMessage,
   NarrativeEnding,
   NarrativeNPCPulse,
@@ -10,6 +12,7 @@ import type {
   NarrativeStoryMessage,
 } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
+import { useAuth } from "../../app/auth-context"
 import { LoadingShim } from "../../shared/ui/loading-shim"
 import { Truncated } from "../../shared/ui/truncated"
 import { useBookmarks } from "../../shared/lib/bookmarks"
@@ -91,9 +94,11 @@ export function PlayPage({
   onBackHome: () => void
 }) {
   const api = useApi()
+  const auth = useAuth()
   const t = useT()
   const [story, setStory] = useState<NarrativeStoryHistoryResponse | null>(null)
   const [ending, setEnding] = useState<NarrativeEnding | null>(null)
+  const [latestAgentPlan, setLatestAgentPlan] = useState<NarrativeAgentPlan | null>(null)
   // Per-session bookmarks — beats the user marked as "I want to
   // remember this." Merged into ending highlights at finalize so
   // the user's call has authority alongside the LLM's picks.
@@ -121,16 +126,18 @@ export function PlayPage({
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
+  const canRequestAgentTrace = reviewerMode && auth.canViewAgentTrace
 
   // Initial load: story + (if already completed) the ending.
   useEffect(() => {
     let cancelled = false
     setError(null)
     api
-      .getNarrativeStory(sessionId)
+      .getNarrativeStory(sessionId, canRequestAgentTrace ? { agentTrace: true } : undefined)
       .then(async (response) => {
         if (cancelled) return
         setStory(response)
+        setLatestAgentPlan(canRequestAgentTrace ? latestAgentPlanFromEvents(response.agent_events) : null)
         // If session already finished, fetch the ending so we can render
         // the closing screen on direct-link visits.
         if (response.session.ending_label) {
@@ -149,7 +156,7 @@ export function PlayPage({
     return () => {
       cancelled = true
     }
-  }, [api, sessionId])
+  }, [api, canRequestAgentTrace, sessionId])
 
   // Auto-scroll to the current decision point whenever content arrives.
   // The page uses native document scroll for a less pane-like reading
@@ -217,7 +224,12 @@ export function PlayPage({
       setActionCommitmentSummary(null)
       lastFailedActionRef.current = null
       try {
-        const response = await api.advanceNarrativeTurn(sessionId, action)
+        const response = await api.advanceNarrativeTurn(
+          sessionId,
+          action,
+          canRequestAgentTrace ? { agentTrace: true } : undefined,
+        )
+        setLatestAgentPlan(canRequestAgentTrace ? response.agent_plan ?? null : null)
         setStory((prev) => {
           if (!prev) return prev
           // Mark the prior narrator's chosen_option_index in the local copy
@@ -257,7 +269,7 @@ export function PlayPage({
         setBusy(false)
       }
     },
-    [api, busy, sessionId],
+    [api, busy, canRequestAgentTrace, sessionId],
   )
 
   const openAdvisor = useCallback(() => {
@@ -388,6 +400,8 @@ export function PlayPage({
               lastNarrator={lastNarrator}
               turnsRemaining={turnsRemaining}
               liveInventory={liveInventory}
+              agentPlan={latestAgentPlan}
+              agentTraceAccessGranted={canRequestAgentTrace}
             />
           ) : null}
 
@@ -969,12 +983,16 @@ function RuntimeInspector({
   lastNarrator,
   turnsRemaining,
   liveInventory,
+  agentPlan,
+  agentTraceAccessGranted,
 }: {
   story: NarrativeStoryHistoryResponse
   ending: NarrativeEnding | null
   lastNarrator: NarrativeStoryMessage | null
   turnsRemaining: number
   liveInventory: string[]
+  agentPlan: NarrativeAgentPlan | null
+  agentTraceAccessGranted: boolean
 }) {
   const { lang } = useLanguage()
   const t = useT()
@@ -1007,6 +1025,34 @@ function RuntimeInspector({
     { label: t("play.runtime_player_role"), value: story.session.player_role?.label ?? t("play.runtime_auto_selected") },
     { label: t("play.runtime_turns_left"), value: String(turnsRemaining) },
   ]
+  const agentTraceRows = agentPlan
+    ? [
+        {
+          label: t("play.agent_trace_step"),
+          value: `ord ${agentPlan.narrator_ord} · ${agentPlan.turn_index}/${agentPlan.turn_budget}`,
+        },
+        {
+          label: t("play.agent_trace_source"),
+          value: `${agentPlan.schema_version} · ${agentPlan.source}`,
+        },
+        {
+          label: t("play.agent_trace_director"),
+          value: `${agentPlan.director.stage_phase} · ${agentPlan.director.expected_pressure}`,
+        },
+        {
+          label: t("play.agent_trace_intent"),
+          value: agentIntentSummary(agentPlan, t("play.agent_trace_no_intent")),
+        },
+        {
+          label: t("play.agent_trace_twist"),
+          value: agentTwistSummary(agentPlan, t("play.agent_trace_none")),
+        },
+        {
+          label: t("play.agent_trace_memory"),
+          value: agentMemorySummary(agentPlan),
+        },
+      ]
+    : []
 
   return (
     <motion.section
@@ -1041,8 +1087,71 @@ function RuntimeInspector({
           ))}
         </div>
       </details>
+      <details style={ppStyles.agentTraceDetails}>
+        <summary style={ppStyles.runtimeInspectorDetailsSummary}>
+          {t("play.agent_trace_summary")}
+        </summary>
+        {agentPlan ? (
+          <div style={ppStyles.agentTraceGrid}>
+            {agentTraceRows.map((row) => (
+              <div style={ppStyles.agentTraceRow} key={row.label}>
+                <span style={ppStyles.runtimeInspectorRowLabel}>{row.label}</span>
+                <strong style={ppStyles.agentTraceValue} title={row.value}>{row.value}</strong>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={ppStyles.agentTraceEmpty}>
+            {agentTraceAccessGranted
+              ? t("play.agent_trace_empty")
+              : t("play.agent_trace_unauthorized")}
+          </div>
+        )}
+      </details>
     </motion.section>
   )
+}
+
+function latestAgentPlanFromEvents(events?: NarrativeAgentEvent[]): NarrativeAgentPlan | null {
+  if (!events || events.length === 0) return null
+  const planEvents = events.filter((event) => event.event_type === "agent_plan")
+  if (planEvents.length === 0) return null
+  const latest = [...planEvents].sort((a, b) => {
+    if (a.ord !== b.ord) return a.ord - b.ord
+    return a.event_index - b.event_index
+  }).at(-1)
+  const payload = latest?.payload
+  return payload?.schema_version === "agent_plan.v1" ? payload : null
+}
+
+function agentIntentSummary(plan: NarrativeAgentPlan, emptyLabel: string): string {
+  if (plan.npc_intents.length === 0) {
+    if (plan.director.active_npc_ids.length === 0) return emptyLabel
+    return plan.director.active_npc_ids.join(", ")
+  }
+  return plan.npc_intents
+    .map((intent) => {
+      const who = intent.display_name || intent.npc_id
+      const what = intent.intent_brief || intent.intent
+      return `${who}: ${what}`
+    })
+    .join(" · ")
+}
+
+function agentTwistSummary(plan: NarrativeAgentPlan, emptyLabel: string): string {
+  if (plan.director.twist_kind) return plan.director.twist_kind
+  if (plan.twist_directive?.["kind"]) return plan.twist_directive["kind"]
+  return emptyLabel
+}
+
+function agentMemorySummary(plan: NarrativeAgentPlan): string {
+  const memory = plan.memory
+  const pulseCount = Object.keys(memory.npc_pulse_trend).length
+  const unusedLeverageCount = memory.unused_leverage.length
+  const played = memory.played_leverage["card_id"]
+    ? `${memory.played_leverage["npc_id"] ?? "npc"}:${memory.played_leverage["action"] ?? "played"}`
+    : "none"
+  return `pulse ${pulseCount} · unused leverage ${unusedLeverageCount} · inventory ${memory.current_inventory_count} · played ${played}`
 }
 
 function stageDisplayName(stage: string): string {
@@ -5262,6 +5371,42 @@ const ppStyles: Record<string, CSSProperties> = {
     display: "inline-flex",
     alignItems: "baseline",
     gap: 6,
+  },
+  agentTraceDetails: {
+    marginTop: 6,
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+  },
+  agentTraceGrid: {
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 14,
+    rowGap: 7,
+    flexWrap: "wrap" as const,
+    paddingTop: 8,
+  },
+  agentTraceRow: {
+    minWidth: 0,
+    maxWidth: "100%",
+    display: "inline-flex",
+    alignItems: "baseline",
+    gap: 6,
+  },
+  agentTraceValue: {
+    minWidth: 0,
+    maxWidth: 420,
+    color: "rgba(255,245,230,0.82)",
+    fontSize: 11.5,
+    lineHeight: 1.3,
+    fontWeight: 720,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  },
+  agentTraceEmpty: {
+    paddingTop: 8,
+    color: "rgba(232,218,205,0.52)",
+    fontSize: 12,
+    lineHeight: 1.45,
   },
 
   roleInvAcquired: {

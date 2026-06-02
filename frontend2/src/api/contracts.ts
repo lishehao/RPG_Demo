@@ -13,6 +13,7 @@ export type AuthUserResponse = {
 export type AuthSessionResponse = {
   authenticated: boolean
   user: AuthUserResponse | null
+  can_view_agent_trace?: boolean
 }
 
 export type AuthLoginRequest = {
@@ -23,6 +24,7 @@ export type CurrentActorResponse = {
   user_id: string
   display_name: string
   is_default: boolean
+  can_view_agent_trace?: boolean
 }
 
 export type StoryShellId =
@@ -605,6 +607,91 @@ export type NarrativeInventoryDelta = {
   reason: string
 }
 
+export type NarrativeAgentPlanSource = "deterministic_v1"
+export type NarrativeAgentEventType = "agent_plan" | "step_judge" | "contract_judge"
+export type NarrativeJudgeSource = "deterministic_v1"
+export type NarrativeJudgeStatus = "pass" | "warn" | "fail"
+export type NarrativeJudgeSeverity = "info" | "warn" | "error"
+
+export type NarrativeDirectorDecision = {
+  stage_phase: string
+  difficulty: string
+  active_npc_ids: string[]
+  twist_kind?: string | null
+  expected_pressure: string
+  reason: string
+}
+
+export type NarrativeNPCIntent = {
+  npc_id: string
+  display_name: string
+  intent: string
+  intent_brief: string
+  leverage?: string | null
+  source: "agenda"
+}
+
+export type NarrativeMemorySnapshot = {
+  last_player_action: Record<string, unknown>
+  npc_pulse_trend: Record<string, string[]>
+  unused_leverage: Record<string, string>[]
+  current_inventory_count: number
+  current_inventory_preview: string[]
+  played_leverage: Record<string, string>
+}
+
+export type NarrativeAgentPlan = {
+  schema_version: "agent_plan.v1"
+  source: NarrativeAgentPlanSource
+  turn_index: number
+  turn_budget: number
+  narrator_ord: number
+  director: NarrativeDirectorDecision
+  npc_intents: NarrativeNPCIntent[]
+  memory: NarrativeMemorySnapshot
+  twist_directive?: Record<string, string> | null
+}
+
+export type NarrativeJudgeViolation = {
+  code: string
+  severity: NarrativeJudgeSeverity
+  rationale: string
+  evidence: string[]
+}
+
+export type NarrativeStepJudgeResult = {
+  schema_version: "step_judge.v1"
+  source: NarrativeJudgeSource
+  turn_index: number
+  narrator_ord: number
+  status: NarrativeJudgeStatus
+  violations: NarrativeJudgeViolation[]
+  summary: string
+}
+
+export type NarrativeContractJudgeResult = {
+  schema_version: "contract_judge.v1"
+  source: NarrativeJudgeSource
+  turn_index: number
+  narrator_ord: number
+  status: NarrativeJudgeStatus
+  violations: NarrativeJudgeViolation[]
+  summary: string
+}
+
+export type NarrativeAgentEventPayload =
+  | NarrativeAgentPlan
+  | NarrativeStepJudgeResult
+  | NarrativeContractJudgeResult
+
+export type NarrativeAgentEvent = {
+  event_index: number
+  ord: number
+  event_type: NarrativeAgentEventType
+  payload: NarrativeAgentEventPayload
+  created_at: string
+}
+
 export type NarrativeStoryMessage = {
   ord: number
   role: NarrativeStoryRole
@@ -770,6 +857,7 @@ export type NarrativeStoryHistoryResponse = {
   template: NarrativeTemplateSummary
   session: NarrativeSessionSummary
   messages: NarrativeStoryMessage[]
+  agent_events?: NarrativeAgentEvent[]
 }
 
 export type NarrativeAdvanceTurnRequest = {
@@ -782,6 +870,7 @@ export type NarrativeAdvanceTurnRequest = {
 export type NarrativeAdvanceTurnResponse = {
   player_message: NarrativeStoryMessage
   narrator_message: NarrativeStoryMessage
+  agent_plan?: NarrativeAgentPlan | null
   ending: NarrativeEnding | null
   is_complete: boolean
 }

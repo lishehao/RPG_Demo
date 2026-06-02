@@ -7,20 +7,26 @@ from pathlib import Path
 from typing import Any
 
 from rpg_backend.narrative.contracts import (
+    AgentEventPayload,
+    AgentEventType,
+    AgentPlan,
     AdvisorMessage,
     BranchHypothetical,
     CastMember,
+    ContractJudgeResult,
     Difficulty,
     EndingTier,
     FailureCondition,
     Highlight,
     InventoryDelta,
+    NarrativeAgentEvent,
     NarrativeSession,
     NarrativeTemplate,
     NPCPulse,
     PlayedLeverageCard,
     PlayerGoal,
     PlayerRole,
+    StepJudgeResult,
     StoryMessage,
     StoryOption,
     TemplateLanguage,
@@ -162,6 +168,20 @@ class NarrativeRepository:
             """
         )
         connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS narrative_agent_events (
+                session_id TEXT NOT NULL,
+                event_index INTEGER NOT NULL,
+                ord INTEGER NOT NULL,
+                event_type TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (session_id, event_index),
+                FOREIGN KEY (session_id) REFERENCES narrative_sessions(session_id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_narrative_templates_owner "
             "ON narrative_templates(owner_user_id, created_at DESC)"
         )
@@ -176,6 +196,14 @@ class NarrativeRepository:
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_narrative_sessions_template "
             "ON narrative_sessions(template_id)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_narrative_agent_events_ord "
+            "ON narrative_agent_events(session_id, ord)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_narrative_agent_events_type "
+            "ON narrative_agent_events(session_id, event_type)"
         )
         connection.commit()
 
@@ -642,10 +670,98 @@ class NarrativeRepository:
             ).fetchone()
         return int(row["max_ord"]) + 1
 
+    # ------------------------------------------------------------------
+    # Agent trace events (per session)
+    # ------------------------------------------------------------------
+
+    def append_agent_event(
+        self,
+        session_id: str,
+        *,
+        ord_value: int,
+        event_type: AgentEventType,
+        payload: AgentEventPayload,
+    ) -> NarrativeAgentEvent:
+        created_at = _utc_now()
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT COALESCE(MAX(event_index), -1) AS max_idx
+                FROM narrative_agent_events
+                WHERE session_id = ?
+                """,
+                (session_id,),
+            ).fetchone()
+            event_index = int(row["max_idx"]) + 1
+            conn.execute(
+                """
+                INSERT INTO narrative_agent_events
+                (session_id, event_index, ord, event_type, payload_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    event_index,
+                    ord_value,
+                    event_type,
+                    json.dumps(payload.model_dump(mode="json"), ensure_ascii=False),
+                    created_at,
+                ),
+            )
+            conn.commit()
+        return NarrativeAgentEvent(
+            event_index=event_index,
+            ord=ord_value,
+            event_type=event_type,
+            payload=payload,
+            created_at=created_at,
+        )
+
+    def list_agent_events(self, session_id: str) -> list[NarrativeAgentEvent]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT event_index, ord, event_type, payload_json, created_at
+                FROM narrative_agent_events
+                WHERE session_id = ?
+                ORDER BY event_index ASC
+                """,
+                (session_id,),
+            ).fetchall()
+        events: list[NarrativeAgentEvent] = []
+        for row in rows:
+            event = _row_to_agent_event(row)
+            if event is not None:
+                events.append(event)
+        return events
+
 
 # --------------------------------------------------------------------------
 # Row → model conversions
 # --------------------------------------------------------------------------
+
+
+def _row_to_agent_event(row: sqlite3.Row) -> NarrativeAgentEvent | None:
+    try:
+        event_type = row["event_type"]
+        payload_raw = json.loads(row["payload_json"])
+        if event_type == "agent_plan":
+            payload = AgentPlan.model_validate(payload_raw)
+        elif event_type == "step_judge":
+            payload = StepJudgeResult.model_validate(payload_raw)
+        elif event_type == "contract_judge":
+            payload = ContractJudgeResult.model_validate(payload_raw)
+        else:
+            return None
+        return NarrativeAgentEvent(
+            event_index=int(row["event_index"]),
+            ord=int(row["ord"]),
+            event_type=event_type,
+            payload=payload,
+            created_at=row["created_at"],
+        )
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _row_to_template(row: sqlite3.Row) -> NarrativeTemplate:

@@ -21,6 +21,7 @@ class AuthSessionResponse(BaseModel):
 
     authenticated: bool
     user: AuthUserResponse | None = None
+    can_view_agent_trace: bool = False
 
 
 class CurrentActorResponse(BaseModel):
@@ -29,3 +30,4 @@ class CurrentActorResponse(BaseModel):
     user_id: str = Field(min_length=1, max_length=80)
     display_name: str = Field(min_length=1, max_length=120)
     is_default: bool = False
+    can_view_agent_trace: bool = False

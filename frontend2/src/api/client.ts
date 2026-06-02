@@ -38,6 +38,10 @@ import type {
   UpdateStoryVisibilityRequest,
 } from "./contracts"
 
+export type NarrativeAgentTraceOptions = {
+  agentTrace?: boolean
+}
+
 export type FrontendApiClient = {
   getAuthSession(): Promise<AuthSessionResponse>
   loginAuth(request: AuthLoginRequest): Promise<AuthSessionResponse>
@@ -72,10 +76,14 @@ export type FrontendApiClient = {
     templateId: string,
     request?: import("./contracts").NarrativeStartSessionRequest,
   ): Promise<NarrativeStartSessionResponse>
-  getNarrativeStory(sessionId: string): Promise<NarrativeStoryHistoryResponse>
+  getNarrativeStory(
+    sessionId: string,
+    options?: NarrativeAgentTraceOptions,
+  ): Promise<NarrativeStoryHistoryResponse>
   advanceNarrativeTurn(
     sessionId: string,
     request: NarrativeAdvanceTurnRequest,
+    options?: NarrativeAgentTraceOptions,
   ): Promise<NarrativeAdvanceTurnResponse>
   askNarrativeAdvisor(
     sessionId: string,
