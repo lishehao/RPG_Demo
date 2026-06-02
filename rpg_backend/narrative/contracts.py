@@ -160,6 +160,120 @@ class InventoryDelta(BaseModel):
     reason: str = Field(default="", max_length=120)
 
 
+AgentPlanSource = Literal["deterministic_v1"]
+AgentEventType = Literal["agent_plan", "step_judge", "contract_judge"]
+JudgeSource = Literal["deterministic_v1"]
+JudgeStatus = Literal["pass", "warn", "fail"]
+JudgeSeverity = Literal["info", "warn", "error"]
+
+
+class DirectorDecision(BaseModel):
+    """Compact pre-turn orchestration decision used for reviewer audit."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    stage_phase: str = Field(min_length=1, max_length=40)
+    difficulty: str = Field(min_length=1, max_length=40)
+    active_npc_ids: list[str] = Field(default_factory=list, max_length=4)
+    twist_kind: str | None = Field(default=None, max_length=80)
+    expected_pressure: str = Field(min_length=1, max_length=80)
+    reason: str = Field(min_length=1, max_length=240)
+
+
+class NPCIntent(BaseModel):
+    """One active NPC move selected by the deterministic turn scheduler."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    npc_id: str = Field(min_length=1, max_length=64)
+    display_name: str = Field(min_length=1, max_length=80)
+    intent: str = Field(min_length=1, max_length=40)
+    intent_brief: str = Field(default="", max_length=200)
+    leverage: str | None = Field(default=None, max_length=200)
+    source: Literal["agenda"] = "agenda"
+
+
+class MemorySnapshot(BaseModel):
+    """Small audit snapshot derived from persisted history, not full history."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    last_player_action: dict[str, object] = Field(default_factory=dict)
+    npc_pulse_trend: dict[str, list[str]] = Field(default_factory=dict)
+    unused_leverage: list[dict[str, str]] = Field(default_factory=list, max_length=8)
+    current_inventory_count: int = Field(default=0, ge=0)
+    current_inventory_preview: list[str] = Field(default_factory=list, max_length=4)
+    played_leverage: dict[str, str] = Field(default_factory=dict)
+
+
+class AgentPlan(BaseModel):
+    """Versioned per-turn trace of the workflow decision before narration."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["agent_plan.v1"] = "agent_plan.v1"
+    source: AgentPlanSource = "deterministic_v1"
+    turn_index: int = Field(ge=0)
+    turn_budget: int = Field(ge=1)
+    narrator_ord: int = Field(ge=0)
+    director: DirectorDecision
+    npc_intents: list[NPCIntent] = Field(default_factory=list, max_length=4)
+    memory: MemorySnapshot
+    twist_directive: dict[str, str] | None = None
+
+
+class JudgeViolation(BaseModel):
+    """Compact deterministic audit finding for a single narrator turn."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1, max_length=80)
+    severity: JudgeSeverity
+    rationale: str = Field(min_length=1, max_length=240)
+    evidence: list[str] = Field(default_factory=list, max_length=8)
+
+
+class StepJudgeResult(BaseModel):
+    """Does the narrator turn honor the pre-turn AgentPlan intent?"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["step_judge.v1"] = "step_judge.v1"
+    source: JudgeSource = "deterministic_v1"
+    turn_index: int = Field(ge=0)
+    narrator_ord: int = Field(ge=0)
+    status: JudgeStatus
+    violations: list[JudgeViolation] = Field(default_factory=list, max_length=12)
+    summary: str = Field(min_length=1, max_length=240)
+
+
+class ContractJudgeResult(BaseModel):
+    """Runtime contract audit for schema, refs, hidden info, and state deltas."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["contract_judge.v1"] = "contract_judge.v1"
+    source: JudgeSource = "deterministic_v1"
+    turn_index: int = Field(ge=0)
+    narrator_ord: int = Field(ge=0)
+    status: JudgeStatus
+    violations: list[JudgeViolation] = Field(default_factory=list, max_length=12)
+    summary: str = Field(min_length=1, max_length=240)
+
+
+AgentEventPayload = AgentPlan | StepJudgeResult | ContractJudgeResult
+
+
+class NarrativeAgentEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_index: int = Field(ge=0)
+    ord: int = Field(ge=0)
+    event_type: AgentEventType
+    payload: AgentEventPayload
+    created_at: str
+
+
 class StoryMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -516,6 +630,7 @@ class StoryHistoryResponse(BaseModel):
     template: NarrativeTemplateSummary
     session: NarrativeSessionSummary
     messages: list[StoryMessage]
+    agent_events: list[NarrativeAgentEvent] = Field(default_factory=list)
 
 
 class AdvanceTurnRequest(BaseModel):
@@ -536,6 +651,8 @@ class AdvanceTurnResponse(BaseModel):
 
     player_message: StoryMessage
     narrator_message: StoryMessage
+    agent_plan: AgentPlan | None = None
+    agent_events: list[NarrativeAgentEvent] = Field(default_factory=list)
     # Surfaced when this turn was the last of the budget — the engine has
     # already generated and persisted the ending. Frontend uses this to
     # render the ending screen without a follow-up GET.

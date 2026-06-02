@@ -49,6 +49,7 @@ from rpg_backend.narrative.gateway import (
     NarrativeLLMGateway,
     get_narrative_gateway,
 )
+from rpg_backend.narrative.judges import judge_contract, judge_step
 from rpg_backend.narrative.repository import NarrativeNotFoundError, NarrativeRepository
 
 
@@ -144,6 +145,16 @@ class NarrativeService:
                 code=exc.code, message=exc.message, status_code=exc.status_code
             ) from exc
         except ValueError as exc:
+            message = str(exc)
+            if "cast too small after sanitization" in message:
+                raise NarrativeServiceError(
+                    code="opening_prompt_shape_mismatch",
+                    message=(
+                        "This premise needs a clearer playable shape: try 3+ people, "
+                        "one public conflict, one secret or contested object, and time pressure."
+                    ),
+                    status_code=422,
+                ) from exc
             raise NarrativeServiceError(
                 code="opening_invalid",
                 message=f"LLM returned an unusable opening: {exc}",
@@ -284,16 +295,24 @@ class NarrativeService:
         return SessionListResponse(items=items)
 
     def get_story_history(
-        self, session_id: str, *, player_user_id: str
+        self,
+        session_id: str,
+        *,
+        player_user_id: str,
+        include_agent_trace: bool = False,
     ) -> StoryHistoryResponse:
         session = self._load_session_for_player(session_id, player_user_id)
         template = self._repo.get_template(session.template_id)
         messages = self._repo.list_story_messages(session_id)
+        agent_events = (
+            self._repo.list_agent_events(session_id) if include_agent_trace else []
+        )
         # turn_count derived from message stream (narrator/player pairs)
         return StoryHistoryResponse(
             template=_summarize_template(template, viewer_user_id=player_user_id),
             session=_summarize_session(session, template),
             messages=messages,
+            agent_events=agent_events,
         )
 
     # ------------------------------------------------------------------
@@ -306,6 +325,7 @@ class NarrativeService:
         request: AdvanceTurnRequest,
         *,
         player_user_id: str,
+        include_agent_trace: bool = False,
     ) -> AdvanceTurnResponse:
         session = self._load_session_for_player(session_id, player_user_id)
         if session.ending_label is not None:
@@ -408,6 +428,56 @@ class NarrativeService:
                 session_id, last_narrator.ord, chosen_index
             )
         self._repo.append_story_message(session_id, turn.narrator_message)
+        turn_agent_events = []
+
+        def _append_agent_event(event_type: str, payload: object) -> None:
+            try:
+                turn_agent_events.append(
+                    self._repo.append_agent_event(
+                        session_id,
+                        ord_value=turn.narrator_message.ord,
+                        event_type=event_type,
+                        payload=payload,
+                    )
+                )
+            except Exception as exc:
+                print(
+                    "[narrative.service] append_agent_event failed "
+                    f"session={session_id} ord={turn.narrator_message.ord} "
+                    f"event_type={event_type}: {exc}",
+                    flush=True,
+                )
+
+        _append_agent_event("agent_plan", turn.agent_plan)
+        try:
+            step_judge = judge_step(
+                agent_plan=turn.agent_plan,
+                player_message=player_message,
+                narrator_message=turn.narrator_message,
+                cast=template.cast,
+            )
+            _append_agent_event("step_judge", step_judge)
+        except Exception as exc:
+            print(
+                "[narrative.service] step_judge failed "
+                f"session={session_id} ord={turn.narrator_message.ord}: {exc}",
+                flush=True,
+            )
+        try:
+            contract_judge = judge_contract(
+                agent_plan=turn.agent_plan,
+                player_message=player_message,
+                narrator_message=turn.narrator_message,
+                cast=template.cast,
+                player_role=active_role,
+            )
+            _append_agent_event("contract_judge", contract_judge)
+        except Exception as exc:
+            print(
+                "[narrative.service] contract_judge failed "
+                f"session={session_id} ord={turn.narrator_message.ord}: {exc}",
+                flush=True,
+            )
         self._repo.touch_session(session_id, increment_turns=1)
 
         ending_payload: NarrativeEnding | None = None
@@ -452,6 +522,8 @@ class NarrativeService:
         return AdvanceTurnResponse(
             player_message=player_message,
             narrator_message=turn.narrator_message,
+            agent_plan=turn.agent_plan if include_agent_trace else None,
+            agent_events=turn_agent_events if include_agent_trace else [],
             ending=ending_payload,
             is_complete=ending_payload is not None,
         )

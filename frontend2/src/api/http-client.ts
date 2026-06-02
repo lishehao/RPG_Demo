@@ -38,7 +38,7 @@ import {
   type PublishedStoryListResponse,
   type UpdateStoryVisibilityRequest,
 } from "./contracts"
-import type { FrontendApiClient } from "./client"
+import type { FrontendApiClient, NarrativeAgentTraceOptions } from "./client"
 import { BACKEND_ROUTE_MAP } from "./route-map"
 
 type RouteParams = Record<string, string | number>
@@ -362,15 +362,25 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       })
     },
 
-    getNarrativeStory(sessionId: string) {
+    getNarrativeStory(sessionId: string, options?: NarrativeAgentTraceOptions) {
       return requestJson<NarrativeStoryHistoryResponse>("getNarrativeStory", {
         params: { session_id: sessionId },
+        query: {
+          agent_trace: options?.agentTrace ? "true" : undefined,
+        },
       })
     },
 
-    advanceNarrativeTurn(sessionId: string, request: NarrativeAdvanceTurnRequest) {
+    advanceNarrativeTurn(
+      sessionId: string,
+      request: NarrativeAdvanceTurnRequest,
+      options?: NarrativeAgentTraceOptions,
+    ) {
       return requestJson<NarrativeAdvanceTurnResponse>("advanceNarrativeTurn", {
         params: { session_id: sessionId },
+        query: {
+          agent_trace: options?.agentTrace ? "true" : undefined,
+        },
         body: request,
       })
     },
