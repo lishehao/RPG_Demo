@@ -745,6 +745,7 @@ def generate_opening(
     seed: str,
     language: TemplateLanguage = "en",
     story_brief: StoryBrief | None = None,
+    brief_consistency_feedback: str | None = None,
 ) -> OpeningResult:
     """Generate world opening. Retries on JSON / shape failure or sparse
     inter-NPC leverage network (LLM is consistently conservative on
@@ -766,6 +767,7 @@ def generate_opening(
                 retry_feedback=feedback,
                 language=language,
                 story_brief=story_brief,
+                brief_consistency_feedback=brief_consistency_feedback,
             )
             # Density check — count inter-NPC leverages across cast.
             edges = sum(len(c.leverages_over_other_npcs) for c in result.cast)
@@ -833,6 +835,7 @@ def _generate_opening_once(
     retry_feedback: str | None,
     language: TemplateLanguage = "en",
     story_brief: StoryBrief | None = None,
+    brief_consistency_feedback: str | None = None,
 ) -> OpeningResult:
     user_payload: dict[str, Any] = {
         "seed": seed,
@@ -855,6 +858,8 @@ def _generate_opening_once(
             "life-or-death danger, or blackmail unless those stakes are "
             "explicitly preserved in the reviewed brief."
         )
+    if brief_consistency_feedback:
+        user_payload["story_brief_consistency_feedback"] = brief_consistency_feedback
     if retry_feedback:
         user_payload["retry_feedback"] = retry_feedback
     response = gateway.invoke_json(

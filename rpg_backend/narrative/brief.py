@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from rpg_backend.narrative.contracts import (
     CastPlan,
@@ -8,6 +9,10 @@ from rpg_backend.narrative.contracts import (
     ConstraintDisposition,
     StoryBrief,
     StoryBriefAdvisorResponse,
+    StoryBriefConsistencyCheck,
+    StoryBriefConsistencyViolation,
+    StoryBriefPlanItem,
+    StoryBriefRevisionAction,
     TemplateLanguage,
     TensionProfile,
 )
@@ -147,7 +152,7 @@ _LIST_MARKER_RE = re.compile(
 )
 _ENTITY_TRAILING_RE = re.compile(
     r"\b(?:argue|argues|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
-    r"before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
+    r"handle|handles|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
     re.I,
 )
 _NON_ENTITY_EXACT = {
@@ -170,6 +175,9 @@ _NON_ENTITY_EXACT = {
     "board vote",
     "talent show",
     "mars",
+    "minutes",
+    "no violence",
+    "no betrayal",
 }
 _NON_ENTITY_WORDS = {
     "tone",
@@ -199,11 +207,23 @@ _EVENT_CONSTRAINT_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\bmidnight\b", "midnight deadline"),
     (r"\beclipse\b", "eclipse"),
     (r"\bbake sale\b", "bake sale"),
-    (r"\bno blackmail\b", "no blackmail"),
     (r"\bcursed index\b", "cursed index"),
     (r"\boxygen supply\b", "oxygen supply"),
     (r"\bpublic reveal\b", "public reveal"),
     (r"\bmissing cupcake\b", "missing cupcake"),
+)
+_NEGATED_CONSTRAINT_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\bno blackmail\b", "no blackmail"),
+    (r"\bno betrayal\b", "no betrayal"),
+    (r"\bno violence\b", "no violence"),
+)
+_WORLD_SETTING_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\bmars colony\b", "Mars colony"),
+    (r"\bmars\b", "Mars setting"),
+    (r"\bfantasy library\b", "fantasy library"),
+    (r"\bpreschool bake sale\b", "preschool bake sale"),
+    (r"\blibrary\b", "library setting"),
+    (r"\bcolony\b", "colony setting"),
 )
 _HIGH_STAKES_PATTERNS = (
     "oxygen supply",
@@ -215,6 +235,12 @@ _HIGH_STAKES_PATTERNS = (
     "revenge",
     "fatal",
 )
+_CJK_RE = re.compile(r"[\u3400-\u9fff]")
+_FORBIDDEN_TERMS_BY_CONSTRAINT: dict[str, tuple[str, ...]] = {
+    "no blackmail": ("blackmail", "leverage threat", "extort", "extortion"),
+    "no betrayal": ("betray", "betrayal", "backstab", "double-cross", "double cross"),
+    "no violence": ("violence", "violent", "murder", "kill", "blood", "gun", "knife", "assault"),
+}
 
 
 def build_story_brief(
@@ -238,6 +264,10 @@ def build_story_brief(
     warnings: list[str] = []
     revision_suggestions: list[str] = []
     preserved = _preserved_constraints(clean_seed, profile)
+    constraints = _constraint_items(clean_seed)
+    time_event_anchors = _time_event_anchor_items(clean_seed)
+    tone_constraints = _tone_constraint_items(clean_seed, profile)
+    world_setting_pressure = _world_setting_items(clean_seed)
     compressed: list[str] = []
     dropped: list[str] = []
     softened: list[str] = []
@@ -281,6 +311,7 @@ def build_story_brief(
         fit_status = "needs_revision"
 
     dispositions = _constraint_dispositions(preserved, compressed, dropped, softened)
+    revision_actions = _revision_actions(warnings, profile)
     fit_rationale = _fit_rationale(fit_status, profile)
     brief = StoryBrief(
         original_seed=clean_seed,
@@ -290,6 +321,10 @@ def build_story_brief(
         story_kernel=kernel,
         intervention_card_label=intervention,
         cast_plan=cast_plan,
+        constraints=constraints,
+        time_event_anchors=time_event_anchors,
+        tone_constraints=tone_constraints,
+        world_setting_pressure=world_setting_pressure,
         preserved_constraints=preserved,
         compressed_constraints=compressed,
         dropped_constraints=dropped,
@@ -297,6 +332,10 @@ def build_story_brief(
         constraint_dispositions=dispositions,
         warnings=warnings,
         revision_suggestions=revision_suggestions,
+        revision_actions=revision_actions,
+        adaptation_note=(
+            "Beta planner draft: this card shows how Tiny Stories will adapt the premise before generation."
+        ),
         runtime_fit_status=fit_status,
         runtime_fit_rationale=fit_rationale,
     )
@@ -307,6 +346,92 @@ def build_story_brief(
         else "Review the brief, then generate the story from this plan."
     )
     return StoryBriefAdvisorResponse(brief=brief, can_generate=can_generate, next_step=next_step)
+
+
+def check_story_brief_opening_consistency(
+    *,
+    brief: StoryBrief,
+    opening: Any,
+    language: TemplateLanguage,
+) -> StoryBriefConsistencyCheck:
+    """Conservatively compare a confirmed brief against generated opening output."""
+    searchable = _opening_search_text(opening)
+    lowered = searchable.lower()
+    violations: list[StoryBriefConsistencyViolation] = []
+
+    if language == "en" and _CJK_RE.search(searchable):
+        violations.append(
+            StoryBriefConsistencyViolation(
+                code="english_cjk_artifact",
+                severity="fail",
+                rationale="English opening contains visible CJK characters.",
+                evidence=_cjk_evidence(searchable),
+            )
+        )
+
+    for item in [*brief.constraints, *brief.tone_constraints]:
+        constraint_key = item.label.lower()
+        for forbidden_key, forbidden_terms in _FORBIDDEN_TERMS_BY_CONSTRAINT.items():
+            if forbidden_key not in constraint_key:
+                continue
+            found = [term for term in forbidden_terms if term in lowered]
+            if found:
+                violations.append(
+                    StoryBriefConsistencyViolation(
+                        code=f"forbidden_{forbidden_key.replace(' ', '_')}_contradiction",
+                        severity="fail",
+                        rationale=f"Opening contradicts preserved constraint `{item.label}`.",
+                        evidence=found[:4],
+                    )
+                )
+
+    if brief.tension_profile in {"comedy", "cozy_mystery"} and not _brief_preserves_high_stakes(brief):
+        found_high_stakes = [term for term in _HIGH_STAKES_PATTERNS if term in lowered]
+        if found_high_stakes:
+            violations.append(
+                StoryBriefConsistencyViolation(
+                    code="lower_stakes_profile_escalated",
+                    severity="warn",
+                    rationale="Opening appears to escalate a comedy/cozy brief into high-stakes danger.",
+                    evidence=found_high_stakes[:4],
+                )
+            )
+
+    missing_primary = _missing_primary_entities(brief, lowered)
+    if missing_primary:
+        violations.append(
+            StoryBriefConsistencyViolation(
+                code="brief_primary_entity_absent",
+                severity="warn",
+                rationale="Some planned active entities are not visible in the generated opening text/cast.",
+                evidence=missing_primary[:5],
+            )
+        )
+
+    missing_anchors = _missing_event_anchors(brief, lowered)
+    if missing_anchors:
+        violations.append(
+            StoryBriefConsistencyViolation(
+                code="brief_event_anchor_absent",
+                severity="warn",
+                rationale="Some event/time anchors from the brief are not visible in the generated opening.",
+                evidence=missing_anchors[:5],
+            )
+        )
+
+    if any(v.severity == "fail" for v in violations):
+        status = "fail"
+    elif any(v.severity == "warn" for v in violations):
+        status = "warn"
+    else:
+        status = "pass"
+    should_retry = any(v.code in {"english_cjk_artifact"} or v.severity == "fail" for v in violations)
+    summary = (
+        "Opening matches the reviewed brief at a conservative contract level."
+        if status == "pass"
+        else "Opening has brief-consistency warnings or repairable contract issues."
+    )
+    return StoryBriefConsistencyCheck(status=status, violations=violations, summary=summary, should_retry=should_retry)
 
 
 def infer_tension_profile(seed: str) -> TensionProfile:
@@ -459,6 +584,9 @@ def _preserved_constraints(seed: str, profile: TensionProfile) -> list[str]:
     for pattern, label in _EVENT_CONSTRAINT_PATTERNS:
         if re.search(pattern, lowered):
             constraints.append(label)
+    for pattern, label in _NEGATED_CONSTRAINT_PATTERNS:
+        if re.search(pattern, lowered):
+            constraints.append(label)
     for token in ("missing", "secret", "vote", "deadline", "wedding", "artifact"):
         if re.search(rf"\b{re.escape(token)}\b", lowered):
             constraints.append(token)
@@ -484,6 +612,126 @@ def _constraint_dispositions(
     for label in softened:
         rows.append(ConstraintDisposition(label=label, disposition="softened", rationale="Adjusted to fit the selected tension profile."))
     return rows[:16]
+
+
+def _constraint_items(seed: str) -> list[StoryBriefPlanItem]:
+    items = [StoryBriefPlanItem(label="core premise", rationale="Preserved as the main premise to adapt.")]
+    for pattern, label in _NEGATED_CONSTRAINT_PATTERNS:
+        if re.search(pattern, seed, re.I):
+            items.append(
+                StoryBriefPlanItem(
+                    label=label,
+                    rationale="Preserved as a constraint; it should not become active cast.",
+                )
+            )
+    for pattern, label in (
+        (r"\bmissing cupcake\b", "missing cupcake"),
+        (r"\bcursed index\b", "cursed index"),
+        (r"\bleaked contract\b", "leaked contract"),
+        (r"\bcolony oxygen supply\b", "colony oxygen supply"),
+        (r"\bring\b", "ring"),
+    ):
+        if re.search(pattern, seed, re.I):
+            items.append(StoryBriefPlanItem(label=label, rationale="Preserved as a contested object or premise constraint."))
+    return _dedupe_plan_items(items)[:10]
+
+
+def _time_event_anchor_items(seed: str) -> list[StoryBriefPlanItem]:
+    items: list[StoryBriefPlanItem] = []
+    for pattern, label in _EVENT_CONSTRAINT_PATTERNS:
+        if re.search(pattern, seed, re.I):
+            items.append(
+                StoryBriefPlanItem(
+                    label=label,
+                    rationale="Used as event/time pressure, not active cast.",
+                )
+            )
+    if re.search(r"\bminutes?\s+before\b", seed, re.I):
+        items.append(StoryBriefPlanItem(label="minutes-before deadline", rationale="Used as a time-pressure anchor."))
+    return _dedupe_plan_items(items)[:10]
+
+
+def _tone_constraint_items(seed: str, profile: TensionProfile) -> list[StoryBriefPlanItem]:
+    items = [
+        StoryBriefPlanItem(
+            label=f"{profile.replace('_', ' ')} profile",
+            rationale="Guides the story kernel and payoff style.",
+        )
+    ]
+    if profile in {"comedy", "cozy_mystery"}:
+        items.append(
+            StoryBriefPlanItem(
+                label="lower-stakes tension",
+                rationale="Prefer social pressure, clues, props, callbacks, and gentle reveals over blackmail or violence.",
+            )
+        )
+    if re.search(r"\bno blackmail\b", seed, re.I):
+        items.append(StoryBriefPlanItem(label="avoid blackmail", rationale="Keep this as a tone constraint."))
+    if re.search(r"\bno betrayal\b", seed, re.I):
+        items.append(StoryBriefPlanItem(label="avoid betrayal", rationale="Keep this as a tone constraint."))
+    if re.search(r"\bno violence\b", seed, re.I):
+        items.append(StoryBriefPlanItem(label="avoid violence", rationale="Keep this as a tone constraint."))
+    return _dedupe_plan_items(items)[:10]
+
+
+def _world_setting_items(seed: str) -> list[StoryBriefPlanItem]:
+    items: list[StoryBriefPlanItem] = []
+    matched_labels: set[str] = set()
+    for pattern, label in _WORLD_SETTING_PATTERNS:
+        if re.search(pattern, seed, re.I):
+            if label in {"Mars setting", "colony setting"} and "Mars colony" in matched_labels:
+                continue
+            if label == "library setting" and "fantasy library" in matched_labels:
+                continue
+            matched_labels.add(label)
+            items.append(
+                StoryBriefPlanItem(
+                    label=label,
+                    rationale="Used as world/setting pressure, not active cast.",
+                )
+            )
+    return _dedupe_plan_items(items)[:10]
+
+
+def _revision_actions(warnings: list[str], profile: TensionProfile) -> list[StoryBriefRevisionAction]:
+    actions = [
+        StoryBriefRevisionAction(
+            action_id="add_witness",
+            label="Add witness",
+            description="Add a third party who can observe, pressure, or misread the conflict.",
+            seed_append="Add a witness with a concrete stake in the outcome.",
+        ),
+        StoryBriefRevisionAction(
+            action_id="add_deadline",
+            label="Add deadline",
+            description="Give the scene a public decision window or event deadline.",
+            seed_append="Add a clear deadline or public event that forces action now.",
+        ),
+        StoryBriefRevisionAction(
+            action_id="add_audience",
+            label="Add audience",
+            description="Make the tension visible through a room, crowd, board, class, or faction.",
+            seed_append="Add an audience or faction that will react to the reveal.",
+        ),
+    ]
+    if profile in {"comedy", "cozy_mystery"} or any("life-or-death" in warning.lower() for warning in warnings):
+        actions.append(
+            StoryBriefRevisionAction(
+                action_id="lower_stakes",
+                label="Lower stakes",
+                description="Keep comedy/cozy tension in props, clues, embarrassment, or social pressure.",
+                seed_append="Lower the stakes to embarrassment, missing props, social pressure, or clue payoff.",
+            )
+        )
+    actions.append(
+        StoryBriefRevisionAction(
+            action_id="move_extra_to_background",
+            label="Move extras to background",
+            description="Keep the named group as context instead of making everyone active at once.",
+            seed_append="Move extra factions to background pressure so only 3-5 parties are active.",
+        )
+    )
+    return actions[:8]
 
 
 def _has_pressure_signal(seed: str) -> bool:
@@ -531,6 +779,77 @@ def _fit_rationale(status: str, profile: TensionProfile) -> str:
 def _has_high_stakes_conflict(seed: str) -> bool:
     lowered = seed.lower()
     return any(pattern in lowered for pattern in _HIGH_STAKES_PATTERNS)
+
+
+def _opening_search_text(opening: Any) -> str:
+    chunks: list[str] = []
+    for attr in ("title", "advisor_persona"):
+        value = getattr(opening, attr, "")
+        if value:
+            chunks.append(str(value))
+    message = getattr(opening, "opening_message", None)
+    if message is not None:
+        chunks.append(str(getattr(message, "content", "")))
+        for option in getattr(message, "options", []) or []:
+            chunks.append(str(getattr(option, "label", "")))
+            chunks.append(str(getattr(option, "hint", "")))
+    for cast_member in getattr(opening, "cast", []) or []:
+        for attr in ("display_name", "role", "relation_to_protagonist", "hidden_objective", "leverage_over_player"):
+            chunks.append(str(getattr(cast_member, attr, "")))
+    return "\n".join(chunk for chunk in chunks if chunk)
+
+
+def _cjk_evidence(text: str) -> list[str]:
+    evidence: list[str] = []
+    for line in text.splitlines():
+        if _CJK_RE.search(line):
+            evidence.append(line[:120])
+    return evidence[:4] or ["CJK characters detected"]
+
+
+def _brief_preserves_high_stakes(brief: StoryBrief) -> bool:
+    labels = " ".join(
+        [
+            *brief.preserved_constraints,
+            *(item.label for item in brief.constraints),
+            *(item.label for item in brief.time_event_anchors),
+        ]
+    ).lower()
+    return any(pattern in labels for pattern in _HIGH_STAKES_PATTERNS)
+
+
+def _missing_primary_entities(brief: StoryBrief, lowered_opening_text: str) -> list[str]:
+    missing: list[str] = []
+    for entity in brief.cast_plan.primary_active_entities:
+        if entity.kind == "setting":
+            continue
+        label = entity.display_name.lower()
+        if label and label not in lowered_opening_text:
+            missing.append(entity.display_name)
+    return missing
+
+
+def _missing_event_anchors(brief: StoryBrief, lowered_opening_text: str) -> list[str]:
+    missing: list[str] = []
+    for anchor in brief.time_event_anchors:
+        label = anchor.label.lower()
+        if label in {"core premise"}:
+            continue
+        if label and label not in lowered_opening_text:
+            missing.append(anchor.label)
+    return missing
+
+
+def _dedupe_plan_items(items: list[StoryBriefPlanItem]) -> list[StoryBriefPlanItem]:
+    result: list[StoryBriefPlanItem] = []
+    seen: set[str] = set()
+    for item in items:
+        key = item.label.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(item)
+    return result
 
 
 def _dedupe_preserving_order(values: list[str]) -> list[str]:

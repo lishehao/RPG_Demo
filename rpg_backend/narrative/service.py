@@ -28,6 +28,7 @@ from rpg_backend.narrative.contracts import (
     StartSessionResponse,
     StoryBriefAdvisorRequest,
     StoryBriefAdvisorResponse,
+    StoryBriefConsistencyCheck,
     StoryHistoryResponse,
     StoryMessage,
     TemplateListResponse,
@@ -35,6 +36,7 @@ from rpg_backend.narrative.contracts import (
 )
 from rpg_backend.narrative.brief import (
     build_story_brief,
+    check_story_brief_opening_consistency,
     has_explicit_small_cast_mismatch,
 )
 from rpg_backend.narrative.engine import (
@@ -198,6 +200,47 @@ class NarrativeService:
                 message=f"LLM returned an unusable opening: {exc}",
                 status_code=502,
             ) from exc
+        story_brief_consistency = None
+        if request.story_brief is not None:
+            story_brief_consistency = check_story_brief_opening_consistency(
+                brief=request.story_brief,
+                opening=opening,
+                language=request.language,
+            )
+            if story_brief_consistency.should_retry:
+                retry_feedback = _story_brief_consistency_feedback(story_brief_consistency)
+                try:
+                    opening = generate_opening(
+                        gateway=self.gateway,
+                        seed=seed,
+                        language=request.language,
+                        story_brief=request.story_brief,
+                        brief_consistency_feedback=retry_feedback,
+                    )
+                except NarrativeGatewayError as exc:
+                    raise NarrativeServiceError(
+                        code=exc.code, message=exc.message, status_code=exc.status_code
+                    ) from exc
+                except ValueError as exc:
+                    raise NarrativeServiceError(
+                        code="opening_invalid",
+                        message=f"LLM returned an unusable opening after brief consistency retry: {exc}",
+                        status_code=502,
+                    ) from exc
+                story_brief_consistency = check_story_brief_opening_consistency(
+                    brief=request.story_brief,
+                    opening=opening,
+                    language=request.language,
+                )
+            if story_brief_consistency.status == "fail":
+                raise NarrativeServiceError(
+                    code="opening_brief_consistency_failed",
+                    message=(
+                        "The generated opening contradicted the reviewed brief. "
+                        "Please revise the premise or try generation again."
+                    ),
+                    status_code=502,
+                )
 
         template_id = _generate_template_id()
         template = self._repo.create_template(
@@ -240,6 +283,7 @@ class NarrativeService:
             template=_summarize_template(template, viewer_user_id=owner_user_id),
             session=_summarize_session(session, template),
             opening=opening_message,
+            story_brief_consistency=story_brief_consistency,
         )
 
     def list_public_templates(self, *, viewer_user_id: str) -> TemplateListResponse:
@@ -1220,6 +1264,18 @@ def _public_replay_cast(cast: list[CastMember]) -> list[CastMember]:
         )
         for member in cast
     ]
+
+
+def _story_brief_consistency_feedback(check: StoryBriefConsistencyCheck) -> str:
+    rows = []
+    for violation in check.violations[:6]:
+        evidence = ", ".join(violation.evidence[:3]) if violation.evidence else "no safe excerpt"
+        rows.append(f"{violation.code}: {violation.rationale} Evidence: {evidence}")
+    return (
+        "Repair the generated opening so it matches the reviewed story_brief. "
+        "Keep the same JSON schema. Fix these issues: "
+        + " | ".join(rows)
+    )[:1200]
 
 
 def _summarize_template(

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from rpg_backend.narrative.brief import build_story_brief, infer_tension_profile
+from rpg_backend.narrative.brief import (
+    build_story_brief,
+    check_story_brief_opening_consistency,
+    infer_tension_profile,
+)
 from rpg_backend.narrative.contracts import (
     CastMember,
     CreateTemplateRequest,
@@ -16,6 +20,27 @@ from rpg_backend.narrative.service import NarrativeService
 class _OpeningResponder:
     def __init__(self) -> None:
         self.story_brief_payload = None
+
+
+class _Opening:
+    def __init__(self, *, content: str, cast_names: list[str] | None = None, title: str = "Opening") -> None:
+        self.title = title
+        self.advisor_persona = "A careful friend outside the room."
+        self.cast = [
+            CastMember(
+                character_id=name.lower().replace(" ", "_"),
+                display_name=name[:40],
+                role="planned party",
+                relation_to_protagonist="Part of the opening pressure.",
+            )
+            for name in (cast_names or [])
+        ]
+        self.opening_message = StoryMessage(
+            ord=0,
+            role="narrator",
+            content=content,
+            options=[StoryOption(label="Ask a careful question", hint="Probe", handle="ask")],
+        )
 
 
 def _cast_names(response) -> list[str]:
@@ -159,6 +184,36 @@ def test_story_brief_fantasy_eclipse_keeps_factions_and_pressure() -> None:
     assert all("time pressure" not in warning.lower() for warning in response.brief.warnings)
 
 
+def test_story_brief_separates_negated_constraints_minutes_and_settings_from_cast() -> None:
+    response = build_story_brief(
+        seed=(
+            "Minutes before the school showcase at Mars colony, teacher, principal, "
+            "student council, and stage crew handle a missing prop with no violence and no betrayal."
+        ),
+        language="en",
+    )
+
+    names = {name.lower() for name in _cast_names(response)}
+    constraints = {item.label.lower() for item in response.brief.constraints}
+    tone = {item.label.lower() for item in response.brief.tone_constraints}
+    anchors = {item.label.lower() for item in response.brief.time_event_anchors}
+    settings = {item.label.lower() for item in response.brief.world_setting_pressure}
+
+    assert {"teacher", "principal", "student council", "stage crew"}.issubset(names)
+    assert "minutes" not in names
+    assert "no violence" not in names
+    assert "no betrayal" not in names
+    assert "mars" not in names
+    assert "no violence" in constraints
+    assert "no betrayal" in constraints
+    assert "avoid violence" in tone
+    assert "avoid betrayal" in tone
+    assert "minutes-before deadline" in anchors
+    assert "mars colony" in settings
+    assert "mars setting" not in settings
+    assert "colony setting" not in settings
+
+
 def test_story_brief_warns_when_comedy_premise_has_life_or_death_stakes() -> None:
     response = build_story_brief(
         seed=(
@@ -175,6 +230,48 @@ def test_story_brief_warns_when_comedy_premise_has_life_or_death_stakes() -> Non
     assert {"Engineering", "Hydroponics", "Security"}.issubset(set(_cast_names(response)))
     assert any("life-or-death" in warning.lower() for warning in response.brief.warnings)
     assert any("lower the stakes" in suggestion.lower() for suggestion in response.brief.revision_suggestions)
+
+
+def test_story_brief_consistency_flags_english_cjk_artifact() -> None:
+    brief = build_story_brief(
+        seed="In a fantasy library during an eclipse, dragons, ink sprites, and a head librarian argue over a cursed index.",
+        language="en",
+    ).brief
+    check = check_story_brief_opening_consistency(
+        brief=brief,
+        opening=_Opening(
+            content="The eclipse 已经开始 above the library stacks.",
+            cast_names=["dragons", "ink sprites", "head librarian"],
+        ),
+        language="en",
+    )
+
+    assert check.status == "fail"
+    assert check.should_retry is True
+    assert any(v.code == "english_cjk_artifact" for v in check.violations)
+
+
+def test_story_brief_consistency_flags_forbidden_constraint_contradiction() -> None:
+    brief = build_story_brief(
+        seed="A cozy bake sale mystery with teacher, principal, parent organizer, and baker; no violence, no betrayal, no blackmail.",
+        language="en",
+    ).brief
+    check = check_story_brief_opening_consistency(
+        brief=brief,
+        opening=_Opening(
+            content="The principal threatens blackmail while a violent betrayal erupts near the cupcake table.",
+            cast_names=["teacher", "principal", "parent organizer", "baker"],
+        ),
+        language="en",
+    )
+
+    assert check.status == "fail"
+    assert check.should_retry is True
+    assert {v.code for v in check.violations} >= {
+        "forbidden_no_blackmail_contradiction",
+        "forbidden_no_betrayal_contradiction",
+        "forbidden_no_violence_contradiction",
+    }
 
 
 def test_story_brief_classifies_comedy_kernel() -> None:

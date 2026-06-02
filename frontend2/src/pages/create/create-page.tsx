@@ -38,6 +38,13 @@ const FIT_STATUS_LABEL_KEYS: Record<NarrativeStoryBrief["runtime_fit_status"], S
   not_fit: "create.brief_not_fit",
 }
 
+const CONSTRAINT_DISPOSITION_LABEL_KEYS = {
+  preserved: "create.brief_preserved",
+  compressed: "create.brief_compressed",
+  dropped: "create.brief_dropped",
+  softened: "create.brief_softened",
+} as const
+
 type TensionProfileChoice = "auto" | NarrativeTensionProfile
 
 type TensionProfileOptionMeta = {
@@ -330,6 +337,18 @@ export function CreatePage({
     }
   }
 
+  const handleApplyRevisionAction = (seedAppend: string) => {
+    setSeed((current) => {
+      const trimmed = current.trim()
+      if (trimmed.toLowerCase().includes(seedAppend.toLowerCase())) return current
+      return `${trimmed}${trimmed ? "\n\n" : ""}${seedAppend}`
+    })
+    setBriefResponse(null)
+    setBriefResponseKey(null)
+    setBriefError(null)
+    window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
+  }
+
   const handlePrimaryAction = async () => {
     if (activeBrief) {
       if (!canGenerateFromBrief) return
@@ -420,6 +439,7 @@ export function CreatePage({
               canGenerate={activeBriefResponse.can_generate}
               nextStep={activeBriefResponse.next_step}
               compact={compactLayout}
+              onApplyRevisionAction={handleApplyRevisionAction}
             />
           ) : null}
 
@@ -799,21 +819,19 @@ function StoryBriefCard({
   canGenerate,
   nextStep,
   compact,
+  onApplyRevisionAction,
 }: {
   brief: NarrativeStoryBrief
   canGenerate: boolean
   nextStep: string
   compact: boolean
+  onApplyRevisionAction: (seedAppend: string) => void
 }) {
   const t = useT()
   const primary = brief.cast_plan.primary_active_entities
   const secondary = brief.cast_plan.secondary_background_entities
-  const constrained = [
-    ...brief.preserved_constraints.map((item) => ({ item, kind: t("create.brief_preserved") })),
-    ...brief.compressed_constraints.map((item) => ({ item, kind: t("create.brief_compressed") })),
-    ...brief.dropped_constraints.map((item) => ({ item, kind: t("create.brief_dropped") })),
-    ...brief.softened_constraints.map((item) => ({ item, kind: t("create.brief_softened") })),
-  ].slice(0, 8)
+  const omitted = brief.cast_plan.omitted_entities
+  const decisions = brief.constraint_dispositions.slice(0, 8)
 
   return (
     <section style={{ ...cpStyles.briefRail, ...(compact ? cpStyles.briefRailCompact : null) }}>
@@ -828,6 +846,7 @@ function StoryBriefCard({
           {t(FIT_STATUS_LABEL_KEYS[brief.runtime_fit_status])}
         </span>
       </div>
+      <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
       <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
         <BriefField label={t("create.brief_profile")} value={t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
@@ -835,23 +854,33 @@ function StoryBriefCard({
         <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
       </div>
       <div style={{ ...cpStyles.briefCastGrid, ...(compact ? cpStyles.briefCastGridCompact : null) }}>
-        <BriefList
+        <BriefEntityList
           label={t("create.brief_primary_cast")}
-          items={primary.map((entity) => entity.display_name)}
+          items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
           empty={t("create.brief_empty")}
         />
-        <BriefList
+        <BriefEntityList
           label={t("create.brief_secondary_cast")}
-          items={secondary.map((entity) => entity.display_name)}
+          items={secondary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
           empty={t("create.brief_empty")}
         />
       </div>
-      {constrained.length > 0 ? (
+      {omitted.length > 0 ? (
+        <BriefPlanSection
+          label={t("create.brief_omitted_cast")}
+          items={omitted.map((entity) => ({ label: entity.display_name, rationale: entity.rationale }))}
+          empty={t("create.brief_empty")}
+        />
+      ) : null}
+      <BriefPlanSection label={t("create.brief_event_pressure")} items={[...brief.time_event_anchors, ...brief.world_setting_pressure]} empty={t("create.brief_empty")} />
+      <BriefPlanSection label={t("create.brief_constraints")} items={brief.constraints} empty={t("create.brief_empty")} />
+      <BriefPlanSection label={t("create.brief_tone_constraints")} items={brief.tone_constraints} empty={t("create.brief_empty")} />
+      {decisions.length > 0 ? (
         <div style={cpStyles.briefConstraintRow}>
-          {constrained.map(({ item, kind }) => (
-            <span key={`${kind}:${item}`} style={cpStyles.briefConstraintChip}>
-              <span style={cpStyles.briefConstraintKind}>{kind}</span>
-              {item}
+          {decisions.map((decision) => (
+            <span key={`${decision.disposition}:${decision.label}`} style={cpStyles.briefConstraintChip} title={decision.rationale}>
+              <span style={cpStyles.briefConstraintKind}>{t(CONSTRAINT_DISPOSITION_LABEL_KEYS[decision.disposition])}</span>
+              {decision.label}
             </span>
           ))}
         </div>
@@ -864,6 +893,24 @@ function StoryBriefCard({
           {brief.revision_suggestions.slice(0, 2).map((suggestion) => (
             <div key={suggestion} style={cpStyles.briefSuggestionLine}>{suggestion}</div>
           ))}
+        </div>
+      ) : null}
+      {brief.revision_actions.length > 0 ? (
+        <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
+          <span style={cpStyles.briefFieldLabel}>{t("create.brief_revision_actions")}</span>
+          <div style={cpStyles.briefRevisionActionRow}>
+            {brief.revision_actions.slice(0, 5).map((action) => (
+              <button
+                key={action.action_id}
+                type="button"
+                style={cpStyles.briefRevisionAction}
+                title={action.description}
+                onClick={() => onApplyRevisionAction(action.seed_append)}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
       <div style={cpStyles.briefFooter}>
@@ -888,6 +935,54 @@ function BriefList({ label, items, empty }: { label: string; items: string[]; em
     <div style={cpStyles.briefList}>
       <span style={cpStyles.briefFieldLabel}>{label}</span>
       <span style={cpStyles.briefListValue}>{items.length > 0 ? items.join(" · ") : empty}</span>
+    </div>
+  )
+}
+
+function BriefEntityList({
+  label,
+  items,
+  empty,
+}: {
+  label: string
+  items: { label: string; detail: string }[]
+  empty: string
+}) {
+  return (
+    <div style={cpStyles.briefList}>
+      <span style={cpStyles.briefFieldLabel}>{label}</span>
+      <div style={cpStyles.briefStackedList}>
+        {items.length > 0 ? items.map((item) => (
+          <span key={item.label} style={cpStyles.briefStackedItem}>
+            <strong>{item.label}</strong>
+            <span>{item.detail}</span>
+          </span>
+        )) : <span style={cpStyles.briefListValue}>{empty}</span>}
+      </div>
+    </div>
+  )
+}
+
+function BriefPlanSection({
+  label,
+  items,
+  empty,
+}: {
+  label: string
+  items: { label: string; rationale: string }[]
+  empty: string
+}) {
+  return (
+    <div style={cpStyles.briefPlanSection}>
+      <span style={cpStyles.briefFieldLabel}>{label}</span>
+      <div style={cpStyles.briefPlanItems}>
+        {items.length > 0 ? items.slice(0, 8).map((item) => (
+          <span key={`${label}:${item.label}`} style={cpStyles.briefPlanItem} title={item.rationale}>
+            <strong>{item.label}</strong>
+            <span>{item.rationale}</span>
+          </span>
+        )) : <span style={cpStyles.briefListValue}>{empty}</span>}
+      </div>
     </div>
   )
 }
@@ -1394,6 +1489,12 @@ const cpStyles: Record<string, CSSProperties> = {
     fontWeight: 780,
     whiteSpace: "nowrap" as const,
   },
+  briefBetaNote: {
+    color: "rgba(245,210,140,0.78)",
+    fontSize: 11.5,
+    lineHeight: 1.42,
+    marginBottom: 8,
+  },
   briefFitPillWarn: {
     color: "rgba(255,170,132,0.92)",
   },
@@ -1453,6 +1554,33 @@ const cpStyles: Record<string, CSSProperties> = {
     fontSize: 12.5,
     lineHeight: 1.38,
   },
+  briefStackedList: {
+    display: "grid",
+    gap: 6,
+  },
+  briefStackedItem: {
+    display: "grid",
+    gap: 2,
+    color: "rgba(255,255,255,0.62)",
+    fontSize: 11.4,
+    lineHeight: 1.32,
+  },
+  briefPlanSection: {
+    display: "grid",
+    gap: 5,
+    marginBottom: 10,
+  },
+  briefPlanItems: {
+    display: "grid",
+    gap: 5,
+  },
+  briefPlanItem: {
+    display: "grid",
+    gap: 2,
+    color: "rgba(255,255,255,0.62)",
+    fontSize: 11.4,
+    lineHeight: 1.32,
+  },
   briefConstraintRow: {
     display: "flex",
     flexWrap: "wrap" as const,
@@ -1489,6 +1617,27 @@ const cpStyles: Record<string, CSSProperties> = {
     color: "rgba(245,210,140,0.86)",
     fontSize: 12,
     lineHeight: 1.38,
+  },
+  briefRevisionActions: {
+    display: "grid",
+    gap: 7,
+    marginBottom: 11,
+  },
+  briefRevisionActionRow: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: 7,
+  },
+  briefRevisionAction: {
+    border: "1px solid rgba(245,200,120,0.32)",
+    borderRadius: 6,
+    background: "rgba(245,200,120,0.07)",
+    color: "rgba(255,238,210,0.88)",
+    fontSize: 11.5,
+    fontWeight: 760,
+    lineHeight: 1.2,
+    padding: "6px 8px",
+    cursor: "pointer",
   },
   briefFooter: {
     display: "grid",

@@ -329,6 +329,8 @@ StoryBriefSource = Literal["deterministic_v1"]
 StoryBriefFitStatus = Literal["fit", "needs_revision", "not_fit"]
 ConstraintDispositionKind = Literal["preserved", "compressed", "dropped", "softened"]
 CastPlanEntityKind = Literal["character", "faction", "object", "setting"]
+StoryBriefConsistencyStatus = Literal["pass", "warn", "fail"]
+StoryBriefConsistencySeverity = Literal["info", "warn", "fail"]
 # Locale a template's narration / NPC dialogue is generated in. The
 # field is set at template creation and is immutable thereafter — every
 # session forking the same template inherits the same language. Adding
@@ -408,6 +410,26 @@ class ConstraintDisposition(BaseModel):
     rationale: str = Field(min_length=1, max_length=220)
 
 
+class StoryBriefPlanItem(BaseModel):
+    """One visible non-cast planning item on the brief card."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = Field(min_length=1, max_length=140)
+    rationale: str = Field(min_length=1, max_length=240)
+
+
+class StoryBriefRevisionAction(BaseModel):
+    """Safe one-click revision affordance for the guided brief panel."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action_id: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=80)
+    description: str = Field(min_length=1, max_length=180)
+    seed_append: str = Field(min_length=1, max_length=220)
+
+
 class CastPlanEntity(BaseModel):
     """One planned character, entity, object, or faction in the brief."""
 
@@ -446,6 +468,10 @@ class StoryBrief(BaseModel):
     story_kernel: str = Field(min_length=1, max_length=220)
     intervention_card_label: str = Field(min_length=1, max_length=80)
     cast_plan: CastPlan
+    constraints: list[StoryBriefPlanItem] = Field(default_factory=list, max_length=10)
+    time_event_anchors: list[StoryBriefPlanItem] = Field(default_factory=list, max_length=10)
+    tone_constraints: list[StoryBriefPlanItem] = Field(default_factory=list, max_length=10)
+    world_setting_pressure: list[StoryBriefPlanItem] = Field(default_factory=list, max_length=10)
     preserved_constraints: list[str] = Field(default_factory=list, max_length=8)
     compressed_constraints: list[str] = Field(default_factory=list, max_length=8)
     dropped_constraints: list[str] = Field(default_factory=list, max_length=8)
@@ -453,8 +479,37 @@ class StoryBrief(BaseModel):
     constraint_dispositions: list[ConstraintDisposition] = Field(default_factory=list, max_length=16)
     warnings: list[str] = Field(default_factory=list, max_length=8)
     revision_suggestions: list[str] = Field(default_factory=list, max_length=8)
+    revision_actions: list[StoryBriefRevisionAction] = Field(default_factory=list, max_length=8)
+    adaptation_note: str = Field(
+        default="Beta planner draft: review the adaptation before generation; it is not a fidelity guarantee.",
+        min_length=1,
+        max_length=220,
+    )
     runtime_fit_status: StoryBriefFitStatus = "fit"
     runtime_fit_rationale: str = Field(min_length=1, max_length=260)
+
+
+class StoryBriefConsistencyViolation(BaseModel):
+    """Safe post-generation mismatch evidence for a confirmed brief."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1, max_length=80)
+    severity: StoryBriefConsistencySeverity
+    rationale: str = Field(min_length=1, max_length=260)
+    evidence: list[str] = Field(default_factory=list, max_length=6)
+
+
+class StoryBriefConsistencyCheck(BaseModel):
+    """Conservative brief-vs-opening checker result."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["story_brief_consistency.v1"] = "story_brief_consistency.v1"
+    status: StoryBriefConsistencyStatus
+    violations: list[StoryBriefConsistencyViolation] = Field(default_factory=list, max_length=12)
+    summary: str = Field(min_length=1, max_length=260)
+    should_retry: bool = False
 
 
 class StoryBriefAdvisorRequest(BaseModel):
@@ -689,6 +744,7 @@ class CreateTemplateResponse(BaseModel):
     template: NarrativeTemplateSummary
     session: NarrativeSessionSummary
     opening: StoryMessage
+    story_brief_consistency: StoryBriefConsistencyCheck | None = None
 
 
 class StartSessionRequest(BaseModel):

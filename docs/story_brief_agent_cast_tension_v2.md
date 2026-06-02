@@ -32,10 +32,19 @@ The first shippable slice is deterministic and testable:
 - `POST /narrative/story-briefs`
 - create-page brief card before full story generation
 - optional `story_brief` on `CreateTemplateRequest`
+- structured non-cast categories for constraints, time/event anchors, tone
+  constraints, and world/setting pressure
+- conservative brief-vs-opening consistency check
+- English language hygiene retry for visible CJK artifacts
+- guided revision action chips on the create page
 
 The brief card is not persisted on the template in this MVP. It is a
 pre-generation planning contract that is injected into the opening-generation
 payload when the user confirms generation from the brief.
+
+The card is intentionally labeled as a beta planner / draft adaptation. It
+should teach the user how the runtime will adapt the premise, not promise exact
+final fidelity.
 
 ## Cast Planner
 
@@ -60,6 +69,18 @@ Planner fidelity rules added after playtest:
 - abstract tone mechanisms such as `misunderstandings` or `callback joke` are not cast
 - event anchors such as `eclipse`, `board vote`, `talent show`, and `final broadcast` count as pressure/constraints
 - exact-word matching prevents stray constraints such as `ring` from appearing because of unrelated substrings
+
+The UI renders active/background cast only from `CastPlanEntity` records. It
+renders negated constraints, temporal anchors, and settings in separate
+sections:
+
+- `constraints`
+- `time_event_anchors`
+- `tone_constraints`
+- `world_setting_pressure`
+
+This keeps items such as `no violence`, `no betrayal`, `Minutes`, and `Mars
+colony` out of the active/background cast display.
 
 ## Tension Profiles
 
@@ -89,6 +110,36 @@ footage, or life-or-death danger. If the premise itself contains life-or-death
 stakes such as stolen oxygen, the brief warns that comedy/cozy fidelity needs a
 lower-stakes revision.
 
+## Consistency And Language Hygiene
+
+After a confirmed brief generates an opening, the service runs a conservative
+brief-vs-opening check before persisting the template. It checks:
+
+- English openings for visible CJK artifacts
+- forbidden or softened constraints such as `no blackmail`, `no betrayal`, and
+  `no violence`
+- profile/stakes escalation for comedy/cozy briefs
+- missing primary entities
+- missing event/time anchors
+
+Clear failures trigger one bounded retry with safe feedback. If the retry still
+fails, the service reports an opening consistency error instead of persisting a
+contradictory opening. Warnings are returned in the create response but do not
+block generation by default.
+
+## Guided Revision Actions
+
+The create page now exposes low-risk revision chips from the brief:
+
+- add witness
+- add deadline
+- add audience
+- lower stakes
+- move extras to background
+
+These append concrete guidance to the seed and require the user to re-plan the
+brief. They are deliberately not a full chat memory system.
+
 ## Deferred Scope
 
 - Full conversational Brief Agent chatbox with multi-turn repair
@@ -98,6 +149,7 @@ lower-stakes revision.
 - Broad tone-preservation rewrite
 - Profile-specific card terminology across the whole play UI
 - Profile-aware Step/Trajectory judge payoff gates
+- Robust semantic generation-fidelity checks beyond conservative heuristics
 
 ## Next Implementation Slice
 

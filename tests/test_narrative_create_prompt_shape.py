@@ -8,7 +8,13 @@ from fastapi.testclient import TestClient
 import rpg_backend.narrative.service as narrative_service_module
 from rpg_backend.main import app
 from rpg_backend.narrative.brief import build_story_brief
-from rpg_backend.narrative.contracts import CreateTemplateRequest
+from rpg_backend.narrative.contracts import (
+    CastMember,
+    CreateTemplateRequest,
+    PlayerRole,
+    StoryMessage,
+    StoryOption,
+)
 from rpg_backend.narrative.engine import generate_opening
 from rpg_backend.narrative.repository import NarrativeRepository
 from rpg_backend.narrative.service import NarrativeService, NarrativeServiceError
@@ -199,3 +205,83 @@ def test_create_template_blocks_explicit_small_cast_prompt_before_llm(
     assert called is False
     assert exc_info.value.code == "opening_prompt_shape_mismatch"
     assert exc_info.value.status_code == 422
+
+
+def test_create_template_retries_brief_consistency_language_artifact(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    brief = build_story_brief(
+        seed=(
+            "In a fantasy library during an eclipse, dragons, ink sprites, "
+            "and a head librarian argue over a cursed index."
+        ),
+        language="en",
+    ).brief
+    calls: list[dict[str, Any]] = []
+
+    def fake_generate_opening(**kwargs):
+        calls.append(kwargs)
+        content = (
+            "The eclipse 已经开始 above the stacks while dragons and ink sprites glare at the head librarian."
+            if len(calls) == 1
+            else "The eclipse begins above the stacks while dragons and ink sprites glare at the head librarian."
+        )
+        return type(
+            "Opening",
+            (),
+            {
+                "title": "Eclipse Index",
+                "advisor_persona": "Mira waits outside the library with a careful warning.",
+                "cast": [
+                    CastMember(
+                        character_id="dragons",
+                        display_name="dragons",
+                        role="faction",
+                        relation_to_protagonist="Accuse the book of hiding the index.",
+                    ),
+                    CastMember(
+                        character_id="ink_sprites",
+                        display_name="ink sprites",
+                        role="faction",
+                        relation_to_protagonist="Know which margin changed.",
+                    ),
+                    CastMember(
+                        character_id="head_librarian",
+                        display_name="head librarian",
+                        role="keeper",
+                        relation_to_protagonist="Controls the locked shelves.",
+                    ),
+                ],
+                "opening_message": StoryMessage(
+                    ord=0,
+                    role="narrator",
+                    content=content,
+                    options=[StoryOption(label="Check the cursed index", hint="Probe", handle="check")],
+                ),
+                "player_goals": [],
+                "failure_conditions": [],
+                "player_role_options": [
+                    PlayerRole(
+                        role_id="book",
+                        label="Apprentice spellbook",
+                        public_persona="A book accused of misfiling the cursed index.",
+                        hidden_objective="Prove the index changed itself during the eclipse.",
+                    )
+                ],
+            },
+        )()
+
+    monkeypatch.setattr(narrative_service_module, "generate_opening", fake_generate_opening)
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    assert len(calls) == 2
+    assert calls[1]["brief_consistency_feedback"]
+    assert response.story_brief_consistency is not None
+    assert response.story_brief_consistency.status == "pass"

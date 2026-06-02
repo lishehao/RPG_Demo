@@ -734,11 +734,25 @@ export type NarrativeTensionProfile =
 export type NarrativeStoryBriefFitStatus = "fit" | "needs_revision" | "not_fit"
 export type NarrativeConstraintDispositionKind = "preserved" | "compressed" | "dropped" | "softened"
 export type NarrativeCastPlanEntityKind = "character" | "faction" | "object" | "setting"
+export type NarrativeStoryBriefConsistencyStatus = "pass" | "warn" | "fail"
+export type NarrativeStoryBriefConsistencySeverity = "info" | "warn" | "fail"
 
 export type NarrativeConstraintDisposition = {
   label: string
   disposition: NarrativeConstraintDispositionKind
   rationale: string
+}
+
+export type NarrativeStoryBriefPlanItem = {
+  label: string
+  rationale: string
+}
+
+export type NarrativeStoryBriefRevisionAction = {
+  action_id: string
+  label: string
+  description: string
+  seed_append: string
 }
 
 export type NarrativeCastPlanEntity = {
@@ -767,6 +781,10 @@ export type NarrativeStoryBrief = {
   story_kernel: string
   intervention_card_label: string
   cast_plan: NarrativeCastPlan
+  constraints: NarrativeStoryBriefPlanItem[]
+  time_event_anchors: NarrativeStoryBriefPlanItem[]
+  tone_constraints: NarrativeStoryBriefPlanItem[]
+  world_setting_pressure: NarrativeStoryBriefPlanItem[]
   preserved_constraints: string[]
   compressed_constraints: string[]
   dropped_constraints: string[]
@@ -774,8 +792,25 @@ export type NarrativeStoryBrief = {
   constraint_dispositions: NarrativeConstraintDisposition[]
   warnings: string[]
   revision_suggestions: string[]
+  revision_actions: NarrativeStoryBriefRevisionAction[]
+  adaptation_note: string
   runtime_fit_status: NarrativeStoryBriefFitStatus
   runtime_fit_rationale: string
+}
+
+export type NarrativeStoryBriefConsistencyViolation = {
+  code: string
+  severity: NarrativeStoryBriefConsistencySeverity
+  rationale: string
+  evidence: string[]
+}
+
+export type NarrativeStoryBriefConsistencyCheck = {
+  schema_version: "story_brief_consistency.v1"
+  status: NarrativeStoryBriefConsistencyStatus
+  violations: NarrativeStoryBriefConsistencyViolation[]
+  summary: string
+  should_retry: boolean
 }
 
 export type NarrativeStoryBriefAdvisorRequest = {
@@ -902,6 +937,7 @@ export type NarrativeCreateTemplateResponse = {
   template: NarrativeTemplateSummary
   session: NarrativeSessionSummary
   opening: NarrativeStoryMessage
+  story_brief_consistency?: NarrativeStoryBriefConsistencyCheck | null
 }
 
 export type NarrativeStartSessionResponse = {
