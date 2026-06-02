@@ -241,7 +241,7 @@ export function CreatePage({
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
   }, [])
   const busyLabel =
-    busyElapsedSeconds >= 45
+    busyElapsedSeconds >= 18
       ? t("create.building_checking_elapsed", { seconds: busyElapsedSeconds })
       : busyElapsedSeconds > 0
       ? t("create.building_elapsed", { seconds: busyElapsedSeconds })

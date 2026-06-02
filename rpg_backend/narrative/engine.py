@@ -858,7 +858,15 @@ def _generate_opening_once(
             "callbacks, or gentle reveals. Do not convert a comedy/cozy brief "
             "into betrayal, revenge, hacking, security-footage leverage, "
             "life-or-death danger, or blackmail unless those stakes are "
-            "explicitly preserved in the reviewed brief."
+            "explicitly preserved in the reviewed brief. For comedy/cozy option "
+            "labels and hints, prefer verbs like ask, compare, invite, reveal, "
+            "notice, soften, callback, or repair; avoid accuse, confront, fight, "
+            "scapegoat, take-the-fall, heist, permanent-position, and criminal "
+            "framing unless the user explicitly asked for those words. For "
+            "fantasy_sci_fi, preserve strange/nonhuman entities literally where "
+            "possible and use world-rule, artifact, magical/technical, or faction "
+            "pressure; do not recast the opening as modern blackmail, security "
+            "footage, hacking, scapegoat, or takes-the-fall leverage by default."
         )
     if brief_consistency_feedback:
         user_payload["story_brief_consistency_feedback"] = brief_consistency_feedback

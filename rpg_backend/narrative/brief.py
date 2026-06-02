@@ -307,6 +307,58 @@ _LOWER_STAKES_OPENING_ESCALATION_PATTERNS = (
     "governor arrives",
     "governor deadline",
 )
+_PROFILE_TONE_TABOO_TERMS: dict[TensionProfile, tuple[str, ...]] = {
+    "comedy": (
+        "accuse",
+        "accuses",
+        "fight",
+        "start a fight",
+        "scapegoat",
+        "takes the fall",
+        "take the fall",
+        "blackmail",
+        "betrayal",
+        "revenge",
+        "hacking",
+        "security footage",
+        "permanent position",
+        "permanent job",
+        "heist",
+    ),
+    "cozy_mystery": (
+        "accuse",
+        "accuses",
+        "fight",
+        "start a fight",
+        "confront",
+        "scapegoat",
+        "takes the fall",
+        "take the fall",
+        "blackmail",
+        "betrayal",
+        "revenge",
+        "hacking",
+        "security footage",
+        "permanent position",
+        "permanent job",
+        "heist",
+    ),
+    "fantasy_sci_fi": (
+        "the scapegoat",
+        "scapegoat",
+        "takes the fall",
+        "take the fall",
+        "blackmail",
+        "security footage",
+        "hacking",
+        "permanent position",
+        "permanent job",
+        "expulsion-level",
+        "expulsion level",
+    ),
+    "family_social": (),
+    "high_drama": (),
+}
 _EMPHASIS_ENTITY_PATTERNS = (
     re.compile(
         r"\b(?:represent|focus on|include|preserve|must include|should include|keep)\b\s+([^.!?;]+)",
@@ -478,6 +530,17 @@ def check_story_brief_opening_consistency(
                     evidence=found_high_stakes[:4],
                 )
             )
+
+    tone_taboo = _profile_tone_taboo_matches(brief, lowered)
+    if tone_taboo:
+        violations.append(
+            StoryBriefConsistencyViolation(
+                code="profile_tone_taboo",
+                severity="fail",
+                rationale="Opening uses high-drama vocabulary that conflicts with the selected tension profile.",
+                evidence=tone_taboo[:6],
+            )
+        )
 
     missing_emphasized = _missing_emphasized_entities(brief, lowered)
     if missing_emphasized:
@@ -743,6 +806,7 @@ def _fallback_entities(seed: str, profile: TensionProfile) -> list[str]:
 def _preserved_constraints(seed: str, profile: TensionProfile) -> list[str]:
     constraints = ["core premise"]
     lowered = seed.lower()
+    has_wedding_ring = bool(re.search(r"\bwedding\s+ring\b", lowered))
     if profile != "high_drama":
         constraints.append(f"{profile.replace('_', ' ')} tone")
     for pattern, label in _EVENT_CONSTRAINT_PATTERNS:
@@ -751,11 +815,16 @@ def _preserved_constraints(seed: str, profile: TensionProfile) -> list[str]:
     for pattern, label in _NEGATED_CONSTRAINT_PATTERNS:
         if re.search(pattern, lowered):
             constraints.append(label)
-    for token in ("missing", "secret", "vote", "deadline", "wedding", "artifact"):
+    for token in ("missing", "secret", "vote", "deadline", "artifact"):
         if re.search(rf"\b{re.escape(token)}\b", lowered):
             constraints.append(token)
-    if re.search(r"\bring\b", lowered):
-        constraints.append("ring")
+    if has_wedding_ring:
+        constraints.append("wedding ring")
+    else:
+        if re.search(r"\bwedding\b", lowered):
+            constraints.append("wedding")
+        if re.search(r"\bring\b", lowered):
+            constraints.append("ring")
     constraints = _dedupe_preserving_order(constraints)
     return constraints[:8]
 
@@ -807,8 +876,11 @@ def _constraint_items(seed: str) -> list[StoryBriefPlanItem]:
         (r"\bcursed index\b", "cursed index"),
         (r"\bleaked contract\b", "leaked contract"),
         (r"\bcolony oxygen supply\b", "colony oxygen supply"),
+        (r"\bwedding\s+ring\b", "wedding ring"),
         (r"\bring\b", "ring"),
     ):
+        if label == "ring" and re.search(r"\bwedding\s+ring\b", seed, re.I):
+            continue
         if re.search(pattern, seed, re.I):
             items.append(StoryBriefPlanItem(label=label, rationale="Preserved as a contested object or premise constraint."))
     return _dedupe_plan_items(items)[:10]
@@ -1033,6 +1105,13 @@ def _opening_search_text(opening: Any) -> str:
     for cast_member in getattr(opening, "cast", []) or []:
         for attr in ("display_name", "role", "relation_to_protagonist", "hidden_objective", "leverage_over_player"):
             chunks.append(str(getattr(cast_member, attr, "")))
+    for player_role in getattr(opening, "player_role_options", []) or []:
+        for attr in ("label", "public_persona", "hidden_objective"):
+            chunks.append(str(getattr(player_role, attr, "")))
+        for leverage in getattr(player_role, "leverages_over_npcs", []) or []:
+            chunks.append(str(getattr(leverage, "leverage", "")))
+        for asset in getattr(player_role, "starting_assets", []) or []:
+            chunks.append(str(asset))
     return "\n".join(chunk for chunk in chunks if chunk)
 
 
@@ -1053,6 +1132,37 @@ def _brief_preserves_high_stakes(brief: StoryBrief) -> bool:
         ]
     ).lower()
     return any(pattern in labels for pattern in _HIGH_STAKES_PATTERNS)
+
+
+def _profile_tone_taboo_matches(brief: StoryBrief, lowered_opening_text: str) -> list[str]:
+    matches: list[str] = []
+    for term in _PROFILE_TONE_TABOO_TERMS.get(brief.tension_profile, ()):
+        if term not in lowered_opening_text:
+            continue
+        if _term_explicitly_requested(brief.original_seed, term):
+            continue
+        matches.append(term)
+    return _dedupe_preserving_order(matches)[:8]
+
+
+def _term_explicitly_requested(seed: str, term: str) -> bool:
+    lowered = seed.lower()
+    candidates = [term]
+    if term.endswith("s"):
+        candidates.append(term[:-1])
+    if term in {"start a fight", "fight"}:
+        candidates.append("fight")
+    if term in {"takes the fall", "take the fall"}:
+        candidates.extend(["takes the fall", "take the fall"])
+    if term in {"hacking", "hack"}:
+        candidates.extend(["hacking", "hack"])
+    for candidate in _dedupe_preserving_order(candidates):
+        for match in re.finditer(re.escape(candidate), lowered):
+            prefix = lowered[max(0, match.start() - 28) : match.start()]
+            if re.search(r"\b(?:no|not|avoid|without|never)\b[^.!?;]{0,28}$", prefix):
+                continue
+            return True
+    return False
 
 
 def _missing_primary_entities(brief: StoryBrief, lowered_opening_text: str) -> list[str]:

@@ -323,6 +323,9 @@ def test_create_template_uses_reliable_opening_first_for_heavy_mars_brief(
     assert "Theatre Club" in response.opening.content
     assert "Earth Media" in response.opening.content
     assert "backup oxygen tank" not in response.opening.content
+    assert "At Mars colony, the talent show" in response.opening.content
+    assert "crowd the first decision" not in response.opening.content
+    assert "talent show, Mars colony is already underway" not in response.opening.content
     visible_text = " ".join(
         [
             response.template.title,

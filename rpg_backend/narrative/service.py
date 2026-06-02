@@ -1441,18 +1441,38 @@ def _fallback_opening_passage(
     pressure_labels: list[str],
 ) -> str:
     cast_text = ", ".join(cast_names)
-    pressure_text = ", ".join(pressure_labels) if pressure_labels else "the public moment"
-    background_text = (
-        f" From the edge of the room, {', '.join(background_names[:5])} are close enough to change how the moment lands."
-        if background_names
-        else ""
-    )
+    scene_setup = _fallback_scene_setup(pressure_labels)
+    background_text = _fallback_background_sentence(background_names)
     profile_clause = _fallback_profile_clause(brief)
     return (
-        f"{pressure_text} is already underway. {cast_text} crowd the first decision, each trying to make their version "
-        f"of events the one everyone else has to answer.{background_text} {profile_clause} "
-        f"Your first move can decide who gets heard before the room settles on the wrong story."
+        f"{scene_setup} {cast_text} cluster around the visible mistake, each trying to explain it before someone else "
+        f"turns the room their way.{background_text} {profile_clause} "
+        f"Your first move can give the room a cleaner way to talk before the loudest version hardens."
     )
+
+
+def _fallback_scene_setup(pressure_labels: list[str]) -> str:
+    setting_labels = [
+        label
+        for label in pressure_labels
+        if any(token in label.lower() for token in ("mars", "colony", "library", "school", "sale", "setting"))
+    ]
+    event_labels = [label for label in pressure_labels if label not in setting_labels]
+    setting = setting_labels[0] if setting_labels else ""
+    event = event_labels[0] if event_labels else "the public moment"
+    extra_event = f", with the {event_labels[1]} close enough to matter" if len(event_labels) > 1 else ""
+    if setting and event:
+        return f"At {setting}, the {event} has already gone sideways{extra_event}."
+    if event:
+        return f"The {event} has already gone sideways{extra_event}."
+    return "The room has already found the mistake everyone wants to explain."
+
+
+def _fallback_background_sentence(background_names: list[str]) -> str:
+    if not background_names:
+        return ""
+    visible = ", ".join(background_names[:5])
+    return f" {visible} hover close enough to object, react, or pull one missing detail back into view."
 
 
 def _fallback_profile_clause(brief: StoryBrief) -> str:

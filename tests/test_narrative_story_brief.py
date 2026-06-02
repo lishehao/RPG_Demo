@@ -61,6 +61,14 @@ def _constraint_labels(response) -> list[str]:
     ]
 
 
+def _constraint_item_labels(response) -> list[str]:
+    return [item.label for item in response.brief.constraints]
+
+
+def _violation_codes(check) -> set[str]:
+    return {violation.code for violation in check.violations}
+
+
 def test_story_brief_flags_explicit_small_cast_as_not_fit() -> None:
     response = build_story_brief(
         seed="A quiet laundromat ring goes missing: only two people, no villains, low conflict.",
@@ -71,6 +79,26 @@ def test_story_brief_flags_explicit_small_cast_as_not_fit() -> None:
     assert response.brief.runtime_fit_status == "not_fit"
     assert any("3+ active parties" in item for item in response.brief.warnings)
     assert response.brief.revision_suggestions
+
+
+def test_story_brief_preserves_wedding_ring_as_object_phrase() -> None:
+    response = build_story_brief(
+        seed=(
+            "A quiet two-person laundromat story with no villains: one customer "
+            "and one attendant try to find a lost wedding ring without conflict, "
+            "betrayal, or public pressure."
+        ),
+        language="en",
+    )
+
+    labels = {label.lower() for label in _constraint_labels(response)}
+    item_labels = {label.lower() for label in _constraint_item_labels(response)}
+
+    assert "wedding ring" in labels
+    assert "wedding" not in labels
+    assert "ring" not in labels
+    assert "wedding ring" in item_labels
+    assert "ring" not in item_labels
 
 
 def test_story_brief_allows_multi_party_no_villain_comedy() -> None:
@@ -261,6 +289,73 @@ def test_story_brief_fantasy_eclipse_keeps_factions_and_pressure() -> None:
     assert "eclipse" in labels
     assert all("ring" not in label.lower() for label in labels)
     assert all("time pressure" not in warning.lower() for warning in response.brief.warnings)
+
+
+def test_cozy_opening_consistency_rejects_accuse_fight_options() -> None:
+    brief = build_story_brief(
+        seed=(
+            "At a neighborhood bake sale, the PTA treasurer, a teen volunteer, "
+            "a tired parent, and the cupcake judge argue over a missing recipe card "
+            "before judging starts. Keep it cozy and funny: no blackmail, no betrayal, "
+            "only misunderstandings, embarrassment, and a callback joke."
+        ),
+        language="en",
+    ).brief
+    opening = _Opening(
+        title="Recipe Card Mix-Up",
+        cast_names=["PTA treasurer", "teen volunteer", "tired parent", "cupcake judge"],
+        content=(
+            "At the neighborhood bake sale, the PTA treasurer, teen volunteer, tired parent, "
+            "and cupcake judge gather around the missing recipe card before judging starts."
+        ),
+    )
+    opening.opening_message.options = [
+        StoryOption(
+            label="Accuse someone of hiding it to stall the judging",
+            hint="Could start a fight",
+            handle="accuse",
+        )
+    ]
+
+    check = check_story_brief_opening_consistency(brief=brief, opening=opening, language="en")
+
+    assert check.status == "fail"
+    assert check.should_retry is True
+    assert "profile_tone_taboo" in _violation_codes(check)
+
+
+def test_fantasy_opening_consistency_rejects_scapegoat_role_frame() -> None:
+    brief = build_story_brief(
+        seed=(
+            "In a fantasy library during an eclipse, dragons, ink sprites, an apprentice "
+            "spellbook, the head librarian, and a banished dragon clan argue over a cursed index."
+        ),
+        language="en",
+    ).brief
+    opening = _Opening(
+        title="The Scapegoat",
+        cast_names=["dragons", "ink sprites", "apprentice spellbook", "head librarian", "banished dragon clan"],
+        content=(
+            "In the fantasy library during the eclipse, dragons, ink sprites, an apprentice "
+            "spellbook, the head librarian, and a banished dragon clan circle the cursed index."
+        ),
+    )
+    opening.player_role_options = [
+        PlayerRole(
+            role_id="role-01",
+            label="The Scapegoat",
+            public_persona="You are blamed whenever the cursed index moves.",
+            hidden_objective="Make sure someone else takes the fall before the eclipse ends.",
+            leverages_over_npcs=[],
+            starting_assets=["A bent page marker"],
+        )
+    ]
+
+    check = check_story_brief_opening_consistency(brief=brief, opening=opening, language="en")
+
+    assert check.status == "fail"
+    assert check.should_retry is True
+    assert "profile_tone_taboo" in _violation_codes(check)
 
 
 def test_story_brief_filters_tone_phrase_from_fantasy_cast() -> None:
