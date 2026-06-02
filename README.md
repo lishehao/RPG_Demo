@@ -88,6 +88,14 @@ actually played.
 For the current active chain versus legacy experimental folders, see
 [Current System Map](./docs/CURRENT_SYSTEM_MAP.md).
 
+### Evidence Status
+
+| Surface | Reviewer-safe claim | Status |
+| --- | --- | --- |
+| Mainline portfolio/demo loop | Playable full-stack narrative runtime with reviewer path, replay, ending, and demo video. | Complete on `main`; still not a validated consumer product. |
+| Agent Trace + judge chain | Inspectable runtime/eval upgrade with agent trace, deterministic judges, and mock-user evaluation artifacts. | Under review in [PR #18](https://github.com/lishehao/RPG_Demo/pull/18); do not claim as merged or GitHub-CI-validated until that PR is clean. |
+| Story Brief / cast planner v2 | Beta exploration for adapting broader prompts into bounded multi-party scenes. | Experimental branch/snapshots only; not the admissions headline claim. |
+
 ---
 
 ## Innovation
@@ -229,6 +237,10 @@ Start here:
 
 - [Eval v3 redesign](./docs/eval/EVAL_V3_REDESIGN.md)
 - `python -m tools.rpg_eval.runner --dry-run --output-dir artifacts/eval_v3/dry_run`
+
+Agent Trace, Step/Contract/Trajectory Judge, and mock-user evaluation work is
+currently PR evidence, not merged mainline evidence. Track it in
+[PR #18](https://github.com/lishehao/RPG_Demo/pull/18).
 
 ---
 
