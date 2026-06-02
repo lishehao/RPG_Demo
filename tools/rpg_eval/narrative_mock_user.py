@@ -76,7 +76,7 @@ class MockUserConfig(BaseModel):
 
     session_id: str | None = Field(default=None, max_length=120)
     template_id: str | None = Field(default=None, max_length=120)
-    mode: Literal["fixture", "live"] = "fixture"
+    mode: Literal["fixture", "live"] = "live"
     fixture: Literal["merger_audit", "none"] = "merger_audit"
     role_id: str | None = Field(default=None, max_length=64)
     role_selection: RoleSelectionPolicy = "first_available"
@@ -1991,12 +1991,13 @@ def _fixture_player_role(role_id: str, label: str) -> PlayerRole:
 def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Run a deterministic mock player against the narrative API and "
-            "archive an inspectable agent/judge episode trace."
+            "Run a deterministic mock player against the live narrative API by "
+            "default and archive an inspectable agent/judge episode trace. "
+            "Use --mode fixture only for CI/test dry-runs."
         )
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--mode", choices=("fixture", "live"), default="fixture")
+    parser.add_argument("--mode", choices=("fixture", "live"), default="live")
     parser.add_argument("--fixture", choices=("merger_audit", "none"), default="merger_audit")
     parser.add_argument("--session", dest="session_id")
     parser.add_argument("--template", dest="template_id")
@@ -2036,6 +2037,8 @@ def main() -> None:
         trace_output_path=args.trace_output_path,
         summary_output_path=args.summary_output_path,
     )
+    if config.mode == "live" and config.session_id is None and config.template_id is None:
+        raise SystemExit("live mode requires --session <session_id> or --template <template_id>")
     if config.mode == "fixture":
         adapter, config = build_fixture_adapter(config)
     else:
