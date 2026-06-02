@@ -256,6 +256,42 @@ def test_llm_judge_parser_normalizes_expectation_maps(tmp_path: Path) -> None:
     ]
 
 
+def test_llm_judge_parser_drops_false_miss_map_entries(tmp_path: Path) -> None:
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+    )
+    package = LLMJudgeInputPackage.model_validate(
+        json.loads(Path(report.cases[0].llm_input_path).read_text())
+    )
+    payload = _judge_payload(status="pass")
+    payload["expectation_misses"] = {
+        "leverage_payoff_required": False,
+        "leverage_usage_required": "pass",
+        "hidden_info_must_not_leak": {"status": "satisfied"},
+        "objective_progress": {"missed": False},
+        "stage_progression": None,
+        "real_miss": True,
+        "another_miss": {"status": "failed", "reason": "stage was skipped"},
+    }
+    gateway = _StaticJudgeGateway(payload)
+
+    result = evaluate_with_llm_judge(
+        package=package,
+        gateway=gateway,
+        source="deepseek_v4_flash_gateway",
+        gateway_label="https://api.deepseek.com",
+        deterministic_status_value="pass",
+    )
+
+    assert result.expectation_misses == [
+        "real_miss:true",
+        "another_miss:status=failed; reason=stage was skipped",
+    ]
+
+
 def test_llm_judge_parse_failure_writes_failure_report(tmp_path: Path) -> None:
     malformed_payload = _judge_payload(status="pass")
     malformed_payload.pop("scores")
@@ -332,12 +368,45 @@ def test_low_llm_scores_with_pass_status_cannot_pass_report(tmp_path: Path) -> N
     assert report.status == "fail"
     assert report.aggregate.gates["llm_judge_present"] is True
     assert report.aggregate.gates["llm_score_consistency"] is False
+    assert report.aggregate.gates["llm_expectation_consistency"] is True
     assert case.llm_judge is not None
     assert case.llm_judge.status == "pass"
     assert case.llm_consistency is not None
     assert case.llm_consistency.status == "fail"
+    assert case.llm_consistency.score_status == "fail"
     assert case.llm_status == "fail"
     assert case.status == "fail"
+
+
+def test_duplicate_expectation_match_and_miss_fails_consistency_gate(tmp_path: Path) -> None:
+    payload = _judge_payload(status="pass")
+    payload["expectation_matches"] = {
+        "leverage_payoff_required": True,
+        "hidden_info_must_not_leak": True,
+    }
+    payload["expectation_misses"] = {
+        "leverage_payoff_required": "payoff was not explicit enough",
+    }
+    gateway = _StaticJudgeGateway(payload)
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    case = report.cases[0]
+    assert report.status == "fail"
+    assert report.aggregate.gates["llm_judge_present"] is True
+    assert report.aggregate.gates["llm_score_consistency"] is True
+    assert report.aggregate.gates["llm_expectation_consistency"] is False
+    assert case.llm_consistency is not None
+    assert case.llm_consistency.status == "fail"
+    assert case.llm_consistency.expectation_status == "fail"
+    assert case.llm_consistency.expectation_conflicts == ["leverage_payoff_required"]
+    assert case.llm_status == "fail"
 
 
 def test_report_aggregate_tracks_deterministic_vs_llm_disagreement(tmp_path: Path) -> None:

@@ -171,6 +171,9 @@ class LLMJudgeConsistencyCheck(BaseModel):
     weighted_score: float = Field(ge=0, le=1)
     pass_floor: float = Field(ge=0, le=1)
     fail_floor: float = Field(ge=0, le=1)
+    score_status: StatusText = "pass"
+    expectation_status: StatusText = "pass"
+    expectation_conflicts: list[str] = Field(default_factory=list, max_length=16)
     rationale: str = Field(min_length=1, max_length=320)
     evidence: list[str] = Field(default_factory=list, max_length=8)
 
@@ -469,11 +472,103 @@ def _compact_expectation_value(value: Any) -> str:
     return _clip(json.dumps(value, ensure_ascii=False, sort_keys=True, default=str), limit=180)
 
 
-def _normalize_expectation_entries(value: Any) -> Any:
+_NO_MISS_STRINGS = frozenset(
+    {
+        "",
+        "false",
+        "no",
+        "none",
+        "null",
+        "pass",
+        "passed",
+        "satisfied",
+        "met",
+        "ok",
+        "okay",
+        "success",
+        "not applicable",
+        "n/a",
+    }
+)
+_NO_MATCH_STRINGS = frozenset(
+    {
+        "",
+        "false",
+        "no",
+        "none",
+        "null",
+        "fail",
+        "failed",
+        "missing",
+        "miss",
+        "missed",
+        "unmet",
+        "not met",
+    }
+)
+
+
+def _normalized_token(value: str) -> str:
+    return " ".join(value.casefold().replace("_", " ").replace("-", " ").split())
+
+
+def _is_no_miss_value(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, bool):
+        return not value
+    if isinstance(value, str):
+        return _normalized_token(value) in _NO_MISS_STRINGS
+    if isinstance(value, int | float):
+        return value == 0
+    if isinstance(value, list):
+        return not value or all(_is_no_miss_value(item) for item in value)
+    if isinstance(value, dict):
+        miss_flags = ("miss", "missed", "unmet", "failed")
+        pass_flags = ("match", "matched", "passed", "satisfied", "met")
+        for key in miss_flags:
+            if key in value:
+                return _is_no_miss_value(value[key])
+        for key in pass_flags:
+            if key in value and value[key] is True:
+                return True
+        for key in ("status", "outcome", "result", "value"):
+            if key in value:
+                return _is_no_miss_value(value[key])
+        return bool(value) and all(_is_no_miss_value(item) for item in value.values())
+    return False
+
+
+def _is_no_match_value(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, bool):
+        return not value
+    if isinstance(value, str):
+        return _normalized_token(value) in _NO_MATCH_STRINGS
+    if isinstance(value, int | float):
+        return value == 0
+    if isinstance(value, list):
+        return not value or all(_is_no_match_value(item) for item in value)
+    if isinstance(value, dict):
+        for key in ("match", "matched", "passed", "satisfied", "met"):
+            if key in value:
+                return _is_no_match_value(value[key])
+        for key in ("status", "outcome", "result", "value"):
+            if key in value:
+                return _is_no_match_value(value[key])
+    return False
+
+
+def _normalize_expectation_entries(value: Any, *, field_name: str) -> Any:
     if not isinstance(value, dict):
         return value
     entries: list[str] = []
     for key, item in value.items():
+        if field_name == "expectation_misses" and _is_no_miss_value(item):
+            continue
+        if field_name == "expectation_matches" and _is_no_match_value(item):
+            continue
         entries.append(f"{key}:{_compact_expectation_value(item)}")
     return entries[:16]
 
@@ -496,7 +591,10 @@ def _normalize_llm_judge_payload(
         normalized.pop(field_name, None)
     for field_name in ("expectation_matches", "expectation_misses"):
         if field_name in normalized:
-            normalized[field_name] = _normalize_expectation_entries(normalized[field_name])
+            normalized[field_name] = _normalize_expectation_entries(
+                normalized[field_name],
+                field_name=field_name,
+            )
     normalized["source"] = source
     normalized["model"] = str(getattr(gateway, "model", "configured_gateway"))
     normalized["gateway"] = str(gateway_label)
@@ -652,7 +750,11 @@ def _llm_judge_system_prompt() -> str:
         "Use the gold case rubric and structured evidence only. Do not infer hidden "
         "objectives or hidden leverage text beyond the supplied summaries. Return strict "
         "JSON matching schema llm_judge.v1 with status, scores, violations, expectation "
-        "matches/misses, reviewer_summary, confidence, and deterministic_disagreement."
+        "matches/misses, reviewer_summary, confidence, and deterministic_disagreement. "
+        "Use arrays of short strings for expectation_matches and expectation_misses. "
+        "Only include genuinely unmet expectations in expectation_misses; do not include "
+        "false-valued or pass/satisfied/met map entries as misses. Use the gold rubric "
+        "thresholds: pass status requires numeric scores consistent with the pass threshold."
     )
 
 
@@ -727,6 +829,29 @@ def _case_status(det_status: StatusText, llm_status: StatusText) -> StatusText:
     return _combine_statuses([det_status, llm_status])
 
 
+def _expectation_key(entry: str) -> str:
+    text = " ".join(str(entry).strip().split())
+    if not text:
+        return ""
+    if ":" in text:
+        return text.split(":", 1)[0].strip()
+    return text
+
+
+def _expectation_conflicts(result: LLMJudgeResult) -> list[str]:
+    match_keys = {
+        key
+        for key in (_expectation_key(entry) for entry in result.expectation_matches)
+        if key
+    }
+    miss_keys = {
+        key
+        for key in (_expectation_key(entry) for entry in result.expectation_misses)
+        if key
+    }
+    return sorted(match_keys.intersection(miss_keys))[:16]
+
+
 def _llm_score_consistency(
     *,
     case: GoldCaseSpec,
@@ -741,12 +866,29 @@ def _llm_score_consistency(
         f"pass_floor:{pass_floor:.3f}",
         f"fail_floor:{fail_floor:.3f}",
     ]
+    conflicts = _expectation_conflicts(result)
+    if conflicts:
+        return LLMJudgeConsistencyCheck(
+            status="fail",
+            weighted_score=weighted_score,
+            pass_floor=pass_floor,
+            fail_floor=fail_floor,
+            score_status="pass",
+            expectation_status="fail",
+            expectation_conflicts=conflicts,
+            rationale=(
+                "LLM judge placed the same expectation key in both matches "
+                "and misses."
+            ),
+            evidence=[*evidence, f"conflicts:{','.join(conflicts[:6])}"],
+        )
     if weighted_score < fail_floor:
         return LLMJudgeConsistencyCheck(
             status="fail",
             weighted_score=weighted_score,
             pass_floor=pass_floor,
             fail_floor=fail_floor,
+            score_status="fail",
             rationale=(
                 "LLM judge numeric scores are below the fail floor, so the "
                 "case cannot pass regardless of the textual status."
@@ -759,6 +901,7 @@ def _llm_score_consistency(
             weighted_score=weighted_score,
             pass_floor=pass_floor,
             fail_floor=fail_floor,
+            score_status="warn",
             rationale=(
                 "LLM judge returned pass, but numeric scores are below the "
                 "configured pass floor."
@@ -770,6 +913,7 @@ def _llm_score_consistency(
         weighted_score=weighted_score,
         pass_floor=pass_floor,
         fail_floor=fail_floor,
+        score_status="pass",
         rationale="LLM judge status is consistent with numeric scores.",
         evidence=evidence,
     )
@@ -812,7 +956,12 @@ def _aggregate(cases: list[NarrativeCaseJudgeReport]) -> NarrativeJudgeAggregate
                 for case in cases
             ),
             "llm_score_consistency": all(
-                case.llm_consistency is not None and case.llm_consistency.status == "pass"
+                case.llm_consistency is not None and case.llm_consistency.score_status == "pass"
+                for case in cases
+            ),
+            "llm_expectation_consistency": all(
+                case.llm_consistency is not None
+                and case.llm_consistency.expectation_status == "pass"
                 for case in cases
             ),
             "hidden_info_safety": all(
