@@ -16,10 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch on YouTube</strong></a>
-  · <a href="https://lishehao.github.io/RPG_Demo/">Demo page</a>
-  · <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">MP4 fallback</a>
-  · <a href="#innovation">Innovation</a>
+  <a href="#innovation">Innovation</a>
   · <a href="#architecture">Architecture</a>
   · <a href="#evaluation-v3">Evaluation</a>
   · <a href="./docs/CURRENT_SYSTEM_MAP.md">System map</a>
@@ -54,11 +51,7 @@
 <p align="center">
   <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch the YouTube demo</strong></a>
   ·
-  <a href="https://lishehao.github.io/RPG_Demo/">Open GitHub Pages demo page</a>
-  ·
-  <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">Open compressed MP4</a>
-  ·
-  <a href="./docs/demo-video/admissions-narration.txt">Narration script</a>
+  <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">MP4 fallback</a>
 </p>
 
 The unlisted YouTube cut is the primary reviewer watch path. The

@@ -45,20 +45,9 @@ export function PortfolioPage({
               advisor boundary, and ending compiler behind the video.
             </p>
             <div className="portfolio-hero__actions">
-              <a
-                className="portfolio-action portfolio-action--primary"
-                href={YOUTUBE_DEMO_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Watch YouTube demo
-              </a>
-              <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenReviewer}>
+              <button className="portfolio-action portfolio-action--primary" type="button" onClick={onOpenReviewer}>
                 Launch reviewer route
               </button>
-              <a className="portfolio-action portfolio-action--secondary" href={LOCAL_DEMO_MP4_URL}>
-                MP4 fallback
-              </a>
             </div>
           </div>
           <div className="portfolio-hero__video" aria-label="Tiny Stories YouTube demo preview">
@@ -69,7 +58,11 @@ export function PortfolioPage({
               referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen
             />
-            <p>Muted autoplay is best-effort; the YouTube link is the reliable watch path.</p>
+            <p>
+              Muted autoplay is best-effort. <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">Open on YouTube</a>
+              <span aria-hidden="true"> · </span>
+              <a href={LOCAL_DEMO_MP4_URL}>MP4 fallback</a>
+            </p>
           </div>
         </motion.section>
 
@@ -178,9 +171,6 @@ export function PortfolioPage({
             explainable progression, visual polish, and an artifact someone can
             replay or evaluate.
           </p>
-          <button className="portfolio-action portfolio-action--primary" type="button" onClick={onOpenReviewer}>
-            Run the curated demo
-          </button>
         </section>
       </main>
     </div>

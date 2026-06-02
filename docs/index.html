@@ -365,7 +365,6 @@
     <header class="shell nav">
       <div class="brand">Tiny Stories</div>
       <nav class="nav-links" aria-label="Project links">
-        <a href="https://youtu.be/RRJ7uyjW_nA">YouTube</a>
         <a href="https://github.com/lishehao/RPG_Demo">GitHub</a>
         <a href="https://github.com/lishehao/RPG_Demo#architecture">Architecture</a>
         <a href="./demo-video/admissions-narration.txt">Narration</a>
@@ -381,13 +380,6 @@
             role assignment, deterministic state scaffolding, advisor context, player
             choice, free-form action, and ending compilation.
           </p>
-          <div class="cta-row">
-            <a class="play-button" href="https://youtu.be/RRJ7uyjW_nA">Watch on YouTube</a>
-            <button class="play-button" type="button" data-play-demo>Play local MP4 fallback</button>
-            <a class="direct-link" href="./demo-video/tiny-stories-admissions-demo-readme.mp4">
-              Open MP4 directly
-            </a>
-          </div>
           <div class="tag-row" aria-label="Project highlights">
             <span class="tag">React 19</span>
             <span class="tag">FastAPI</span>
@@ -408,16 +400,14 @@
           <div class="video-actions">
             <span>
               <span class="video-kicker">Admissions reviewer cut</span>
-              Muted YouTube preview is best-effort; use the watch link if autoplay is blocked.
+              Muted preview is best-effort; open YouTube if playback is blocked.
             </span>
             <span>
-              <a href="https://youtu.be/RRJ7uyjW_nA">Watch on YouTube</a>
-              ·
-              <a href="./demo-video/tiny-stories-admissions-demo-readme.mp4">Open MP4</a>
+              <a href="https://youtu.be/RRJ7uyjW_nA">Open on YouTube</a>
             </span>
           </div>
-          <details class="fallback-video" data-demo-fallback>
-            <summary>Use local MP4 fallback</summary>
+          <details class="fallback-video">
+            <summary>MP4 fallback</summary>
             <video
               controls
               data-demo-video
@@ -503,38 +493,5 @@
         <a href="https://github.com/lishehao/RPG_Demo">View repository</a>
       </span>
     </footer>
-    <script>
-      const video = document.querySelector("[data-demo-video]");
-      const fallback = document.querySelector("[data-demo-fallback]");
-      const playButton = document.querySelector("[data-play-demo]");
-
-      playButton?.addEventListener("click", async () => {
-        if (!video) return;
-
-        if (fallback) fallback.open = true;
-        video.muted = false;
-        video.volume = 1;
-        video.controls = true;
-
-        try {
-          await video.play();
-        } catch {
-          video.focus();
-          playButton.textContent = "Use the video play control";
-        }
-      });
-
-      video?.addEventListener("playing", () => {
-        if (playButton) playButton.textContent = "Playing with sound";
-      });
-
-      video?.addEventListener("pause", () => {
-        if (playButton && !video.ended) playButton.textContent = "Resume demo with sound";
-      });
-
-      video?.addEventListener("ended", () => {
-        if (playButton) playButton.textContent = "Replay demo with sound";
-      });
-    </script>
   </body>
 </html>
