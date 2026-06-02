@@ -174,6 +174,10 @@ class LLMJudgeConsistencyCheck(BaseModel):
     score_status: StatusText = "pass"
     expectation_status: StatusText = "pass"
     expectation_conflicts: list[str] = Field(default_factory=list, max_length=16)
+    required_expectation_status: StatusText = "pass"
+    required_expectation_matches: list[str] = Field(default_factory=list, max_length=32)
+    required_expectation_misses: list[str] = Field(default_factory=list, max_length=32)
+    non_blocking_expectation_misses: list[str] = Field(default_factory=list, max_length=32)
     rationale: str = Field(min_length=1, max_length=320)
     evidence: list[str] = Field(default_factory=list, max_length=8)
 
@@ -868,7 +872,9 @@ def _llm_judge_system_prompt() -> str:
         "matches/misses, reviewer_summary, confidence, and deterministic_disagreement. "
         "Use arrays of short strings for expectation_matches and expectation_misses. "
         "Only include genuinely unmet expectations in expectation_misses; do not include "
-        "false-valued or pass/satisfied/met map entries as misses. Use the gold rubric "
+        "false-valued or pass/satisfied/met map entries as misses. A required gold "
+        "expectation miss cannot coexist with status=pass unless the expectation is "
+        "explicitly non-blocking and the rationale names why. Use the gold rubric "
         "thresholds: pass status requires numeric scores consistent with the pass threshold."
     )
 
@@ -967,6 +973,31 @@ def _expectation_conflicts(result: LLMJudgeResult) -> list[str]:
     return sorted(match_keys.intersection(miss_keys))[:16]
 
 
+def _expectation_keys(entries: list[str]) -> set[str]:
+    return {key for key in (_expectation_key(entry) for entry in entries) if key}
+
+
+def _required_expectation_keys(case: GoldCaseSpec) -> set[str]:
+    expected = case.expected
+    keys = {"min_turns", "trajectory_status_allowed"}
+    if expected.required_stage_progression:
+        keys.add("required_stage_progression")
+    if expected.expected_role_behavior.strip():
+        keys.add("expected_role_behavior")
+    if expected.leverage_usage_required:
+        keys.add("leverage_usage_required")
+    if expected.leverage_payoff_required:
+        keys.add("leverage_payoff_required")
+    if expected.hidden_info_must_not_leak:
+        keys.add("hidden_info_must_not_leak")
+    if expected.forbidden_violation_codes:
+        keys.add("forbidden_violation_codes")
+        keys.update(expected.forbidden_violation_codes)
+    if expected.ending_required:
+        keys.add("ending_required")
+    return keys
+
+
 def _llm_score_consistency(
     *,
     case: GoldCaseSpec,
@@ -981,6 +1012,16 @@ def _llm_score_consistency(
         f"pass_floor:{pass_floor:.3f}",
         f"fail_floor:{fail_floor:.3f}",
     ]
+    match_keys = _expectation_keys(result.expectation_matches)
+    miss_keys = _expectation_keys(result.expectation_misses)
+    required_keys = _required_expectation_keys(case)
+    required_matches = sorted(match_keys.intersection(required_keys))[:32]
+    required_misses = sorted(miss_keys.intersection(required_keys))[:32]
+    non_blocking_misses = sorted(miss_keys.difference(required_keys))[:32]
+    expectation_evidence = [
+        f"required_misses:{','.join(required_misses[:6]) if required_misses else 'none'}",
+        f"non_blocking_misses:{','.join(non_blocking_misses[:6]) if non_blocking_misses else 'none'}",
+    ]
     conflicts = _expectation_conflicts(result)
     if conflicts:
         return LLMJudgeConsistencyCheck(
@@ -991,11 +1032,37 @@ def _llm_score_consistency(
             score_status="pass",
             expectation_status="fail",
             expectation_conflicts=conflicts,
+            required_expectation_status="fail" if required_misses else "pass",
+            required_expectation_matches=required_matches,
+            required_expectation_misses=required_misses,
+            non_blocking_expectation_misses=non_blocking_misses,
             rationale=(
                 "LLM judge placed the same expectation key in both matches "
                 "and misses."
             ),
-            evidence=[*evidence, f"conflicts:{','.join(conflicts[:6])}"],
+            evidence=[
+                *evidence,
+                *expectation_evidence,
+                f"conflicts:{','.join(conflicts[:6])}",
+            ],
+        )
+    if required_misses:
+        return LLMJudgeConsistencyCheck(
+            status="fail",
+            weighted_score=weighted_score,
+            pass_floor=pass_floor,
+            fail_floor=fail_floor,
+            score_status="pass",
+            expectation_status="pass",
+            required_expectation_status="fail",
+            required_expectation_matches=required_matches,
+            required_expectation_misses=required_misses,
+            non_blocking_expectation_misses=non_blocking_misses,
+            rationale=(
+                "LLM judge missed required gold expectations, so the case "
+                "cannot pass regardless of the textual status or numeric score."
+            ),
+            evidence=[*evidence, *expectation_evidence],
         )
     if weighted_score < fail_floor:
         return LLMJudgeConsistencyCheck(
@@ -1004,11 +1071,14 @@ def _llm_score_consistency(
             pass_floor=pass_floor,
             fail_floor=fail_floor,
             score_status="fail",
+            required_expectation_matches=required_matches,
+            required_expectation_misses=required_misses,
+            non_blocking_expectation_misses=non_blocking_misses,
             rationale=(
                 "LLM judge numeric scores are below the fail floor, so the "
                 "case cannot pass regardless of the textual status."
             ),
-            evidence=evidence,
+            evidence=[*evidence, *expectation_evidence],
         )
     if result.status == "pass" and weighted_score < pass_floor:
         return LLMJudgeConsistencyCheck(
@@ -1017,11 +1087,14 @@ def _llm_score_consistency(
             pass_floor=pass_floor,
             fail_floor=fail_floor,
             score_status="warn",
+            required_expectation_matches=required_matches,
+            required_expectation_misses=required_misses,
+            non_blocking_expectation_misses=non_blocking_misses,
             rationale=(
                 "LLM judge returned pass, but numeric scores are below the "
                 "configured pass floor."
             ),
-            evidence=evidence,
+            evidence=[*evidence, *expectation_evidence],
         )
     return LLMJudgeConsistencyCheck(
         status="pass",
@@ -1029,8 +1102,11 @@ def _llm_score_consistency(
         pass_floor=pass_floor,
         fail_floor=fail_floor,
         score_status="pass",
+        required_expectation_matches=required_matches,
+        required_expectation_misses=required_misses,
+        non_blocking_expectation_misses=non_blocking_misses,
         rationale="LLM judge status is consistent with numeric scores.",
-        evidence=evidence,
+        evidence=[*evidence, *expectation_evidence],
     )
 
 
@@ -1084,6 +1160,11 @@ def _aggregate(cases: list[NarrativeCaseJudgeReport]) -> NarrativeJudgeAggregate
             "llm_expectation_consistency": all(
                 case.llm_consistency is not None
                 and case.llm_consistency.expectation_status == "pass"
+                for case in cases
+            ),
+            "llm_required_expectations_met": all(
+                case.llm_consistency is not None
+                and case.llm_consistency.required_expectation_status == "pass"
                 for case in cases
             ),
             "hidden_info_safety": all(

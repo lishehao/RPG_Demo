@@ -109,6 +109,7 @@ def test_gold_set_runner_produces_report_and_artifacts(tmp_path: Path) -> None:
     assert report.aggregate.gates["gold_set_loaded"] is True
     assert report.aggregate.gates["mock_user_runs_completed"] is True
     assert report.aggregate.gates["llm_judge_present"] is True
+    assert report.aggregate.gates["llm_required_expectations_met"] is True
     case = report.cases[0]
     assert case.status == "pass"
     assert Path(case.trace_path).exists()
@@ -427,6 +428,7 @@ def test_low_llm_scores_with_pass_status_cannot_pass_report(tmp_path: Path) -> N
     assert report.aggregate.gates["llm_judge_present"] is True
     assert report.aggregate.gates["llm_score_consistency"] is False
     assert report.aggregate.gates["llm_expectation_consistency"] is True
+    assert report.aggregate.gates["llm_required_expectations_met"] is True
     assert case.llm_judge is not None
     assert case.llm_judge.status == "pass"
     assert case.llm_consistency is not None
@@ -434,6 +436,58 @@ def test_low_llm_scores_with_pass_status_cannot_pass_report(tmp_path: Path) -> N
     assert case.llm_consistency.score_status == "fail"
     assert case.llm_status == "fail"
     assert case.status == "fail"
+
+
+def test_required_expectation_miss_cannot_pass_report(tmp_path: Path) -> None:
+    payload = _judge_payload(status="pass")
+    payload["expectation_matches"] = ["hidden_info_must_not_leak"]
+    payload["expectation_misses"] = ["leverage_payoff_required"]
+    payload["reviewer_summary"] = "The run passes overall despite one miss."
+    gateway = _StaticJudgeGateway(payload)
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    case = report.cases[0]
+    assert report.status == "fail"
+    assert report.aggregate.gates["llm_score_consistency"] is True
+    assert report.aggregate.gates["llm_expectation_consistency"] is True
+    assert report.aggregate.gates["llm_required_expectations_met"] is False
+    assert case.llm_consistency is not None
+    assert case.llm_consistency.status == "fail"
+    assert case.llm_consistency.required_expectation_status == "fail"
+    assert case.llm_consistency.required_expectation_matches == ["hidden_info_must_not_leak"]
+    assert case.llm_consistency.required_expectation_misses == ["leverage_payoff_required"]
+    assert case.llm_status == "fail"
+    assert case.status == "fail"
+
+
+def test_non_blocking_expectation_miss_can_pass_report(tmp_path: Path) -> None:
+    payload = _judge_payload(status="pass")
+    payload["expectation_misses"] = ["optional_tone_polish"]
+    gateway = _StaticJudgeGateway(payload)
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    case = report.cases[0]
+    assert report.status == "pass"
+    assert report.aggregate.gates["llm_required_expectations_met"] is True
+    assert report.aggregate.gates["llm_expectation_consistency"] is True
+    assert case.llm_consistency is not None
+    assert case.llm_consistency.status == "pass"
+    assert case.llm_consistency.required_expectation_misses == []
+    assert case.llm_consistency.non_blocking_expectation_misses == ["optional_tone_polish"]
 
 
 def test_duplicate_expectation_match_and_miss_fails_consistency_gate(tmp_path: Path) -> None:
@@ -460,10 +514,12 @@ def test_duplicate_expectation_match_and_miss_fails_consistency_gate(tmp_path: P
     assert report.aggregate.gates["llm_judge_present"] is True
     assert report.aggregate.gates["llm_score_consistency"] is True
     assert report.aggregate.gates["llm_expectation_consistency"] is False
+    assert report.aggregate.gates["llm_required_expectations_met"] is False
     assert case.llm_consistency is not None
     assert case.llm_consistency.status == "fail"
     assert case.llm_consistency.expectation_status == "fail"
     assert case.llm_consistency.expectation_conflicts == ["leverage_payoff_required"]
+    assert case.llm_consistency.required_expectation_misses == ["leverage_payoff_required"]
     assert case.llm_status == "fail"
 
 
