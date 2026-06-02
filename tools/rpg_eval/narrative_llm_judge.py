@@ -39,6 +39,19 @@ SCORE_DIMENSIONS = (
     "hidden_info_safety",
 )
 LLM_JUDGE_BENIGN_METADATA_FIELDS = frozenset({"case_id"})
+LLM_JUDGE_CONFIDENCE_LABELS = {
+    "high": 0.9,
+    "high confidence": 0.9,
+    "very high": 0.9,
+    "medium": 0.6,
+    "medium confidence": 0.6,
+    "moderate": 0.6,
+    "moderate confidence": 0.6,
+    "mid": 0.6,
+    "low": 0.3,
+    "low confidence": 0.3,
+    "very low": 0.3,
+}
 StatusText = Literal["pass", "warn", "fail"]
 RunReportStatus = Literal["pass", "warn", "fail", "validation_failed"]
 RunMode = Literal["case", "fixture", "live"]
@@ -597,6 +610,12 @@ def _normalize_expectation_entries(value: Any, *, field_name: str) -> Any:
     return entries[:16]
 
 
+def _normalize_confidence(value: Any) -> Any:
+    if isinstance(value, str):
+        return LLM_JUDGE_CONFIDENCE_LABELS.get(_normalized_token(value), value)
+    return value
+
+
 def _normalize_llm_judge_payload(
     payload: Any,
     *,
@@ -619,6 +638,8 @@ def _normalize_llm_judge_payload(
                 normalized[field_name],
                 field_name=field_name,
             )
+    if "confidence" in normalized:
+        normalized["confidence"] = _normalize_confidence(normalized["confidence"])
     normalized["source"] = source
     normalized["model"] = str(getattr(gateway, "model", "configured_gateway"))
     normalized["gateway"] = str(gateway_label)
@@ -875,7 +896,8 @@ def _llm_judge_system_prompt() -> str:
         "false-valued or pass/satisfied/met map entries as misses. A required gold "
         "expectation miss cannot coexist with status=pass unless the expectation is "
         "explicitly non-blocking and the rationale names why. Use the gold rubric "
-        "thresholds: pass status requires numeric scores consistent with the pass threshold."
+        "thresholds: pass status requires numeric scores consistent with the pass threshold. "
+        "Return confidence as a numeric value in [0, 1], not a label such as high or medium."
     )
 
 

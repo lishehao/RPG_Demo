@@ -280,6 +280,90 @@ def test_llm_judge_parser_strips_allowlisted_case_id_metadata(tmp_path: Path) ->
     assert "case_id" not in result.model_dump()
 
 
+@pytest.mark.parametrize(
+    ("raw_confidence", "expected_confidence"),
+    [
+        ("high", 0.9),
+        (" HIGH confidence ", 0.9),
+        ("medium-confidence", 0.6),
+        ("LOW", 0.3),
+    ],
+)
+def test_llm_judge_parser_normalizes_confidence_labels(
+    tmp_path: Path,
+    raw_confidence: str,
+    expected_confidence: float,
+) -> None:
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+    )
+    package = LLMJudgeInputPackage.model_validate(
+        json.loads(Path(report.cases[0].llm_input_path).read_text())
+    )
+    payload = _judge_payload(status="pass")
+    payload["confidence"] = raw_confidence
+    gateway = _StaticJudgeGateway(payload)
+
+    result = evaluate_with_llm_judge(
+        package=package,
+        gateway=gateway,
+        source="deepseek_v4_flash_gateway",
+        gateway_label="https://api.deepseek.com",
+        deterministic_status_value="pass",
+    )
+
+    assert result.status == "pass"
+    assert result.confidence == pytest.approx(expected_confidence)
+
+
+def test_unknown_confidence_label_still_writes_failure_report(tmp_path: Path) -> None:
+    malformed_payload = _judge_payload(status="pass")
+    malformed_payload["confidence"] = "certain"
+    gateway = _StaticJudgeGateway(malformed_payload)
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    case = report.cases[0]
+    assert report.status == "validation_failed"
+    assert report.aggregate.gates["llm_judge_present"] is False
+    assert case.llm_judge is None
+    assert case.llm_judge_error is not None
+    assert "confidence" in case.llm_judge_error.message
+    assert case.llm_judge_error.safe_payload_summary["confidence"] == "certain"
+    assert case.llm_judge_error.normalized_payload_summary["confidence"] == "certain"
+
+
+def test_out_of_range_numeric_confidence_still_writes_failure_report(tmp_path: Path) -> None:
+    malformed_payload = _judge_payload(status="pass")
+    malformed_payload["confidence"] = 1.2
+    gateway = _StaticJudgeGateway(malformed_payload)
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    case = report.cases[0]
+    assert report.status == "validation_failed"
+    assert report.aggregate.gates["llm_judge_present"] is False
+    assert case.llm_judge_error is not None
+    assert "confidence" in case.llm_judge_error.message
+    assert case.llm_judge_error.safe_payload_summary["confidence"] == 1.2
+    assert case.llm_judge_error.normalized_payload_summary["confidence"] == 1.2
+
+
 def test_llm_judge_parser_normalizes_expectation_maps(tmp_path: Path) -> None:
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
