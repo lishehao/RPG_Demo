@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Social drama cover</title>
+  <desc id="desc">Text-free hand-drawn case table with empty chairs, evidence cards, and intersecting pressure lines.</desc>
+  <defs>
+    <linearGradient id="wash" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff7e8"/>
+      <stop offset="1" stop-color="#d7c0a0"/>
+    </linearGradient>
+    <filter id="rough">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="2" seed="41" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.35"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="url(#wash)"/>
+  <g filter="url(#rough)" fill="none" stroke="#2d241a" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M236 229c247-44 500-42 759 7 23 115 15 223-25 324-249 39-500 35-753-13-23-113-18-220 19-318z" stroke-width="4"/>
+    <path d="M295 292c96-16 192-15 288 1 13 55 10 107-8 154-95 15-190 14-286-4-10-54-7-104 6-151z" stroke-width="3"/>
+    <path d="M673 287c92-10 181-4 267 18 5 51-3 98-24 142-85 9-171 3-259-18-4-50 3-96 16-142z" stroke-width="3"/>
+    <path d="M383 501c135-22 271-22 407 1M396 348c227 47 402 39 526-23M531 332c70 42 124 95 162 159" stroke-width="2.5" opacity="0.55"/>
+    <path d="M158 342c42-70 95-111 160-122M1076 337c-37-71-88-115-153-132M202 596c64-36 134-47 210-32M1028 601c-72-41-146-54-222-38" stroke-width="3" opacity="0.52"/>
+    <path d="M166 197c58-26 115-24 171 8M974 166c67-23 128-12 184 32M117 482c61 13 112 42 153 86M1045 480c56 4 101 27 136 70" stroke-width="3" opacity="0.46"/>
+    <path d="M422 145c42-18 85-19 130-4 10 38 7 72-12 103-42 13-84 10-126-8-9-36-6-70 8-91z" stroke-width="3"/>
+    <path d="M743 132c43-14 86-11 129 8 5 37-2 70-23 100-43 9-84 4-124-15-5-35 1-67 18-93z" stroke-width="3"/>
+    <path d="M478 185c22-4 45-4 68 1M793 180c22 1 44 6 66 14" stroke-width="2" opacity="0.62"/>
+  </g>
+  <g fill="#c06a36" opacity="0.15">
+    <circle cx="368" cy="288" r="88"/>
+    <circle cx="797" cy="308" r="96"/>
+    <circle cx="623" cy="522" r="82"/>
+  </g>
+</svg>

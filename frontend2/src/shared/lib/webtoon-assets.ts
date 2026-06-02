@@ -1,6 +1,6 @@
-// Maps stable story / character / theme keys to webtoon-style illustrations
-// in /webtoons/. Keep all path strings here so design output and runtime
-// resolution stay in sync — Claude Design references the same URLs verbatim.
+// Maps stable story / character / theme keys to visual assets. Template cover
+// surfaces now use curated, text-free illustration panels; older /webtoons/
+// pools remain for avatars, endings, and legacy scene accents.
 
 const SHELLS = [
   "campus_romance",
@@ -16,6 +16,7 @@ const SHELLS = [
   "palace_drama",
 ] as const
 type Shell = (typeof SHELLS)[number]
+type StoryCoverProfile = "cozy_comedy" | "fantasy_sci_fi" | "high_drama_social" | "neutral"
 
 // Each shell has five variants now; pick is deterministic by template_id hash
 // so the same template always shows the same cover, but two templates of the
@@ -143,6 +144,67 @@ const THEME_TO_SHELL: Record<string, Shell> = {
   mystery: "urban_supernatural",
 }
 
+const STORY_COVER_BY_PROFILE: Record<StoryCoverProfile, string> = {
+  cozy_comedy: "/illustrations/story-cover-cozy-comedy.svg",
+  fantasy_sci_fi: "/illustrations/story-cover-fantasy-sci-fi.svg",
+  high_drama_social: "/illustrations/story-cover-high-drama-social.svg",
+  neutral: "/illustrations/story-cover-neutral.svg",
+}
+
+const TENSION_PROFILE_TO_COVER: Record<string, StoryCoverProfile> = {
+  comedy: "cozy_comedy",
+  cozy_mystery: "cozy_comedy",
+  fantasy_sci_fi: "fantasy_sci_fi",
+  high_drama: "high_drama_social",
+  family_social: "high_drama_social",
+}
+
+const COVER_PROFILE_KEYWORDS: Record<StoryCoverProfile, readonly string[]> = {
+  fantasy_sci_fi: [
+    "mars", "colony", "oxygen", "space", "planet", "alien", "sci-fi", "sci fi",
+    "science fiction", "dragon", "spell", "magic", "magical", "library", "eclipse",
+    "wizard", "apprentice", "artifact", "technical", "faction", "clan",
+    "火星", "殖民", "氧气", "太空", "星球", "龙", "魔法", "图书馆", "日食",
+  ],
+  cozy_comedy: [
+    "cozy", "comedy", "comic", "funny", "bake sale", "cupcake", "talent show",
+    "theatre", "theater", "misunderstanding", "callback", "embarrass", "playful",
+    "low stakes", "gentle", "neighborhood", "volunteer", "fun",
+    "喜剧", "搞笑", "温馨", "轻松", "误会", "才艺", "烘焙", "纸杯蛋糕",
+  ],
+  high_drama_social: [
+    "board", "vote", "cfo", "founder", "union", "investor", "chair", "company",
+    "office", "inheritance", "estate", "will", "scandal", "press", "trial",
+    "courtroom", "deadline", "public pressure", "family dinner", "conflict",
+    "董事", "投票", "创始", "工会", "投资", "公司", "遗产", "丑闻", "法庭",
+  ],
+  neutral: [],
+}
+
+function storyCoverFromProfile(profile: StoryCoverProfile): string {
+  return STORY_COVER_BY_PROFILE[profile]
+}
+
+function countKeywordHits(corpus: string, keywords: readonly string[]): number {
+  return keywords.reduce((total, keyword) => total + (corpus.includes(keyword) ? 1 : 0), 0)
+}
+
+function inferCoverProfileFromText(corpus: string, explicitProfile?: string | null): StoryCoverProfile {
+  const explicit = explicitProfile ? TENSION_PROFILE_TO_COVER[explicitProfile] : undefined
+  if (explicit) return explicit
+
+  const lower = corpus.toLowerCase()
+  const hits = {
+    fantasy_sci_fi: countKeywordHits(lower, COVER_PROFILE_KEYWORDS.fantasy_sci_fi),
+    cozy_comedy: countKeywordHits(lower, COVER_PROFILE_KEYWORDS.cozy_comedy),
+    high_drama_social: countKeywordHits(lower, COVER_PROFILE_KEYWORDS.high_drama_social),
+  }
+  if (hits.fantasy_sci_fi > 0 && hits.fantasy_sci_fi >= hits.cozy_comedy) return "fantasy_sci_fi"
+  if (hits.cozy_comedy > 0) return "cozy_comedy"
+  if (hits.high_drama_social > 0) return "high_drama_social"
+  return "neutral"
+}
+
 function stableHash(input: string): number {
   let h = 5381
   for (let i = 0; i < input.length; i += 1) {
@@ -180,9 +242,8 @@ function shellVariantSlug(shell: Shell, key: string): string {
 
 /** Cover image for a world card / story drawer / world detail hero. */
 export function getCoverByStoryId(storyId: string, theme?: string | null): string {
-  const themed = theme ? THEME_TO_SHELL[theme] : undefined
-  const shell = themed ?? pick(SHELLS, storyId)
-  return `/webtoons/shells/${shellVariantSlug(shell, storyId)}.jpg`
+  const corpus = `${theme ?? ""} ${storyId}`
+  return storyCoverFromProfile(inferCoverProfileFromText(corpus, theme))
 }
 
 // ───────── portraits ─────────
@@ -260,6 +321,7 @@ const PEAK_CLOSEUPS = [
 
 export const ASSET_CATALOG = {
   shells: SHELLS.flatMap((s) => shellVariantSlugs(s).map((slug) => `/webtoons/shells/${slug}.jpg`)),
+  storyCovers: Object.values(STORY_COVER_BY_PROFILE),
   avatars: {
     female: AVATAR_FEMALE.map((s) => `/webtoons/avatars/${s}.jpg`),
     male: AVATAR_MALE.map((s) => `/webtoons/avatars/${s}.jpg`),
@@ -281,6 +343,11 @@ type LooseTemplate = {
   seed: string
   title?: string
   cast: LooseCast[]
+  story_brief?: {
+    tension_profile?: string | null
+    genre_tone?: string | null
+    story_kernel?: string | null
+  } | null
 }
 
 const SHELL_KEYWORDS: Record<Shell, readonly string[]> = {
@@ -381,11 +448,21 @@ function inferGender(role: string, relation: string): "female" | "male" {
   return stableHash(`${role}|${relation}`) % 2 === 0 ? "female" : "male"
 }
 
-/** Cover for a template card / hero. Uses variant -01/-02 deterministically
- *  per template so two templates of the same shell get different visuals. */
+/** Cover for a template card / hero.
+ * Curated SVG panels are intentionally text-free and broad enough for live
+ * generated premises, avoiding old text-heavy JPG covers that could expose
+ * unrelated language or mismatched story cues.
+ */
 export function getCoverForTemplate(template: LooseTemplate): string {
-  const shell = inferShell(template)
-  return `/webtoons/shells/${shellVariantSlug(shell, template.template_id)}.jpg`
+  const corpus = [
+    template.seed,
+    template.title ?? "",
+    template.story_brief?.genre_tone ?? "",
+    template.story_brief?.story_kernel ?? "",
+    template.cast.map((c) => `${c.display_name} ${c.role} ${c.relation_to_protagonist}`).join(" "),
+  ].join(" ")
+  const profile = inferCoverProfileFromText(corpus, template.story_brief?.tension_profile)
+  return storyCoverFromProfile(profile)
 }
 
 /** Stable per-character avatar within a template. */

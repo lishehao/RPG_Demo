@@ -84,6 +84,10 @@ replace basic UI affordances or make controls harder to scan.
 - Narrative prose must sit on clean, high-contrast surfaces.
 - Play cover/header imagery can carry the illustrated style, but it should not
   cross story text or hide controls.
+- Cover/reference images should use curated, text-free local illustrations
+  first. They may be broad by profile, but must not contain readable unrelated
+  language, UI screenshots, or story-specific claims that the premise did not
+  earn.
 - Options, intervention cards, diary, advisor, and impact receipts stay aligned
   and product-like, with only light notebook accents.
 - Keep the verified objective contrast and advisor/header overlap fixes.
@@ -122,6 +126,10 @@ replace basic UI affordances or make controls harder to scan.
 ## Current Implementation Notes
 
 - Core UI tokens are warm-neutral and restrained.
+- Play/template cover surfaces use a small curated SVG set under
+  `/illustrations/story-cover-*.svg`: neutral storyboard, cozy/comedy,
+  fantasy/sci-fi, and high-drama/social. Selection is deterministic from
+  profile and lightweight seed/title/cast keywords.
 - Reviewer mode includes an illustration slot using
   `/illustrations/case-notebook-panel.svg` as a bounded reference asset.
 - The prior hand-drawn repair fixes remain required: play objective contrast,
@@ -134,6 +142,9 @@ replace basic UI affordances or make controls harder to scan.
   thumbnails, clue/object cards, role-reference cards, empty-state panels, and
   reviewer evidence boards.
 - Prefer reusable asset slots and predictable dimensions over one-off art drops.
+- Generated per-story imagery should remain future work until it has prompt
+  controls, language/text hygiene, fallback covers, and reviewer-safe asset
+  gating. Curated static covers are the default beta strategy.
 - Keep assets named by function: `story-cover`, `scene-thumb`,
   `reference-card`, `evidence-board`, `empty-state`.
 - When adding generated image assets, keep prompts short, inspect outputs, and

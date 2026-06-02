@@ -1294,7 +1294,7 @@ function Header({
     ? {
         ...ppStyles.header,
         ...ppStyles.headerWithCover,
-        backgroundImage: `linear-gradient(180deg, rgba(20,16,12,0.55) 0%, rgba(20,16,12,0.92) 100%), url(${coverUrl})`,
+        backgroundImage: `linear-gradient(180deg, rgba(42,32,22,0.34) 0%, rgba(42,32,22,0.78) 100%), url(${coverUrl})`,
       }
     : compactHeader
       ? { ...ppStyles.header, ...ppStyles.headerCompact }
