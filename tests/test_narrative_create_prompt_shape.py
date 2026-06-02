@@ -289,7 +289,7 @@ def test_create_template_retries_brief_consistency_language_artifact(
     assert response.story_brief_consistency.status == "pass"
 
 
-def test_create_template_retries_mars_brief_contract_feedback(
+def test_create_template_uses_reliable_opening_first_for_heavy_mars_brief(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -306,54 +306,7 @@ def test_create_template_retries_mars_brief_contract_feedback(
 
     def fake_generate_opening(**kwargs):
         calls.append(kwargs)
-        if len(calls) == 1:
-            title = "Oxygen Heist"
-            content = (
-                "Hydroponics, Oxygen, Security, Medical, and Education argue over a backup oxygen tank "
-                "while a scapegoat deadline turns the talent show into an emergency."
-            )
-            cast_names = ["Hydroponics", "Oxygen", "Security", "Medical", "Education"]
-        else:
-            title = "Broadcast Rehearsal"
-            content = (
-                "Hydroponics, Oxygen, Security, Medical, and Education crowd the rehearsal table while "
-                "Waste Recycling, Transit, Finance, Communications, Theatre Club, and Earth Media watch "
-                "the final broadcast timer and argue over who gets represented in the comedy talent show."
-            )
-            cast_names = ["Hydroponics", "Oxygen", "Security", "Medical", "Education", "Theatre Club", "Earth Media"]
-        return type(
-            "Opening",
-            (),
-            {
-                "title": title,
-                "advisor_persona": "A patient producer watches from the broadcast booth.",
-                "cast": [
-                    CastMember(
-                        character_id=name.lower().replace(" ", "_"),
-                        display_name=name,
-                        role="planned faction",
-                        relation_to_protagonist="Part of the Mars talent-show pressure.",
-                    )
-                    for name in cast_names
-                ],
-                "opening_message": StoryMessage(
-                    ord=0,
-                    role="narrator",
-                    content=content,
-                    options=[StoryOption(label="Ask who is missing from the lineup", hint="Represent factions", handle="ask")],
-                ),
-                "player_goals": [],
-                "failure_conditions": [],
-                "player_role_options": [
-                    PlayerRole(
-                        role_id="producer",
-                        label="Producer",
-                        public_persona="The producer trying to keep the comedy talent show representative.",
-                        hidden_objective="Protect the final broadcast from becoming a crisis briefing.",
-                    )
-                ],
-            },
-        )()
+        raise AssertionError("heavy adapted Story Brief should use reliable opening before live retries")
 
     monkeypatch.setattr(narrative_service_module, "generate_opening", fake_generate_opening)
     repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
@@ -364,11 +317,39 @@ def test_create_template_retries_mars_brief_contract_feedback(
         owner_user_id="usr_test",
     )
 
-    assert len(calls) == 2
-    assert "brief_emphasized_entity_absent" in calls[1]["brief_consistency_feedback"]
-    assert "lower_stakes_profile_escalated" in calls[1]["brief_consistency_feedback"]
+    assert calls == []
     assert response.story_brief_consistency is not None
     assert response.story_brief_consistency.status == "pass"
+    assert "Theatre Club" in response.opening.content
+    assert "Earth Media" in response.opening.content
+    assert "backup oxygen tank" not in response.opening.content
+    visible_text = " ".join(
+        [
+            response.template.title,
+            response.opening.content,
+            response.template.advisor_persona,
+            *[option.label for option in response.opening.options],
+            *[option.hint or "" for option in response.opening.options],
+            *[goal.goal for goal in response.template.player_goals],
+            *[goal.stakes for goal in response.template.player_goals],
+            *[condition.label for condition in response.template.failure_conditions],
+            *[condition.description for condition in response.template.failure_conditions],
+            *[role.label for role in response.template.player_role_options],
+            *[role.public_persona for role in response.template.player_role_options],
+        ]
+    ).lower()
+    for internal_term in (
+        "fallback",
+        "brief",
+        "active focus",
+        "background pressure",
+        "playable",
+        "contract",
+        "checker",
+        "reviewed",
+        "represented parties",
+    ):
+        assert internal_term not in visible_text
 
 
 def test_create_template_uses_brief_fallback_after_repeated_consistency_failure(

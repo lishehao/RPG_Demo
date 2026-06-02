@@ -181,40 +181,43 @@ class NarrativeService:
                 ),
                 status_code=422,
             )
-        try:
-            opening = generate_opening(
-                gateway=self.gateway,
-                seed=seed,
-                language=request.language,
-                story_brief=request.story_brief,
-                max_attempts=2 if request.story_brief is not None else 3,
-            )
-        except NarrativeGatewayError as exc:
-            if request.story_brief is not None and exc.code in {"llm_invalid_json", "llm_invalid_response"}:
-                opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
-            else:
-                raise NarrativeServiceError(
-                    code=exc.code, message=exc.message, status_code=exc.status_code
-                ) from exc
-        except ValueError as exc:
-            message = str(exc)
-            if "cast too small after sanitization" in message:
-                raise NarrativeServiceError(
-                    code="opening_prompt_shape_mismatch",
-                    message=(
-                        "This premise needs a clearer playable shape: try 3+ people, "
-                        "one public conflict, one secret or contested object, and time pressure."
-                    ),
-                    status_code=422,
-                ) from exc
-            if request.story_brief is not None:
-                opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
-            else:
-                raise NarrativeServiceError(
-                    code="opening_invalid",
-                    message=f"LLM returned an unusable opening: {exc}",
-                    status_code=502,
-                ) from exc
+        if request.story_brief is not None and _story_brief_prefers_reliable_opening(request.story_brief):
+            opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+        else:
+            try:
+                opening = generate_opening(
+                    gateway=self.gateway,
+                    seed=seed,
+                    language=request.language,
+                    story_brief=request.story_brief,
+                    max_attempts=2 if request.story_brief is not None else 3,
+                )
+            except NarrativeGatewayError as exc:
+                if request.story_brief is not None and exc.code in {"llm_invalid_json", "llm_invalid_response"}:
+                    opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                else:
+                    raise NarrativeServiceError(
+                        code=exc.code, message=exc.message, status_code=exc.status_code
+                    ) from exc
+            except ValueError as exc:
+                message = str(exc)
+                if "cast too small after sanitization" in message:
+                    raise NarrativeServiceError(
+                        code="opening_prompt_shape_mismatch",
+                        message=(
+                            "This premise needs a clearer playable shape: try 3+ people, "
+                            "one public conflict, one secret or contested object, and time pressure."
+                        ),
+                        status_code=422,
+                    ) from exc
+                if request.story_brief is not None:
+                    opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                else:
+                    raise NarrativeServiceError(
+                        code="opening_invalid",
+                        message=f"LLM returned an unusable opening: {exc}",
+                        status_code=502,
+                    ) from exc
         story_brief_consistency = None
         if request.story_brief is not None:
             story_brief_consistency = check_story_brief_opening_consistency(
@@ -222,7 +225,7 @@ class NarrativeService:
                 opening=opening,
                 language=request.language,
             )
-            if story_brief_consistency.should_retry:
+            if story_brief_consistency.should_retry and not _story_brief_prefers_reliable_opening(request.story_brief):
                 retry_feedback = _story_brief_consistency_feedback(story_brief_consistency)
                 try:
                     opening = generate_opening(
@@ -231,7 +234,7 @@ class NarrativeService:
                         language=request.language,
                         story_brief=request.story_brief,
                         brief_consistency_feedback=retry_feedback,
-                        max_attempts=2,
+                        max_attempts=1,
                     )
                 except NarrativeGatewayError as exc:
                     if exc.code in {"llm_invalid_json", "llm_invalid_response"}:
@@ -1288,6 +1291,30 @@ def _public_replay_cast(cast: list[CastMember]) -> list[CastMember]:
     ]
 
 
+def _story_brief_prefers_reliable_opening(brief: StoryBrief) -> bool:
+    """Use deterministic opening first for briefs likely to burn retry budget.
+
+    The live generator is still preferred for ordinary briefs. This gate is for
+    heavily adapted prompts where the planner already had to cap or compress a
+    large cast, especially comedy/cozy briefs with explicitly preserved
+    background parties. Those are the cases that have been reliable only after
+    a long retry tail.
+    """
+    plan = brief.cast_plan
+    has_cap_pressure = plan.input_entity_count > 10 or bool(plan.omitted_entities)
+    has_heavy_window = plan.input_entity_count >= 10 and len(plan.secondary_background_entities) >= 5
+    has_explicit_representation = any(
+        marker in brief.original_seed.lower()
+        for marker in ("represent ", "must include", "should include", "focus on", "preserve ")
+    )
+    lower_stakes_profile = brief.tension_profile in {"comedy", "cozy_mystery"}
+    return has_cap_pressure or (
+        lower_stakes_profile
+        and has_heavy_window
+        and (has_explicit_representation or bool(brief.compressed_constraints))
+    )
+
+
 def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> OpeningResult:
     """Deterministic repair opening used only after LLM brief generation fails.
 
@@ -1308,7 +1335,7 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
         ]
     cast_names = [entity.display_name for entity in primary_entities[:5]]
     if len(cast_names) < 3:
-        cast_names = ["Brief keeper", "Concerned witness", "Deadline holder", "Outside pressure"]
+        cast_names = ["Organizer", "Concerned witness", "Deadline holder", "Outside voice"]
     cast = _fallback_cast_members(cast_names)
     background_names = [
         entity.display_name
@@ -1322,31 +1349,27 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
         background_names=background_names,
         pressure_labels=pressure_labels,
     )
-    options = [
-        StoryOption(label="Ask who is not being represented", hint="Protect the brief", handle="ask"),
-        StoryOption(label="Name the pressure everyone is avoiding", hint="Focus the room", handle="name"),
-        StoryOption(label="Invite the quiet party to speak", hint="Shift attention", handle="invite"),
-    ]
+    options = _fallback_opening_options(brief)
     player_roles = _fallback_player_roles(brief, cast)
     return OpeningResult(
         title=_fallback_title(brief, pressure_labels),
-        advisor_persona="A careful advisor watches the room and keeps the reviewed Brief visible.",
+        advisor_persona="A careful advisor watches who is heard, what pressure is visible, and how the tone stays on track.",
         cast=cast,
         opening_message=StoryMessage(ord=0, role="narrator", content=opening_text, options=options),
         player_goals=[
             PlayerGoal(
-                goal="Keep the reviewed Brief visible in the room.",
-                stakes="If the scene drifts, the agreed tone and represented parties disappear.",
+                goal="Keep the key parties in the room before one side controls the first decision.",
+                stakes="If a quiet party disappears, the opening turns into a generic argument.",
             ),
             PlayerGoal(
                 goal="Create one concrete payoff that matches the selected profile.",
-                stakes="The opening becomes playable only if pressure turns into a clear choice.",
+                stakes="The first exchange needs a clue, prop, decision, or callback that the next turn can use.",
             ),
         ],
         failure_conditions=[
             FailureCondition(
-                label="Brief drift",
-                description="The scene ignores represented parties or the selected tone profile for several turns.",
+                label="One-sided room",
+                description="Several turns pass while important parties remain invisible or unheard.",
             ),
             FailureCondition(
                 label="No payoff",
@@ -1366,9 +1389,9 @@ def _fallback_cast_members(names: list[str]) -> list[CastMember]:
             CastMember(
                 character_id=ids[idx],
                 display_name=_fallback_label(name, limit=40),
-                role="Brief party",
-                relation_to_protagonist="A planned party whose reaction can move the scene.",
-                hidden_objective=f"Keep {name[:70]} visible in the final decision.",
+                role="Involved party",
+                relation_to_protagonist="A party whose reaction can shift the next choice.",
+                hidden_objective=f"Make sure {name[:70]} is heard before the decision lands.",
                 leverage_over_player="Knows which detail the room keeps avoiding.",
                 leverages_over_other_npcs=[
                     NPCLeverageOverNPC(
@@ -1383,7 +1406,12 @@ def _fallback_cast_members(names: list[str]) -> list[CastMember]:
 
 
 def _fallback_player_roles(brief: StoryBrief, cast: list[CastMember]) -> list[PlayerRole]:
-    role_names = ["Brief mediator", "Scene witness", "Pressure holder"]
+    if brief.tension_profile in {"comedy", "cozy_mystery"}:
+        role_names = ["Callback keeper", "Clue spotter", "Gentle referee"]
+    elif brief.tension_profile == "fantasy_sci_fi":
+        role_names = ["Rule keeper", "Artifact witness", "Faction go-between"]
+    else:
+        role_names = ["Room mediator", "Scene witness", "Pressure holder"]
     roles: list[PlayerRole] = []
     for idx, role_name in enumerate(role_names):
         target = cast[idx % len(cast)]
@@ -1391,12 +1419,12 @@ def _fallback_player_roles(brief: StoryBrief, cast: list[CastMember]) -> list[Pl
             PlayerRole(
                 role_id=_fallback_slug(role_name)[:32] or f"role_{idx + 1}",
                 label=_fallback_label(role_name, limit=24),
-                public_persona=f"You are the {role_name.lower()} trying to keep the {brief.tension_profile.replace('_', ' ')} plan playable.",
-                hidden_objective="Make the represented parties, pressure, and payoff visible before the room drifts.",
+                public_persona=f"You are the {role_name.lower()} trying to keep the exchange concrete and fair.",
+                hidden_objective="Bring the quiet parties, pressure, and payoff into view before one side controls the room.",
                 leverages_over_npcs=[
                     PlayerLeverageOverNPC(
                         npc_id=target.character_id,
-                        leverage=f"You can show why {target.display_name} must be included before the choice lands.",
+                        leverage=f"You know why {target.display_name} needs to be heard before the choice lands.",
                     )
                 ],
                 starting_assets=[_fallback_label(brief.intervention_card_label, limit=80)],
@@ -1412,24 +1440,64 @@ def _fallback_opening_passage(
     background_names: list[str],
     pressure_labels: list[str],
 ) -> str:
-    profile = brief.tension_profile.replace("_", " ")
     cast_text = ", ".join(cast_names)
     pressure_text = ", ".join(pressure_labels) if pressure_labels else "the public moment"
     background_text = (
-        f" Background pressure stays visible from {', '.join(background_names[:5])}."
+        f" From the edge of the room, {', '.join(background_names[:5])} are close enough to change how the moment lands."
         if background_names
         else ""
     )
-    lower_stakes_clause = (
-        " The stakes stay social and concrete: props, clues, timing, embarrassment, representation, and callback payoff."
-        if brief.tension_profile in {"comedy", "cozy_mystery"}
-        else ""
-    )
+    profile_clause = _fallback_profile_clause(brief)
     return (
-        f"{pressure_text} is already underway. {cast_text} are the active focus, and everyone can see that "
-        f"the scene must honor the reviewed {profile} Brief rather than drift into a different story."
-        f"{background_text}{lower_stakes_clause} Your first move will decide whose version of the pressure becomes playable."
+        f"{pressure_text} is already underway. {cast_text} crowd the first decision, each trying to make their version "
+        f"of events the one everyone else has to answer.{background_text} {profile_clause} "
+        f"Your first move can decide who gets heard before the room settles on the wrong story."
     )
+
+
+def _fallback_profile_clause(brief: StoryBrief) -> str:
+    if brief.tension_profile == "comedy":
+        return (
+            "The trouble stays social: timing, embarrassment, missing props, and the joke that will either save the room "
+            "or make everyone look worse."
+        )
+    if brief.tension_profile == "cozy_mystery":
+        return (
+            "The trouble stays gentle and concrete: clues, mixed signals, and a reveal that can repair trust instead of breaking it."
+        )
+    if brief.tension_profile == "fantasy_sci_fi":
+        return (
+            "A rule of the world is under strain, and the next choice will show whether the artifact, faction, or setting bends first."
+        )
+    if brief.tension_profile == "family_social":
+        return "Old loyalties and misread intentions press against the room, but the first choice can still steer toward repair."
+    return "The first choice will turn hidden pressure into a public shift."
+
+
+def _fallback_opening_options(brief: StoryBrief) -> list[StoryOption]:
+    if brief.tension_profile == "comedy":
+        return [
+            StoryOption(label="Ask what actually happened to the missing prop", hint="Keep it concrete", handle="ask_prop"),
+            StoryOption(label="Give the quiet party a harmless way in", hint="Soften the room", handle="invite"),
+            StoryOption(label="Turn the mistake into a callback", hint="Aim for payoff", handle="callback"),
+        ]
+    if brief.tension_profile == "cozy_mystery":
+        return [
+            StoryOption(label="Ask where the clue was last seen", hint="Follow the object", handle="ask_clue"),
+            StoryOption(label="Let the nervous witness explain", hint="Lower worry", handle="witness"),
+            StoryOption(label="Compare everyone’s version gently", hint="Repair trust", handle="compare"),
+        ]
+    if brief.tension_profile == "fantasy_sci_fi":
+        return [
+            StoryOption(label="Ask which rule changed first", hint="Name the world pressure", handle="rule"),
+            StoryOption(label="Invite the background faction to answer", hint="Broaden the room", handle="faction"),
+            StoryOption(label="Inspect the artifact everyone keeps avoiding", hint="Find the hinge", handle="artifact"),
+        ]
+    return [
+        StoryOption(label="Ask who is being left out", hint="Bring in a quiet party", handle="ask"),
+        StoryOption(label="Name the pressure everyone is avoiding", hint="Focus the room", handle="name"),
+        StoryOption(label="Invite the quiet party to speak", hint="Shift attention", handle="invite"),
+    ]
 
 
 def _fallback_pressure_labels(brief: StoryBrief) -> list[str]:
@@ -1443,8 +1511,8 @@ def _fallback_pressure_labels(brief: StoryBrief) -> list[str]:
 
 def _fallback_title(brief: StoryBrief, pressure_labels: list[str]) -> str:
     if pressure_labels:
-        return _fallback_label(f"{pressure_labels[0].title()} Brief", limit=120)
-    return _fallback_label(f"{brief.tension_profile.replace('_', ' ').title()} Brief Opening", limit=120)
+        return _fallback_label(pressure_labels[0].title(), limit=120)
+    return _fallback_label(f"{brief.tension_profile.replace('_', ' ').title()} First Scene", limit=120)
 
 
 def _fallback_slug(value: str) -> str:
@@ -1464,7 +1532,7 @@ def _story_brief_consistency_feedback(check: StoryBriefConsistencyCheck) -> str:
         evidence = ", ".join(violation.evidence[:3]) if violation.evidence else "no safe excerpt"
         rows.append(f"{violation.code}: {violation.rationale} Evidence: {evidence}")
     return (
-        "Repair the generated opening so it matches the reviewed story_brief. "
+        "Repair the generated opening so it matches the confirmed story plan. "
         "Keep the same JSON schema. Explicitly mention required/emphasized entities in cast or passage. "
         "For comedy/cozy briefs, keep stakes in social pressure, props, embarrassment, clues, or representation unless the brief preserved high stakes. "
         "Fix these issues: "
@@ -1475,7 +1543,7 @@ def _story_brief_consistency_feedback(check: StoryBriefConsistencyCheck) -> str:
 def _story_brief_consistency_failure_message(check: StoryBriefConsistencyCheck) -> str:
     codes = ", ".join(violation.code for violation in check.violations[:4])
     return (
-        "The generated opening still could not satisfy the reviewed brief. "
+        "The generated opening still could not satisfy the confirmed plan. "
         "Try to reduce required entities, relax which factions must be represented, "
         "lower stakes for comedy/cozy prompts, or revise the brief before generating again. "
         f"Mismatch signals: {codes or 'brief consistency failed'}."
