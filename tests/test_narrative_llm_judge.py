@@ -516,6 +516,7 @@ def test_low_llm_scores_with_pass_status_cannot_pass_report(tmp_path: Path) -> N
     assert report.status == "fail"
     assert report.aggregate.gates["llm_judge_present"] is True
     assert report.aggregate.gates["llm_score_consistency"] is False
+    assert report.aggregate.gates["llm_score_shape_consistency"] is True
     assert report.aggregate.gates["llm_expectation_consistency"] is True
     assert report.aggregate.gates["llm_required_expectations_met"] is True
     assert case.llm_judge is not None
@@ -525,6 +526,67 @@ def test_low_llm_scores_with_pass_status_cannot_pass_report(tmp_path: Path) -> N
     assert case.llm_consistency.score_status == "fail"
     assert case.llm_status == "fail"
     assert case.status == "fail"
+
+
+def test_rubric_weight_like_scores_with_pass_status_fail_shape_gate(tmp_path: Path) -> None:
+    gold_set = load_gold_set(DEFAULT_GOLD_SET)
+    payload = _judge_payload(status="pass")
+    payload["scores"] = dict(gold_set.cases[0].rubric.weights)
+    payload["expectation_matches"] = [
+        "expected_role_behavior",
+        "hidden_info_must_not_leak",
+        "leverage_payoff_required",
+        "leverage_usage_required",
+        "min_turns",
+        "required_stage_progression",
+        "trajectory_status_allowed",
+    ]
+    payload["reviewer_summary"] = "All required expectations met and the case passes."
+    gateway = _StaticJudgeGateway(payload)
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    case = report.cases[0]
+    assert report.status == "fail"
+    assert report.aggregate.gates["llm_judge_present"] is True
+    assert report.aggregate.gates["llm_score_consistency"] is False
+    assert report.aggregate.gates["llm_score_shape_consistency"] is False
+    assert report.aggregate.gates["llm_required_expectations_met"] is True
+    assert case.llm_consistency is not None
+    assert case.llm_consistency.status == "fail"
+    assert case.llm_consistency.score_shape_status == "fail"
+    assert case.llm_consistency.suspicious_score_shape == "rubric_weight_copy"
+    assert set(case.llm_consistency.suspicious_score_dimensions) == set(payload["scores"])
+    assert any("agency:score=0.120;rubric_weight=0.120" in item for item in case.llm_consistency.evidence)
+    assert case.llm_status == "fail"
+
+
+def test_high_quality_scores_with_pass_status_pass_shape_gate(tmp_path: Path) -> None:
+    payload = _judge_payload(status="pass")
+    payload["scores"] = {dimension: 0.88 for dimension in payload["scores"]}
+    gateway = _StaticJudgeGateway(payload)
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    case = report.cases[0]
+    assert report.status == "pass"
+    assert report.aggregate.gates["llm_score_consistency"] is True
+    assert report.aggregate.gates["llm_score_shape_consistency"] is True
+    assert case.llm_consistency is not None
+    assert case.llm_consistency.score_shape_status == "pass"
+    assert case.llm_consistency.suspicious_score_dimensions == []
 
 
 def test_required_expectation_miss_cannot_pass_report(tmp_path: Path) -> None:

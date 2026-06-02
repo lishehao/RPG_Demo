@@ -185,6 +185,9 @@ class LLMJudgeConsistencyCheck(BaseModel):
     pass_floor: float = Field(ge=0, le=1)
     fail_floor: float = Field(ge=0, le=1)
     score_status: StatusText = "pass"
+    score_shape_status: StatusText = "pass"
+    suspicious_score_shape: str | None = Field(default=None, max_length=120)
+    suspicious_score_dimensions: list[str] = Field(default_factory=list, max_length=16)
     expectation_status: StatusText = "pass"
     expectation_conflicts: list[str] = Field(default_factory=list, max_length=16)
     required_expectation_status: StatusText = "pass"
@@ -960,6 +963,9 @@ def _llm_judge_system_prompt() -> str:
         "expectation miss cannot coexist with status=pass unless the expectation is "
         "explicitly non-blocking and the rationale names why. Use the gold rubric "
         "thresholds: pass status requires numeric scores consistent with the pass threshold. "
+        "The scores object must contain quality scores in [0, 1] for each dimension; "
+        "rubric weights are for aggregation only and must never be copied into scores. "
+        "If status is pass, dimension quality scores should be consistent with pass-level quality. "
         "For leverage_payoff_required, use the leverage_payoff_evidence field: "
         "target_npc_pulse_shift, inventory_delta, or room_pulse_shift are observable payoff signals. "
         "Return confidence as a numeric value in [0, 1], not a label such as high or medium."
@@ -1085,6 +1091,53 @@ def _required_expectation_keys(case: GoldCaseSpec) -> set[str]:
     return keys
 
 
+def _rubric_weight_like_score_dimensions(
+    *,
+    case: GoldCaseSpec,
+    result: LLMJudgeResult,
+    tolerance: float = 0.015,
+) -> list[str]:
+    suspicious: list[str] = []
+    for dimension in SCORE_DIMENSIONS:
+        if dimension not in case.rubric.weights:
+            continue
+        score = float(getattr(result.scores, dimension))
+        weight = float(case.rubric.weights[dimension])
+        if abs(score - weight) <= tolerance:
+            suspicious.append(dimension)
+    return suspicious
+
+
+def _score_shape_dimension_evidence(
+    *,
+    case: GoldCaseSpec,
+    result: LLMJudgeResult,
+    dimensions: list[str],
+) -> list[str]:
+    return [
+        (
+            f"{dimension}:score={float(getattr(result.scores, dimension)):.3f};"
+            f"rubric_weight={float(case.rubric.weights.get(dimension, 0.0)):.3f}"
+        )
+        for dimension in dimensions[:8]
+    ]
+
+
+def _consistency_evidence(
+    *,
+    base: list[str],
+    expectation: list[str],
+    score_shape: list[str],
+    extra: list[str] | None = None,
+    prioritize_score_shape: bool = False,
+) -> list[str]:
+    if prioritize_score_shape:
+        items = [*base, *score_shape[:4], *expectation, *(extra or [])]
+    else:
+        items = [*base, *expectation, *(extra or []), *score_shape[:2]]
+    return items[:8]
+
+
 def _llm_score_consistency(
     *,
     case: GoldCaseSpec,
@@ -1098,6 +1151,31 @@ def _llm_score_consistency(
         f"weighted_score:{weighted_score:.3f}",
         f"pass_floor:{pass_floor:.3f}",
         f"fail_floor:{fail_floor:.3f}",
+    ]
+    suspicious_score_dimensions = _rubric_weight_like_score_dimensions(
+        case=case,
+        result=result,
+    )
+    score_shape_status: StatusText = (
+        "fail" if len(suspicious_score_dimensions) >= len(SCORE_DIMENSIONS) - 1 else "pass"
+    )
+    score_shape_evidence = [
+        "score_shape:rubric_weight_copy"
+        if score_shape_status == "fail"
+        else "score_shape:quality_scores",
+        (
+            "score_shape_dimensions:"
+            + (
+                ",".join(suspicious_score_dimensions[:8])
+                if suspicious_score_dimensions
+                else "none"
+            )
+        ),
+        *_score_shape_dimension_evidence(
+            case=case,
+            result=result,
+            dimensions=suspicious_score_dimensions,
+        ),
     ]
     match_keys = _expectation_keys(result.expectation_matches)
     miss_keys = _expectation_keys(result.expectation_misses)
@@ -1117,6 +1195,11 @@ def _llm_score_consistency(
             pass_floor=pass_floor,
             fail_floor=fail_floor,
             score_status="pass",
+            score_shape_status=score_shape_status,
+            suspicious_score_shape="rubric_weight_copy"
+            if score_shape_status == "fail"
+            else None,
+            suspicious_score_dimensions=suspicious_score_dimensions,
             expectation_status="fail",
             expectation_conflicts=conflicts,
             required_expectation_status="fail" if required_misses else "pass",
@@ -1128,9 +1211,12 @@ def _llm_score_consistency(
                 "and misses."
             ),
             evidence=[
-                *evidence,
-                *expectation_evidence,
-                f"conflicts:{','.join(conflicts[:6])}",
+                *_consistency_evidence(
+                    base=evidence,
+                    expectation=expectation_evidence,
+                    score_shape=score_shape_evidence,
+                    extra=[f"conflicts:{','.join(conflicts[:6])}"],
+                )
             ],
         )
     if required_misses:
@@ -1140,6 +1226,11 @@ def _llm_score_consistency(
             pass_floor=pass_floor,
             fail_floor=fail_floor,
             score_status="pass",
+            score_shape_status=score_shape_status,
+            suspicious_score_shape="rubric_weight_copy"
+            if score_shape_status == "fail"
+            else None,
+            suspicious_score_dimensions=suspicious_score_dimensions,
             expectation_status="pass",
             required_expectation_status="fail",
             required_expectation_matches=required_matches,
@@ -1149,7 +1240,35 @@ def _llm_score_consistency(
                 "LLM judge missed required gold expectations, so the case "
                 "cannot pass regardless of the textual status or numeric score."
             ),
-            evidence=[*evidence, *expectation_evidence],
+            evidence=_consistency_evidence(
+                base=evidence,
+                expectation=expectation_evidence,
+                score_shape=score_shape_evidence,
+            ),
+        )
+    if score_shape_status == "fail":
+        return LLMJudgeConsistencyCheck(
+            status="fail",
+            weighted_score=weighted_score,
+            pass_floor=pass_floor,
+            fail_floor=fail_floor,
+            score_status="fail",
+            score_shape_status="fail",
+            suspicious_score_shape="rubric_weight_copy",
+            suspicious_score_dimensions=suspicious_score_dimensions,
+            required_expectation_matches=required_matches,
+            required_expectation_misses=required_misses,
+            non_blocking_expectation_misses=non_blocking_misses,
+            rationale=(
+                "LLM judge dimension scores look copied from rubric weights "
+                "instead of assigned as quality scores."
+            ),
+            evidence=_consistency_evidence(
+                base=evidence,
+                expectation=expectation_evidence,
+                score_shape=score_shape_evidence,
+                prioritize_score_shape=True,
+            ),
         )
     if weighted_score < fail_floor:
         return LLMJudgeConsistencyCheck(
@@ -1158,6 +1277,11 @@ def _llm_score_consistency(
             pass_floor=pass_floor,
             fail_floor=fail_floor,
             score_status="fail",
+            score_shape_status=score_shape_status,
+            suspicious_score_shape="rubric_weight_copy"
+            if score_shape_status == "fail"
+            else None,
+            suspicious_score_dimensions=suspicious_score_dimensions,
             required_expectation_matches=required_matches,
             required_expectation_misses=required_misses,
             non_blocking_expectation_misses=non_blocking_misses,
@@ -1165,7 +1289,11 @@ def _llm_score_consistency(
                 "LLM judge numeric scores are below the fail floor, so the "
                 "case cannot pass regardless of the textual status."
             ),
-            evidence=[*evidence, *expectation_evidence],
+            evidence=_consistency_evidence(
+                base=evidence,
+                expectation=expectation_evidence,
+                score_shape=score_shape_evidence,
+            ),
         )
     if result.status == "pass" and weighted_score < pass_floor:
         return LLMJudgeConsistencyCheck(
@@ -1174,6 +1302,11 @@ def _llm_score_consistency(
             pass_floor=pass_floor,
             fail_floor=fail_floor,
             score_status="warn",
+            score_shape_status=score_shape_status,
+            suspicious_score_shape="rubric_weight_copy"
+            if score_shape_status == "fail"
+            else None,
+            suspicious_score_dimensions=suspicious_score_dimensions,
             required_expectation_matches=required_matches,
             required_expectation_misses=required_misses,
             non_blocking_expectation_misses=non_blocking_misses,
@@ -1181,7 +1314,11 @@ def _llm_score_consistency(
                 "LLM judge returned pass, but numeric scores are below the "
                 "configured pass floor."
             ),
-            evidence=[*evidence, *expectation_evidence],
+            evidence=_consistency_evidence(
+                base=evidence,
+                expectation=expectation_evidence,
+                score_shape=score_shape_evidence,
+            ),
         )
     return LLMJudgeConsistencyCheck(
         status="pass",
@@ -1189,11 +1326,20 @@ def _llm_score_consistency(
         pass_floor=pass_floor,
         fail_floor=fail_floor,
         score_status="pass",
+        score_shape_status=score_shape_status,
+        suspicious_score_shape="rubric_weight_copy"
+        if score_shape_status == "fail"
+        else None,
+        suspicious_score_dimensions=suspicious_score_dimensions,
         required_expectation_matches=required_matches,
         required_expectation_misses=required_misses,
         non_blocking_expectation_misses=non_blocking_misses,
         rationale="LLM judge status is consistent with numeric scores.",
-        evidence=[*evidence, *expectation_evidence],
+        evidence=_consistency_evidence(
+            base=evidence,
+            expectation=expectation_evidence,
+            score_shape=score_shape_evidence,
+        ),
     )
 
 
@@ -1242,6 +1388,11 @@ def _aggregate(cases: list[NarrativeCaseJudgeReport]) -> NarrativeJudgeAggregate
             ),
             "llm_score_consistency": all(
                 case.llm_consistency is not None and case.llm_consistency.score_status == "pass"
+                for case in cases
+            ),
+            "llm_score_shape_consistency": all(
+                case.llm_consistency is not None
+                and case.llm_consistency.score_shape_status == "pass"
                 for case in cases
             ),
             "llm_expectation_consistency": all(
