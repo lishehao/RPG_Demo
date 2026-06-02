@@ -652,6 +652,7 @@ class AdvanceTurnResponse(BaseModel):
     player_message: StoryMessage
     narrator_message: StoryMessage
     agent_plan: AgentPlan | None = None
+    agent_events: list[NarrativeAgentEvent] = Field(default_factory=list)
     # Surfaced when this turn was the last of the budget — the engine has
     # already generated and persisted the ending. Frontend uses this to
     # render the ending screen without a follow-up GET.

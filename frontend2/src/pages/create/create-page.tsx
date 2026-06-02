@@ -252,6 +252,9 @@ export function CreatePage({
           <p style={{ ...cpStyles.sub, ...(compactLayout ? cpStyles.subCompact : null) }}>
             {t("create.subhead")}
           </p>
+          <p style={{ ...cpStyles.promptFitHint, ...(compactLayout ? cpStyles.promptFitHintCompact : null) }}>
+            {t("create.prompt_fit_hint")}
+          </p>
 
           <div style={cpStyles.textareaWrap}>
             <textarea
@@ -741,13 +744,29 @@ const cpStyles: Record<string, CSSProperties> = {
     color: "rgba(255,255,255,0.78)",
     marginTop: 0,
     marginRight: 0,
-    marginBottom: 40,
+    marginBottom: 10,
     marginLeft: 0,
   },
   subCompact: {
     fontSize: 15.5,
     lineHeight: 1.52,
+    marginBottom: 10,
+  },
+  promptFitHint: {
+    maxWidth: 620,
+    marginTop: 0,
+    marginRight: 0,
     marginBottom: 30,
+    marginLeft: 0,
+    color: "rgba(245,210,140,0.92)",
+    fontSize: 13,
+    lineHeight: 1.45,
+    fontWeight: 650,
+  },
+  promptFitHintCompact: {
+    marginBottom: 24,
+    fontSize: 12.5,
+    lineHeight: 1.42,
   },
 
   textareaWrap: {

@@ -84,6 +84,7 @@ const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
   turn_already_advanced: "这一段已经走过了，刷新一下接着玩。",
   llm_unavailable: "AI 服务还没配置，请联系站点维护人。",
   opening_invalid: "AI 给的开场没法用——换个种子再试。",
+  opening_prompt_shape_mismatch: "这个开头还不太适合当前运行时。试试 3 个以上人物、一个公开冲突、一个秘密/争夺物，再加一点时间压力。",
   advisor_invalid: "顾问没说出有效的话，再问一次。",
 }
 
@@ -104,6 +105,7 @@ const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
   turn_already_advanced: "This turn already moved forward. Refresh to continue.",
   llm_unavailable: "AI service isn't configured. Contact the site maintainer.",
   opening_invalid: "The AI's opening isn't usable — try a different seed.",
+  opening_prompt_shape_mismatch: "This premise does not fit the current runtime yet. Try 3+ people, one public conflict, one secret or contested object, and time pressure.",
   advisor_invalid: "The advisor didn't say anything usable. Ask again.",
 }
 

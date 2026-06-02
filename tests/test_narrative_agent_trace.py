@@ -247,6 +247,7 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     events = repo.list_agent_events("sess_agent_trace")
 
     assert response.agent_plan is None
+    assert response.agent_events == []
     assert gateway.calls[0]["user_payload"]["npc_agenda_this_turn"][0]["npc_id"] == "evan"
     assert [event.event_type for event in events] == [
         "agent_plan",
@@ -278,6 +279,12 @@ def test_advance_can_return_agent_plan_for_debug_trace(tmp_path) -> None:
     assert response.agent_plan is not None
     assert response.agent_plan.narrator_ord == response.narrator_message.ord
     assert response.agent_plan.npc_intents[0].npc_id == "evan"
+    assert [event.event_type for event in response.agent_events] == [
+        "agent_plan",
+        "step_judge",
+        "contract_judge",
+    ]
+    assert response.agent_events[0].payload == response.agent_plan
 
 
 def test_story_endpoint_requires_reviewer_for_agent_trace(tmp_path) -> None:

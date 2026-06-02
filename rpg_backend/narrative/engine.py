@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any
 
 from rpg_backend.narrative.contracts import (
@@ -1932,10 +1933,10 @@ def _parse_branches(
             continue
         if ord_val < 0 or ord_val not in valid_ords or ord_val in seen_ords:
             continue
-        chosen = str(item.get("chosen_path_summary") or "").strip()[:80]
-        alt = str(item.get("alternate_path_summary") or "").strip()[:80]
+        chosen = _clean_branch_fragment(str(item.get("chosen_path_summary") or ""), limit=80)
+        alt = _clean_branch_fragment(str(item.get("alternate_path_summary") or ""), limit=80)
         label_raw = str(item.get("alternate_ending_label") or "").strip()
-        rationale = str(item.get("rationale") or "").strip()[:200]
+        rationale = _clean_branch_fragment(str(item.get("rationale") or ""), limit=200)
         if not chosen or not alt or not label_raw or not rationale:
             continue
         # Snap to closed pool; drop branch if same as actual ending.
@@ -1957,6 +1958,49 @@ def _parse_branches(
             continue
     out.sort(key=lambda b: b.pivot_beat_ord)
     return out[:4]
+
+
+_DANGLING_BRANCH_TAILS = (
+    "this path leads to",
+    "that path leads to",
+    "the path leads to",
+    "path leads to",
+    "leads to",
+    "lead to",
+    "would lead to",
+    "could lead to",
+    "points toward",
+    "because",
+    "which",
+    "where",
+    "with",
+    "and",
+    "or",
+    "to",
+    "toward",
+)
+
+
+def _clean_branch_fragment(value: str, *, limit: int) -> str:
+    """Keep post-game branch cards from displaying dangling LLM fragments."""
+    text = re.sub(r"\s+", " ", value).strip()
+    if not text:
+        return ""
+    text = _clip_text(text, limit)
+    text = text.strip(" \t\r\n-–—:;")
+    while text.endswith(("...", "…")):
+        text = text[:-3] if text.endswith("...") else text[:-1]
+        text = text.strip(" \t\r\n-–—:;")
+    lowered = text.casefold().rstrip(".!?。！？")
+    if lowered.endswith(_DANGLING_BRANCH_TAILS):
+        return ""
+    if text and text[-1] not in ".!?。！？":
+        punctuation = "。" if re.search(r"[\u4e00-\u9fff]", text) else "."
+        if len(text) >= limit:
+            text = text[: max(1, limit - 1)].rstrip(" \t\r\n-–—:;,.!?。！？") + punctuation
+        else:
+            text = f"{text}{punctuation}"
+    return text
 
 
 def _invoke_turn(

@@ -871,6 +871,7 @@ export type NarrativeAdvanceTurnResponse = {
   player_message: NarrativeStoryMessage
   narrator_message: NarrativeStoryMessage
   agent_plan?: NarrativeAgentPlan | null
+  agent_events?: NarrativeAgentEvent[]
   ending: NarrativeEnding | null
   is_complete: boolean
 }

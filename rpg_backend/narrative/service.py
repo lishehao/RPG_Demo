@@ -145,6 +145,16 @@ class NarrativeService:
                 code=exc.code, message=exc.message, status_code=exc.status_code
             ) from exc
         except ValueError as exc:
+            message = str(exc)
+            if "cast too small after sanitization" in message:
+                raise NarrativeServiceError(
+                    code="opening_prompt_shape_mismatch",
+                    message=(
+                        "This premise needs a clearer playable shape: try 3+ people, "
+                        "one public conflict, one secret or contested object, and time pressure."
+                    ),
+                    status_code=422,
+                ) from exc
             raise NarrativeServiceError(
                 code="opening_invalid",
                 message=f"LLM returned an unusable opening: {exc}",
@@ -418,24 +428,25 @@ class NarrativeService:
                 session_id, last_narrator.ord, chosen_index
             )
         self._repo.append_story_message(session_id, turn.narrator_message)
-        self._repo.append_agent_event(
+        turn_agent_events = []
+        turn_agent_events.append(self._repo.append_agent_event(
             session_id,
             ord_value=turn.narrator_message.ord,
             event_type="agent_plan",
             payload=turn.agent_plan,
-        )
+        ))
         step_judge = judge_step(
             agent_plan=turn.agent_plan,
             player_message=player_message,
             narrator_message=turn.narrator_message,
             cast=template.cast,
         )
-        self._repo.append_agent_event(
+        turn_agent_events.append(self._repo.append_agent_event(
             session_id,
             ord_value=turn.narrator_message.ord,
             event_type="step_judge",
             payload=step_judge,
-        )
+        ))
         contract_judge = judge_contract(
             agent_plan=turn.agent_plan,
             player_message=player_message,
@@ -443,12 +454,12 @@ class NarrativeService:
             cast=template.cast,
             player_role=active_role,
         )
-        self._repo.append_agent_event(
+        turn_agent_events.append(self._repo.append_agent_event(
             session_id,
             ord_value=turn.narrator_message.ord,
             event_type="contract_judge",
             payload=contract_judge,
-        )
+        ))
         self._repo.touch_session(session_id, increment_turns=1)
 
         ending_payload: NarrativeEnding | None = None
@@ -494,6 +505,7 @@ class NarrativeService:
             player_message=player_message,
             narrator_message=turn.narrator_message,
             agent_plan=turn.agent_plan if include_agent_trace else None,
+            agent_events=turn_agent_events if include_agent_trace else [],
             ending=ending_payload,
             is_complete=ending_payload is not None,
         )
