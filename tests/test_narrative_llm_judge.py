@@ -193,6 +193,11 @@ def test_llm_judge_input_includes_deterministic_evidence(tmp_path: Path) -> None
     assert package.turn_evidence[0]["step_judge"]["status"] == "pass"
     assert package.turn_evidence[0]["contract_judge"]["status"] == "pass"
     assert package.turn_evidence[0]["agent_plan_summary"]["available"] is True
+    assert package.leverage_payoff_evidence
+    leverage_evidence = package.leverage_payoff_evidence[0]
+    assert leverage_evidence["status"] == "observed"
+    assert "target_npc_pulse_shift" in leverage_evidence["payoff_signals"]
+    assert leverage_evidence["target_npc_pulse"][0]["shift"] != "steady"
 
 
 def test_llm_judge_strict_parser_with_static_gateway(tmp_path: Path) -> None:

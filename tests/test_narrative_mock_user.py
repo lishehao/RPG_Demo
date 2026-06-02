@@ -715,3 +715,63 @@ def test_trajectory_judge_fails_replayed_leverage_card() -> None:
         check.code == "leverage_card_reuse" and check.status == "fail"
         for check in result.checks
     )
+
+
+def test_trajectory_judge_records_target_leverage_payoff_evidence() -> None:
+    card = {
+        "card_id": "founder-evan-0",
+        "target_npc_id": "evan",
+        "action": "reveal",
+    }
+    trace = MockTurnTrace(
+        turn_index=0,
+        narrator_ord=2,
+        role_id="founder",
+        observation_summary={"latest_narrator_ord": 0},
+        memory_before={"objective_progress": "medium"},
+        selected_action={
+            "selected_option_handle": "show",
+            "played_leverage": card,
+            "decision_reason": "test",
+        },
+        runtime_output_summary={
+            "narrator_ord": 2,
+            "passage": "The room treats the evidence as material.",
+            "option_count": 2,
+            "npc_pulse": [{"npc_id": "evan", "shift": "wary", "state": "watching"}],
+            "inventory_delta": {"added_count": 0, "removed_count": 0, "has_reason": False},
+        },
+        agent_plan_summary={
+            "available": True,
+            "stage_phase": "pressure",
+            "active_npc_ids": ["evan"],
+        },
+        memory_after={"objective_progress": "medium"},
+        memory_summary={"played_leverage_cards": [card]},
+        step_judge_status="pass",
+        contract_judge_status="pass",
+    )
+    result = judge_episode_trajectory(
+        traces=[trace],
+        memory=EpisodeMemory(
+            objective="Keep the vote alive",
+            observed_npc_ids=["evan"],
+            objective_progress="medium",
+            played_leverage_cards=[card],
+        ),
+        config=MockUserConfig(
+            session_id="sess_payoff_evidence",
+            turn_budget=1,
+            leverage_policy="opportunistic",
+        ),
+        ending_detected=False,
+    )
+
+    payoff_check = next(
+        check for check in result.checks if check.code == "leverage_payoff_continuity"
+    )
+    assert payoff_check.status == "pass"
+    assert payoff_check.evidence
+    assert "card_id:founder-evan-0" in payoff_check.evidence[0]
+    assert "target_npc_id:evan" in payoff_check.evidence[0]
+    assert "pulse_shift:wary" in payoff_check.evidence[0]

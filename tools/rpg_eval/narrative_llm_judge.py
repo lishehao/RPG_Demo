@@ -240,6 +240,7 @@ class LLMJudgeInputPackage(BaseModel):
     deterministic_summary: dict[str, Any]
     turn_evidence: list[dict[str, Any]]
     trajectory_judge: dict[str, Any]
+    leverage_payoff_evidence: list[dict[str, Any]] = Field(default_factory=list)
     hidden_info_indicators: dict[str, Any]
 
 
@@ -762,6 +763,63 @@ def _write_runtime_failure_artifacts(
     _write_json(llm_result_path, failure)
 
 
+def _turn_leverage_payoff_evidence(turn: Any) -> dict[str, Any] | None:
+    selected_action = turn.selected_action
+    played = selected_action.get("played_leverage")
+    if not isinstance(played, dict):
+        return None
+
+    runtime_summary = turn.runtime_output_summary
+    target_npc_id = str(played.get("target_npc_id") or played.get("npc_id") or "")
+    target_pulses: list[dict[str, str]] = []
+    room_pulses: list[dict[str, str]] = []
+    for pulse in runtime_summary.get("npc_pulse") or []:
+        if not isinstance(pulse, dict):
+            continue
+        shift = str(pulse.get("shift") or "steady")
+        if shift == "steady":
+            continue
+        item = {
+            "npc_id": str(pulse.get("npc_id") or ""),
+            "shift": shift,
+            "state": str(_clip(pulse.get("state") or "", limit=120)),
+        }
+        room_pulses.append(item)
+        if item["npc_id"] == target_npc_id:
+            target_pulses.append(item)
+
+    delta = runtime_summary.get("inventory_delta") or {}
+    inventory_delta = {
+        "added_count": int(delta.get("added_count") or 0) if isinstance(delta, dict) else 0,
+        "removed_count": int(delta.get("removed_count") or 0) if isinstance(delta, dict) else 0,
+        "has_reason": bool(delta.get("has_reason")) if isinstance(delta, dict) else False,
+    }
+    payoff_signals: list[str] = []
+    if target_pulses:
+        payoff_signals.append("target_npc_pulse_shift")
+    elif room_pulses:
+        payoff_signals.append("room_pulse_shift")
+    if inventory_delta["added_count"] or inventory_delta["removed_count"]:
+        payoff_signals.append("inventory_delta")
+
+    return {
+        "turn_index": turn.turn_index,
+        "narrator_ord": turn.narrator_ord,
+        "card_id": str(played.get("card_id") or ""),
+        "target_npc_id": target_npc_id,
+        "action": str(played.get("action") or ""),
+        "selected_option_handle": _clip(
+            selected_action.get("selected_option_handle") or "",
+            limit=80,
+        ),
+        "status": "observed" if payoff_signals else "missing",
+        "payoff_signals": payoff_signals,
+        "target_npc_pulse": target_pulses[:3],
+        "room_pulse": room_pulses[:4],
+        "inventory_delta": inventory_delta,
+    }
+
+
 def build_llm_judge_input(
     *,
     case: GoldCaseSpec,
@@ -830,6 +888,11 @@ def build_llm_judge_input(
         },
         turn_evidence=turn_evidence,
         trajectory_judge=result.trajectory_judge.model_dump(mode="json"),
+        leverage_payoff_evidence=[
+            item
+            for turn in result.turns
+            if (item := _turn_leverage_payoff_evidence(turn)) is not None
+        ],
         hidden_info_indicators={
             "hidden_or_leak_codes": hidden_codes,
             "forbidden_code_hits": sorted(set(all_codes).intersection(case.expected.forbidden_violation_codes)),
@@ -897,6 +960,8 @@ def _llm_judge_system_prompt() -> str:
         "expectation miss cannot coexist with status=pass unless the expectation is "
         "explicitly non-blocking and the rationale names why. Use the gold rubric "
         "thresholds: pass status requires numeric scores consistent with the pass threshold. "
+        "For leverage_payoff_required, use the leverage_payoff_evidence field: "
+        "target_npc_pulse_shift, inventory_delta, or room_pulse_shift are observable payoff signals. "
         "Return confidence as a numeric value in [0, 1], not a label such as high or medium."
     )
 

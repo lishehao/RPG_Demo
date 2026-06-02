@@ -1076,17 +1076,61 @@ def _runtime_retry_count(events: list[AgentLoopEvent]) -> int:
     )
 
 
-def _trace_has_runtime_impact(trace: MockTurnTrace) -> bool:
+def _trace_runtime_impact_evidence(
+    trace: MockTurnTrace,
+    *,
+    target_npc_id: str | None = None,
+) -> list[str]:
+    evidence: list[str] = []
     pulses = trace.runtime_output_summary.get("npc_pulse") or []
-    if any(
-        isinstance(pulse, dict) and str(pulse.get("shift") or "steady") != "steady"
-        for pulse in pulses
-    ):
-        return True
+    for pulse in pulses:
+        if not isinstance(pulse, dict):
+            continue
+        npc_id = str(pulse.get("npc_id") or "")
+        if target_npc_id and npc_id != target_npc_id:
+            continue
+        shift = str(pulse.get("shift") or "steady")
+        if shift == "steady":
+            continue
+        state = str(pulse.get("state") or "")
+        item = f"narrator_ord:{trace.narrator_ord};npc_id:{npc_id};pulse_shift:{shift}"
+        if state:
+            item += f";state:{_clip(state, 80)}"
+        evidence.append(item)
     delta = trace.runtime_output_summary.get("inventory_delta") or {}
     if isinstance(delta, dict):
-        return bool(int(delta.get("added_count") or 0) or int(delta.get("removed_count") or 0))
-    return False
+        added_count = int(delta.get("added_count") or 0)
+        removed_count = int(delta.get("removed_count") or 0)
+        if added_count or removed_count:
+            evidence.append(
+                f"narrator_ord:{trace.narrator_ord};inventory_delta:"
+                f"added={added_count};removed={removed_count}"
+            )
+    return evidence[:8]
+
+
+def _played_leverage_payoff_evidence(trace: MockTurnTrace) -> list[str]:
+    played = trace.selected_action.get("played_leverage")
+    if not isinstance(played, dict):
+        return []
+    card_id = str(played.get("card_id") or "")
+    target_npc_id = str(played.get("target_npc_id") or played.get("npc_id") or "")
+    target_evidence = _trace_runtime_impact_evidence(
+        trace,
+        target_npc_id=target_npc_id or None,
+    )
+    impact_evidence = target_evidence or _trace_runtime_impact_evidence(trace)
+    return [
+        (
+            f"card_id:{card_id or 'unknown'};target_npc_id:{target_npc_id or 'unknown'};"
+            f"{item}"
+        )
+        for item in impact_evidence[:8]
+    ]
+
+
+def _trace_has_runtime_impact(trace: MockTurnTrace) -> bool:
+    return bool(_trace_runtime_impact_evidence(trace))
 
 
 def judge_episode_trajectory(
@@ -1284,11 +1328,16 @@ def judge_episode_trajectory(
             "The configured leverage policy produced a played leverage card.",
             [f"played_leverage_count:{len(memory.played_leverage_cards)}"],
         )
-        no_payoff = [
-            trace.narrator_ord
-            for trace in traces
-            if trace.selected_action.get("played_leverage") and not _trace_has_runtime_impact(trace)
-        ]
+        payoff_evidence: list[str] = []
+        no_payoff: list[int] = []
+        for trace in traces:
+            if not trace.selected_action.get("played_leverage"):
+                continue
+            turn_evidence = _played_leverage_payoff_evidence(trace)
+            if turn_evidence:
+                payoff_evidence.extend(turn_evidence)
+            else:
+                no_payoff.append(trace.narrator_ord)
         if no_payoff:
             add_check(
                 "leverage_payoff_continuity",
@@ -1301,6 +1350,7 @@ def judge_episode_trajectory(
                 "leverage_payoff_continuity",
                 "pass",
                 "Played leverage cards produced visible pulse or inventory impact.",
+                payoff_evidence[:8],
             )
 
     leverage_card_ids = [
@@ -1327,11 +1377,17 @@ def judge_episode_trajectory(
             "No leverage card id was replayed across the episode.",
         )
 
-    if traces and any(_trace_has_runtime_impact(trace) for trace in traces):
+    runtime_impact_evidence = [
+        item
+        for trace in traces
+        for item in _trace_runtime_impact_evidence(trace)
+    ]
+    if runtime_impact_evidence:
         add_check(
             "runtime_impact_observed",
             "pass",
             "At least one turn produced pulse shift or inventory impact.",
+            runtime_impact_evidence[:8],
         )
     elif traces:
         add_check(
