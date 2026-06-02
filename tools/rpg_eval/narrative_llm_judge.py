@@ -162,6 +162,19 @@ class LLMJudgeResult(BaseModel):
     deterministic_disagreement: bool = False
 
 
+class LLMJudgeConsistencyCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["llm_judge_consistency.v1"] = "llm_judge_consistency.v1"
+    source: Literal["deterministic_runner_v1"] = "deterministic_runner_v1"
+    status: StatusText
+    weighted_score: float = Field(ge=0, le=1)
+    pass_floor: float = Field(ge=0, le=1)
+    fail_floor: float = Field(ge=0, le=1)
+    rationale: str = Field(min_length=1, max_length=320)
+    evidence: list[str] = Field(default_factory=list, max_length=8)
+
+
 class LLMJudgeErrorArtifact(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -208,6 +221,7 @@ class NarrativeCaseJudgeReport(BaseModel):
     deterministic_summary: dict[str, Any]
     llm_judge: LLMJudgeResult | None = None
     llm_judge_error: LLMJudgeErrorArtifact | None = None
+    llm_consistency: LLMJudgeConsistencyCheck | None = None
 
 
 class NarrativeJudgeAggregate(BaseModel):
@@ -419,6 +433,51 @@ def _payload_summary(payload: Any) -> dict[str, Any]:
     return summary
 
 
+def _compact_expectation_value(value: Any) -> str:
+    if isinstance(value, bool):
+        return str(value).lower()
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return _clip(value, limit=180)
+    if isinstance(value, int | float):
+        return str(value)
+    if isinstance(value, list):
+        compact_values = [_compact_expectation_value(item) for item in value[:4]]
+        suffix = ",..." if len(value) > 4 else ""
+        return "[" + ",".join(compact_values) + suffix + "]"
+    if isinstance(value, dict):
+        preferred_keys = (
+            "status",
+            "outcome",
+            "match",
+            "matched",
+            "passed",
+            "reason",
+            "rationale",
+            "evidence",
+            "value",
+        )
+        parts: list[str] = []
+        for key in preferred_keys:
+            if key in value:
+                parts.append(f"{key}={_compact_expectation_value(value[key])}")
+        if not parts:
+            for key, nested_value in list(value.items())[:4]:
+                parts.append(f"{key}={_compact_expectation_value(nested_value)}")
+        return "; ".join(parts)
+    return _clip(json.dumps(value, ensure_ascii=False, sort_keys=True, default=str), limit=180)
+
+
+def _normalize_expectation_entries(value: Any) -> Any:
+    if not isinstance(value, dict):
+        return value
+    entries: list[str] = []
+    for key, item in value.items():
+        entries.append(f"{key}:{_compact_expectation_value(item)}")
+    return entries[:16]
+
+
 def _normalize_llm_judge_payload(
     payload: Any,
     *,
@@ -435,6 +494,9 @@ def _normalize_llm_judge_payload(
     normalized = dict(payload)
     for field_name in LLM_JUDGE_BENIGN_METADATA_FIELDS:
         normalized.pop(field_name, None)
+    for field_name in ("expectation_matches", "expectation_misses"):
+        if field_name in normalized:
+            normalized[field_name] = _normalize_expectation_entries(normalized[field_name])
     normalized["source"] = source
     normalized["model"] = str(getattr(gateway, "model", "configured_gateway"))
     normalized["gateway"] = str(gateway_label)
@@ -665,6 +727,54 @@ def _case_status(det_status: StatusText, llm_status: StatusText) -> StatusText:
     return _combine_statuses([det_status, llm_status])
 
 
+def _llm_score_consistency(
+    *,
+    case: GoldCaseSpec,
+    result: LLMJudgeResult,
+) -> LLMJudgeConsistencyCheck:
+    weighted_score = result.scores.weighted_average(case.rubric.weights)
+    pass_floor = float(case.rubric.pass_threshold)
+    fail_floor = float(case.rubric.warn_threshold)
+    evidence = [
+        f"llm_status:{result.status}",
+        f"weighted_score:{weighted_score:.3f}",
+        f"pass_floor:{pass_floor:.3f}",
+        f"fail_floor:{fail_floor:.3f}",
+    ]
+    if weighted_score < fail_floor:
+        return LLMJudgeConsistencyCheck(
+            status="fail",
+            weighted_score=weighted_score,
+            pass_floor=pass_floor,
+            fail_floor=fail_floor,
+            rationale=(
+                "LLM judge numeric scores are below the fail floor, so the "
+                "case cannot pass regardless of the textual status."
+            ),
+            evidence=evidence,
+        )
+    if result.status == "pass" and weighted_score < pass_floor:
+        return LLMJudgeConsistencyCheck(
+            status="warn",
+            weighted_score=weighted_score,
+            pass_floor=pass_floor,
+            fail_floor=fail_floor,
+            rationale=(
+                "LLM judge returned pass, but numeric scores are below the "
+                "configured pass floor."
+            ),
+            evidence=evidence,
+        )
+    return LLMJudgeConsistencyCheck(
+        status="pass",
+        weighted_score=weighted_score,
+        pass_floor=pass_floor,
+        fail_floor=fail_floor,
+        rationale="LLM judge status is consistent with numeric scores.",
+        evidence=evidence,
+    )
+
+
 def _report_status(cases: list[NarrativeCaseJudgeReport]) -> RunReportStatus:
     if any(case.llm_judge_error is not None for case in cases):
         return "validation_failed"
@@ -699,6 +809,10 @@ def _aggregate(cases: list[NarrativeCaseJudgeReport]) -> NarrativeJudgeAggregate
             "deterministic_evidence_present": all(case.deterministic_status in {"pass", "warn", "fail"} for case in cases),
             "llm_judge_present": all(
                 case.llm_judge is not None and case.llm_judge.schema_version == "llm_judge.v1"
+                for case in cases
+            ),
+            "llm_score_consistency": all(
+                case.llm_consistency is not None and case.llm_consistency.status == "pass"
                 for case in cases
             ),
             "hidden_info_safety": all(
@@ -770,6 +884,7 @@ def run_gold_set_evaluation(
         det_status = deterministic_status(episode, case)
         llm_result: LLMJudgeResult | None = None
         llm_error: LLMJudgeErrorArtifact | None = None
+        llm_consistency: LLMJudgeConsistencyCheck | None = None
         try:
             llm_result = evaluate_with_llm_judge(
                 package=package,
@@ -778,6 +893,7 @@ def run_gold_set_evaluation(
                 gateway_label=gateway_label,
                 deterministic_status_value=det_status,
             )
+            llm_consistency = _llm_score_consistency(case=case, result=llm_result)
             _write_json(llm_result_path, llm_result)
         except LLMJudgeEvaluationError as exc:
             llm_error = _llm_judge_error_artifact(
@@ -789,7 +905,11 @@ def run_gold_set_evaluation(
                 deterministic_summary=package.deterministic_summary,
             )
             _write_json(llm_result_path, llm_error)
-        llm_status: StatusText = llm_result.status if llm_result else "fail"
+        llm_status: StatusText = (
+            _combine_statuses([llm_result.status, llm_consistency.status])
+            if llm_result and llm_consistency
+            else "fail"
+        )
         case_status = _case_status(det_status, llm_status)
         case_reports.append(
             NarrativeCaseJudgeReport(
@@ -800,7 +920,8 @@ def run_gold_set_evaluation(
                 llm_status=llm_status,
                 status=case_status,
                 disagreement=(
-                    llm_result.deterministic_disagreement if llm_result else det_status != "fail"
+                    (llm_result.deterministic_disagreement if llm_result else False)
+                    or det_status != llm_status
                 ),
                 trace_path=str(trace_path),
                 summary_path=str(summary_path),
@@ -809,6 +930,7 @@ def run_gold_set_evaluation(
                 deterministic_summary=package.deterministic_summary,
                 llm_judge=llm_result,
                 llm_judge_error=llm_error,
+                llm_consistency=llm_consistency,
             )
         )
 

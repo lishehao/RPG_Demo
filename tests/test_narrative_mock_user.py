@@ -29,9 +29,11 @@ from rpg_backend.narrative.service import NarrativeService
 from rpg_backend.responses_transport import ResponsesJSONResponse
 from tools.rpg_eval.narrative_mock_user import (
     EpisodeMemory,
+    MockUserAction,
     MockUserConfig,
     MockTurnTrace,
     TestClientNarrativeAdapter,
+    _memory_after_turn,
     choose_mock_user_action,
     judge_episode_trajectory,
     run_mock_user_episode,
@@ -468,6 +470,47 @@ def test_trajectory_judge_warns_on_flat_low_impact_episode() -> None:
     assert result.status == "warn"
     codes = {check.code for check in result.checks if check.status == "warn"}
     assert {"stage_progression_flat", "objective_progress", "low_divergence_no_impact"}.issubset(codes)
+
+
+def test_episode_memory_keeps_highest_objective_progress_signal() -> None:
+    config = MockUserConfig(
+        session_id="sess_progress",
+        objective="Stop the secret merger while exposing who altered the audit packet.",
+    )
+    action = MockUserAction(
+        chosen_option_index=0,
+        selected_option_label="Press the audit evidence.",
+        decision_reason="test",
+    )
+    memory = EpisodeMemory(objective=config.objective, objective_progress="low")
+
+    progressed = _memory_after_turn(
+        memory,
+        action=action,
+        narrator_message=StoryMessage(
+            ord=2,
+            role="narrator",
+            content="The secret merger and altered audit packet are exposed.",
+        ),
+        step=None,
+        contract=None,
+        config=config,
+    )
+    later_low_signal = _memory_after_turn(
+        progressed,
+        action=action,
+        narrator_message=StoryMessage(
+            ord=4,
+            role="narrator",
+            content="The room falls quiet while everyone waits.",
+        ),
+        step=None,
+        contract=None,
+        config=config,
+    )
+
+    assert progressed.objective_progress == "high"
+    assert later_low_signal.objective_progress == "high"
 
 
 def test_trajectory_judge_fails_replayed_leverage_card() -> None:

@@ -318,6 +318,7 @@ def _memory_from_observation(
     pressure_count = memory.pressure_signal_count + sum(
         1 for pulse in narrator.npc_pulse if pulse.shift in {"wary", "broken", "colder"}
     )
+    observed_progress = _objective_progress(config.objective, narrator.content)
     return memory.model_copy(
         update={
             "objective": memory.objective or config.objective,
@@ -339,7 +340,7 @@ def _memory_from_observation(
             ),
             "npc_pulse_trend": npc_pulse_trend,
             "pressure_signal_count": pressure_count,
-            "objective_progress": _objective_progress(config.objective, narrator.content),
+            "objective_progress": _max_objective_progress(memory.objective_progress, observed_progress),
         }
     )
 
@@ -395,6 +396,7 @@ def _memory_after_turn(
     policy_counts = dict(memory.policy_decision_counts)
     policy_counts[config.policy] = policy_counts.get(config.policy, 0) + 1
     last_action = action.selected_option_label or action.free_input or "unknown action"
+    observed_progress = _objective_progress(config.objective, narrator_message.content)
     return memory.model_copy(
         update={
             "latest_narrator_ord": narrator_message.ord,
@@ -421,7 +423,7 @@ def _memory_after_turn(
             "policy_decision_counts": policy_counts,
             "pressure_signal_count": pressure_count,
             "last_action_summary": _clip(last_action, 180),
-            "objective_progress": _objective_progress(config.objective, narrator_message.content),
+            "objective_progress": _max_objective_progress(memory.objective_progress, observed_progress),
         }
     )
 
@@ -457,6 +459,14 @@ def _objective_progress(objective: str, text: str) -> Literal["unknown", "low", 
     if hits >= 1:
         return "medium"
     return "low"
+
+
+def _max_objective_progress(
+    current: Literal["unknown", "low", "medium", "high"],
+    observed: Literal["unknown", "low", "medium", "high"],
+) -> Literal["unknown", "low", "medium", "high"]:
+    ranks = {"unknown": 0, "low": 1, "medium": 2, "high": 3}
+    return current if ranks[current] >= ranks[observed] else observed
 
 
 def select_role_index(

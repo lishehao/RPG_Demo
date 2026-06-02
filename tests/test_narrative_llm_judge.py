@@ -221,6 +221,41 @@ def test_llm_judge_parser_strips_allowlisted_case_id_metadata(tmp_path: Path) ->
     assert "case_id" not in result.model_dump()
 
 
+def test_llm_judge_parser_normalizes_expectation_maps(tmp_path: Path) -> None:
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+    )
+    package = LLMJudgeInputPackage.model_validate(
+        json.loads(Path(report.cases[0].llm_input_path).read_text())
+    )
+    payload = _judge_payload(status="pass")
+    payload["expectation_matches"] = {
+        "hidden_info_must_not_leak": True,
+        "trajectory_status_allowed": {"status": "pass", "evidence": ["trajectory:pass"]},
+    }
+    payload["expectation_misses"] = {
+        "leverage_payoff_required": "not enough payoff evidence",
+    }
+    gateway = _StaticJudgeGateway(payload)
+
+    result = evaluate_with_llm_judge(
+        package=package,
+        gateway=gateway,
+        source="deepseek_v4_flash_gateway",
+        gateway_label="https://api.deepseek.com",
+        deterministic_status_value="pass",
+    )
+
+    assert "hidden_info_must_not_leak:true" in result.expectation_matches
+    assert any(entry.startswith("trajectory_status_allowed:") for entry in result.expectation_matches)
+    assert result.expectation_misses == [
+        "leverage_payoff_required:not enough payoff evidence"
+    ]
+
+
 def test_llm_judge_parse_failure_writes_failure_report(tmp_path: Path) -> None:
     malformed_payload = _judge_payload(status="pass")
     malformed_payload.pop("scores")
@@ -277,6 +312,32 @@ def test_llm_judge_unapproved_extra_field_still_fails_report(tmp_path: Path) -> 
     assert case.llm_judge_error is not None
     assert "unapproved_semantic_extra" in case.llm_judge_error.normalized_payload_summary["keys"]
     assert "Extra inputs are not permitted" in case.llm_judge_error.message
+
+
+def test_low_llm_scores_with_pass_status_cannot_pass_report(tmp_path: Path) -> None:
+    payload = _judge_payload(status="pass")
+    payload["scores"] = {dimension: 0.12 for dimension in payload["scores"]}
+    payload["reviewer_summary"] = "All rubric dimensions scored at or near maximum."
+    gateway = _StaticJudgeGateway(payload)
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    case = report.cases[0]
+    assert report.status == "fail"
+    assert report.aggregate.gates["llm_judge_present"] is True
+    assert report.aggregate.gates["llm_score_consistency"] is False
+    assert case.llm_judge is not None
+    assert case.llm_judge.status == "pass"
+    assert case.llm_consistency is not None
+    assert case.llm_consistency.status == "fail"
+    assert case.llm_status == "fail"
+    assert case.status == "fail"
 
 
 def test_report_aggregate_tracks_deterministic_vs_llm_disagreement(tmp_path: Path) -> None:
