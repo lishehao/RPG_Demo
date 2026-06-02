@@ -38,6 +38,7 @@ SCORE_DIMENSIONS = (
     "narrative_coherence",
     "hidden_info_safety",
 )
+LLM_JUDGE_BENIGN_METADATA_FIELDS = frozenset({"case_id"})
 StatusText = Literal["pass", "warn", "fail"]
 RunReportStatus = Literal["pass", "warn", "fail", "validation_failed"]
 RunMode = Literal["case", "fixture", "live"]
@@ -432,6 +433,8 @@ def _normalize_llm_judge_payload(
             response_payload=payload,
         )
     normalized = dict(payload)
+    for field_name in LLM_JUDGE_BENIGN_METADATA_FIELDS:
+        normalized.pop(field_name, None)
     normalized["source"] = source
     normalized["model"] = str(getattr(gateway, "model", "configured_gateway"))
     normalized["gateway"] = str(gateway_label)
