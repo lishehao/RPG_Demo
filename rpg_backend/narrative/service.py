@@ -429,37 +429,55 @@ class NarrativeService:
             )
         self._repo.append_story_message(session_id, turn.narrator_message)
         turn_agent_events = []
-        turn_agent_events.append(self._repo.append_agent_event(
-            session_id,
-            ord_value=turn.narrator_message.ord,
-            event_type="agent_plan",
-            payload=turn.agent_plan,
-        ))
-        step_judge = judge_step(
-            agent_plan=turn.agent_plan,
-            player_message=player_message,
-            narrator_message=turn.narrator_message,
-            cast=template.cast,
-        )
-        turn_agent_events.append(self._repo.append_agent_event(
-            session_id,
-            ord_value=turn.narrator_message.ord,
-            event_type="step_judge",
-            payload=step_judge,
-        ))
-        contract_judge = judge_contract(
-            agent_plan=turn.agent_plan,
-            player_message=player_message,
-            narrator_message=turn.narrator_message,
-            cast=template.cast,
-            player_role=active_role,
-        )
-        turn_agent_events.append(self._repo.append_agent_event(
-            session_id,
-            ord_value=turn.narrator_message.ord,
-            event_type="contract_judge",
-            payload=contract_judge,
-        ))
+
+        def _append_agent_event(event_type: str, payload: object) -> None:
+            try:
+                turn_agent_events.append(
+                    self._repo.append_agent_event(
+                        session_id,
+                        ord_value=turn.narrator_message.ord,
+                        event_type=event_type,
+                        payload=payload,
+                    )
+                )
+            except Exception as exc:
+                print(
+                    "[narrative.service] append_agent_event failed "
+                    f"session={session_id} ord={turn.narrator_message.ord} "
+                    f"event_type={event_type}: {exc}",
+                    flush=True,
+                )
+
+        _append_agent_event("agent_plan", turn.agent_plan)
+        try:
+            step_judge = judge_step(
+                agent_plan=turn.agent_plan,
+                player_message=player_message,
+                narrator_message=turn.narrator_message,
+                cast=template.cast,
+            )
+            _append_agent_event("step_judge", step_judge)
+        except Exception as exc:
+            print(
+                "[narrative.service] step_judge failed "
+                f"session={session_id} ord={turn.narrator_message.ord}: {exc}",
+                flush=True,
+            )
+        try:
+            contract_judge = judge_contract(
+                agent_plan=turn.agent_plan,
+                player_message=player_message,
+                narrator_message=turn.narrator_message,
+                cast=template.cast,
+                player_role=active_role,
+            )
+            _append_agent_event("contract_judge", contract_judge)
+        except Exception as exc:
+            print(
+                "[narrative.service] contract_judge failed "
+                f"session={session_id} ord={turn.narrator_message.ord}: {exc}",
+                flush=True,
+            )
         self._repo.touch_session(session_id, increment_turns=1)
 
         ending_payload: NarrativeEnding | None = None

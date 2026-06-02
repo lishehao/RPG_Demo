@@ -18,7 +18,7 @@ from tools.rpg_eval.narrative_llm_judge import (
 from tools.rpg_eval.narrative_mock_user import AgentLoopEvent, MockUserRuntimeError
 
 
-class _StaticJudgeGateway:
+class _StaticJudgeClient:
     model = "deepseek-v4-flash"
 
     def __init__(self, payload: dict[str, Any]) -> None:
@@ -175,6 +175,60 @@ def test_gold_set_runner_writes_report_for_runtime_failure(
     assert json.loads(Path(case.llm_result_path).read_text())["schema_version"] == "runtime_failure.v1"
 
 
+def test_gold_set_runner_writes_report_for_adapter_construction_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise_adapter_failure(*args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        raise RuntimeError("live adapter could not authenticate reviewer")
+
+    monkeypatch.setattr(judge_module, "_adapter_for_case", _raise_adapter_failure)
+    output = tmp_path / "report.json"
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=output,
+        mode="fixture",
+        llm_judge_mode="fake",
+    )
+
+    assert output.exists()
+    assert report.status == "validation_failed"
+    assert report.aggregate.gates["runtime_completed"] is False
+    assert report.aggregate.gates["mock_user_runs_completed"] is False
+    case = report.cases[0]
+    assert case.runtime_error is not None
+    assert case.runtime_error.error_type == "RuntimeError"
+    assert "could not authenticate reviewer" in case.runtime_error.message
+    assert Path(case.trace_path).exists()
+    assert Path(case.summary_path).exists()
+    assert Path(case.llm_input_path).exists()
+    assert Path(case.llm_result_path).exists()
+
+
+def test_fake_judge_enforces_required_ending_expectation(tmp_path: Path) -> None:
+    gold_set_data = json.loads(DEFAULT_GOLD_SET.read_text())
+    gold_set_data["cases"][0]["expected"]["ending_required"] = True
+    gold_set_path = tmp_path / "ending_required_gold_set.json"
+    gold_set_path.write_text(json.dumps(gold_set_data), encoding="utf-8")
+
+    report = run_gold_set_evaluation(
+        gold_set_path=gold_set_path,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+    )
+
+    case = report.cases[0]
+    assert report.status == "fail"
+    assert case.deterministic_status == "fail"
+    assert case.llm_status == "fail"
+    assert case.llm_judge is not None
+    assert "ending_required" in case.llm_judge.expectation_misses
+    assert report.aggregate.gates["llm_required_expectations_met"] is False
+
+
 def test_llm_judge_input_includes_deterministic_evidence(tmp_path: Path) -> None:
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -210,7 +264,7 @@ def test_llm_judge_strict_parser_with_static_gateway(tmp_path: Path) -> None:
     package = LLMJudgeInputPackage.model_validate(
         json.loads(Path(report.cases[0].llm_input_path).read_text())
     )
-    gateway = _StaticJudgeGateway(_judge_payload(status="warn"))
+    gateway = _StaticJudgeClient(_judge_payload(status="warn"))
 
     result = evaluate_with_llm_judge(
         package=package,
@@ -243,7 +297,7 @@ def test_llm_judge_parser_fills_missing_model_gateway_from_context(tmp_path: Pat
     payload = _judge_payload(status="pass")
     payload.pop("model")
     payload.pop("gateway")
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     result = evaluate_with_llm_judge(
         package=package,
@@ -271,7 +325,7 @@ def test_llm_judge_parser_strips_allowlisted_case_id_metadata(tmp_path: Path) ->
     )
     payload = _judge_payload(status="pass")
     payload["case_id"] = "merger_audit_fixture_smoke"
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     result = evaluate_with_llm_judge(
         package=package,
@@ -310,7 +364,7 @@ def test_llm_judge_parser_normalizes_confidence_labels(
     )
     payload = _judge_payload(status="pass")
     payload["confidence"] = raw_confidence
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     result = evaluate_with_llm_judge(
         package=package,
@@ -327,7 +381,7 @@ def test_llm_judge_parser_normalizes_confidence_labels(
 def test_unknown_confidence_label_still_writes_failure_report(tmp_path: Path) -> None:
     malformed_payload = _judge_payload(status="pass")
     malformed_payload["confidence"] = "certain"
-    gateway = _StaticJudgeGateway(malformed_payload)
+    gateway = _StaticJudgeClient(malformed_payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -350,7 +404,7 @@ def test_unknown_confidence_label_still_writes_failure_report(tmp_path: Path) ->
 def test_out_of_range_numeric_confidence_still_writes_failure_report(tmp_path: Path) -> None:
     malformed_payload = _judge_payload(status="pass")
     malformed_payload["confidence"] = 1.2
-    gateway = _StaticJudgeGateway(malformed_payload)
+    gateway = _StaticJudgeClient(malformed_payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -387,7 +441,7 @@ def test_llm_judge_parser_normalizes_expectation_maps(tmp_path: Path) -> None:
     payload["expectation_misses"] = {
         "leverage_payoff_required": "not enough payoff evidence",
     }
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     result = evaluate_with_llm_judge(
         package=package,
@@ -424,7 +478,7 @@ def test_llm_judge_parser_drops_false_miss_map_entries(tmp_path: Path) -> None:
         "real_miss": True,
         "another_miss": {"status": "failed", "reason": "stage was skipped"},
     }
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     result = evaluate_with_llm_judge(
         package=package,
@@ -443,7 +497,7 @@ def test_llm_judge_parser_drops_false_miss_map_entries(tmp_path: Path) -> None:
 def test_llm_judge_parse_failure_writes_failure_report(tmp_path: Path) -> None:
     malformed_payload = _judge_payload(status="pass")
     malformed_payload.pop("scores")
-    gateway = _StaticJudgeGateway(malformed_payload)
+    gateway = _StaticJudgeClient(malformed_payload)
     output = tmp_path / "report.json"
 
     report = run_gold_set_evaluation(
@@ -479,7 +533,7 @@ def test_llm_judge_parse_failure_writes_failure_report(tmp_path: Path) -> None:
 def test_llm_judge_unapproved_extra_field_still_fails_report(tmp_path: Path) -> None:
     malformed_payload = _judge_payload(status="pass")
     malformed_payload["unapproved_semantic_extra"] = "do not silently accept this"
-    gateway = _StaticJudgeGateway(malformed_payload)
+    gateway = _StaticJudgeClient(malformed_payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -502,7 +556,7 @@ def test_low_llm_scores_with_pass_status_cannot_pass_report(tmp_path: Path) -> N
     payload = _judge_payload(status="pass")
     payload["scores"] = {dimension: 0.12 for dimension in payload["scores"]}
     payload["reviewer_summary"] = "All rubric dimensions scored at or near maximum."
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -542,7 +596,7 @@ def test_rubric_weight_like_scores_with_pass_status_fail_shape_gate(tmp_path: Pa
         "trajectory_status_allowed",
     ]
     payload["reviewer_summary"] = "All required expectations met and the case passes."
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -570,7 +624,7 @@ def test_rubric_weight_like_scores_with_pass_status_fail_shape_gate(tmp_path: Pa
 def test_high_quality_scores_with_pass_status_pass_shape_gate(tmp_path: Path) -> None:
     payload = _judge_payload(status="pass")
     payload["scores"] = {dimension: 0.88 for dimension in payload["scores"]}
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -594,7 +648,7 @@ def test_required_expectation_miss_cannot_pass_report(tmp_path: Path) -> None:
     payload["expectation_matches"] = ["hidden_info_must_not_leak"]
     payload["expectation_misses"] = ["leverage_payoff_required"]
     payload["reviewer_summary"] = "The run passes overall despite one miss."
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -621,7 +675,7 @@ def test_required_expectation_miss_cannot_pass_report(tmp_path: Path) -> None:
 def test_non_blocking_expectation_miss_can_pass_report(tmp_path: Path) -> None:
     payload = _judge_payload(status="pass")
     payload["expectation_misses"] = ["optional_tone_polish"]
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -650,7 +704,7 @@ def test_duplicate_expectation_match_and_miss_fails_consistency_gate(tmp_path: P
     payload["expectation_misses"] = {
         "leverage_payoff_required": "payoff was not explicit enough",
     }
-    gateway = _StaticJudgeGateway(payload)
+    gateway = _StaticJudgeClient(payload)
 
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
@@ -675,7 +729,7 @@ def test_duplicate_expectation_match_and_miss_fails_consistency_gate(tmp_path: P
 
 
 def test_report_aggregate_tracks_deterministic_vs_llm_disagreement(tmp_path: Path) -> None:
-    gateway = _StaticJudgeGateway(_judge_payload(status="warn"))
+    gateway = _StaticJudgeClient(_judge_payload(status="warn"))
     report = run_gold_set_evaluation(
         gold_set_path=DEFAULT_GOLD_SET,
         output_path=tmp_path / "report.json",

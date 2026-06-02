@@ -287,6 +287,33 @@ def test_advance_can_return_agent_plan_for_debug_trace(tmp_path) -> None:
     assert response.agent_events[0].payload == response.agent_plan
 
 
+def test_trace_archive_failure_does_not_abort_completed_turn(tmp_path, monkeypatch) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(repo, session_id="sess_agent_trace_nonfatal")
+    repo.touch_session("sess_agent_trace_nonfatal", increment_turns=1)
+    service = NarrativeService(repository=repo, gateway=_TurnOnlyResponder())
+
+    def _raise_append_failure(*args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        raise RuntimeError("agent event table locked")
+
+    monkeypatch.setattr(repo, "append_agent_event", _raise_append_failure)
+
+    response = service.advance(
+        "sess_agent_trace_nonfatal",
+        AdvanceTurnRequest(free_input="I keep the memo visible."),
+        player_user_id="local-dev",
+        include_agent_trace=True,
+    )
+
+    history = repo.list_story_messages("sess_agent_trace_nonfatal")
+    session = repo.get_session("sess_agent_trace_nonfatal")
+    assert response.agent_plan is not None
+    assert response.agent_events == []
+    assert [message.role for message in history] == ["narrator", "player", "narrator"]
+    assert session.turn_count == 2
+
+
 def test_story_endpoint_requires_reviewer_for_agent_trace(tmp_path) -> None:
     repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
     client = TestClient(main_module.app)

@@ -436,6 +436,8 @@ def deterministic_status(result: MockUserEpisodeResult, case: GoldCaseSpec) -> S
         statuses.append("fail")
     if case.expected.leverage_usage_required and not result.episode_memory.played_leverage_cards:
         statuses.append("warn")
+    if case.expected.ending_required and not result.summary.ending_detected:
+        statuses.append("fail")
     return _combine_statuses(statuses)
 
 
@@ -905,13 +907,19 @@ def build_llm_judge_input(
 
 
 def _fake_llm_judge_payload(user_payload: dict[str, Any]) -> dict[str, Any]:
+    gold_case = user_payload.get("gold_case") or {}
+    expected = gold_case.get("expected") if isinstance(gold_case, dict) else {}
+    expected = expected if isinstance(expected, dict) else {}
     deterministic = user_payload.get("deterministic_summary") or {}
     trajectory_status = str(deterministic.get("trajectory_status") or "missing")
     repeated = deterministic.get("repeated_violation_codes") or {}
     hidden = user_payload.get("hidden_info_indicators") or {}
     hidden_hits = hidden.get("hidden_or_leak_codes") or []
     forbidden_hits = hidden.get("forbidden_code_hits") or []
-    has_fail = trajectory_status == "fail" or bool(forbidden_hits)
+    expectation_misses = [str(code) for code in forbidden_hits]
+    if expected.get("ending_required") is True and not deterministic.get("ending_detected"):
+        expectation_misses.append("ending_required")
+    has_fail = trajectory_status == "fail" or bool(forbidden_hits) or "ending_required" in expectation_misses
     has_warn = trajectory_status == "warn" or bool(repeated) or bool(hidden_hits)
     status: StatusText = "fail" if has_fail else "warn" if has_warn else "pass"
     base_score = 0.38 if status == "fail" else 0.68 if status == "warn" else 0.86
@@ -943,7 +951,7 @@ def _fake_llm_judge_payload(user_payload: dict[str, Any]) -> dict[str, Any]:
         "scores": {dimension: base_score for dimension in SCORE_DIMENSIONS},
         "violations": violations,
         "expectation_matches": ["deterministic evidence package parsed", "trajectory evidence included"],
-        "expectation_misses": [str(code) for code in forbidden_hits],
+        "expectation_misses": expectation_misses,
         "reviewer_summary": f"Fake judge classified the run as {status} from deterministic evidence.",
         "confidence": 0.72,
         "deterministic_disagreement": False,
@@ -1465,8 +1473,8 @@ def run_gold_set_evaluation(
             session_override=session_override,
             template_override=template_override,
         )
-        adapter, config = _adapter_for_case(config, resolved_mode)
         try:
+            adapter, config = _adapter_for_case(config, resolved_mode)
             episode = run_mock_user_episode(config, adapter)
         except Exception as exc:
             runtime_failure = _runtime_failure_artifact(
