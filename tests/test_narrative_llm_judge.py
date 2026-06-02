@@ -166,6 +166,71 @@ def test_llm_judge_strict_parser_with_static_gateway(tmp_path: Path) -> None:
     assert "trajectory_judge" in gateway.calls[0]["user_payload"]
 
 
+def test_llm_judge_parser_fills_missing_model_gateway_from_context(tmp_path: Path) -> None:
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=tmp_path / "report.json",
+        mode="fixture",
+        llm_judge_mode="fake",
+    )
+    package = LLMJudgeInputPackage.model_validate(
+        json.loads(Path(report.cases[0].llm_input_path).read_text())
+    )
+    payload = _judge_payload(status="pass")
+    payload.pop("model")
+    payload.pop("gateway")
+    gateway = _StaticJudgeGateway(payload)
+
+    result = evaluate_with_llm_judge(
+        package=package,
+        gateway=gateway,
+        source="deepseek_v4_flash_gateway",
+        gateway_label="https://api.deepseek.com",
+        deterministic_status_value="pass",
+    )
+
+    assert result.status == "pass"
+    assert result.model == "deepseek-v4-flash"
+    assert result.gateway == "https://api.deepseek.com"
+    assert result.source == "deepseek_v4_flash_gateway"
+
+
+def test_llm_judge_parse_failure_writes_failure_report(tmp_path: Path) -> None:
+    malformed_payload = _judge_payload(status="pass")
+    malformed_payload.pop("scores")
+    gateway = _StaticJudgeGateway(malformed_payload)
+    output = tmp_path / "report.json"
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=output,
+        mode="fixture",
+        llm_judge_mode="fake",
+        gateway=gateway,
+    )
+
+    assert output.exists()
+    assert report.status == "validation_failed"
+    assert report.aggregate.gates["mock_user_runs_completed"] is True
+    assert report.aggregate.gates["deterministic_evidence_present"] is True
+    assert report.aggregate.gates["llm_judge_present"] is False
+    case = report.cases[0]
+    assert case.deterministic_status == "pass"
+    assert case.llm_status == "fail"
+    assert case.status == "fail"
+    assert case.llm_judge is None
+    assert case.llm_judge_error is not None
+    assert case.llm_judge_error.status == "validation_failed"
+    assert case.llm_judge_error.deterministic_summary["turn_count"] > 0
+    assert Path(case.trace_path).exists()
+    assert Path(case.summary_path).exists()
+    assert Path(case.llm_input_path).exists()
+    error_artifact = json.loads(Path(case.llm_result_path).read_text())
+    assert error_artifact["schema_version"] == "llm_judge_error.v1"
+    assert error_artifact["safe_payload_summary"]["keys"]
+    assert "scores" not in error_artifact["safe_payload_summary"]["keys"]
+
+
 def test_report_aggregate_tracks_deterministic_vs_llm_disagreement(tmp_path: Path) -> None:
     gateway = _StaticJudgeGateway(_judge_payload(status="warn"))
     report = run_gold_set_evaluation(

@@ -39,6 +39,7 @@ SCORE_DIMENSIONS = (
     "hidden_info_safety",
 )
 StatusText = Literal["pass", "warn", "fail"]
+RunReportStatus = Literal["pass", "warn", "fail", "validation_failed"]
 RunMode = Literal["case", "fixture", "live"]
 JudgeMode = Literal["fake", "live"]
 
@@ -160,6 +161,22 @@ class LLMJudgeResult(BaseModel):
     deterministic_disagreement: bool = False
 
 
+class LLMJudgeErrorArtifact(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["llm_judge_error.v1"] = "llm_judge_error.v1"
+    source: Literal["deepseek_v4_flash_gateway", "fake_gateway"]
+    model: str = Field(min_length=1, max_length=120)
+    gateway: str = Field(min_length=1, max_length=240)
+    status: Literal["validation_failed"] = "validation_failed"
+    error_type: str = Field(min_length=1, max_length=120)
+    message: str = Field(min_length=1, max_length=1200)
+    deterministic_status: StatusText
+    deterministic_summary: dict[str, Any]
+    safe_payload_summary: dict[str, Any] = Field(default_factory=dict)
+    normalized_payload_summary: dict[str, Any] = Field(default_factory=dict)
+
+
 class LLMJudgeInputPackage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -188,7 +205,8 @@ class NarrativeCaseJudgeReport(BaseModel):
     llm_input_path: str
     llm_result_path: str
     deterministic_summary: dict[str, Any]
-    llm_judge: LLMJudgeResult
+    llm_judge: LLMJudgeResult | None = None
+    llm_judge_error: LLMJudgeErrorArtifact | None = None
 
 
 class NarrativeJudgeAggregate(BaseModel):
@@ -209,6 +227,7 @@ class NarrativeLLMJudgeRunReport(BaseModel):
     schema_version: Literal["narrative_llm_judge_report.v1"] = "narrative_llm_judge_report.v1"
     run_id: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    status: RunReportStatus
     git_sha: str | None = None
     gold_set_id: str
     gold_set_path: str
@@ -367,6 +386,80 @@ def _clip(value: Any, limit: int = 420) -> Any:
     return value
 
 
+class LLMJudgeEvaluationError(RuntimeError):
+    def __init__(
+        self,
+        *,
+        error_type: str,
+        message: str,
+        response_payload: Any = None,
+        normalized_payload: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.error_type = error_type
+        self.response_payload = response_payload
+        self.normalized_payload = normalized_payload
+
+
+def _payload_summary(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {"type": type(payload).__name__}
+    summary: dict[str, Any] = {
+        "keys": sorted(str(key) for key in payload.keys()),
+    }
+    for key in ("schema_version", "source", "model", "gateway", "status", "confidence"):
+        if key in payload:
+            summary[key] = _clip(payload.get(key), limit=160)
+    if "scores" in payload:
+        summary["scores_type"] = type(payload.get("scores")).__name__
+    if "violations" in payload:
+        violations = payload.get("violations")
+        summary["violation_count"] = len(violations) if isinstance(violations, list) else None
+    return summary
+
+
+def _normalize_llm_judge_payload(
+    payload: Any,
+    *,
+    gateway: JudgeGateway,
+    source: Literal["deepseek_v4_flash_gateway", "fake_gateway"],
+    gateway_label: str,
+) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise LLMJudgeEvaluationError(
+            error_type="llm_judge_payload_type_error",
+            message=f"LLM judge response payload must be an object, got {type(payload).__name__}.",
+            response_payload=payload,
+        )
+    normalized = dict(payload)
+    normalized["source"] = source
+    normalized["model"] = str(getattr(gateway, "model", "configured_gateway"))
+    normalized["gateway"] = str(gateway_label)
+    return normalized
+
+
+def _llm_judge_error_artifact(
+    *,
+    error: LLMJudgeEvaluationError,
+    source: Literal["deepseek_v4_flash_gateway", "fake_gateway"],
+    gateway: JudgeGateway,
+    gateway_label: str,
+    deterministic_status_value: StatusText,
+    deterministic_summary: dict[str, Any],
+) -> LLMJudgeErrorArtifact:
+    return LLMJudgeErrorArtifact(
+        source=source,
+        model=str(getattr(gateway, "model", "configured_gateway")),
+        gateway=gateway_label,
+        error_type=error.error_type,
+        message=_clip(str(error), limit=1200),
+        deterministic_status=deterministic_status_value,
+        deterministic_summary=deterministic_summary,
+        safe_payload_summary=_payload_summary(error.response_payload),
+        normalized_payload_summary=_payload_summary(error.normalized_payload),
+    )
+
+
 def build_llm_judge_input(
     *,
     case: GoldCaseSpec,
@@ -506,22 +599,43 @@ def evaluate_with_llm_judge(
     gateway_label: str,
     deterministic_status_value: StatusText,
 ) -> LLMJudgeResult:
-    response = gateway.invoke_json(
-        system_prompt=_llm_judge_system_prompt(),
-        user_payload=package.model_dump(mode="json"),
-        operation_name="rpg_eval.narrative_llm_judge",
-        max_output_tokens=1400,
-    )
-    parsed = LLMJudgeResult.model_validate(response.payload)
-    parsed = parsed.model_copy(
+    try:
+        response = gateway.invoke_json(
+            system_prompt=_llm_judge_system_prompt(),
+            user_payload=package.model_dump(mode="json"),
+            operation_name="rpg_eval.narrative_llm_judge",
+            max_output_tokens=1400,
+        )
+    except Exception as exc:
+        raise LLMJudgeEvaluationError(
+            error_type=type(exc).__name__,
+            message=f"LLM judge gateway call failed: {exc}",
+        ) from exc
+
+    normalized_payload: dict[str, Any] | None = None
+    try:
+        normalized_payload = _normalize_llm_judge_payload(
+            response.payload,
+            gateway=gateway,
+            source=source,
+            gateway_label=gateway_label,
+        )
+        parsed = LLMJudgeResult.model_validate(normalized_payload)
+    except LLMJudgeEvaluationError:
+        raise
+    except Exception as exc:
+        raise LLMJudgeEvaluationError(
+            error_type=type(exc).__name__,
+            message=f"LLM judge response validation failed: {exc}",
+            response_payload=response.payload,
+            normalized_payload=normalized_payload,
+        ) from exc
+
+    return parsed.model_copy(
         update={
-            "source": source,
-            "model": getattr(gateway, "model", parsed.model),
-            "gateway": gateway_label,
             "deterministic_disagreement": parsed.status != deterministic_status_value,
         }
     )
-    return parsed
 
 
 def _adapter_for_case(config: MockUserConfig, mode: Literal["fixture", "live"]):
@@ -548,12 +662,26 @@ def _case_status(det_status: StatusText, llm_status: StatusText) -> StatusText:
     return _combine_statuses([det_status, llm_status])
 
 
+def _report_status(cases: list[NarrativeCaseJudgeReport]) -> RunReportStatus:
+    if any(case.llm_judge_error is not None for case in cases):
+        return "validation_failed"
+    return _combine_statuses([case.status for case in cases])
+
+
 def _aggregate(cases: list[NarrativeCaseJudgeReport]) -> NarrativeJudgeAggregate:
     status_counts = Counter(case.status for case in cases)
     deterministic_counts = Counter(case.deterministic_status for case in cases)
     llm_counts = Counter(case.llm_status for case in cases)
     violation_counts = Counter(
-        violation.code for case in cases for violation in case.llm_judge.violations
+        violation.code
+        for case in cases
+        for violation in (case.llm_judge.violations if case.llm_judge else [])
+    )
+    hidden_info_codes = (
+        {violation.code for violation in case.llm_judge.violations}
+        if case.llm_judge
+        else {"llm_judge_missing"}
+        for case in cases
     )
     return NarrativeJudgeAggregate(
         case_count=len(cases),
@@ -566,10 +694,12 @@ def _aggregate(cases: list[NarrativeCaseJudgeReport]) -> NarrativeJudgeAggregate
             "gold_set_loaded": bool(cases),
             "mock_user_runs_completed": all(case.deterministic_summary.get("turn_count", 0) > 0 for case in cases),
             "deterministic_evidence_present": all(case.deterministic_status in {"pass", "warn", "fail"} for case in cases),
-            "llm_judge_present": all(case.llm_judge.schema_version == "llm_judge.v1" for case in cases),
-            "hidden_info_safety": all(
-                "hidden_info_safety_signal" not in {violation.code for violation in case.llm_judge.violations}
+            "llm_judge_present": all(
+                case.llm_judge is not None and case.llm_judge.schema_version == "llm_judge.v1"
                 for case in cases
+            ),
+            "hidden_info_safety": all(
+                "hidden_info_safety_signal" not in codes for codes in hidden_info_codes
             ),
         },
     )
@@ -635,34 +765,53 @@ def run_gold_set_evaluation(
         package = build_llm_judge_input(case=case, result=episode)
         _write_json(llm_input_path, package)
         det_status = deterministic_status(episode, case)
-        llm_result = evaluate_with_llm_judge(
-            package=package,
-            gateway=judge_gateway,
-            source=judge_source,
-            gateway_label=gateway_label,
-            deterministic_status_value=det_status,
-        )
-        _write_json(llm_result_path, llm_result)
+        llm_result: LLMJudgeResult | None = None
+        llm_error: LLMJudgeErrorArtifact | None = None
+        try:
+            llm_result = evaluate_with_llm_judge(
+                package=package,
+                gateway=judge_gateway,
+                source=judge_source,
+                gateway_label=gateway_label,
+                deterministic_status_value=det_status,
+            )
+            _write_json(llm_result_path, llm_result)
+        except LLMJudgeEvaluationError as exc:
+            llm_error = _llm_judge_error_artifact(
+                error=exc,
+                source=judge_source,
+                gateway=judge_gateway,
+                gateway_label=gateway_label,
+                deterministic_status_value=det_status,
+                deterministic_summary=package.deterministic_summary,
+            )
+            _write_json(llm_result_path, llm_error)
+        llm_status: StatusText = llm_result.status if llm_result else "fail"
+        case_status = _case_status(det_status, llm_status)
         case_reports.append(
             NarrativeCaseJudgeReport(
                 case_id=case.case_id,
                 name=case.name,
                 run_mode=resolved_mode,
                 deterministic_status=det_status,
-                llm_status=llm_result.status,
-                status=_case_status(det_status, llm_result.status),
-                disagreement=llm_result.deterministic_disagreement,
+                llm_status=llm_status,
+                status=case_status,
+                disagreement=(
+                    llm_result.deterministic_disagreement if llm_result else det_status != "fail"
+                ),
                 trace_path=str(trace_path),
                 summary_path=str(summary_path),
                 llm_input_path=str(llm_input_path),
                 llm_result_path=str(llm_result_path),
                 deterministic_summary=package.deterministic_summary,
                 llm_judge=llm_result,
+                llm_judge_error=llm_error,
             )
         )
 
     report = NarrativeLLMJudgeRunReport(
         run_id=datetime.now(timezone.utc).strftime("narrative_llm_judge_%Y%m%d_%H%M%S"),
+        status=_report_status(case_reports),
         git_sha=_git_sha(),
         gold_set_id=gold_set.gold_set_id,
         gold_set_path=str(gold_set_path),
