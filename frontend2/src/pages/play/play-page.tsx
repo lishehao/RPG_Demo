@@ -5060,7 +5060,7 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 3,
   },
   runCompactRoleTag: {
-    color: "rgba(90,72,113,0.72)",
+    color: "rgba(47,35,24,0.78)",
     fontSize: 11.5,
     fontWeight: 720,
     letterSpacing: 0,
@@ -5077,7 +5077,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runCompactMeta: {
     gridColumn: "1 / -1",
-    color: "var(--text-faint)",
+    color: "rgba(47,35,24,0.58)",
     fontSize: 10.5,
     lineHeight: 1.2,
     fontWeight: 650,
@@ -5089,16 +5089,20 @@ const ppStyles: Record<string, CSSProperties> = {
   runCompactObjective: {
     marginTop: 6,
     maxWidth: 560,
+    padding: "7px 9px 8px",
+    background: "rgba(255,248,226,0.48)",
+    borderLeft: "2px solid rgba(93,95,143,0.34)",
+    borderRadius: 5,
   },
   runCompactObjectiveLabel: {
-    color: "rgba(205,180,245,0.58)",
+    color: "rgba(47,35,24,0.72)",
     fontSize: 9.5,
     fontWeight: 700,
     letterSpacing: 0,
     textTransform: "none" as const,
   },
   runCompactObjectiveText: {
-    color: "rgba(49,36,22,0.72)",
+    color: "rgba(34,25,17,0.94)",
     fontFamily: "var(--font-narrative)",
     fontSize: 13.5,
     lineHeight: 1.38,
@@ -5117,7 +5121,7 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 5,
   },
   runContextMeta: {
-    color: "var(--text-faint)",
+    color: "rgba(47,35,24,0.58)",
     fontSize: 11,
     lineHeight: 1.2,
     fontWeight: 650,
@@ -5132,7 +5136,7 @@ const ppStyles: Record<string, CSSProperties> = {
     minWidth: 0,
   },
   runContextObjectiveLabel: {
-    color: "rgba(205,180,245,0.62)",
+    color: "rgba(47,35,24,0.72)",
     fontSize: 10,
     lineHeight: 1.1,
     fontWeight: 700,
@@ -5142,7 +5146,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runContextObjectiveText: {
     minWidth: 0,
-    color: "rgba(255,245,230,0.76)",
+    color: "rgba(34,25,17,0.94)",
     fontFamily: "var(--font-narrative)",
     fontSize: 14,
     lineHeight: 1.42,
@@ -5211,7 +5215,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runKicker: {
     fontSize: 11.5,
-    color: "rgba(205,180,245,0.62)",
+    color: "rgba(47,35,24,0.72)",
     letterSpacing: 0,
     textTransform: "none" as const,
     fontWeight: 720,

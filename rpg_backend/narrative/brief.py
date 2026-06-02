@@ -696,8 +696,7 @@ def _build_cast_plan(seed: str, entities: list[str], profile: TensionProfile) ->
     emphasized_keys = _emphasized_entity_keys(seed, entities)
     planned = _select_planned_entities(entities, emphasized_keys)
     if len(planned) < 3 and not has_explicit_small_cast_mismatch(seed):
-        planned = _fallback_entities(seed, profile)
-        emphasized_keys = set()
+        planned = _dedupe_preserving_order([*planned, *_fallback_entities(seed, profile)])[:10]
     primary = [
         _entity(
             name,
@@ -726,6 +725,7 @@ def _build_cast_plan(seed: str, entities: list[str], profile: TensionProfile) ->
     ]
     selected_keys = {_canonical_entity_key(name) for name in planned}
     omitted_names = [name for name in entities if _canonical_entity_key(name) not in selected_keys]
+    has_cap_pressure = len(entities) > 10
     omitted = [
         _entity(
             name,
@@ -733,8 +733,10 @@ def _build_cast_plan(seed: str, entities: list[str], profile: TensionProfile) ->
             role="Omitted/merge candidate",
             rationale=(
                 "Explicitly requested but still beyond the current cap; reduce required entities or move it into a constraint."
-                if _canonical_entity_key(name) in emphasized_keys
+                if _canonical_entity_key(name) in emphasized_keys and has_cap_pressure
                 else "Beyond the 10-entity planning cap."
+                if has_cap_pressure
+                else "Kept as prompt context outside the first focus window; revise if it must be represented."
             ),
         )
         for idx, name in enumerate(omitted_names[:5])

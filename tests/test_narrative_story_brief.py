@@ -291,6 +291,29 @@ def test_story_brief_fantasy_eclipse_keeps_factions_and_pressure() -> None:
     assert all("time pressure" not in warning.lower() for warning in response.brief.warnings)
 
 
+def test_story_brief_small_cozy_prompt_does_not_use_cap_rationale() -> None:
+    response = build_story_brief(
+        seed=(
+            "At a neighborhood bake sale, three parents and a shy teen volunteer "
+            "try to find who swapped the cupcake labels. Keep it cozy and funny, "
+            "no blackmail, no betrayal, no corporate stakes."
+        ),
+        language="en",
+    )
+
+    plan = response.brief.cast_plan
+    planned_names = {
+        entity.display_name.lower()
+        for entity in [*plan.primary_active_entities, *plan.secondary_background_entities]
+    }
+    omitted_rationales = [entity.rationale.lower() for entity in plan.omitted_entities]
+
+    assert plan.input_entity_count < 10
+    assert "three parents" in planned_names
+    assert "shy teen volunteer" in planned_names
+    assert all("10-entity planning cap" not in rationale for rationale in omitted_rationales)
+
+
 def test_cozy_opening_consistency_rejects_accuse_fight_options() -> None:
     brief = build_story_brief(
         seed=(

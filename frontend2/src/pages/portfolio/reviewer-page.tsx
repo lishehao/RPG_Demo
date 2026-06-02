@@ -11,6 +11,14 @@ import {
   REVIEWER_DEMO_TITLE,
 } from "./portfolio-data"
 
+function reviewerLaunchError(err: unknown): string {
+  const message = friendlyError(err, "Could not launch the reviewer demo.")
+  if (message.toLowerCase().includes("ai service isn't configured")) {
+    return "Local AI service is not configured, so this live reviewer run cannot launch. The Runtime Inspector appears after a configured reviewer run starts."
+  }
+  return message
+}
+
 export function ReviewerPage({
   onBackHome,
   onOpenCreate,
@@ -46,7 +54,7 @@ export function ReviewerPage({
       })
       onSessionStarted(response.session.session_id)
     } catch (err) {
-      setError(friendlyError(err, "Could not launch the reviewer demo."))
+      setError(reviewerLaunchError(err))
       inflightRef.current = false
       setBusy(false)
     }
@@ -66,8 +74,9 @@ export function ReviewerPage({
           <h1>{REVIEWER_DEMO_TITLE}</h1>
           <p>
             A locked English demo path designed for portfolio review. It starts
-            a real session, keeps the Korean-webtoon visual language, and opens
-            the play surface with a live runtime inspector.
+            a real session, opens a hand-drawn case-file play surface, and
+            exposes the runtime inspector when the local AI gateway is
+            configured.
           </p>
           <blockquote>"{REVIEWER_DEMO_SEED}"</blockquote>
           <div className="reviewer-actions">

@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
   NarrativeDifficulty,
@@ -834,6 +834,44 @@ function StoryBriefCard({
   const secondary = brief.cast_plan.secondary_background_entities
   const omitted = brief.cast_plan.omitted_entities
   const decisions = brief.constraint_dispositions.slice(0, 8)
+  const metaFields = (
+    <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
+      <BriefField label={t("create.brief_profile")} value={t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
+      <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
+      <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
+    </div>
+  )
+  const secondaryCast = (
+    <BriefEntityList
+      label={t("create.brief_secondary_cast")}
+      items={secondary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+      empty={t("create.brief_empty")}
+    />
+  )
+  const omittedCast = omitted.length > 0 ? (
+    <BriefPlanSection
+      label={t("create.brief_omitted_cast")}
+      items={omitted.map((entity) => ({ label: entity.display_name, rationale: entity.rationale }))}
+      empty={t("create.brief_empty")}
+    />
+  ) : null
+  const planDetails = (
+    <>
+      <BriefPlanSection label={t("create.brief_event_pressure")} items={[...brief.time_event_anchors, ...brief.world_setting_pressure]} empty={t("create.brief_empty")} />
+      <BriefPlanSection label={t("create.brief_constraints")} items={brief.constraints} empty={t("create.brief_empty")} />
+      <BriefPlanSection label={t("create.brief_tone_constraints")} items={brief.tone_constraints} empty={t("create.brief_empty")} />
+      {decisions.length > 0 ? (
+        <div style={cpStyles.briefConstraintRow}>
+          {decisions.map((decision) => (
+            <span key={`${decision.disposition}:${decision.label}`} style={cpStyles.briefConstraintChip} title={decision.rationale}>
+              <span style={cpStyles.briefConstraintKind}>{t(CONSTRAINT_DISPOSITION_LABEL_KEYS[decision.disposition])}</span>
+              {decision.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </>
+  )
 
   return (
     <section style={{ ...cpStyles.briefRail, ...(compact ? cpStyles.briefRailCompact : null) }}>
@@ -851,43 +889,37 @@ function StoryBriefCard({
       </div>
       <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
-      <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
-        <BriefField label={t("create.brief_profile")} value={t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
-        <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
-        <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
-      </div>
-      <div style={{ ...cpStyles.briefCastGrid, ...(compact ? cpStyles.briefCastGridCompact : null) }}>
-        <BriefEntityList
-          label={t("create.brief_primary_cast")}
-          items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-          empty={t("create.brief_empty")}
-        />
-        <BriefEntityList
-          label={t("create.brief_secondary_cast")}
-          items={secondary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-          empty={t("create.brief_empty")}
-        />
-      </div>
-      {omitted.length > 0 ? (
-        <BriefPlanSection
-          label={t("create.brief_omitted_cast")}
-          items={omitted.map((entity) => ({ label: entity.display_name, rationale: entity.rationale }))}
-          empty={t("create.brief_empty")}
-        />
-      ) : null}
-      <BriefPlanSection label={t("create.brief_event_pressure")} items={[...brief.time_event_anchors, ...brief.world_setting_pressure]} empty={t("create.brief_empty")} />
-      <BriefPlanSection label={t("create.brief_constraints")} items={brief.constraints} empty={t("create.brief_empty")} />
-      <BriefPlanSection label={t("create.brief_tone_constraints")} items={brief.tone_constraints} empty={t("create.brief_empty")} />
-      {decisions.length > 0 ? (
-        <div style={cpStyles.briefConstraintRow}>
-          {decisions.map((decision) => (
-            <span key={`${decision.disposition}:${decision.label}`} style={cpStyles.briefConstraintChip} title={decision.rationale}>
-              <span style={cpStyles.briefConstraintKind}>{t(CONSTRAINT_DISPOSITION_LABEL_KEYS[decision.disposition])}</span>
-              {decision.label}
-            </span>
-          ))}
-        </div>
-      ) : null}
+      {compact ? (
+        <>
+          <div style={cpStyles.briefPrimaryCompact}>
+            <BriefEntityList
+              label={t("create.brief_primary_cast")}
+              items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+              empty={t("create.brief_empty")}
+            />
+          </div>
+          <BriefDetailsDisclosure label={t("create.brief_details_toggle")}>
+            {metaFields}
+            {secondaryCast}
+            {omittedCast}
+            {planDetails}
+          </BriefDetailsDisclosure>
+        </>
+      ) : (
+        <>
+          {metaFields}
+          <div style={cpStyles.briefCastGrid}>
+            <BriefEntityList
+              label={t("create.brief_primary_cast")}
+              items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+              empty={t("create.brief_empty")}
+            />
+            {secondaryCast}
+          </div>
+          {omittedCast}
+          {planDetails}
+        </>
+      )}
       {brief.warnings.length > 0 || brief.revision_suggestions.length > 0 ? (
         <div style={cpStyles.briefWarningBlock}>
           {brief.warnings.slice(0, 3).map((warning) => (
@@ -987,6 +1019,15 @@ function BriefPlanSection({
         )) : <span style={cpStyles.briefListValue}>{empty}</span>}
       </div>
     </div>
+  )
+}
+
+function BriefDetailsDisclosure({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <details style={cpStyles.briefDetailDisclosure}>
+      <summary style={cpStyles.briefDetailSummary}>{label}</summary>
+      <div style={cpStyles.briefDetailBody}>{children}</div>
+    </details>
   )
 }
 
@@ -1596,6 +1637,13 @@ const cpStyles: Record<string, CSSProperties> = {
   briefCastGridCompact: {
     gridTemplateColumns: "1fr",
   },
+  briefPrimaryCompact: {
+    marginBottom: 10,
+    padding: "8px 9px",
+    borderLeft: "2px solid rgba(98,114,71,0.36)",
+    borderRadius: 5,
+    background: "rgba(255,248,226,0.5)",
+  },
   briefList: {
     minWidth: 0,
     display: "grid",
@@ -1669,6 +1717,24 @@ const cpStyles: Record<string, CSSProperties> = {
     color: "rgba(107,70,19,0.84)",
     fontSize: 12,
     lineHeight: 1.38,
+  },
+  briefDetailDisclosure: {
+    marginBottom: 11,
+    borderTop: "1px dashed rgba(76,53,29,0.2)",
+    borderBottom: "1px dashed rgba(76,53,29,0.16)",
+    padding: "7px 0",
+  },
+  briefDetailSummary: {
+    cursor: "pointer",
+    color: "rgba(68,55,40,0.7)",
+    fontSize: 11.5,
+    lineHeight: 1.3,
+    fontWeight: 820,
+  },
+  briefDetailBody: {
+    display: "grid",
+    gap: 8,
+    paddingTop: 9,
   },
   briefRevisionActions: {
     display: "grid",
