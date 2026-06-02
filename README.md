@@ -16,8 +16,9 @@
 </p>
 
 <p align="center">
-  <a href="https://lishehao.github.io/RPG_Demo/"><strong>Watch the demo</strong></a>
-  · <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">MP4</a>
+  <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch on YouTube</strong></a>
+  · <a href="https://lishehao.github.io/RPG_Demo/">Demo page</a>
+  · <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">MP4 fallback</a>
   · <a href="#innovation">Innovation</a>
   · <a href="#architecture">Architecture</a>
   · <a href="#evaluation-v3">Evaluation</a>
@@ -48,20 +49,24 @@
 
 ## Demo
 
-[![Watch the Tiny Stories demo](./docs/demo-video/admissions-trailer-contact.jpg)](https://lishehao.github.io/RPG_Demo/)
+[![Watch the Tiny Stories demo](./docs/demo-video/admissions-trailer-contact.jpg)](https://youtu.be/RRJ7uyjW_nA)
 
 <p align="center">
-  <a href="https://lishehao.github.io/RPG_Demo/"><strong>Watch the GitHub Pages demo</strong></a>
+  <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch the YouTube demo</strong></a>
+  ·
+  <a href="https://lishehao.github.io/RPG_Demo/">Open GitHub Pages demo page</a>
   ·
   <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">Open compressed MP4</a>
   ·
   <a href="./docs/demo-video/admissions-narration.txt">Narration script</a>
 </p>
 
-The GitHub Pages demo contains a playable 720p compressed MP4 with
-narration (~4.6 MB). It shows real app capture mixed with generated
-Korean-webtoon keyframes: seed input, story generation, runtime state,
-player choices, free-form action, advisor chat, and ending compilation.
+The unlisted YouTube cut is the primary reviewer watch path. The
+GitHub Pages demo keeps the same 720p compressed MP4 available for
+offline/fallback playback (~4.6 MB). It shows real app capture mixed
+with generated Korean-webtoon keyframes: seed input, story generation,
+runtime state, player choices, free-form action, advisor chat, and
+ending compilation.
 
 ---
 
