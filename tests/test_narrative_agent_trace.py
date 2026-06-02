@@ -186,7 +186,7 @@ def test_repository_agent_event_round_trips(tmp_path) -> None:
     assert events[0].payload == plan
 
 
-class _TurnOnlyGateway:
+class _TurnOnlyResponder:
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
 
@@ -230,7 +230,7 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     # Make the next turn index 2, which is a pressure-stage gauntlet turn
     # that schedules an NPC agenda entry.
     repo.touch_session("sess_agent_trace", increment_turns=1)
-    gateway = _TurnOnlyGateway()
+    gateway = _TurnOnlyResponder()
     service = NarrativeService(repository=repo, gateway=gateway)
 
     response = service.advance(
@@ -266,7 +266,7 @@ def test_advance_can_return_agent_plan_for_debug_trace(tmp_path) -> None:
     repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
     _create_template_and_session(repo, session_id="sess_agent_trace_debug")
     repo.touch_session("sess_agent_trace_debug", increment_turns=1)
-    service = NarrativeService(repository=repo, gateway=_TurnOnlyGateway())
+    service = NarrativeService(repository=repo, gateway=_TurnOnlyResponder())
 
     response = service.advance(
         "sess_agent_trace_debug",
@@ -293,7 +293,7 @@ def test_story_endpoint_requires_reviewer_for_agent_trace(tmp_path) -> None:
         player_user_id=user_id,
     )
     _append_agent_plan_event(repo, session_id)
-    service = NarrativeService(repository=repo, gateway=_TurnOnlyGateway())
+    service = NarrativeService(repository=repo, gateway=_TurnOnlyResponder())
     original_service = main_module.narrative_service
     main_module.narrative_service = service
 
@@ -324,7 +324,7 @@ def test_story_endpoint_returns_agent_trace_for_authorized_reviewer(tmp_path, mo
         player_user_id=user_id,
     )
     expected_plan = _append_agent_plan_event(repo, session_id)
-    service = NarrativeService(repository=repo, gateway=_TurnOnlyGateway())
+    service = NarrativeService(repository=repo, gateway=_TurnOnlyResponder())
     original_service = main_module.narrative_service
     main_module.narrative_service = service
 
