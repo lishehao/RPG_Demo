@@ -130,6 +130,8 @@ export function PlayPage({
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
+  const canDockAdvisor = useCompactLayout("(min-width: 1024px)")
+  const advisorDocked = advisorOpen && canDockAdvisor
   const canRequestAgentTrace = reviewerMode && auth.canViewAgentTrace
 
   // Initial load: story + (if already completed) the ending.
@@ -386,9 +388,10 @@ export function PlayPage({
         turnCount={story.session.turn_count}
         turnBudget={story.session.turn_budget}
         coverUrl={cover}
+        advisorDocked={advisorDocked}
       />
 
-      <main style={ppStyles.main}>
+      <main style={{ ...ppStyles.main, ...(advisorDocked ? ppStyles.mainAdvisorDocked : null) }}>
         <div className="play-story-column" style={ppStyles.storyColumn} ref={scrollerRef}>
           <RunContextPanel
             story={story}
@@ -1274,6 +1277,7 @@ function Header({
   turnCount,
   turnBudget,
   coverUrl,
+  advisorDocked = false,
 }: {
   onBackHome: () => void
   title: string
@@ -1281,11 +1285,12 @@ function Header({
   turnCount?: number
   turnBudget?: number
   coverUrl?: string
+  advisorDocked?: boolean
 }) {
   const t = useT()
   const compactHeader = useCompactLayout()
   const showCoverHeader = Boolean(coverUrl && !compactHeader)
-  const headerStyle: CSSProperties = showCoverHeader
+  const baseHeaderStyle: CSSProperties = showCoverHeader
     ? {
         ...ppStyles.header,
         ...ppStyles.headerWithCover,
@@ -1293,7 +1298,11 @@ function Header({
       }
     : compactHeader
       ? { ...ppStyles.header, ...ppStyles.headerCompact }
-    : ppStyles.header
+      : ppStyles.header
+  const headerStyle: CSSProperties =
+    advisorDocked && !compactHeader
+      ? { ...baseHeaderStyle, ...ppStyles.headerAdvisorDocked }
+      : baseHeaderStyle
 
   const showProgress = typeof turnCount === "number" && typeof turnBudget === "number"
   const pct = showProgress ? Math.min(100, (turnCount! / turnBudget!) * 100) : 0
@@ -4931,6 +4940,11 @@ const ppStyles: Record<string, CSSProperties> = {
     background: "rgba(255,246,228,0.94)",
     backdropFilter: "blur(12px)",
   },
+  headerAdvisorDocked: {
+    position: "relative",
+    top: "auto",
+    zIndex: 2,
+  },
   headerRow: {
     padding: "16px 32px",
     display: "flex",
@@ -5017,7 +5031,16 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   headerSpacer: { width: 90 },
 
-  main: { flex: 1, display: "flex", justifyContent: "center", overflow: "visible" },
+  main: {
+    flex: 1,
+    display: "flex",
+    justifyContent: "center",
+    overflow: "visible",
+    transition: "padding-right 180ms ease",
+  },
+  mainAdvisorDocked: {
+    paddingRight: 380,
+  },
   storyColumn: {
     width: "calc(100% - 32px)",
     maxWidth: 880,
