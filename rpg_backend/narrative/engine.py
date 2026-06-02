@@ -847,7 +847,13 @@ def _generate_opening_once(
             "inside the runtime cast when they are characters/factions, treat "
             "secondary_background_entities as background pressure, and use "
             "intervention_card_label as the player-facing card terminology "
-            "instead of defaulting every genre to blackmail."
+            "instead of defaulting every genre to blackmail. For comedy and "
+            "cozy_mystery, keep the lower-stakes tension contract: use "
+            "misunderstanding, embarrassment, clues, social pressure, props, "
+            "callbacks, or gentle reveals. Do not convert a comedy/cozy brief "
+            "into betrayal, revenge, hacking, security-footage leverage, "
+            "life-or-death danger, or blackmail unless those stakes are "
+            "explicitly preserved in the reviewed brief."
         )
     if retry_feedback:
         user_payload["retry_feedback"] = retry_feedback

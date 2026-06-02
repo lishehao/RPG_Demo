@@ -45,17 +45,8 @@ _PROFILE_KEYWORDS: tuple[tuple[TensionProfile, tuple[str, ...]], ...] = (
     (
         "comedy",
         (
-            "comedy",
-            "comic",
-            "funny",
-            "sitcom",
-            "absurd",
-            "awkward",
-            "embarrass",
             "talent show",
             "prank",
-            "cupcake",
-            "bake sale",
         ),
     ),
     (
@@ -70,6 +61,8 @@ _PROFILE_KEYWORDS: tuple[tuple[TensionProfile, tuple[str, ...]], ...] = (
             "museum",
             "locked room",
             "lost ring",
+            "cupcake",
+            "bake sale",
         ),
     ),
     (
@@ -138,6 +131,91 @@ _STOPWORDS = {
     "premise",
 }
 
+_EXPLICIT_COMEDY_MARKERS = (
+    "comedy",
+    "comic",
+    "funny",
+    "sitcom",
+    "absurd",
+    "awkward",
+)
+
+_SETTING_PREFIX_RE = re.compile(r"^(?:at|in|on|during)\b", re.I)
+_LIST_MARKER_RE = re.compile(
+    r"\b(?:involves?|involving|features?|featuring|including|includes?|with|where|departments?|factions?|cast)\b[: ]+",
+    re.I,
+)
+_ENTITY_TRAILING_RE = re.compile(
+    r"\b(?:argue|argues|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
+    r"before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
+    re.I,
+)
+_NON_ENTITY_EXACT = {
+    "at",
+    "in",
+    "on",
+    "keep",
+    "no blackmail",
+    "blackmail",
+    "misunderstandings",
+    "misunderstanding",
+    "callback joke",
+    "callback",
+    "embarrassment",
+    "embarrassed parents",
+    "revenge",
+    "hacking",
+    "security footage",
+    "board",
+    "board vote",
+    "talent show",
+    "mars",
+}
+_NON_ENTITY_WORDS = {
+    "tone",
+    "kernel",
+    "joke",
+    "misunderstanding",
+    "misunderstandings",
+    "blackmail",
+    "callback",
+    "embarrassment",
+    "embarrassed",
+    "proof",
+    "constraint",
+    "stakes",
+    "talent",
+    "show",
+    "colony",
+    "broadcast",
+    "eclipse",
+    "library",
+    "vote",
+}
+_EVENT_CONSTRAINT_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"\btalent show\b", "talent show"),
+    (r"\bfinal broadcast\b", "final broadcast"),
+    (r"\bboard vote\b", "board vote"),
+    (r"\bmidnight\b", "midnight deadline"),
+    (r"\beclipse\b", "eclipse"),
+    (r"\bbake sale\b", "bake sale"),
+    (r"\bno blackmail\b", "no blackmail"),
+    (r"\bcursed index\b", "cursed index"),
+    (r"\boxygen supply\b", "oxygen supply"),
+    (r"\bpublic reveal\b", "public reveal"),
+    (r"\bmissing cupcake\b", "missing cupcake"),
+)
+_HIGH_STAKES_PATTERNS = (
+    "oxygen supply",
+    "life-or-death",
+    "life or death",
+    "murder",
+    "kill",
+    "deadly",
+    "revenge",
+    "fatal",
+)
+
 
 def build_story_brief(
     *,
@@ -185,6 +263,16 @@ def build_story_brief(
         softened.append("Treat embarrassment, timing, and callback payoff as the tension engine instead of default blackmail.")
     if profile == "cozy_mystery":
         softened.append("Keep stakes inspectable and clue-driven; avoid forcing every reveal into betrayal melodrama.")
+    if "no blackmail" in clean_seed.lower():
+        softened.append("Avoid blackmail escalation; preserve the no-blackmail constraint.")
+    if profile in {"comedy", "cozy_mystery"} and _has_high_stakes_conflict(clean_seed):
+        warnings.append(
+            "This premise asks for a lower-stakes profile but includes life-or-death or revenge-scale stakes."
+        )
+        revision_suggestions.append(
+            "Lower the stakes to embarrassment, missing props, social pressure, or clue payoff if you want comedy/cozy fidelity."
+        )
+        softened.append("Keep the profile lower-stakes; do not escalate into life-or-death betrayal unless the user revises the brief.")
 
     fit_status = "fit"
     if explicit_small_cast:
@@ -223,6 +311,8 @@ def build_story_brief(
 
 def infer_tension_profile(seed: str) -> TensionProfile:
     lowered = seed.lower()
+    if any(marker in lowered for marker in _EXPLICIT_COMEDY_MARKERS):
+        return "comedy"
     for profile, keywords in _PROFILE_KEYWORDS:
         if any(keyword in lowered for keyword in keywords):
             return profile
@@ -239,7 +329,7 @@ def has_explicit_small_cast_mismatch(seed: str) -> bool:
 
 def _extract_entities(seed: str) -> list[str]:
     candidates: list[str] = []
-    parts = [seed]
+    parts = _entity_source_parts(seed)
     if ":" in seed:
         parts.insert(0, seed.split(":", 1)[1])
     for part in parts:
@@ -248,7 +338,7 @@ def _extract_entities(seed: str) -> list[str]:
             if candidate:
                 candidates.append(candidate)
     # Proper-noun fallback catches compact prompts without comma lists.
-    for match in re.finditer(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b", seed):
+    for match in re.finditer(r"\b([A-Z]{2,}|[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b", seed):
         candidate = _clean_entity(match.group(1))
         if candidate:
             candidates.append(candidate)
@@ -258,21 +348,46 @@ def _extract_entities(seed: str) -> list[str]:
         key = candidate.lower()
         if key in seen:
             continue
+        if any(_is_sub_entity(key, existing) for existing in seen):
+            continue
         seen.add(key)
         deduped.append(candidate)
     return deduped
 
 
+def _entity_source_parts(seed: str) -> list[str]:
+    parts: list[str] = []
+    for match in _LIST_MARKER_RE.finditer(seed):
+        parts.append(seed[match.end() :])
+    # Keep the full seed as a fallback, but cleanup aggressively filters
+    # setting openers and clauses that are not cast/faction names.
+    parts.append(seed)
+    return parts
+
+
 def _clean_entity(raw: str) -> str:
     text = re.sub(r"\([^)]*\)", "", raw).strip(" .!?\"'“”‘’")
+    text = _LIST_MARKER_RE.sub("", text)
     text = re.sub(r"\b(the|a|an|with|featuring|including|departments?|factions?|cast)\b", "", text, flags=re.I)
+    text = _ENTITY_TRAILING_RE.sub("", text)
     text = " ".join(text.split())
     if not text:
+        return ""
+    lowered = text.lower()
+    if lowered in _NON_ENTITY_EXACT:
+        return ""
+    if re.match(r"^(?:comedy|cozy|mystery|fantasy|sci-fi|sci fi)\s+on\b", lowered):
+        return ""
+    if _SETTING_PREFIX_RE.match(lowered):
         return ""
     words = text.split()
     if len(words) > 5:
         return ""
+    if words and words[0].lower() in {"at", "in", "on", "during", "before", "after", "keep"}:
+        return ""
     if all(word.lower() in _STOPWORDS for word in words):
+        return ""
+    if any(word.lower().strip(".,:;!?") in _NON_ENTITY_WORDS for word in words):
         return ""
     if len(text) < 2 or len(text) > 80:
         return ""
@@ -341,9 +456,15 @@ def _preserved_constraints(seed: str, profile: TensionProfile) -> list[str]:
     lowered = seed.lower()
     if profile != "high_drama":
         constraints.append(f"{profile.replace('_', ' ')} tone")
-    for token in ("missing", "secret", "vote", "deadline", "wedding", "talent show", "artifact", "ring"):
-        if token in lowered:
+    for pattern, label in _EVENT_CONSTRAINT_PATTERNS:
+        if re.search(pattern, lowered):
+            constraints.append(label)
+    for token in ("missing", "secret", "vote", "deadline", "wedding", "artifact"):
+        if re.search(rf"\b{re.escape(token)}\b", lowered):
             constraints.append(token)
+    if re.search(r"\bring\b", lowered):
+        constraints.append("ring")
+    constraints = _dedupe_preserving_order(constraints)
     return constraints[:8]
 
 
@@ -381,6 +502,11 @@ def _has_pressure_signal(seed: str) -> bool:
             "accused",
             "contest",
             "show",
+            "talent show",
+            "broadcast",
+            "eclipse",
+            "board vote",
+            "midnight",
             "pressure",
             "secret",
             "conflict",
@@ -400,6 +526,29 @@ def _fit_rationale(status: str, profile: TensionProfile) -> str:
     if status == "needs_revision":
         return "The runtime can attempt this, but the brief recommends clearer public conflict, pressure, or cast shape first."
     return f"This fits the current multi-party runtime using the {profile.replace('_', ' ')} tension profile."
+
+
+def _has_high_stakes_conflict(seed: str) -> bool:
+    lowered = seed.lower()
+    return any(pattern in lowered for pattern in _HIGH_STAKES_PATTERNS)
+
+
+def _dedupe_preserving_order(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        key = value.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(value)
+    return result
+
+
+def _is_sub_entity(candidate_key: str, existing_key: str) -> bool:
+    if len(candidate_key) <= 4 and re.search(rf"\b{re.escape(candidate_key)}\b", existing_key):
+        return True
+    return False
 
 
 def _slugify(value: str) -> str:

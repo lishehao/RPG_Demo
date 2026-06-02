@@ -169,6 +169,8 @@ def test_generate_opening_injects_reviewed_story_brief() -> None:
     assert payload["story_brief"]["tension_profile"] == "comedy"
     assert payload["story_brief"]["intervention_card_label"] == "Callback card"
     assert "intervention_card_label" in payload["story_brief_generation_rules"]
+    assert "lower-stakes tension contract" in payload["story_brief_generation_rules"]
+    assert "Do not convert a comedy/cozy brief" in payload["story_brief_generation_rules"]
 
 
 def test_create_template_blocks_explicit_small_cast_prompt_before_llm(

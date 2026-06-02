@@ -52,6 +52,15 @@ The runtime trace also now includes Director focus metadata:
 
 This records the intended focus window without rewriting turn generation.
 
+Planner fidelity rules added after playtest:
+
+- entity extraction prefers explicit comma/list/faction segments
+- setting openers such as `At`, `In`, `On`, `Mars colony`, and event anchors are not cast
+- negated tone constraints such as `no blackmail` stay as constraints, not entities
+- abstract tone mechanisms such as `misunderstandings` or `callback joke` are not cast
+- event anchors such as `eclipse`, `board vote`, `talent show`, and `final broadcast` count as pressure/constraints
+- exact-word matching prevents stray constraints such as `ring` from appearing because of unrelated substrings
+
 ## Tension Profiles
 
 Supported enum values:
@@ -71,6 +80,14 @@ The profile also changes the planned intervention card label:
 - family/social: loyalty card
 
 Full play-page terminology and judge profile-specific payoff checks are deferred.
+
+For comedy and cozy briefs, the confirmed generation payload carries a
+lower-stakes contract. Opening generation should use misunderstandings,
+embarrassment, clues, social pressure, props, callbacks, or gentle reveals
+instead of silently escalating into blackmail, revenge, hacking, security
+footage, or life-or-death danger. If the premise itself contains life-or-death
+stakes such as stolen oxygen, the brief warns that comedy/cozy fidelity needs a
+lower-stakes revision.
 
 ## Deferred Scope
 
