@@ -4,7 +4,7 @@ import json
 
 from tools.rpg_eval.catalog import default_case_catalog, default_player_policies
 from tools.rpg_eval.contracts import EvalEvent
-from tools.rpg_eval.oracles import validate_episode_trace
+from tools.rpg_eval.oracles import build_runtime_case_summary, validate_episode_trace
 from tools.rpg_eval.runner import run_dry_eval, run_unified_runtime_eval
 
 
@@ -49,6 +49,41 @@ def test_eval_v3_oracle_checks_turn_count_and_state_keys() -> None:
     assert {failure.category for failure in failures} == {"trajectory_oracle"}
     assert any("runtime turns" in failure.message for failure in failures)
     assert any("missing required state keys" in failure.message for failure in failures)
+
+
+def test_eval_v3_runtime_summary_fails_when_required_endings_are_absent() -> None:
+    base_case = default_case_catalog()[0]
+    case = base_case.model_copy(
+        update={
+            "oracle": base_case.oracle.model_copy(
+                update={
+                    "min_turns": 1,
+                    "min_distinct_endings": 1,
+                    "required_state_keys": [],
+                }
+            )
+        }
+    )
+    events = [
+        EvalEvent(
+            event_index=0,
+            event_type="author_step",
+            case_id=case.case_id,
+            payload={"story_shell_id": case.expected_shells[0], "segment_count": 3, "cast_count": 3},
+        ),
+        EvalEvent(
+            event_index=1,
+            event_type="runtime_output",
+            case_id=case.case_id,
+            payload={"narration": "A valid runtime beat with enough text for review."},
+        ),
+    ]
+
+    summary = build_runtime_case_summary(case, events)
+    trajectory_gate = next(gate for gate in summary.gates if gate.gate == "trajectory_valid")
+
+    assert not trajectory_gate.passed
+    assert any(failure.stage == "ending" and "distinct endings" in failure.message for failure in trajectory_gate.failures)
 
 
 def test_eval_v3_dry_run_writes_core_artifacts(tmp_path) -> None:
@@ -108,8 +143,16 @@ def test_eval_v3_runtime_run_writes_unified_episode_artifacts(tmp_path) -> None:
     assert gate_summary["manifest"]["mode"] == "runtime"
     assert gate_summary["manifest"]["case_count"] == 1
     assert gate_summary["manifest"]["policy_count"] == 3
-    assert gate_summary["passed_case_count"] == 1
+    assert gate_summary["passed_case_count"] == 0
+    assert gate_summary["failed_case_count"] == 1
     assert gate_summary["gate_pass_counts"]["author_valid"] == 1
     assert gate_summary["gate_pass_counts"]["runtime_valid"] == 1
     assert gate_summary["gate_pass_counts"]["agency_valid"] == 1
-    assert gate_summary["gate_pass_counts"]["trajectory_valid"] == 1
+    assert gate_summary["gate_pass_counts"].get("trajectory_valid", 0) == 0
+
+    case_summary = json.loads(paths["case_summary"].read_text())
+    trajectory_gate = next(gate for gate in case_summary[0]["gates"] if gate["gate"] == "trajectory_valid")
+    assert any(
+        failure["stage"] == "ending" and "distinct endings" in failure["message"]
+        for failure in trajectory_gate["failures"]
+    )

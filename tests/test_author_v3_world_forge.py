@@ -36,6 +36,54 @@ def test_forge_world_deterministic_shell_is_office_power(config: WorldConfigurat
     assert config.seed.detected_shell == "office_power"
 
 
+@pytest.mark.parametrize(
+    ("seed", "expected_shell"),
+    [
+        ("A family banquet turns into an inheritance hearing", "wealth_families"),
+        ("Minutes before the awards livestream, a sponsor reveals the recording", "entertainment_scandal"),
+        ("The student council scholarship committee reopens an old recording", "campus_romance"),
+        ("A night patrol medium finds an old debt contract", "urban_supernatural"),
+    ],
+)
+def test_forge_world_deterministic_detects_english_shell_keywords(seed: str, expected_shell: str) -> None:
+    config = forge_world(seed)
+
+    assert config.story_shell_id == expected_shell
+    assert config.seed.detected_shell == expected_shell
+
+
+def test_forge_world_deterministic_adapts_non_office_cast_and_relationships() -> None:
+    config = forge_world("Minutes before the awards livestream, a sponsor reveals the scandal recording")
+
+    cast_text = " ".join(
+        [
+            character.public_identity
+            for character in config.characters
+        ]
+    )
+    relationship_text = " ".join(
+        [
+            edge.public_facade
+            + edge.hidden_truth
+            + " ".join(edge.hooks)
+            + edge.stance_a_to_b.hidden_dynamic
+            + edge.stance_a_to_b.tension_source
+            + edge.stance_b_to_a.hidden_dynamic
+            + edge.stance_b_to_a.tension_source
+            for edge in config.relationship_edges
+        ]
+    )
+
+    assert config.story_shell_id == "entertainment_scandal"
+    assert "经纪公司负责人" in cast_text
+    assert "赞助方代表" in cast_text
+    assert "赞助" in relationship_text
+    assert "颁奖礼" in relationship_text
+    assert "CEO" not in cast_text
+    assert "CFO" not in relationship_text
+    assert "董事会" not in relationship_text
+
+
 def test_forge_world_deterministic_all_characters_have_required_fields(config: WorldConfiguration) -> None:
     for character in config.characters:
         assert isinstance(character, ForgedCharacter)

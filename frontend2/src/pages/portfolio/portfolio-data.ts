@@ -1,5 +1,13 @@
 export const REVIEWER_DEMO_TITLE = "The Merger Betrayal"
 
+export const YOUTUBE_DEMO_URL = "https://youtu.be/RRJ7uyjW_nA"
+
+export const YOUTUBE_DEMO_EMBED_URL =
+  "https://www.youtube.com/embed/RRJ7uyjW_nA?autoplay=1&mute=1&playsinline=1&controls=1&rel=0"
+
+export const LOCAL_DEMO_MP4_URL =
+  "https://lishehao.github.io/RPG_Demo/demo-video/tiny-stories-admissions-demo-readme.mp4"
+
 export const REVIEWER_DEMO_SEED =
   "Minutes before the awards livestream, my cofounder announces our secret merger onstage. My ex steps into the control room holding the recording that proves I buried the deal."
 

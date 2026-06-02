@@ -4,11 +4,14 @@ import { Header } from "../../shared/ui/header"
 import {
   CASE_STUDY_POINTS,
   INTERACTION_LOOP,
+  LOCAL_DEMO_MP4_URL,
   PIPELINE_STEPS,
   PORTFOLIO_METRICS,
   REVIEWER_DEMO_ACTIONS,
   REVIEWER_DEMO_SEED,
   REVIEWER_DEMO_TITLE,
+  YOUTUBE_DEMO_EMBED_URL,
+  YOUTUBE_DEMO_URL,
 } from "./portfolio-data"
 
 export function PortfolioPage({
@@ -35,20 +38,38 @@ export function PortfolioPage({
         >
           <div className="portfolio-hero__content">
             <span className="ts-tag">Portfolio Case Study</span>
-            <h1>Tiny Stories is an inspectable AI drama runtime.</h1>
+            <h1>Tiny Stories is an inspectable AI narrative runtime.</h1>
             <p>
-              A one-line seed becomes a playable Korean-webtoon-style episode:
-              cast, role, consequences, advisor reasoning, ending compiler, and
-              replayable branches.
+              Watch the 75-second admissions demo first. The live reviewer route
+              is a secondary inspection path for the runtime state, contracts,
+              advisor boundary, and ending compiler behind the video.
             </p>
             <div className="portfolio-hero__actions">
-              <button className="portfolio-action portfolio-action--primary" type="button" onClick={onOpenReviewer}>
-                Launch reviewer demo
+              <a
+                className="portfolio-action portfolio-action--primary"
+                href={YOUTUBE_DEMO_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Watch YouTube demo
+              </a>
+              <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenReviewer}>
+                Launch reviewer route
               </button>
-              <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenCreate}>
-                Try a custom seed
-              </button>
+              <a className="portfolio-action portfolio-action--secondary" href={LOCAL_DEMO_MP4_URL}>
+                MP4 fallback
+              </a>
             </div>
+          </div>
+          <div className="portfolio-hero__video" aria-label="Tiny Stories YouTube demo preview">
+            <iframe
+              src={YOUTUBE_DEMO_EMBED_URL}
+              title="Tiny Stories: Inspectable AI Narrative Runtime Demo"
+              allow="autoplay; encrypted-media; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+            <p>Muted autoplay is best-effort; the YouTube link is the reliable watch path.</p>
           </div>
         </motion.section>
 

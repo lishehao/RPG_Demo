@@ -233,7 +233,7 @@ def build_runtime_case_summary(case: EvalCase, events: list[EvalEvent]) -> EvalC
         for event in ending_events
         if event.payload.get("ending_id")
     }
-    if ending_events and len(distinct_endings) < case.oracle.min_distinct_endings:
+    if len(distinct_endings) < case.oracle.min_distinct_endings:
         trajectory_failures.append(
             EvalFailure(
                 category="trajectory_oracle",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, deque
+import re
 from typing import Any, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -17,11 +18,26 @@ from rpg_backend.author_v3.gateway import AuthorV3LLMGateway
 
 
 _DETERMINISTIC_SHELL_KEYWORDS: dict[StoryShellId, tuple[str, ...]] = {
-    "wealth_families": ("豪门", "联姻", "继承", "遗嘱", "婚约", "订婚", "家宴", "私生", "旧爱", "律师"),
-    "office_power": ("董事会", "并购", "黑账", "上司", "法务", "发布会", "升职", "空降", "总裁"),
-    "entertainment_scandal": ("娱乐圈", "热搜", "颁奖", "颁奖礼", "直播", "绯闻", "代言", "黑料", "偷拍视频"),
-    "campus_romance": ("校园", "校庆", "奖学金", "导师", "评审", "学生会", "录音"),
-    "urban_supernatural": ("异能", "夜巡", "契约", "怪谈", "灵媒", "旧债"),
+    "wealth_families": (
+        "豪门", "联姻", "继承", "遗嘱", "婚约", "订婚", "家宴", "私生", "旧爱", "律师",
+        "family", "banquet", "heir", "inheritance", "engagement", "fiance", "will",
+    ),
+    "office_power": (
+        "董事会", "并购", "黑账", "上司", "法务", "发布会", "升职", "空降", "总裁",
+        "board", "merger", "audit", "cofounder", "investor", "promotion", "legal",
+    ),
+    "entertainment_scandal": (
+        "娱乐圈", "热搜", "颁奖", "颁奖礼", "直播", "绯闻", "代言", "黑料", "偷拍视频",
+        "awards", "livestream", "red carpet", "scandal", "sponsor", "recording",
+    ),
+    "campus_romance": (
+        "校园", "校庆", "奖学金", "导师", "评审", "学生会", "录音",
+        "campus", "scholarship", "student council", "mentor", "committee",
+    ),
+    "urban_supernatural": (
+        "异能", "夜巡", "契约", "怪谈", "灵媒", "旧债",
+        "supernatural", "medium", "contract", "haunting", "night patrol", "old debt",
+    ),
 }
 
 _DETERMINISTIC_SHELL_SETTINGS: dict[StoryShellId, tuple[str, str, tuple[str, ...]]] = {
@@ -32,14 +48,329 @@ _DETERMINISTIC_SHELL_SETTINGS: dict[StoryShellId, tuple[str, str, tuple[str, ...
     "urban_supernatural": ("夜巡契约重启的旧城区", "秘密契约与旧债交换现场", ("契约", "旧债", "保护")),
 }
 
+_DETERMINISTIC_CHARACTER_OVERRIDES: dict[StoryShellId, dict[str, dict[str, Any]]] = {
+    "wealth_families": {
+        "chen_weiming": {
+            "public_identity": "陈氏家族执行董事，遗产委员会主席",
+            "hidden_need": "压下遗嘱附录里关于私产转移的真相",
+            "fear": "继承委员会重算家族信托",
+            "shame_trigger": "当年逼走继承人的旧账",
+            "breaking_point": "私生继承人身份被公开",
+            "speech_pattern": "冷静克制，喜欢用家族规矩压人",
+        },
+        "lin_yuxin": {
+            "public_identity": "联姻候选人，慈善基金门面",
+            "hidden_need": "摆脱被安排的婚约并拿到话语权",
+            "fear": "被发现伪造慈善基金履历",
+            "shame_trigger": "曾为进入家族核心出卖旧爱",
+            "breaking_point": "与家主的秘密协议曝光",
+            "speech_pattern": "优雅得体但暗藏锋芒",
+        },
+        "zhang_hao": {
+            "public_identity": "被排除的继承人，掌握遗嘱线索",
+            "hidden_need": "拿回被夺走的继承份额",
+            "fear": "血缘与证据都被永久抹去",
+            "shame_trigger": "曾因自保放弃公开真相",
+            "breaking_point": "发现遗嘱附录被再次调包",
+            "speech_pattern": "直白克制，不愿再说空话",
+        },
+        "wang_siyu": {
+            "public_identity": "家族信托会计师",
+            "hidden_need": "保护自己参与的旁支转账记录",
+            "fear": "遗嘱复核暴露私人账目",
+            "shame_trigger": "挪用信托款填补家人亏空",
+            "breaking_point": "被迫在血缘和自保间选择",
+            "speech_pattern": "数字精确，措辞谨慎",
+        },
+        "liu_jianfeng": {
+            "public_identity": "外部律师团代理人",
+            "hidden_need": "通过信托重组获取家族资产控制权",
+            "fear": "继承案失败导致委托方追责",
+            "shame_trigger": "曾伪造见证文件并私下和解",
+            "breaking_point": "对手掌握了他篡改遗嘱的录音",
+            "speech_pattern": "圆滑世故，善于用法律术语施压",
+        },
+    },
+    "entertainment_scandal": {
+        "chen_weiming": {
+            "public_identity": "经纪公司负责人，颁奖礼幕后操盘人",
+            "hidden_need": "掩盖早年合同造假的真相",
+            "fear": "主办方与平台同时切割",
+            "shame_trigger": "出道期背叛艺人的旧账",
+            "breaking_point": "私下操控奖项的证据曝光",
+            "speech_pattern": "冷静克制，喜欢用行业黑话",
+        },
+        "lin_yuxin": {
+            "public_identity": "奖项热门演员，品牌红毯门面",
+            "hidden_need": "取代经纪公司负责人掌控资源",
+            "fear": "被发现履历与奖项包装造假",
+            "shame_trigger": "曾为上位出卖前任搭档",
+            "breaking_point": "与经纪公司的秘密交易曝光",
+            "speech_pattern": "镜头前优雅，私下锋利",
+        },
+        "zhang_hao": {
+            "public_identity": "舞台技术总监，掌握原始录音",
+            "hidden_need": "拿回被夺走署名的舞台方案",
+            "fear": "证据被剪辑成无法追溯的片段",
+            "shame_trigger": "曾因懦弱接受幕后背锅",
+            "breaking_point": "发现原始录音被二次调包",
+            "speech_pattern": "直接，不会配合公关话术",
+        },
+        "wang_siyu": {
+            "public_identity": "赞助结算负责人",
+            "hidden_need": "保护自己参与的代言回扣记录",
+            "fear": "合同审查暴露暗账",
+            "shame_trigger": "挪用宣发预算填补私人亏空",
+            "breaking_point": "被迫在赞助方和自保间选择",
+            "speech_pattern": "数字精确，措辞谨慎",
+        },
+        "liu_jianfeng": {
+            "public_identity": "赞助方代表",
+            "hidden_need": "通过资源置换拿到颁奖礼话语权",
+            "fear": "代言对赌失败导致基金崩盘",
+            "shame_trigger": "曾操纵热搜被私下和解",
+            "breaking_point": "对手掌握了他买奖的录音",
+            "speech_pattern": "圆滑世故，善于画资源大饼",
+        },
+    },
+    "campus_romance": {
+        "chen_weiming": {
+            "public_identity": "学生会主席，奖学金评审代表",
+            "hidden_need": "掩盖早年评审作弊的真相",
+            "fear": "评审委员会取消他的保研资格",
+            "shame_trigger": "曾在竞赛中背叛队友",
+            "breaking_point": "隐藏亲属关系被公开",
+            "speech_pattern": "冷静克制，喜欢用校规压人",
+        },
+        "lin_yuxin": {
+            "public_identity": "校庆公关负责人，奖学金候选人",
+            "hidden_need": "取代学生会主席成为实际掌权者",
+            "fear": "被发现履历造假",
+            "shame_trigger": "曾为名额出卖前任队友",
+            "breaking_point": "与主席的秘密换票交易曝光",
+            "speech_pattern": "体面周到但暗藏锋芒",
+        },
+        "zhang_hao": {
+            "public_identity": "技术社团负责人，掌握旧录音",
+            "hidden_need": "拿回被窃取的竞赛成果",
+            "fear": "项目被彻底边缘化",
+            "shame_trigger": "曾因懦弱放弃申诉",
+            "breaking_point": "发现旧录音被评审组删除",
+            "speech_pattern": "直接，不擅长场面话",
+        },
+        "wang_siyu": {
+            "public_identity": "奖学金账务负责人",
+            "hidden_need": "保护自己参与的经费挪用记录",
+            "fear": "资格复核暴露异常报销",
+            "shame_trigger": "挪用活动经费补贴家人",
+            "breaking_point": "被迫在同学情谊和自保间选择",
+            "speech_pattern": "数字精确，措辞谨慎",
+        },
+        "liu_jianfeng": {
+            "public_identity": "校友赞助人代表",
+            "hidden_need": "通过赞助换取评审席位",
+            "fear": "赞助项目失败导致校友会追责",
+            "shame_trigger": "曾操纵评审被私下和解",
+            "breaking_point": "对手掌握了他买票的录音",
+            "speech_pattern": "圆滑世故，善于承诺资源",
+        },
+    },
+    "urban_supernatural": {
+        "chen_weiming": {
+            "public_identity": "夜巡队长，契约议会代表",
+            "hidden_need": "掩盖早年血契造假的真相",
+            "fear": "契约议会剥夺他的夜巡权",
+            "shame_trigger": "曾把队友献给旧债势力",
+            "breaking_point": "被封印的私生契约曝光",
+            "speech_pattern": "冷静克制，喜欢用契约条文压人",
+        },
+        "lin_yuxin": {
+            "public_identity": "灵媒公关，夜巡所形象门面",
+            "hidden_need": "取代夜巡队长控制契约解释权",
+            "fear": "被发现灵媒资质造假",
+            "shame_trigger": "曾为自保出卖前任搭档",
+            "breaking_point": "与队长的秘密魂契曝光",
+            "speech_pattern": "温和体面但带着试探",
+        },
+        "zhang_hao": {
+            "public_identity": "封印术师，掌握契约原本",
+            "hidden_need": "拿回被夺走的封印术署名",
+            "fear": "封印阵图被彻底篡改",
+            "shame_trigger": "曾因恐惧放弃救人",
+            "breaking_point": "发现契约原本被二次污染",
+            "speech_pattern": "直接，习惯把灵异现象拆成规则",
+        },
+        "wang_siyu": {
+            "public_identity": "契约账本保管人",
+            "hidden_need": "保护自己参与的魂契交换记录",
+            "fear": "契约审判暴露旧债账簿",
+            "shame_trigger": "挪用供奉配额保护家人",
+            "breaking_point": "被迫在封口和救人间选择",
+            "speech_pattern": "数字精确，措辞谨慎",
+        },
+        "liu_jianfeng": {
+            "public_identity": "旧债代理人",
+            "hidden_need": "通过契约吞并获取旧城区主导权",
+            "fear": "旧债清算失败导致反噬",
+            "shame_trigger": "曾操纵灵债被私下和解",
+            "breaking_point": "对手掌握了他篡改血契的录音",
+            "speech_pattern": "圆滑世故，善于承诺庇护",
+        },
+    },
+}
+
+_DETERMINISTIC_RELATIONSHIP_TERM_REPLACEMENTS: dict[StoryShellId, tuple[tuple[str, str], ...]] = {
+    "wealth_families": (
+        ("外部投资人", "外部律师"),
+        ("市场副总", "联姻候选人"),
+        ("新品发布", "继承听证"),
+        ("关联交易", "旁支转账"),
+        ("监管调查", "遗产调查"),
+        ("原始票据", "原始遗嘱"),
+        ("影子实体", "离岸信托"),
+        ("董事会", "继承委员会"),
+        ("发布会", "家宴"),
+        ("投资人", "外部律师"),
+        ("CEO", "家主"),
+        ("CFO", "信托会计师"),
+        ("CTO", "被排除的继承人"),
+        ("公司", "家族信托"),
+        ("财报", "信托账册"),
+        ("灰账", "遗产账本"),
+        ("审计", "遗嘱复核"),
+        ("对赌", "继承补充协议"),
+        ("控制权", "继承权"),
+        ("预算", "信托拨款"),
+        ("技术", "遗嘱证据"),
+        ("专利", "遗嘱附录"),
+        ("算法", "继承档案"),
+        ("研发", "档案调查"),
+        ("市场", "家族门面"),
+        ("财务", "信托"),
+        ("资本", "律师团"),
+        ("收购", "信托重组"),
+        ("基金", "信托"),
+        ("估值", "遗产估值"),
+        ("项目", "继承案"),
+        ("投资", "注资"),
+    ),
+    "entertainment_scandal": (
+        ("外部投资人", "赞助方代表"),
+        ("市场副总", "公关负责人"),
+        ("新品发布", "直播彩排"),
+        ("关联交易", "代言回扣"),
+        ("监管调查", "平台调查"),
+        ("原始票据", "原始合同"),
+        ("影子实体", "空壳工作室"),
+        ("董事会", "主办方"),
+        ("发布会", "颁奖礼"),
+        ("投资人", "赞助方代表"),
+        ("CEO", "经纪公司负责人"),
+        ("CFO", "赞助结算人"),
+        ("CTO", "舞台技术总监"),
+        ("公司", "节目组"),
+        ("财报", "赞助账目"),
+        ("灰账", "合同账目"),
+        ("审计", "舆情复核"),
+        ("对赌", "流量对赌"),
+        ("控制权", "话语权"),
+        ("预算", "宣发预算"),
+        ("技术", "录制资料"),
+        ("专利", "原始录音"),
+        ("算法", "剪辑母带"),
+        ("研发", "舞台方案"),
+        ("市场", "公关"),
+        ("财务", "赞助"),
+        ("资本", "赞助方"),
+        ("收购", "资源置换"),
+        ("基金", "赞助基金"),
+        ("估值", "代言估值"),
+        ("项目", "节目"),
+        ("投资", "赞助"),
+    ),
+    "campus_romance": (
+        ("外部投资人", "校友赞助人"),
+        ("市场副总", "校庆公关负责人"),
+        ("新品发布", "校庆彩排"),
+        ("关联交易", "票源交换"),
+        ("监管调查", "校纪调查"),
+        ("原始票据", "原始审批单"),
+        ("影子实体", "影子社团"),
+        ("董事会", "评审委员会"),
+        ("发布会", "校庆晚会"),
+        ("投资人", "校友赞助人"),
+        ("CEO", "学生会主席"),
+        ("CFO", "奖学金账务负责人"),
+        ("CTO", "技术社团负责人"),
+        ("公司", "校庆委员会"),
+        ("财报", "奖学金账册"),
+        ("灰账", "社团黑账"),
+        ("审计", "资格复核"),
+        ("对赌", "保研承诺"),
+        ("控制权", "评审席位"),
+        ("预算", "活动经费"),
+        ("技术", "录音资料"),
+        ("专利", "旧录音"),
+        ("算法", "证据备份"),
+        ("研发", "社团项目"),
+        ("市场", "公关"),
+        ("财务", "奖学金账务"),
+        ("资本", "校友资源"),
+        ("收购", "名额置换"),
+        ("基金", "校友基金"),
+        ("估值", "项目评分"),
+        ("项目", "竞赛项目"),
+        ("投资", "赞助"),
+    ),
+    "urban_supernatural": (
+        ("外部投资人", "旧债代理人"),
+        ("市场副总", "灵媒公关"),
+        ("新品发布", "契约重启仪式"),
+        ("关联交易", "魂契交换"),
+        ("监管调查", "灵异调查"),
+        ("原始票据", "原始契约"),
+        ("影子实体", "影子契约"),
+        ("董事会", "契约议会"),
+        ("发布会", "夜巡仪式"),
+        ("投资人", "旧债代理人"),
+        ("CEO", "夜巡队长"),
+        ("CFO", "契约账本保管人"),
+        ("CTO", "封印术师"),
+        ("公司", "夜巡所"),
+        ("财报", "契约账簿"),
+        ("灰账", "旧债账簿"),
+        ("审计", "契约审判"),
+        ("对赌", "血契条款"),
+        ("控制权", "契约主导权"),
+        ("预算", "供奉配额"),
+        ("技术", "封印术"),
+        ("专利", "契约原本"),
+        ("算法", "封印阵图"),
+        ("研发", "封印试验"),
+        ("市场", "灵媒"),
+        ("财务", "契约账务"),
+        ("资本", "旧债势力"),
+        ("收购", "契约吞并"),
+        ("基金", "旧债基金"),
+        ("估值", "灵债估值"),
+        ("项目", "夜巡任务"),
+        ("投资", "供奉"),
+    ),
+}
+
 
 def _infer_deterministic_shell(seed_text: str, shell_hint: StoryShellId | None = None) -> StoryShellId:
     if shell_hint is not None:
         return shell_hint
+    normalized_seed = seed_text.casefold()
+    best_shell: StoryShellId | None = None
+    best_match_count = 0
     for shell_id, keywords in _DETERMINISTIC_SHELL_KEYWORDS.items():
-        if any(keyword in seed_text for keyword in keywords):
-            return shell_id
-    return "office_power"
+        match_count = sum(1 for keyword in keywords if keyword.casefold() in normalized_seed)
+        if match_count > best_match_count:
+            best_shell = shell_id
+            best_match_count = match_count
+    return best_shell or "office_power"
 
 
 _SEED_PARSE_SYSTEM_PROMPT = """
@@ -179,8 +510,8 @@ def _forge_world_deterministic(
         character_count=5,
         theme_keywords=list(theme_keywords),
     )
-    characters = _build_deterministic_characters()
-    relationship_edges = _build_deterministic_relationship_edges()
+    characters = _build_deterministic_characters(shell_id)
+    relationship_edges = _build_deterministic_relationship_edges(shell_id)
     config = WorldConfiguration(
         seed=seed,
         setting=setting,
@@ -426,8 +757,8 @@ def _character_batch_system_prompt(*, validation_feedback: str | None) -> str:
     )
 
 
-def _build_deterministic_characters() -> list[ForgedCharacter]:
-    return [
+def _build_deterministic_characters(shell_id: StoryShellId = "office_power") -> list[ForgedCharacter]:
+    characters = [
         ForgedCharacter(
             character_id="chen_weiming",
             display_name="陈伟明",
@@ -499,10 +830,17 @@ def _build_deterministic_characters() -> list[ForgedCharacter]:
             route_eligible=False,
         ),
     ]
-
-
-def _build_deterministic_relationship_edges() -> list[RelationshipEdge]:
+    overrides = _DETERMINISTIC_CHARACTER_OVERRIDES.get(shell_id)
+    if not overrides:
+        return characters
     return [
+        character.model_copy(update=overrides.get(character.character_id, {}))
+        for character in characters
+    ]
+
+
+def _build_deterministic_relationship_edges(shell_id: StoryShellId = "office_power") -> list[RelationshipEdge]:
+    edges = [
         RelationshipEdge(
             character_a_id="chen_weiming",
             character_b_id="lin_yuxin",
@@ -724,6 +1062,44 @@ def _build_deterministic_relationship_edges() -> list[RelationshipEdge]:
             ),
         ),
     ]
+    replacements = _DETERMINISTIC_RELATIONSHIP_TERM_REPLACEMENTS.get(shell_id)
+    if not replacements:
+        return edges
+    return [_adapt_relationship_edge_terms(edge, replacements) for edge in edges]
+
+
+def _adapt_relationship_edge_terms(
+    edge: RelationshipEdge,
+    replacements: tuple[tuple[str, str], ...],
+) -> RelationshipEdge:
+    return edge.model_copy(
+        update={
+            "public_facade": _replace_story_terms(edge.public_facade, replacements),
+            "hidden_truth": _replace_story_terms(edge.hidden_truth, replacements),
+            "hooks": [_replace_story_terms(hook, replacements) for hook in edge.hooks],
+            "stance_a_to_b": _adapt_relationship_stance_terms(edge.stance_a_to_b, replacements),
+            "stance_b_to_a": _adapt_relationship_stance_terms(edge.stance_b_to_a, replacements),
+        }
+    )
+
+
+def _adapt_relationship_stance_terms(
+    stance: RelationshipStance,
+    replacements: tuple[tuple[str, str], ...],
+) -> RelationshipStance:
+    return stance.model_copy(
+        update={
+            "hidden_dynamic": _replace_story_terms(stance.hidden_dynamic, replacements),
+            "tension_source": _replace_story_terms(stance.tension_source, replacements),
+        }
+    )
+
+
+def _replace_story_terms(text: str, replacements: tuple[tuple[str, str], ...]) -> str:
+    source_to_target = dict(replacements)
+    ordered_sources = sorted(replacements, key=lambda item: len(item[0]), reverse=True)
+    pattern = "|".join(re.escape(source) for source, _ in ordered_sources)
+    return re.sub(pattern, lambda match: source_to_target[match.group(0)], text)
 
 
 def _build_stance(

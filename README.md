@@ -62,11 +62,9 @@
 </p>
 
 The unlisted YouTube cut is the primary reviewer watch path. The
-GitHub Pages demo keeps the same 720p compressed MP4 available for
-offline/fallback playback (~4.6 MB). It shows real app capture mixed
-with generated Korean-webtoon keyframes: seed input, story generation,
-runtime state, player choices, free-form action, advisor chat, and
-ending compilation.
+GitHub Pages demo keeps the same 720p compressed MP4 available as an
+offline/fallback path (~4.6 MB). Treat this as an admissions/portfolio
+artifact for the inspectable runtime, not a validated consumer launch.
 
 ---
 

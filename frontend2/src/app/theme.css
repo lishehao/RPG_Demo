@@ -352,8 +352,6 @@ kbd {
 .portfolio-hero,
 .reviewer-hero {
   min-height: 560px;
-  display: flex;
-  align-items: flex-end;
   border-radius: 0;
   overflow: hidden;
   position: relative;
@@ -364,13 +362,19 @@ kbd {
 }
 
 .portfolio-hero {
-  background-image:
-    linear-gradient(90deg, rgba(12,12,16,0.96) 0%, rgba(12,12,16,0.70) 42%, rgba(12,12,16,0.16) 100%),
-    linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.86) 100%),
-    url("/webtoons/shells/wealth_families.jpg");
+  min-height: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(420px, 1.12fr);
+  gap: 42px;
+  align-items: center;
+  padding: 42px 0 36px;
+  background-image: none;
+  overflow: visible;
 }
 
 .reviewer-hero {
+  display: flex;
+  align-items: flex-end;
   background-image:
     linear-gradient(90deg, rgba(12,12,16,0.96) 0%, rgba(12,12,16,0.76) 46%, rgba(12,12,16,0.20) 100%),
     linear-gradient(180deg, rgba(12,12,16,0.08) 0%, rgba(12,12,16,0.90) 100%),
@@ -383,8 +387,8 @@ kbd {
 }
 
 .portfolio-hero__content {
-  width: min(760px, 100%);
-  padding: 72px 56px;
+  width: min(640px, 100%);
+  padding: 0;
 }
 .portfolio-hero .ts-tag,
 .reviewer-hero .ts-tag {
@@ -423,6 +427,8 @@ kbd {
 }
 .portfolio-action,
 .reviewer-action {
+  display: inline-flex;
+  align-items: center;
   height: auto;
   padding: 4px 0 6px;
   border: none;
@@ -435,6 +441,7 @@ kbd {
   font-size: 14px;
   font-weight: 750;
   line-height: 1.2;
+  text-decoration: none;
 }
 .portfolio-action--primary,
 .reviewer-action--primary {
@@ -450,6 +457,31 @@ kbd {
 .reviewer-action:disabled {
   cursor: default;
   opacity: 0.52;
+}
+
+.portfolio-hero__video {
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 8px;
+  background: #050506;
+  box-shadow: 0 36px 100px rgba(0,0,0,0.48);
+}
+
+.portfolio-hero__video iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  background: #000;
+}
+
+.portfolio-hero__video p {
+  margin: 0;
+  padding: 12px 14px;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(255,255,255,0.10);
+  font-size: 12.5px;
+  line-height: 1.45;
 }
 
 .portfolio-proofbar {
@@ -1168,6 +1200,10 @@ kbd {
     gap: 12px;
   }
   .topbar-link { display: none; }
+  .topbar-create-link,
+  .topbar-login-link {
+    display: inline-flex;
+  }
   .topbar-lang {
     flex-shrink: 0;
     gap: 8px;
@@ -1224,9 +1260,18 @@ kbd {
     min-height: 520px;
     border-radius: 0;
   }
+  .portfolio-hero {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    gap: 26px;
+    padding: 30px 0 34px;
+  }
   .portfolio-hero__content,
   .reviewer-hero {
     padding: 48px 24px;
+  }
+  .portfolio-hero__content {
+    padding: 0;
   }
   .portfolio-hero h1,
   .reviewer-hero h1 {
@@ -1235,6 +1280,9 @@ kbd {
   .portfolio-hero p,
   .reviewer-hero p {
     font-size: 15px;
+  }
+  .portfolio-hero__video p {
+    font-size: 12.5px;
   }
   .portfolio-proofbar,
   .portfolio-loop,

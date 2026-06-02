@@ -20,6 +20,11 @@ from rpg_backend.play_v2.runtime import build_initial_world_state, build_suggest
 _AUTHOR_SEED = "办公室权力斗争"
 _AUTHOR_REQUESTED_RUN_MODE = "live"
 _AUTHOR_FALLBACK_RUN_MODE = "live_deepseek_v4_flash"
+_AUTHOR_FALLBACK_MARKERS = (
+    "live gateway does not support mode=live",
+    "author_v3 only supports deterministic or live_deepseek_v4_flash",
+    "llm_mode_invalid",
+)
 
 
 def _count_chinese_characters(text: str) -> int:
@@ -48,7 +53,7 @@ def _run_smoke1() -> tuple[bool, str, Any, str]:
         result = run_author_v3_pipeline(_AUTHOR_SEED, run_mode=_AUTHOR_REQUESTED_RUN_MODE)
     except Exception as exc:  # noqa: BLE001
         message = str(exc)
-        if "live gateway does not support mode=live" not in message:
+        if not any(marker in message for marker in _AUTHOR_FALLBACK_MARKERS):
             raise
         effective_run_mode = _AUTHOR_FALLBACK_RUN_MODE
         try:
