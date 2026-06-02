@@ -70,6 +70,9 @@ export function ReviewerPage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.32, ease: "easeOut" }}
         >
+          <div className="story-illustration-slot reviewer-hero__art" aria-hidden="true">
+            <span className="story-illustration-slot__label">Runtime evidence board</span>
+          </div>
           <span className="ts-tag">Reviewer Mode</span>
           <h1>{REVIEWER_DEMO_TITLE}</h1>
           <p>

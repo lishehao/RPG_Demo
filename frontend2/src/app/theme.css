@@ -1,10 +1,10 @@
 /* ------ tokens ------ */
 :root {
-  --paper: #f3e4c7;
-  --paper-soft: #fff6e4;
-  --paper-cream: #fbefd7;
-  --paper-aged: #e2caa3;
-  --paper-shadow: rgba(83, 55, 26, 0.18);
+  --paper: #efe7dc;
+  --paper-soft: #fffaf2;
+  --paper-cream: #fbf4e8;
+  --paper-aged: #d9c7aa;
+  --paper-shadow: rgba(69, 49, 31, 0.13);
   --ink: #2d241a;
   --ink-muted: rgba(45, 36, 26, 0.7);
   --ink-faint: rgba(45, 36, 26, 0.46);
@@ -34,34 +34,34 @@
   --radius-md: 8px;
   --radius-lg: 8px;
   --paper-texture:
-    radial-gradient(circle at 18% 14%, rgba(124, 95, 55, 0.13) 0 1px, transparent 1.3px),
-    radial-gradient(circle at 76% 38%, rgba(98, 114, 71, 0.07) 0 1px, transparent 1.4px),
-    linear-gradient(115deg, rgba(255, 255, 255, 0.28), transparent 34%, rgba(118, 75, 34, 0.07) 86%);
-  --shadow-soft: 0 20px 44px rgba(83, 55, 26, 0.14), 0 1px 0 rgba(255, 255, 255, 0.42) inset;
-  --shadow-watercolor: 0 18px 42px rgba(99, 75, 42, 0.13), 0 10px 26px rgba(98, 114, 71, 0.07);
-  --shadow-drawer: -24px 0 60px rgba(83, 55, 26, 0.2);
+    radial-gradient(circle at 18% 14%, rgba(124, 95, 55, 0.055) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 76% 38%, rgba(98, 114, 71, 0.045) 0 1px, transparent 1.6px),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.34), transparent 38%, rgba(118, 75, 34, 0.035) 88%);
+  --shadow-soft: 0 18px 44px rgba(69, 49, 31, 0.11), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+  --shadow-watercolor: 0 18px 46px rgba(87, 66, 42, 0.11), 0 8px 22px rgba(98, 114, 71, 0.045);
+  --shadow-drawer: -24px 0 60px rgba(69, 49, 31, 0.16);
   --sketch-offset: 2px;
   --story-page:
-    radial-gradient(circle at 12% 8%, rgba(255, 246, 220, 0.72), transparent 28%),
-    radial-gradient(circle at 78% 18%, rgba(98, 114, 71, 0.13), transparent 31%),
-    radial-gradient(circle at 50% 108%, rgba(157, 91, 47, 0.14), transparent 40%),
+    radial-gradient(circle at 12% 8%, rgba(255, 252, 242, 0.76), transparent 30%),
+    radial-gradient(circle at 78% 18%, rgba(98, 114, 71, 0.075), transparent 32%),
+    radial-gradient(circle at 50% 108%, rgba(157, 91, 47, 0.07), transparent 42%),
     var(--paper-texture),
-    linear-gradient(180deg, #f0dfbd 0%, #e4cfaa 58%, #d8bb8b 100%);
+    linear-gradient(180deg, #f8f3ea 0%, #efe5d6 58%, #e7d9c5 100%);
   --story-paper-panel:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 40%),
-    repeating-linear-gradient(0deg, rgba(84, 60, 31, 0.045) 0 1px, transparent 1px 31px),
-    #f6e7c8;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 42%),
+    repeating-linear-gradient(0deg, rgba(84, 60, 31, 0.024) 0 1px, transparent 1px 31px),
+    #fff8ed;
   --story-paper-card:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 42%),
-    #fff3dc;
+    linear-gradient(150deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 44%),
+    #fffbf4;
   --story-ruled-paper:
     repeating-linear-gradient(0deg, transparent 0 31px, rgba(74, 91, 126, 0.09) 32px),
     linear-gradient(90deg, rgba(169, 73, 63, 0.12) 0 1px, transparent 1px),
     rgba(255, 248, 226, 0.9);
-  --story-ink-border: 1px solid rgba(76, 53, 29, 0.34);
-  --story-sketch-shadow: 5px 7px 0 rgba(72, 47, 22, 0.16), var(--shadow-watercolor);
-  --story-note-shadow: 3px 4px 0 rgba(72, 47, 22, 0.14), 0 12px 26px rgba(83, 55, 26, 0.1);
-  --story-tape: rgba(230, 196, 125, 0.52);
+  --story-ink-border: 1px solid rgba(76, 53, 29, 0.24);
+  --story-sketch-shadow: var(--shadow-watercolor);
+  --story-note-shadow: 0 12px 26px rgba(69, 49, 31, 0.09), 0 1px 0 rgba(255, 255, 255, 0.45) inset;
+  --story-tape: rgba(226, 196, 134, 0.38);
   --font-ui: "Inter", system-ui, -apple-system, "PingFang SC", sans-serif;
   --font-narrative: "Newsreader", Georgia, "Songti SC", serif;
   --max-content: 1080px;
@@ -466,6 +466,38 @@ kbd {
 .portfolio-hero__content {
   width: min(640px, 100%);
   padding: 0;
+}
+
+.story-illustration-slot {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(76,53,29,0.18);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(140deg, rgba(255,255,255,0.42), rgba(255,255,255,0) 42%),
+    var(--story-paper-card);
+  box-shadow: var(--story-note-shadow);
+}
+.story-illustration-slot::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1px dashed rgba(76,53,29,0.16);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.story-illustration-slot__label {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  color: rgba(47,35,24,0.62);
+  background: rgba(255,250,242,0.72);
+  border: 1px solid rgba(76,53,29,0.14);
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 10px;
+  line-height: 1.15;
+  font-weight: 780;
 }
 .portfolio-hero .ts-tag,
 .reviewer-hero .ts-tag {
@@ -877,14 +909,16 @@ kbd {
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 48px 56px 46px;
+  padding: 48px min(420px, 38vw) 46px 56px;
   overflow: visible;
   color: var(--text);
   border: var(--story-ink-border);
   border-radius: var(--radius-lg);
-  background: var(--story-paper-panel);
-  background-image: var(--story-paper-panel);
-  box-shadow: var(--story-sketch-shadow);
+  background:
+    radial-gradient(circle at 80% 26%, rgba(93,95,143,0.08), transparent 32%),
+    linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.18) 45%),
+    #fffaf2;
+  box-shadow: var(--shadow-soft);
 }
 .reviewer-hero > * {
   position: relative;
@@ -909,6 +943,21 @@ kbd {
   inset: 10px;
   border: 1px dashed rgba(76,53,29,0.18);
   border-radius: 6px;
+  pointer-events: none;
+}
+.reviewer-hero__art {
+  position: absolute;
+  top: 38px;
+  right: 34px;
+  bottom: 38px;
+  width: min(340px, 34%);
+  z-index: 0;
+  background-image:
+    linear-gradient(180deg, rgba(255,250,242,0.12), rgba(255,250,242,0.34)),
+    url("/illustrations/case-notebook-panel.svg");
+  background-size: cover;
+  background-position: center;
+  transform: rotate(0.35deg);
   pointer-events: none;
 }
 .reviewer-hero .ts-tag {
@@ -940,7 +989,7 @@ kbd {
   padding: 14px 16px 15px;
   color: rgba(45,36,26,0.82);
   border-left: 2px solid rgba(93,95,143,0.36);
-  background: rgba(255,248,226,0.5);
+  background: rgba(255,255,255,0.58);
   border-radius: 6px;
 }
 .reviewer-action {
@@ -1466,6 +1515,9 @@ kbd {
     min-height: auto;
     border-radius: var(--radius-lg);
     padding: 34px 28px 32px;
+  }
+  .reviewer-hero__art {
+    display: none;
   }
   .reviewer-checklist {
     margin: 20px 0 0;
