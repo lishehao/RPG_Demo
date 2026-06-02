@@ -155,6 +155,33 @@ def test_story_brief_strips_list_introducer_and_dedupes_mars_entities() -> None:
     assert active_or_background.isdisjoint(omitted)
 
 
+def test_story_brief_protects_emphasized_entities_under_ten_entity_cap() -> None:
+    seed = (
+        "On Mars colony, a comedy talent show with ten groups - Hydroponics, Oxygen, "
+        "Security, Medical, Education, Waste Recycling, Transit, Finance, Communications, "
+        "Theatre Club, and Earth Media before the final broadcast. "
+        "Each group should represent Theatre Club and Earth Media concerns."
+    )
+
+    response = build_story_brief(seed=seed, language="en")
+    plan = response.brief.cast_plan
+    active_or_background = {
+        entity.display_name
+        for entity in [*plan.primary_active_entities, *plan.secondary_background_entities]
+    }
+    omitted = {entity.display_name for entity in plan.omitted_entities}
+
+    assert "Theatre Club" in active_or_background
+    assert "Earth Media" in active_or_background
+    assert "Earth Media" not in omitted
+    assert any(
+        entity.display_name == "Earth Media" and "explicitly" in entity.rationale.lower()
+        for entity in [*plan.primary_active_entities, *plan.secondary_background_entities]
+    )
+    assert "ten groups -" not in response.brief.premise_summary.lower()
+    assert "Hydroponics" in response.brief.premise_summary
+
+
 def test_story_brief_revision_guidance_does_not_become_cast() -> None:
     base = (
         "On Mars colony, a comedy talent show involves Engineering, Hydroponics, "

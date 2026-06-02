@@ -286,9 +286,15 @@ _LOWER_STAKES_OPENING_ESCALATION_PATTERNS = (
     "governor arrives",
     "governor deadline",
 )
-_EMPHASIS_ENTITY_RE = re.compile(
-    r"\b(?:represent|include|preserve|must include|should include|keep)\b\s+([^.!?;]+)",
-    re.I,
+_EMPHASIS_ENTITY_PATTERNS = (
+    re.compile(
+        r"\b(?:represent|focus on|include|preserve|must include|should include|keep)\b\s+([^.!?;]+)",
+        re.I,
+    ),
+    re.compile(
+        r"\b(?:central|important)\s+(?:entities?|factions?|groups?|cast)\s*[:\-]\s*([^.!?;]+)",
+        re.I,
+    ),
 )
 
 
@@ -364,7 +370,13 @@ def build_story_brief(
     fit_rationale = _fit_rationale(fit_status, profile)
     brief = StoryBrief(
         original_seed=clean_seed,
-        premise_summary=_premise_summary(clean_seed),
+        premise_summary=_premise_summary(
+            clean_seed,
+            cast_plan=cast_plan,
+            profile=profile,
+            time_event_anchors=time_event_anchors,
+            world_setting_pressure=world_setting_pressure,
+        ),
         genre_tone=title,
         tension_profile=profile,
         story_kernel=kernel,
@@ -594,20 +606,51 @@ def _clean_entity(raw: str) -> str:
 
 
 def _build_cast_plan(seed: str, entities: list[str], profile: TensionProfile) -> CastPlan:
-    planned = entities[:10]
+    emphasized_keys = _emphasized_entity_keys(seed, entities)
+    planned = _select_planned_entities(entities, emphasized_keys)
     if len(planned) < 3 and not has_explicit_small_cast_mismatch(seed):
         planned = _fallback_entities(seed, profile)
+        emphasized_keys = set()
     primary = [
-        _entity(name, idx, role="Primary active party", rationale="Kept in the 3-5 entity focus window.")
+        _entity(
+            name,
+            idx,
+            role="Primary active party",
+            rationale=(
+                "Protected because the prompt explicitly emphasized this entity; kept in the 3-5 entity focus window."
+                if _canonical_entity_key(name) in emphasized_keys
+                else "Kept in the 3-5 entity focus window."
+            ),
+        )
         for idx, name in enumerate(planned[:5])
     ]
     secondary = [
-        _entity(name, idx + 5, role="Secondary/background pressure", rationale="Kept as context, not active every turn.")
+        _entity(
+            name,
+            idx + 5,
+            role="Secondary/background pressure",
+            rationale=(
+                "Protected because the prompt explicitly emphasized this entity; kept as background within the 10-entity cap."
+                if _canonical_entity_key(name) in emphasized_keys
+                else "Kept as context, not active every turn."
+            ),
+        )
         for idx, name in enumerate(planned[5:10])
     ]
+    selected_keys = {_canonical_entity_key(name) for name in planned}
+    omitted_names = [name for name in entities if _canonical_entity_key(name) not in selected_keys]
     omitted = [
-        _entity(name, idx + 10, role="Omitted/merge candidate", rationale="Beyond the 10-entity planning cap.")
-        for idx, name in enumerate(entities[10:15])
+        _entity(
+            name,
+            idx + 10,
+            role="Omitted/merge candidate",
+            rationale=(
+                "Explicitly requested but still beyond the current cap; reduce required entities or move it into a constraint."
+                if _canonical_entity_key(name) in emphasized_keys
+                else "Beyond the 10-entity planning cap."
+            ),
+        )
+        for idx, name in enumerate(omitted_names[:5])
     ]
     return CastPlan(
         input_entity_count=len(entities),
@@ -616,6 +659,29 @@ def _build_cast_plan(seed: str, entities: list[str], profile: TensionProfile) ->
         omitted_entities=omitted,
         active_focus_window="Director should keep 3-5 entities readable per turn; others remain background pressure.",
     )
+
+
+def _select_planned_entities(entities: list[str], emphasized_keys: set[str]) -> list[str]:
+    planned = entities[:10]
+    planned_keys = {_canonical_entity_key(name) for name in planned}
+    for entity in entities[10:]:
+        key = _canonical_entity_key(entity)
+        if key in planned_keys or key not in emphasized_keys:
+            continue
+        replace_idx = None
+        for idx in range(len(planned) - 1, -1, -1):
+            planned_key = _canonical_entity_key(planned[idx])
+            if planned_key in emphasized_keys:
+                continue
+            replace_idx = idx
+            if idx >= 5:
+                break
+        if replace_idx is None:
+            continue
+        planned_keys.discard(_canonical_entity_key(planned[replace_idx]))
+        planned[replace_idx] = entity
+        planned_keys.add(key)
+    return planned
 
 
 def _entity(name: str, idx: int, *, role: str, rationale: str) -> CastPlanEntity:
@@ -836,9 +902,31 @@ def _has_pressure_signal(seed: str) -> bool:
     )
 
 
-def _premise_summary(seed: str) -> str:
+def _premise_summary(
+    seed: str,
+    *,
+    cast_plan: CastPlan | None = None,
+    profile: TensionProfile | None = None,
+    time_event_anchors: list[StoryBriefPlanItem] | None = None,
+    world_setting_pressure: list[StoryBriefPlanItem] | None = None,
+) -> str:
+    if cast_plan is not None and profile is not None:
+        cast_names = [
+            entity.display_name
+            for entity in [*cast_plan.primary_active_entities, *cast_plan.secondary_background_entities]
+        ]
+        pressure_labels = [
+            item.label
+            for item in [*(time_event_anchors or []), *(world_setting_pressure or [])]
+            if item.label.lower() != "core premise"
+        ]
+        summary = f"{_PROFILE_KERNELS[profile][0]} brief with {', '.join(cast_names[:6])}"
+        if pressure_labels:
+            summary += f"; pressure: {', '.join(pressure_labels[:3])}"
+        return summary[:257].rstrip(" ,;") + "."
     if len(seed) <= 240:
-        return seed
+        cleaned = _ENTITY_LEADING_NOISE_RE.sub("", seed)
+        return cleaned
     return seed[:237].rstrip() + "..."
 
 
@@ -870,6 +958,15 @@ def _canonical_entity_key(value: str) -> str:
     cleaned = re.sub(r"\bconcerns?\b", "", cleaned)
     cleaned = re.sub(r"[^a-z0-9]+", " ", cleaned)
     return " ".join(cleaned.split())
+
+
+def _emphasized_entity_keys(seed: str, entities: list[str]) -> set[str]:
+    keys = {_canonical_entity_key(name) for name in _emphasized_entity_names(seed)}
+    for entity in entities:
+        escaped = re.escape(entity)
+        if len(re.findall(rf"\b{escaped}\b", seed, flags=re.I)) > 1:
+            keys.add(_canonical_entity_key(entity))
+    return {key for key in keys if key}
 
 
 def _opening_search_text(opening: Any) -> str:
@@ -923,12 +1020,13 @@ def _missing_primary_entities(brief: StoryBrief, lowered_opening_text: str) -> l
 def _emphasized_entity_names(seed: str) -> list[str]:
     entity_seed = _strip_planner_note_lines(seed)
     names: list[str] = []
-    for match in _EMPHASIS_ENTITY_RE.finditer(entity_seed):
-        segment = re.sub(r"\bconcerns?\b", "", match.group(1), flags=re.I)
-        for raw in _ENTITY_SPLIT_RE.split(segment):
-            candidate = _clean_entity(raw)
-            if candidate:
-                names.append(candidate)
+    for pattern in _EMPHASIS_ENTITY_PATTERNS:
+        for match in pattern.finditer(entity_seed):
+            segment = re.sub(r"\bconcerns?\b", "", match.group(1), flags=re.I)
+            for raw in _ENTITY_SPLIT_RE.split(segment):
+                candidate = _clean_entity(raw)
+                if candidate:
+                    names.append(candidate)
     return _dedupe_preserving_order(names)[:8]
 
 

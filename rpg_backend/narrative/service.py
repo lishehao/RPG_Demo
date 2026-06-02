@@ -235,11 +235,8 @@ class NarrativeService:
             if story_brief_consistency.status == "fail":
                 raise NarrativeServiceError(
                     code="opening_brief_consistency_failed",
-                    message=(
-                        "The generated opening contradicted the reviewed brief. "
-                        "Please revise the premise or try generation again."
-                    ),
-                    status_code=502,
+                    message=_story_brief_consistency_failure_message(story_brief_consistency),
+                    status_code=422,
                 )
 
         template_id = _generate_template_id()
@@ -1273,9 +1270,21 @@ def _story_brief_consistency_feedback(check: StoryBriefConsistencyCheck) -> str:
         rows.append(f"{violation.code}: {violation.rationale} Evidence: {evidence}")
     return (
         "Repair the generated opening so it matches the reviewed story_brief. "
-        "Keep the same JSON schema. Fix these issues: "
+        "Keep the same JSON schema. Explicitly mention required/emphasized entities in cast or passage. "
+        "For comedy/cozy briefs, keep stakes in social pressure, props, embarrassment, clues, or representation unless the brief preserved high stakes. "
+        "Fix these issues: "
         + " | ".join(rows)
     )[:1200]
+
+
+def _story_brief_consistency_failure_message(check: StoryBriefConsistencyCheck) -> str:
+    codes = ", ".join(violation.code for violation in check.violations[:4])
+    return (
+        "The generated opening still could not satisfy the reviewed brief. "
+        "Try to reduce required entities, relax which factions must be represented, "
+        "lower stakes for comedy/cozy prompts, or revise the brief before generating again. "
+        f"Mismatch signals: {codes or 'brief consistency failed'}."
+    )[:500]
 
 
 def _summarize_template(

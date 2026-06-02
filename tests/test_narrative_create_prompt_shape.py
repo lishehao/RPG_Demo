@@ -285,3 +285,157 @@ def test_create_template_retries_brief_consistency_language_artifact(
     assert calls[1]["brief_consistency_feedback"]
     assert response.story_brief_consistency is not None
     assert response.story_brief_consistency.status == "pass"
+
+
+def test_create_template_retries_mars_brief_contract_feedback(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    brief = build_story_brief(
+        seed=(
+            "On Mars colony, a comedy talent show with ten groups - Hydroponics, Oxygen, "
+            "Security, Medical, Education, Waste Recycling, Transit, Finance, Communications, "
+            "Theatre Club, and Earth Media before the final broadcast. "
+            "Each group should represent Theatre Club and Earth Media concerns."
+        ),
+        language="en",
+    ).brief
+    calls: list[dict[str, Any]] = []
+
+    def fake_generate_opening(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            title = "Oxygen Heist"
+            content = (
+                "Hydroponics, Oxygen, Security, Medical, and Education argue over a backup oxygen tank "
+                "while a scapegoat deadline turns the talent show into an emergency."
+            )
+            cast_names = ["Hydroponics", "Oxygen", "Security", "Medical", "Education"]
+        else:
+            title = "Broadcast Rehearsal"
+            content = (
+                "Hydroponics, Oxygen, Security, Medical, and Education crowd the rehearsal table while "
+                "Waste Recycling, Transit, Finance, Communications, Theatre Club, and Earth Media watch "
+                "the final broadcast timer and argue over who gets represented in the comedy talent show."
+            )
+            cast_names = ["Hydroponics", "Oxygen", "Security", "Medical", "Education", "Theatre Club", "Earth Media"]
+        return type(
+            "Opening",
+            (),
+            {
+                "title": title,
+                "advisor_persona": "A patient producer watches from the broadcast booth.",
+                "cast": [
+                    CastMember(
+                        character_id=name.lower().replace(" ", "_"),
+                        display_name=name,
+                        role="planned faction",
+                        relation_to_protagonist="Part of the Mars talent-show pressure.",
+                    )
+                    for name in cast_names
+                ],
+                "opening_message": StoryMessage(
+                    ord=0,
+                    role="narrator",
+                    content=content,
+                    options=[StoryOption(label="Ask who is missing from the lineup", hint="Represent factions", handle="ask")],
+                ),
+                "player_goals": [],
+                "failure_conditions": [],
+                "player_role_options": [
+                    PlayerRole(
+                        role_id="producer",
+                        label="Producer",
+                        public_persona="The producer trying to keep the comedy talent show representative.",
+                        hidden_objective="Protect the final broadcast from becoming a crisis briefing.",
+                    )
+                ],
+            },
+        )()
+
+    monkeypatch.setattr(narrative_service_module, "generate_opening", fake_generate_opening)
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    assert len(calls) == 2
+    assert "brief_emphasized_entity_absent" in calls[1]["brief_consistency_feedback"]
+    assert "lower_stakes_profile_escalated" in calls[1]["brief_consistency_feedback"]
+    assert response.story_brief_consistency is not None
+    assert response.story_brief_consistency.status == "pass"
+
+
+def test_create_template_brief_consistency_failure_is_user_actionable_422(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    brief = build_story_brief(
+        seed=(
+            "On Mars colony, a lower-stakes comedy talent show involves Hydroponics, "
+            "Security, Theatre Club, and Earth Media before the final broadcast; no violence."
+        ),
+        language="en",
+        desired_tension_profile="comedy",
+    ).brief
+
+    def fake_generate_opening(**_: object) -> object:
+        return type(
+            "Opening",
+            (),
+            {
+                "title": "Oxygen Heist",
+                "advisor_persona": "A crisis aide calls from the airlock.",
+                "cast": [
+                    CastMember(
+                        character_id="hydroponics",
+                        display_name="Hydroponics",
+                        role="department",
+                        relation_to_protagonist="Part of the emergency.",
+                    ),
+                    CastMember(
+                        character_id="security",
+                        display_name="Security",
+                        role="department",
+                        relation_to_protagonist="Blames the player.",
+                    ),
+                ],
+                "opening_message": StoryMessage(
+                    ord=0,
+                    role="narrator",
+                    content=(
+                        "Hydroponics and Security argue over a backup oxygen tank while "
+                        "Theatre Club and Earth Media are nowhere in the room."
+                    ),
+                    options=[StoryOption(label="Ask about the tank", hint="Crisis", handle="ask")],
+                ),
+                "player_goals": [],
+                "failure_conditions": [],
+                "player_role_options": [
+                    PlayerRole(
+                        role_id="producer",
+                        label="Producer",
+                        public_persona="The producer caught in the airlock crisis.",
+                        hidden_objective="Find the tank.",
+                    )
+                ],
+            },
+        )()
+
+    monkeypatch.setattr(narrative_service_module, "generate_opening", fake_generate_opening)
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
+
+    with pytest.raises(NarrativeServiceError) as exc_info:
+        service.create_template(
+            CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
+            owner_user_id="usr_test",
+        )
+
+    assert exc_info.value.code == "opening_brief_consistency_failed"
+    assert exc_info.value.status_code == 422
+    assert "reduce required entities" in exc_info.value.message.lower()
+    assert "lower stakes" in exc_info.value.message.lower()
