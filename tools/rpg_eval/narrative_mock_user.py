@@ -62,6 +62,7 @@ AgentLoopAction = Literal[
     "update_memory",
     "choose_action",
     "play_turn",
+    "runtime_retry",
     "collect_events",
     "collect_judges",
     "summarize_episode",
@@ -96,6 +97,7 @@ class MockUserConfig(BaseModel):
     request_agent_trace: bool = True
     trace_output_path: str | None = Field(default=None, max_length=500)
     summary_output_path: str | None = Field(default=None, max_length=500)
+    live_turn_retry_limit: int = Field(default=1, ge=0, le=2)
 
     @field_validator("base_url")
     @classmethod
@@ -210,6 +212,7 @@ class MockUserEpisodeSummary(BaseModel):
     trajectory_status: JudgeStatusText = "missing"
     trajectory_check_counts: dict[str, int] = Field(default_factory=dict)
     repeated_violation_codes: dict[str, int] = Field(default_factory=dict)
+    runtime_retry_count: int = Field(default=0, ge=0)
     recommendations: list[str] = Field(default_factory=list, max_length=8)
 
 
@@ -229,6 +232,21 @@ class MockUserEpisodeResult(BaseModel):
     action_loop: list[AgentLoopEvent] = Field(default_factory=list)
     turns: list[MockTurnTrace]
     summary: MockUserEpisodeSummary
+
+
+class MockUserRuntimeError(RuntimeError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        session_id: str | None = None,
+        action_loop: list[AgentLoopEvent] | None = None,
+        runtime_retry_count: int = 0,
+    ) -> None:
+        super().__init__(message)
+        self.session_id = session_id
+        self.action_loop = action_loop or []
+        self.runtime_retry_count = runtime_retry_count
 
 
 class NarrativeAPIAdapter(Protocol):
@@ -1041,6 +1059,23 @@ def _trajectory_check_counts(checks: list[TrajectoryJudgeCheck]) -> dict[str, in
     return dict(counts)
 
 
+def _safe_error_message(exc: BaseException, *, limit: int = 420) -> str:
+    return _clip(str(exc), limit)
+
+
+def _is_retryable_live_turn_error(exc: BaseException) -> bool:
+    message = str(exc).casefold()
+    return "llm_invalid_json" in message or "502" in message or "bad gateway" in message
+
+
+def _runtime_retry_count(events: list[AgentLoopEvent]) -> int:
+    return sum(
+        1
+        for event in events
+        if event.action_type == "runtime_retry" and bool(event.payload.get("will_retry"))
+    )
+
+
 def _trace_has_runtime_impact(trace: MockTurnTrace) -> bool:
     pulses = trace.runtime_output_summary.get("npc_pulse") or []
     if any(
@@ -1397,11 +1432,48 @@ def run_mock_user_episode(
                 payload=selected_action,
             )
         )
-        response = adapter.advance_turn(
-            session_id,
-            action.to_request(),
-            agent_trace=config.request_agent_trace,
-        )
+        attempts = 0
+        while True:
+            try:
+                response = adapter.advance_turn(
+                    session_id,
+                    action.to_request(),
+                    agent_trace=config.request_agent_trace,
+                )
+                break
+            except Exception as exc:
+                can_retry = (
+                    config.mode == "live"
+                    and attempts < config.live_turn_retry_limit
+                    and _is_retryable_live_turn_error(exc)
+                )
+                turn_loop_events.append(
+                    _loop_event(
+                        loop_events,
+                        turn_index=turn_index,
+                        action_type="runtime_retry",
+                        summary=(
+                            "Retry live turn after transient runtime error."
+                            if can_retry
+                            else "Live turn failed; no retry remains."
+                        ),
+                        payload={
+                            "attempt": attempts + 1,
+                            "will_retry": can_retry,
+                            "max_retries": config.live_turn_retry_limit,
+                            "error_type": type(exc).__name__,
+                            "message": _safe_error_message(exc),
+                        },
+                    )
+                )
+                if not can_retry:
+                    raise MockUserRuntimeError(
+                        f"turn {turn_index} advance failed: {_safe_error_message(exc)}",
+                        session_id=session_id,
+                        action_loop=loop_events,
+                        runtime_retry_count=_runtime_retry_count(loop_events),
+                    ) from exc
+                attempts += 1
         turn_loop_events.append(
             _loop_event(
                 loop_events,
@@ -1507,6 +1579,7 @@ def run_mock_user_episode(
             requested_turn_budget=config.turn_budget,
             ending_detected=ending_detected or bool(history.session.ending_label),
             trajectory_judge=trajectory_judge,
+            runtime_retry_count=_runtime_retry_count(loop_events),
         ),
     )
     _loop_event(
@@ -1530,6 +1603,7 @@ def _episode_summary(
     requested_turn_budget: int,
     ending_detected: bool,
     trajectory_judge: TrajectoryJudgeResult,
+    runtime_retry_count: int = 0,
 ) -> MockUserEpisodeSummary:
     step_counts = Counter(trace.step_judge_status for trace in traces)
     contract_counts = Counter(trace.contract_judge_status for trace in traces)
@@ -1554,6 +1628,8 @@ def _episode_summary(
         recommendations.append("review trajectory warnings before demo or portfolio capture")
     if not traces:
         recommendations.append("episode did not advance; check session state and turn budget")
+    if runtime_retry_count:
+        recommendations.append("live runtime retry occurred; review retry event evidence")
     return MockUserEpisodeSummary(
         turn_count=len(traces),
         completed_turn_budget=len(traces) >= requested_turn_budget,
@@ -1563,6 +1639,7 @@ def _episode_summary(
         trajectory_status=trajectory_judge.status,
         trajectory_check_counts=_trajectory_check_counts(trajectory_judge.checks),
         repeated_violation_codes=repeated,
+        runtime_retry_count=runtime_retry_count,
         recommendations=recommendations,
     )
 

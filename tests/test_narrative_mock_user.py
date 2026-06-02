@@ -31,6 +31,7 @@ from tools.rpg_eval.narrative_mock_user import (
     EpisodeMemory,
     MockUserAction,
     MockUserConfig,
+    MockUserRuntimeError,
     MockTurnTrace,
     TestClientNarrativeAdapter,
     _memory_after_turn,
@@ -250,6 +251,103 @@ class _AlreadyCompleteAdapter:
         raise AssertionError(f"unexpected advance: {session_id} {payload} {agent_trace}")
 
 
+class _TransientTurnFailureAdapter:
+    def __init__(self, *, failures_before_success: int) -> None:
+        self.failures_before_success = failures_before_success
+        self.advance_calls = 0
+        self._advanced = False
+        self._player = StoryMessage(ord=1, role="player", content="Show the memo.")
+        self._narrator = StoryMessage(
+            ord=2,
+            role="narrator",
+            content="Evan studies the audit packet and admits the memo matters.",
+            options=[],
+            npc_pulse=[NPCPulse(npc_id="evan", state="cornered", shift="wary")],
+        )
+
+    def get_template(self, template_id: str) -> NarrativeTemplateSummary:
+        raise AssertionError(f"unexpected template lookup: {template_id}")
+
+    def start_session(
+        self,
+        template_id: str,
+        *,
+        player_role_index: int | None,
+        turn_budget: int,
+    ) -> StartSessionResponse:
+        raise AssertionError(f"unexpected session start: {template_id} {player_role_index} {turn_budget}")
+
+    def _session(self, session_id: str) -> NarrativeSessionSummary:
+        return NarrativeSessionSummary(
+            session_id=session_id,
+            template_id="tmpl_retry",
+            template_title="Retry",
+            template_seed="retry",
+            player_user_id="local-dev",
+            turn_count=1 if self._advanced else 0,
+            turn_budget=1,
+            difficulty="story",
+            player_role=_player_role(),
+            ending_label="Complete" if self._advanced else None,
+            ending_subtitle="Done" if self._advanced else None,
+            ending_tier="victory" if self._advanced else None,
+            created_at="2026-06-01T00:00:00Z",
+            last_active_at="2026-06-01T00:00:00Z",
+        )
+
+    def get_story(self, session_id: str, *, agent_trace: bool) -> StoryHistoryResponse:
+        del agent_trace
+        messages = [
+            StoryMessage(
+                ord=0,
+                role="narrator",
+                content="The control room goes quiet.",
+                options=_opening_options(),
+                npc_pulse=[NPCPulse(npc_id="evan", state="watching", shift="steady")],
+            )
+        ]
+        if self._advanced:
+            messages.extend([self._player, self._narrator])
+        return StoryHistoryResponse(
+            template=NarrativeTemplateSummary(
+                template_id="tmpl_retry",
+                owner_user_id="usr_owner",
+                seed="retry",
+                title="Retry",
+                cast=_cast(),
+                advisor_persona="A calm strategy coach.",
+                player_goals=[],
+                failure_conditions=[],
+                player_role_options=[_player_role()],
+                visibility="public",
+                language="en",
+                play_count=1,
+                created_at="2026-06-01T00:00:00Z",
+            ),
+            session=self._session(session_id),
+            messages=messages,
+            agent_events=[],
+        )
+
+    def advance_turn(
+        self,
+        session_id: str,
+        payload: AdvanceTurnRequest,
+        *,
+        agent_trace: bool,
+    ) -> AdvanceTurnResponse:
+        del session_id, payload, agent_trace
+        self.advance_calls += 1
+        if self.advance_calls <= self.failures_before_success:
+            raise RuntimeError("POST /turns failed: 502 {\"error\":{\"code\":\"llm_invalid_json\"}}")
+        self._advanced = True
+        return AdvanceTurnResponse(
+            player_message=self._player,
+            narrator_message=self._narrator,
+            is_complete=True,
+        )
+
+
 def test_mock_user_role_selection_and_leverage_action_are_deterministic(tmp_path) -> None:
     repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
     _create_template_and_session(
@@ -413,6 +511,55 @@ def test_mock_user_episode_collects_agent_and_judge_trace_via_api(
     summary_artifact = json.loads(summary_path.read_text())
     assert summary_artifact["trajectory_judge"]["status"] == "pass"
     assert summary_artifact["loop_event_count"] == len(result.action_loop)
+
+
+def test_live_mock_user_retries_transient_turn_failure_once(tmp_path) -> None:
+    trace_path = tmp_path / "retry_episode.jsonl"
+    summary_path = tmp_path / "retry_summary.json"
+    adapter = _TransientTurnFailureAdapter(failures_before_success=1)
+
+    result = run_mock_user_episode(
+        MockUserConfig(
+            session_id="sess_retry",
+            mode="live",
+            turn_budget=1,
+            trace_output_path=str(trace_path),
+            summary_output_path=str(summary_path),
+        ),
+        adapter,
+    )
+
+    assert adapter.advance_calls == 2
+    assert result.summary.runtime_retry_count == 1
+    retry_events = [event for event in result.action_loop if event.action_type == "runtime_retry"]
+    assert len(retry_events) == 1
+    assert retry_events[0].payload["will_retry"] is True
+    rows = [json.loads(line) for line in trace_path.read_text().splitlines()]
+    assert any(
+        row["record_type"] == "loop_event"
+        and row["payload"]["action_type"] == "runtime_retry"
+        for row in rows
+    )
+    assert json.loads(summary_path.read_text())["summary"]["runtime_retry_count"] == 1
+
+
+def test_live_mock_user_repeated_turn_failure_raises_with_retry_evidence() -> None:
+    adapter = _TransientTurnFailureAdapter(failures_before_success=2)
+
+    with pytest.raises(MockUserRuntimeError) as exc_info:
+        run_mock_user_episode(
+            MockUserConfig(session_id="sess_retry_fail", mode="live", turn_budget=1),
+            adapter,
+        )
+
+    assert adapter.advance_calls == 2
+    assert exc_info.value.session_id == "sess_retry_fail"
+    assert exc_info.value.runtime_retry_count == 1
+    retry_events = [
+        event for event in exc_info.value.action_loop if event.action_type == "runtime_retry"
+    ]
+    assert [event.payload["will_retry"] for event in retry_events] == [True, False]
+    assert "llm_invalid_json" in str(exc_info.value)
 
 
 def test_trajectory_judge_fails_empty_episode() -> None:

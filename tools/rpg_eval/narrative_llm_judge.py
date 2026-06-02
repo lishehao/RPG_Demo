@@ -194,6 +194,25 @@ class LLMJudgeErrorArtifact(BaseModel):
     normalized_payload_summary: dict[str, Any] = Field(default_factory=dict)
 
 
+class RuntimeFailureArtifact(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["runtime_failure.v1"] = "runtime_failure.v1"
+    status: Literal["validation_failed"] = "validation_failed"
+    case_id: str
+    run_mode: Literal["fixture", "live"]
+    session_id: str | None = None
+    error_type: str = Field(min_length=1, max_length=120)
+    message: str = Field(min_length=1, max_length=1200)
+    runtime_retry_count: int = Field(default=0, ge=0)
+    trace_path: str
+    summary_path: str
+    llm_input_path: str
+    llm_result_path: str
+    deterministic_summary: dict[str, Any]
+    safe_context: dict[str, Any] = Field(default_factory=dict)
+
+
 class LLMJudgeInputPackage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -225,6 +244,7 @@ class NarrativeCaseJudgeReport(BaseModel):
     llm_judge: LLMJudgeResult | None = None
     llm_judge_error: LLMJudgeErrorArtifact | None = None
     llm_consistency: LLMJudgeConsistencyCheck | None = None
+    runtime_error: RuntimeFailureArtifact | None = None
 
 
 class NarrativeJudgeAggregate(BaseModel):
@@ -623,6 +643,100 @@ def _llm_judge_error_artifact(
     )
 
 
+def _default_runtime_failure_summary(runtime_retry_count: int) -> dict[str, Any]:
+    return {
+        "turn_count": 0,
+        "completed_turn_budget": False,
+        "ending_detected": False,
+        "step_status_counts": {},
+        "contract_status_counts": {},
+        "trajectory_status": "missing",
+        "trajectory_check_counts": {},
+        "repeated_violation_codes": {},
+        "runtime_retry_count": runtime_retry_count,
+        "recommendations": ["runtime failure prevented complete mock-user episode"],
+    }
+
+
+def _runtime_failure_artifact(
+    *,
+    case: GoldCaseSpec,
+    run_mode: Literal["fixture", "live"],
+    error: BaseException,
+    trace_path: Path,
+    summary_path: Path,
+    llm_input_path: Path,
+    llm_result_path: Path,
+) -> RuntimeFailureArtifact:
+    session_id = getattr(error, "session_id", None)
+    runtime_retry_count = int(getattr(error, "runtime_retry_count", 0) or 0)
+    return RuntimeFailureArtifact(
+        case_id=case.case_id,
+        run_mode=run_mode,
+        session_id=session_id,
+        error_type=type(error).__name__,
+        message=_clip(str(error), limit=1200),
+        runtime_retry_count=runtime_retry_count,
+        trace_path=str(trace_path),
+        summary_path=str(summary_path),
+        llm_input_path=str(llm_input_path),
+        llm_result_path=str(llm_result_path),
+        deterministic_summary=_default_runtime_failure_summary(runtime_retry_count),
+        safe_context={
+            "template_id": case.runtime.template_id,
+            "configured_session_id": case.runtime.session_id,
+            "policy": case.mock_user.policy,
+            "turn_budget": case.mock_user.turn_budget,
+        },
+    )
+
+
+def _write_runtime_failure_artifacts(
+    *,
+    failure: RuntimeFailureArtifact,
+    error: BaseException,
+    trace_path: Path,
+    summary_path: Path,
+    llm_input_path: Path,
+    llm_result_path: Path,
+) -> None:
+    loop_events = list(getattr(error, "action_loop", []) or [])
+    trace_rows: list[dict[str, Any]] = []
+    for event in loop_events:
+        if hasattr(event, "model_dump"):
+            trace_rows.append(
+                {
+                    "record_type": "loop_event",
+                    "schema_version": event.schema_version,
+                    "session_id": failure.session_id,
+                    "payload": event.model_dump(mode="json"),
+                }
+            )
+    trace_rows.append(
+        {
+            "record_type": "runtime_failure",
+            "schema_version": failure.schema_version,
+            "session_id": failure.session_id,
+            "payload": failure.model_dump(mode="json"),
+        }
+    )
+    trace_path.parent.mkdir(parents=True, exist_ok=True)
+    trace_path.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False) for row in trace_rows) + "\n",
+        encoding="utf-8",
+    )
+    _write_json(summary_path, failure)
+    _write_json(
+        llm_input_path,
+        {
+            "schema_version": "llm_judge_input_unavailable.v1",
+            "reason": "runtime_failure",
+            "runtime_failure": failure.model_dump(mode="json"),
+        },
+    )
+    _write_json(llm_result_path, failure)
+
+
 def build_llm_judge_input(
     *,
     case: GoldCaseSpec,
@@ -686,6 +800,7 @@ def build_llm_judge_input(
             "trajectory_status": result.summary.trajectory_status,
             "trajectory_check_counts": result.summary.trajectory_check_counts,
             "repeated_violation_codes": result.summary.repeated_violation_codes,
+            "runtime_retry_count": result.summary.runtime_retry_count,
             "recommendations": result.summary.recommendations,
         },
         turn_evidence=turn_evidence,
@@ -920,6 +1035,8 @@ def _llm_score_consistency(
 
 
 def _report_status(cases: list[NarrativeCaseJudgeReport]) -> RunReportStatus:
+    if any(case.runtime_error is not None for case in cases):
+        return "validation_failed"
     if any(case.llm_judge_error is not None for case in cases):
         return "validation_failed"
     return _combine_statuses([case.status for case in cases])
@@ -949,7 +1066,12 @@ def _aggregate(cases: list[NarrativeCaseJudgeReport]) -> NarrativeJudgeAggregate
         disagreement_count=sum(1 for case in cases if case.disagreement),
         gates={
             "gold_set_loaded": bool(cases),
-            "mock_user_runs_completed": all(case.deterministic_summary.get("turn_count", 0) > 0 for case in cases),
+            "runtime_completed": all(case.runtime_error is None for case in cases),
+            "mock_user_runs_completed": all(
+                case.runtime_error is None
+                and case.deterministic_summary.get("turn_count", 0) > 0
+                for case in cases
+            ),
             "deterministic_evidence_present": all(case.deterministic_status in {"pass", "warn", "fail"} for case in cases),
             "llm_judge_present": all(
                 case.llm_judge is not None and case.llm_judge.schema_version == "llm_judge.v1"
@@ -1025,7 +1147,44 @@ def run_gold_set_evaluation(
             template_override=template_override,
         )
         adapter, config = _adapter_for_case(config, resolved_mode)
-        episode = run_mock_user_episode(config, adapter)
+        try:
+            episode = run_mock_user_episode(config, adapter)
+        except Exception as exc:
+            runtime_failure = _runtime_failure_artifact(
+                case=case,
+                run_mode=resolved_mode,
+                error=exc,
+                trace_path=trace_path,
+                summary_path=summary_path,
+                llm_input_path=llm_input_path,
+                llm_result_path=llm_result_path,
+            )
+            _write_runtime_failure_artifacts(
+                failure=runtime_failure,
+                error=exc,
+                trace_path=trace_path,
+                summary_path=summary_path,
+                llm_input_path=llm_input_path,
+                llm_result_path=llm_result_path,
+            )
+            case_reports.append(
+                NarrativeCaseJudgeReport(
+                    case_id=case.case_id,
+                    name=case.name,
+                    run_mode=resolved_mode,
+                    deterministic_status="fail",
+                    llm_status="fail",
+                    status="fail",
+                    disagreement=True,
+                    trace_path=str(trace_path),
+                    summary_path=str(summary_path),
+                    llm_input_path=str(llm_input_path),
+                    llm_result_path=str(llm_result_path),
+                    deterministic_summary=runtime_failure.deterministic_summary,
+                    runtime_error=runtime_failure,
+                )
+            )
+            continue
         write_episode_trace(episode, trace_path)
         write_episode_summary(episode, summary_path)
         package = build_llm_judge_input(case=case, result=episode)

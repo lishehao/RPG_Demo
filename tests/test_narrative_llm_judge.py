@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 from rpg_backend.responses_transport import ResponsesJSONResponse
+from tools.rpg_eval import narrative_llm_judge as judge_module
 from tools.rpg_eval.narrative_llm_judge import (
     DEFAULT_GOLD_SET,
     LLMJudgeInputPackage,
@@ -14,6 +15,7 @@ from tools.rpg_eval.narrative_llm_judge import (
     load_gold_set,
     run_gold_set_evaluation,
 )
+from tools.rpg_eval.narrative_mock_user import AgentLoopEvent, MockUserRuntimeError
 
 
 class _StaticJudgeGateway:
@@ -114,6 +116,62 @@ def test_gold_set_runner_produces_report_and_artifacts(tmp_path: Path) -> None:
     assert Path(case.llm_input_path).exists()
     assert Path(case.llm_result_path).exists()
     assert "Proof that Evan signed the side letter first" not in Path(case.llm_input_path).read_text()
+
+
+def test_gold_set_runner_writes_report_for_runtime_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise_runtime_failure(*args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        raise MockUserRuntimeError(
+            "turn 1 advance failed: POST /turns failed: 502 llm_invalid_json",
+            session_id="sess_runtime_fail",
+            action_loop=[
+                AgentLoopEvent(
+                    event_index=0,
+                    turn_index=1,
+                    action_type="runtime_retry",
+                    summary="Retry live turn after transient runtime error.",
+                    payload={
+                        "attempt": 1,
+                        "will_retry": True,
+                        "max_retries": 1,
+                        "error_type": "RuntimeError",
+                        "message": "502 llm_invalid_json",
+                    },
+                )
+            ],
+            runtime_retry_count=1,
+        )
+
+    monkeypatch.setattr(judge_module, "run_mock_user_episode", _raise_runtime_failure)
+    output = tmp_path / "report.json"
+
+    report = run_gold_set_evaluation(
+        gold_set_path=DEFAULT_GOLD_SET,
+        output_path=output,
+        mode="fixture",
+        llm_judge_mode="fake",
+    )
+
+    assert output.exists()
+    assert report.status == "validation_failed"
+    assert report.aggregate.gates["runtime_completed"] is False
+    assert report.aggregate.gates["mock_user_runs_completed"] is False
+    case = report.cases[0]
+    assert case.runtime_error is not None
+    assert case.runtime_error.status == "validation_failed"
+    assert case.runtime_error.session_id == "sess_runtime_fail"
+    assert case.runtime_error.runtime_retry_count == 1
+    assert case.deterministic_summary["runtime_retry_count"] == 1
+    assert Path(case.trace_path).exists()
+    assert Path(case.summary_path).exists()
+    assert Path(case.llm_input_path).exists()
+    assert Path(case.llm_result_path).exists()
+    trace_rows = [json.loads(line) for line in Path(case.trace_path).read_text().splitlines()]
+    assert [row["record_type"] for row in trace_rows] == ["loop_event", "runtime_failure"]
+    assert json.loads(Path(case.llm_result_path).read_text())["schema_version"] == "runtime_failure.v1"
 
 
 def test_llm_judge_input_includes_deterministic_evidence(tmp_path: Path) -> None:
