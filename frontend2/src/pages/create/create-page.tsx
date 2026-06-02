@@ -241,7 +241,9 @@ export function CreatePage({
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
   }, [])
   const busyLabel =
-    busyElapsedSeconds > 0
+    busyElapsedSeconds >= 45
+      ? t("create.building_checking_elapsed", { seconds: busyElapsedSeconds })
+      : busyElapsedSeconds > 0
       ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
       : t("create.building_label")
   const busyStageIndex = Math.min(
@@ -408,6 +410,7 @@ export function CreatePage({
               value={seed}
               onChange={(e) => {
                 setSeed(e.target.value)
+                setError(null)
                 setBriefResponse(null)
                 setBriefResponseKey(null)
                 setBriefError(null)

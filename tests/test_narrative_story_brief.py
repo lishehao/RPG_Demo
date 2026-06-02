@@ -263,6 +263,29 @@ def test_story_brief_fantasy_eclipse_keeps_factions_and_pressure() -> None:
     assert all("time pressure" not in warning.lower() for warning in response.brief.warnings)
 
 
+def test_story_brief_filters_tone_phrase_from_fantasy_cast() -> None:
+    response = build_story_brief(
+        seed=(
+            "In a floating dragon library, a shy apprentice spellbook, ink sprites, sky pirates, "
+            "the Archivist Guild, moon-oracle librarians, and a banished dragon clan argue over "
+            "a missing star map before an eclipse in three hours. Keep it fantastical, tense but "
+            "playful, and make the eclipse the time pressure."
+        ),
+        language="en",
+    )
+
+    names = {name.lower() for name in _cast_names(response)}
+    tone = {item.label.lower() for item in response.brief.tone_constraints}
+
+    assert "tense but playful" not in names
+    assert "it fantastical" not in names
+    assert "shy apprentice spellbook" in names
+    assert "ink sprites" in names
+    assert "sky pirates" in names
+    assert "banished dragon clan" in names
+    assert "tense but playful" in tone
+
+
 def test_story_brief_separates_negated_constraints_minutes_and_settings_from_cast() -> None:
     response = build_story_brief(
         seed=(
@@ -291,6 +314,29 @@ def test_story_brief_separates_negated_constraints_minutes_and_settings_from_cas
     assert "mars colony" in settings
     assert "mars setting" not in settings
     assert "colony setting" not in settings
+
+
+def test_story_brief_filters_small_cast_exclusions_from_focus() -> None:
+    response = build_story_brief(
+        seed=(
+            "A quiet two-person laundromat story with no villains: one customer and one attendant "
+            "try to find a lost wedding ring without conflict, betrayal, or public pressure."
+        ),
+        language="en",
+    )
+
+    names = {name.lower() for name in _cast_names(response)}
+    constraints = {item.label.lower() for item in response.brief.constraints}
+
+    assert response.can_generate is False
+    assert response.brief.runtime_fit_status == "not_fit"
+    assert "customer" in names
+    assert "attendant" in names
+    assert "betrayal" not in names
+    assert "or public pressure" not in names
+    assert "no villains: one customer" not in names
+    assert "no villains" in constraints
+    assert "avoid public pressure" in constraints
 
 
 def test_story_brief_warns_when_comedy_premise_has_life_or_death_stakes() -> None:

@@ -68,7 +68,7 @@ const STATUS_FALLBACKS_EN: Record<number, string> = {
 }
 
 const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
-  llm_invalid_json: "AI 一时短路了，再点一次就行。",
+  llm_invalid_json: "模型返回的故事格式坏了。可以重试，或先用 Brief 简化实体/约束再生成。",
   llm_provider_failed: "AI 服务暂时不在线，稍等再试。",
   llm_invalid_response: "AI 回了个空白，再试一次。",
   turn_invalid: "故事一时接不上你那一步——换个动作或稍等再试。",
@@ -83,14 +83,14 @@ const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
   no_narrator: "上一段叙述丢了，刷新一下试试。",
   turn_already_advanced: "这一段已经走过了，刷新一下接着玩。",
   llm_unavailable: "AI 服务还没配置，请联系站点维护人。",
-  opening_invalid: "AI 给的开场没法用——换个种子再试。",
+  opening_invalid: "模型返回的开场数据没法用。可以重试，或生成一个更简单、约束更少的开场。",
   opening_prompt_shape_mismatch: "这个开头还不太适合当前运行时。试试 3 个以上人物、一个公开冲突、一个秘密/争夺物，再加一点时间压力。",
   opening_brief_consistency_failed: "生成的开场没能兑现这张 Brief。试着减少必须出现的实体、放宽代表对象，或把喜剧/温和故事的风险降到道具、误会、社交压力。",
   advisor_invalid: "顾问没说出有效的话，再问一次。",
 }
 
 const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
-  llm_invalid_json: "The AI hiccuped — just click again.",
+  llm_invalid_json: "The model returned malformed story data. Try again, or simplify the Brief before generating.",
   llm_provider_failed: "AI service is briefly offline. Try again shortly.",
   llm_invalid_response: "The AI returned a blank. Try again.",
   turn_invalid: "The story can't pick up from that move — try a different action, or wait and retry.",
@@ -105,7 +105,7 @@ const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
   no_narrator: "Lost the previous narration. Try a refresh.",
   turn_already_advanced: "This turn already moved forward. Refresh to continue.",
   llm_unavailable: "AI service isn't configured. Contact the site maintainer.",
-  opening_invalid: "The AI's opening isn't usable — try a different seed.",
+  opening_invalid: "The model returned unusable opening data. Try again, or generate a simpler opening with fewer constraints.",
   opening_prompt_shape_mismatch: "This premise does not fit the current runtime yet. Try 3+ people, one public conflict, one secret or contested object, and time pressure.",
   opening_brief_consistency_failed: "The opening could not satisfy this Brief yet. Try reducing required entities, relaxing represented factions, or lowering comedy/cozy stakes to props, misunderstandings, and social pressure.",
   advisor_invalid: "The advisor didn't say anything usable. Ask again.",

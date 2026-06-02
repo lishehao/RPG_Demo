@@ -152,7 +152,7 @@ _LIST_MARKER_RE = re.compile(
 )
 _ENTITY_TRAILING_RE = re.compile(
     r"\b(?:argue|argues|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
-    r"handle|handles|represent|represents|should|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
+    r"handle|handles|represent|represents|should|try|tries|find|finds|without|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
     re.I,
 )
 _ENTITY_LEADING_NOISE_RE = re.compile(
@@ -183,6 +183,16 @@ _NON_ENTITY_EXACT = {
     "minutes",
     "no violence",
     "no betrayal",
+    "no villains",
+    "betrayal",
+    "public pressure",
+    "or public pressure",
+    "conflict",
+    "tense but playful",
+    "fantastical",
+    "playful",
+    "funny",
+    "cozy",
     "move",
     "add",
     "lower",
@@ -192,6 +202,17 @@ _NON_ENTITY_EXACT = {
     "ensure",
     "represent",
     "planner",
+    "without",
+    "villains",
+    "villain",
+    "conflict",
+    "betrayal",
+    "pressure",
+    "tense",
+    "playful",
+    "fantastical",
+    "funny",
+    "style",
 }
 _NON_ENTITY_WORDS = {
     "tone",
@@ -549,6 +570,7 @@ def _extract_entities(seed: str) -> list[str]:
 
 
 def _entity_source_parts(seed: str) -> list[str]:
+    seed = _strip_entity_exclusion_segments(seed)
     parts: list[str] = []
     for match in _LIST_MARKER_RE.finditer(seed):
         parts.append(seed[match.end() :])
@@ -560,9 +582,11 @@ def _entity_source_parts(seed: str) -> list[str]:
 
 def _clean_entity(raw: str) -> str:
     text = re.sub(r"\([^)]*\)", "", raw).strip(" .!?\"'“”‘’")
+    text = re.sub(r"^\s*no\s+villains?\s*:\s*", "", text, flags=re.I)
     text = _LIST_MARKER_RE.sub("", text)
     text = _ENTITY_LEADING_NOISE_RE.sub("", text)
-    text = re.sub(r"\b(the|a|an|with|featuring|including|departments?|factions?|cast)\b", "", text, flags=re.I)
+    text = re.sub(r"\b(the|a|an|one|with|featuring|including|departments?|factions?|cast)\b", "", text, flags=re.I)
+    text = re.sub(r"^\s*(?:or|and)\s+", "", text, flags=re.I)
     text = _ENTITY_TRAILING_RE.sub("", text)
     text = " ".join(text.split())
     if not text:
@@ -756,6 +780,20 @@ def _constraint_dispositions(
 
 def _constraint_items(seed: str) -> list[StoryBriefPlanItem]:
     items = [StoryBriefPlanItem(label="core premise", rationale="Preserved as the main premise to adapt.")]
+    if re.search(r"\bno villains?\b", seed, re.I):
+        items.append(
+            StoryBriefPlanItem(
+                label="no villains",
+                rationale="Preserved as an exclusion; it should not become active cast.",
+            )
+        )
+    if re.search(r"\bwithout\b[^.!?;]*\bpublic pressure\b", seed, re.I):
+        items.append(
+            StoryBriefPlanItem(
+                label="avoid public pressure",
+                rationale="Preserved as a low-pressure constraint; it should not become active cast.",
+            )
+        )
     for pattern, label in _NEGATED_CONSTRAINT_PATTERNS:
         if re.search(pattern, seed, re.I):
             items.append(
@@ -811,6 +849,10 @@ def _tone_constraint_items(seed: str, profile: TensionProfile) -> list[StoryBrie
         items.append(StoryBriefPlanItem(label="avoid betrayal", rationale="Keep this as a tone constraint."))
     if re.search(r"\bno violence\b", seed, re.I):
         items.append(StoryBriefPlanItem(label="avoid violence", rationale="Keep this as a tone constraint."))
+    if re.search(r"\btense but playful\b", seed, re.I):
+        items.append(StoryBriefPlanItem(label="tense but playful", rationale="Keep this as tone guidance, not active cast."))
+    if re.search(r"\bkeep it\b[^.!?;]*\b(?:funny|cozy|playful|fantastical)\b", seed, re.I):
+        items.append(StoryBriefPlanItem(label="tone/style guidance", rationale="Treat `keep it` wording as tone guidance, not cast."))
     return _dedupe_plan_items(items)[:10]
 
 
@@ -953,6 +995,13 @@ def _strip_planner_note_lines(seed: str) -> str:
     return "\n".join(kept)
 
 
+def _strip_entity_exclusion_segments(seed: str) -> str:
+    text = re.sub(r"\bwithout\b[^.!?;]*", "", seed, flags=re.I)
+    text = re.sub(r"\bkeep it\b[^.!?;]*", "", text, flags=re.I)
+    text = re.sub(r"\bmake it\b[^.!?;]*", "", text, flags=re.I)
+    return text
+
+
 def _canonical_entity_key(value: str) -> str:
     cleaned = _ENTITY_LEADING_NOISE_RE.sub("", value).lower()
     cleaned = re.sub(r"\bconcerns?\b", "", cleaned)
@@ -1023,6 +1072,8 @@ def _emphasized_entity_names(seed: str) -> list[str]:
     for pattern in _EMPHASIS_ENTITY_PATTERNS:
         for match in pattern.finditer(entity_seed):
             segment = re.sub(r"\bconcerns?\b", "", match.group(1), flags=re.I)
+            if re.match(r"\s*it\b", segment, re.I):
+                continue
             for raw in _ENTITY_SPLIT_RE.split(segment):
                 candidate = _clean_entity(raw)
                 if candidate:

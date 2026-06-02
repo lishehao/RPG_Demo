@@ -12,6 +12,8 @@ from rpg_backend.narrative.contracts import (
     CastMember,
     CreateTemplateRequest,
     PlayerRole,
+    StoryBriefConsistencyCheck,
+    StoryBriefConsistencyViolation,
     StoryMessage,
     StoryOption,
 )
@@ -369,7 +371,7 @@ def test_create_template_retries_mars_brief_contract_feedback(
     assert response.story_brief_consistency.status == "pass"
 
 
-def test_create_template_brief_consistency_failure_is_user_actionable_422(
+def test_create_template_uses_brief_fallback_after_repeated_consistency_failure(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -426,6 +428,154 @@ def test_create_template_brief_consistency_failure_is_user_actionable_422(
         )()
 
     monkeypatch.setattr(narrative_service_module, "generate_opening", fake_generate_opening)
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    assert response.story_brief_consistency is not None
+    assert response.story_brief_consistency.status == "pass"
+    assert "Theatre Club" in response.opening.content
+    assert "Earth Media" in response.opening.content
+    assert "backup oxygen tank" not in response.opening.content
+    assert response.template.player_role_options
+
+
+def test_create_template_uses_brief_fallback_after_opening_parse_failure(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    brief = build_story_brief(
+        seed=(
+            "In a floating dragon library, a shy apprentice spellbook, ink sprites, sky pirates, "
+            "the Archivist Guild, moon-oracle librarians, and a banished dragon clan argue over "
+            "a missing star map before an eclipse in three hours. Keep it fantastical, tense but "
+            "playful, and make the eclipse the time pressure."
+        ),
+        language="en",
+    ).brief
+
+    def fake_generate_opening(**_: object) -> object:
+        raise ValueError("Expecting ',' delimiter")
+
+    monkeypatch.setattr(narrative_service_module, "generate_opening", fake_generate_opening)
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    assert response.story_brief_consistency is not None
+    assert response.story_brief_consistency.status == "pass"
+    assert "已经" not in response.opening.content
+    assert "eclipse" in response.opening.content.lower()
+    assert "shy apprentice spellbook" in response.opening.content
+    assert response.session.session_id
+
+
+def test_create_template_cozy_fit_prompt_can_fallback_to_playable_opening(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    brief = build_story_brief(
+        seed=(
+            "At a neighborhood bake sale, the PTA treasurer, a teen volunteer, "
+            "a tired parent, and the cupcake judge argue over a missing recipe card "
+            "before judging starts. Keep it cozy and funny: no blackmail, no betrayal, "
+            "only misunderstandings, embarrassment, and a callback joke."
+        ),
+        language="en",
+    ).brief
+
+    def fake_generate_opening(**_: object) -> object:
+        raise ValueError("missing or non-string field: opening_passage")
+
+    monkeypatch.setattr(narrative_service_module, "generate_opening", fake_generate_opening)
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    assert response.story_brief_consistency is not None
+    assert response.story_brief_consistency.status == "pass"
+    assert "PTA treasurer" in response.opening.content
+    assert "cupcake judge" in response.opening.content
+    assert response.opening.options
+    assert response.session.session_id
+
+
+def test_create_template_brief_consistency_failure_is_user_actionable_422(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    brief = build_story_brief(
+        seed=(
+            "On Mars colony, a lower-stakes comedy talent show involves Hydroponics, "
+            "Security, Theatre Club, and Earth Media before the final broadcast; no violence."
+        ),
+        language="en",
+        desired_tension_profile="comedy",
+    ).brief
+
+    def fake_generate_opening(**_: object) -> object:
+        return type(
+            "Opening",
+            (),
+            {
+                "title": "Oxygen Heist",
+                "advisor_persona": "A crisis aide calls from the airlock.",
+                "cast": [
+                    CastMember(
+                        character_id="hydroponics",
+                        display_name="Hydroponics",
+                        role="department",
+                        relation_to_protagonist="Part of the emergency.",
+                    )
+                ],
+                "opening_message": StoryMessage(
+                    ord=0,
+                    role="narrator",
+                    content="Hydroponics argues over a backup oxygen tank.",
+                    options=[StoryOption(label="Ask about the tank", hint="Crisis", handle="ask")],
+                ),
+                "player_goals": [],
+                "failure_conditions": [],
+                "player_role_options": [
+                    PlayerRole(
+                        role_id="producer",
+                        label="Producer",
+                        public_persona="The producer caught in the airlock crisis.",
+                        hidden_objective="Find the tank.",
+                    )
+                ],
+            },
+        )()
+
+    def always_fail_check(**_: object) -> StoryBriefConsistencyCheck:
+        return StoryBriefConsistencyCheck(
+            status="fail",
+            should_retry=False,
+            summary="Forced failure for actionable error mapping.",
+            violations=[
+                StoryBriefConsistencyViolation(
+                    code="brief_emphasized_entity_absent",
+                    severity="fail",
+                    rationale="Required entities are absent.",
+                    evidence=["Theatre Club", "Earth Media"],
+                )
+            ],
+        )
+
+    monkeypatch.setattr(narrative_service_module, "generate_opening", fake_generate_opening)
+    monkeypatch.setattr(narrative_service_module, "check_story_brief_opening_consistency", always_fail_check)
     repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
     service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
 

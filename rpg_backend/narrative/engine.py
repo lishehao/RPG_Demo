@@ -746,6 +746,7 @@ def generate_opening(
     language: TemplateLanguage = "en",
     story_brief: StoryBrief | None = None,
     brief_consistency_feedback: str | None = None,
+    max_attempts: int = 3,
 ) -> OpeningResult:
     """Generate world opening. Retries on JSON / shape failure or sparse
     inter-NPC leverage network (LLM is consistently conservative on
@@ -759,7 +760,8 @@ def generate_opening(
     last_error: Exception | None = None
     feedback: str | None = None
     last_result: OpeningResult | None = None
-    for attempt in range(3):
+    max_attempts = max(1, max_attempts)
+    for attempt in range(max_attempts):
         try:
             result = _generate_opening_once(
                 gateway,
@@ -772,7 +774,7 @@ def generate_opening(
             # Density check — count inter-NPC leverages across cast.
             edges = sum(len(c.leverages_over_other_npcs) for c in result.cast)
             required = _required_inter_leverage_edges(len(result.cast))
-            if edges < required and attempt < 2:
+            if edges < required and attempt < max_attempts - 1:
                 # Save for fallback (in case the next attempt errors out
                 # entirely — better to ship a sparse network than fail).
                 last_result = result
