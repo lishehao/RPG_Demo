@@ -4,7 +4,9 @@ import pytest
 
 from rpg_backend.author_v2.contracts import BoundIPCastMember, CompiledPlayPlan, CompiledSegment
 from rpg_backend.author_v3.quality_evaluator import QualityReport
+from rpg_backend.author_v3.tension_weaver import TensionWeaverError
 from rpg_backend.author_v3.workflow import run_author_v3_pipeline
+import rpg_backend.author_v3.workflow as workflow_module
 
 
 @pytest.fixture
@@ -115,6 +117,40 @@ class TestPipelineResults:
 
     def test_storylet_pool_present(self, pipeline_result: dict) -> None:
         assert "storylet_pool" in pipeline_result
+
+    def test_live_tension_weaver_error_falls_back_to_deterministic_stage(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        original_forge_world = workflow_module.forge_world
+        original_weave_secrets = workflow_module.weave_secrets
+        original_compile_storylet_pool = workflow_module.compile_storylet_pool
+        original_evaluate_quality = workflow_module.evaluate_quality
+
+        monkeypatch.setattr(workflow_module, "get_author_v3_llm_gateway", lambda *_args, **_kwargs: object())
+        monkeypatch.setattr(
+            workflow_module,
+            "forge_world",
+            lambda seed_text, **_kwargs: original_forge_world(seed_text, gateway=None),
+        )
+
+        def _weave_with_live_failure(config, matrix, *, gateway=None, max_rounds=2, threshold=0.6):  # noqa: ANN001, ANN202
+            if gateway is not None:
+                raise TensionWeaverError("llm_bad_secrets", "expected >=2 secrets, got 0")
+            return original_weave_secrets(config, matrix, gateway=None, max_rounds=max_rounds, threshold=threshold)
+
+        monkeypatch.setattr(workflow_module, "weave_secrets", _weave_with_live_failure)
+        monkeypatch.setattr(
+            workflow_module,
+            "compile_storylet_pool",
+            lambda config, web, matrix, **_kwargs: original_compile_storylet_pool(config, web, matrix, gateway=None),
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "evaluate_quality",
+            lambda config, web, pool, matrix, **_kwargs: original_evaluate_quality(config, web, pool, matrix, gateway=None),
+        )
+
+        result = workflow_module.run_author_v3_pipeline("董事会权力斗争", run_mode="live_deepseek_v4_flash")
+
+        assert len(result["plan"].organic_secrets or []) >= 2
 
 
 class TestArcVariants:

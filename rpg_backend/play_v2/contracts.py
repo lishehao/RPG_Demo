@@ -448,6 +448,7 @@ class UrbanWorldState(BaseModel):
 
     session_id: str = Field(min_length=1)
     story_id: str = Field(min_length=1)
+    session_response_id: str | None = Field(default=None, max_length=200)
     status: Literal["active", "completed", "expired"] = "active"
     turn_index: int = Field(default=0, ge=0)
     segment_index: int = Field(default=0, ge=0)

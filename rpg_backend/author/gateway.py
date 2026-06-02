@@ -47,7 +47,7 @@ class AuthorLLMGateway:
                 use_session_cache=self.use_session_cache,
                 temperature=0.2,
                 enable_thinking=False,
-                explicit_disable_thinking=self.model.startswith("qwen"),
+                explicit_disable_thinking=self.model.startswith("deepseek"),
                 json_content_type_hint=self.json_content_type_hint,
                 json_object_prompt_only=self.json_object_prompt_only,
                 provider_failed_code="llm_provider_failed",
@@ -109,19 +109,11 @@ def get_author_llm_gateway(settings: Settings | None = None) -> AuthorLLMGateway
         session_cache_header=resolved.responses_session_cache_header,
         session_cache_value=resolved.responses_session_cache_value,
         requests_per_minute=(
-            int(resolved.responses_author_qwen_requests_per_minute)
-            if resolved.responses_author_qwen_requests_per_minute is not None and model.startswith("qwen")
-            else (
-                int(resolved.responses_author_requests_per_minute)
-                if resolved.responses_author_requests_per_minute is not None
-                else None
-            )
+            int(resolved.responses_author_requests_per_minute)
+            if resolved.responses_author_requests_per_minute is not None
+            else None
         ),
-        rate_limit_scope=(
-            "author:qwen"
-            if model.startswith("qwen")
-            else ("author" if resolved.responses_author_requests_per_minute is not None else None)
-        ),
+        rate_limit_scope=("author" if resolved.responses_author_requests_per_minute is not None else None),
         chat_json_stream_mode=resolved.responses_chat_json_stream_mode,
         chat_json_stream_hosts=resolved.responses_chat_json_stream_host_list(),
     )

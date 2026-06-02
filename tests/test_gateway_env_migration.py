@@ -5,7 +5,6 @@ from pydantic import ValidationError
 import rpg_backend.author.gateway as author_gateway_module
 import rpg_backend.play.gateway as play_gateway_module
 from rpg_backend.config import Settings
-from tools.play_benchmarks import live_api_playtest
 
 
 def _settings_from_env(monkeypatch, values: dict[str, str]) -> Settings:
@@ -123,15 +122,15 @@ def test_helper_slots_override_legacy_helper_and_preserve_order(monkeypatch) -> 
         {
             "APP_HELPER_GATEWAY_BASE_URL": "https://helper-legacy.example/v1",
             "APP_HELPER_GATEWAY_API_KEY": "helper-legacy-key",
-            "APP_HELPER_GATEWAY_MODEL": "gpt-5.4-mini",
+            "APP_HELPER_GATEWAY_MODEL": "deepseek-v4-flash",
             "APP_HELPER_SLOT_1_BASE_URL": "https://helper-1.example/v1",
             "APP_HELPER_SLOT_1_API_KEY": "helper-1-key",
-            "APP_HELPER_SLOT_1_MODEL": "gpt-5.4-mini",
+            "APP_HELPER_SLOT_1_MODEL": "deepseek-v4-flash",
             "APP_HELPER_SLOT_1_WEIGHT": "2.0",
             "APP_HELPER_SLOT_1_ROLE": "backup",
             "APP_HELPER_SLOT_2_BASE_URL": "https://helper-2.example/v1",
             "APP_HELPER_SLOT_2_API_KEY": "helper-2-key",
-            "APP_HELPER_SLOT_2_MODEL": "gpt-5.4-mini",
+            "APP_HELPER_SLOT_2_MODEL": "deepseek-v4-flash",
             "APP_HELPER_SLOT_2_ROLE": "primary",
         },
     )
@@ -145,7 +144,7 @@ def test_helper_slots_override_legacy_helper_and_preserve_order(monkeypatch) -> 
     assert endpoints[1].weight == 2.0
     assert settings.resolved_helper_responses_base_url() == "https://helper-2.example/v1"
     assert settings.resolved_helper_responses_api_key() == "helper-2-key"
-    assert settings.resolved_helper_responses_model() == "gpt-5.4-mini"
+    assert settings.resolved_helper_responses_model() == "deepseek-v4-flash"
 
 
 def test_helper_api_key_pool_supports_csv_and_dedup(monkeypatch) -> None:
@@ -154,7 +153,7 @@ def test_helper_api_key_pool_supports_csv_and_dedup(monkeypatch) -> None:
         {
             "APP_HELPER_SLOT_2_BASE_URL": "https://helper-2.example/v1",
             "APP_HELPER_SLOT_2_API_KEY": "helper-2-key",
-            "APP_HELPER_SLOT_2_MODEL": "gpt-5.4-mini",
+            "APP_HELPER_SLOT_2_MODEL": "deepseek-v4-flash",
             "APP_HELPER_SLOT_2_ROLE": "primary",
             "APP_HELPER_RESPONSES_API_KEYS": " key-a, key-b ; key-a\nkey-c ",
         },
@@ -169,7 +168,7 @@ def test_responses_api_key_pool_supports_csv_and_dedup(monkeypatch) -> None:
         {
             "APP_RESPONSES_BASE_URL": "https://responses.example/v1",
             "APP_RESPONSES_API_KEY": "responses-key-default",
-            "APP_RESPONSES_MODEL": "gpt-5.4-mini",
+            "APP_RESPONSES_MODEL": "deepseek-v4-flash",
             "APP_RESPONSES_API_KEYS": " key-a, key-b ; key-a\nkey-c ",
         },
     )
@@ -183,10 +182,10 @@ def test_author_api_key_pool_falls_back_to_author_then_generic(monkeypatch) -> N
         {
             "APP_RESPONSES_BASE_URL": "https://responses.example/v1",
             "APP_RESPONSES_API_KEY": "generic-key",
-            "APP_RESPONSES_MODEL": "gpt-5.4-mini",
+            "APP_RESPONSES_MODEL": "deepseek-v4-flash",
             "APP_RESPONSES_AUTHOR_BASE_URL": "https://author.example/v1",
             "APP_RESPONSES_AUTHOR_API_KEY": "author-key",
-            "APP_RESPONSES_AUTHOR_MODEL": "gpt-5.4-mini",
+            "APP_RESPONSES_AUTHOR_MODEL": "deepseek-v4-flash",
         },
     )
 
@@ -199,7 +198,7 @@ def test_helper_api_key_pool_falls_back_to_primary_key(monkeypatch) -> None:
         {
             "APP_HELPER_SLOT_2_BASE_URL": "https://helper-2.example/v1",
             "APP_HELPER_SLOT_2_API_KEY": "helper-2-key",
-            "APP_HELPER_SLOT_2_MODEL": "gpt-5.4-mini",
+            "APP_HELPER_SLOT_2_MODEL": "deepseek-v4-flash",
             "APP_HELPER_SLOT_2_ROLE": "primary",
         },
     )
@@ -213,7 +212,7 @@ def test_play_api_key_pool_supports_csv_and_dedup(monkeypatch) -> None:
         {
             "APP_RESPONSES_PLAY_BASE_URL": "https://play.example/v1",
             "APP_RESPONSES_PLAY_API_KEY": "play-key-default",
-            "APP_RESPONSES_PLAY_MODEL": "gpt-5.4-mini",
+            "APP_RESPONSES_PLAY_MODEL": "deepseek-v4-flash",
             "APP_RESPONSES_PLAY_API_KEYS": " key-a, key-b ; key-a\nkey-c ",
         },
     )
@@ -227,7 +226,7 @@ def test_play_api_key_pool_falls_back_to_play_key(monkeypatch) -> None:
         {
             "APP_RESPONSES_PLAY_BASE_URL": "https://play.example/v1",
             "APP_RESPONSES_PLAY_API_KEY": "play-key-default",
-            "APP_RESPONSES_PLAY_MODEL": "gpt-5.4-mini",
+            "APP_RESPONSES_PLAY_MODEL": "deepseek-v4-flash",
         },
     )
 
@@ -362,7 +361,7 @@ def test_author_gateway_passes_author_api_key_pool(monkeypatch) -> None:
             "APP_RESPONSES_AUTHOR_BASE_URL": "https://author.example/v1",
             "APP_RESPONSES_AUTHOR_API_KEY": "author-key-a",
             "APP_RESPONSES_AUTHOR_API_KEYS": "author-key-a,author-key-b",
-            "APP_RESPONSES_AUTHOR_MODEL": "gpt-5.4-mini",
+            "APP_RESPONSES_AUTHOR_MODEL": "deepseek-v4-flash",
         },
     )
 
@@ -379,58 +378,10 @@ def test_play_gateway_passes_play_api_key_pool(monkeypatch) -> None:
             "APP_RESPONSES_PLAY_BASE_URL": "https://play.example/v1",
             "APP_RESPONSES_PLAY_API_KEY": "play-key-a",
             "APP_RESPONSES_PLAY_API_KEYS": "play-key-a,play-key-b",
-            "APP_RESPONSES_PLAY_MODEL": "gpt-5.4-mini",
+            "APP_RESPONSES_PLAY_MODEL": "deepseek-v4-flash",
         },
     )
 
     gateway = play_gateway_module.get_play_llm_gateway(settings=settings)
 
     assert gateway.client["api_keys"] == ("play-key-a", "play-key-b")
-
-
-def test_benchmark_playtest_agent_client_uses_resolved_primary_and_helper_envs(monkeypatch) -> None:
-    monkeypatch.setattr(live_api_playtest, "build_openai_client", lambda **kwargs: kwargs)
-    settings = _settings_from_env(
-        monkeypatch,
-        {
-            "APP_GATEWAY_BASE_URL": "https://legacy.example/v1",
-            "APP_GATEWAY_API_KEY": "legacy-key",
-            "APP_GATEWAY_MODEL": "legacy-model",
-            "APP_GATEWAY_PLAY_MODEL": "legacy-play-model",
-            "APP_HELPER_GATEWAY_BASE_URL": "https://helper.example/v1",
-            "APP_HELPER_GATEWAY_API_KEY": "helper-key",
-            "APP_HELPER_GATEWAY_MODEL": "helper-model",
-        },
-    )
-
-    primary = live_api_playtest.PlaytestAgentClient(live_api_playtest.PERSONAS[0], settings=settings)
-    helper = live_api_playtest.PlaytestAgentClient(live_api_playtest.PERSONAS[0], settings=settings, provider="helper")
-
-    assert primary._provider == "primary"
-    assert primary._transport.client["base_url"] == "https://legacy.example/v1"
-    assert primary._transport.model == "legacy-play-model"
-    assert helper._provider == "helper"
-    assert helper._transport.client["base_url"] == "https://helper.example/v1"
-    assert helper._transport.model == "helper-model"
-
-
-def test_benchmark_playtest_agent_client_uses_play_specific_envs(monkeypatch) -> None:
-    monkeypatch.setattr(live_api_playtest, "build_openai_client", lambda **kwargs: kwargs)
-    settings = _settings_from_env(
-        monkeypatch,
-        {
-            "APP_RESPONSES_BASE_URL": "https://generic.example/v1",
-            "APP_RESPONSES_API_KEY": "generic-key",
-            "APP_RESPONSES_MODEL": "generic-model",
-            "APP_RESPONSES_PLAY_BASE_URL": "https://play.example/v1",
-            "APP_RESPONSES_PLAY_API_KEY": "play-key",
-            "APP_RESPONSES_PLAY_MODEL": "play-model",
-        },
-    )
-
-    primary = live_api_playtest.PlaytestAgentClient(live_api_playtest.PERSONAS[0], settings=settings)
-
-    assert primary._provider == "primary"
-    assert primary._transport.client["base_url"] == "https://play.example/v1"
-    assert primary._transport.client["api_key"] == "play-key"
-    assert primary._transport.model == "play-model"

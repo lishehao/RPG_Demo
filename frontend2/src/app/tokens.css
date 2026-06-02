@@ -32,9 +32,9 @@
   --accent-softer: rgba(212, 168, 83, 0.08);
   --warn: #e07a5f;
   --warn-soft: rgba(224, 122, 95, 0.18);
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 22px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
   --font-ui: "Inter", system-ui, -apple-system, sans-serif;
   --font-narrative: "Newsreader", Georgia, "Songti SC", serif;
   --shadow-drawer: -24px 0 60px rgba(0, 0, 0, 0.5);
@@ -50,20 +50,21 @@ input, textarea { font-family: inherit; color: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 22px;
-  padding: 0 10px;
-  border-radius: 999px;
+  height: auto;
+  padding: 0 0 4px;
+  border-radius: 0;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px solid rgba(212, 168, 83, 0.28);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(212, 168, 83, 0.28);
 }
 .ts-tag--muted {
   color: var(--text-muted);
-  background: rgba(255,255,255,0.04);
+  background: transparent;
   border-color: var(--line);
 }
 .ts-btn {
@@ -73,7 +74,7 @@ input, textarea { font-family: inherit; color: inherit; }
   gap: 8px;
   height: 40px;
   padding: 0 18px;
-  border-radius: 10px;
+  border-radius: 7px;
   font-size: 14px;
   font-weight: 500;
   transition: all 160ms ease;
@@ -85,12 +86,33 @@ input, textarea { font-family: inherit; color: inherit; }
   font-weight: 600;
 }
 .ts-btn--primary:hover { background: #e1b969; transform: translateY(-1px); }
+.ts-btn--secondary {
+  height: auto;
+  padding: 5px 0 4px;
+  border-radius: 0;
+  background: transparent;
+  border-color: transparent;
+  border-bottom-color: rgba(212, 168, 83, 0.34);
+  color: rgba(246, 221, 176, 0.92);
+  font-weight: 650;
+}
+.ts-btn--secondary:hover {
+  color: var(--accent);
+  border-bottom-color: rgba(212, 168, 83, 0.56);
+  background: transparent;
+}
 .ts-btn--ghost {
   color: var(--text-muted);
-  border-color: var(--line);
+  border-color: transparent;
+  background: transparent;
 }
-.ts-btn--ghost:hover { color: var(--text); border-color: var(--line-strong); background: rgba(255,255,255,0.02); }
-.ts-btn--lg { height: 48px; padding: 0 24px; font-size: 15px; border-radius: 12px; }
+.ts-btn--ghost:hover { color: var(--text); border-color: transparent; background: transparent; }
+.ts-btn--secondary.ts-btn--lg {
+  height: auto;
+  padding: 7px 0 5px;
+  border-radius: 0;
+}
+.ts-btn--lg { height: 48px; padding: 0 24px; font-size: 15px; border-radius: 7px; }
 
 .ts-link-dashed {
   color: var(--text-muted);

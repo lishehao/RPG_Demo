@@ -89,6 +89,24 @@ def test_shared_transport_usage_normalizer_maps_chat_completions_tokens() -> Non
     assert usage["total_tokens"] == 25
 
 
+def test_shared_transport_usage_normalizer_maps_deepseek_cache_tokens() -> None:
+    usage = usage_to_dict(
+        {
+            "prompt_tokens": 130,
+            "completion_tokens": 20,
+            "prompt_cache_hit_tokens": 96,
+            "prompt_cache_miss_tokens": 34,
+            "total_tokens": 150,
+        }
+    )
+
+    assert usage["input_tokens"] == 130
+    assert usage["output_tokens"] == 20
+    assert usage["total_tokens"] == 150
+    assert usage["cached_input_tokens"] == 96
+    assert usage["cache_miss_input_tokens"] == 34
+
+
 def test_shared_transport_is_single_usage_normalizer_definition() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     matches: list[str] = []
@@ -237,7 +255,7 @@ def test_shared_transport_xcode_defaults_to_json_object_without_schema() -> None
     setattr(client.responses, "_base_url", "https://api.xcode.best/v1")
     transport = ResponsesJSONTransport(
         client=client,  # type: ignore[arg-type]
-        model="gpt-5.4-mini",
+        model="deepseek-v4-flash",
         timeout_seconds=20.0,
         use_session_cache=False,
         temperature=0.2,
@@ -265,7 +283,7 @@ def test_shared_transport_xcode_respects_explicit_json_object() -> None:
     setattr(client.responses, "_base_url", "https://api.xcode.best/v1")
     transport = ResponsesJSONTransport(
         client=client,  # type: ignore[arg-type]
-        model="gpt-5.4-mini",
+        model="deepseek-v4-flash",
         timeout_seconds=20.0,
         use_session_cache=False,
         temperature=0.2,
@@ -434,12 +452,41 @@ def test_shared_transport_emits_enable_thinking_flag_only_when_enabled() -> None
     }
 
 
-def test_author_v2_qwen_gateway_explicitly_disables_thinking() -> None:
+def test_shared_transport_uses_deepseek_v4_flash_thinking_toggle_when_disabled() -> None:
+    client = FakeClient([{"pong": True}])
+    transport = ResponsesJSONTransport(
+        client=client,  # type: ignore[arg-type]
+        model="deepseek-v4-flash",
+        timeout_seconds=20.0,
+        use_session_cache=False,
+        temperature=0.2,
+        enable_thinking=False,
+        explicit_disable_thinking=True,
+        provider_failed_code="provider_failed",
+        invalid_response_code="invalid_response",
+        invalid_json_code="invalid_json",
+        error_factory=lambda code, message, status_code: RuntimeError(f"{code}:{message}:{status_code}"),
+    )
+
+    response = transport.invoke_json(
+        system_prompt="Return one strict JSON object.",
+        user_payload={"ping": True},
+        max_output_tokens=32,
+    )
+
+    assert response.payload == {"pong": True}
+    assert client.calls[0]["extra_body"] == {
+        "thinking": {"type": "disabled"},
+        "response_format": {"type": "json_object"},
+    }
+
+
+def test_author_v2_deepseek_flash_gateway_explicitly_disables_thinking() -> None:
     client = FakeClient([{"pong": True}])
     gateway = AuthorV2LLMGateway(
         client=client,  # type: ignore[arg-type]
-        model="qwen3.5-flash",
-        profile_id="live_qwen3_5_flash",
+        model="deepseek-v4-flash",
+        profile_id="live_deepseek_v4_flash",
         timeout_seconds=45.0,
         max_output_tokens_preview=800,
         max_output_tokens_cast_slots=800,
@@ -452,18 +499,21 @@ def test_author_v2_qwen_gateway_explicitly_disables_thinking() -> None:
         system_prompt="Return one strict JSON object.",
         user_payload={"ping": True},
         max_output_tokens=32,
-        operation_name="demo.qwen",
+        operation_name="demo.deepseek_flash",
     )
 
     assert response.payload == {"pong": True}
-    assert client.calls[0]["extra_body"] == {"enable_thinking": False, "response_format": {"type": "json_object"}}
+    assert client.calls[0]["extra_body"] == {
+        "thinking": {"type": "disabled"},
+        "response_format": {"type": "json_object"},
+    }
 
 
-def test_play_qwen_gateway_explicitly_disables_thinking_when_play_thinking_off() -> None:
+def test_play_deepseek_flash_gateway_explicitly_disables_thinking_when_play_thinking_off() -> None:
     client = FakeClient([{"pong": True}])
     gateway = PlayLLMGateway(
         client=client,  # type: ignore[arg-type]
-        model="qwen3.5-flash",
+        model="deepseek-v4-flash",
         timeout_seconds=20.0,
         max_output_tokens_interpret=220,
         max_output_tokens_interpret_repair=320,
@@ -485,7 +535,7 @@ def test_play_qwen_gateway_explicitly_disables_thinking_when_play_thinking_off()
 
     assert response.payload == {"pong": True}
     assert client.calls[0]["extra_body"] == {
-        "enable_thinking": False,
+        "thinking": {"type": "disabled"},
         "response_format": {"type": "json_object"},
     }
 
@@ -710,6 +760,56 @@ def test_raw_responses_client_merges_response_format_into_payload(monkeypatch) -
         "max_tokens": 32,
         "temperature": 0.2,
         "response_format": {"type": "json_object"},
+    }
+
+
+def test_raw_responses_client_defaults_deepseek_v4_flash_to_non_thinking_json(monkeypatch) -> None:
+    recorded: dict[str, object] = {}
+
+    class _FakeHTTPResponse:
+        status_code = 200
+
+        def json(self):  # noqa: ANN201
+            return {
+                "id": "resp-demo",
+                "output_text": "{\"pong\": true}",
+                "usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15},
+            }
+
+    class _FakeHTTPClient:
+        def __init__(self, *, timeout: float, limits=None) -> None:  # noqa: ANN001, ARG002
+            pass
+
+        def close(self) -> None:
+            pass
+
+        def post(self, url: str, *, headers: dict[str, str], json: dict[str, object], timeout: float):  # noqa: ANN201, ARG002
+            recorded["json"] = json
+            return _FakeHTTPResponse()
+
+    monkeypatch.setattr("rpg_backend.responses_transport.httpx.Client", _FakeHTTPClient)
+    client = RawResponsesClient(base_url="https://api.deepseek.com", api_key="secret-key")
+
+    response = client.responses.create(
+        model="deepseek-v4-flash",
+        instructions="Return JSON only.",
+        input="ping",
+        max_output_tokens=32,
+        timeout=12,
+        temperature=0.2,
+    )
+
+    assert response.output_text == "{\"pong\": true}"
+    assert recorded["json"] == {
+        "model": "deepseek-v4-flash",
+        "messages": [
+            {"role": "system", "content": "Return JSON only."},
+            {"role": "user", "content": "ping"},
+        ],
+        "max_tokens": 32,
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"},
+        "thinking": {"type": "disabled"},
     }
 
 

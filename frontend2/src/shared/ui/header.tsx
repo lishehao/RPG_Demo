@@ -1,20 +1,23 @@
 import { useState } from "react"
 import { useAuth } from "../../app/auth-context"
 import { LANGUAGE_OPTIONS, useLanguage, type Lang } from "../lib/i18n"
-import { Button } from "./primitives"
 
 export function Header({
   onHome,
   onCreate,
   showCreateButton = true,
+  createVariant = "button",
 }: {
   onHome: () => void
   onCreate: () => void
   showCreateButton?: boolean
+  createVariant?: "button" | "link"
 }) {
   const auth = useAuth()
   const { lang, setLang, t } = useLanguage()
   const [menuOpen, setMenuOpen] = useState(false)
+  const accountName = auth.user?.display_name?.trim() || "reader"
+  const accountInitial = accountName.slice(0, 1).toUpperCase()
 
   const handleLogin = () => {
     // Hash routes are app-internal; jumping via location.hash keeps Header
@@ -40,27 +43,32 @@ export function Header({
 
         <LanguageToggle lang={lang} onSelect={setLang} />
 
-        {showCreateButton ? (
-          <Button variant="primary" size="md" onClick={onCreate}>
+        {showCreateButton && createVariant === "link" ? (
+          <button className="topbar-link topbar-create-link" type="button" onClick={onCreate}>
             {t("header.write_story")}
-          </Button>
+          </button>
+        ) : showCreateButton ? (
+          <button className="topbar-link topbar-create-link" type="button" onClick={onCreate}>
+            {t("header.write_story")}
+          </button>
         ) : null}
 
         {auth.loading ? (
           <span className="topbar-account__hint">...</span>
         ) : auth.isAnonymous ? (
-          <Button variant="ghost" size="md" onClick={handleLogin}>
+          <button className="topbar-link topbar-login-link" type="button" onClick={handleLogin}>
             {t("header.login")}
-          </Button>
+          </button>
         ) : (
           <div className="topbar-account">
             <button
               type="button"
               className="topbar-account__pill"
               onClick={() => setMenuOpen((v) => !v)}
+              aria-label={accountName}
             >
-              <span className="topbar-account__avatar">{auth.user?.display_name.slice(0, 1).toUpperCase()}</span>
-              <span className="topbar-account__name">{auth.user?.display_name}</span>
+              <span className="topbar-account__avatar">{accountInitial}</span>
+              <span className="topbar-account__name">{accountName}</span>
             </button>
             {menuOpen ? (
               <div className="topbar-account__menu" onMouseLeave={() => setMenuOpen(false)}>
@@ -98,7 +106,10 @@ function LanguageToggle({ lang, onSelect }: { lang: Lang; onSelect: (next: Lang)
             onClick={() => onSelect(opt.value)}
             aria-pressed={active}
           >
-            {opt.label}
+            <span className="topbar-lang__full">{opt.label}</span>
+            <span className="topbar-lang__short" aria-hidden>
+              {opt.value === "zh" ? "中" : "EN"}
+            </span>
           </button>
         )
       })}

@@ -120,6 +120,7 @@
         font-weight: 800;
         padding: 12px 18px;
         box-shadow: 0 16px 38px rgba(231, 184, 93, 0.2);
+        text-decoration: none;
       }
 
       .direct-link {
@@ -154,11 +155,16 @@
         box-shadow: 0 42px 110px rgba(0, 0, 0, 0.62);
       }
 
-      video {
+      .youtube-embed,
+      .video-frame video {
         display: block;
         width: 100%;
         aspect-ratio: 16 / 9;
         background: #000;
+      }
+
+      .youtube-embed {
+        border: 0;
       }
 
       .video-actions {
@@ -188,6 +194,23 @@
         color: var(--ink);
         font-weight: 650;
         text-decoration: none;
+      }
+
+      .fallback-video {
+        border-top: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .fallback-video summary {
+        cursor: pointer;
+        padding: 13px 16px;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .fallback-video[open] summary {
+        border-bottom: 1px solid var(--line);
       }
 
       .section {
@@ -342,6 +365,7 @@
     <header class="shell nav">
       <div class="brand">Tiny Stories</div>
       <nav class="nav-links" aria-label="Project links">
+        <a href="https://youtu.be/RRJ7uyjW_nA">YouTube</a>
         <a href="https://github.com/lishehao/RPG_Demo">GitHub</a>
         <a href="https://github.com/lishehao/RPG_Demo#architecture">Architecture</a>
         <a href="./demo-video/admissions-narration.txt">Narration</a>
@@ -358,7 +382,8 @@
             choice, free-form action, and ending compilation.
           </p>
           <div class="cta-row">
-            <button class="play-button" type="button" data-play-demo>Play demo with sound</button>
+            <a class="play-button" href="https://youtu.be/RRJ7uyjW_nA">Watch on YouTube</a>
+            <button class="play-button" type="button" data-play-demo>Play local MP4 fallback</button>
             <a class="direct-link" href="./demo-video/tiny-stories-admissions-demo-readme.mp4">
               Open MP4 directly
             </a>
@@ -371,29 +396,40 @@
             <span class="tag">Programmatic video demo</span>
           </div>
         </div>
-        <div class="video-frame" aria-label="Playable demo video">
-          <video
-            controls
-            data-demo-video
-            playsinline
-            preload="metadata"
-            poster="./demo-video/admissions-trailer-contact.jpg"
-            src="./demo-video/tiny-stories-admissions-demo-readme.mp4"
-          >
-            Your browser cannot play this video. Open the MP4 directly:
-            ./demo-video/tiny-stories-admissions-demo-readme.mp4
-          </video>
+        <div class="video-frame" aria-label="YouTube demo preview">
+          <iframe
+            class="youtube-embed"
+            src="https://www.youtube.com/embed/RRJ7uyjW_nA?autoplay=1&amp;mute=1&amp;playsinline=1&amp;controls=1&amp;rel=0"
+            title="Tiny Stories: Inspectable AI Narrative Runtime Demo"
+            allow="autoplay; encrypted-media; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen
+          ></iframe>
           <div class="video-actions">
             <span>
               <span class="video-kicker">Admissions reviewer cut</span>
-              75-second narrated demo, optimized for web playback.
+              Muted YouTube preview is best-effort; use the watch link if autoplay is blocked.
             </span>
             <span>
-              <a href="./demo-video/tiny-stories-admissions-demo-readme.mp4">Open MP4</a>
+              <a href="https://youtu.be/RRJ7uyjW_nA">Watch on YouTube</a>
               ·
-              <a href="./demo-video/tiny-stories-admissions-demo.mp4">Open 1080p render</a>
+              <a href="./demo-video/tiny-stories-admissions-demo-readme.mp4">Open MP4</a>
             </span>
           </div>
+          <details class="fallback-video" data-demo-fallback>
+            <summary>Use local MP4 fallback</summary>
+            <video
+              controls
+              data-demo-video
+              playsinline
+              preload="metadata"
+              poster="./demo-video/admissions-trailer-contact.jpg"
+              src="./demo-video/tiny-stories-admissions-demo-readme.mp4"
+            >
+              Your browser cannot play this video. Open the MP4 directly:
+              ./demo-video/tiny-stories-admissions-demo-readme.mp4
+            </video>
+          </details>
         </div>
       </section>
 
@@ -469,11 +505,13 @@
     </footer>
     <script>
       const video = document.querySelector("[data-demo-video]");
+      const fallback = document.querySelector("[data-demo-fallback]");
       const playButton = document.querySelector("[data-play-demo]");
 
       playButton?.addEventListener("click", async () => {
         if (!video) return;
 
+        if (fallback) fallback.open = true;
         video.muted = false;
         video.volume = 1;
         video.controls = true;

@@ -49,7 +49,7 @@ class PlayLLMGateway:
                 use_session_cache=self.use_session_cache,
                 temperature=0.4,
                 enable_thinking=self.enable_thinking,
-                explicit_disable_thinking=self.model.startswith("qwen") and not self.enable_thinking,
+                explicit_disable_thinking=self.model.startswith("deepseek") and not self.enable_thinking,
                 json_content_type_hint=self.json_content_type_hint,
                 json_object_prompt_only=self.json_object_prompt_only,
                 provider_failed_code="play_llm_provider_failed",

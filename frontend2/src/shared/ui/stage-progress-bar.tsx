@@ -130,7 +130,7 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     gap: 10,
-    marginBottom: 26,
+    marginBottom: 0,
   },
   label: {
     display: "flex",
@@ -161,11 +161,12 @@ const styles: Record<string, CSSProperties> = {
   bar: {
     display: "flex",
     width: "100%",
-    height: 28,
-    background: "rgba(255,255,255,0.025)",
-    border: "1px solid var(--line)",
-    borderRadius: 6,
-    overflow: "hidden",
+    minHeight: 26,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    overflow: "visible",
+    columnGap: 10,
   },
   segment: {
     position: "relative",
@@ -173,27 +174,34 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     minWidth: 0,
-    transition: "background 0.4s ease, color 0.4s ease",
+    paddingBottom: 7,
+    borderBottom: "1px solid rgba(255,255,255,0.10)",
+    transition: "border-color 0.4s ease, color 0.4s ease",
   },
   segCurrent: {
-    background:
-      "linear-gradient(180deg, rgba(212,168,83,0.22), rgba(212,168,83,0.08))",
+    background: "transparent",
+    borderBottom: "2px solid rgba(245,210,140,0.88)",
     color: "rgba(245,210,140,0.96)",
     fontWeight: 600,
   },
   // Past stages — read as "completed". Brighter than the previous
   // 0.10 fill so finished stages are clearly visible at a glance.
   segPast: {
-    background: "rgba(140,100,200,0.18)",
+    background: "transparent",
+    borderBottom: "2px solid rgba(140,100,200,0.42)",
     color: "rgba(200,170,235,0.82)",
   },
   segFuture: {
     background: "transparent",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
     color: "var(--text-faint)",
   },
   currentGlow: {
     position: "absolute",
-    inset: 0,
+    left: "20%",
+    right: "20%",
+    bottom: -2,
+    height: 2,
     background:
       "linear-gradient(90deg, transparent, rgba(245,210,140,0.18), transparent)",
     pointerEvents: "none",

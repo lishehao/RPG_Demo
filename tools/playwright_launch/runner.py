@@ -12,7 +12,7 @@ from random import Random
 from typing import Any, Literal
 from urllib.parse import urlparse
 
-from tools.play_benchmarks.story_seed_factory import build_story_seed_batch
+from tools.rpg_eval.seed_factory import build_story_seed_batch
 
 
 LaunchLayer = Literal["env", "core", "recovery", "parallel"]

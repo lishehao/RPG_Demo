@@ -2393,6 +2393,46 @@ def _usage_token_count(usage: dict[str, Any] | None, key: str) -> int:
     return 0
 
 
+def _normalized_response_id(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
+def _record_llm_response_diagnostics(
+    diagnostics: dict[str, Any] | None,
+    *,
+    prefix: str,
+    previous_response_id: str | None,
+    response_id: Any,
+    usage: dict[str, Any] | None,
+) -> str | None:
+    resolved_response_id = _normalized_response_id(response_id)
+    if diagnostics is None:
+        return resolved_response_id
+    diagnostics[f"{prefix}_response_id"] = resolved_response_id or ""
+    diagnostics[f"{prefix}_used_previous_response_id"] = bool(previous_response_id)
+    diagnostics[f"{prefix}_cached_input_tokens"] = _usage_token_count(usage, "cached_input_tokens")
+    diagnostics[f"{prefix}_cache_creation_input_tokens"] = _usage_token_count(
+        usage,
+        "cache_creation_input_tokens",
+    )
+    diagnostics["used_previous_response_id"] = bool(diagnostics.get("used_previous_response_id")) or bool(
+        previous_response_id
+    )
+    if resolved_response_id is not None:
+        diagnostics["session_response_id"] = resolved_response_id
+    return resolved_response_id
+
+
+def _diagnostic_session_response_id(
+    diagnostics: dict[str, Any] | None,
+    fallback: str | None = None,
+) -> str | None:
+    if diagnostics is None:
+        return _normalized_response_id(fallback)
+    return _normalized_response_id(diagnostics.get("session_response_id")) or _normalized_response_id(fallback)
+
+
 def _live_llm_calls_enabled(*, settings, flag_attr: str) -> bool:
     if not bool(getattr(settings, flag_attr, False)):
         return False
@@ -2724,6 +2764,7 @@ def _run_npc_micro_sim(
     intent: UrbanTurnIntent,
     gateway: PlayLLMGateway | None = None,
     diagnostics: dict[str, Any] | None = None,
+    previous_response_id: str | None = None,
 ) -> _NpcMicroSimResult | None:
     segment = _resolved_segment(plan, state)
     if segment.segment_role not in {"misread", "pressure", "reveal", "terminal"}:
@@ -2839,6 +2880,7 @@ def _run_npc_micro_sim(
                 ),
             },
             max_output_tokens=int(getattr(settings, "play_v2_micro_sim_max_output_tokens", 260) or 260),
+            previous_response_id=previous_response_id,
             operation_name="play_v2.npc_micro_sim",
             plaintext_fallback_key=None,
         )
@@ -2848,6 +2890,15 @@ def _run_npc_micro_sim(
             diagnostics["micro_sim_latency_ms"] = round((time.perf_counter() - started) * 1000, 4)
         return heuristic_result
     if diagnostics is not None:
+        response_id = _record_llm_response_diagnostics(
+            diagnostics,
+            prefix="micro_sim",
+            previous_response_id=previous_response_id,
+            response_id=getattr(response, "response_id", None),
+            usage=response.usage if isinstance(response.usage, dict) else {},
+        )
+        if response_id is not None:
+            diagnostics["session_response_id"] = response_id
         diagnostics["micro_sim_status"] = "completed"
         diagnostics["micro_sim_latency_ms"] = round((time.perf_counter() - started) * 1000, 4)
         diagnostics["micro_sim_input_tokens"] = _usage_token_count(response.usage, "input_tokens")
@@ -2902,6 +2953,7 @@ def _try_compile_with_llm(
     suggestions: list[UrbanSuggestedAction],
     gateway: PlayLLMGateway | None = None,
     diagnostics: dict[str, Any] | None = None,
+    previous_response_id: str | None = None,
 ) -> _IntentCandidate | None:
     settings = get_settings()
     if not _live_llm_calls_enabled(settings=settings, flag_attr="play_v2_intent_compiler_use_llm"):
@@ -3063,7 +3115,7 @@ def _try_compile_with_llm(
     started = time.perf_counter()
     last_failure_reason = ""
     last_usage: dict[str, Any] = {}
-    previous_response_id: str | None = None
+    latest_response_id = _normalized_response_id(previous_response_id)
     max_attempts = 2
     if diagnostics is not None:
         diagnostics["intent_llm_attempts"] = 0
@@ -3087,7 +3139,7 @@ def _try_compile_with_llm(
                     "retry_feedback": last_failure_reason if retry_mode else "",
                 },
                 max_output_tokens=_repair_budget() if retry_mode else base_budget,
-                previous_response_id=previous_response_id if retry_mode else None,
+                previous_response_id=latest_response_id,
                 operation_name="play_v2.intent_compile_repair" if retry_mode else "play_v2.intent_compile",
                 plaintext_fallback_key=None,
             )
@@ -3099,9 +3151,15 @@ def _try_compile_with_llm(
             if attempt + 1 < max_attempts:
                 continue
             break
-        response_id = getattr(response, "response_id", None)
         response_usage = getattr(response, "usage", {})
-        previous_response_id = response_id or previous_response_id
+        response_id = _record_llm_response_diagnostics(
+            diagnostics,
+            prefix="intent_llm",
+            previous_response_id=latest_response_id,
+            response_id=getattr(response, "response_id", None),
+            usage=response_usage if isinstance(response_usage, dict) else {},
+        )
+        latest_response_id = response_id or latest_response_id
         last_usage = response_usage if isinstance(response_usage, dict) else {}
         candidate, invalid_reason = _parse_candidate_payload(getattr(response, "payload", None))
         if candidate is not None:
@@ -3587,6 +3645,7 @@ def parse_turn_intent(
     prefetched_suggestions: tuple[UrbanSuggestedAction, ...] | None = None,
     prefetched_control_actions: tuple[UrbanControlAction, ...] | None = None,
     diagnostics: dict[str, Any] | None = None,
+    previous_response_id: str | None = None,
 ) -> UrbanTurnIntent:
     submitted_with_selected_ids = bool((selected_story_action_id or "").strip() or (selected_suggestion_id or "").strip())
     if diagnostics is not None:
@@ -3655,6 +3714,7 @@ def parse_turn_intent(
                 suggestions,
                 gateway=gateway,
                 diagnostics=diagnostics,
+                previous_response_id=previous_response_id,
             )
             candidate = llm_candidate or heuristic_candidate
             if llm_candidate is None and diagnostics is not None and "intent_llm_status" not in diagnostics:
@@ -3853,9 +3913,11 @@ def run_intent_stage(
     precomputed_diagnostics: dict[str, Any] | None = None,
     prefetched_suggestions: tuple[UrbanSuggestedAction, ...] | None = None,
     prefetched_control_actions: tuple[UrbanControlAction, ...] | None = None,
+    previous_response_id: str | None = None,
 ) -> tuple[UrbanTurnIntent, _NpcMicroSimResult | None, dict[str, Any]]:
     diagnostics: dict[str, Any] = dict(precomputed_diagnostics or {})
     stage_started = time.perf_counter()
+    latest_response_id = _normalized_response_id(previous_response_id)
     if precomputed_intent is not None:
         intent = precomputed_intent.model_copy(deep=True)
         # When submit reuses a precomputed draft, submit-phase call accounting must
@@ -3877,6 +3939,9 @@ def run_intent_stage(
         diagnostics["micro_sim_input_tokens"] = 0
         diagnostics["micro_sim_output_tokens"] = 0
         diagnostics["micro_sim_total_tokens"] = 0
+        if latest_response_id is not None:
+            diagnostics["session_response_id"] = latest_response_id
+        diagnostics["used_previous_response_id"] = bool(diagnostics.get("used_previous_response_id"))
         return intent, precomputed_micro_sim, diagnostics
     parse_started = time.perf_counter()
     intent = parse_turn_intent(
@@ -3894,11 +3959,13 @@ def run_intent_stage(
         prefetched_suggestions=prefetched_suggestions,
         prefetched_control_actions=prefetched_control_actions,
         diagnostics=diagnostics,
+        previous_response_id=latest_response_id,
     )
     parse_latency_ms = (time.perf_counter() - parse_started) * 1000
     diagnostics["intent_parse_latency_ms"] = round(parse_latency_ms, 4)
     diagnostics["intent_compile_source"] = intent.intent_compile_source
     diagnostics["control_source"] = intent.control_source
+    latest_response_id = _diagnostic_session_response_id(diagnostics, latest_response_id)
     micro_started = time.perf_counter()
     micro_sim = _run_npc_micro_sim(
         plan=plan,
@@ -3906,7 +3973,9 @@ def run_intent_stage(
         intent=intent,
         gateway=gateway,
         diagnostics=diagnostics,
+        previous_response_id=latest_response_id,
     )
+    latest_response_id = _diagnostic_session_response_id(diagnostics, latest_response_id)
     diagnostics["intent_micro_sim_stage_latency_ms"] = round((time.perf_counter() - micro_started) * 1000, 4)
     diagnostics["intent_stage_latency_ms"] = round((time.perf_counter() - stage_started) * 1000, 4)
     intent_input_tokens = int(diagnostics.get("intent_llm_input_tokens", 0) or 0)
@@ -3918,6 +3987,8 @@ def run_intent_stage(
     diagnostics["intent_stage_total_tokens"] = int(diagnostics.get("intent_llm_total_tokens", 0)) + int(
         diagnostics.get("micro_sim_total_tokens", 0)
     )
+    if latest_response_id is not None:
+        diagnostics["session_response_id"] = latest_response_id
     return intent, micro_sim, diagnostics
 
 
@@ -3944,6 +4015,7 @@ def run_speculative_compose_prewarm(
         (selected_story_action_id or "").strip() or (selected_suggestion_id or "").strip()
     )
     working_state = state.model_copy(deep=True)
+    latest_response_id = _normalized_response_id(state.session_response_id)
     intent, micro_sim, intent_diagnostics = run_intent_stage(
         plan,
         working_state,
@@ -3961,7 +4033,9 @@ def run_speculative_compose_prewarm(
         precomputed_diagnostics=precomputed_intent_diagnostics,
         prefetched_suggestions=prefetched_suggestions,
         prefetched_control_actions=prefetched_control_actions,
+        previous_response_id=latest_response_id,
     )
+    latest_response_id = _diagnostic_session_response_id(intent_diagnostics, latest_response_id)
     working_state, _ = apply_turn_resolution(
         plan,
         working_state,
@@ -3976,6 +4050,7 @@ def run_speculative_compose_prewarm(
         intent_diagnostics=intent_diagnostics,
         submitted_with_selected_ids=submitted_with_selected_ids,
         gateway=gateway,
+        previous_response_id=latest_response_id,
     )
     diagnostics: dict[str, int | float | str | bool] = {}
     for key, value in dict(compose_diagnostics or {}).items():
@@ -6421,6 +6496,7 @@ def _compose_narration_once_with_regen(
     storylet_hints: list[dict[str, Any]] | None = None,
     shell_tokens: tuple[str, ...] = (),
     gateway: PlayLLMGateway | None = None,
+    previous_response_id: str | None = None,
 ) -> tuple[str, str, dict[str, int | float | str | bool]]:
     settings = get_settings()
     compose_started = time.perf_counter()
@@ -6519,6 +6595,7 @@ def _compose_narration_once_with_regen(
     max_output_tokens = int(getattr(settings, "play_v2_dramatic_rewrite_max_output_tokens", 360) or 360)
     diagnostics["memory_context_total_chars_sent"] = memory_context_chars if memory_context_prompt_section else 0
     last_invalid_label = ""
+    latest_response_id = _normalized_response_id(previous_response_id)
     for attempt in range(3):
         try:
             storylet_prompt_section = _storylet_hint_prompt_section(compose_input.storylet_hints)
@@ -6546,9 +6623,19 @@ def _compose_narration_once_with_regen(
                     "turn_complexity": turn_complexity,
                 },
                 max_output_tokens=max_output_tokens,
+                previous_response_id=latest_response_id,
                 operation_name="play_v2.narration_compose",
                 plaintext_fallback_key="narration",
             )
+            response_usage = getattr(response, "usage", {})
+            response_id = _record_llm_response_diagnostics(
+                diagnostics,
+                prefix="compose",
+                previous_response_id=latest_response_id,
+                response_id=getattr(response, "response_id", None),
+                usage=response_usage if isinstance(response_usage, dict) else {},
+            )
+            latest_response_id = response_id or latest_response_id
             payload = response.payload if isinstance(response.payload, dict) else {}
             if "narration" not in payload and payload.get("rewritten_narration"):
                 payload = {
@@ -6575,9 +6662,9 @@ def _compose_narration_once_with_regen(
             diagnostics["compose_invalid_reason"] = ""
             diagnostics["fallback_reason"] = "none"
             diagnostics["length_profile"] = f"{output.length_profile}:{_sentence_count(rendered)}"
-            diagnostics["compose_input_tokens"] = _usage_token_count(response.usage, "input_tokens")
-            diagnostics["compose_output_tokens"] = _usage_token_count(response.usage, "output_tokens")
-            diagnostics["compose_total_tokens"] = _usage_token_count(response.usage, "total_tokens")
+            diagnostics["compose_input_tokens"] = _usage_token_count(response_usage, "input_tokens")
+            diagnostics["compose_output_tokens"] = _usage_token_count(response_usage, "output_tokens")
+            diagnostics["compose_total_tokens"] = _usage_token_count(response_usage, "total_tokens")
             diagnostics["compose_latency_ms"] = round((time.perf_counter() - compose_started) * 1000, 4)
             diagnostics["narration_compose_source"] = "llm_retry" if attempt > 0 else "llm"
             return rendered, str(diagnostics["narration_compose_source"]), diagnostics
@@ -6601,6 +6688,7 @@ def _compose_burst_enhance_with_regen(
     compose_input: NarrationComposeInput,
     base_narration: str,
     gateway: PlayLLMGateway | None,
+    previous_response_id: str | None = None,
 ) -> tuple[str | None, dict[str, int | float | str | bool]]:
     started = time.perf_counter()
     diagnostics: dict[str, int | float | str | bool] = {
@@ -6623,6 +6711,7 @@ def _compose_burst_enhance_with_regen(
     _, pass2_max_retry, pass2_max_output_tokens, _ = _key_burst_pass2_config(plan)
     max_attempts = 1 + max(pass2_max_retry, 0)
     last_reason = ""
+    latest_response_id = _normalized_response_id(previous_response_id)
     for attempt in range(max_attempts):
         try:
             response = gateway._invoke_json(
@@ -6638,18 +6727,28 @@ def _compose_burst_enhance_with_regen(
                     "retry_mode": attempt > 0,
                 },
                 max_output_tokens=pass2_max_output_tokens,
+                previous_response_id=latest_response_id,
                 operation_name="play_v2.narration_compose_pass2",
                 plaintext_fallback_key="narration",
             )
+            response_usage = getattr(response, "usage", {})
+            response_id = _record_llm_response_diagnostics(
+                diagnostics,
+                prefix="compose_pass2",
+                previous_response_id=latest_response_id,
+                response_id=getattr(response, "response_id", None),
+                usage=response_usage if isinstance(response_usage, dict) else {},
+            )
+            latest_response_id = response_id or latest_response_id
             payload = response.payload if isinstance(response.payload, dict) else {}
             raw_text = str(payload.get("narration") or "")
             enhanced = _finalize_narration_style(raw_text)
             if enhanced:
                 diagnostics["compose_pass2_retry_count"] = attempt
                 diagnostics["compose_pass2_invalid_reason"] = ""
-                diagnostics["compose_pass2_input_tokens"] = _usage_token_count(response.usage, "input_tokens")
-                diagnostics["compose_pass2_output_tokens"] = _usage_token_count(response.usage, "output_tokens")
-                diagnostics["compose_pass2_total_tokens"] = _usage_token_count(response.usage, "total_tokens")
+                diagnostics["compose_pass2_input_tokens"] = _usage_token_count(response_usage, "input_tokens")
+                diagnostics["compose_pass2_output_tokens"] = _usage_token_count(response_usage, "output_tokens")
+                diagnostics["compose_pass2_total_tokens"] = _usage_token_count(response_usage, "total_tokens")
                 diagnostics["compose_pass2_applied"] = enhanced != base_narration
                 diagnostics["compose_pass2_latency_ms"] = round((time.perf_counter() - started) * 1000, 4)
                 return enhanced, diagnostics
@@ -6846,6 +6945,7 @@ def _render_narration_npc_texture_v2(
     submitted_with_selected_ids: bool = False,
     precomputed_compose: dict[str, Any] | None = None,
     gateway: PlayLLMGateway | None = None,
+    previous_response_id: str | None = None,
 ) -> tuple[str, dict[str, int | float | str | bool]]:
     current_segment = _resolved_segment(plan, state)
     target_member = next(
@@ -6978,6 +7078,8 @@ def _render_narration_npc_texture_v2(
     state.recent_clause_family_ids = unique_preserve([*style_hints.used_clause_family_ids, *state.recent_clause_family_ids])[:6]
     precomputed_compose_narration, precomputed_compose_diagnostics = _sanitize_compose_payload(precomputed_compose)
     compose_prewarm_applied = bool(precomputed_compose_narration)
+    latest_response_id = _normalized_response_id(previous_response_id)
+    pass2_diagnostics: dict[str, int | float | str | bool] = {}
     if compose_prewarm_applied:
         composed_text = precomputed_compose_narration
         compose_source = "prewarm_cache"
@@ -7002,7 +7104,9 @@ def _render_narration_npc_texture_v2(
             storylet_hints=storylet_hints,
             shell_tokens=shell_tokens,
             gateway=gateway,
+            previous_response_id=latest_response_id,
         )
+        latest_response_id = _diagnostic_session_response_id(compose_diagnostics, latest_response_id)
     compose_pass_count = 1
     compose_pass2_retry_count = 0
     compose_pass2_latency_ms = 0.0
@@ -7048,7 +7152,9 @@ def _render_narration_npc_texture_v2(
             compose_input=pass2_compose_input,
             base_narration=composed_text,
             gateway=gateway,
+            previous_response_id=latest_response_id,
         )
+        latest_response_id = _diagnostic_session_response_id(pass2_diagnostics, latest_response_id)
         compose_pass_count = 2
         compose_pass2_retry_count = int(pass2_diagnostics.get("compose_pass2_retry_count") or 0)
         compose_pass2_invalid_reason = str(pass2_diagnostics.get("compose_pass2_invalid_reason") or "")
@@ -7151,6 +7257,21 @@ def _render_narration_npc_texture_v2(
         "memory_context_revealed_secrets": int(compose_diagnostics.get("memory_context_revealed_secrets") or 0),
         "memory_context_npc_pressure_count": int(compose_diagnostics.get("memory_context_npc_pressure_count") or 0),
         "memory_context_total_chars_sent": int(compose_diagnostics.get("memory_context_total_chars_sent") or 0),
+        "session_response_id": str(
+            _diagnostic_session_response_id(
+                pass2_diagnostics or compose_diagnostics,
+                _diagnostic_session_response_id(compose_diagnostics, previous_response_id),
+            )
+            or ""
+        ),
+        "used_previous_response_id": bool(compose_diagnostics.get("used_previous_response_id"))
+        or bool(pass2_diagnostics.get("used_previous_response_id")),
+        "compose_cached_input_tokens": int(compose_diagnostics.get("compose_cached_input_tokens") or 0),
+        "compose_cache_creation_input_tokens": int(compose_diagnostics.get("compose_cache_creation_input_tokens") or 0),
+        "compose_pass2_cached_input_tokens": int(pass2_diagnostics.get("compose_pass2_cached_input_tokens") or 0),
+        "compose_pass2_cache_creation_input_tokens": int(
+            pass2_diagnostics.get("compose_pass2_cache_creation_input_tokens") or 0
+        ),
     }
     merged_diagnostics["storylet_matches_ids"] = list(storylet_match_ids)
     return composed_text, merged_diagnostics
@@ -7164,6 +7285,7 @@ def _render_narration(
     submitted_with_selected_ids: bool = False,
     precomputed_compose: dict[str, Any] | None = None,
     gateway: PlayLLMGateway | None = None,
+    previous_response_id: str | None = None,
 ) -> tuple[str, dict[str, int | float | str | bool]]:
     rendered, diagnostics = _render_narration_npc_texture_v2(
         plan,
@@ -7173,6 +7295,7 @@ def _render_narration(
         submitted_with_selected_ids=submitted_with_selected_ids,
         precomputed_compose=precomputed_compose,
         gateway=gateway,
+        previous_response_id=previous_response_id,
     )
     return _finalize_narration_style(rendered), diagnostics
 
@@ -7292,6 +7415,7 @@ def run_turn(
         except PlayGatewayError:
             gateway = None
         gateway_acquire_wait_ms = round((time.perf_counter() - gateway_started) * 1000, 4)
+    latest_response_id = _normalized_response_id(state.session_response_id)
     intent, micro_sim, _intent_diagnostics = run_intent_stage(
         plan,
         state,
@@ -7309,8 +7433,11 @@ def run_turn(
         precomputed_diagnostics=precomputed_intent_diagnostics,
         prefetched_suggestions=prefetched_suggestions,
         prefetched_control_actions=prefetched_control_actions,
+        previous_response_id=latest_response_id,
     )
+    latest_response_id = _diagnostic_session_response_id(_intent_diagnostics, latest_response_id)
     _intent_diagnostics["gateway_acquire_wait_ms"] = gateway_acquire_wait_ms
+    _intent_diagnostics["session_cache_enabled"] = bool(getattr(gateway, "use_session_cache", False))
     state, consequence_tags = apply_turn_resolution(
         plan,
         state,
@@ -7352,7 +7479,10 @@ def run_turn(
         submitted_with_selected_ids=submitted_with_selected_ids,
         precomputed_compose=precomputed_compose,
         gateway=gateway,
+        previous_response_id=latest_response_id,
     )
+    latest_response_id = _diagnostic_session_response_id(narration_diagnostics, latest_response_id)
+    state.session_response_id = latest_response_id
     if state.last_turn_semantic_plan is not None and render_state.last_turn_semantic_plan is not None:
         state.last_turn_semantic_plan = state.last_turn_semantic_plan.model_copy(
             update={
@@ -7537,6 +7667,31 @@ def run_turn(
     intent_stage_diagnostics["pre_submit_total_tokens"] = pre_submit_total_tokens
     intent_stage_diagnostics["post_submit_total_tokens"] = post_submit_total_tokens
     intent_stage_diagnostics["play_turn_total_tokens"] = pre_submit_total_tokens + post_submit_total_tokens
+    cached_input_tokens = sum(
+        int(intent_stage_diagnostics.get(key) or 0)
+        for key in (
+            "intent_llm_cached_input_tokens",
+            "micro_sim_cached_input_tokens",
+            "compose_cached_input_tokens",
+            "compose_pass2_cached_input_tokens",
+        )
+    )
+    cache_creation_input_tokens = sum(
+        int(intent_stage_diagnostics.get(key) or 0)
+        for key in (
+            "intent_llm_cache_creation_input_tokens",
+            "micro_sim_cache_creation_input_tokens",
+            "compose_cache_creation_input_tokens",
+            "compose_pass2_cache_creation_input_tokens",
+        )
+    )
+    intent_stage_diagnostics["cached_input_tokens"] = cached_input_tokens
+    intent_stage_diagnostics["cache_creation_input_tokens"] = cache_creation_input_tokens
+    if latest_response_id is not None:
+        intent_stage_diagnostics["session_response_id"] = latest_response_id
+    intent_stage_diagnostics["used_previous_response_id"] = bool(
+        intent_stage_diagnostics.get("used_previous_response_id")
+    )
     post_submit_llm_calls = _post_submit_llm_call_count(intent_stage_diagnostics)
     intent_stage_diagnostics["post_submit_llm_calls"] = post_submit_llm_calls
     intent_stage_diagnostics["single_llm_call_after_submit"] = post_submit_llm_calls <= 1

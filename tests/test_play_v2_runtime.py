@@ -3602,6 +3602,125 @@ def test_run_turn_reuses_single_gateway_for_intent_micro_and_compose(monkeypatch
     assert bool(diagnostics.get("single_llm_call_after_submit")) is False
 
 
+def test_run_turn_chains_response_ids_for_session_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    plan = _play_plan()
+    state = build_initial_world_state(plan)
+    state.session_response_id = "resp-seed"
+    _move_state_to_segment(plan, state, "reveal")
+    state.scene_heat = 6
+    state.secret_exposure = 6
+    state.route_lock = 5
+
+    class _FakeResponse:
+        def __init__(
+            self,
+            payload: dict[str, object],
+            *,
+            response_id: str,
+            usage: dict[str, int] | None = None,
+        ) -> None:
+            self.payload = payload
+            self.response_id = response_id
+            self.usage = usage or {}
+
+    class _FakeGateway:
+        use_session_cache = True
+
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        def _invoke_json(self, **kwargs):  # noqa: ANN003, ANN204
+            self.calls.append(dict(kwargs))
+            operation_name = str(kwargs.get("operation_name") or "")
+            response_id = f"resp-{len(self.calls)}"
+            user_payload = kwargs.get("user_payload", {}) or {}
+            usage = {
+                "input_tokens": 100,
+                "output_tokens": 20,
+                "total_tokens": 120,
+                "cached_input_tokens": 40,
+                "cache_creation_input_tokens": 5,
+            }
+            if operation_name == "play_v2.intent_compile":
+                cast = list(user_payload.get("cast") or [])
+                target_id = cast[0]["character_id"] if cast else None
+                allowed_moves = list(user_payload.get("allowed_move_families") or [])
+                return _FakeResponse(
+                    {
+                        "move_family": allowed_moves[0] if allowed_moves else "probe_secret",
+                        "target_id": target_id,
+                        "scene_frame": "public",
+                        "lane_id": "burst",
+                        "intent_confidence": 0.88,
+                        "deviation_type": "none",
+                        "deviation_note": "",
+                        "alternatives": [],
+                    },
+                    response_id=response_id,
+                    usage=usage,
+                )
+            if operation_name == "play_v2.npc_micro_sim":
+                shortlist = list(user_payload.get("shortlist") or [])
+                actor = shortlist[0]["character_id"] if shortlist else ""
+                return _FakeResponse(
+                    {
+                        "recommended_actor_id": actor,
+                        "summary": "micro sim ok",
+                        "candidates": [
+                            {
+                                "character_id": actor,
+                                "action_family": "test_water",
+                                "reason_family": "mixed",
+                                "signal_family": "mixed",
+                                "cost_family": "mixed",
+                                "confidence": 0.66,
+                                "rationale": "ok",
+                            }
+                        ],
+                    },
+                    response_id=response_id,
+                    usage=usage,
+                )
+            return _FakeResponse(
+                {
+                    "narration": "这拍把站位关系直接推上台面。",
+                    "coverage_marks": {
+                        "target": True,
+                        "move": True,
+                        "consequence": True,
+                        "relationship": True,
+                    },
+                    "length_profile": "normal",
+                },
+                response_id=response_id,
+                usage=usage,
+            )
+
+    gateway = _FakeGateway()
+    monkeypatch.setattr(runtime_module, "get_play_llm_gateway", lambda _settings: gateway)
+    monkeypatch.setenv("APP_PLAY_V2_ALLOW_LIVE_LLM_IN_TESTS", "true")
+
+    result = run_turn(plan, state, "我要先试探对方底牌再当众逼问。")
+
+    assert [
+        (call["operation_name"], call.get("previous_response_id"))
+        for call in gateway.calls
+    ] == [
+        ("play_v2.intent_compile", "resp-seed"),
+        ("play_v2.npc_micro_sim", "resp-1"),
+        ("play_v2.narration_compose", "resp-2"),
+        ("play_v2.narration_compose", "resp-3"),
+        ("play_v2.narration_compose_pass2", "resp-4"),
+    ]
+    assert result.state.session_response_id == "resp-5"
+    diagnostics = result.intent_stage_diagnostics
+    assert diagnostics["session_response_id"] == "resp-5"
+    assert diagnostics["session_cache_enabled"] is True
+    assert diagnostics["used_previous_response_id"] is True
+    assert diagnostics["cached_input_tokens"] == 160
+    assert diagnostics["cache_creation_input_tokens"] == 20
+
+
 def test_compose_accepts_style_output_without_stem_guard_retries(monkeypatch: pytest.MonkeyPatch) -> None:
     plan = _play_plan()
     state = build_initial_world_state(plan)

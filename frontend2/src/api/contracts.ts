@@ -560,6 +560,15 @@ export type NarrativePlayerLeverageOverNPC = {
   leverage: string
 }
 
+export type NarrativeLeverageCardAction = "reveal" | "threaten" | "trade"
+
+export type NarrativePlayedLeverageCard = {
+  card_id: string
+  npc_id: string
+  leverage: string
+  action: NarrativeLeverageCardAction
+}
+
 export type NarrativePlayerRole = {
   role_id: string
   label: string
@@ -605,6 +614,7 @@ export type NarrativeStoryMessage = {
   npc_pulse?: NarrativeNPCPulse[]
   inventory_delta?: NarrativeInventoryDelta | null
   diary?: string | null
+  played_leverage?: NarrativePlayedLeverageCard | null
 }
 
 export type NarrativeDifficulty = "story" | "gauntlet"
@@ -766,6 +776,7 @@ export type NarrativeAdvanceTurnRequest = {
   chosen_option_index?: number | null
   free_input?: string | null
   diary?: string | null
+  played_leverage?: NarrativePlayedLeverageCard | null
 }
 
 export type NarrativeAdvanceTurnResponse = {

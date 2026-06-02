@@ -18,7 +18,18 @@ def _make_gateway(transport: MagicMock) -> AuthorV3LLMGateway:
     gateway = AuthorV3LLMGateway(
         client=object(),
         model="test-model",
-        profile_id="pure_gpt",
+        profile_id="live_deepseek_v4_flash",
+        timeout_seconds=1.0,
+    )
+    object.__setattr__(gateway, "_transport", transport)
+    return gateway
+
+
+def _make_gateway_with_model(transport: MagicMock, model: str) -> AuthorV3LLMGateway:
+    gateway = AuthorV3LLMGateway(
+        client=object(),
+        model=model,
+        profile_id="live_deepseek_v4_flash",
         timeout_seconds=1.0,
     )
     object.__setattr__(gateway, "_transport", transport)
@@ -53,6 +64,22 @@ def test_invoke_json_no_retry_needed() -> None:
 
     assert result.parsed == {"detected_shell": "office_power"}
     assert transport.invoke_json.call_count == 1
+
+
+def test_deepseek_flash_downgrades_schema_enforcement_to_json_object() -> None:
+    transport = MagicMock()
+    transport.invoke_json.return_value = _make_response({"detected_shell": "office_power"})
+    gateway = _make_gateway_with_model(transport, "deepseek-v4-flash")
+
+    gateway.invoke_json(
+        system_prompt="system",
+        user_payload={"seed_text": "办公室权力斗争"},
+        max_output_tokens=128,
+        operation_name="author_v3.test.deepseek_json",
+        response_model=_ShellResponse,
+    )
+
+    assert transport.invoke_json.call_args.kwargs["response_format_type"] == "json_object"
 
 
 def test_retry_on_json_decode_error_then_success() -> None:

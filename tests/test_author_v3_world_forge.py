@@ -6,7 +6,7 @@ import pytest
 
 from rpg_backend.author_v3.contracts import ForgedCharacter, RelationshipMatrix, WorldConfiguration
 from rpg_backend.author_v3.relationship_matrix import build_relationship_matrix
-from rpg_backend.author_v3.world_forge import forge_world
+from rpg_backend.author_v3.world_forge import _parse_relationship_payload, forge_world
 
 
 @pytest.fixture
@@ -36,6 +36,54 @@ def test_forge_world_deterministic_shell_is_office_power(config: WorldConfigurat
     assert config.seed.detected_shell == "office_power"
 
 
+@pytest.mark.parametrize(
+    ("seed", "expected_shell"),
+    [
+        ("A family banquet turns into an inheritance hearing", "wealth_families"),
+        ("Minutes before the awards livestream, a sponsor reveals the recording", "entertainment_scandal"),
+        ("The student council scholarship committee reopens an old recording", "campus_romance"),
+        ("A night patrol medium finds an old debt contract", "urban_supernatural"),
+    ],
+)
+def test_forge_world_deterministic_detects_english_shell_keywords(seed: str, expected_shell: str) -> None:
+    config = forge_world(seed)
+
+    assert config.story_shell_id == expected_shell
+    assert config.seed.detected_shell == expected_shell
+
+
+def test_forge_world_deterministic_adapts_non_office_cast_and_relationships() -> None:
+    config = forge_world("Minutes before the awards livestream, a sponsor reveals the scandal recording")
+
+    cast_text = " ".join(
+        [
+            character.public_identity
+            for character in config.characters
+        ]
+    )
+    relationship_text = " ".join(
+        [
+            edge.public_facade
+            + edge.hidden_truth
+            + " ".join(edge.hooks)
+            + edge.stance_a_to_b.hidden_dynamic
+            + edge.stance_a_to_b.tension_source
+            + edge.stance_b_to_a.hidden_dynamic
+            + edge.stance_b_to_a.tension_source
+            for edge in config.relationship_edges
+        ]
+    )
+
+    assert config.story_shell_id == "entertainment_scandal"
+    assert "经纪公司负责人" in cast_text
+    assert "赞助方代表" in cast_text
+    assert "赞助" in relationship_text
+    assert "颁奖礼" in relationship_text
+    assert "CEO" not in cast_text
+    assert "CFO" not in relationship_text
+    assert "董事会" not in relationship_text
+
+
 def test_forge_world_deterministic_all_characters_have_required_fields(config: WorldConfiguration) -> None:
     for character in config.characters:
         assert isinstance(character, ForgedCharacter)
@@ -49,6 +97,44 @@ def test_forge_world_deterministic_all_characters_have_required_fields(config: W
 
 def test_forge_world_deterministic_relationship_edges_count(config: WorldConfiguration) -> None:
     assert len(config.relationship_edges) == 10
+
+
+def test_relationship_payload_sanitizes_prose_numeric_stance_fields() -> None:
+    edges = _parse_relationship_payload(
+        {
+            "relationship_edges": [
+                {
+                    "character_a_id": "a",
+                    "character_b_id": "b",
+                    "public_facade": "公开合作",
+                    "hidden_truth": "私下互相试探",
+                    "tension_score": "强烈拉扯",
+                    "hooks": ["旧账"],
+                    "stance_a_to_b": {
+                        "trust_level": "信任很低",
+                        "dependency_level": "0.7",
+                        "hidden_dynamic": "控制与试探",
+                        "tension_source": "旧账",
+                        "power_asymmetry": "a掌握资源",
+                    },
+                    "stance_b_to_a": {
+                        "trust_level": 0.4,
+                        "dependency_level": "依赖对方",
+                        "hidden_dynamic": "戒备",
+                        "tension_source": "把柄",
+                        "power_asymmetry": -0.2,
+                    },
+                }
+            ]
+        }
+    )
+
+    assert len(edges) == 1
+    assert edges[0].tension_score == 0.5
+    assert edges[0].stance_a_to_b.trust_level == 0.5
+    assert edges[0].stance_a_to_b.dependency_level == 0.7
+    assert edges[0].stance_a_to_b.power_asymmetry == 0.0
+    assert edges[0].stance_b_to_a.dependency_level == 0.5
 
 
 def test_forge_world_deterministic_tension_scores_in_range(config: WorldConfiguration) -> None:

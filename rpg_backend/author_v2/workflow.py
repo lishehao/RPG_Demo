@@ -130,8 +130,6 @@ from rpg_backend.author_v2.stage_utils import (
 )
 from rpg_backend.config import get_settings
 
-_MAINLINE_LIVE_MODES = {"live_priority", "mainline_live"}
-_PURE_GPT_SEGMENT_PLAYBOOK_TIMEOUT_SECONDS = 12.0
 _SEGMENT_PLAYBOOK_TEXT_MAX_CHARS = 220
 _SEGMENT_PLAYBOOK_RENDER_CUE_MAX_ITEMS = 5
 _SEGMENT_PLAYBOOK_RENDER_CUE_ITEM_MAX_CHARS = 56
@@ -333,7 +331,7 @@ def _extend_llm_trace(
 
 
 def _allow_live_downgrade(live_mode: AuthorV2RunMode) -> bool:
-    return live_mode in _MAINLINE_LIVE_MODES
+    return False
 
 
 def _segment_playbook_gateway(
@@ -341,19 +339,7 @@ def _segment_playbook_gateway(
     *,
     live_mode: AuthorV2RunMode,
 ) -> AuthorV2LLMGateway:
-    current_timeout = float(getattr(gateway, "timeout_seconds", 0.0) or 0.0)
-    if live_mode != "pure_gpt" or current_timeout <= 0:
-        return gateway
-    target_timeout = min(current_timeout, _PURE_GPT_SEGMENT_PLAYBOOK_TIMEOUT_SECONDS)
-    if target_timeout >= current_timeout:
-        return gateway
-    if not isinstance(gateway, AuthorV2LLMGateway):
-        try:
-            gateway.timeout_seconds = target_timeout  # type: ignore[attr-defined]
-        except Exception:  # noqa: BLE001
-            return gateway
-        return gateway
-    return replace(gateway, timeout_seconds=target_timeout, call_trace=gateway.call_trace)
+    return gateway
 
 
 def _quality_metrics(

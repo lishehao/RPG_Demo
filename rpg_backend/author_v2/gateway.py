@@ -6,21 +6,14 @@ from typing import Any, Literal
 from rpg_backend.config import Settings, get_settings
 from rpg_backend.responses_transport import ResponsesJSONResponse, ResponsesJSONTransport, build_openai_client
 
-ConcreteAuthorV2LiveMode = Literal["live_qwen3_5_plus", "live_qwen3_5_flash", "live_gpt_5_4_mini"]
+ConcreteAuthorV2LiveMode = Literal["live_deepseek_v4_flash"]
 AuthorV2RunMode = Literal[
     "deterministic",
     "live_priority",
-    "pure_gpt",
     "mainline_live",
-    "live_qwen3_5_plus",
-    "live_qwen3_5_flash",
-    "live_gpt_5_4_mini",
+    "live_deepseek_v4_flash",
 ]
-AUTHOR_V2_PRIORITY_CHAIN: tuple[ConcreteAuthorV2LiveMode, ...] = (
-    "live_gpt_5_4_mini",
-    "live_qwen3_5_flash",
-    "live_qwen3_5_plus",
-)
+AUTHOR_V2_PRIORITY_CHAIN: tuple[ConcreteAuthorV2LiveMode, ...] = ("live_deepseek_v4_flash",)
 
 
 class AuthorV2GatewayError(RuntimeError):
@@ -59,7 +52,7 @@ class AuthorV2LLMGateway:
                 use_session_cache=self.use_session_cache,
                 temperature=0.2,
                 enable_thinking=False,
-                explicit_disable_thinking=self.model.startswith("qwen"),
+                explicit_disable_thinking=self.model.startswith("deepseek"),
                 json_content_type_hint=self.json_content_type_hint,
                 json_object_prompt_only=self.json_object_prompt_only,
                 provider_failed_code="llm_provider_failed",
@@ -89,6 +82,8 @@ class AuthorV2LLMGateway:
         resolved_response_format = response_format_type
         if resolved_response_format is None:
             resolved_response_format = "json_object"
+        if self.model.startswith("deepseek") and resolved_response_format == "json_schema":
+            resolved_response_format = "json_object"
         return self._transport.invoke_json(
             system_prompt=system_prompt,
             user_payload=user_payload,
@@ -102,36 +97,24 @@ class AuthorV2LLMGateway:
 
 
 def resolve_author_v2_live_mode_chain(mode: AuthorV2RunMode) -> tuple[ConcreteAuthorV2LiveMode, ...]:
-    if mode in {"live_priority", "mainline_live"}:
+    if mode in {"live_priority", "mainline_live", "live_deepseek_v4_flash"}:
         return AUTHOR_V2_PRIORITY_CHAIN
     if mode == "deterministic":
         return ()
-    if mode == "pure_gpt":
-        return ("live_gpt_5_4_mini",)
-    return (mode,)
+    raise AuthorV2GatewayError(
+        code="llm_mode_invalid",
+        message=f"author_v2 only supports deterministic or live_deepseek_v4_flash, got mode={mode}",
+        status_code=400,
+    )
 
 
 def _resolved_profile_settings(mode: ConcreteAuthorV2LiveMode, settings: Settings) -> tuple[str, str, str, bool]:
-    if mode == "live_qwen3_5_plus":
+    if mode == "live_deepseek_v4_flash":
         return (
             settings.resolved_author_responses_base_url(),
             settings.resolved_author_responses_api_key(),
-            "qwen3.5-plus",
+            settings.resolved_author_responses_model() or "deepseek-v4-flash",
             settings.resolved_author_responses_use_session_cache(),
-        )
-    if mode == "live_qwen3_5_flash":
-        return (
-            settings.resolved_author_responses_base_url(),
-            settings.resolved_author_responses_api_key(),
-            "qwen3.5-flash",
-            settings.resolved_author_responses_use_session_cache(),
-        )
-    if mode == "live_gpt_5_4_mini":
-        return (
-            settings.resolved_responses_base_url(),
-            settings.resolved_responses_api_key(),
-            "gpt-5.4-mini",
-            settings.resolved_responses_use_session_cache(),
         )
     raise AuthorV2GatewayError(
         code="llm_mode_invalid",
@@ -156,42 +139,24 @@ def get_author_v2_llm_gateway(
     client = build_openai_client(
         base_url=base_url,
         api_key=api_key,
-        api_keys=(
-            resolved.author_responses_api_key_pool()
-            if mode in {"live_qwen3_5_plus", "live_qwen3_5_flash"}
-            else resolved.responses_api_key_pool()
-        ),
+        api_keys=resolved.author_responses_api_key_pool(),
         use_session_cache=bool(use_session_cache),
         session_cache_header=resolved.responses_session_cache_header,
         session_cache_value=resolved.responses_session_cache_value,
         requests_per_minute=(
-            int(resolved.responses_author_qwen_requests_per_minute)
-            if mode in {"live_qwen3_5_plus", "live_qwen3_5_flash"}
-            and resolved.responses_author_qwen_requests_per_minute is not None
-            else (
-                int(resolved.responses_author_requests_per_minute)
-                if resolved.responses_author_requests_per_minute is not None
-                else None
-            )
+            int(resolved.responses_author_requests_per_minute)
+            if resolved.responses_author_requests_per_minute is not None
+            else None
         ),
-        rate_limit_scope=(
-            "author_v2:qwen"
-            if mode in {"live_qwen3_5_plus", "live_qwen3_5_flash"}
-            else ("author_v2" if resolved.responses_author_requests_per_minute is not None else None)
-        ),
+        rate_limit_scope=("author_v2" if resolved.responses_author_requests_per_minute is not None else None),
         chat_json_stream_mode=resolved.responses_chat_json_stream_mode,
         chat_json_stream_hosts=resolved.responses_chat_json_stream_host_list(),
-    )
-    timeout_seconds = float(
-        resolved.responses_timeout_seconds_author_v2_qwen
-        if mode in {"live_qwen3_5_plus", "live_qwen3_5_flash"}
-        else resolved.responses_timeout_seconds
     )
     return AuthorV2LLMGateway(
         client=client,
         model=model,
         profile_id=mode,
-        timeout_seconds=timeout_seconds,
+        timeout_seconds=float(resolved.responses_timeout_seconds),
         max_output_tokens_preview=resolved.responses_max_output_tokens_author_overview,
         max_output_tokens_cast_slots=resolved.responses_max_output_tokens_author_overview,
         max_output_tokens_segment_allocation=resolved.responses_max_output_tokens_author_beat_plan,

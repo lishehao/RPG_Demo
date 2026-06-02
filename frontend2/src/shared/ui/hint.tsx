@@ -6,9 +6,9 @@
  *
  * The icon doesn't replace the surface label — it sits next to it.
  * Reading flow: <h3>NPC mood <Hint>...</Hint></h3>. Designed for
- * instant recognition (the small `?` is universal) and zero space
- * impact (16px round chip). Native `title` for keyboard / screen
- * reader; custom popover for mouse hover.
+ * instant recognition (the small `?` is universal) and near-zero space
+ * impact. Native `title` for keyboard / screen reader; custom popover for
+ * mouse hover.
  */
 
 import {
@@ -83,13 +83,14 @@ const baseWrap: CSSProperties = {
 }
 
 const iconStyle: CSSProperties = {
-  width: 16,
-  height: 16,
-  padding: 0,
-  borderRadius: "50%",
-  background: "var(--bg-elev-2)",
-  color: "var(--text-muted)",
-  border: "1px solid var(--line-strong)",
+  width: "auto",
+  height: "auto",
+  padding: "0 0 1px",
+  borderRadius: 0,
+  background: "transparent",
+  color: "var(--text-faint)",
+  border: "none",
+  borderBottom: "1px dotted rgba(245,200,120,0.38)",
   fontSize: 10.5,
   fontWeight: 700,
   lineHeight: 1,
@@ -106,10 +107,10 @@ const popoverBase: CSSProperties = {
   width: "max-content",
   maxWidth: 260,
   padding: "10px 12px",
-  background: "var(--bg-elev-2)",
-  border: "1px solid var(--line-strong)",
-  borderRadius: 8,
-  boxShadow: "0 16px 36px rgba(0,0,0,0.48)",
+  background: "rgba(12,10,10,0.94)",
+  border: "none",
+  borderRadius: 0,
+  boxShadow: "none",
   fontSize: 12,
   lineHeight: 1.55,
   color: "var(--text)",

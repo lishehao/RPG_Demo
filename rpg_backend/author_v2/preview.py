@@ -47,8 +47,6 @@ from rpg_backend.author_v2.template_library import (
 )
 from rpg_backend.config import get_settings
 
-_MAINLINE_LIVE_MODES = {"live_priority", "mainline_live"}
-
 PREVIEW_SYNTHESIS_SYSTEM_PROMPT = """
 你在编译一个都市关系戏 preview blueprint。
 目标不是完整世界观，而是可传播、可站队、可失控。
@@ -661,7 +659,7 @@ def _resolve_live_gateway(
 
 
 def _allow_live_downgrade(live_mode: AuthorV2RunMode) -> bool:
-    return live_mode in _MAINLINE_LIVE_MODES
+    return False
 
 
 def _quality_metrics(

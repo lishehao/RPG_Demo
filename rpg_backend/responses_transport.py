@@ -202,6 +202,12 @@ def usage_to_dict(usage: Any) -> dict[str, Any]:
     input_details = raw.get("input_tokens_details")
     if isinstance(input_details, dict) and isinstance(input_details.get("cached_tokens"), (int, float)):
         normalized["cached_input_tokens"] = int(input_details["cached_tokens"])
+    prompt_cache_hit_tokens = raw.get("prompt_cache_hit_tokens")
+    if isinstance(prompt_cache_hit_tokens, (int, float)) and not isinstance(prompt_cache_hit_tokens, bool):
+        normalized["cached_input_tokens"] = int(prompt_cache_hit_tokens)
+    prompt_cache_miss_tokens = raw.get("prompt_cache_miss_tokens")
+    if isinstance(prompt_cache_miss_tokens, (int, float)) and not isinstance(prompt_cache_miss_tokens, bool):
+        normalized["cache_miss_input_tokens"] = int(prompt_cache_miss_tokens)
     output_details = raw.get("output_tokens_details")
     if isinstance(output_details, dict) and isinstance(output_details.get("reasoning_tokens"), (int, float)):
         normalized["reasoning_tokens"] = int(output_details["reasoning_tokens"])
@@ -666,16 +672,25 @@ class _RawResponsesResource:
         else:
             chat_payload["response_format"] = {"type": "json_object"}
         # Pass through provider-specific extras already promoted from `extra_body`
-        # into `payload` by `RawResponsesClient.create()`. Without this,
-        # qwen3.5-flash's `enable_thinking=False` is lost here and the model
-        # defaults to thinking-on (3000+ reasoning_tokens per call, ~30s instead
-        # of ~2s). Also covers thinking_budget / chat_template_kwargs / content_type.
-        _passthrough_keys = ("enable_thinking", "thinking_budget", "chat_template_kwargs", "content_type")
+        # into `payload` by `RawResponsesClient.create()`. DeepSeek V4 uses
+        # `thinking: {type: ...}` to keep local demo calls in non-thinking mode.
+        _passthrough_keys = (
+            "enable_thinking",
+            "thinking",
+            "thinking_budget",
+            "reasoning_effort",
+            "chat_template_kwargs",
+            "content_type",
+        )
         for _key in _passthrough_keys:
             if _key == "enable_thinking" and _is_beecode_base_url(self._base_url):
                 continue
             if _key in payload and _key not in chat_payload:
                 chat_payload[_key] = payload[_key]
+        model_name = str(payload.get("model") or "").strip().lower()
+        if model_name.startswith("deepseek") and "thinking" not in chat_payload:
+            chat_payload["thinking"] = {"type": "disabled"}
+            chat_payload.pop("enable_thinking", None)
         return f"{self._base_url}/chat/completions", chat_payload
 
 
@@ -831,7 +846,12 @@ class ResponsesJSONTransport:
             "temperature": self.temperature,
         }
         extra_body: dict[str, Any] = {}
-        if self.enable_thinking:
+        if self.model.startswith("deepseek"):
+            if self.enable_thinking:
+                extra_body["thinking"] = {"type": "enabled"}
+            elif self.explicit_disable_thinking:
+                extra_body["thinking"] = {"type": "disabled"}
+        elif self.enable_thinking:
             extra_body["enable_thinking"] = True
         elif self.explicit_disable_thinking:
             extra_body["enable_thinking"] = False

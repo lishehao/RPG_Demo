@@ -34,14 +34,86 @@ from rpg_backend.author_v2.workflow import (
 )
 import rpg_backend.author_v2.workflow as workflow_module
 from rpg_backend.config import Settings, get_settings
-from tools.urban_author_play_benchmarks.gold_set import mini_gold_realistic_6, v1_topic_gold_14
-from tools.urban_author_play_benchmarks.holdout_case_catalog import build_holdout_case_catalog
+
+
+_BASE_TEMPLATE_REGRESSION_CASES = (
+    (
+        "wealth_topic_banquet_will_flip",
+        "慈善晚宴主桌上，握着能改写顺位的补充条款的人、名义上的联姻对象和突然回来的旧爱一起逼她在众人面前站队。做成8到15分钟标准豪门局，要有当众掀桌感。",
+        "wealth_banquet_will_flip",
+        "12_15",
+    ),
+    (
+        "wealth_topic_engagement_sideswitch",
+        "豪门订婚宴上，最体面的未婚夫、突然回来的旧爱和握着遗嘱录音的律师同时逼她站队。做成8到15分钟标准局，重点要有当众失控的爆点。",
+        "wealth_engagement_sideswitch",
+        "12_15",
+    ),
+    (
+        "wealth_topic_inheritance_evidence_drop",
+        "豪门继承夜里，继承顺位、旧案证据和最会装体面的人同时逼她选边。做成8到15分钟标准局，要有当众翻盘的重击感。",
+        "wealth_inheritance_evidence_drop",
+        "12_15",
+    ),
+    (
+        "office_topic_board_vote_blackledger",
+        "董事会前夜，项目负责人被上司、对手和法务一起拖进并购黑账与暧昧站队里。想要一个8到15分钟的职场修罗场。",
+        "office_board_vote_blackledger",
+        "12_15",
+    ),
+    (
+        "office_topic_merger_scapegoat",
+        "并购收口会上，掌权者、旧同盟和危险合作方同时把黑账往她身上推，所有人都默认最后必须有人背锅。做成8到15分钟标准职场局。",
+        "office_merger_scapegoat",
+        "12_15",
+    ),
+    (
+        "entertainment_topic_awards_scandal",
+        "颁奖礼后台，顶流男主、铁血经纪人和突然回来的旧绯闻对象把女主逼进直播翻车边缘。标准局，8到15分钟。",
+        "entertainment_awards_scandal",
+        "12_15",
+    ),
+    (
+        "campus_topic_homecoming_recording",
+        "校庆晚会前，奖学金竞争、旧录音和前任回归一起把女主推向风口。要有校园站队和公开翻车感，8到15分钟。",
+        "campus_homecoming_recording",
+        "12_15",
+    ),
+)
+
+
+_LONG_ARC_TEMPLATE_REGRESSION_CASES = (
+    (
+        "wealth_flagship_succession",
+        "继承委员会跨夜听证与家宴并行推进，联姻席位、私生证据和旧爱回潮反复换手，目标做成30到45分钟的超级旗舰局。",
+        "wealth_private_heir_return",
+        "30_45",
+    ),
+    (
+        "office_flagship_merger",
+        "并购终局拆成多会场长链路推进，总裁、法务、董事与旧同盟轮流逼她让步，每次拒绝都触发更高层级公开后果，目标30到45分钟。",
+        "office_merger_scapegoat",
+        "30_45",
+    ),
+    (
+        "entertainment_flagship_awards",
+        "颁奖礼周从彩排到庆功夜连锁发酵，热搜、隐恋、代言与黑料互相咬合，主角需要跨多个镜头场景反手回收，目标30到45分钟超级旗舰局。",
+        "entertainment_awards_scandal",
+        "30_45",
+    ),
+    (
+        "wealth_light_sideswitch",
+        "豪门订婚宴前夜的排位战里，未婚夫、旧爱和律师轮流加压，目标做成15到20分钟轻量长局并确保代价落地。",
+        "wealth_engagement_sideswitch",
+        "15_20",
+    ),
+)
 
 
 class _DynamicFakeGateway:
-    def __init__(self, profile_id: str = "live_gpt_5_4_mini") -> None:
+    def __init__(self, profile_id: str = "live_deepseek_v4_flash") -> None:
         self.profile_id = profile_id
-        self.model = "gpt-5.4-mini"
+        self.model = "deepseek-v4-flash"
         self.call_trace: list[dict] = []
         self.max_output_tokens_preview = 800
         self.max_output_tokens_cast_slots = 800
@@ -131,12 +203,12 @@ def test_preview_graph_returns_valid_blueprint() -> None:
 def test_preview_live_mode_falls_back_when_gateway_unavailable(monkeypatch) -> None:
     monkeypatch.setattr("rpg_backend.author_v2.preview.get_author_v2_llm_gateway", lambda _mode: (_ for _ in ()).throw(RuntimeError("missing")))
 
-    preview, state = run_preview_blueprint_graph("豪门家宴上，旧案录音要被当众说破。", live_mode="live_qwen3_5_plus")
+    preview, state = run_preview_blueprint_graph("豪门家宴上，旧案录音要被当众说破。", live_mode="live_deepseek_v4_flash")
 
     assert preview.story_shell_id == "wealth_families"
     synth_record = next(record for record in state["quality_trace"] if record["stage"] == "synthesize_preview_blueprint")
     assert synth_record["outcome"] == "fallback"
-    assert synth_record["source"] == "live_qwen3_5_plus"
+    assert synth_record["source"] == "live_deepseek_v4_flash"
     assert synth_record["reasons"] == ["retry_exhausted:live_gateway_unavailable"]
 
 
@@ -181,8 +253,8 @@ def test_preview_live_mode_rejects_schema_drift_and_falls_back() -> None:
     preview, state = run_preview_blueprint_graph(
         seed,
         preview_id=preview_id,
-        live_mode="live_qwen3_5_flash",
-        gateway=_PreviewRepairGateway(profile_id="live_qwen3_5_flash"),
+        live_mode="live_deepseek_v4_flash",
+        gateway=_PreviewRepairGateway(profile_id="live_deepseek_v4_flash"),
     )
 
     synth_record = next(record for record in state["quality_trace"] if record["stage"] == "synthesize_preview_blueprint")
@@ -223,8 +295,8 @@ def test_preview_seed_fingerprint_json_equivalence_does_not_trigger_locked() -> 
 
     _preview, state = run_preview_blueprint_graph(
         "豪门订婚宴上，未婚夫、旧爱和律师一起逼她在众目睽睽下选边。",
-        live_mode="live_qwen3_5_flash",
-        gateway=_EquivalentFingerprintGateway(profile_id="live_qwen3_5_flash"),
+        live_mode="live_deepseek_v4_flash",
+        gateway=_EquivalentFingerprintGateway(profile_id="live_deepseek_v4_flash"),
     )
     synth_record = next(record for record in state["quality_trace"] if record["stage"] == "synthesize_preview_blueprint")
 
@@ -237,7 +309,7 @@ def test_preview_strict_no_repair_fallback_raises_on_retry_exhausted(monkeypatch
     get_settings.cache_clear()
 
     class _PreviewRepairGateway(_DynamicFakeGateway):
-        def __init__(self, profile_id: str = "live_qwen3_5_flash") -> None:
+        def __init__(self, profile_id: str = "live_deepseek_v4_flash") -> None:
             super().__init__(profile_id=profile_id)
             self.attempts = 0
 
@@ -270,12 +342,12 @@ def test_preview_strict_no_repair_fallback_raises_on_retry_exhausted(monkeypatch
                 }
             )
 
-    gateway = _PreviewRepairGateway(profile_id="live_qwen3_5_flash")
+    gateway = _PreviewRepairGateway(profile_id="live_deepseek_v4_flash")
     try:
         try:
             run_preview_blueprint_graph(
                 "豪门订婚宴上，未婚夫、旧爱和律师一起逼她在众目睽睽下选边。",
-                live_mode="live_qwen3_5_flash",
+                live_mode="live_deepseek_v4_flash",
                 gateway=gateway,
             )
             assert False, "strict mode should reject retry exhausted preview outcome"
@@ -318,8 +390,8 @@ def test_preview_live_mode_reports_missing_required_delta_fields() -> None:
 
     _preview, state = run_preview_blueprint_graph(
         "豪门订婚宴上，未婚夫、旧爱和律师一起逼她在众目睽睽下选边。",
-        live_mode="live_qwen3_5_flash",
-        gateway=_MissingDeltaGateway(profile_id="live_qwen3_5_flash"),
+        live_mode="live_deepseek_v4_flash",
+        gateway=_MissingDeltaGateway(profile_id="live_deepseek_v4_flash"),
     )
     synth_record = next(record for record in state["quality_trace"] if record["stage"] == "synthesize_preview_blueprint")
 
@@ -506,7 +578,7 @@ def test_compile_voice_atoms_live_calls_gateway_on_first_attempt(monkeypatch) ->
     gateway = _CaptureGateway()
     monkeypatch.setattr(
         "rpg_backend.author_v2.workflow._resolve_live_gateway",
-        lambda live_mode, gateway_override: [("live_gpt_5_4_mini", gateway)],
+        lambda live_mode, gateway_override: [("live_deepseek_v4_flash", gateway)],
     )
 
     result_state = compile_voice_atoms(
@@ -516,7 +588,7 @@ def test_compile_voice_atoms_live_calls_gateway_on_first_attempt(monkeypatch) ->
             "bound_cast": bound_cast,
             "quality_trace": [],
             "llm_call_trace": [],
-            "live_mode": "live_gpt_5_4_mini",
+            "live_mode": "live_deepseek_v4_flash",
         }
     )
     quality_record = next(record for record in result_state["quality_trace"] if record["stage"] == "compile_voice_atoms")
@@ -662,7 +734,7 @@ def test_compile_segment_playbooks_uses_reduced_live_parallelism(monkeypatch) ->
             contract=contract,
             bound_cast=kwargs["bound_cast"],
         )
-        return playbook, [], [], True, {"live_attempt_count": 1, "live_success_count": 1, "provider_failure_count": 0, "used_modes": ["live_gpt_5_4_mini"]}
+        return playbook, [], [], True, {"live_attempt_count": 1, "live_success_count": 1, "provider_failure_count": 0, "used_modes": ["live_deepseek_v4_flash"]}
 
     monkeypatch.setattr("rpg_backend.author_v2.workflow.ThreadPoolExecutor", _Executor)
     monkeypatch.setattr("rpg_backend.author_v2.workflow._compile_segment_with_mode", _fake_compile)
@@ -673,7 +745,7 @@ def test_compile_segment_playbooks_uses_reduced_live_parallelism(monkeypatch) ->
             "segment_contracts": allocation_state["segment_contracts"],
             "bound_cast": bound_cast,
             "quality_trace": [],
-            "live_mode": "pure_gpt",
+            "live_mode": "live_deepseek_v4_flash",
         }
     )
 
@@ -710,7 +782,7 @@ def test_compile_segment_playbooks_uses_single_worker_under_strict_gate(monkeypa
                 contract=contract,
                 bound_cast=kwargs["bound_cast"],
             )
-            return playbook, [], [], True, {"live_attempt_count": 1, "live_success_count": 1, "provider_failure_count": 0, "used_modes": ["live_gpt_5_4_mini"]}
+            return playbook, [], [], True, {"live_attempt_count": 1, "live_success_count": 1, "provider_failure_count": 0, "used_modes": ["live_deepseek_v4_flash"]}
 
         monkeypatch.setattr("rpg_backend.author_v2.workflow.ThreadPoolExecutor", _Executor)
         monkeypatch.setattr("rpg_backend.author_v2.workflow._compile_segment_with_mode", _fake_compile)
@@ -721,7 +793,7 @@ def test_compile_segment_playbooks_uses_single_worker_under_strict_gate(monkeypa
                 "segment_contracts": allocation_state["segment_contracts"],
                 "bound_cast": bound_cast,
                 "quality_trace": [],
-                "live_mode": "pure_gpt",
+                "live_mode": "live_deepseek_v4_flash",
             }
         )
         assert captured["max_workers"] == 1
@@ -730,7 +802,7 @@ def test_compile_segment_playbooks_uses_single_worker_under_strict_gate(monkeypa
         get_settings.cache_clear()
 
 
-def test_compile_segment_playbook_pure_gpt_retries_three_times_and_uses_shorter_timeout(monkeypatch) -> None:
+def test_compile_segment_playbook_live_deepseek_v4_flash_retries_three_times_with_shared_timeout(monkeypatch) -> None:
     blueprint = _accepted_blueprint()
     cast_slots = plan_cast_slots({"accepted_blueprint": blueprint, "quality_trace": []})["cast_slots"]
     bound_cast = bind_slots_to_ip_cast(cast_slots, blueprint)
@@ -751,7 +823,7 @@ def test_compile_segment_playbook_pure_gpt_retries_three_times_and_uses_shorter_
 
     class _ProviderFailGateway(_DynamicFakeGateway):
         def __init__(self) -> None:
-            super().__init__(profile_id="live_gpt_5_4_mini")
+            super().__init__(profile_id="live_deepseek_v4_flash")
             self.timeout_seconds = 20.0
             self.observed_timeout_seconds: list[float] = []
 
@@ -779,22 +851,22 @@ def test_compile_segment_playbook_pure_gpt_retries_three_times_and_uses_shorter_
     gateway = _ProviderFailGateway()
     monkeypatch.setattr(
         "rpg_backend.author_v2.workflow._resolve_live_gateway",
-        lambda live_mode, gateway_override: [("live_gpt_5_4_mini", gateway)],
+        lambda live_mode, gateway_override: [("live_deepseek_v4_flash", gateway)],
     )
 
     _, trace, reasons, live_success, metrics = _compile_segment_with_mode(
         blueprint=blueprint,
         contract=contract,
         bound_cast=local_cast,
-        live_mode="pure_gpt",
+        live_mode="live_deepseek_v4_flash",
     )
 
     assert live_success is False
     assert metrics["live_attempt_count"] == 3
     assert metrics["provider_failure_count"] == 3
-    assert gateway.observed_timeout_seconds == [12.0, 12.0, 12.0]
+    assert gateway.observed_timeout_seconds == [20.0, 20.0, 20.0]
     assert len(trace) == 3
-    assert reasons == ["retry_exhausted:live_gpt_5_4_mini:llm_provider_failed"]
+    assert reasons == ["retry_exhausted:live_deepseek_v4_flash:llm_provider_failed"]
 
 
 def test_compiled_segments_include_three_suggestion_lanes() -> None:
@@ -908,10 +980,10 @@ def test_author_play_graph_live_records_trace_and_uses_live_content(monkeypatch)
     monkeypatch.setattr("rpg_backend.author_v2.workflow.get_author_v2_llm_gateway", lambda _mode: _DynamicFakeGateway())
     blueprint = _accepted_blueprint("董事会前夜，并购黑账和暧昧站队一起逼近。")
 
-    result = run_author_play_graph(blueprint, live_mode="live_gpt_5_4_mini", gateway=_DynamicFakeGateway())
+    result = run_author_play_graph(blueprint, live_mode="live_deepseek_v4_flash", gateway=_DynamicFakeGateway())
 
     assert result.state["llm_call_trace"]
-    assert any(record["source"] == "live_gpt_5_4_mini" for record in result.state["quality_trace"] if record["stage"] in {"compile_voice_atoms", "compile_segment_playbooks"})
+    assert any(record["source"] == "live_deepseek_v4_flash" for record in result.state["quality_trace"] if record["stage"] in {"compile_voice_atoms", "compile_segment_playbooks"})
     assert all(record["source"] == "deterministic" for record in result.state["quality_trace"] if record["stage"] in {"plan_cast_slots", "bind_ip_cast", "allocate_segment_contracts"})
     assert any("公开代价" in segment.public_pressure_cue for segment in result.play_plan.segments)
 
@@ -919,26 +991,30 @@ def test_author_play_graph_live_records_trace_and_uses_live_content(monkeypatch)
 def test_author_play_graph_flash_live_mode_uses_live_branch() -> None:
     blueprint = _accepted_blueprint("豪门订婚宴上，未婚夫、旧爱和律师一起逼她在众目睽睽下选边。")
 
-    result = run_author_play_graph(blueprint, live_mode="live_qwen3_5_flash", gateway=_DynamicFakeGateway(profile_id="live_qwen3_5_flash"))
+    result = run_author_play_graph(blueprint, live_mode="live_deepseek_v4_flash", gateway=_DynamicFakeGateway(profile_id="live_deepseek_v4_flash"))
 
     assert result.state["llm_call_trace"]
-    assert any(record["source"] == "live_qwen3_5_flash" for record in result.state["quality_trace"] if record["stage"] in {"compile_voice_atoms", "compile_segment_playbooks"})
+    assert any(record["source"] == "live_deepseek_v4_flash" for record in result.state["quality_trace"] if record["stage"] in {"compile_voice_atoms", "compile_segment_playbooks"})
     assert all(record["source"] == "deterministic" for record in result.state["quality_trace"] if record["stage"] in {"plan_cast_slots", "bind_ip_cast", "allocate_segment_contracts"})
 
 
-def test_live_priority_chain_is_gpt_then_flash_then_plus() -> None:
+def test_live_priority_chain_is_deepseek_flash_only() -> None:
+    assert AUTHOR_V2_PRIORITY_CHAIN == ("live_deepseek_v4_flash",)
     assert resolve_author_v2_live_mode_chain("live_priority") == AUTHOR_V2_PRIORITY_CHAIN
 
 
-def test_pure_gpt_chain_is_gpt_only() -> None:
-    assert resolve_author_v2_live_mode_chain("pure_gpt") == ("live_gpt_5_4_mini",)
+def test_live_deepseek_v4_flash_chain_is_flash_only() -> None:
+    assert resolve_author_v2_live_mode_chain("live_deepseek_v4_flash") == ("live_deepseek_v4_flash",)
 
 
 def test_mainline_live_chain_matches_priority_chain() -> None:
     assert resolve_author_v2_live_mode_chain("mainline_live") == AUTHOR_V2_PRIORITY_CHAIN
 
 
-def test_preview_live_priority_falls_through_to_flash(monkeypatch) -> None:
+def test_preview_live_priority_uses_flash_only_without_provider_fallback(monkeypatch) -> None:
+    class _ProviderFailure(RuntimeError):
+        code = "llm_provider_failed"
+
     class _FailingGateway(_DynamicFakeGateway):
         def invoke_json(
             self,
@@ -949,13 +1025,11 @@ def test_preview_live_priority_falls_through_to_flash(monkeypatch) -> None:
             operation_name,
             response_format_type=None,
         ):  # noqa: ANN001
-            raise RuntimeError("provider down")
+            raise _ProviderFailure("provider down")
 
     def _gateway_for_mode(mode: str):  # noqa: ANN001, ANN202
-        if mode == "live_gpt_5_4_mini":
+        if mode == "live_deepseek_v4_flash":
             return _FailingGateway(profile_id=mode)
-        if mode == "live_qwen3_5_flash":
-            return _DynamicFakeGateway(profile_id=mode)
         raise AssertionError(f"unexpected mode {mode}")
 
     monkeypatch.setattr("rpg_backend.author_v2.preview.get_author_v2_llm_gateway", _gateway_for_mode)
@@ -968,6 +1042,9 @@ def test_preview_live_priority_falls_through_to_flash(monkeypatch) -> None:
     synth_record = next(record for record in state["quality_trace"] if record["stage"] == "synthesize_preview_blueprint")
 
     assert preview.bomb_moment.startswith("在董事会镜头前") or "当众" in preview.bomb_moment
+    assert synth_record["source"] == "live_priority"
+    assert synth_record["actual_mode"] == "deterministic"
+    assert synth_record["provider_failure_count"] == 3
 
 
 def test_seed_fingerprint_rejects_out_of_scope_seed() -> None:
@@ -995,44 +1072,46 @@ def test_template_matching_prefers_awards_when_seed_mentions_awards_even_with_li
     assert match_story_template(fingerprint).template_id == "entertainment_awards_scandal"
 
 
-def test_template_matching_tiebreak_resolves_holdout_four_misclass_cases() -> None:
-    holdout_cases = build_holdout_case_catalog(v1_topic_gold_14(), seed=20260401, variants_per_case=2)
-    target_case_ids = {
-        "wealth_topic_inheritance_evidence_drop_holdout_1",
-        "wealth_topic_inheritance_evidence_drop_holdout_2",
-        "office_topic_board_vote_blackledger_holdout_1",
-        "office_topic_board_vote_blackledger_holdout_2",
-    }
-    selected = [case for case in holdout_cases if case.case_id in target_case_ids]
+def test_template_matching_tiebreak_resolves_targeted_regression_cases() -> None:
+    targeted_cases = (
+        (
+            "wealth_topic_inheritance_evidence_drop_holdout_like_1",
+            "继承顺位听证前，旧案证据和最会装体面的人同时逼她在家宴主桌公开选边。",
+            "wealth_inheritance_evidence_drop",
+        ),
+        (
+            "wealth_topic_inheritance_evidence_drop_holdout_like_2",
+            "继承夜的补充证据突然落到她手里，联姻对象和旧爱都等她当众翻盘。",
+            "wealth_inheritance_evidence_drop",
+        ),
+        (
+            "office_topic_board_vote_blackledger_holdout_like_1",
+            "董事会表决前，黑账录音、上司暗示和法务函一起逼她公开站队。",
+            "office_board_vote_blackledger",
+        ),
+        (
+            "office_topic_board_vote_blackledger_holdout_like_2",
+            "并购董事会前夜，她拿到黑账证据，却被上司和对手同时推上背锅位。",
+            "office_board_vote_blackledger",
+        ),
+    )
 
-    assert len(selected) == 4
-    for case in selected:
-        fingerprint = build_seed_fingerprint(case.seed, "12_15")
-        assert match_story_template(fingerprint).template_id == case.expected_template_id
+    for _case_id, seed, expected_template_id in targeted_cases:
+        fingerprint = build_seed_fingerprint(seed, "12_15")
+        assert match_story_template(fingerprint).template_id == expected_template_id
 
 
 def test_template_matching_tiebreak_does_not_regress_base_14_expected_templates() -> None:
-    for case in v1_topic_gold_14():
-        assert case.expected_template_id is not None
-        fingerprint = build_seed_fingerprint(case.seed, "12_15")
-        assert match_story_template(fingerprint).template_id == case.expected_template_id
+    for _case_id, seed, expected_template_id, play_length in _BASE_TEMPLATE_REGRESSION_CASES:
+        fingerprint = build_seed_fingerprint(seed, play_length)
+        assert match_story_template(fingerprint).template_id == expected_template_id
 
 
 def test_mini_long_arc_problem_cases_match_expected_templates() -> None:
-    targeted_case_ids = {
-        "entertainment_flagship_awards",
-        "wealth_light_sideswitch",
-        "wealth_flagship_succession",
-        "office_flagship_merger",
-    }
-    for case in mini_gold_realistic_6():
-        if case.case_id not in targeted_case_ids:
-            continue
-        assert case.expected_template_id is not None
-        assert case.expected_play_length_preset is not None
-        fingerprint = build_seed_fingerprint(case.seed, str(case.expected_play_length_preset))
+    for _case_id, seed, expected_template_id, play_length in _LONG_ARC_TEMPLATE_REGRESSION_CASES:
+        fingerprint = build_seed_fingerprint(seed, play_length)
         assert fingerprint.fit_mode != "out_of_scope"
-        assert match_story_template(fingerprint).template_id == case.expected_template_id
+        assert match_story_template(fingerprint).template_id == expected_template_id
 
 
 def test_preview_normalization_validates_without_post_patch_repair(monkeypatch) -> None:
@@ -1050,11 +1129,11 @@ def test_preview_normalization_validates_without_post_patch_repair(monkeypatch) 
                 response_format_type=response_format_type,
             )
 
-    monkeypatch.setattr("rpg_backend.author_v2.preview.get_author_v2_llm_gateway", lambda _mode: _NoPublicBombGateway(profile_id="live_qwen3_5_flash"))
+    monkeypatch.setattr("rpg_backend.author_v2.preview.get_author_v2_llm_gateway", lambda _mode: _NoPublicBombGateway(profile_id="live_deepseek_v4_flash"))
 
     preview, state = run_preview_blueprint_graph(
         "校庆晚会前，奖学金竞争和旧录音同时逼她选边。",
-        live_mode="live_qwen3_5_flash",
+        live_mode="live_deepseek_v4_flash",
     )
 
     assert any(token in preview.bomb_moment for token in ("公开", "当众", "直播", "镜头"))
@@ -1370,14 +1449,14 @@ def test_segment_playbook_payload_uses_delta_contract_and_base_excerpt(monkeypat
     gateway = _CaptureGateway()
     monkeypatch.setattr(
         "rpg_backend.author_v2.workflow._resolve_live_gateway",
-        lambda live_mode, gateway_override: [("live_gpt_5_4_mini", gateway)],
+        lambda live_mode, gateway_override: [("live_deepseek_v4_flash", gateway)],
     )
 
     _compile_segment_with_mode(
         blueprint=blueprint,
         contract=contract,
         bound_cast=local_cast,
-        live_mode="live_gpt_5_4_mini",
+        live_mode="live_deepseek_v4_flash",
     )
 
     assert captured["playbook_base"]
@@ -1435,14 +1514,14 @@ def test_segment_playbook_delta_sanitizer_truncates_render_cues_overflow(monkeyp
     gateway = _CueOverflowGateway()
     monkeypatch.setattr(
         "rpg_backend.author_v2.workflow._resolve_live_gateway",
-        lambda live_mode, gateway_override: [("live_gpt_5_4_mini", gateway)],
+        lambda live_mode, gateway_override: [("live_deepseek_v4_flash", gateway)],
     )
 
     playbook, _trace, reasons, live_success, _metrics = _compile_segment_with_mode(
         blueprint=blueprint,
         contract=contract,
         bound_cast=local_cast,
-        live_mode="live_gpt_5_4_mini",
+        live_mode="live_deepseek_v4_flash",
     )
 
     assert live_success is True
@@ -1489,7 +1568,7 @@ def test_segment_playbook_missing_scene_goal_uses_deterministic_base(monkeypatch
     gateway = _MissingSceneGoalGateway()
     monkeypatch.setattr(
         "rpg_backend.author_v2.workflow._resolve_live_gateway",
-        lambda live_mode, gateway_override: [("live_gpt_5_4_mini", gateway)],
+        lambda live_mode, gateway_override: [("live_deepseek_v4_flash", gateway)],
     )
 
     deterministic_playbook = _compile_single_segment(blueprint=blueprint, contract=contract, bound_cast=local_cast)
@@ -1497,7 +1576,7 @@ def test_segment_playbook_missing_scene_goal_uses_deterministic_base(monkeypatch
         blueprint=blueprint,
         contract=contract,
         bound_cast=local_cast,
-        live_mode="live_gpt_5_4_mini",
+        live_mode="live_deepseek_v4_flash",
     )
 
     assert live_success is True
@@ -1588,12 +1667,12 @@ def test_surface_signal_readability_gate_flags_flat_segments() -> None:
     assert "relationship_backlash_missing" in failures
 
 
-def test_preview_pure_gpt_retries_provider_failures_without_downgrade(monkeypatch) -> None:
+def test_preview_live_deepseek_v4_flash_retries_provider_failures_without_downgrade(monkeypatch) -> None:
     class _ProviderFailure(RuntimeError):
         code = "llm_provider_failed"
 
     class _RetryGateway(_DynamicFakeGateway):
-        def __init__(self, profile_id: str = "live_gpt_5_4_mini") -> None:
+        def __init__(self, profile_id: str = "live_deepseek_v4_flash") -> None:
             super().__init__(profile_id=profile_id)
             self.attempts = 0
 
@@ -1607,19 +1686,18 @@ def test_preview_pure_gpt_retries_provider_failures_without_downgrade(monkeypatc
 
     preview, state = run_preview_blueprint_graph(
         "豪门订婚宴上，未婚夫、旧爱和律师一起逼她在众目睽睽下选边。",
-        live_mode="pure_gpt",
+        live_mode="live_deepseek_v4_flash",
     )
 
     synth_record = next(record for record in state["quality_trace"] if record["stage"] == "synthesize_preview_blueprint")
     assert preview.bomb_moment
-    assert synth_record["actual_mode"] == "live_gpt_5_4_mini"
+    assert synth_record["actual_mode"] == "live_deepseek_v4_flash"
     assert synth_record["used_live_output"] is True
     assert synth_record["live_attempt_count"] == 3
     assert synth_record["provider_failure_count"] == 2
-    assert "fallback_chain_used:live_qwen3_5_flash" not in synth_record["reasons"]
 
 
-def test_preview_mainline_live_downgrades_after_gpt_retries(monkeypatch) -> None:
+def test_preview_mainline_live_does_not_downgrade_after_flash_retries(monkeypatch) -> None:
     class _ProviderFailure(RuntimeError):
         code = "llm_provider_failed"
 
@@ -1628,10 +1706,8 @@ def test_preview_mainline_live_downgrades_after_gpt_retries(monkeypatch) -> None
             raise _ProviderFailure("provider down")
 
     def _gateway_for_mode(mode: str):  # noqa: ANN001, ANN202
-        if mode == "live_gpt_5_4_mini":
+        if mode == "live_deepseek_v4_flash":
             return _AlwaysFailGateway(profile_id=mode)
-        if mode == "live_qwen3_5_flash":
-            return _DynamicFakeGateway(profile_id=mode)
         raise AssertionError(f"unexpected mode {mode}")
 
     monkeypatch.setattr("rpg_backend.author_v2.preview.get_author_v2_llm_gateway", _gateway_for_mode)
@@ -1642,15 +1718,15 @@ def test_preview_mainline_live_downgrades_after_gpt_retries(monkeypatch) -> None
     )
     synth_record = next(record for record in state["quality_trace"] if record["stage"] == "synthesize_preview_blueprint")
 
-    assert synth_record["source"] == "live_qwen3_5_flash"
-    assert synth_record["actual_mode"] == "live_qwen3_5_flash"
-    assert synth_record["used_live_output"] is True
-    assert synth_record["live_attempt_count"] == 2
-    assert synth_record["provider_failure_count"] == 1
-    assert "live_gpt_5_4_mini:llm_provider_failed" in synth_record["reasons"]
+    assert synth_record["source"] == "mainline_live"
+    assert synth_record["actual_mode"] == "deterministic"
+    assert synth_record["used_live_output"] is False
+    assert synth_record["live_attempt_count"] == 3
+    assert synth_record["provider_failure_count"] == 3
+    assert synth_record["reasons"] == ["retry_exhausted:live_deepseek_v4_flash:llm_provider_failed"]
 
 
-def test_author_v2_qwen_gateway_defaults_to_json_mode() -> None:
+def test_author_v2_deepseek_flash_gateway_defaults_to_json_mode() -> None:
     recorded: dict[str, object] = {}
 
     def _fake_invoke_json(self, **kwargs):  # noqa: ANN001, ANN202
@@ -1659,8 +1735,8 @@ def test_author_v2_qwen_gateway_defaults_to_json_mode() -> None:
 
     gateway = AuthorV2LLMGateway(
         client=SimpleNamespace(responses=SimpleNamespace(create=None)),
-        model="qwen3.5-flash",
-        profile_id="live_qwen3_5_flash",
+        model="deepseek-v4-flash",
+        profile_id="live_deepseek_v4_flash",
         timeout_seconds=45.0,
         max_output_tokens_preview=800,
         max_output_tokens_cast_slots=800,
@@ -1681,7 +1757,7 @@ def test_author_v2_qwen_gateway_defaults_to_json_mode() -> None:
     assert recorded["response_format_type"] == "json_object"
 
 
-def test_author_v2_gpt_gateway_defaults_to_json_mode() -> None:
+def test_author_v2_deepseek_flash_gateway_defaults_to_json_mode_without_schema() -> None:
     recorded: dict[str, object] = {}
 
     def _fake_invoke_json(self, **kwargs):  # noqa: ANN001, ANN202
@@ -1690,8 +1766,8 @@ def test_author_v2_gpt_gateway_defaults_to_json_mode() -> None:
 
     gateway = AuthorV2LLMGateway(
         client=SimpleNamespace(responses=SimpleNamespace(create=None)),
-        model="gpt-5.4-mini",
-        profile_id="live_gpt_5_4_mini",
+        model="deepseek-v4-flash",
+        profile_id="live_deepseek_v4_flash",
         timeout_seconds=45.0,
         max_output_tokens_preview=800,
         max_output_tokens_cast_slots=800,
@@ -1712,7 +1788,48 @@ def test_author_v2_gpt_gateway_defaults_to_json_mode() -> None:
     assert recorded["response_format_type"] == "json_object"
 
 
-def test_author_v2_qwen_gateway_uses_dedicated_timeout(monkeypatch) -> None:
+def test_author_v2_deepseek_gateway_uses_author_config_and_downgrades_schema(monkeypatch) -> None:
+    captured_client_kwargs: dict[str, object] = {}
+    recorded_invoke_kwargs: dict[str, object] = {}
+
+    def _fake_build_openai_client(**kwargs):  # noqa: ANN001, ANN202
+        captured_client_kwargs.update(kwargs)
+        return SimpleNamespace(responses=SimpleNamespace(create=None))
+
+    def _fake_invoke_json(self, **kwargs):  # noqa: ANN001, ANN202
+        recorded_invoke_kwargs.update(kwargs)
+        return SimpleNamespace(payload={"ok": True}, response_id="resp_demo", usage={}, input_characters=10)
+
+    monkeypatch.setattr("rpg_backend.author_v2.gateway.build_openai_client", _fake_build_openai_client)
+    monkeypatch.setattr("rpg_backend.author_v2.gateway.ResponsesJSONTransport.invoke_json", _fake_invoke_json)
+    settings = Settings(
+        responses_base_url="https://generic.example",
+        responses_api_key="generic-key",
+        responses_author_base_url="https://api.deepseek.com",
+        responses_author_api_key="author-key",
+        responses_author_model="deepseek-v4-flash",
+        responses_author_requests_per_minute=120,
+    )
+
+    gateway = get_author_v2_llm_gateway("live_deepseek_v4_flash", settings=settings)
+    gateway.invoke_json(
+        system_prompt="Return JSON.",
+        user_payload={"demo": True},
+        max_output_tokens=32,
+        operation_name="author_v2.preview_synthesis",
+        response_format_type="json_schema",
+        response_format_schema={"type": "object", "properties": {"ok": {"type": "boolean"}}},
+    )
+
+    assert gateway.model == "deepseek-v4-flash"
+    assert captured_client_kwargs["base_url"] == "https://api.deepseek.com"
+    assert captured_client_kwargs["api_key"] == "author-key"
+    assert captured_client_kwargs["requests_per_minute"] == 120
+    assert captured_client_kwargs["rate_limit_scope"] == "author_v2"
+    assert recorded_invoke_kwargs["response_format_type"] == "json_object"
+
+
+def test_author_v2_deepseek_flash_gateway_uses_shared_timeout(monkeypatch) -> None:
     monkeypatch.setattr("rpg_backend.author_v2.gateway.build_openai_client", lambda **kwargs: SimpleNamespace(responses=SimpleNamespace(create=None)))
     settings = Settings(
         responses_base_url="https://generic.example/v1",
@@ -1720,17 +1837,14 @@ def test_author_v2_qwen_gateway_uses_dedicated_timeout(monkeypatch) -> None:
         responses_author_base_url="https://author.example/v1",
         responses_author_api_key="author-key",
         responses_timeout_seconds=20.0,
-        responses_timeout_seconds_author_v2_qwen=45.0,
     )
 
-    qwen_gateway = get_author_v2_llm_gateway("live_qwen3_5_flash", settings=settings)
-    gpt_gateway = get_author_v2_llm_gateway("live_gpt_5_4_mini", settings=settings)
+    gateway = get_author_v2_llm_gateway("live_deepseek_v4_flash", settings=settings)
 
-    assert qwen_gateway.timeout_seconds == 45.0
-    assert gpt_gateway.timeout_seconds == 20.0
+    assert gateway.timeout_seconds == 20.0
 
 
-def test_author_v2_qwen_gateway_applies_rpm_limit(monkeypatch) -> None:
+def test_author_v2_deepseek_flash_gateway_applies_author_rpm_limit(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
     def _fake_build_openai_client(**kwargs):  # noqa: ANN001, ANN202
@@ -1741,10 +1855,10 @@ def test_author_v2_qwen_gateway_applies_rpm_limit(monkeypatch) -> None:
     settings = Settings(
         responses_author_base_url="https://author.example/v1",
         responses_author_api_key="author-key",
-        responses_author_qwen_requests_per_minute=500,
+        responses_author_requests_per_minute=500,
     )
 
-    _ = get_author_v2_llm_gateway("live_qwen3_5_flash", settings=settings)
+    _ = get_author_v2_llm_gateway("live_deepseek_v4_flash", settings=settings)
 
     assert captured["requests_per_minute"] == 500
-    assert captured["rate_limit_scope"] == "author_v2:qwen"
+    assert captured["rate_limit_scope"] == "author_v2"

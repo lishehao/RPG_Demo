@@ -11,11 +11,13 @@ from rpg_backend.narrative.contracts import (
     Highlight,
     InventoryDelta,
     NPCPulse,
+    PlayedLeverageCard,
     PlayerGoal,
     PlayerLeverageOverNPC,
     PlayerRole,
     StoryMessage,
     StoryOption,
+    STORY_OPTION_LABEL_MAX_LENGTH,
     TemplateLanguage,
 )
 from rpg_backend.narrative.gateway import NarrativeGatewayError, NarrativeLLMGateway
@@ -53,6 +55,9 @@ _LANGUAGE_DIRECTIVE_EN = (
     "for the option (e.g. 'show recording', 'push back', 'step away') "
     "— short enough that a player can later say 'I picked show "
     "recording that turn.' Don't repeat the [Intent] bracket prefix.\n"
+    "- English options[].label values should be complete 5-12 word "
+    "player actions. Do not end them with ellipses or leave them "
+    "visibly unfinished.\n"
     "- advisor_persona (the entire description of the friend the player "
     "can call): ENGLISH. Pick a plausible English/Western name and write "
     "the persona description in English.\n"
@@ -262,6 +267,12 @@ _TURN_SYSTEM_PROMPT = """\
 - **玩家的 leverages_over_npcs 是真正的双向博弈** —— 当 NPC 出 `leverage_over_player` 牌时，你应该让玩家**有机会反打**：在 narration 里暗示玩家手里也有牌（"你想起苏曼三个月前那张转账截图"），并在选项中给出"亮出 XXX 反将"的选择
 - **starting_assets 是真实存在的物件**——玩家在剧情中可以拿出来、亮出来、被别人发现。每条 asset 在 12 回合中至少应该有 1 次被引用或使用的机会（不一定都用上，但叙事要让它们"在场"）
 - 玩家的 `hidden_objective` 是**整局戏的隐藏主轴** —— passage 里偶尔可以闪现玩家朝着这个目标推进的内心动作（"你心里默数着今晚还剩多少机会"），但**不要明说**，除非玩家自己选择揭开
+
+**玩家本回合打出的反将牌（played_leverage_card）**:
+当 user_payload 含 `played_leverage_card`，表示玩家不是随口试探，而是明确消耗/亮出一张自己角色卡上的 leverage。你必须把它当作真实行动处理：
+- passage 必须具体写出这张 leverage 如何进入场景，以及目标 NPC 如何反应；不能只泛泛写"你打出一张牌"。
+- 它会改变关系与权力位置，但不要写成数值 buff；用旁观者沉默、目标失态、临时让步、反咬风险等戏剧后果呈现。
+- 后续 options 至少一个要承接这张牌造成的新局势，而不是回到原本三个惯性选项。
 
 **Reversal 强制翻转（twist_directive）—— 仅在 reversal 阶段出现**:
 当 user_payload 含 `twist_directive: {kind, hint}`，这表示**当前回合是 reversal 拐点**，**不能只升压**——必须真正发生一个让玩家立场或局势发生根本变化的事件。kind 是下面之一：
@@ -879,6 +890,7 @@ def advance_turn(
     player_role: PlayerRole | None = None,
     current_inventory: list[str] | None = None,
     player_diary: str | None = None,
+    played_leverage: PlayedLeverageCard | None = None,
     language: TemplateLanguage = "en",
 ) -> TurnResult:
     """Advance one turn."""
@@ -905,6 +917,8 @@ def advance_turn(
         user_payload["current_inventory"] = current_inventory
     if player_diary:
         user_payload["player_diary"] = player_diary
+    if played_leverage is not None:
+        user_payload["played_leverage_card"] = played_leverage.model_dump()
 
     # Active scheduling: tell the LLM which NPC should actively push their
     # agenda this turn. Empty in story mode and during the hook phase.
@@ -1365,6 +1379,8 @@ def _summarize_recent_consequences(
             "content": msg.content[:240],
             "chosen_label": chosen_label,
         }
+        if msg.played_leverage is not None:
+            last_player_action["played_leverage_card"] = msg.played_leverage.model_dump()
         break
 
     # Last 4 narrator beats — one shift per NPC per beat, oldest-to-newest.
@@ -2249,7 +2265,7 @@ def _parse_options(raw: Any, *, language: TemplateLanguage | None = None) -> lis
             if not text:
                 continue
             text = _normalize_option_label_language(text, language)
-            options.append(StoryOption(label=_clip_text(text, 60), hint="", handle=""))
+            options.append(StoryOption(label=_clip_text(text, STORY_OPTION_LABEL_MAX_LENGTH), hint="", handle=""))
             continue
         if not isinstance(item, dict):
             continue
@@ -2260,7 +2276,11 @@ def _parse_options(raw: Any, *, language: TemplateLanguage | None = None) -> lis
         hint = str(item.get("hint") or "").strip()
         handle = str(item.get("handle") or "").strip()
         options.append(
-            StoryOption(label=_clip_text(label, 60), hint=_clip_text(hint, 120), handle=handle[:12])
+            StoryOption(
+                label=_clip_text(label, STORY_OPTION_LABEL_MAX_LENGTH),
+                hint=_clip_text(hint, 120),
+                handle=handle[:12],
+            )
         )
         if len(options) >= 5:
             break

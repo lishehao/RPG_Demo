@@ -35,7 +35,7 @@ export function EmptyState({
       <div
         style={{
           ...styles.hero,
-          backgroundImage: `linear-gradient(180deg, rgba(20,16,12,0.05) 0%, rgba(20,16,12,0.55) 75%, var(--bg-elev) 100%), url(${getEmptyPlazaImage()})`,
+          backgroundImage: `linear-gradient(180deg, rgba(20,16,12,0.05) 0%, rgba(20,16,12,0.62) 78%, var(--bg) 100%), url(${getEmptyPlazaImage()})`,
         }}
       />
       <div style={styles.body}>
@@ -51,9 +51,9 @@ const styles: Record<string, CSSProperties> = {
   wrap: {
     maxWidth: 520,
     margin: "60px auto",
-    background: "var(--bg-elev)",
-    borderRadius: "var(--radius-md)",
-    border: "1px solid var(--line)",
+    background: "transparent",
+    borderRadius: 0,
+    border: "none",
     overflow: "hidden",
   },
   hero: {
@@ -63,7 +63,7 @@ const styles: Record<string, CSSProperties> = {
     backgroundPosition: "center",
   },
   body: {
-    padding: "20px 28px 28px",
+    padding: "22px 0 28px",
     textAlign: "center" as const,
     color: "var(--text-muted)",
   },

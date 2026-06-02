@@ -1,14 +1,12 @@
 import { type CSSProperties, useEffect, useRef, useState } from "react"
 import { motion } from "motion/react"
 import type {
-  NarrativeCastMember,
   NarrativeEndingDistributionResponse,
   NarrativePlayerRole,
   NarrativeTemplateSummary,
   NarrativeTemplateVisibility,
 } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
-import { useAuth } from "../../app/auth-context"
 import { Header } from "../../shared/ui/header"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { LoadingShim } from "../../shared/ui/loading-shim"
@@ -34,24 +32,27 @@ export function TemplateDetailPage({
   onSessionStarted: (sessionId: string) => void
 }) {
   const api = useApi()
-  const auth = useAuth()
   const t = useT()
   const { lang } = useLanguage()
+  const compactLayout = useCompactLayout()
   const [template, setTemplate] = useState<NarrativeTemplateSummary | null>(null)
   const [distribution, setDistribution] = useState<NarrativeEndingDistributionResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [visBusy, setVisBusy] = useState(false)
+  const [selectedRoleIndex, setSelectedRoleIndex] = useState<number | null>(null)
   const startInflightRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
     setError(null)
+    setSelectedRoleIndex(null)
     api
       .getNarrativeTemplate(templateId)
       .then((res) => {
         if (cancelled) return
         setTemplate(res)
+        setSelectedRoleIndex(res.player_role_options?.length ? 0 : null)
       })
       .catch((err) => {
         if (cancelled) return
@@ -73,11 +74,8 @@ export function TemplateDetailPage({
 
   const handleStart = async (roleIndex?: number) => {
     if (startInflightRef.current || !template) return
-    if (auth.isAnonymous) {
-      window.location.hash = `#/login?next=template/${templateId}`
-      return
-    }
     startInflightRef.current = true
+    setSelectedRoleIndex(roleIndex ?? null)
     setBusy(true)
     setError(null)
     try {
@@ -111,14 +109,14 @@ export function TemplateDetailPage({
   if (!template) {
     return (
       <div style={tdStyles.page}>
-        <Header onHome={onBackHome} onCreate={onOpenCreate} />
+        <Header onHome={onBackHome} onCreate={onOpenCreate} createVariant="link" />
         {error ? (
           <EmptyState
             title={t("world.empty_title")}
             hint={error}
             action={
               <button
-                className="ts-btn ts-btn--primary"
+                style={tdStyles.emptyAction}
                 type="button"
                 onClick={onBackHome}
               >
@@ -135,10 +133,16 @@ export function TemplateDetailPage({
 
   const cover = getCoverForTemplate(template)
   const advisorAvatar = getAdvisorAvatar(template.template_id, template.advisor_persona)
+  const selectedRole =
+    selectedRoleIndex !== null
+      ? template.player_role_options?.[selectedRoleIndex] ?? null
+      : null
+  const roleOptions = template.player_role_options ?? []
+  const hasMultipleRoles = roleOptions.length > 1
 
   return (
     <div style={tdStyles.page}>
-      <Header onHome={onBackHome} onCreate={onOpenCreate} />
+      <Header onHome={onBackHome} onCreate={onOpenCreate} createVariant="link" />
 
       {/* Hero: shell cover with title overlay */}
       <div
@@ -167,183 +171,138 @@ export function TemplateDetailPage({
       </div>
 
       <main style={tdStyles.main}>
-        <section style={tdStyles.section}>
-          <div style={tdStyles.sectionLabel}>{t("world.section_seed")}</div>
-          <div style={tdStyles.seedQuote}>"{template.seed}"</div>
-        </section>
-
-        <section style={tdStyles.section}>
-          <div style={tdStyles.sectionLabel}>{t("world.section_cast")}</div>
-          <div style={tdStyles.castList}>
-            {template.cast.map((c) => {
-              const interLevs = c.leverages_over_other_npcs ?? []
-              return (
-                <div key={c.character_id} style={tdStyles.castRow}>
-                  <img
-                    src={getAvatarForCastMember(template.template_id, c)}
-                    alt={c.display_name}
-                    style={tdStyles.castAvatar}
-                    loading="lazy"
-                  />
-                  <div style={tdStyles.castInfo}>
-                    <Truncated style={tdStyles.castName}>{c.display_name}</Truncated>
-                    <Truncated style={tdStyles.castRole}>{c.role}</Truncated>
-                    <Truncated lines={2} style={tdStyles.castRelation}>{c.relation_to_protagonist}</Truncated>
-                    {interLevs.length > 0 ? (
-                      <div style={tdStyles.castLevChip}>
-                        {t("world.cast_holds_leverage", { count: interLevs.length })}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          {(() => {
-            // Compute the inter-NPC leverage network across all cast for
-            // the dedicated "political network" subsection.
-            const npcNameById = new Map(
-              template.cast.map((c) => [c.character_id, c.display_name]),
-            )
-            const edges: Array<{ holder: string; target: string; leverage: string }> = []
-            for (const c of template.cast) {
-              for (const lev of c.leverages_over_other_npcs ?? []) {
-                edges.push({
-                  holder: c.display_name,
-                  target: npcNameById.get(lev.target_npc_id) ?? lev.target_npc_id,
-                  leverage: lev.leverage,
-                })
-              }
-            }
-            if (edges.length === 0) return null
-            return (
-              <div style={tdStyles.networkBox}>
-                <div style={tdStyles.networkLabel}>{t("world.network_label")}</div>
-                <p style={tdStyles.networkHint}>
-                  {t("world.network_hint")}
-                </p>
-                <ul style={tdStyles.networkList}>
-                  {edges.map((e, i) => (
-                    <li key={i} style={tdStyles.networkRow}>
-                      <Truncated style={tdStyles.networkHolder}>{e.holder}</Truncated>
-                      <span style={tdStyles.networkArrow}>→</span>
-                      <Truncated style={tdStyles.networkTarget}>{e.target}</Truncated>
-                      <span style={tdStyles.networkColon}>：</span>
-                      <Truncated lines={2} style={tdStyles.networkLeverage}>{e.leverage}</Truncated>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )
-          })()}
-        </section>
-
-        {template.failure_conditions && template.failure_conditions.length > 0 ? (
-          <section style={tdStyles.section}>
-            <div style={tdStyles.sectionLabel}>{t("world.section_failure")}</div>
-            <p style={tdStyles.failureHint}>
-              {t("world.failure_hint")}
-            </p>
-            <ul style={tdStyles.failureList}>
-              {template.failure_conditions.map((fc, i) => (
-                <li key={i} style={tdStyles.failureRow}>
-                  <Truncated style={tdStyles.failureLabel}>{`⚠ ${fc.label}`}</Truncated>
-                  <Truncated lines={3} style={tdStyles.failureDesc}>{fc.description}</Truncated>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <section style={tdStyles.section}>
-          <div style={tdStyles.sectionLabel}>{t("world.section_advisor")}</div>
-          <div style={tdStyles.advisorBlock}>
-            <img src={advisorAvatar} alt="" style={tdStyles.advisorAvatar} loading="lazy" />
-            <div style={tdStyles.advisorText}>{template.advisor_persona}</div>
-          </div>
-        </section>
-
-        {distribution && distribution.total_completed > 0 ? (
-          <section style={tdStyles.section}>
-            <div style={tdStyles.sectionLabel}>
-              {t("world.section_endings", { count: distribution.total_completed })}
-            </div>
-            <div style={tdStyles.distributionList}>
-              {distribution.entries.map((entry, idx) => {
-                const pct = (entry.count / distribution.total_completed) * 100
-                return (
-                  <motion.div
-                    key={entry.label}
-                    style={tdStyles.distributionRow}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.05 * idx + 0.15, ...itemTransition }}
-                  >
-                    <div style={tdStyles.distributionLabel}>
-                      {ENDING_LABEL_DISPLAY[lang][entry.label] ?? entry.label}
-                    </div>
-                    <div style={tdStyles.distributionBarTrack}>
-                      <motion.div
-                        style={tdStyles.distributionBarFill}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ delay: cascadeDelay(idx, 0.05, 0.25), ...transitions.slow }}
-                      />
-                    </div>
-                    <div style={tdStyles.distributionCount}>×{entry.count}</div>
-                  </motion.div>
-                )
-              })}
-            </div>
-            <p style={tdStyles.distributionHint}>
-              {t("world.endings_hint")}
-            </p>
-          </section>
-        ) : null}
-
         {error ? <div style={tdStyles.errorBox}>{error}</div> : null}
 
-        {template.player_role_options && template.player_role_options.length > 0 ? (
-          <section style={tdStyles.roleSection}>
-            <div style={tdStyles.sectionLabel}>{t("world.section_roles")}</div>
-            <p style={tdStyles.roleHint}>
-              {t("world.roles_hint")}
-            </p>
-            <div style={tdStyles.roleGrid}>
-              {template.player_role_options.map((role, idx) => (
-                <PlayerRoleCard
-                  key={role.role_id}
-                  role={role}
-                  cast={template.cast}
-                  busy={busy}
-                  index={idx}
-                  onSelect={() => void handleStart(idx)}
-                />
-              ))}
-            </div>
-          </section>
-        ) : (
-          <div style={tdStyles.actions}>
-            <motion.button
-              className="ts-btn ts-btn--primary ts-btn--lg"
-              onClick={() => void handleStart()}
-              disabled={busy}
-              style={{
-                minWidth: 240,
-                opacity: busy ? 0.5 : 1,
-                pointerEvents: busy ? "none" : "auto",
-              }}
-              type="button"
-              whileHover={busy ? undefined : hoverLift}
-              whileTap={busy ? undefined : tapPress}
-            >
-              {busy ? t("world.start_busy") : t("world.start_cta")}
-            </motion.button>
-            <p style={tdStyles.actionHint}>
-              {t("world.start_hint")}
-            </p>
+        <div style={{
+          ...tdStyles.launchGrid,
+          ...(compactLayout ? tdStyles.launchGridCompact : {}),
+        }}>
+          <div style={tdStyles.launchPrimary}>
+            {roleOptions.length > 0 ? (
+              <section style={tdStyles.roleSection}>
+                <div style={tdStyles.sectionLabel}>
+                  {hasMultipleRoles ? t("world.section_roles") : t("world.section_role_single")}
+                </div>
+                <p style={tdStyles.roleHint}>
+                  {hasMultipleRoles ? t("world.roles_hint") : t("world.role_single_hint")}
+                </p>
+                {hasMultipleRoles ? (
+                  <div
+                    style={{
+                      ...tdStyles.roleChooserLayout,
+                      ...(compactLayout ? tdStyles.roleChooserLayoutCompact : null),
+                    }}
+                  >
+                    <div
+                      style={{
+                        ...tdStyles.roleChoiceList,
+                        ...(compactLayout ? tdStyles.roleChoiceListCompact : null),
+                      }}
+                      aria-label={t("world.section_roles")}
+                    >
+                      {roleOptions.map((role, idx) => {
+                        const isActive = idx === selectedRoleIndex
+                        return (
+                          <button
+                            key={role.role_id}
+                            type="button"
+                            style={{
+                              ...tdStyles.roleChoiceButton,
+                              ...(compactLayout ? tdStyles.roleChoiceButtonCompact : null),
+                              ...(isActive ? tdStyles.roleChoiceButtonActive : null),
+                            }}
+                            onClick={() => setSelectedRoleIndex(idx)}
+                            disabled={busy}
+                            aria-pressed={isActive}
+                          >
+                            <span
+                              style={{
+                                ...tdStyles.roleChoiceIndex,
+                                ...(isActive ? tdStyles.roleChoiceIndexActive : null),
+                              }}
+                            >
+                              {idx + 1}.
+                            </span>
+                            <span style={tdStyles.roleChoiceCopy}>
+                              <span style={tdStyles.roleChoiceTopline}>
+                                <Truncated style={tdStyles.roleChoiceName}>{role.label}</Truncated>
+                                {isActive ? (
+                                  <span style={tdStyles.roleChoiceSelected}>
+                                    {t("world.role_chosen_badge")}
+                                  </span>
+                                ) : null}
+                              </span>
+                              <span style={tdStyles.roleChoiceMeta}>
+                                {t("world.role_launch_stats", {
+                                  cards: role.leverages_over_npcs.length,
+                                  items: role.starting_assets.length,
+                                })}
+                              </span>
+                              <Truncated
+                                lines={2}
+                                style={{
+                                  ...tdStyles.roleChoiceObjective,
+                                  ...(isActive ? tdStyles.roleChoiceObjectiveActive : null),
+                                }}
+                              >
+                                {role.hidden_objective}
+                              </Truncated>
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {selectedRole && selectedRoleIndex !== null ? (
+                      <SelectedRoleLaunchPanel
+                        role={selectedRole}
+                        cast={template.cast}
+                        busy={busy}
+                        hasAlternates
+                        onStart={() => void handleStart(selectedRoleIndex)}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+                {!hasMultipleRoles && selectedRole && selectedRoleIndex !== null ? (
+                  <SelectedRoleLaunchPanel
+                    role={selectedRole}
+                    cast={template.cast}
+                    busy={busy}
+                    hasAlternates={false}
+                    onStart={() => void handleStart(selectedRoleIndex)}
+                  />
+                ) : null}
+              </section>
+            ) : (
+              <div style={tdStyles.actions}>
+                <motion.button
+                  onClick={() => void handleStart()}
+                  disabled={busy}
+                  style={{
+                    ...tdStyles.startAction,
+                    opacity: busy ? 0.5 : 1,
+                    pointerEvents: busy ? "none" : "auto",
+                  }}
+                  type="button"
+                  whileHover={busy ? undefined : hoverLift}
+                  whileTap={busy ? undefined : tapPress}
+                >
+                  {busy ? t("world.start_busy") : t("world.start_cta")}
+                </motion.button>
+                <p style={tdStyles.actionHint}>
+                  {t("world.start_hint")}
+                </p>
+              </div>
+            )}
           </div>
-        )}
+
+          <StoryBriefingRail
+            template={template}
+            advisorAvatar={advisorAvatar}
+            distribution={distribution}
+            lang={lang}
+          />
+        </div>
 
         {/* Owner-only: visibility controls */}
         {template.is_owner ? (
@@ -378,105 +337,302 @@ function visibilityLabel(v: NarrativeTemplateVisibility, t: ReturnType<typeof us
   return t("home.visibility_private")
 }
 
-function PlayerRoleCard({
+function useCompactLayout(query = "(max-width: 900px)") {
+  const [compact, setCompact] = useState(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const media = window.matchMedia(query)
+    const update = () => setCompact(media.matches)
+    update()
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [query])
+  return compact
+}
+
+function displayEndingLabel(label: string, lang: ReturnType<typeof useLanguage>["lang"]): string {
+  const translated = ENDING_LABEL_DISPLAY[lang][label]
+  if (translated) return translated
+  return label
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase())
+}
+
+function StoryBriefingRail({
+  template,
+  advisorAvatar,
+  distribution,
+  lang,
+}: {
+  template: NarrativeTemplateSummary
+  advisorAvatar: string
+  distribution: NarrativeEndingDistributionResponse | null
+  lang: ReturnType<typeof useLanguage>["lang"]
+}) {
+  const t = useT()
+  const npcNameById = new Map(template.cast.map((c) => [c.character_id, c.display_name]))
+  const edges: Array<{ holder: string; target: string; leverage: string }> = []
+  for (const c of template.cast) {
+    for (const lev of c.leverages_over_other_npcs ?? []) {
+      edges.push({
+        holder: c.display_name,
+        target: npcNameById.get(lev.target_npc_id) ?? lev.target_npc_id,
+        leverage: lev.leverage,
+      })
+    }
+  }
+
+  return (
+    <aside style={tdStyles.launchRail}>
+      <section style={tdStyles.briefingRail}>
+        <div style={tdStyles.sectionLabel}>{t("world.section_briefing")}</div>
+        <div style={tdStyles.seedQuote}>"{template.seed}"</div>
+
+        <div style={tdStyles.railDivider} />
+
+        <div style={tdStyles.briefingSubhead}>{t("world.section_cast")}</div>
+        <div style={tdStyles.castList}>
+          {template.cast.map((c) => {
+            const interLevs = c.leverages_over_other_npcs ?? []
+            return (
+              <div key={c.character_id} style={tdStyles.castRow}>
+                <img
+                  src={getAvatarForCastMember(template.template_id, c)}
+                  alt={c.display_name}
+                  style={tdStyles.castAvatar}
+                  loading="lazy"
+                />
+                <div style={tdStyles.castInfo}>
+                  <Truncated style={tdStyles.castName}>{c.display_name}</Truncated>
+                  <Truncated style={tdStyles.castRole}>{c.role}</Truncated>
+                  <span style={tdStyles.castRelation}>{c.relation_to_protagonist}</span>
+                  {interLevs.length > 0 ? (
+                    <div style={tdStyles.castLevChip}>
+                      {t("world.cast_holds_leverage", { count: interLevs.length })}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div style={tdStyles.advisorBlock}>
+          <img src={advisorAvatar} alt="" style={tdStyles.advisorAvatar} loading="lazy" />
+          <span style={tdStyles.advisorText}>{template.advisor_persona}</span>
+        </div>
+
+        <div style={tdStyles.railDetailsGroup}>
+          {edges.length > 0 ? (
+            <details style={tdStyles.railDetails}>
+              <summary style={tdStyles.railDetailsSummary}>{t("world.network_label")}</summary>
+              <p style={tdStyles.networkHint}>
+                {t("world.network_hint")}
+              </p>
+              <ul style={tdStyles.networkList}>
+                {edges.map((e, i) => (
+                  <li key={i} style={tdStyles.networkRow}>
+                    <Truncated style={tdStyles.networkHolder}>{e.holder}</Truncated>
+                    <span style={tdStyles.networkArrow}>→</span>
+                    <Truncated style={tdStyles.networkTarget}>{e.target}</Truncated>
+                    <span style={tdStyles.networkColon}>:</span>
+                    <Truncated lines={2} style={tdStyles.networkLeverage}>{e.leverage}</Truncated>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+
+          {template.failure_conditions && template.failure_conditions.length > 0 ? (
+            <details style={tdStyles.railDetails}>
+              <summary style={tdStyles.railDetailsSummary}>{t("world.section_failure")}</summary>
+              <p style={tdStyles.failureHint}>
+                {t("world.failure_hint")}
+              </p>
+              <ul style={tdStyles.failureList}>
+                {template.failure_conditions.map((fc, i) => (
+                  <li key={i} style={tdStyles.failureRow}>
+                    <Truncated style={tdStyles.failureLabel}>{`! ${fc.label}`}</Truncated>
+                    <Truncated lines={2} style={tdStyles.failureDesc}>{fc.description}</Truncated>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+
+          {distribution && distribution.total_completed > 0 ? (
+            <details style={tdStyles.railDetails}>
+              <summary style={tdStyles.railDetailsSummary}>
+                {t("world.section_endings", { count: distribution.total_completed })}
+              </summary>
+              <div style={tdStyles.distributionList}>
+                {distribution.entries.map((entry, idx) => {
+                  const pct = (entry.count / distribution.total_completed) * 100
+                  return (
+                    <motion.div
+                      key={entry.label}
+                      style={tdStyles.distributionRow}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 * idx + 0.15, ...itemTransition }}
+                    >
+                      <Truncated style={tdStyles.distributionLabel}>
+                        {displayEndingLabel(entry.label, lang)}
+                      </Truncated>
+                      <div style={tdStyles.distributionBarTrack}>
+                        <motion.div
+                          style={tdStyles.distributionBarFill}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ delay: cascadeDelay(idx, 0.05, 0.25), ...transitions.slow }}
+                        />
+                      </div>
+                      <div style={tdStyles.distributionCount}>x{entry.count}</div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+              <p style={tdStyles.distributionHint}>
+                {t("world.endings_hint")}
+              </p>
+            </details>
+          ) : null}
+        </div>
+      </section>
+    </aside>
+  )
+}
+
+function SelectedRoleLaunchPanel({
   role,
   cast,
   busy,
-  onSelect,
-  index = 0,
+  hasAlternates,
+  onStart,
 }: {
   role: NarrativePlayerRole
-  cast: NarrativeCastMember[]
+  cast: NarrativeTemplateSummary["cast"]
   busy: boolean
-  onSelect: () => void
-  index?: number
+  hasAlternates: boolean
+  onStart: () => void
 }) {
   const t = useT()
+  const compactLayout = useCompactLayout()
   const npcNameById = new Map(cast.map((c) => [c.character_id, c.display_name]))
+  const previewLeverage = role.leverages_over_npcs[0]
+  const previewAsset = role.starting_assets[0]
+  const hiddenPreviewCount =
+    Math.max(0, role.leverages_over_npcs.length - (previewLeverage ? 1 : 0)) +
+    Math.max(0, role.starting_assets.length - (previewAsset ? 1 : 0))
+  const previewLeverageText = previewLeverage
+    ? `${npcNameById.get(previewLeverage.npc_id) ?? previewLeverage.npc_id}: ${previewLeverage.leverage}`
+    : ""
+  const previewAssetText = previewAsset ?? ""
+  const briefLines = [
+    role.public_persona
+      ? {
+          label: t("world.role_launch_persona_label"),
+          text: role.public_persona,
+          tone: "public" as const,
+        }
+      : null,
+    {
+      label: t("world.role_launch_private_label"),
+      text: role.hidden_objective,
+      tone: "private" as const,
+    },
+    previewLeverage
+      ? {
+          label: t("world.role_loadout_leverage_label"),
+          text: previewLeverageText,
+          tone: "leverage" as const,
+        }
+      : null,
+    previewAsset
+      ? {
+          label: t("world.role_loadout_asset_label"),
+          text: previewAssetText,
+          tone: "asset" as const,
+        }
+      : null,
+  ].filter((line): line is { label: string; text: string; tone: "public" | "private" | "leverage" | "asset" } => Boolean(line))
+
   return (
-    <motion.button
-      type="button"
+    <motion.div
       style={{
-        ...tdStyles.roleCard,
-        opacity: busy ? 0.5 : 1,
-        pointerEvents: busy ? "none" : "auto",
+        ...tdStyles.roleLaunchPanel,
+        ...(compactLayout ? tdStyles.roleLaunchPanelCompact : null),
       }}
-      onClick={onSelect}
-      disabled={busy}
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={busy ? undefined : { borderColor: "var(--accent)", y: -2 }}
-      whileTap={busy ? undefined : tapPress}
-      transition={{ delay: index * 0.06, ...itemTransition }}
+      transition={transitions.snap}
     >
-      <div style={tdStyles.roleCardHeader}>
-        <Truncated style={tdStyles.roleCardLabel}>{role.label}</Truncated>
-        <span style={tdStyles.roleCardTagPersona}>{t("world.role_tag_persona")}</span>
+      <div style={tdStyles.roleLaunchMain}>
+        <div style={tdStyles.roleLaunchKicker}>{t("world.role_launch_kicker")}</div>
+        <div style={tdStyles.roleLaunchTitleRow}>
+          <Truncated style={tdStyles.roleLaunchTitle}>{role.label}</Truncated>
+          <span style={tdStyles.roleLaunchStat}>
+            {t("world.role_launch_stats", {
+              cards: role.leverages_over_npcs.length,
+              items: role.starting_assets.length,
+            })}
+          </span>
+        </div>
+        <div style={tdStyles.roleLaunchBrief}>
+          {briefLines.map((line, index) => (
+            <p key={`${line.label}-${index}`} style={tdStyles.roleLaunchBriefLine}>
+              <span style={tdStyles.roleLaunchBriefLabel}>{line.label}</span>
+              <span
+                style={{
+                  ...tdStyles.roleLaunchBriefText,
+                  ...(line.tone === "private" ? tdStyles.roleLaunchBriefPrivate : null),
+                  ...(line.tone === "leverage" ? tdStyles.roleLaunchBriefLeverage : null),
+                }}
+              >
+                {line.text}
+              </span>
+            </p>
+          ))}
+          {hiddenPreviewCount > 0 ? (
+            <div style={tdStyles.roleLaunchMore}>
+              {t("world.role_loadout_more", { count: hiddenPreviewCount })}
+            </div>
+          ) : null}
+        </div>
       </div>
-
-      <div style={tdStyles.roleSummaryRow}>
-        <span style={tdStyles.roleSummaryChip}>
-          {t("world.role_summary_counters", { count: role.leverages_over_npcs.length })}
-        </span>
-        <span style={tdStyles.roleSummaryChip}>
-          {t("world.role_summary_assets", { count: role.starting_assets.length })}
-        </span>
-        <Truncated
-          style={{ ...tdStyles.roleSummaryChip, ...tdStyles.roleSummaryHidden }}
+      <div
+        style={{
+          ...tdStyles.roleLaunchActions,
+          ...(compactLayout ? tdStyles.roleLaunchActionsCompact : null),
+        }}
+      >
+        <motion.button
+          type="button"
+          style={tdStyles.roleLaunchButton}
+          onClick={onStart}
+          disabled={busy}
+          whileHover={busy ? undefined : hoverLift}
+          whileTap={busy ? undefined : tapPress}
         >
-          {`🎯 ${role.hidden_objective}`}
-        </Truncated>
-      </div>
-
-      <p style={tdStyles.rolePersona}>{role.public_persona}</p>
-
-      <div style={tdStyles.roleObjectiveBlock}>
-        <span style={tdStyles.roleObjectiveLabel}>{t("world.role_objective_label")}</span>
-        {role.hidden_objective}
-      </div>
-
-      {role.leverages_over_npcs.length > 0 ? (
-        <div>
-          <div style={tdStyles.roleSubLabel}>{t("world.role_sub_leverages")}</div>
-          <ul style={tdStyles.roleLeverageList}>
-            {role.leverages_over_npcs.map((lev, i) => (
-              <li key={i} style={tdStyles.roleLeverageItem}>
-                <span style={tdStyles.roleLeverageNpc}>
-                  {npcNameById.get(lev.npc_id) ?? lev.npc_id}
-                </span>
-                {lev.leverage}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {role.starting_assets.length > 0 ? (
-        <div>
-          <div style={tdStyles.roleSubLabel}>{t("world.role_sub_assets")}</div>
-          <ul style={tdStyles.roleAssetList}>
-            {role.starting_assets.map((asset, i) => (
-              <li key={i} style={tdStyles.roleAssetItem}>
-                · {asset}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <div style={tdStyles.roleCardCta}>
-        <span style={tdStyles.roleCtaText}>
-          {busy ? t("world.start_busy") : t("world.role_card_cta")}
+          {busy ? t("world.role_starting_cta") : t("world.role_launch_cta")}
+        </motion.button>
+        <span
+          style={{
+            ...tdStyles.roleLaunchHint,
+            ...(compactLayout ? tdStyles.roleLaunchHintCompact : null),
+          }}
+        >
+          {hasAlternates ? t("world.role_launch_hint") : t("world.start_hint")}
         </span>
       </div>
-    </motion.button>
+    </motion.div>
   )
 }
 
 const tdStyles: Record<string, CSSProperties> = {
   page: { minHeight: "100%", background: "var(--bg)" },
   center: { padding: 80, textAlign: "center", color: "var(--text-muted)" },
-  main: { maxWidth: 720, margin: "-48px auto 0", padding: "0 32px 80px", position: "relative", zIndex: 2 },
+  main: { maxWidth: 1040, margin: "-48px auto 0", padding: "0 32px 80px", position: "relative", zIndex: 2 },
 
   hero: {
     width: "100%",
@@ -489,20 +645,22 @@ const tdStyles: Record<string, CSSProperties> = {
   },
   heroInner: {
     width: "100%",
-    maxWidth: 720,
+    maxWidth: 1040,
     margin: "0 auto",
     padding: "32px 32px 56px",
   },
   crumb: {
-    background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.18)",
+    background: "transparent",
+    borderTop: "none",
+    borderRight: "none",
+    borderLeft: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.22)",
     color: "white",
     fontSize: 12.5,
     cursor: "pointer",
-    padding: "5px 12px",
-    borderRadius: 999,
+    padding: "0 0 4px",
+    borderRadius: 0,
     marginBottom: 18,
-    backdropFilter: "blur(6px)",
   },
   title: {
     fontFamily: "var(--font-narrative)",
@@ -515,73 +673,142 @@ const tdStyles: Record<string, CSSProperties> = {
   },
   metaRow: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
   badge: {
-    padding: "4px 10px",
-    background: "rgba(255,255,255,0.16)",
-    border: "1px solid rgba(255,255,255,0.22)",
-    borderRadius: 999,
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
     fontSize: 12,
-    color: "white",
-    backdropFilter: "blur(6px)",
+    color: "var(--accent)",
+    letterSpacing: 0,
+    textTransform: "none" as const,
   },
   ownerBadge: {
-    background: "var(--accent)",
-    color: "white",
+    background: "transparent",
+    color: "var(--accent)",
     borderColor: "transparent",
   },
   metaItem: { fontSize: 12, color: "rgba(255,255,255,0.78)" },
 
   section: { marginBottom: 28 },
-  sectionLabel: {
-    fontSize: 11,
+  launchGrid: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 360px)",
+    gap: 22,
+    alignItems: "start",
+  },
+  launchGridCompact: {
+    gridTemplateColumns: "1fr",
+  },
+  launchPrimary: {
+    minWidth: 0,
+  },
+  launchRail: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 24,
+  },
+  briefingRail: {
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 18,
+  },
+  railDetails: {
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+  },
+  railDetailsSummary: {
+    cursor: "pointer",
+    fontSize: 12.5,
+    color: "var(--accent)",
+    letterSpacing: 0,
+    textTransform: "none" as const,
+    fontWeight: 680,
+  },
+  railDetailsGroup: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 12,
+  },
+  railDivider: {
+    height: 1,
+    background: "rgba(255,255,255,0.075)",
+  },
+  briefingSubhead: {
+    fontSize: 11.5,
     color: "var(--text-faint)",
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
+    letterSpacing: 0,
+    textTransform: "none" as const,
+    fontWeight: 680,
+    marginBottom: -4,
+  },
+  sectionLabel: {
+    fontSize: 11.5,
+    color: "var(--text-faint)",
+    letterSpacing: 0,
+    textTransform: "none",
+    fontWeight: 680,
     marginBottom: 10,
   },
   seedQuote: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 17,
+    fontSize: 15.5,
     lineHeight: 1.6,
     color: "var(--text-muted)",
     fontStyle: "italic",
-    padding: "14px 18px",
-    borderLeft: "2px solid var(--line-strong)",
-    background: "var(--bg-elev)",
-    borderRadius: "0 var(--radius-sm) var(--radius-sm) 0",
+    padding: 0,
+    border: "none",
+    background: "transparent",
+    borderRadius: 0,
   },
 
-  castList: { display: "flex", flexDirection: "column", gap: 10 },
+  castList: { display: "flex", flexDirection: "column", gap: 14 },
   castRow: {
     display: "flex",
     alignItems: "center",
-    gap: 14,
-    padding: "12px 14px",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: "var(--radius-sm)",
+    gap: 11,
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
   },
   castAvatar: {
-    width: 56,
-    height: 56,
+    width: 44,
+    height: 44,
     borderRadius: "50%",
     objectFit: "cover",
     border: "1px solid var(--line)",
     flexShrink: 0,
   },
   castInfo: { flex: 1, minWidth: 0 },
-  castName: { fontSize: 15, fontWeight: 500 },
-  castRole: { fontSize: 12, color: "var(--accent)", marginTop: 3 },
-  castRelation: { fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 4 },
+  castName: { display: "block", fontSize: 13.5, fontWeight: 600 },
+  castRole: { display: "block", fontSize: 11.5, color: "var(--accent)", marginTop: 2 },
+  castRelation: {
+    display: "block",
+    fontSize: 12,
+    color: "var(--text-muted)",
+    lineHeight: 1.45,
+    marginTop: 3,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  },
   castLevChip: {
     display: "inline-block",
     marginTop: 6,
     fontSize: 11,
     color: "rgba(245,200,120,0.92)",
-    background: "rgba(245,200,120,0.08)",
-    border: "1px solid rgba(245,200,120,0.30)",
-    padding: "2px 8px",
-    borderRadius: 4,
-    letterSpacing: "0.04em",
+    background: "transparent",
+    border: "none",
+    padding: 0,
+    borderRadius: 0,
+    letterSpacing: 0,
   },
 
   failureHint: {
@@ -602,17 +829,17 @@ const tdStyles: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column" as const,
     gap: 4,
-    padding: "12px 14px",
-    background: "linear-gradient(180deg, rgba(220,80,60,0.08), rgba(220,80,60,0.02))",
-    border: "1px solid rgba(220,80,60,0.32)",
-    borderRadius: "var(--radius-sm)",
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
   },
   failureLabel: {
     fontFamily: "var(--font-narrative)",
     fontSize: 14,
     fontWeight: 500,
     color: "rgba(245,180,170,0.96)",
-    letterSpacing: "0.04em",
+    letterSpacing: 0,
   },
   failureDesc: {
     fontSize: 13,
@@ -620,21 +847,6 @@ const tdStyles: Record<string, CSSProperties> = {
     lineHeight: 1.6,
   },
 
-  networkBox: {
-    marginTop: 16,
-    padding: "16px 18px",
-    background: "linear-gradient(180deg, rgba(140,100,200,0.06), rgba(140,100,200,0.02))",
-    border: "1px solid rgba(140,100,200,0.28)",
-    borderRadius: "var(--radius-sm)",
-  },
-  networkLabel: {
-    fontSize: 11,
-    color: "rgba(180,150,230,0.92)",
-    letterSpacing: "0.1em",
-    textTransform: "uppercase" as const,
-    fontWeight: 600,
-    marginBottom: 6,
-  },
   networkHint: {
     fontSize: 12.5,
     color: "var(--text-muted)",
@@ -677,42 +889,77 @@ const tdStyles: Record<string, CSSProperties> = {
   networkLeverage: {
     color: "var(--text-muted)",
     flex: "1 1 100%",
-    paddingLeft: 14,
+    paddingLeft: 0,
     fontStyle: "italic" as const,
     fontSize: 12.5,
   },
 
   advisorBlock: {
-    padding: "14px 18px",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
+    padding: 0,
+    background: "transparent",
+    border: "none",
     borderRadius: "var(--radius-sm)",
     display: "flex",
     alignItems: "center",
-    gap: 14,
+    gap: 12,
   },
   advisorAvatar: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     borderRadius: "50%",
     objectFit: "cover",
     border: "1px solid var(--line)",
     flexShrink: 0,
   },
   advisorText: {
-    fontSize: 14,
-    lineHeight: 1.6,
+    display: "-webkit-box",
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: "vertical" as const,
+    overflow: "hidden",
+    fontSize: 12.5,
+    lineHeight: 1.5,
     color: "var(--text)",
   },
 
   actions: { marginTop: 40, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 },
+  emptyAction: {
+    width: "fit-content",
+    minHeight: 32,
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,178,0.96)",
+    fontSize: 13.5,
+    fontWeight: 850,
+    lineHeight: 1.25,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  startAction: {
+    width: "fit-content",
+    minHeight: 34,
+    minWidth: 0,
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,178,0.96)",
+    fontSize: 14,
+    fontWeight: 880,
+    lineHeight: 1.25,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
   actionHint: { fontSize: 12, color: "var(--text-faint)", margin: 0 },
 
   errorBox: {
-    padding: "12px 16px",
-    background: "rgba(220,80,80,0.08)",
-    border: "1px solid rgba(220,80,80,0.25)",
-    borderRadius: "var(--radius-sm)",
+    padding: "10px 0",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
     fontSize: 13,
     color: "var(--warn)",
     marginBottom: 16,
@@ -721,17 +968,16 @@ const tdStyles: Record<string, CSSProperties> = {
   distributionList: { display: "flex", flexDirection: "column", gap: 6 },
   distributionRow: {
     display: "grid",
-    gridTemplateColumns: "70px 1fr 40px",
+    gridTemplateColumns: "minmax(94px, 1fr) 92px 28px",
     alignItems: "center",
-    gap: 12,
+    gap: 9,
   },
-  distributionLabel: { fontSize: 13, color: "var(--text)", fontWeight: 500 },
+  distributionLabel: { fontSize: 12.5, color: "var(--text)", fontWeight: 600 },
   distributionBarTrack: {
     height: 8,
-    background: "var(--bg-elev)",
+    background: "rgba(255,255,255,0.08)",
     borderRadius: 4,
     overflow: "hidden",
-    border: "1px solid var(--line)",
   },
   distributionBarFill: {
     height: "100%",
@@ -751,175 +997,264 @@ const tdStyles: Record<string, CSSProperties> = {
     margin: "12px 0 0",
   },
 
-  ownerSection: { marginTop: 56, paddingTop: 32, borderTop: "1px dashed var(--line)" },
+  ownerSection: { marginTop: 56, paddingTop: 0 },
   visControls: { display: "flex", gap: 8, flexWrap: "wrap" },
   visBtn: {
-    padding: "8px 14px",
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: 999,
+    padding: "0 0 5px",
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid var(--line)",
+    borderRadius: 0,
     fontSize: 13,
     color: "var(--text-muted)",
     cursor: "pointer",
   },
   visBtnActive: {
-    background: "var(--accent-soft)",
+    background: "transparent",
     color: "var(--accent)",
-    borderColor: "var(--accent)",
+    borderBottomColor: "var(--accent)",
   },
 
   roleSection: { marginTop: 24, marginBottom: 28 },
   roleHint: {
     fontSize: 13.5,
     color: "var(--text-muted)",
-    margin: "0 0 18px",
+    margin: "0 0 14px",
     lineHeight: 1.6,
   },
-  roleGrid: {
+  roleChooserLayout: {
     display: "grid",
+    gridTemplateColumns: "minmax(220px, 0.58fr) minmax(0, 1fr)",
+    gap: 28,
+    alignItems: "start",
+    marginTop: 2,
+  },
+  roleChooserLayoutCompact: {
     gridTemplateColumns: "1fr",
-    gap: 14,
+    gap: 8,
   },
-  roleCard: {
-    background: "var(--bg-elev)",
-    border: "1px solid var(--line)",
-    borderRadius: "var(--radius-md)",
-    padding: "18px 20px 16px",
-    cursor: "pointer",
-    transition: "border-color 0.15s, transform 0.15s",
-    textAlign: "left" as const,
+  roleChoiceList: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 4,
+    borderTop: "none",
+    minWidth: 0,
+  },
+  roleChoiceListCompact: {
+    flexDirection: "column" as const,
+    borderBottom: "none",
+  },
+  roleChoiceButton: {
     width: "100%",
-    fontFamily: "inherit",
-    color: "inherit",
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 12,
-  },
-  roleCardHeader: {
-    display: "flex",
-    alignItems: "baseline",
+    minWidth: 0,
+    padding: "9px 0",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    color: "rgba(232,218,205,0.74)",
+    display: "grid",
+    gridTemplateColumns: "24px minmax(0, 1fr)",
     gap: 10,
-    flexWrap: "wrap" as const,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    textAlign: "left" as const,
   },
-  roleCardLabel: {
-    fontFamily: "var(--font-narrative)",
-    fontSize: 19,
-    fontWeight: 500,
-    color: "var(--text)",
-    lineHeight: 1.25,
+  roleChoiceButtonCompact: {
+    width: "100%",
+    minWidth: 0,
+    flex: "0 0 auto",
+    padding: "10px 0",
   },
-  roleSummaryRow: {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    gap: 6,
-    marginTop: 4,
-    marginBottom: 4,
+  roleChoiceButtonActive: {
+    color: "rgba(255,245,230,0.98)",
+    boxShadow: "none",
   },
-  roleSummaryChip: {
-    fontSize: 11.5,
-    color: "rgba(245,200,120,0.92)",
-    background: "rgba(245,200,120,0.08)",
-    border: "1px solid rgba(245,200,120,0.30)",
-    padding: "3px 10px",
-    borderRadius: 999,
-    letterSpacing: "0.02em",
-    whiteSpace: "nowrap" as const,
+  roleChoiceIndex: {
+    color: "rgba(246,221,176,0.54)",
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: 0,
+    lineHeight: 1.2,
   },
-  roleSummaryHidden: {
-    color: "rgba(180,150,230,0.92)",
-    background: "rgba(140,100,200,0.08)",
-    border: "1px solid rgba(140,100,200,0.32)",
-    maxWidth: "100%",
-    overflow: "hidden",
-    textOverflow: "ellipsis" as const,
+  roleChoiceIndexActive: {
+    color: "rgba(255,226,178,0.94)",
   },
-  roleCardTagPersona: {
-    fontSize: 10.5,
-    letterSpacing: "0.08em",
-    textTransform: "uppercase" as const,
-    color: "var(--text-faint)",
-    background: "rgba(255,255,255,0.04)",
-    padding: "3px 8px",
-    borderRadius: 4,
-    border: "1px solid var(--line)",
-  },
-  rolePersona: {
-    fontSize: 13.5,
-    color: "var(--text)",
-    lineHeight: 1.65,
-    margin: 0,
-  },
-  roleObjectiveBlock: {
-    fontSize: 13,
-    color: "var(--text-muted)",
-    lineHeight: 1.6,
-    background: "rgba(0,0,0,0.18)",
-    border: "1px dashed var(--line)",
-    borderRadius: 6,
-    padding: "10px 12px",
-    margin: 0,
-  },
-  roleObjectiveLabel: {
-    display: "inline-block",
-    fontSize: 10,
-    letterSpacing: "0.08em",
-    textTransform: "uppercase" as const,
-    color: "var(--text-faint)",
-    marginRight: 8,
-    fontWeight: 600,
-  },
-  roleAssetList: {
+  roleChoiceCopy: {
+    minWidth: 0,
     display: "flex",
     flexDirection: "column" as const,
-    gap: 4,
-    margin: 0,
-    padding: 0,
-    listStyle: "none",
+    gap: 5,
   },
-  roleAssetItem: {
-    fontSize: 12.5,
-    color: "var(--text-muted)",
-    lineHeight: 1.55,
-    paddingLeft: 14,
-    position: "relative" as const,
-  },
-  roleLeverageList: {
+  roleChoiceTopline: {
+    minWidth: 0,
     display: "flex",
-    flexDirection: "column" as const,
-    gap: 4,
-    margin: 0,
-    padding: 0,
-    listStyle: "none",
-  },
-  roleLeverageItem: {
-    fontSize: 12.5,
-    color: "var(--text-muted)",
-    lineHeight: 1.55,
-  },
-  roleLeverageNpc: {
-    color: "var(--accent)",
-    fontWeight: 600,
-    marginRight: 6,
-  },
-  roleSubLabel: {
-    fontSize: 10,
-    letterSpacing: "0.08em",
-    textTransform: "uppercase" as const,
-    color: "var(--text-faint)",
-    fontWeight: 600,
-    marginBottom: 4,
-  },
-  roleCardCta: {
-    marginTop: 4,
-    display: "flex",
-    justifyContent: "flex-end",
     alignItems: "center",
     gap: 8,
   },
-  roleCtaText: {
-    fontSize: 13,
-    color: "var(--accent)",
-    fontWeight: 600,
-    letterSpacing: "0.04em",
+  roleChoiceName: {
+    minWidth: 0,
+    flex: "0 1 auto",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 16,
+    lineHeight: 1.2,
+  },
+  roleChoiceSelected: {
+    flexShrink: 0,
+    color: "rgba(255,226,178,0.9)",
+    fontSize: 10.5,
+    fontWeight: 820,
+    lineHeight: 1,
+  },
+  roleChoiceMeta: {
+    color: "rgba(246,221,176,0.58)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 750,
+    whiteSpace: "nowrap" as const,
+  },
+  roleChoiceObjective: {
+    color: "rgba(232,218,205,0.58)",
+    fontSize: 12,
+    lineHeight: 1.42,
+    fontFamily: "var(--font-narrative)",
+  },
+  roleChoiceObjectiveActive: {
+    color: "rgba(255,245,230,0.76)",
+  },
+  roleLaunchPanel: {
+    marginTop: 0,
+    marginBottom: 14,
+    padding: "18px 0 18px",
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(255,255,255,0.08)",
+    borderRadius: 0,
+    background: "transparent",
+    boxShadow: "none",
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: 10,
+    alignItems: "start",
+  },
+  roleLaunchPanelCompact: {
+    marginTop: 8,
+    gap: 10,
+    padding: "18px 0 18px",
+  },
+  roleLaunchMain: {
+    minWidth: 0,
+  },
+  roleLaunchKicker: {
+    color: "rgba(212,168,83,0.92)",
+    fontSize: 11.5,
+    fontWeight: 720,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+    marginBottom: 6,
+  },
+  roleLaunchTitleRow: {
+    display: "flex",
+    alignItems: "baseline",
+    flexWrap: "wrap" as const,
+    gap: 9,
+  },
+  roleLaunchTitle: {
+    color: "rgba(255,245,230,0.98)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 20,
+    lineHeight: 1.25,
+    fontWeight: 500,
+  },
+  roleLaunchStat: {
+    color: "rgba(246,221,176,0.72)",
+    fontSize: 11.5,
+    fontWeight: 700,
+    whiteSpace: "nowrap" as const,
+  },
+  roleLaunchBrief: {
+    marginTop: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "stretch",
+    gap: 5,
+  },
+  roleLaunchBriefLine: {
+    margin: 0,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 8,
+    rowGap: 5,
+    flexWrap: "wrap" as const,
+    color: "rgba(232,218,205,0.78)",
+    fontSize: 12.6,
+    lineHeight: 1.45,
+  },
+  roleLaunchBriefLabel: {
+    color: "rgba(246,221,176,0.62)",
+    fontSize: 10.8,
+    fontWeight: 760,
+    letterSpacing: 0,
+    lineHeight: 1.35,
+    textTransform: "none" as const,
+    flexShrink: 0,
+  },
+  roleLaunchBriefText: {
+    minWidth: 0,
+    color: "rgba(232,218,205,0.78)",
+    fontFamily: "var(--font-narrative)",
+    flex: "1 1 180px",
+  },
+  roleLaunchBriefPrivate: {
+    color: "rgba(255,245,230,0.88)",
+    fontWeight: 560,
+  },
+  roleLaunchBriefLeverage: {
+    color: "rgba(255,230,184,0.86)",
+  },
+  roleLaunchMore: {
+    paddingLeft: 0,
+    color: "rgba(246,221,176,0.62)",
+    fontSize: 11.5,
+    fontWeight: 700,
+  },
+  roleLaunchActions: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    flexWrap: "nowrap" as const,
+    gap: 4,
+  },
+  roleLaunchActionsCompact: {
+    flexDirection: "column" as const,
+    alignItems: "flex-start",
+  },
+  roleLaunchButton: {
+    alignSelf: "flex-start",
+    width: "fit-content",
+    minHeight: 34,
+    minWidth: 0,
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,178,0.96)",
+    fontSize: 13.5,
+    fontWeight: 880,
+    lineHeight: 1.25,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    whiteSpace: "nowrap" as const,
+  },
+  roleLaunchHint: {
+    maxWidth: 340,
+    color: "var(--text-faint)",
+    fontSize: 11.5,
+    lineHeight: 1.4,
+    textAlign: "left" as const,
+  },
+  roleLaunchHintCompact: {
+    maxWidth: "none",
   },
 }
