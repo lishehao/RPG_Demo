@@ -26,10 +26,16 @@ from rpg_backend.narrative.contracts import (
     PublicReplayResponse,
     SessionListResponse,
     StartSessionResponse,
+    StoryBriefAdvisorRequest,
+    StoryBriefAdvisorResponse,
     StoryHistoryResponse,
     StoryMessage,
     TemplateListResponse,
     UpdateTemplateVisibilityRequest,
+)
+from rpg_backend.narrative.brief import (
+    build_story_brief,
+    has_explicit_small_cast_mismatch,
 )
 from rpg_backend.narrative.engine import (
     advance_turn,
@@ -127,6 +133,24 @@ class NarrativeService:
     # Template authoring
     # ------------------------------------------------------------------
 
+    def create_story_brief(
+        self,
+        request: StoryBriefAdvisorRequest,
+        *,
+        owner_user_id: str,
+    ) -> StoryBriefAdvisorResponse:
+        del owner_user_id
+        seed = request.seed.strip()
+        if not seed:
+            raise NarrativeServiceError(
+                code="seed_required", message="Seed must not be empty.", status_code=422
+            )
+        return build_story_brief(
+            seed=seed,
+            language=request.language,
+            desired_tension_profile=request.desired_tension_profile,
+        )
+
     def create_template(
         self,
         request: CreateTemplateRequest,
@@ -138,8 +162,22 @@ class NarrativeService:
             raise NarrativeServiceError(
                 code="seed_required", message="Seed must not be empty.", status_code=422
             )
+        if has_explicit_small_cast_mismatch(seed):
+            raise NarrativeServiceError(
+                code="opening_prompt_shape_mismatch",
+                message=(
+                    "This premise needs a clearer playable shape: try 3+ people, "
+                    "one public conflict, one secret or contested object, and time pressure."
+                ),
+                status_code=422,
+            )
         try:
-            opening = generate_opening(gateway=self.gateway, seed=seed, language=request.language)
+            opening = generate_opening(
+                gateway=self.gateway,
+                seed=seed,
+                language=request.language,
+                story_brief=request.story_brief,
+            )
         except NarrativeGatewayError as exc:
             raise NarrativeServiceError(
                 code=exc.code, message=exc.message, status_code=exc.status_code

@@ -20,6 +20,7 @@ from rpg_backend.narrative.contracts import (
     PlayerGoal,
     PlayerLeverageOverNPC,
     PlayerRole,
+    StoryBrief,
     StoryMessage,
     StoryOption,
     STORY_OPTION_LABEL_MAX_LENGTH,
@@ -110,6 +111,13 @@ _OPENING_SYSTEM_PROMPT = """\
 你是一名擅长写关系剧的剧作家，专长是高密度的现代都市人际戏剧（豪门、职场、情感纠葛、校园、娱乐圈等等）。
 
 玩家给你一句故事种子，你的任务是为这个故事**搭建初始局面**并**写下开场**。
+
+如果 user_payload 里带有 `story_brief`，它是用户确认过的生成前规划卡：
+- 优先保留 `premise_summary`、`tension_profile`、`story_kernel` 和 `preserved_constraints`
+- cast 只让 `cast_plan.primary_active_entities` 里的 3-5 个实体成为真正可互动的主要角色
+- `cast_plan.secondary_background_entities` 可以作为背景势力、传闻、部门、旁观者或场外压力，不要把所有实体都挤进同一回合
+- `compressed_constraints` / `softened_constraints` 要被温和承接；`dropped_constraints` 不要硬塞回主线
+- comedy / cozy_mystery / family_social / fantasy_sci_fi 不要一律写成黑料勒索。按 `story_kernel` 选择误会、线索、世界规则、忠诚测试等更合适的 tension
 
 输出**严格** JSON 对象，不要 markdown，不要任何解释文字。字段如下：
 
@@ -736,6 +744,7 @@ def generate_opening(
     gateway: NarrativeLLMGateway,
     seed: str,
     language: TemplateLanguage = "en",
+    story_brief: StoryBrief | None = None,
 ) -> OpeningResult:
     """Generate world opening. Retries on JSON / shape failure or sparse
     inter-NPC leverage network (LLM is consistently conservative on
@@ -751,7 +760,13 @@ def generate_opening(
     last_result: OpeningResult | None = None
     for attempt in range(3):
         try:
-            result = _generate_opening_once(gateway, seed, retry_feedback=feedback, language=language)
+            result = _generate_opening_once(
+                gateway,
+                seed,
+                retry_feedback=feedback,
+                language=language,
+                story_brief=story_brief,
+            )
             # Density check — count inter-NPC leverages across cast.
             edges = sum(len(c.leverages_over_other_npcs) for c in result.cast)
             required = _required_inter_leverage_edges(len(result.cast))
@@ -817,12 +832,23 @@ def _generate_opening_once(
     *,
     retry_feedback: str | None,
     language: TemplateLanguage = "en",
+    story_brief: StoryBrief | None = None,
 ) -> OpeningResult:
     user_payload: dict[str, Any] = {
         "seed": seed,
         "language": language,
         "language_directive": _language_directive(language),
     }
+    if story_brief is not None:
+        user_payload["story_brief"] = story_brief.model_dump(mode="json")
+        user_payload["story_brief_generation_rules"] = (
+            "Honor the reviewed story_brief: keep the selected tension_profile, "
+            "use story_kernel as the arc shape, include primary_active_entities "
+            "inside the runtime cast when they are characters/factions, treat "
+            "secondary_background_entities as background pressure, and use "
+            "intervention_card_label as the player-facing card terminology "
+            "instead of defaulting every genre to blackmail."
+        )
     if retry_feedback:
         user_payload["retry_feedback"] = retry_feedback
     response = gateway.invoke_json(
@@ -992,11 +1018,23 @@ def build_agent_plan(
         for entry in agenda
         if entry.get("npc_id")
     ]
+    focus_window_npc_ids = _pick_focus_window_npc_ids(
+        cast=cast,
+        history=history,
+        active_npc_ids=[intent.npc_id for intent in npc_intents],
+    )
+    background_npc_ids = [
+        member.character_id
+        for member in cast
+        if member.character_id not in set(focus_window_npc_ids)
+    ][:5]
     inventory = list(current_inventory or [])
     director = DirectorDecision(
         stage_phase=stage_phase,
         difficulty=difficulty,
         active_npc_ids=[intent.npc_id for intent in npc_intents],
+        focus_window_npc_ids=focus_window_npc_ids,
+        background_npc_ids=background_npc_ids,
         twist_kind=twist.get("kind") if twist else None,
         expected_pressure=_pressure_for_agent_plan(
             stage_phase=stage_phase, agenda=agenda, twist=twist,
@@ -1357,6 +1395,30 @@ def _pick_npc_agenda(
             agenda.append(_make_agenda_entry(pick_two, intent="reveal"))
         return agenda
     return []
+
+
+def _pick_focus_window_npc_ids(
+    *,
+    cast: list[CastMember],
+    history: list[StoryMessage],
+    active_npc_ids: list[str],
+) -> list[str]:
+    """Director focus window: keep 3-5 NPCs readable even if global cast grows."""
+    ordered: list[str] = []
+    for npc_id in active_npc_ids:
+        if npc_id and npc_id not in ordered:
+            ordered.append(npc_id)
+    recent = _recent_active_npcs(history, lookback=4)
+    for npc_id in recent:
+        if npc_id not in ordered:
+            ordered.append(npc_id)
+    for member in cast:
+        if member.character_id not in ordered:
+            ordered.append(member.character_id)
+    if len(ordered) <= 5:
+        return ordered
+    minimum = min(3, len(ordered))
+    return ordered[: max(minimum, 5)]
 
 
 # --------------------------------------------------------------------------
@@ -2237,7 +2299,7 @@ def _parse_cast(raw: Any) -> list[CastMember]:
     # invent new ids or point a leverage at the holder themselves.
     valid_ids = {m.character_id for m in members}
     cleaned: list[CastMember] = []
-    for member in members[:8]:
+    for member in members[:10]:
         cleaned_levs = [
             lev for lev in member.leverages_over_other_npcs
             if lev.target_npc_id in valid_ids and lev.target_npc_id != member.character_id

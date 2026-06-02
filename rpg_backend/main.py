@@ -66,6 +66,8 @@ from rpg_backend.narrative.contracts import (
     SessionListResponse,
     StartSessionRequest,
     StartSessionResponse,
+    StoryBriefAdvisorRequest,
+    StoryBriefAdvisorResponse,
     StoryHistoryResponse,
     TemplateListResponse,
     UpdateTemplateVisibilityRequest,
@@ -580,6 +582,21 @@ def get_play_session_diagnostics(
 # replay). A template = the shared world shell (cast, opening, advisor
 # persona). A session = one player's actual playthrough of a template.
 # --------------------------------------------------------------------------
+
+
+@app.post("/narrative/story-briefs", response_model=StoryBriefAdvisorResponse)
+def create_narrative_story_brief(
+    payload: StoryBriefAdvisorRequest,
+    session: AuthenticatedSession = Depends(get_required_request_session),
+) -> StoryBriefAdvisorResponse:
+    """Preview runtime fit, cast focus, and tension profile before generation."""
+    _require_authoring_enabled()
+    _require_non_blank_llm_input(
+        payload.seed,
+        code="seed_required",
+        message="Seed must not be empty.",
+    )
+    return narrative_service.create_story_brief(payload, owner_user_id=session.user.user_id)
 
 
 @app.post("/narrative/templates", response_model=CreateTemplateResponse)

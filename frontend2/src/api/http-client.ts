@@ -24,6 +24,8 @@ import {
   type NarrativePublicReplayResponse,
   type NarrativeSessionListResponse,
   type NarrativeStartSessionResponse,
+  type NarrativeStoryBriefAdvisorRequest,
+  type NarrativeStoryBriefAdvisorResponse,
   type NarrativeStoryHistoryResponse,
   type NarrativeTemplateListResponse,
   type NarrativeTemplateSummary,
@@ -321,6 +323,12 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
     },
 
     // ---------- Narrative ----------
+
+    createNarrativeStoryBrief(request: NarrativeStoryBriefAdvisorRequest) {
+      return requestJson<NarrativeStoryBriefAdvisorResponse>("createNarrativeStoryBrief", {
+        body: request,
+      })
+    },
 
     createNarrativeTemplate(request: NarrativeCreateTemplateRequest) {
       return requestJson<NarrativeCreateTemplateResponse>("createNarrativeTemplate", {

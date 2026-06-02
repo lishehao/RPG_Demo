@@ -155,6 +155,8 @@ def test_agent_plan_schema_is_versioned_and_compact() -> None:
     assert plan.director.stage_phase == "pressure"
     assert plan.director.expected_pressure == "medium"
     assert plan.npc_intents[0].npc_id == "evan"
+    assert len(plan.director.focus_window_npc_ids) <= 5
+    assert "evan" in plan.director.focus_window_npc_ids
     assert plan.memory.current_inventory_count == 2
     assert "history" not in plan.model_dump()
 

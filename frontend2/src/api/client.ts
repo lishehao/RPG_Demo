@@ -22,6 +22,8 @@ import type {
   NarrativePublicReplayResponse,
   NarrativeSessionListResponse,
   NarrativeStartSessionResponse,
+  NarrativeStoryBriefAdvisorRequest,
+  NarrativeStoryBriefAdvisorResponse,
   NarrativeStoryHistoryResponse,
   NarrativeTemplateListResponse,
   NarrativeTemplateSummary,
@@ -65,6 +67,7 @@ export type FrontendApiClient = {
   submitPlayTurn(sessionId: string, request: PlayTurnRequest): Promise<PlaySessionSnapshot>
 
   // ---------- Narrative (template/session) ----------
+  createNarrativeStoryBrief(request: NarrativeStoryBriefAdvisorRequest): Promise<NarrativeStoryBriefAdvisorResponse>
   createNarrativeTemplate(request: NarrativeCreateTemplateRequest): Promise<NarrativeCreateTemplateResponse>
   listPublicNarrativeTemplates(): Promise<NarrativeTemplateListResponse>
   getNarrativeTemplate(templateId: string): Promise<NarrativeTemplateSummary>

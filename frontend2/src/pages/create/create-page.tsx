@@ -2,6 +2,9 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
   NarrativeDifficulty,
+  NarrativeStoryBrief,
+  NarrativeStoryBriefAdvisorResponse,
+  NarrativeTensionProfile,
   NarrativeTemplateLanguage,
   NarrativeTemplateVisibility,
 } from "../../api/contracts"
@@ -20,6 +23,65 @@ const SEED_EXAMPLE_KEYS: StringKey[] = [
 ]
 
 const VISIBILITY_OPTION_IDS: NarrativeTemplateVisibility[] = ["private", "unlisted", "public"]
+
+const TENSION_PROFILE_LABEL_KEYS: Record<NarrativeStoryBrief["tension_profile"], StringKey> = {
+  high_drama: "create.brief_profile_high_drama",
+  cozy_mystery: "create.brief_profile_cozy_mystery",
+  comedy: "create.brief_profile_comedy",
+  fantasy_sci_fi: "create.brief_profile_fantasy_sci_fi",
+  family_social: "create.brief_profile_family_social",
+}
+
+const FIT_STATUS_LABEL_KEYS: Record<NarrativeStoryBrief["runtime_fit_status"], StringKey> = {
+  fit: "create.brief_fit",
+  needs_revision: "create.brief_needs_revision",
+  not_fit: "create.brief_not_fit",
+}
+
+type TensionProfileChoice = "auto" | NarrativeTensionProfile
+
+type TensionProfileOptionMeta = {
+  id: TensionProfileChoice
+  labelKey: StringKey
+  descKey: StringKey
+}
+
+const TENSION_PROFILE_OPTIONS: TensionProfileOptionMeta[] = [
+  {
+    id: "auto",
+    labelKey: "create.tension_auto_label",
+    descKey: "create.tension_auto_desc",
+  },
+  {
+    id: "high_drama",
+    labelKey: "create.tension_high_drama_label",
+    descKey: "create.tension_high_drama_desc",
+  },
+  {
+    id: "cozy_mystery",
+    labelKey: "create.tension_cozy_mystery_label",
+    descKey: "create.tension_cozy_mystery_desc",
+  },
+  {
+    id: "comedy",
+    labelKey: "create.tension_comedy_label",
+    descKey: "create.tension_comedy_desc",
+  },
+  {
+    id: "fantasy_sci_fi",
+    labelKey: "create.tension_fantasy_sci_fi_label",
+    descKey: "create.tension_fantasy_sci_fi_desc",
+  },
+  {
+    id: "family_social",
+    labelKey: "create.tension_family_social_label",
+    descKey: "create.tension_family_social_desc",
+  },
+]
+
+function briefKey(seed: string, language: NarrativeTemplateLanguage, tensionProfile: TensionProfileChoice): string {
+  return `${seed.trim()}\n${language}\n${tensionProfile}`
+}
 
 type BudgetOptionMeta = {
   budget: number
@@ -127,9 +189,14 @@ export function CreatePage({
   // override — the field is independent of UI language once chosen
   // (you can browse in English but write a Chinese story, etc.).
   const [storyLanguage, setStoryLanguage] = useState<NarrativeTemplateLanguage>(uiLang)
+  const [desiredTensionProfile, setDesiredTensionProfile] = useState<TensionProfileChoice>("auto")
   const [busy, setBusy] = useState(false)
+  const [briefBusy, setBriefBusy] = useState(false)
   const [busyElapsedSeconds, setBusyElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [briefError, setBriefError] = useState<string | null>(null)
+  const [briefResponse, setBriefResponse] = useState<NarrativeStoryBriefAdvisorResponse | null>(null)
+  const [briefResponseKey, setBriefResponseKey] = useState<string | null>(null)
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
@@ -140,18 +207,26 @@ export function CreatePage({
   const seedExamples = useMemo(() => SEED_EXAMPLE_KEYS.map((k) => t(k)), [t])
   const visibleSeedExamples = compactLayout ? seedExamples.slice(0, 3) : seedExamples
   const hasSeed = Boolean(seed.trim())
+  const currentBriefKey = briefKey(seed, storyLanguage, desiredTensionProfile)
+  const activeBriefResponse =
+    briefResponse && briefResponseKey === currentBriefKey ? briefResponse : null
+  const activeBrief = activeBriefResponse?.brief ?? null
+  const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
   const showCreateAction = true
-  const showBackAction = hasSeed || busy
-  const showSeedExamples = !hasSeed && !busy
+  const showBackAction = hasSeed || busy || briefBusy
+  const showSeedExamples = !hasSeed && !busy && !briefBusy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
   const selectedDifficulty = DIFFICULTY_OPTIONS.find((o) => o.id === difficulty) ?? DIFFICULTY_OPTIONS[0]
   const selectedLanguage =
     STORY_LANGUAGE_OPTIONS[uiLang].find((o) => o.id === storyLanguage) ?? STORY_LANGUAGE_OPTIONS[uiLang][0]
   const selectedVisibility = VISIBILITY_KEY_MAP[visibility]
+  const selectedTension =
+    TENSION_PROFILE_OPTIONS.find((o) => o.id === desiredTensionProfile) ?? TENSION_PROFILE_OPTIONS[0]
   const settingsSummary = [
     t(selectedBudget.labelKey),
     t(selectedDifficulty.labelKey),
     selectedLanguage.label,
+    t(selectedTension.labelKey),
     t(selectedVisibility.labelKey),
   ].join(" · ")
   const submitModKey = useMemo(() => {
@@ -166,6 +241,17 @@ export function CreatePage({
     BUSY_STAGE_KEYS.length - 1,
     Math.max(0, Math.floor(busyElapsedSeconds / 3)),
   )
+  const primaryCtaLabel = busy
+    ? t("create.cta_busy")
+    : briefBusy
+      ? t("create.brief_cta_busy")
+      : activeBrief
+        ? canGenerateFromBrief
+          ? t("create.brief_cta_generate")
+          : t("create.brief_cta_blocked")
+        : hasSeed
+          ? t("create.brief_cta_idle")
+          : t("create.cta_empty")
 
   // Author flow requires a real account.
   useEffect(() => {
@@ -205,6 +291,7 @@ export function CreatePage({
         turn_budget: turnBudget,
         difficulty,
         language: storyLanguage,
+        story_brief: activeBriefResponse?.can_generate ? activeBriefResponse.brief : null,
       })
       onSessionStarted(response.session.session_id)
     } catch (err) {
@@ -215,6 +302,41 @@ export function CreatePage({
     // Note: on success we deliberately leave inflightRef=true; the navigate
     // unmounts this component anyway, and locking it prevents any late
     // re-render race.
+  }
+
+  const handlePlanStory = async () => {
+    const trimmed = seed.trim()
+    if (!trimmed) {
+      setError(t("create.error_seed_required"))
+      return
+    }
+    if (briefBusy || busy) return
+    setBriefBusy(true)
+    setBriefError(null)
+    setError(null)
+    try {
+      const response = await api.createNarrativeStoryBrief({
+        seed: trimmed,
+        language: storyLanguage,
+        desired_tension_profile:
+          desiredTensionProfile === "auto" ? null : desiredTensionProfile,
+      })
+      setBriefResponse(response)
+      setBriefResponseKey(briefKey(trimmed, storyLanguage, desiredTensionProfile))
+    } catch (err) {
+      setBriefError(friendlyError(err, t("create.brief_error_failed")))
+    } finally {
+      setBriefBusy(false)
+    }
+  }
+
+  const handlePrimaryAction = async () => {
+    if (activeBrief) {
+      if (!canGenerateFromBrief) return
+      await handleCreate()
+      return
+    }
+    await handlePlanStory()
   }
 
   return (
@@ -265,15 +387,20 @@ export function CreatePage({
               }}
               placeholder={compactLayout ? t("create.placeholder_short") : t("create.placeholder")}
               value={seed}
-              onChange={(e) => setSeed(e.target.value)}
+              onChange={(e) => {
+                setSeed(e.target.value)
+                setBriefResponse(null)
+                setBriefResponseKey(null)
+                setBriefError(null)
+              }}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                   e.preventDefault()
-                  void handleCreate()
+                  void handlePrimaryAction()
                 }
               }}
               spellCheck={false}
-              disabled={busy}
+              disabled={busy || briefBusy}
             />
           </div>
           <div style={cpStyles.editorMeta}>
@@ -286,6 +413,15 @@ export function CreatePage({
           </div>
 
           {error ? <div style={cpStyles.error}>{error}</div> : null}
+          {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
+          {activeBriefResponse ? (
+            <StoryBriefCard
+              brief={activeBriefResponse.brief}
+              canGenerate={activeBriefResponse.can_generate}
+              nextStep={activeBriefResponse.next_step}
+              compact={compactLayout}
+            />
+          ) : null}
 
           <div
             style={{
@@ -299,24 +435,33 @@ export function CreatePage({
                   key="create-submit"
                   style={{
                     ...cpStyles.primaryAction,
-                    opacity: !hasSeed || busy ? 0.5 : 1,
-                    pointerEvents: !hasSeed || busy ? "none" : "auto",
+                    opacity: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? 0.5 : 1,
+                    pointerEvents: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? "none" : "auto",
                     ...(compactLayout ? cpStyles.primaryCtaCompact : null),
                   }}
-                  disabled={!hasSeed || busy}
-                  onClick={() => void handleCreate()}
+                  disabled={!hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief)}
+                  onClick={() => void handlePrimaryAction()}
                   type="button"
                   initial={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
-                  animate={{ opacity: !hasSeed || busy ? 0.5 : 1, y: 0, height: "auto", marginTop: 0 }}
+                  animate={{ opacity: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? 0.5 : 1, y: 0, height: "auto", marginTop: 0 }}
                   exit={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
                   transition={itemTransition}
                 >
-                  {busy ? t("create.cta_busy") : hasSeed ? t("create.cta_idle") : t("create.cta_empty")}
+                  {primaryCtaLabel}
                 </motion.button>
               ) : null}
             </AnimatePresence>
+            {!compactLayout && activeBrief && !busy && !briefBusy ? (
+              <button
+                style={cpStyles.backAction}
+                onClick={() => void handlePlanStory()}
+                type="button"
+              >
+                {t("create.brief_replan")}
+              </button>
+            ) : null}
             {!compactLayout && showBackAction ? (
-              <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy} type="button">
+              <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy || briefBusy} type="button">
                 {t("create.cta_back")}
               </button>
             ) : null}
@@ -466,12 +611,39 @@ export function CreatePage({
                         ...(storyLanguage === o.id ? cpStyles.segmentBtnActive : null),
                       }}
                       onClick={() => setStoryLanguage(o.id)}
-                      disabled={busy}
+                      disabled={busy || briefBusy}
                       type="button"
                       title={o.desc}
                       aria-pressed={storyLanguage === o.id}
                     >
                       <span style={cpStyles.segmentMain}>{o.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  ...cpStyles.settingGroup,
+                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
+                }}
+              >
+                <span style={cpStyles.settingLabel}>{t("create.field_tension_profile")}</span>
+                <div style={cpStyles.segmentRow}>
+                  {TENSION_PROFILE_OPTIONS.map((o) => (
+                    <button
+                      key={o.id}
+                      style={{
+                        ...cpStyles.segmentBtn,
+                        ...(desiredTensionProfile === o.id ? cpStyles.segmentBtnActive : null),
+                      }}
+                      onClick={() => setDesiredTensionProfile(o.id)}
+                      disabled={busy || briefBusy}
+                      type="button"
+                      title={t(o.descKey)}
+                      aria-pressed={desiredTensionProfile === o.id}
+                    >
+                      <span style={cpStyles.segmentMain}>{t(o.labelKey)}</span>
                     </button>
                   ))}
                 </div>
@@ -619,6 +791,104 @@ function BusyTip() {
         {t(BUSY_TIP_KEYS[idx])}
       </motion.div>
     </AnimatePresence>
+  )
+}
+
+function StoryBriefCard({
+  brief,
+  canGenerate,
+  nextStep,
+  compact,
+}: {
+  brief: NarrativeStoryBrief
+  canGenerate: boolean
+  nextStep: string
+  compact: boolean
+}) {
+  const t = useT()
+  const primary = brief.cast_plan.primary_active_entities
+  const secondary = brief.cast_plan.secondary_background_entities
+  const constrained = [
+    ...brief.preserved_constraints.map((item) => ({ item, kind: t("create.brief_preserved") })),
+    ...brief.compressed_constraints.map((item) => ({ item, kind: t("create.brief_compressed") })),
+    ...brief.dropped_constraints.map((item) => ({ item, kind: t("create.brief_dropped") })),
+    ...brief.softened_constraints.map((item) => ({ item, kind: t("create.brief_softened") })),
+  ].slice(0, 8)
+
+  return (
+    <section style={{ ...cpStyles.briefRail, ...(compact ? cpStyles.briefRailCompact : null) }}>
+      <div style={cpStyles.briefHeader}>
+        <span style={cpStyles.briefEyebrow}>{t("create.brief_card_label")}</span>
+        <span
+          style={{
+            ...cpStyles.briefFitPill,
+            ...(brief.runtime_fit_status === "not_fit" ? cpStyles.briefFitPillWarn : null),
+          }}
+        >
+          {t(FIT_STATUS_LABEL_KEYS[brief.runtime_fit_status])}
+        </span>
+      </div>
+      <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
+      <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
+        <BriefField label={t("create.brief_profile")} value={t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
+        <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
+        <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
+      </div>
+      <div style={{ ...cpStyles.briefCastGrid, ...(compact ? cpStyles.briefCastGridCompact : null) }}>
+        <BriefList
+          label={t("create.brief_primary_cast")}
+          items={primary.map((entity) => entity.display_name)}
+          empty={t("create.brief_empty")}
+        />
+        <BriefList
+          label={t("create.brief_secondary_cast")}
+          items={secondary.map((entity) => entity.display_name)}
+          empty={t("create.brief_empty")}
+        />
+      </div>
+      {constrained.length > 0 ? (
+        <div style={cpStyles.briefConstraintRow}>
+          {constrained.map(({ item, kind }) => (
+            <span key={`${kind}:${item}`} style={cpStyles.briefConstraintChip}>
+              <span style={cpStyles.briefConstraintKind}>{kind}</span>
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {brief.warnings.length > 0 || brief.revision_suggestions.length > 0 ? (
+        <div style={cpStyles.briefWarningBlock}>
+          {brief.warnings.slice(0, 3).map((warning) => (
+            <div key={warning} style={cpStyles.briefWarningLine}>{warning}</div>
+          ))}
+          {brief.revision_suggestions.slice(0, 2).map((suggestion) => (
+            <div key={suggestion} style={cpStyles.briefSuggestionLine}>{suggestion}</div>
+          ))}
+        </div>
+      ) : null}
+      <div style={cpStyles.briefFooter}>
+        <span>{brief.runtime_fit_rationale}</span>
+        <strong>{canGenerate ? nextStep : t("create.brief_revise_first")}</strong>
+      </div>
+    </section>
+  )
+}
+
+function BriefField({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={cpStyles.briefField}>
+      <span style={cpStyles.briefFieldLabel}>{label}</span>
+      <span style={cpStyles.briefFieldValue}>{value}</span>
+    </div>
+  )
+}
+
+function BriefList({ label, items, empty }: { label: string; items: string[]; empty: string }) {
+  return (
+    <div style={cpStyles.briefList}>
+      <span style={cpStyles.briefFieldLabel}>{label}</span>
+      <span style={cpStyles.briefListValue}>{items.length > 0 ? items.join(" · ") : empty}</span>
+    </div>
   )
 }
 
@@ -1092,6 +1362,141 @@ const cpStyles: Record<string, CSSProperties> = {
   },
 
   error: { marginBottom: 16, fontSize: 13, color: "var(--warn)" },
+  briefRail: {
+    marginTop: 6,
+    marginBottom: 20,
+    padding: "14px 0 12px",
+    borderTop: "1px solid rgba(245,200,120,0.28)",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
+    color: "rgba(255,255,255,0.82)",
+  },
+  briefRailCompact: {
+    marginBottom: 18,
+  },
+  briefHeader: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 8,
+  },
+  briefEyebrow: {
+    color: "rgba(245,200,120,0.82)",
+    fontSize: 11.5,
+    lineHeight: 1.2,
+    fontWeight: 820,
+    letterSpacing: 0,
+  },
+  briefFitPill: {
+    color: "rgba(194,255,212,0.86)",
+    fontSize: 11,
+    lineHeight: 1.2,
+    fontWeight: 780,
+    whiteSpace: "nowrap" as const,
+  },
+  briefFitPillWarn: {
+    color: "rgba(255,170,132,0.92)",
+  },
+  briefPremise: {
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 12,
+    marginLeft: 0,
+    color: "rgba(255,245,230,0.9)",
+    fontSize: 14,
+    lineHeight: 1.52,
+    fontFamily: "var(--font-narrative)",
+  },
+  briefMetaGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "12px 18px",
+    marginBottom: 13,
+  },
+  briefMetaGridCompact: {
+    gridTemplateColumns: "1fr",
+    gap: "8px 0",
+  },
+  briefField: {
+    minWidth: 0,
+    display: "grid",
+    gap: 3,
+  },
+  briefFieldLabel: {
+    color: "rgba(255,255,255,0.48)",
+    fontSize: 10.5,
+    lineHeight: 1.15,
+    fontWeight: 760,
+    letterSpacing: 0,
+  },
+  briefFieldValue: {
+    color: "rgba(255,255,255,0.82)",
+    fontSize: 12,
+    lineHeight: 1.36,
+  },
+  briefCastGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: "10px 20px",
+    marginBottom: 12,
+  },
+  briefCastGridCompact: {
+    gridTemplateColumns: "1fr",
+  },
+  briefList: {
+    minWidth: 0,
+    display: "grid",
+    gap: 3,
+  },
+  briefListValue: {
+    color: "rgba(255,255,255,0.76)",
+    fontSize: 12.5,
+    lineHeight: 1.38,
+  },
+  briefConstraintRow: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "6px 8px",
+    marginBottom: 11,
+  },
+  briefConstraintChip: {
+    display: "inline-flex",
+    alignItems: "baseline",
+    gap: 5,
+    maxWidth: "100%",
+    color: "rgba(255,255,255,0.74)",
+    fontSize: 11.5,
+    lineHeight: 1.25,
+    borderBottom: "1px solid rgba(255,255,255,0.13)",
+    paddingBottom: 3,
+  },
+  briefConstraintKind: {
+    color: "rgba(245,200,120,0.72)",
+    fontSize: 10,
+    fontWeight: 800,
+  },
+  briefWarningBlock: {
+    display: "grid",
+    gap: 4,
+    marginBottom: 11,
+  },
+  briefWarningLine: {
+    color: "rgba(255,170,132,0.95)",
+    fontSize: 12,
+    lineHeight: 1.38,
+  },
+  briefSuggestionLine: {
+    color: "rgba(245,210,140,0.86)",
+    fontSize: 12,
+    lineHeight: 1.38,
+  },
+  briefFooter: {
+    display: "grid",
+    gap: 3,
+    color: "rgba(255,255,255,0.58)",
+    fontSize: 11.5,
+    lineHeight: 1.42,
+  },
   actions: {
     display: "flex",
     alignItems: "baseline",

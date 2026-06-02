@@ -617,6 +617,8 @@ export type NarrativeDirectorDecision = {
   stage_phase: string
   difficulty: string
   active_npc_ids: string[]
+  focus_window_npc_ids?: string[]
+  background_npc_ids?: string[]
   twist_kind?: string | null
   expected_pressure: string
   reason: string
@@ -722,6 +724,72 @@ export type NarrativeTemplateVisibility = "private" | "unlisted" | "public"
 // `TemplateLanguage` literal in `rpg_backend/narrative/contracts.py`.
 export type NarrativeTemplateLanguage = "zh" | "en"
 
+export type NarrativeTensionProfile =
+  | "high_drama"
+  | "cozy_mystery"
+  | "comedy"
+  | "fantasy_sci_fi"
+  | "family_social"
+
+export type NarrativeStoryBriefFitStatus = "fit" | "needs_revision" | "not_fit"
+export type NarrativeConstraintDispositionKind = "preserved" | "compressed" | "dropped" | "softened"
+export type NarrativeCastPlanEntityKind = "character" | "faction" | "object" | "setting"
+
+export type NarrativeConstraintDisposition = {
+  label: string
+  disposition: NarrativeConstraintDispositionKind
+  rationale: string
+}
+
+export type NarrativeCastPlanEntity = {
+  entity_id: string
+  display_name: string
+  kind: NarrativeCastPlanEntityKind
+  role: string
+  rationale: string
+}
+
+export type NarrativeCastPlan = {
+  input_entity_count: number
+  primary_active_entities: NarrativeCastPlanEntity[]
+  secondary_background_entities: NarrativeCastPlanEntity[]
+  omitted_entities: NarrativeCastPlanEntity[]
+  active_focus_window: string
+}
+
+export type NarrativeStoryBrief = {
+  schema_version: "story_brief.v1"
+  source: "deterministic_v1"
+  original_seed: string
+  premise_summary: string
+  genre_tone: string
+  tension_profile: NarrativeTensionProfile
+  story_kernel: string
+  intervention_card_label: string
+  cast_plan: NarrativeCastPlan
+  preserved_constraints: string[]
+  compressed_constraints: string[]
+  dropped_constraints: string[]
+  softened_constraints: string[]
+  constraint_dispositions: NarrativeConstraintDisposition[]
+  warnings: string[]
+  revision_suggestions: string[]
+  runtime_fit_status: NarrativeStoryBriefFitStatus
+  runtime_fit_rationale: string
+}
+
+export type NarrativeStoryBriefAdvisorRequest = {
+  seed: string
+  language?: NarrativeTemplateLanguage
+  desired_tension_profile?: NarrativeTensionProfile | null
+}
+
+export type NarrativeStoryBriefAdvisorResponse = {
+  brief: NarrativeStoryBrief
+  can_generate: boolean
+  next_step: string
+}
+
 export type NarrativeTemplateSummary = {
   template_id: string
   owner_user_id: string
@@ -821,6 +889,7 @@ export type NarrativeCreateTemplateRequest = {
   turn_budget?: number
   difficulty?: NarrativeDifficulty
   language?: NarrativeTemplateLanguage
+  story_brief?: NarrativeStoryBrief | null
 }
 
 export type NarrativeStartSessionRequest = {

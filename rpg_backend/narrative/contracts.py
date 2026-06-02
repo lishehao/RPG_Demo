@@ -174,7 +174,9 @@ class DirectorDecision(BaseModel):
 
     stage_phase: str = Field(min_length=1, max_length=40)
     difficulty: str = Field(min_length=1, max_length=40)
-    active_npc_ids: list[str] = Field(default_factory=list, max_length=4)
+    active_npc_ids: list[str] = Field(default_factory=list, max_length=5)
+    focus_window_npc_ids: list[str] = Field(default_factory=list, max_length=5)
+    background_npc_ids: list[str] = Field(default_factory=list, max_length=5)
     twist_kind: str | None = Field(default=None, max_length=80)
     expected_pressure: str = Field(min_length=1, max_length=80)
     reason: str = Field(min_length=1, max_length=240)
@@ -217,7 +219,7 @@ class AgentPlan(BaseModel):
     turn_budget: int = Field(ge=1)
     narrator_ord: int = Field(ge=0)
     director: DirectorDecision
-    npc_intents: list[NPCIntent] = Field(default_factory=list, max_length=4)
+    npc_intents: list[NPCIntent] = Field(default_factory=list, max_length=5)
     memory: MemorySnapshot
     twist_directive: dict[str, str] | None = None
 
@@ -316,6 +318,17 @@ class AdvisorMessage(BaseModel):
 TemplateVisibility = Literal["private", "unlisted", "public"]
 Difficulty = Literal["story", "gauntlet"]
 EndingTier = Literal["victory", "compromised", "collapsed"]
+TensionProfile = Literal[
+    "high_drama",
+    "cozy_mystery",
+    "comedy",
+    "fantasy_sci_fi",
+    "family_social",
+]
+StoryBriefSource = Literal["deterministic_v1"]
+StoryBriefFitStatus = Literal["fit", "needs_revision", "not_fit"]
+ConstraintDispositionKind = Literal["preserved", "compressed", "dropped", "softened"]
+CastPlanEntityKind = Literal["character", "faction", "object", "setting"]
 # Locale a template's narration / NPC dialogue is generated in. The
 # field is set at template creation and is immutable thereafter — every
 # session forking the same template inherits the same language. Adding
@@ -339,7 +352,7 @@ class NarrativeTemplate(BaseModel):
     owner_user_id: str = Field(min_length=1, max_length=80)
     seed: str = Field(min_length=1, max_length=4000)
     title: str = Field(min_length=1, max_length=120)
-    cast: list[CastMember] = Field(min_length=2, max_length=8)
+    cast: list[CastMember] = Field(min_length=2, max_length=10)
     advisor_persona: str = Field(min_length=1, max_length=200)
     opening_passage: str = Field(min_length=1, max_length=4000)
     opening_options: list[StoryOption] = Field(default_factory=list)
@@ -378,6 +391,94 @@ class NarrativeTemplateSummary(BaseModel):
     play_count: int
     created_at: str
     is_owner: bool = False
+
+
+# --------------------------------------------------------------------------
+# Story Brief Agent / Cast Planner / Tension Profile v2
+# --------------------------------------------------------------------------
+
+
+class ConstraintDisposition(BaseModel):
+    """How the planner will handle a user-provided premise constraint."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = Field(min_length=1, max_length=120)
+    disposition: ConstraintDispositionKind
+    rationale: str = Field(min_length=1, max_length=220)
+
+
+class CastPlanEntity(BaseModel):
+    """One planned character, entity, object, or faction in the brief."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    entity_id: str = Field(min_length=1, max_length=64)
+    display_name: str = Field(min_length=1, max_length=80)
+    kind: CastPlanEntityKind = "character"
+    role: str = Field(min_length=1, max_length=140)
+    rationale: str = Field(min_length=1, max_length=220)
+
+
+class CastPlan(BaseModel):
+    """Global cast plan: up to 10 entities, with 3-5 active at runtime."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    input_entity_count: int = Field(default=0, ge=0)
+    primary_active_entities: list[CastPlanEntity] = Field(default_factory=list, max_length=5)
+    secondary_background_entities: list[CastPlanEntity] = Field(default_factory=list, max_length=5)
+    omitted_entities: list[CastPlanEntity] = Field(default_factory=list, max_length=5)
+    active_focus_window: str = Field(min_length=1, max_length=160)
+
+
+class StoryBrief(BaseModel):
+    """Compact pre-generation plan the user reviews before spending LLM budget."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["story_brief.v1"] = "story_brief.v1"
+    source: StoryBriefSource = "deterministic_v1"
+    original_seed: str = Field(min_length=1, max_length=4000)
+    premise_summary: str = Field(min_length=1, max_length=260)
+    genre_tone: str = Field(min_length=1, max_length=160)
+    tension_profile: TensionProfile
+    story_kernel: str = Field(min_length=1, max_length=220)
+    intervention_card_label: str = Field(min_length=1, max_length=80)
+    cast_plan: CastPlan
+    preserved_constraints: list[str] = Field(default_factory=list, max_length=8)
+    compressed_constraints: list[str] = Field(default_factory=list, max_length=8)
+    dropped_constraints: list[str] = Field(default_factory=list, max_length=8)
+    softened_constraints: list[str] = Field(default_factory=list, max_length=8)
+    constraint_dispositions: list[ConstraintDisposition] = Field(default_factory=list, max_length=16)
+    warnings: list[str] = Field(default_factory=list, max_length=8)
+    revision_suggestions: list[str] = Field(default_factory=list, max_length=8)
+    runtime_fit_status: StoryBriefFitStatus = "fit"
+    runtime_fit_rationale: str = Field(min_length=1, max_length=260)
+
+
+class StoryBriefAdvisorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    seed: str = Field(min_length=1, max_length=4000)
+    language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
+    desired_tension_profile: TensionProfile | None = None
+
+    @field_validator("seed")
+    @classmethod
+    def _strip_seed(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Seed must not be empty.")
+        return stripped
+
+
+class StoryBriefAdvisorResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    brief: StoryBrief
+    can_generate: bool
+    next_step: str = Field(min_length=1, max_length=220)
 
 
 # --------------------------------------------------------------------------
@@ -562,6 +663,11 @@ class CreateTemplateRequest(BaseModel):
     # Narration / NPC dialogue locale. Immutable after creation —
     # all sessions forking this template share the same language.
     language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
+    # Optional create-time plan returned by Story Brief Advisor. This is
+    # reviewed by the user before generation, then injected into the opening
+    # payload so planning and generation use the same facts. It is not
+    # persisted on the template in this MVP.
+    story_brief: StoryBrief | None = None
 
     @field_validator("seed")
     @classmethod
