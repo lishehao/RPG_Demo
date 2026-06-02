@@ -135,7 +135,7 @@ def _create_template_and_session(
     )
 
 
-class _TurnGateway:
+class _TurnResponder:
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
 
@@ -256,7 +256,7 @@ def test_mock_user_role_selection_and_leverage_action_are_deterministic(tmp_path
         session_id="sess_mock_policy",
         player_user_id="local-dev",
     )
-    service = NarrativeService(repository=repo, gateway=_TurnGateway())
+    service = NarrativeService(repository=repo, gateway=_TurnResponder())
     history = service.get_story_history(
         "sess_mock_policy",
         player_user_id="local-dev",
@@ -336,7 +336,7 @@ def test_mock_user_episode_collects_agent_and_judge_trace_via_api(
         session_id=session_id,
         player_user_id=login.json()["user"]["user_id"],
     )
-    gateway = _TurnGateway()
+    gateway = _TurnResponder()
     service = NarrativeService(repository=repo, gateway=gateway)
     original_service = main_module.narrative_service
     main_module.narrative_service = service
