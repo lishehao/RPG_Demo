@@ -231,6 +231,7 @@ Start here:
 - `python -m tools.rpg_eval.runner --dry-run --output-dir artifacts/eval_v3/dry_run`
 - [Narrative mock-user agent chain](./docs/eval/MOCK_USER_AGENT_CHAIN.md)
 - `python -m tools.rpg_eval.narrative_mock_user --mode live --base-url http://127.0.0.1:8000 --session <session_id> --output artifacts/mock_user_episode.jsonl`
+- `python -m tools.rpg_eval.narrative_llm_judge --gold-set tools/rpg_eval/gold_sets/narrative_agent_smoke.json --mode fixture --llm-judge fake --output artifacts/narrative_llm_judge_report.json`
 
 ---
 

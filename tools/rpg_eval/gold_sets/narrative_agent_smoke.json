@@ -1,0 +1,60 @@
+{
+  "schema_version": "narrative_agent_gold_set.v1",
+  "gold_set_id": "narrative_agent_smoke",
+  "description": "CI-safe smoke set for the Tiny Stories agent evaluation chain. It validates gold case parsing, mock-user execution, deterministic evidence, LLM-judge input packaging, and report gates without external LLM calls.",
+  "cases": [
+    {
+      "case_id": "merger_audit_fixture_smoke",
+      "name": "Merger audit leverage smoke",
+      "runtime": {
+        "mode": "fixture",
+        "fixture": "merger_audit",
+        "seed": "A cofounder announces a secret merger before the audit is ready."
+      },
+      "mock_user": {
+        "role_id": "founder",
+        "role_selection": "first_available",
+        "policy": "leverage_seeker",
+        "turn_budget": 2,
+        "freeform_rate": 0.0,
+        "leverage_policy": "opportunistic",
+        "objective": "Keep the vote alive while making the contradiction visible.",
+        "risk_tolerance": "medium",
+        "seed": 7
+      },
+      "expected": {
+        "min_turns": 2,
+        "required_stage_progression": ["hook"],
+        "expected_role_behavior": "The founder should use visible evidence without leaking hidden leverage prose.",
+        "leverage_usage_required": true,
+        "leverage_payoff_required": true,
+        "hidden_info_must_not_leak": true,
+        "allowed_violation_codes": [],
+        "forbidden_violation_codes": [
+          "hidden_info_leak",
+          "unknown_npc_pulse_id",
+          "unknown_npc_intent_id",
+          "leverage_card_reuse"
+        ],
+        "trajectory_status_allowed": ["pass", "warn"],
+        "ending_required": false
+      },
+      "rubric": {
+        "weights": {
+          "agency": 0.12,
+          "role_consistency": 0.1,
+          "objective_progress": 0.12,
+          "consequence_continuity": 0.14,
+          "leverage_payoff": 0.14,
+          "safety_contract": 0.14,
+          "trajectory_quality": 0.12,
+          "narrative_coherence": 0.1,
+          "hidden_info_safety": 0.12
+        },
+        "pass_threshold": 0.78,
+        "warn_threshold": 0.58
+      },
+      "run_mode": "ci_stub"
+    }
+  ]
+}
