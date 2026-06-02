@@ -124,6 +124,58 @@ def test_story_brief_mars_talent_show_preserves_departments_and_event_constraint
     assert all("ring" not in label.lower() for label in labels)
 
 
+def test_story_brief_strips_list_introducer_and_dedupes_mars_entities() -> None:
+    seed = (
+        "On Mars colony, a comedy talent show with ten groups - Hydroponics, "
+        "Security, Engineering, Medicine, Culture, Terraforming, Council, AI Core, "
+        "Theatre Club, and Earth Media before the final broadcast. "
+        "Each group should represent Theatre Club and Earth Media concerns."
+    )
+
+    response = build_story_brief(seed=seed, language="en")
+    names = _cast_names(response)
+    lowered_names = [name.lower() for name in names]
+
+    assert "Hydroponics" in names
+    assert "ten groups - Hydroponics" not in names
+    assert "represent Theatre Club" not in names
+    assert "Earth Media concerns" not in names
+    assert "Each" not in names
+    assert "Theatre Club" in names
+    assert "Earth Media" in names
+    assert len(lowered_names) == len(set(lowered_names))
+    active_or_background = {
+        entity.display_name.lower()
+        for entity in [
+            *response.brief.cast_plan.primary_active_entities,
+            *response.brief.cast_plan.secondary_background_entities,
+        ]
+    }
+    omitted = {entity.display_name.lower() for entity in response.brief.cast_plan.omitted_entities}
+    assert active_or_background.isdisjoint(omitted)
+
+
+def test_story_brief_revision_guidance_does_not_become_cast() -> None:
+    base = (
+        "On Mars colony, a comedy talent show involves Engineering, Hydroponics, "
+        "Security, Medicine, Culture, Terraforming, Council, AI Core, Theatre Club, "
+        "and Earth Media before the final broadcast."
+    )
+    response = build_story_brief(seed=base, language="en")
+
+    for action in response.brief.revision_actions:
+        revised = build_story_brief(seed=f"{base}\n\n{action.seed_append}", language="en")
+        names = {name.lower() for name in _cast_names(revised)}
+        first_word = action.label.split()[0].lower()
+
+        assert first_word not in names
+        assert "planner" not in names
+        assert "move" not in names
+        assert "add" not in names
+        assert "lower" not in names
+        assert "extra factions" not in names
+
+
 def test_story_brief_filters_tone_mechanisms_from_bake_sale_cast() -> None:
     seed = (
         "At a cozy preschool bake sale, the teacher, parent organizer, principal, "
@@ -272,6 +324,65 @@ def test_story_brief_consistency_flags_forbidden_constraint_contradiction() -> N
         "forbidden_no_betrayal_contradiction",
         "forbidden_no_violence_contradiction",
     }
+
+
+def test_story_brief_consistency_fails_missing_emphasized_background_entities() -> None:
+    brief = build_story_brief(
+        seed=(
+            "On Mars colony, a comedy talent show with ten groups - Hydroponics, "
+            "Security, Engineering, Medicine, Culture, Terraforming, Council, AI Core, "
+            "Theatre Club, and Earth Media before the final broadcast. "
+            "Each group should represent Theatre Club and Earth Media concerns."
+        ),
+        language="en",
+    ).brief
+
+    check = check_story_brief_opening_consistency(
+        brief=brief,
+        opening=_Opening(
+            title="Oxygen Heist",
+            content=(
+                "Engineering, Hydroponics, and Security argue over a backup oxygen tank "
+                "while the governor waits outside."
+            ),
+            cast_names=["Engineering", "Hydroponics", "Security"],
+        ),
+        language="en",
+    )
+
+    assert check.status == "fail"
+    assert check.should_retry is True
+    assert any(v.code == "brief_emphasized_entity_absent" for v in check.violations)
+
+
+def test_story_brief_consistency_fails_lower_stakes_mars_escalation() -> None:
+    brief = build_story_brief(
+        seed=(
+            "On Mars colony, a lower-stakes comedy talent show involves Engineering, "
+            "Hydroponics, Security, Theatre Club, and Earth Media before the final broadcast; "
+            "no violence and no blackmail."
+        ),
+        language="en",
+        desired_tension_profile="comedy",
+    ).brief
+
+    check = check_story_brief_opening_consistency(
+        brief=brief,
+        opening=_Opening(
+            title="Oxygen Heist",
+            content=(
+                "Security accuses Engineering of an Oxygen Heist after a backup oxygen tank "
+                "vanishes; Hydroponics risks becoming the scapegoat, and the governor arrives "
+                "in ten minutes to decide a permanent position."
+            ),
+            cast_names=["Engineering", "Hydroponics", "Security"],
+        ),
+        language="en",
+    )
+
+    assert check.status == "fail"
+    assert check.should_retry is True
+    assert any(v.code == "lower_stakes_profile_escalated" for v in check.violations)
 
 
 def test_story_brief_classifies_comedy_kernel() -> None:

@@ -152,9 +152,14 @@ _LIST_MARKER_RE = re.compile(
 )
 _ENTITY_TRAILING_RE = re.compile(
     r"\b(?:argue|argues|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
-    r"handle|handles|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
+    r"handle|handles|represent|represents|should|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
     re.I,
 )
+_ENTITY_LEADING_NOISE_RE = re.compile(
+    r"^(?:ten|\d+)\s+(?:groups?|departments?|factions?|parties?|entities?)\s*[-:]\s*",
+    re.I,
+)
+_PLANNER_NOTE_LINE_RE = re.compile(r"^\s*(?:planner note|revision guidance)\s*:", re.I | re.M)
 _NON_ENTITY_EXACT = {
     "at",
     "in",
@@ -178,6 +183,15 @@ _NON_ENTITY_EXACT = {
     "minutes",
     "no violence",
     "no betrayal",
+    "move",
+    "add",
+    "lower",
+    "use",
+    "include",
+    "make",
+    "ensure",
+    "represent",
+    "planner",
 }
 _NON_ENTITY_WORDS = {
     "tone",
@@ -199,6 +213,20 @@ _NON_ENTITY_WORDS = {
     "eclipse",
     "library",
     "vote",
+    "each",
+    "group",
+    "groups",
+    "concern",
+    "concerns",
+    "move",
+    "extra",
+    "extras",
+    "add",
+    "lower",
+    "include",
+    "ensure",
+    "represent",
+    "planner",
 }
 _EVENT_CONSTRAINT_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\btalent show\b", "talent show"),
@@ -227,8 +255,20 @@ _WORLD_SETTING_PATTERNS: tuple[tuple[str, str], ...] = (
 )
 _HIGH_STAKES_PATTERNS = (
     "oxygen supply",
+    "oxygen tank",
+    "backup oxygen",
+    "oxygen heist",
     "life-or-death",
     "life or death",
+    "heist",
+    "scapegoat",
+    "permanent position",
+    "career-ending",
+    "career ending",
+    "criminal",
+    "security footage",
+    "hack",
+    "hacking",
     "murder",
     "kill",
     "deadly",
@@ -241,6 +281,15 @@ _FORBIDDEN_TERMS_BY_CONSTRAINT: dict[str, tuple[str, ...]] = {
     "no betrayal": ("betray", "betrayal", "backstab", "double-cross", "double cross"),
     "no violence": ("violence", "violent", "murder", "kill", "blood", "gun", "knife", "assault"),
 }
+_LOWER_STAKES_OPENING_ESCALATION_PATTERNS = (
+    *_HIGH_STAKES_PATTERNS,
+    "governor arrives",
+    "governor deadline",
+)
+_EMPHASIS_ENTITY_RE = re.compile(
+    r"\b(?:represent|include|preserve|must include|should include|keep)\b\s+([^.!?;]+)",
+    re.I,
+)
 
 
 def build_story_brief(
@@ -386,16 +435,27 @@ def check_story_brief_opening_consistency(
                 )
 
     if brief.tension_profile in {"comedy", "cozy_mystery"} and not _brief_preserves_high_stakes(brief):
-        found_high_stakes = [term for term in _HIGH_STAKES_PATTERNS if term in lowered]
+        found_high_stakes = [term for term in _LOWER_STAKES_OPENING_ESCALATION_PATTERNS if term in lowered]
         if found_high_stakes:
             violations.append(
                 StoryBriefConsistencyViolation(
                     code="lower_stakes_profile_escalated",
-                    severity="warn",
+                    severity="fail",
                     rationale="Opening appears to escalate a comedy/cozy brief into high-stakes danger.",
                     evidence=found_high_stakes[:4],
                 )
             )
+
+    missing_emphasized = _missing_emphasized_entities(brief, lowered)
+    if missing_emphasized:
+        violations.append(
+            StoryBriefConsistencyViolation(
+                code="brief_emphasized_entity_absent",
+                severity="fail",
+                rationale="Entities explicitly requested in the prompt/brief are not visible in the generated opening.",
+                evidence=missing_emphasized[:5],
+            )
+        )
 
     missing_primary = _missing_primary_entities(brief, lowered)
     if missing_primary:
@@ -453,24 +513,20 @@ def has_explicit_small_cast_mismatch(seed: str) -> bool:
 
 
 def _extract_entities(seed: str) -> list[str]:
+    entity_seed = _strip_planner_note_lines(seed)
     candidates: list[str] = []
-    parts = _entity_source_parts(seed)
-    if ":" in seed:
-        parts.insert(0, seed.split(":", 1)[1])
+    parts = _entity_source_parts(entity_seed)
+    if ":" in entity_seed:
+        parts.insert(0, entity_seed.split(":", 1)[1])
     for part in parts:
         for raw in _ENTITY_SPLIT_RE.split(part):
             candidate = _clean_entity(raw)
             if candidate:
                 candidates.append(candidate)
-    # Proper-noun fallback catches compact prompts without comma lists.
-    for match in re.finditer(r"\b([A-Z]{2,}|[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b", seed):
-        candidate = _clean_entity(match.group(1))
-        if candidate:
-            candidates.append(candidate)
     deduped: list[str] = []
     seen: set[str] = set()
     for candidate in candidates:
-        key = candidate.lower()
+        key = _canonical_entity_key(candidate)
         if key in seen:
             continue
         if any(_is_sub_entity(key, existing) for existing in seen):
@@ -493,6 +549,7 @@ def _entity_source_parts(seed: str) -> list[str]:
 def _clean_entity(raw: str) -> str:
     text = re.sub(r"\([^)]*\)", "", raw).strip(" .!?\"'“”‘’")
     text = _LIST_MARKER_RE.sub("", text)
+    text = _ENTITY_LEADING_NOISE_RE.sub("", text)
     text = re.sub(r"\b(the|a|an|with|featuring|including|departments?|factions?|cast)\b", "", text, flags=re.I)
     text = _ENTITY_TRAILING_RE.sub("", text)
     text = " ".join(text.split())
@@ -508,7 +565,24 @@ def _clean_entity(raw: str) -> str:
     words = text.split()
     if len(words) > 5:
         return ""
-    if words and words[0].lower() in {"at", "in", "on", "during", "before", "after", "keep"}:
+    if words and words[0].lower() in {
+        "at",
+        "in",
+        "on",
+        "during",
+        "before",
+        "after",
+        "keep",
+        "move",
+        "add",
+        "lower",
+        "use",
+        "include",
+        "make",
+        "ensure",
+        "represent",
+        "planner",
+    }:
         return ""
     if all(word.lower() in _STOPWORDS for word in words):
         return ""
@@ -699,19 +773,19 @@ def _revision_actions(warnings: list[str], profile: TensionProfile) -> list[Stor
             action_id="add_witness",
             label="Add witness",
             description="Add a third party who can observe, pressure, or misread the conflict.",
-            seed_append="Add a witness with a concrete stake in the outcome.",
+            seed_append="Planner note: Add a witness with a concrete stake in the outcome.",
         ),
         StoryBriefRevisionAction(
             action_id="add_deadline",
             label="Add deadline",
             description="Give the scene a public decision window or event deadline.",
-            seed_append="Add a clear deadline or public event that forces action now.",
+            seed_append="Planner note: Add a clear deadline or public event that forces action now.",
         ),
         StoryBriefRevisionAction(
             action_id="add_audience",
             label="Add audience",
             description="Make the tension visible through a room, crowd, board, class, or faction.",
-            seed_append="Add an audience or faction that will react to the reveal.",
+            seed_append="Planner note: Add an audience or faction that will react to the reveal.",
         ),
     ]
     if profile in {"comedy", "cozy_mystery"} or any("life-or-death" in warning.lower() for warning in warnings):
@@ -720,7 +794,7 @@ def _revision_actions(warnings: list[str], profile: TensionProfile) -> list[Stor
                 action_id="lower_stakes",
                 label="Lower stakes",
                 description="Keep comedy/cozy tension in props, clues, embarrassment, or social pressure.",
-                seed_append="Lower the stakes to embarrassment, missing props, social pressure, or clue payoff.",
+                seed_append="Planner note: Lower the stakes to embarrassment, missing props, social pressure, or clue payoff.",
             )
         )
     actions.append(
@@ -728,7 +802,7 @@ def _revision_actions(warnings: list[str], profile: TensionProfile) -> list[Stor
             action_id="move_extra_to_background",
             label="Move extras to background",
             description="Keep the named group as context instead of making everyone active at once.",
-            seed_append="Move extra factions to background pressure so only 3-5 parties are active.",
+            seed_append="Planner note: Move extra factions to background pressure so only 3-5 parties are active.",
         )
     )
     return actions[:8]
@@ -781,6 +855,23 @@ def _has_high_stakes_conflict(seed: str) -> bool:
     return any(pattern in lowered for pattern in _HIGH_STAKES_PATTERNS)
 
 
+def _strip_planner_note_lines(seed: str) -> str:
+    kept: list[str] = []
+    for line in seed.splitlines():
+        if _PLANNER_NOTE_LINE_RE.match(line):
+            continue
+        line = re.sub(r"\s+(?:planner note|revision guidance)\s*:.*$", "", line, flags=re.I)
+        kept.append(line)
+    return "\n".join(kept)
+
+
+def _canonical_entity_key(value: str) -> str:
+    cleaned = _ENTITY_LEADING_NOISE_RE.sub("", value).lower()
+    cleaned = re.sub(r"\bconcerns?\b", "", cleaned)
+    cleaned = re.sub(r"[^a-z0-9]+", " ", cleaned)
+    return " ".join(cleaned.split())
+
+
 def _opening_search_text(opening: Any) -> str:
     chunks: list[str] = []
     for attr in ("title", "advisor_persona"):
@@ -826,6 +917,26 @@ def _missing_primary_entities(brief: StoryBrief, lowered_opening_text: str) -> l
         label = entity.display_name.lower()
         if label and label not in lowered_opening_text:
             missing.append(entity.display_name)
+    return missing
+
+
+def _emphasized_entity_names(seed: str) -> list[str]:
+    entity_seed = _strip_planner_note_lines(seed)
+    names: list[str] = []
+    for match in _EMPHASIS_ENTITY_RE.finditer(entity_seed):
+        segment = re.sub(r"\bconcerns?\b", "", match.group(1), flags=re.I)
+        for raw in _ENTITY_SPLIT_RE.split(segment):
+            candidate = _clean_entity(raw)
+            if candidate:
+                names.append(candidate)
+    return _dedupe_preserving_order(names)[:8]
+
+
+def _missing_emphasized_entities(brief: StoryBrief, lowered_opening_text: str) -> list[str]:
+    missing: list[str] = []
+    for name in _emphasized_entity_names(brief.original_seed):
+        if name.lower() not in lowered_opening_text:
+            missing.append(name)
     return missing
 
 
