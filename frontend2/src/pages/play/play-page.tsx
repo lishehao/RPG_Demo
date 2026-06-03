@@ -69,6 +69,16 @@ type ActionCommitmentSummary = {
 }
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
+const SCAFFOLD_PARTY_DISPLAY_NAMES = new Set([
+  "player",
+  "mix-up witness",
+  "embarrassed helper",
+  "deadline host",
+  "deadline holder",
+  "concerned witness",
+  "outside voice",
+  "organizer",
+])
 
 function fitTextareaToContent(node: HTMLTextAreaElement | null) {
   if (!node) return
@@ -91,6 +101,10 @@ function isBackgroundStakeholder(member: NarrativeStoryHistoryResponse["template
   const role = member.role.toLowerCase()
   const relation = member.relation_to_protagonist.toLowerCase()
   return role.includes("background stakeholder") || relation.includes("visible context")
+}
+
+function isScaffoldPartyDisplayName(name: string): boolean {
+  return SCAFFOLD_PARTY_DISPLAY_NAMES.has(name.trim().toLowerCase())
 }
 
 export function PlayPage({
@@ -347,9 +361,6 @@ export function PlayPage({
   const castNameById: Record<string, string> = Object.fromEntries(
     story.template.cast.map((c) => [c.character_id, c.display_name]),
   )
-  const headerCast = story.template.cast
-    .filter((member) => !isBackgroundStakeholder(member))
-    .map((member) => member.display_name)
   // Live inventory derived from role.starting_assets + Σ delta over
   // narrator messages. Mirrors backend compute_current_inventory.
   const liveInventory = computeLiveInventory(
@@ -393,7 +404,6 @@ export function PlayPage({
       <Header
         onBackHome={onBackHome}
         title={story.template.title}
-        cast={headerCast}
         turnCount={story.session.turn_count}
         turnBudget={story.session.turn_budget}
         coverUrl={cover}
@@ -890,7 +900,7 @@ function RunContextPanel({
   const runStatusText = isComplete
     ? t("play.status_done")
     : t("play.status_turns_left", { count: turnsRemaining })
-  const runMetaText = [stage, runStatusText, privateResourceText].filter(Boolean).join(" · ")
+  const runMetaText = [stage, runStatusText].filter(Boolean).join(" · ")
   const runProgressLabel = t("stage_bar.aria", {
     turn: turnsCompleted,
     total: turnBudget,
@@ -904,6 +914,7 @@ function RunContextPanel({
   const hiddenInventoryCount = Math.max(0, liveInventory.length - visibleInventory.length)
   const backgroundStakeholders = story.template.cast
     .filter(isBackgroundStakeholder)
+    .filter((member) => !isScaffoldPartyDisplayName(member.display_name))
     .sort((a, b) => {
       const aProtected = a.relation_to_protagonist.toLowerCase().includes("protected context")
       const bProtected = b.relation_to_protagonist.toLowerCase().includes("protected context")
@@ -990,13 +1001,22 @@ function RunContextPanel({
         </div>
         {role ? (
           <div style={ppStyles.runCompactObjective}>
+            <span style={ppStyles.runCompactObjectiveLabel}>{t("play.run_goal_label")}</span>
             <strong style={ppStyles.runCompactObjectiveText}>
               {role.hidden_objective}
             </strong>
           </div>
         ) : null}
-        {renderVisibleContextLine()}
-        {renderInventoryLine()}
+        <div style={ppStyles.runSupportStack}>
+          {renderVisibleContextLine()}
+          {renderInventoryLine()}
+          {privateResourceText ? (
+            <div style={ppStyles.runInventoryLine}>
+              <span style={ppStyles.runInventoryKicker}>{t("play.run_resource_label")}</span>
+              <span style={ppStyles.runInventoryItems}>{privateResourceText}</span>
+            </div>
+          ) : null}
+        </div>
         {renderRunProgress()}
       </motion.section>
     )
@@ -1022,11 +1042,20 @@ function RunContextPanel({
       </div>
       {role ? (
         <div style={ppStyles.runContextObjectiveLine}>
+          <span style={ppStyles.runContextObjectiveLabel}>{t("play.run_goal_label")}</span>
           <strong style={ppStyles.runContextObjectiveText}>{role.hidden_objective}</strong>
         </div>
       ) : null}
-      {renderVisibleContextLine()}
-      {renderInventoryLine()}
+      <div style={ppStyles.runSupportStack}>
+        {renderVisibleContextLine()}
+        {renderInventoryLine()}
+        {privateResourceText ? (
+          <div style={ppStyles.runInventoryLine}>
+            <span style={ppStyles.runInventoryKicker}>{t("play.run_resource_label")}</span>
+            <span style={ppStyles.runInventoryItems}>{privateResourceText}</span>
+          </div>
+        ) : null}
+      </div>
       {renderRunProgress()}
     </motion.section>
   )
@@ -1392,7 +1421,17 @@ function Header({
             </div>
           ) : null}
         </div>
-        {compactHeader && showProgress ? (
+        {!compactHeader && showProgress ? (
+          <span
+            style={
+              showCoverHeader
+                ? { ...ppStyles.headerTurnsDesktop, ...ppStyles.headerTurnsDesktopOnCover }
+                : ppStyles.headerTurnsDesktop
+            }
+          >
+            {t("play.header_turn_count_short", { current: turnCount!, total: turnBudget! })}
+          </span>
+        ) : compactHeader && showProgress ? (
           <span style={ppStyles.headerTurnsCompact}>
             {t("play.header_turn_count_short", { current: turnCount!, total: turnBudget! })}
           </span>
@@ -1879,6 +1918,7 @@ function StoryBeat({
         : intensity === "rising"
           ? { ...ppStyles.narratorBeat, ...ppStyles.narratorBeatRising }
           : ppStyles.narratorBeat
+    const visibleBeatStyle = isLatestNarrator ? { ...beatStyle, ...ppStyles.narratorBeatLatest } : beatStyle
     const textStyle =
       intensity === "peak"
         ? { ...ppStyles.narratorText, ...ppStyles.narratorTextPeak }
@@ -1893,7 +1933,7 @@ function StoryBeat({
         variants={itemVariants}
         transition={itemTransition}
         style={{
-          ...beatStyle,
+          ...visibleBeatStyle,
           position: "relative",
           ...(isBookmarked ? ppStyles.narratorBeatBookmarked : null),
         }}
@@ -1938,6 +1978,9 @@ function StoryBeat({
             }
             aria-hidden
           />
+        ) : null}
+        {isLatestNarrator ? (
+          <div style={ppStyles.narratorBeatKicker}>{t("play.current_scene_label")}</div>
         ) : null}
         {beatSignal ? (
           <motion.div
@@ -5065,6 +5108,19 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap",
   },
   headerTurns: { marginLeft: 8 },
+  headerTurnsDesktop: {
+    minWidth: 90,
+    textAlign: "right" as const,
+    color: "rgba(68,55,40,0.68)",
+    fontSize: 12,
+    fontWeight: 760,
+    whiteSpace: "nowrap" as const,
+    letterSpacing: 0,
+  },
+  headerTurnsDesktopOnCover: {
+    color: "rgba(255,255,255,0.86)",
+    textShadow: "0 2px 12px rgba(0,0,0,0.48)",
+  },
   headerTurnsCompact: {
     color: "rgba(245,200,120,0.82)",
     fontSize: 12,
@@ -5086,21 +5142,21 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   storyColumn: {
     width: "calc(100% - 32px)",
-    maxWidth: 880,
-    margin: "24px 16px 0",
-    padding: "24px 30px 120px",
+    maxWidth: 920,
+    margin: "22px 16px 0",
+    padding: "22px 34px 124px",
     overflowY: "visible",
-    background: "var(--story-paper-panel)",
-    border: "var(--story-ink-border)",
+    background: "rgba(255,249,235,0.92)",
+    border: "1px solid rgba(76,53,29,0.16)",
     borderRadius: 6,
-    boxShadow: "var(--story-sketch-shadow)",
+    boxShadow: "0 18px 46px rgba(72,47,22,0.12), 2px 3px 0 rgba(72,47,22,0.08)",
   },
 
   runContextPanel: {
-    margin: "0 0 16px",
-    paddingTop: 10,
+    margin: "0 0 18px",
+    paddingTop: 6,
     paddingRight: 0,
-    paddingBottom: 7,
+    paddingBottom: 14,
     paddingLeft: 0,
     borderBottom: "1px dashed rgba(76,53,29,0.18)",
     backgroundSize: "auto",
@@ -5197,9 +5253,11 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   runContextObjectiveLine: {
-    marginTop: 7,
+    marginTop: 9,
     maxWidth: 680,
     minWidth: 0,
+    display: "grid",
+    gap: 3,
   },
   runContextObjectiveLabel: {
     color: "rgba(47,35,24,0.72)",
@@ -5219,14 +5277,14 @@ const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 500,
   },
   runInventoryLine: {
-    marginTop: 6,
+    marginTop: 0,
     display: "flex",
     alignItems: "baseline",
     columnGap: 8,
     rowGap: 3,
     flexWrap: "wrap" as const,
     minWidth: 0,
-    color: "rgba(49,36,22,0.58)",
+    color: "rgba(49,36,22,0.56)",
     fontSize: 11.5,
     lineHeight: 1.35,
   },
@@ -5244,6 +5302,14 @@ const ppStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     columnGap: 6,
     rowGap: 2,
+    flexWrap: "wrap" as const,
+  },
+  runSupportStack: {
+    marginTop: 10,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 16,
+    rowGap: 5,
     flexWrap: "wrap" as const,
   },
   runInventoryItem: {
@@ -6139,6 +6205,21 @@ const ppStyles: Record<string, CSSProperties> = {
     borderRadius: 6,
     boxShadow: "2px 3px 0 rgba(72,47,22,0.1)",
   },
+  narratorBeatLatest: {
+    padding: "18px 42px 20px 18px",
+    background: "rgba(255,250,238,0.96)",
+    border: "1px solid rgba(76,53,29,0.22)",
+    boxShadow: "0 16px 34px rgba(72,47,22,0.10), 2px 3px 0 rgba(72,47,22,0.10)",
+  },
+  narratorBeatKicker: {
+    marginBottom: 8,
+    color: "rgba(107,70,19,0.80)",
+    fontSize: 11,
+    lineHeight: 1.2,
+    fontWeight: 820,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+  },
   // Bookmarked beat — soft accent ring on the left edge, signals
   // "you marked this" without competing with the rising/peak intensity
   // ramp.
@@ -6194,8 +6275,8 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   narratorText: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 16.5,
-    lineHeight: 1.85,
+    fontSize: 17,
+    lineHeight: 1.82,
     color: "var(--text)",
     whiteSpace: "pre-wrap",
   },
@@ -6386,17 +6467,17 @@ const ppStyles: Record<string, CSSProperties> = {
 
   actionArea: {
     marginTop: 18,
-    padding: "14px 16px 16px",
+    padding: "16px 18px 18px",
     border: "1px solid rgba(76,53,29,0.22)",
     borderRadius: 6,
     position: "relative" as const,
-    background: "var(--story-paper-card)",
+    background: "rgba(255,252,242,0.96)",
     backdropFilter: "none",
-    boxShadow: "var(--story-note-shadow)",
+    boxShadow: "0 14px 30px rgba(72,47,22,0.10), 2px 3px 0 rgba(72,47,22,0.08)",
     zIndex: 1,
   },
   turnGuide: {
-    marginBottom: 8,
+    marginBottom: 12,
     paddingTop: 0,
     paddingRight: 0,
     paddingBottom: 4,
@@ -6437,7 +6518,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   turnGuideTitle: {
     color: "rgba(49,36,22,0.95)",
-    fontSize: 13,
+    fontSize: 14.5,
     lineHeight: 1.2,
     flexShrink: 0,
   },
@@ -6909,11 +6990,15 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   optionBtn: {
     textAlign: "left",
-    minHeight: 70,
-    padding: "11px 12px 12px 14px",
-    background: "rgba(255,248,226,0.42)",
-    borderTop: "none",
-    borderRight: "none",
+    minHeight: 76,
+    padding: "13px 14px 14px 15px",
+    background: "rgba(255,248,226,0.68)",
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(76,53,29,0.12)",
+    borderRightWidth: 1,
+    borderRightStyle: "solid",
+    borderRightColor: "rgba(76,53,29,0.12)",
     borderBottomWidth: 1,
     borderBottomStyle: "solid",
     borderBottomColor: "rgba(76,53,29,0.16)",
@@ -6923,14 +7008,14 @@ const ppStyles: Record<string, CSSProperties> = {
     borderRadius: 5,
     color: "var(--text)",
     cursor: "pointer",
-    transition: "background 160ms, border-color 160ms, color 160ms, opacity 160ms",
+    transition: "background 160ms, border-color 160ms, color 160ms, opacity 160ms, transform 160ms",
     fontFamily: "inherit",
     outline: "none",
     WebkitTapHighlightColor: "rgba(157,91,47,0.14)",
   },
   optionBtnCompact: {
-    minHeight: 74,
-    padding: "10px 0 12px 11px",
+    minHeight: 76,
+    padding: "11px 10px 12px 12px",
   },
   // Picked state stays typographic so the action list does not read as
   // boxed UI stacked inside the story.

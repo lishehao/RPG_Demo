@@ -1757,7 +1757,7 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
     pressure_labels = _fallback_pressure_labels(brief)
     opening_text = _fallback_opening_passage(
         brief=brief,
-        cast_names=[member.display_name for member in cast],
+        cast_names=_fallback_opening_focus_names(cast_names),
         background_names=background_names,
         pressure_labels=pressure_labels,
     )
@@ -1924,6 +1924,7 @@ def _fallback_opening_passage(
     pressure_labels: list[str],
 ) -> str:
     cast_text = _fallback_names_text(cast_names)
+    cast_text_mid_sentence = _fallback_names_text(cast_names, sentence_start=False)
     seed = brief.original_seed
     scene = _fallback_scene_label(brief, pressure_labels)
     contested = _fallback_contested_object(seed)
@@ -1934,12 +1935,12 @@ def _fallback_opening_passage(
     if _fallback_uses_fantasy_scene(brief):
         return (
             f"In {scene}, {_fallback_contested_status(contested)} just as {_fallback_event_phrase(pressure_labels)} starts to matter{secondary_event}. "
-            f"{cast_text} argue over what the old rule means now.{background_text} "
+            f"{cast_text} {_fallback_verb(cast_text, 'is', 'are')} trying to read what the old rule means now.{background_text} "
             f"{profile_clause} {first_move}"
         )
     if brief.tension_profile in {"comedy", "cozy_mystery"}:
         return (
-            f"At {scene}, {cast_text} are gathered around the {contested} while the room is still deciding "
+            f"At {scene}, the {contested} {_fallback_verb(contested, 'has', 'have')} pulled {cast_text_mid_sentence} into the same public moment while the room is still deciding "
             f"whether this is a mix-up, a performance note, or a public embarrassment{secondary_event}.{background_text} "
             f"{profile_clause} {first_move}"
         )
@@ -2090,9 +2091,14 @@ def _fallback_uses_fantasy_scene(brief: StoryBrief) -> bool:
 
 
 def _fallback_background_sentence(background_names: list[str], *, brief: StoryBrief) -> str:
-    if not background_names:
+    visible_background_names = [
+        name
+        for name in background_names
+        if not _fallback_is_scaffold_party_name(name)
+    ]
+    if not visible_background_names:
         return ""
-    names = background_names[:5]
+    names = visible_background_names[:5]
     visible = _fallback_names_text(names)
     if brief.tension_profile == "comedy":
         return f" {visible} {_fallback_verb(visible, 'stays', 'stay')} close enough to react, heckle gently, or turn the next beat into a callback."
@@ -2101,11 +2107,42 @@ def _fallback_background_sentence(background_names: list[str], *, brief: StoryBr
     return f" {visible} {_fallback_verb(visible, 'stays', 'stay')} close enough to object, react, or pull one missing detail back into view."
 
 
-def _fallback_names_text(names: list[str]) -> str:
+def _fallback_names_text(names: list[str], *, sentence_start: bool = True) -> str:
     if not names:
         return ""
-    first, *rest = names
-    return ", ".join([_fallback_sentence_start(first), *rest])
+    display_names = [
+        _fallback_sentence_start(name) if index == 0 and sentence_start else name
+        for index, name in enumerate(names)
+    ]
+    if len(display_names) == 1:
+        return display_names[0]
+    if len(display_names) == 2:
+        return f"{display_names[0]} and {display_names[1]}"
+    return f"{', '.join(display_names[:-1])}, and {display_names[-1]}"
+
+
+def _fallback_opening_focus_names(cast_names: list[str]) -> list[str]:
+    focused = [
+        name
+        for name in cast_names
+        if not _fallback_is_scaffold_party_name(name)
+    ]
+    if len(focused) >= 2:
+        return focused[:5]
+    return cast_names[:5] or ["the key parties"]
+
+
+def _fallback_is_scaffold_party_name(name: str) -> bool:
+    return name.strip().casefold() in {
+        "player",
+        "mix-up witness",
+        "embarrassed helper",
+        "deadline host",
+        "deadline holder",
+        "concerned witness",
+        "outside voice",
+        "organizer",
+    }
 
 
 def _fallback_sentence_start(value: str) -> str:

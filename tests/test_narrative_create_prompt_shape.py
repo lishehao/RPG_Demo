@@ -564,6 +564,13 @@ def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
     assert response.opening.options
     assert "cupcake labels become" in response.opening.content.casefold()
     assert "cupcake labels becomes" not in response.opening.content.casefold()
+    assert "cupcake labels have pulled" in response.opening.content.casefold()
+    assert "cupcake labels has pulled" not in response.opening.content.casefold()
+    opening_lower = response.opening.content.casefold()
+    assert "player" not in opening_lower
+    assert "mix-up witness" not in opening_lower
+    assert "embarrassed helper" not in opening_lower
+    assert "deadline host" not in opening_lower
     role_labels = {role.label for role in response.template.player_role_options}
     assert "Label checker" in role_labels
     assert "Callback keeper" not in role_labels
