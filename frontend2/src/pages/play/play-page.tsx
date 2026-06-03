@@ -4844,14 +4844,14 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   storyColumn: {
     width: "calc(100% - 32px)",
-    maxWidth: 940,
+    maxWidth: 980,
     margin: "18px 16px 0",
-    padding: "20px 34px 108px",
+    padding: "24px 36px 108px",
     overflowY: "visible",
-    background: "linear-gradient(180deg, rgba(23,18,13,0.94) 0%, rgba(13,11,9,0.96) 100%)",
-    border: "1px solid rgba(236,204,152,0.14)",
-    borderRadius: 3,
-    boxShadow: "0 26px 72px rgba(0,0,0,0.32)",
+    background: "var(--hard-panel)",
+    border: "var(--hard-border)",
+    borderRadius: 2,
+    boxShadow: "0 34px 110px rgba(0,0,0,0.45)",
   },
 
   runContextPanel: {

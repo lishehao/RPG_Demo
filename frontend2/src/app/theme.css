@@ -1,14 +1,14 @@
 /* ------ tokens ------ */
 :root {
-  --paper: #0d0b09;
-  --paper-soft: #15110d;
-  --paper-cream: #1d1711;
-  --paper-aged: #2a2118;
+  --paper: #090a0c;
+  --paper-soft: #111318;
+  --paper-cream: #171923;
+  --paper-aged: #202332;
   --paper-shadow: rgba(0, 0, 0, 0.38);
-  --ink: #f2eadc;
-  --ink-muted: rgba(242, 234, 220, 0.72);
-  --ink-faint: rgba(242, 234, 220, 0.46);
-  --charcoal: #080706;
+  --ink: #f5efe4;
+  --ink-muted: rgba(245, 239, 228, 0.72);
+  --ink-faint: rgba(245, 239, 228, 0.46);
+  --charcoal: #07080a;
   --text-on-ink: #fff2dd;
   --text-on-ink-muted: rgba(255, 242, 221, 0.72);
   --text-on-ink-faint: rgba(255, 242, 221, 0.48);
@@ -16,8 +16,8 @@
   --bg-elev: var(--paper-soft);
   --bg-elev-2: var(--paper-cream);
   --bg-elev-3: var(--paper-aged);
-  --line: rgba(236, 204, 152, 0.14);
-  --line-strong: rgba(236, 204, 152, 0.28);
+  --line: rgba(245, 200, 120, 0.13);
+  --line-strong: rgba(245, 200, 120, 0.28);
   --text: var(--ink);
   --text-muted: var(--ink-muted);
   --text-faint: var(--ink-faint);
@@ -34,19 +34,26 @@
   --radius-md: 3px;
   --radius-lg: 4px;
   --paper-texture:
-    radial-gradient(circle at 18% 14%, rgba(236, 204, 152, 0.08) 0 1px, transparent 1.4px),
-    radial-gradient(circle at 76% 38%, rgba(148, 164, 109, 0.06) 0 1px, transparent 1.5px),
-    linear-gradient(115deg, rgba(255, 255, 255, 0.04), transparent 38%, rgba(208, 138, 79, 0.05) 88%);
-  --shadow-soft: 0 22px 54px rgba(0, 0, 0, 0.32), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
-  --shadow-watercolor: 0 22px 54px rgba(0, 0, 0, 0.28), 0 10px 28px rgba(208, 138, 79, 0.08);
+    linear-gradient(90deg, rgba(245, 200, 120, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.04), transparent 42%, rgba(148, 164, 109, 0.04) 88%);
+  --shadow-soft: 0 28px 78px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.07) inset;
+  --shadow-watercolor: 0 30px 90px rgba(0, 0, 0, 0.42), 0 10px 34px rgba(208, 138, 79, 0.08);
   --shadow-drawer: -24px 0 60px rgba(0, 0, 0, 0.4);
   --sketch-offset: 1px;
   --story-page:
-    radial-gradient(circle at 12% 8%, rgba(208, 138, 79, 0.16), transparent 26%),
-    radial-gradient(circle at 78% 18%, rgba(148, 164, 109, 0.11), transparent 31%),
-    radial-gradient(circle at 50% 108%, rgba(20, 12, 6, 0.86), transparent 40%),
+    linear-gradient(90deg, rgba(245, 200, 120, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    radial-gradient(circle at 12% 8%, rgba(208, 138, 79, 0.16), transparent 25%),
+    radial-gradient(circle at 78% 18%, rgba(148, 164, 109, 0.10), transparent 30%),
+    radial-gradient(circle at 50% 108%, rgba(2, 3, 6, 0.88), transparent 40%),
     var(--paper-texture),
-    linear-gradient(180deg, #0d0b09 0%, #14100c 58%, #090807 100%);
+    linear-gradient(180deg, #090a0c 0%, #111318 58%, #07080a 100%);
+  --hard-panel:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, rgba(18, 20, 28, 0.94), rgba(8, 9, 13, 0.96));
+  --hard-panel-flat: rgba(10, 11, 16, 0.74);
+  --hard-border: 1px solid rgba(245, 200, 120, 0.15);
   --story-paper-panel:
     linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 42%),
     linear-gradient(180deg, rgba(31, 24, 17, 0.96), rgba(15, 12, 9, 0.96));
@@ -85,6 +92,7 @@ html,
 body {
   background-color: var(--bg);
   background-image: var(--paper-texture);
+  background-size: 28px 28px, 28px 28px, auto;
   background-attachment: fixed;
 }
 
@@ -240,10 +248,10 @@ kbd {
 .tag-warn { color: var(--warn); border-color: rgba(169, 73, 63, 0.3); }
 
 .card {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-watercolor);
+  background: var(--hard-panel);
+  border: var(--hard-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-soft);
 }
 
 .skeleton {
@@ -255,16 +263,17 @@ kbd {
 @keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 
 .empty-state {
-  padding: 28px 0; text-align: left; color: var(--text-muted);
-  border: none;
+  padding: 18px 0; text-align: left; color: var(--text-muted);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 .empty-state h3 { margin: 0 0 4px; color: var(--text); font-size: 16px; font-weight: 500; }
 .empty-state p { margin: 0; font-size: 14px; }
 
 .error-state {
-  padding: 10px 0; border-radius: 0;
-  background: transparent; color: var(--warn);
-  border: none; font-size: 14px;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  background: rgba(211, 108, 88, 0.11); color: rgba(255, 224, 216, 0.96);
+  border: 1px solid rgba(211, 108, 88, 0.32); border-left: 3px solid var(--warn); font-size: 14px;
 }
 
 /* ------ drawer ------ */
@@ -284,8 +293,8 @@ kbd {
 /* ------ topbar ------ */
 .topbar {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 16px 32px; border-bottom: 1px solid var(--line);
-  background: rgba(12, 10, 8, 0.88); backdrop-filter: blur(12px);
+  padding: 16px 32px; border-bottom: 1px solid rgba(245, 200, 120, 0.14);
+  background: rgba(7, 8, 12, 0.82); backdrop-filter: blur(16px);
   position: sticky; top: 0; z-index: 50;
 }
 .brand {
@@ -407,8 +416,8 @@ kbd {
 .reviewer-page {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(12,12,16,0.84), var(--bg) 38%),
-    var(--bg);
+    var(--story-page);
+  background-attachment: fixed;
 }
 
 .reviewer-page {
@@ -605,13 +614,16 @@ kbd {
   margin: 18px 0 72px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 28px;
-  background: transparent;
+  gap: 0;
+  background: var(--hard-panel-flat);
+  border: var(--hard-border);
+  border-radius: var(--radius-sm);
 }
 
 .portfolio-proofbar__item {
   min-width: 0;
-  padding: 0;
+  padding: 18px 18px 19px;
+  border-right: 1px solid rgba(245,200,120,0.10);
 }
 .portfolio-proofbar__item:last-child { border-right: none; }
 .portfolio-proofbar__item strong {
@@ -879,11 +891,11 @@ kbd {
   gap: 24px;
 }
 .portfolio-case-card {
-  padding: 0;
+  padding: 18px 18px 19px;
   min-height: 180px;
-  background: transparent;
-  border: none;
-  border-radius: 0;
+  background: var(--hard-panel-flat);
+  border: var(--hard-border);
+  border-radius: var(--radius-sm);
 }
 .portfolio-case-card p {
   margin: 0;

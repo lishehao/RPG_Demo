@@ -692,10 +692,10 @@ function formatRelative(isoString: string, t: ReturnType<typeof useT>): string {
 }
 
 const hpStyles: Record<string, CSSProperties> = {
-  page: { minHeight: "100%", background: "var(--bg)" },
-  main: { maxWidth: 1100, margin: "0 auto", padding: "32px 32px 80px" },
+  page: { minHeight: "100%", background: "var(--story-page)", backgroundAttachment: "fixed" },
+  main: { maxWidth: 1180, margin: "0 auto", padding: "32px 32px 80px" },
   mainCompact: {
-    padding: "18px 32px 64px",
+    padding: "18px 16px 64px",
   },
 
   hero: {
@@ -1059,11 +1059,12 @@ const hpStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "minmax(0, 1fr) minmax(90px, 18%) auto",
     alignItems: "center",
     gap: 18,
-    padding: "22px 0",
+    padding: "20px 22px",
     textAlign: "left",
-    background: "transparent",
-    border: "none",
-    borderRadius: 0,
+    background: "var(--hard-panel)",
+    border: "var(--hard-border)",
+    borderLeft: "3px solid rgba(148,164,109,0.58)",
+    borderRadius: 2,
     color: "var(--text)",
     cursor: "pointer",
     transition: "opacity 160ms, transform 160ms",
@@ -1217,9 +1218,9 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   card: {
     textAlign: "left",
-    background: "transparent",
-    border: "none",
-    borderRadius: 0,
+    background: "var(--hard-panel)",
+    border: "var(--hard-border)",
+    borderRadius: 2,
     cursor: "pointer",
     transition: "opacity 180ms, transform 180ms",
     display: "grid",
@@ -1227,6 +1228,7 @@ const hpStyles: Record<string, CSSProperties> = {
     minHeight: 158,
     overflow: "hidden",
     padding: 0,
+    boxShadow: "0 22px 70px rgba(0,0,0,0.28)",
   },
   cardCompact: {
     gridTemplateColumns: "1fr",
@@ -1247,12 +1249,12 @@ const hpStyles: Record<string, CSSProperties> = {
     aspectRatio: "16 / 9",
   },
   cardBody: {
-    padding: "20px 0 18px 18px",
+    padding: "20px 20px 18px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     gap: 14,
-    background: "transparent",
+    background: "rgba(6,7,10,0.20)",
   },
   cardBodyCompact: {
     padding: "12px 0 0",
@@ -1349,9 +1351,10 @@ const hpStyles: Record<string, CSSProperties> = {
     border: "none",
   },
   emptyCard: {
-    background: "transparent",
-    borderRadius: 0,
-    border: "none",
+    background: "var(--hard-panel)",
+    borderRadius: 2,
+    border: "var(--hard-border)",
+    boxShadow: "0 22px 70px rgba(0,0,0,0.26)",
     overflow: "hidden",
   },
   emptyHero: {
@@ -1372,7 +1375,7 @@ const hpStyles: Record<string, CSSProperties> = {
   footer: {
     marginTop: 80,
     paddingTop: 32,
-    borderTop: "1px dashed var(--line)",
+    borderTop: "1px solid var(--line)",
     textAlign: "center",
     fontSize: 12,
     color: "var(--text-faint)",

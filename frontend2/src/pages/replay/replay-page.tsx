@@ -587,7 +587,7 @@ function renderInterleavedStream(
 }
 
 const rpStyles: Record<string, CSSProperties> = {
-  page: { minHeight: "100%", background: "var(--bg)" },
+  page: { minHeight: "100%", background: "var(--story-page)", backgroundAttachment: "fixed" },
   center: {
     padding: 80,
     textAlign: "center",
@@ -597,7 +597,7 @@ const rpStyles: Record<string, CSSProperties> = {
 
   hero: {
     width: "100%",
-    minHeight: 320,
+    minHeight: 380,
     backgroundSize: "cover",
     backgroundPosition: "center",
     color: "white",
@@ -606,9 +606,9 @@ const rpStyles: Record<string, CSSProperties> = {
   },
   heroInner: {
     width: "100%",
-    maxWidth: 720,
+    maxWidth: 900,
     margin: "0 auto",
-    padding: "32px 32px 60px",
+    padding: "38px 32px 74px",
   },
   crumb: {
     display: "block",
@@ -719,14 +719,22 @@ const rpStyles: Record<string, CSSProperties> = {
     lineHeight: 1.2,
     textAlign: "left",
   },
-  main: { maxWidth: 720, margin: "-40px auto 0", padding: "0 32px 80px", position: "relative", zIndex: 2 },
+  main: {
+    maxWidth: 900,
+    margin: "-48px auto 0",
+    padding: "0 32px 80px",
+    position: "relative",
+    zIndex: 2,
+  },
 
   payoffSummary: {
     marginBottom: 28,
-    padding: "20px 0 22px",
-    borderTop: "1px solid rgba(245,200,120,0.22)",
-    borderBottom: "1px solid rgba(255,255,255,0.09)",
-    background: "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
+    padding: "22px 24px 24px",
+    border: "1px solid rgba(245,200,120,0.15)",
+    borderLeft: "3px solid rgba(208,138,79,0.64)",
+    borderRadius: 2,
+    background: "var(--hard-panel)",
+    boxShadow: "0 28px 90px rgba(0,0,0,0.36)",
   },
   payoffTopLine: {
     display: "flex",
@@ -894,10 +902,11 @@ const rpStyles: Record<string, CSSProperties> = {
     marginTop: 12,
   },
   previewRecord: {
-    padding: "4px 0 10px",
-    background: "transparent",
-    border: "none",
-    borderRadius: 0,
+    padding: "14px 16px 15px",
+    background: "rgba(255,255,255,0.035)",
+    border: "1px solid rgba(245,200,120,0.10)",
+    borderLeft: "3px solid rgba(245,200,120,0.42)",
+    borderRadius: 2,
     display: "grid",
     gridTemplateColumns: "44px minmax(0, 1fr)",
     gap: 16,

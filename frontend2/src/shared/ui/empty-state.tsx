@@ -51,9 +51,10 @@ const styles: Record<string, CSSProperties> = {
   wrap: {
     maxWidth: 520,
     margin: "60px auto",
-    background: "transparent",
-    borderRadius: 0,
-    border: "none",
+    background: "var(--hard-panel)",
+    borderRadius: 2,
+    border: "var(--hard-border)",
+    boxShadow: "var(--shadow-soft)",
     overflow: "hidden",
   },
   hero: {
@@ -63,7 +64,7 @@ const styles: Record<string, CSSProperties> = {
     backgroundPosition: "center",
   },
   body: {
-    padding: "22px 0 28px",
+    padding: "22px 24px 28px",
     textAlign: "center" as const,
     color: "var(--text-muted)",
   },

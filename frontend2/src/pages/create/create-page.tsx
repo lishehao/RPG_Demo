@@ -13,6 +13,7 @@ import { useAuth } from "../../app/auth-context"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { useLanguage, useT, type Lang, type StringKey } from "../../shared/lib/i18n"
 import { itemTransition, transitions } from "../../shared/lib/motion-presets"
+import { GENERATED_ASSETS, PAGE_BG } from "../../shared/lib/webtoon-assets"
 
 const SEED_EXAMPLE_KEYS: StringKey[] = [
   "create.example_seed_1",
@@ -124,6 +125,16 @@ type DifficultyOptionMeta = {
   descKey: StringKey
 }
 
+type LocalFitBlocker = {
+  rationale: string
+  actions: Array<{
+    actionId: string
+    label: string
+    description: string
+    seedAppend: string
+  }>
+}
+
 const DIFFICULTY_OPTIONS: DifficultyOptionMeta[] = [
   {
     id: "story",
@@ -203,6 +214,8 @@ export function CreatePage({
   const [briefError, setBriefError] = useState<string | null>(null)
   const [briefResponse, setBriefResponse] = useState<NarrativeStoryBriefAdvisorResponse | null>(null)
   const [briefResponseKey, setBriefResponseKey] = useState<string | null>(null)
+  const [submittedSeed, setSubmittedSeed] = useState<string | null>(null)
+  const [localFitBlocker, setLocalFitBlocker] = useState<LocalFitBlocker | null>(null)
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
@@ -218,9 +231,9 @@ export function CreatePage({
     briefResponse && briefResponseKey === currentBriefKey ? briefResponse : null
   const activeBrief = activeBriefResponse?.brief ?? null
   const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
-  const showCreateAction = true
   const showBackAction = hasSeed || busy || briefBusy
   const showSeedExamples = !hasSeed && !busy && !briefBusy
+  const showComposerPrimary = !activeBriefResponse && !localFitBlocker
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
   const selectedDifficulty = DIFFICULTY_OPTIONS.find((o) => o.id === difficulty) ?? DIFFICULTY_OPTIONS[0]
   const selectedLanguage =
@@ -264,6 +277,8 @@ export function CreatePage({
     ? t("create.cta_busy")
     : briefBusy
       ? t("create.brief_cta_busy")
+      : localFitBlocker
+        ? t("create.brief_cta_blocked")
       : activeBrief
         ? canGenerateFromBrief
           ? t("create.brief_cta_generate")
@@ -271,6 +286,89 @@ export function CreatePage({
         : hasSeed
           ? t("create.brief_cta_idle")
           : t("create.cta_empty")
+
+  const resetGuideResult = () => {
+    setBriefResponse(null)
+    setBriefResponseKey(null)
+    setBriefError(null)
+    setSubmittedSeed(null)
+    setLocalFitBlocker(null)
+  }
+
+  const detectLocalFitBlocker = (rawSeed: string): LocalFitBlocker | null => {
+    const lower = rawSeed.toLowerCase()
+    const utilitySignals = [
+      "meal plan",
+      "grocery",
+      "macro",
+      "recipe",
+      "workout",
+      "itinerary",
+      "study plan",
+      "budget spreadsheet",
+      "translate",
+      "summarize",
+      "explain",
+      "debug",
+      "resume",
+      "cover letter",
+      "weekly plan",
+      "购物清单",
+      "菜单",
+      "食谱",
+      "健身计划",
+      "旅行计划",
+      "翻译",
+      "总结",
+      "解释",
+      "简历",
+    ]
+    const storySignals = [
+      "ex",
+      "rival",
+      "family",
+      "friend",
+      "witness",
+      "deadline",
+      "secret",
+      "vote",
+      "gala",
+      "wedding",
+      "board",
+      "betray",
+      "recording",
+      "contract",
+      "conflict",
+      "前任",
+      "家人",
+      "朋友",
+      "秘密",
+      "投票",
+      "婚礼",
+      "合同",
+      "冲突",
+    ]
+    const utilityHit = utilitySignals.some((signal) => lower.includes(signal))
+    const storySignalCount = storySignals.reduce((count, signal) => count + (lower.includes(signal) ? 1 : 0), 0)
+    if (!utilityHit || storySignalCount >= 2) return null
+    return {
+      rationale: t("create.local_blocker_utility"),
+      actions: [
+        {
+          actionId: "add_cast_deadline",
+          label: t("create.local_action_cast_deadline_label"),
+          description: t("create.local_action_cast_deadline_desc"),
+          seedAppend: t("create.local_action_cast_deadline_append"),
+        },
+        {
+          actionId: "add_public_conflict",
+          label: t("create.local_action_conflict_label"),
+          description: t("create.local_action_conflict_desc"),
+          seedAppend: t("create.local_action_conflict_append"),
+        },
+      ],
+    }
+  }
 
   // Author flow requires a real account.
   useEffect(() => {
@@ -330,7 +428,18 @@ export function CreatePage({
       return
     }
     if (briefBusy || busy) return
+    const localBlocker = detectLocalFitBlocker(trimmed)
+    if (localBlocker) {
+      setSubmittedSeed(trimmed)
+      setLocalFitBlocker(localBlocker)
+      setBriefResponse(null)
+      setBriefResponseKey(null)
+      setBriefError(null)
+      setError(null)
+      return
+    }
     setBriefBusy(true)
+    setSubmittedSeed(trimmed)
     setBriefError(null)
     setError(null)
     try {
@@ -355,9 +464,7 @@ export function CreatePage({
       if (trimmed.toLowerCase().includes(seedAppend.toLowerCase())) return current
       return `${trimmed}${trimmed ? "\n\n" : ""}${seedAppend}`
     })
-    setBriefResponse(null)
-    setBriefResponseKey(null)
-    setBriefError(null)
+    resetGuideResult()
     window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
   }
 
@@ -372,7 +479,7 @@ export function CreatePage({
 
   return (
     <div style={cpStyles.page}>
-      <header style={cpStyles.header}>
+      <header style={{ ...cpStyles.header, ...(compactLayout ? cpStyles.headerCompact : null) }}>
         <button style={cpStyles.brandLink} onClick={onBackHome}>
           <span
             style={{
@@ -396,180 +503,315 @@ export function CreatePage({
           animate={{ opacity: 1, y: 0 }}
           transition={itemTransition}
         >
-          <span className="ts-tag" style={cpStyles.kicker}>{t("create.tag_new")}</span>
-          <h1 style={{ ...cpStyles.title, ...(compactLayout ? cpStyles.titleCompact : null) }}>
-            {t("create.heading_l1")}
-            <br />
-            {t("create.heading_l2")}
-          </h1>
-          <p style={{ ...cpStyles.sub, ...(compactLayout ? cpStyles.subCompact : null) }}>
-            {t("create.subhead")}
-          </p>
-          <p style={{ ...cpStyles.promptFitHint, ...(compactLayout ? cpStyles.promptFitHintCompact : null) }}>
-            {t("create.prompt_fit_hint")}
-          </p>
+          <section style={{ ...cpStyles.agentHero, ...(compactLayout ? cpStyles.agentHeroCompact : null) }}>
+            <div style={{ ...cpStyles.heroCopy, ...(compactLayout ? cpStyles.heroCopyCompact : null) }}>
+              <span className="ts-tag" style={cpStyles.kicker}>{t("create.tag_new")}</span>
+              <h1 style={{ ...cpStyles.title, ...(compactLayout ? cpStyles.titleCompact : null) }}>
+                {t("create.heading_l1")}
+                <br />
+                {t("create.heading_l2")}
+              </h1>
+              <p style={{ ...cpStyles.sub, ...(compactLayout ? cpStyles.subCompact : null) }}>
+                {t("create.subhead")}
+              </p>
+            </div>
+            <div style={{ ...cpStyles.agentSignalPanel, ...(compactLayout ? cpStyles.agentSignalPanelCompact : null) }}>
+              <span style={cpStyles.agentSignalKicker}>{t("create.brief_card_label")}</span>
+              <strong style={cpStyles.agentSignalTitle}>
+                {activeBrief
+                  ? t(canGenerateFromBrief ? "create.brief_footer_ready" : "create.brief_revise_first")
+                  : localFitBlocker
+                    ? t("create.brief_revise_first")
+                  : briefBusy
+                    ? t("create.brief_cta_busy")
+                    : t("create.brief_cta_idle")}
+              </strong>
+              <span style={cpStyles.agentSignalLine}>{settingsSummary}</span>
+            </div>
+          </section>
 
-          <div style={cpStyles.textareaWrap}>
-            <textarea
-              ref={seedTextareaRef}
-              style={{
-                ...cpStyles.textarea,
-                ...(compactLayout ? cpStyles.textareaCompact : {}),
-              }}
-              placeholder={compactLayout ? t("create.placeholder_short") : t("create.placeholder")}
-              value={seed}
-              onChange={(e) => {
-                setSeed(e.target.value)
-                setError(null)
-                setBriefResponse(null)
-                setBriefResponseKey(null)
-                setBriefError(null)
-              }}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                  e.preventDefault()
-                  void handlePrimaryAction()
-                }
-              }}
-              spellCheck={false}
-              disabled={busy || briefBusy}
-            />
-          </div>
-          <div style={cpStyles.editorMeta}>
-            <span style={cpStyles.count}>{t("create.char_count", { n: seed.length })}</span>
-            {showCreateAction && !compactLayout ? (
-              <span style={cpStyles.shortcutHint}>
-                {t("create.submit_shortcut", { mod: submitModKey })}
-              </span>
-            ) : null}
-          </div>
+          <section style={{ ...cpStyles.workspace, ...(compactLayout ? cpStyles.workspaceCompact : null) }}>
+            <div style={{ ...cpStyles.conversationPanel, ...(compactLayout ? cpStyles.conversationPanelCompact : null) }}>
+              <div style={cpStyles.threadTop}>
+                <span style={cpStyles.threadEyebrow}>{t("create.prompt_fit_hint")}</span>
+                <span style={cpStyles.threadState}>
+                  {briefBusy
+                    ? t("create.brief_cta_busy")
+                    : localFitBlocker
+                      ? t("create.brief_not_fit")
+                      : activeBrief
+                        ? t(FIT_STATUS_LABEL_KEYS[activeBrief.runtime_fit_status])
+                        : t("create.brief_cta_idle")}
+                </span>
+              </div>
 
-          {error ? <div style={cpStyles.error}>{error}</div> : null}
-          {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
-          {activeBriefResponse ? (
-            <StoryBriefCard
-              brief={activeBriefResponse.brief}
-              canGenerate={activeBriefResponse.can_generate}
-              compact={compactLayout}
-              onApplyRevisionAction={handleApplyRevisionAction}
-            />
-          ) : null}
+              <div style={cpStyles.messageStack}>
+                <div style={cpStyles.guideMessage}>
+                  <span style={cpStyles.messageSpeaker}>{t("create.tag_new")}</span>
+                  <strong style={cpStyles.messageTitle}>{t("create.guide_initial_title")}</strong>
+                  <p style={cpStyles.messageText}>{t("create.guide_initial_body")}</p>
+                </div>
+                {submittedSeed ? (
+                  <div style={cpStyles.userMessage}>
+                    <span style={cpStyles.messageSpeaker}>{t("create.user_message_label")}</span>
+                    <p style={cpStyles.messageText}>{submittedSeed}</p>
+                  </div>
+                ) : null}
+              </div>
 
-          <div
-            style={{
-              ...cpStyles.actions,
-              ...(compactLayout ? cpStyles.actionsCompact : null),
-            }}
-          >
-            <AnimatePresence initial={false}>
-              {showCreateAction ? (
-                <motion.button
-                  key="create-submit"
-                  style={{
-                    ...cpStyles.primaryAction,
-                    opacity: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? 0.5 : 1,
-                    pointerEvents: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? "none" : "auto",
-                    ...(compactLayout ? cpStyles.primaryCtaCompact : null),
-                  }}
-                  disabled={!hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief)}
-                  onClick={() => void handlePrimaryAction()}
-                  type="button"
-                  initial={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
-                  animate={{ opacity: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? 0.5 : 1, y: 0, height: "auto", marginTop: 0 }}
-                  exit={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
-                  transition={itemTransition}
-                >
-                  {primaryCtaLabel}
-                </motion.button>
+              <div style={cpStyles.composerDock}>
+                <div style={cpStyles.textareaWrap}>
+                  <textarea
+                    ref={seedTextareaRef}
+                    style={{
+                      ...cpStyles.textarea,
+                      ...(compactLayout ? cpStyles.textareaCompact : {}),
+                    }}
+                    placeholder={compactLayout ? t("create.placeholder_short") : t("create.placeholder")}
+                    value={seed}
+                    onChange={(e) => {
+                      setSeed(e.target.value)
+                      setError(null)
+                      resetGuideResult()
+                    }}
+                    onKeyDown={(e) => {
+                      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                        e.preventDefault()
+                        void handlePrimaryAction()
+                      }
+                    }}
+                    spellCheck={false}
+                    disabled={busy || briefBusy}
+                  />
+                </div>
+                <div style={cpStyles.editorMeta}>
+                  <span style={cpStyles.count}>{t("create.char_count", { n: seed.length })}</span>
+                  {showComposerPrimary && !compactLayout ? (
+                    <span style={cpStyles.shortcutHint}>
+                      {t("create.submit_shortcut", { mod: submitModKey })}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              {error ? <div style={cpStyles.error}>{error}</div> : null}
+              {briefError ? (
+                <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageBlocked }}>
+                  <span style={cpStyles.messageSpeaker}>{t("create.tag_new")}</span>
+                  <strong style={cpStyles.messageTitle}>{t("create.guide_error_title")}</strong>
+                  <p style={cpStyles.messageText}>{briefError}</p>
+                </div>
               ) : null}
-            </AnimatePresence>
-            {!compactLayout && activeBrief && !busy && !briefBusy ? (
-              <button
-                style={cpStyles.backAction}
-                onClick={() => void handlePlanStory()}
-                type="button"
-              >
-                {t("create.brief_replan")}
-              </button>
-            ) : null}
-            {!compactLayout && showBackAction ? (
-              <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy || briefBusy} type="button">
-                {t("create.cta_back")}
-              </button>
-            ) : null}
-          </div>
 
-          <AnimatePresence initial={false}>
-            {showSeedExamples ? (
-              <motion.div
-                key="seed-examples"
-                style={{
-                  ...cpStyles.examplesBlock,
-                  ...(compactLayout ? cpStyles.examplesBlockCompact : null),
-                }}
-                initial={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 24 }}
-                exit={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
-                transition={itemTransition}
-              >
-                <span style={cpStyles.examplesLabel}>{t("create.examples_label")}</span>
+              {localFitBlocker ? (
+                <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageResult, ...cpStyles.guideMessageBlocked }}>
+                  <span style={cpStyles.messageSpeaker}>{t("create.tag_new")}</span>
+                  <strong style={cpStyles.messageTitle}>{t("create.guide_not_fit_title")}</strong>
+                  <div style={cpStyles.notFitPanel}>
+                    <p style={cpStyles.messageText}>
+                      <strong>{t("create.guide_not_fit_why_label")}</strong>{" "}
+                      {localFitBlocker.rationale}
+                    </p>
+                    <p style={cpStyles.messageText}>{t("create.guide_not_fit_supported_shape")}</p>
+                    <p style={cpStyles.messageText}>{t("create.guide_not_fit_next_step")}</p>
+                  </div>
+                  <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
+                    <span style={cpStyles.briefFieldLabel}>{t("create.brief_revision_actions")}</span>
+                    <div style={cpStyles.briefRevisionActionRow}>
+                      {localFitBlocker.actions.map((action) => (
+                        <button
+                          key={action.actionId}
+                          type="button"
+                          style={cpStyles.briefRevisionAction}
+                          title={action.description}
+                          onClick={() => handleApplyRevisionAction(action.seedAppend)}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <AnimatePresence initial={false}>
+                {briefBusy ? (
+                  <motion.div
+                    key="guide-thinking"
+                    style={cpStyles.guideThinking}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={itemTransition}
+                  >
+                    <span style={cpStyles.messageSpeaker}>{t("create.tag_new")}</span>
+                    <strong style={cpStyles.messageTitle}>{t("create.guide_planning_title")}</strong>
+                    <span style={cpStyles.thinkingPulse}>{t("create.guide_planning_body")}</span>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+
+              {activeBriefResponse ? (
                 <div
                   style={{
-                    ...cpStyles.examplesList,
-                    ...(compactLayout ? cpStyles.examplesListCompact : null),
+                    ...cpStyles.guideMessage,
+                    ...cpStyles.guideMessageResult,
+                    ...(activeBriefResponse.can_generate ? cpStyles.guideMessageSuccess : cpStyles.guideMessageBlocked),
                   }}
                 >
-                  {visibleSeedExamples.map((example, index) => (
-                    <button
-                      key={example}
-                      style={cpStyles.exampleLine}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => {
-                        setSeed(example)
-                        window.requestAnimationFrame(() => {
-                          const node = seedTextareaRef.current
-                          if (!node) return
-                          node.focus({ preventScroll: true })
-                          node.setSelectionRange(example.length, example.length)
-                        })
-                      }}
-                      disabled={busy}
-                      type="button"
-                    >
-                      <span style={cpStyles.exampleLineIndex}>{index + 1}.</span>
-                      <span style={cpStyles.exampleLineText}>{example}</span>
-                      <span style={cpStyles.exampleLineUse}>{t("create.example_use")}</span>
-                    </button>
-                  ))}
+                  <span style={cpStyles.messageSpeaker}>{t("create.tag_new")}</span>
+                  <strong style={cpStyles.messageTitle}>
+                    {t(activeBriefResponse.can_generate ? "create.guide_supported_title" : "create.guide_not_fit_title")}
+                  </strong>
+                  {activeBriefResponse.can_generate ? (
+                    <p style={cpStyles.messageText}>{t("create.guide_supported_body")}</p>
+                  ) : (
+                    <div style={cpStyles.notFitPanel}>
+                      <p style={cpStyles.messageText}>
+                        <strong>{t("create.guide_not_fit_why_label")}</strong>{" "}
+                        {activeBriefResponse.brief.runtime_fit_rationale}
+                      </p>
+                      <p style={cpStyles.messageText}>{t("create.guide_not_fit_supported_shape")}</p>
+                      <p style={cpStyles.messageText}>{t("create.guide_not_fit_next_step")}</p>
+                    </div>
+                  )}
+                  <StoryBriefCard
+                    brief={activeBriefResponse.brief}
+                    canGenerate={activeBriefResponse.can_generate}
+                    compact={compactLayout}
+                    onApplyRevisionAction={handleApplyRevisionAction}
+                  />
                 </div>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+              ) : null}
 
-          <details
-            style={{
-              ...cpStyles.settingsDetails,
-              ...(!showSeedExamples ? cpStyles.settingsDetailsFocused : null),
-            }}
-            open={settingsOpen}
-            onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
-          >
-            <summary style={cpStyles.settingsSummary}>
-              <span style={cpStyles.settingsSummaryMain}>
-                <span style={cpStyles.settingsSummaryLabel}>{t("create.settings_label")}</span>
-                <span style={cpStyles.settingsSummaryValue}>{settingsSummary}</span>
-              </span>
-              <span style={cpStyles.settingsToggleHint}>
-                {settingsOpen ? t("create.settings_done") : t("create.settings_edit")}
-              </span>
-            </summary>
-            <div
-              style={{
-                ...cpStyles.settingsStrip,
-                ...(compactLayout ? cpStyles.settingsStripCompact : null),
-              }}
-              aria-label={t("create.settings_label")}
-            >
+              <div
+                style={{
+                  ...cpStyles.actions,
+                  ...(compactLayout ? cpStyles.actionsCompact : null),
+                }}
+              >
+                <AnimatePresence initial={false}>
+                  {showComposerPrimary ? (
+                    <motion.button
+                      key="create-submit"
+                      style={{
+                        ...cpStyles.primaryAction,
+                        opacity: !hasSeed || busy || briefBusy ? 0.5 : 1,
+                        pointerEvents: !hasSeed || busy || briefBusy ? "none" : "auto",
+                        ...(compactLayout ? cpStyles.primaryCtaCompact : null),
+                      }}
+                      disabled={!hasSeed || busy || briefBusy}
+                      onClick={() => void handlePrimaryAction()}
+                      type="button"
+                      initial={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
+                      animate={{ opacity: !hasSeed || busy || briefBusy ? 0.5 : 1, y: 0, height: "auto", marginTop: 0 }}
+                      exit={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
+                      transition={itemTransition}
+                    >
+                      {primaryCtaLabel}
+                    </motion.button>
+                  ) : null}
+                </AnimatePresence>
+                {activeBriefResponse?.can_generate && !busy && !briefBusy ? (
+                  <button
+                    style={cpStyles.primaryAction}
+                    onClick={() => void handleCreate()}
+                    type="button"
+                  >
+                    {t("create.brief_cta_generate")}
+                  </button>
+                ) : null}
+                {activeBrief && !busy && !briefBusy ? (
+                  <button
+                    style={cpStyles.backAction}
+                    onClick={() => void handlePlanStory()}
+                    type="button"
+                  >
+                    {t("create.brief_replan")}
+                  </button>
+                ) : null}
+                {!compactLayout && showBackAction ? (
+                  <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy || briefBusy} type="button">
+                    {t("create.cta_back")}
+                  </button>
+                ) : null}
+              </div>
+
+              <AnimatePresence initial={false}>
+                {showSeedExamples ? (
+                  <motion.div
+                    key="seed-examples"
+                    style={{
+                      ...cpStyles.examplesBlock,
+                      ...(compactLayout ? cpStyles.examplesBlockCompact : null),
+                    }}
+                    initial={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 0 }}
+                    exit={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
+                    transition={itemTransition}
+                  >
+                    <span style={cpStyles.examplesLabel}>{t("create.examples_label")}</span>
+                    <div
+                      style={{
+                        ...cpStyles.examplesList,
+                        ...(compactLayout ? cpStyles.examplesListCompact : null),
+                      }}
+                    >
+                      {visibleSeedExamples.map((example, index) => (
+                        <button
+                          key={example}
+                          style={cpStyles.exampleLine}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setSeed(example)
+                            resetGuideResult()
+                            window.requestAnimationFrame(() => {
+                              const node = seedTextareaRef.current
+                              if (!node) return
+                              node.focus({ preventScroll: true })
+                              node.setSelectionRange(example.length, example.length)
+                            })
+                          }}
+                          disabled={busy}
+                          type="button"
+                        >
+                          <span style={cpStyles.exampleLineIndex}>{index + 1}.</span>
+                          <span style={cpStyles.exampleLineText}>{example}</span>
+                          <span style={cpStyles.exampleLineUse}>{t("create.example_use")}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+
+            <aside style={{ ...cpStyles.controlPanel, ...(compactLayout ? cpStyles.controlPanelCompact : null) }}>
+              <div style={cpStyles.controlArt} aria-hidden />
+              <details
+                style={{
+                  ...cpStyles.settingsDetails,
+                  ...(!showSeedExamples ? cpStyles.settingsDetailsFocused : null),
+                }}
+                open={settingsOpen}
+                onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
+              >
+                <summary style={cpStyles.settingsSummary}>
+                  <span style={cpStyles.settingsSummaryMain}>
+                    <span style={cpStyles.settingsSummaryLabel}>{t("create.settings_label")}</span>
+                    <span style={cpStyles.settingsSummaryValue}>{settingsSummary}</span>
+                  </span>
+                  <span style={cpStyles.settingsToggleHint}>
+                    {settingsOpen ? t("create.settings_done") : t("create.settings_edit")}
+                  </span>
+                </summary>
+                <div
+                  style={{
+                    ...cpStyles.settingsStrip,
+                    ...(compactLayout ? cpStyles.settingsStripCompact : null),
+                  }}
+                  aria-label={t("create.settings_label")}
+                >
               <div
                 style={{
                   ...cpStyles.settingGroup,
@@ -642,7 +884,10 @@ export function CreatePage({
                         ...cpStyles.segmentBtn,
                         ...(storyLanguage === o.id ? cpStyles.segmentBtnActive : null),
                       }}
-                      onClick={() => setStoryLanguage(o.id)}
+                      onClick={() => {
+                        setStoryLanguage(o.id)
+                        resetGuideResult()
+                      }}
                       disabled={busy || briefBusy}
                       type="button"
                       title={o.desc}
@@ -669,7 +914,10 @@ export function CreatePage({
                         ...cpStyles.segmentBtn,
                         ...(desiredTensionProfile === o.id ? cpStyles.segmentBtnActive : null),
                       }}
-                      onClick={() => setDesiredTensionProfile(o.id)}
+                      onClick={() => {
+                        setDesiredTensionProfile(o.id)
+                        resetGuideResult()
+                      }}
                       disabled={busy || briefBusy}
                       type="button"
                       title={t(o.descKey)}
@@ -710,28 +958,37 @@ export function CreatePage({
                   })}
                 </div>
               </div>
-            </div>
-          </details>
-
-          <AnimatePresence>
-            {busy ? (
-              <motion.div
-                key="busy"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={itemTransition}
-                style={cpStyles.busyCard}
-              >
-                <div style={cpStyles.busySignal}>
-                  <span style={cpStyles.busyLabel}>{busyLabel}</span>
-                  <span style={cpStyles.busySignalLine} aria-hidden />
                 </div>
-                <BusyStages activeIndex={busyStageIndex} compact={compactLayout} />
-                <BusyTip />
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+              </details>
+
+              <div style={cpStyles.contractPanel}>
+                <span style={cpStyles.contractKicker}>{t("create.brief_profile")}</span>
+                <strong style={cpStyles.contractTitle}>{t(selectedTension.labelKey)}</strong>
+                <span style={cpStyles.contractLine}>{t(selectedDifficulty.taglineKey)}</span>
+                <span style={cpStyles.contractLine}>{t(selectedVisibility.descKey)}</span>
+              </div>
+
+              <AnimatePresence>
+                {busy ? (
+                  <motion.div
+                    key="busy"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={itemTransition}
+                    style={cpStyles.busyCard}
+                  >
+                    <div style={cpStyles.busySignal}>
+                      <span style={cpStyles.busyLabel}>{busyLabel}</span>
+                      <span style={cpStyles.busySignalLine} aria-hidden />
+                    </div>
+                    <BusyStages activeIndex={busyStageIndex} compact={compactLayout} />
+                    <BusyTip />
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </aside>
+          </section>
         </motion.div>
       </main>
     </div>
@@ -1142,77 +1399,296 @@ const busyStageStyles: Record<string, CSSProperties> = {
 const cpStyles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100%",
-    background: "var(--story-page)",
-    backgroundSize: "auto",
-    backgroundPosition: "center top",
+    background:
+      `linear-gradient(90deg, rgba(7,8,12,0.96) 0%, rgba(7,8,12,0.82) 45%, rgba(7,8,12,0.48) 100%), linear-gradient(180deg, rgba(7,8,12,0.02) 0%, var(--bg) 88%), url(${PAGE_BG.create})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
     backgroundAttachment: "fixed",
   },
   header: {
     padding: "18px 40px",
-    borderBottom: "1px solid var(--line)",
+    borderBottom: "1px solid rgba(245,200,120,0.14)",
     color: "var(--text)",
-    background: "rgba(12,10,8,0.88)",
-    backdropFilter: "blur(12px)",
+    background: "rgba(7,8,12,0.78)",
+    backdropFilter: "blur(16px)",
+  },
+  headerCompact: {
+    padding: "16px 18px",
   },
   brandLink: { display: "inline-flex", alignItems: "center", gap: 8 },
   brandName: { fontFamily: "var(--font-narrative)", fontSize: 17 },
 
-  main: { padding: "56px 40px 80px", display: "flex", justifyContent: "center" },
+  main: { padding: "42px 40px 80px", display: "flex", justifyContent: "center" },
   mainCompact: {
-    padding: "34px 18px 56px",
+    padding: "22px 14px 54px",
   },
   inner: {
     width: "100%",
-    maxWidth: 900,
-    padding: "34px 38px 32px",
+    maxWidth: 1180,
+    padding: "0",
     color: "var(--text)",
-    background: "var(--story-paper-panel)",
-    border: "var(--story-ink-border)",
-    borderRadius: 3,
-    boxShadow: "var(--shadow-watercolor)",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0) 34%), linear-gradient(180deg, rgba(13,15,20,0.94), rgba(9,10,14,0.97))",
+    border: "1px solid rgba(245,200,120,0.16)",
+    borderRadius: 2,
+    boxShadow: "0 34px 110px rgba(0,0,0,0.54), inset 0 1px 0 rgba(255,255,255,0.08)",
     transform: "none",
+    overflow: "hidden",
   },
   innerCompact: {
     maxWidth: 520,
-    padding: "24px 18px 22px",
+    padding: "0",
     transform: "none",
+  },
+  agentHero: {
+    minHeight: 246,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 0.45fr)",
+    gap: 0,
+    background:
+      `linear-gradient(90deg, rgba(8,9,13,0.96) 0%, rgba(8,9,13,0.78) 54%, rgba(8,9,13,0.25) 100%), linear-gradient(180deg, rgba(8,9,13,0.06), rgba(8,9,13,0.72)), url(${GENERATED_ASSETS.advisorNotebook})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center 42%",
+    borderBottom: "1px solid rgba(245,200,120,0.14)",
+  },
+  agentHeroCompact: {
+    gridTemplateColumns: "1fr",
+    minHeight: 0,
+  },
+  heroCopy: {
+    padding: "46px 46px 40px",
+    maxWidth: 700,
+  },
+  heroCopyCompact: {
+    padding: "28px 20px 26px",
+  },
+  agentSignalPanel: {
+    alignSelf: "stretch",
+    minWidth: 0,
+    display: "grid",
+    alignContent: "end",
+    gap: 8,
+    padding: "38px 34px 38px",
+    borderLeft: "1px solid rgba(245,200,120,0.14)",
+    background: "rgba(7,8,12,0.58)",
+    backdropFilter: "blur(14px)",
+  },
+  agentSignalPanelCompact: {
+    borderLeft: "none",
+    borderTop: "1px solid rgba(245,200,120,0.12)",
+    padding: "18px 20px 20px",
+  },
+  agentSignalKicker: {
+    color: "rgba(245,200,120,0.82)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 10.5,
+    lineHeight: 1.25,
+    fontWeight: 780,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase" as const,
+  },
+  agentSignalTitle: {
+    color: "rgba(255,250,242,0.96)",
+    fontSize: 19,
+    lineHeight: 1.26,
+    fontWeight: 720,
+  },
+  agentSignalLine: {
+    color: "rgba(244,239,230,0.58)",
+    fontSize: 12.5,
+    lineHeight: 1.45,
+  },
+  workspace: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 360px)",
+    gap: 0,
+    alignItems: "stretch",
+  },
+  workspaceCompact: {
+    gridTemplateColumns: "1fr",
+  },
+  conversationPanel: {
+    minWidth: 0,
+    padding: "30px 34px 34px",
+    display: "grid",
+    gap: 18,
+  },
+  conversationPanelCompact: {
+    padding: "22px 16px 24px",
+  },
+  controlPanel: {
+    minWidth: 0,
+    padding: "26px 24px 28px",
+    borderLeft: "1px solid rgba(245,200,120,0.12)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)), rgba(8,9,13,0.58)",
+  },
+  controlPanelCompact: {
+    padding: "20px 16px 24px",
+    borderLeft: "none",
+    borderTop: "1px solid rgba(245,200,120,0.12)",
+  },
+  controlArt: {
+    minHeight: 148,
+    marginBottom: 22,
+    backgroundImage:
+      `linear-gradient(180deg, rgba(8,9,13,0.04), rgba(8,9,13,0.76)), url(${GENERATED_ASSETS.objectCardSheet})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    border: "1px solid rgba(245,200,120,0.14)",
+    borderRadius: 2,
+    boxShadow: "0 18px 54px rgba(0,0,0,0.32)",
+  },
+  threadTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: 14,
+    paddingBottom: 12,
+    borderBottom: "1px solid rgba(245,200,120,0.10)",
+  },
+  threadEyebrow: {
+    color: "rgba(245,200,120,0.82)",
+    fontSize: 12,
+    lineHeight: 1.45,
+    fontWeight: 700,
+  },
+  threadState: {
+    color: "var(--text-faint)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 10.5,
+    lineHeight: 1.25,
+    fontWeight: 760,
+    letterSpacing: "0.05em",
+    textTransform: "uppercase" as const,
+    whiteSpace: "nowrap" as const,
+  },
+  messageStack: {
+    display: "grid",
+    gap: 12,
+  },
+  guideMessage: {
+    maxWidth: 680,
+    minWidth: 0,
+    padding: "14px 16px 15px",
+    background: "rgba(255,255,255,0.045)",
+    border: "1px solid rgba(245,200,120,0.12)",
+    borderLeft: "3px solid rgba(148,164,109,0.62)",
+    borderRadius: 2,
+  },
+  guideMessageResult: {
+    maxWidth: "100%",
+    display: "grid",
+    gap: 12,
+    padding: "15px",
+  },
+  guideMessageSuccess: {
+    borderLeftColor: "rgba(148,164,109,0.72)",
+    background: "rgba(148,164,109,0.075)",
+  },
+  guideMessageBlocked: {
+    borderLeftColor: "rgba(211,108,88,0.76)",
+    background: "rgba(211,108,88,0.09)",
+  },
+  userMessage: {
+    maxWidth: 680,
+    minWidth: 0,
+    justifySelf: "end",
+    padding: "13px 15px 14px",
+    background: "rgba(208,138,79,0.12)",
+    border: "1px solid rgba(208,138,79,0.32)",
+    borderRight: "3px solid rgba(208,138,79,0.70)",
+    borderRadius: 2,
+  },
+  messageSpeaker: {
+    display: "block",
+    marginBottom: 6,
+    color: "rgba(245,200,120,0.78)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 780,
+    letterSpacing: "0.05em",
+    textTransform: "uppercase" as const,
+  },
+  messageTitle: {
+    display: "block",
+    marginBottom: 5,
+    color: "rgba(255,250,242,0.96)",
+    fontSize: 15,
+    lineHeight: 1.35,
+    fontWeight: 780,
+  },
+  messageText: {
+    minWidth: 0,
+    margin: 0,
+    color: "var(--text)",
+    fontSize: 13.5,
+    lineHeight: 1.62,
+    whiteSpace: "pre-wrap" as const,
+    overflowWrap: "anywhere" as const,
+  },
+  notFitPanel: {
+    display: "grid",
+    gap: 8,
+    padding: "9px 10px",
+    border: "1px solid rgba(211,108,88,0.20)",
+    background: "rgba(0,0,0,0.14)",
+  },
+  composerDock: {
+    display: "grid",
+    gap: 8,
+  },
+  guideThinking: {
+    maxWidth: 420,
+    padding: "13px 15px",
+    border: "1px solid rgba(148,164,109,0.22)",
+    borderLeft: "3px solid rgba(148,164,109,0.62)",
+    background: "rgba(148,164,109,0.08)",
+    borderRadius: 2,
+  },
+  thinkingPulse: {
+    color: "var(--text-muted)",
+    fontSize: 13,
+    lineHeight: 1.4,
   },
 
   title: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 40,
-    lineHeight: 1.15,
+    fontSize: 46,
+    lineHeight: 1.08,
     letterSpacing: 0,
     fontWeight: 400,
     marginTop: 0,
     marginRight: 0,
     marginBottom: 16,
     marginLeft: 0,
-    color: "var(--text)",
-    textShadow: "none",
+    color: "rgba(255,250,242,0.98)",
+    textShadow: "0 2px 24px rgba(0,0,0,0.62)",
   },
   titleCompact: {
-    fontSize: 36,
-    lineHeight: 1.13,
+    fontSize: 34,
+    lineHeight: 1.08,
     marginBottom: 14,
   },
   kicker: {
     display: "inline-block",
-    marginBottom: 24,
+    marginBottom: 20,
     padding: "0 0 6px",
     background: "transparent",
     border: "none",
     borderBottom: "1px solid rgba(208,138,79,0.36)",
     borderRadius: 0,
-    letterSpacing: 0,
-    textTransform: "none",
-    color: "var(--accent)",
+    fontFamily: "var(--font-mono)",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "rgba(245,200,120,0.88)",
     transform: "none",
   },
   sub: {
     fontSize: 16,
     lineHeight: 1.55,
-    color: "var(--text-muted)",
+    color: "rgba(244,239,230,0.78)",
     marginTop: 0,
     marginRight: 0,
     marginBottom: 10,
@@ -1242,19 +1718,19 @@ const cpStyles: Record<string, CSSProperties> = {
 
   textareaWrap: {
     position: "relative",
-    padding: "14px 16px 16px",
-    marginBottom: 7,
-    background: "var(--story-ruled-paper)",
-    border: "var(--story-ink-border)",
-    borderRadius: 3,
-    boxShadow: "var(--story-note-shadow)",
+    padding: "0",
+    marginBottom: 0,
+    background: "rgba(5,6,10,0.46)",
+    border: "1px solid rgba(245,200,120,0.16)",
+    borderRadius: 2,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   },
   editorMeta: {
     display: "flex",
     alignItems: "baseline",
     justifyContent: "space-between",
     gap: 12,
-    marginBottom: 18,
+    marginBottom: 0,
     color: "var(--text-faint)",
     fontSize: 11,
     lineHeight: 1.25,
@@ -1262,11 +1738,11 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   examplesBlock: {
     display: "grid",
-    gridTemplateColumns: "104px minmax(0, 1fr)",
+    gridTemplateColumns: "96px minmax(0, 1fr)",
     alignItems: "start",
     columnGap: 18,
     rowGap: 10,
-    marginBottom: 24,
+    marginBottom: 0,
   },
   examplesBlockCompact: {
     gridTemplateColumns: "1fr",
@@ -1296,11 +1772,11 @@ const cpStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     columnGap: 7,
     rowGap: 2,
-    padding: "7px 9px 8px",
+    padding: "9px 10px 10px",
     background: "rgba(255,255,255,0.035)",
-    border: "1px solid var(--line)",
-    borderLeft: "2px solid rgba(208,138,79,0.38)",
-    borderRadius: 3,
+    border: "1px solid rgba(245,200,120,0.10)",
+    borderLeft: "2px solid rgba(208,138,79,0.48)",
+    borderRadius: 2,
     color: "var(--text-muted)",
     cursor: "pointer",
     fontFamily: "var(--font-ui)",
@@ -1330,23 +1806,23 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   textarea: {
     width: "100%",
-    minHeight: 200,
-    padding: "7px 0 7px 36px",
+    minHeight: 126,
+    padding: "18px 20px",
     background: "transparent",
     border: "none",
-    borderBottom: "1px solid rgba(236,204,152,0.18)",
+    borderBottom: "none",
     borderRadius: 0,
     fontFamily: "var(--font-ui)",
-    fontSize: 16,
-    lineHeight: 1.65,
+    fontSize: 15.5,
+    lineHeight: 1.62,
     color: "var(--text)",
     resize: "vertical",
     outline: "none",
     transition: "border-color 200ms",
   },
   textareaCompact: {
-    minHeight: 118,
-    padding: "6px 0 7px 24px",
+    minHeight: 96,
+    padding: "16px 14px",
     fontSize: 15,
   },
   count: {
@@ -1364,8 +1840,8 @@ const cpStyles: Record<string, CSSProperties> = {
   settingsStrip: {
     display: "grid",
     gridTemplateColumns: "1fr",
-    rowGap: 12,
-    padding: "12px 0 2px",
+    rowGap: 14,
+    padding: "14px 0 2px",
     marginBottom: 0,
   },
   settingsStripCompact: {
@@ -1375,9 +1851,9 @@ const cpStyles: Record<string, CSSProperties> = {
   settingGroup: {
     minWidth: 0,
     display: "grid",
-    gridTemplateColumns: "116px minmax(0, 1fr)",
-    alignItems: "baseline",
-    columnGap: 14,
+    gridTemplateColumns: "1fr",
+    alignItems: "start",
+    columnGap: 0,
     rowGap: 8,
   },
   settingGroupCompact: {
@@ -1396,16 +1872,16 @@ const cpStyles: Record<string, CSSProperties> = {
     minWidth: 0,
     display: "flex",
     flexWrap: "wrap" as const,
-    alignItems: "baseline",
-    columnGap: 12,
+    alignItems: "stretch",
+    columnGap: 8,
     rowGap: 8,
   },
   segmentBtn: {
     minWidth: 0,
-    padding: "5px 8px 6px",
+    padding: "8px 9px 9px",
     background: "rgba(255,255,255,0.035)",
-    border: "1px solid var(--line)",
-    borderRadius: 3,
+    border: "1px solid rgba(245,200,120,0.10)",
+    borderRadius: 2,
     color: "var(--text-muted)",
     display: "inline-flex",
     alignItems: "baseline",
@@ -1416,9 +1892,9 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   segmentBtnActive: {
     color: "var(--text)",
-    background: "rgba(208,138,79,0.16)",
-    borderColor: "rgba(208,138,79,0.48)",
-    boxShadow: "none",
+    background: "rgba(208,138,79,0.14)",
+    borderColor: "rgba(208,138,79,0.56)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   },
   segmentBtnWarn: {
     borderColor: "rgba(160,71,45,0.46)",
@@ -1438,18 +1914,21 @@ const cpStyles: Record<string, CSSProperties> = {
   },
 
   settingsDetails: {
-    marginTop: 16,
-    borderTop: "1px solid var(--line)",
+    marginTop: 0,
+    padding: "13px 14px 14px",
+    border: "1px solid rgba(245,200,120,0.12)",
+    borderRadius: 2,
+    background: "rgba(5,6,10,0.38)",
   },
   settingsDetailsFocused: {
-    marginTop: 4,
+    marginTop: 0,
   },
   settingsSummary: {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) auto",
     alignItems: "center",
     gap: 16,
-    padding: "8px 0",
+    padding: 0,
     cursor: "pointer",
     listStyle: "none",
     color: "var(--text-muted)",
@@ -1571,41 +2050,34 @@ const cpStyles: Record<string, CSSProperties> = {
   },
 
   error: {
-    marginBottom: 16,
-    padding: "8px 10px",
+    marginBottom: 0,
+    padding: "11px 12px",
     fontSize: 13,
-    color: "var(--warn)",
-    background: "var(--warn-soft)",
+    color: "rgba(255,224,216,0.96)",
+    background: "rgba(211,108,88,0.12)",
     border: "1px solid rgba(211,108,88,0.34)",
-    borderRadius: 3,
+    borderLeft: "3px solid rgba(211,108,88,0.72)",
+    borderRadius: 2,
   },
   briefRail: {
     position: "relative" as const,
-    marginTop: 6,
-    marginBottom: 20,
+    marginTop: 0,
+    marginBottom: 0,
     padding: "18px 16px 16px",
-    border: "1px solid rgba(236,204,152,0.20)",
-    borderLeft: "3px solid rgba(208,138,79,0.58)",
-    borderRadius: 3,
-    background: "var(--story-paper-card)",
+    border: "1px solid rgba(245,200,120,0.14)",
+    borderLeft: "3px solid rgba(208,138,79,0.66)",
+    borderRadius: 2,
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0) 42%), rgba(8,9,13,0.66)",
     color: "var(--text-muted)",
-    boxShadow: "var(--story-note-shadow)",
+    boxShadow: "0 18px 54px rgba(0,0,0,0.30)",
   },
   briefRailCompact: {
     marginBottom: 18,
     padding: "16px 12px 14px",
   },
   briefTape: {
-    position: "absolute" as const,
-    top: -10,
-    left: 24,
-    width: 72,
-    height: 18,
-    background: "rgba(208,138,79,0.26)",
-    border: "1px solid rgba(208,138,79,0.18)",
-    boxShadow: "none",
-    transform: "none",
-    pointerEvents: "none" as const,
+    display: "none",
   },
   briefHeader: {
     display: "flex",
@@ -1645,7 +2117,7 @@ const cpStyles: Record<string, CSSProperties> = {
     marginBottom: 8,
   },
   briefFitPillWarn: {
-    color: "var(--warn)",
+    color: "rgba(255,170,150,0.96)",
   },
   briefPremise: {
     marginTop: 0,
@@ -1695,10 +2167,10 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   briefPrimaryCompact: {
     marginBottom: 10,
-    padding: "8px 9px",
-    borderLeft: "2px solid rgba(148,164,109,0.36)",
-    borderRadius: 3,
-    background: "rgba(255,255,255,0.035)",
+    padding: "10px 11px",
+    borderLeft: "2px solid rgba(148,164,109,0.56)",
+    borderRadius: 2,
+    background: "rgba(255,255,255,0.04)",
   },
   briefList: {
     minWidth: 0,
@@ -1761,11 +2233,16 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   briefWarningBlock: {
     display: "grid",
-    gap: 4,
-    marginBottom: 11,
+    gap: 6,
+    marginBottom: 12,
+    padding: "10px 11px",
+    border: "1px solid rgba(211,108,88,0.24)",
+    borderLeft: "3px solid rgba(211,108,88,0.74)",
+    background: "rgba(211,108,88,0.10)",
+    borderRadius: 2,
   },
   briefWarningLine: {
-    color: "var(--warn)",
+    color: "rgba(255,218,210,0.94)",
     fontSize: 12,
     lineHeight: 1.38,
   },
@@ -1776,8 +2253,8 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   briefDetailDisclosure: {
     marginBottom: 11,
-    borderTop: "1px solid var(--line)",
-    borderBottom: "1px solid var(--line)",
+    borderTop: "1px solid rgba(245,200,120,0.12)",
+    borderBottom: "1px solid rgba(245,200,120,0.10)",
     padding: "7px 0",
   },
   briefDetailSummary: {
@@ -1803,9 +2280,9 @@ const cpStyles: Record<string, CSSProperties> = {
     gap: 7,
   },
   briefRevisionAction: {
-    border: "1px solid rgba(208,138,79,0.28)",
-    borderRadius: 3,
-    background: "rgba(208,138,79,0.10)",
+    border: "1px solid rgba(208,138,79,0.42)",
+    borderRadius: 2,
+    background: "rgba(208,138,79,0.14)",
     color: "var(--text)",
     fontSize: 11.5,
     fontWeight: 760,
@@ -1819,6 +2296,37 @@ const cpStyles: Record<string, CSSProperties> = {
     color: "var(--text-faint)",
     fontSize: 11.5,
     lineHeight: 1.42,
+    paddingTop: 10,
+    borderTop: "1px solid rgba(245,200,120,0.10)",
+  },
+  contractPanel: {
+    marginTop: 14,
+    padding: "13px 14px 14px",
+    border: "1px solid rgba(245,200,120,0.12)",
+    borderLeft: "3px solid rgba(148,164,109,0.54)",
+    borderRadius: 2,
+    background: "rgba(255,255,255,0.035)",
+    display: "grid",
+    gap: 6,
+  },
+  contractKicker: {
+    color: "rgba(245,200,120,0.72)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 10,
+    fontWeight: 780,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase" as const,
+  },
+  contractTitle: {
+    color: "var(--text)",
+    fontSize: 14,
+    lineHeight: 1.3,
+    fontWeight: 760,
+  },
+  contractLine: {
+    color: "var(--text-muted)",
+    fontSize: 11.5,
+    lineHeight: 1.45,
   },
   actions: {
     display: "flex",
@@ -1826,11 +2334,11 @@ const cpStyles: Record<string, CSSProperties> = {
     columnGap: 18,
     rowGap: 8,
     flexWrap: "wrap",
-    marginBottom: 24,
+    marginBottom: 0,
   },
   actionsCompact: {
     alignItems: "baseline",
-    marginBottom: 20,
+    marginBottom: 0,
   },
   primaryAction: {
     width: "fit-content",
@@ -1871,11 +2379,11 @@ const cpStyles: Record<string, CSSProperties> = {
     lineHeight: 1.5,
   },
   busyCard: {
-    marginTop: 24,
-    padding: "12px 0 0",
-    background: "transparent",
-    border: "none",
-    borderRadius: 0,
+    marginTop: 14,
+    padding: "13px 14px 14px",
+    background: "rgba(255,255,255,0.035)",
+    border: "1px solid rgba(245,200,120,0.12)",
+    borderRadius: 2,
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "flex-start",
