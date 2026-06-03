@@ -10,9 +10,10 @@ import {
   REVIEWER_DEMO_ACTIONS,
   REVIEWER_DEMO_SEED,
   REVIEWER_DEMO_TITLE,
-  YOUTUBE_DEMO_EMBED_URL,
   YOUTUBE_DEMO_URL,
 } from "./portfolio-data"
+
+const PORTFOLIO_VIDEO_POSTER = "/illustrations/soft-east-asian/homepage-hero-desktop.webp"
 
 export function PortfolioPage({
   onBackHome,
@@ -50,16 +51,20 @@ export function PortfolioPage({
               </button>
             </div>
           </div>
-          <div className="portfolio-hero__video" aria-label="Tiny Stories YouTube demo preview">
-            <iframe
-              src={YOUTUBE_DEMO_EMBED_URL}
+          <div className="portfolio-hero__video" aria-label="Tiny Stories demo preview">
+            <video
+              controls
+              muted
+              playsInline
+              preload="metadata"
+              poster={PORTFOLIO_VIDEO_POSTER}
               title="Tiny Stories: Inspectable AI Narrative Runtime Demo"
-              allow="autoplay; encrypted-media; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
+            >
+              <source src={LOCAL_DEMO_MP4_URL} type="video/mp4" />
+              <a href={LOCAL_DEMO_MP4_URL}>Open MP4 demo</a>
+            </video>
             <p>
-              Muted autoplay is best-effort. <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">Open on YouTube</a>
+              Poster-backed preview. <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">Open on YouTube</a>
               <span aria-hidden="true"> · </span>
               <a href={LOCAL_DEMO_MP4_URL}>MP4 fallback</a>
             </p>
