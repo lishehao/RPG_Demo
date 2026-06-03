@@ -10,15 +10,29 @@ import { Header } from "../../shared/ui/header"
 import { LoadingShim } from "../../shared/ui/loading-shim"
 import { Truncated } from "../../shared/ui/truncated"
 import {
+  GENERATED_ASSETS,
   PAGE_BG,
   getCoverForTemplate,
   getEmptyPlazaImage,
 } from "../../shared/lib/webtoon-assets"
 import { friendlyError } from "../../shared/lib/friendly-error"
-import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
+import { ENDING_LABEL_DISPLAY, useLanguage, useT, type StringKey } from "../../shared/lib/i18n"
 import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
 
 type Tab = "plaza" | "my-templates"
+
+const HOME_SCENARIO_RAIL: ReadonlyArray<{ labelKey: StringKey; image: string; toneKey: StringKey }> = [
+  { labelKey: "home.cloud3_rail_cozy", image: GENERATED_ASSETS.coverCozy, toneKey: "home.cloud3_rail_tone_social" },
+  { labelKey: "home.cloud3_rail_mars", image: GENERATED_ASSETS.coverSciFiMars, toneKey: "home.cloud3_rail_tone_world" },
+  { labelKey: "home.cloud3_rail_fantasy", image: GENERATED_ASSETS.coverFantasy, toneKey: "home.cloud3_rail_tone_object" },
+  { labelKey: "home.cloud3_rail_drama", image: GENERATED_ASSETS.coverHighDrama, toneKey: "home.cloud3_rail_tone_stakes" },
+]
+
+const HOME_BRIEF_META_KEYS: readonly StringKey[] = [
+  "home.cloud3_brief_meta_1",
+  "home.cloud3_brief_meta_2",
+  "home.cloud3_brief_meta_3",
+]
 
 export function HomePage({
   onOpenCreate,
@@ -101,59 +115,114 @@ export function HomePage({
           animate="animate"
           transition={{ staggerChildren: 0.08, delayChildren: 0.05 }}
         >
-          <div style={{ ...hpStyles.heroInner, ...(compactHome ? hpStyles.heroInnerCompact : null) }}>
-            <motion.div
-              variants={itemVariants}
-              transition={itemTransition}
-              style={{ ...hpStyles.heroTagline, ...(compactHome ? hpStyles.heroTaglineCompact : null) }}
-            >
-              {t("home.hero_tagline")}
-            </motion.div>
-            <motion.h1
-              variants={itemVariants}
-              transition={itemTransition}
-              style={{ ...hpStyles.heroTitle, ...(compactHome ? hpStyles.heroTitleCompact : null) }}
-            >
-              {t("home.hero_title_l1")}
-              <br />
-              {t("home.hero_title_l2")}
-            </motion.h1>
-            <motion.p
-              variants={itemVariants}
-              transition={itemTransition}
-              style={{ ...hpStyles.heroSub, ...(compactHome ? hpStyles.heroSubCompact : null) }}
-            >
-              {t("home.hero_sub")}
-            </motion.p>
-            <motion.div
-              variants={itemVariants}
-              transition={itemTransition}
-              style={{ ...hpStyles.heroActions, ...(compactHome ? hpStyles.heroActionsCompact : null) }}
-            >
-              <motion.button
-                style={hpStyles.heroPrimaryAction}
-                onClick={onOpenCreate}
-                type="button"
-                whileHover={{ x: 2 }}
-                whileTap={tapPress}
+          <div style={{ ...hpStyles.heroFrame, ...(compactHome ? hpStyles.heroFrameCompact : null) }}>
+            <div style={{ ...hpStyles.heroInner, ...(compactHome ? hpStyles.heroInnerCompact : null) }}>
+              <motion.div
+                variants={itemVariants}
+                transition={itemTransition}
+                style={{ ...hpStyles.heroTagline, ...(compactHome ? hpStyles.heroTaglineCompact : null) }}
               >
-                {t("home.cta_create")}
-              </motion.button>
-              {!compactHome ? (
+                {t("home.hero_tagline")}
+              </motion.div>
+              <motion.h1
+                variants={itemVariants}
+                transition={itemTransition}
+                style={{ ...hpStyles.heroTitle, ...(compactHome ? hpStyles.heroTitleCompact : null) }}
+              >
+                {t("home.hero_title_l1")}
+                <br />
+                {t("home.hero_title_l2")}
+              </motion.h1>
+              <motion.p
+                variants={itemVariants}
+                transition={itemTransition}
+                style={{ ...hpStyles.heroSub, ...(compactHome ? hpStyles.heroSubCompact : null) }}
+              >
+                {t("home.hero_sub")}
+              </motion.p>
+              <motion.div
+                variants={itemVariants}
+                transition={itemTransition}
+                style={{ ...hpStyles.heroActions, ...(compactHome ? hpStyles.heroActionsCompact : null) }}
+              >
                 <motion.button
-                  style={hpStyles.heroSecondaryAction}
-                  onClick={() => {
-                    window.location.hash = "#/portfolio"
-                  }}
+                  style={hpStyles.heroPrimaryAction}
+                  onClick={onOpenCreate}
                   type="button"
                   whileHover={{ x: 2 }}
                   whileTap={tapPress}
                 >
-                  {t("home.cta_portfolio")}
+                  {t("home.cta_create")}
                 </motion.button>
-              ) : null}
+                {!compactHome ? (
+                  <motion.button
+                    style={hpStyles.heroSecondaryAction}
+                    onClick={() => {
+                      window.location.hash = "#/portfolio"
+                    }}
+                    type="button"
+                    whileHover={{ x: 2 }}
+                    whileTap={tapPress}
+                  >
+                    {t("home.cta_portfolio")}
+                  </motion.button>
+                ) : null}
+              </motion.div>
+            </div>
+
+            <motion.div
+              variants={itemVariants}
+              transition={itemTransition}
+              style={{ ...hpStyles.heroStoryDeck, ...(compactHome ? hpStyles.heroStoryDeckCompact : null) }}
+              aria-hidden={compactHome}
+            >
+              <div style={hpStyles.storyDeckImage} />
+              <div style={hpStyles.storyDeckPlate}>
+                <span style={hpStyles.deckKicker}>{t("home.cloud3_brief_label")}</span>
+                <strong style={hpStyles.deckTitle}>{t("home.cloud3_brief_title")}</strong>
+                <div style={hpStyles.deckMetaGrid}>
+                  {HOME_BRIEF_META_KEYS.map((key) => (
+                    <span key={key} style={hpStyles.deckMetaItem}>{t(key)}</span>
+                  ))}
+                </div>
+              </div>
+              <div style={hpStyles.storyBeatSlip}>
+                <span style={hpStyles.deckKicker}>{t("home.cloud3_storyboard_label")}</span>
+                <span style={hpStyles.storyBeatText}>{t("home.cloud3_storyboard_beat")}</span>
+                <span style={hpStyles.storyBeatNote}>{t("home.cloud3_storyboard_note")}</span>
+              </div>
             </motion.div>
           </div>
+
+          <motion.div
+            variants={itemVariants}
+            transition={itemTransition}
+            style={{ ...hpStyles.heroRail, ...(compactHome ? hpStyles.heroRailCompact : null) }}
+          >
+            <span style={hpStyles.heroRailLabel}>{t("home.cloud3_rail_label")}</span>
+            <div style={{ ...hpStyles.heroRailItems, ...(compactHome ? hpStyles.heroRailItemsCompact : null) }}>
+              {HOME_SCENARIO_RAIL.map((item) => (
+                <button
+                  key={item.labelKey}
+                  type="button"
+                  style={hpStyles.heroRailItem}
+                  onClick={onOpenCreate}
+                >
+                  <span
+                    style={{
+                      ...hpStyles.heroRailThumb,
+                      backgroundImage: `linear-gradient(180deg, rgba(8,7,6,0) 25%, rgba(8,7,6,0.72) 100%), url(${item.image})`,
+                    }}
+                    aria-hidden
+                  />
+                  <span style={hpStyles.heroRailCopy}>
+                    <span style={hpStyles.heroRailTitle}>{t(item.labelKey)}</span>
+                    <span style={hpStyles.heroRailTone}>{t(item.toneKey)}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
         </motion.section>
 
         {/* My sessions split into in-progress + completed groups. Only
@@ -631,7 +700,7 @@ const hpStyles: Record<string, CSSProperties> = {
 
   hero: {
     position: "relative",
-    minHeight: 360,
+    minHeight: 590,
     padding: 0,
     borderRadius: 0,
     overflow: "hidden",
@@ -644,26 +713,42 @@ const hpStyles: Record<string, CSSProperties> = {
     backgroundSize: "cover",
     backgroundPosition: "center 30%",
     color: "white",
-    marginBottom: 22,
-    display: "flex",
-    alignItems: "center",
+    marginBottom: 26,
+    display: "grid",
+    gridTemplateRows: "minmax(0, 1fr) auto",
+    alignItems: "stretch",
+    borderTop: "1px solid rgba(236,204,152,0.16)",
+    borderBottom: "1px solid rgba(236,204,152,0.18)",
+    boxShadow: "0 32px 90px rgba(0,0,0,0.34)",
   },
   heroCompact: {
-    minHeight: 392,
+    minHeight: 0,
     marginBottom: 16,
     backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.94) 0%, rgba(12,12,16,0.62) 48%, rgba(12,12,16,0.16) 100%), linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.38) 72%, var(--bg) 100%), url(${PAGE_BG.homeHero})`,
     backgroundPosition: "center 36%",
-    alignItems: "flex-end",
+  },
+  heroFrame: {
+    minHeight: 468,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 0.96fr) minmax(360px, 0.84fr)",
+    alignItems: "center",
+    gap: 28,
+    width: "100%",
+  },
+  heroFrameCompact: {
+    minHeight: 380,
+    gridTemplateColumns: "1fr",
+    gap: 0,
   },
   heroInner: {
     width: "100%",
     maxWidth: 640,
-    padding: "58px 56px 64px",
+    padding: "58px 0 54px 56px",
     textAlign: "left" as const,
   },
   heroInnerCompact: {
-    padding: "42px 28px 34px",
-    maxWidth: 420,
+    padding: "42px 24px 28px",
+    maxWidth: 430,
   },
   heroTagline: {
     display: "inline-block",
@@ -749,6 +834,175 @@ const hpStyles: Record<string, CSSProperties> = {
     fontWeight: 650,
     fontFamily: "inherit",
     cursor: "pointer",
+  },
+  heroStoryDeck: {
+    position: "relative" as const,
+    minHeight: 380,
+    marginTop: 44,
+    marginRight: 42,
+    marginBottom: 30,
+    borderLeft: "1px solid rgba(236,204,152,0.18)",
+    borderBottom: "1px solid rgba(236,204,152,0.18)",
+    background:
+      "linear-gradient(180deg, rgba(19,15,11,0.64), rgba(10,8,6,0.72))",
+    boxShadow: "-24px 36px 90px rgba(0,0,0,0.38)",
+    overflow: "hidden",
+  },
+  heroStoryDeckCompact: {
+    display: "none",
+  },
+  storyDeckImage: {
+    position: "absolute" as const,
+    inset: 0,
+    backgroundImage: `linear-gradient(90deg, rgba(12,10,8,0.20), rgba(12,10,8,0.08)), url(${PAGE_BG.homeHero})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    opacity: 0.88,
+    filter: "saturate(1.02) contrast(1.02)",
+  },
+  storyDeckPlate: {
+    position: "absolute" as const,
+    top: 26,
+    left: 24,
+    right: 42,
+    padding: "18px 18px 16px",
+    display: "grid",
+    gap: 12,
+    background: "rgba(10,8,6,0.78)",
+    borderTop: "1px solid rgba(236,204,152,0.20)",
+    borderLeft: "1px solid rgba(236,204,152,0.20)",
+    borderBottom: "1px solid rgba(236,204,152,0.12)",
+    backdropFilter: "blur(10px)",
+  },
+  deckKicker: {
+    fontFamily: "var(--font-mono)",
+    color: "rgba(245,205,150,0.78)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 720,
+    letterSpacing: "0.04em",
+    textTransform: "uppercase" as const,
+  },
+  deckTitle: {
+    color: "rgba(255,247,232,0.94)",
+    fontSize: 17,
+    lineHeight: 1.32,
+    fontWeight: 650,
+  },
+  deckMetaGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 10,
+  },
+  deckMetaItem: {
+    minWidth: 0,
+    paddingTop: 8,
+    color: "rgba(242,234,220,0.66)",
+    borderTop: "1px solid rgba(236,204,152,0.14)",
+    fontSize: 11.5,
+    lineHeight: 1.25,
+  },
+  storyBeatSlip: {
+    position: "absolute" as const,
+    left: 24,
+    right: 24,
+    bottom: 24,
+    padding: "16px 18px 17px",
+    display: "grid",
+    gap: 7,
+    background: "rgba(21,17,13,0.84)",
+    borderLeft: "3px solid rgba(208,138,79,0.72)",
+    borderTop: "1px solid rgba(236,204,152,0.14)",
+    borderRight: "1px solid rgba(236,204,152,0.10)",
+    borderBottom: "1px solid rgba(236,204,152,0.16)",
+    backdropFilter: "blur(12px)",
+  },
+  storyBeatText: {
+    color: "rgba(255,247,232,0.90)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 18,
+    lineHeight: 1.36,
+  },
+  storyBeatNote: {
+    color: "rgba(242,234,220,0.58)",
+    fontSize: 12,
+    lineHeight: 1.35,
+  },
+  heroRail: {
+    display: "grid",
+    gridTemplateColumns: "180px minmax(0, 1fr)",
+    alignItems: "stretch",
+    gap: 0,
+    borderTop: "1px solid rgba(236,204,152,0.16)",
+    background: "rgba(8,7,6,0.72)",
+    backdropFilter: "blur(10px)",
+  },
+  heroRailCompact: {
+    gridTemplateColumns: "1fr",
+  },
+  heroRailLabel: {
+    padding: "18px 18px 16px 24px",
+    color: "rgba(242,234,220,0.62)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 10.5,
+    lineHeight: 1.35,
+    fontWeight: 720,
+    letterSpacing: "0.04em",
+    textTransform: "uppercase" as const,
+    borderRight: "1px solid rgba(236,204,152,0.12)",
+  },
+  heroRailItems: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    minWidth: 0,
+  },
+  heroRailItemsCompact: {
+    gridTemplateColumns: "1fr",
+  },
+  heroRailItem: {
+    minWidth: 0,
+    minHeight: 96,
+    display: "grid",
+    gridTemplateColumns: "88px minmax(0, 1fr)",
+    alignItems: "stretch",
+    gap: 0,
+    padding: 0,
+    borderLeft: "1px solid rgba(236,204,152,0.10)",
+    background: "transparent",
+    color: "var(--text)",
+    textAlign: "left" as const,
+    overflow: "hidden",
+  },
+  heroRailThumb: {
+    width: "100%",
+    minHeight: 96,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  },
+  heroRailCopy: {
+    minWidth: 0,
+    padding: "17px 14px 14px",
+    display: "grid",
+    alignContent: "center",
+    gap: 6,
+  },
+  heroRailTitle: {
+    minWidth: 0,
+    color: "rgba(255,247,232,0.90)",
+    fontSize: 13.5,
+    lineHeight: 1.24,
+    fontWeight: 760,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  },
+  heroRailTone: {
+    color: "rgba(242,234,220,0.48)",
+    fontSize: 11,
+    lineHeight: 1.2,
+    fontFamily: "var(--font-mono)",
+    letterSpacing: "0.03em",
+    textTransform: "uppercase" as const,
   },
 
   section: { marginTop: 34 },
