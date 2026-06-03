@@ -20,6 +20,7 @@ from rpg_backend.narrative.contracts import (
 )
 from rpg_backend.narrative.engine import generate_opening
 from rpg_backend.narrative.profile_vocabulary import reliable_profile_vocabulary
+from rpg_backend.narrative.reliable_renderer import infer_template_tension_profile
 from rpg_backend.narrative.repository import NarrativeRepository
 from rpg_backend.narrative.service import NarrativeService, NarrativeServiceError
 from rpg_backend.responses_transport import ResponsesJSONResponse
@@ -372,6 +373,7 @@ def test_create_template_uses_reliable_opening_first_for_heavy_mars_brief(
     assert "At the Mars colony talent show" in response.opening.content
     assert "oxygen rumor" in response.opening.content
     assert "callback" in response.opening.content
+    assert infer_template_tension_profile(response.template) == "comedy"
     first_sentence = response.opening.content.split(".", 1)[0]
     assert "Waste Recycling" not in first_sentence
     assert "Transit" not in first_sentence
@@ -520,6 +522,63 @@ def test_create_template_uses_brief_fallback_after_opening_parse_failure(
     assert "library setting" not in response.opening.content
     assert "visible mistake" not in response.opening.content
     assert response.session.session_id
+
+
+def test_fantasy_reliable_turns_avoid_comedy_residue_when_prompt_is_playful(
+    tmp_path,
+) -> None:
+    seed = (
+        "In a floating dragon library, a shy apprentice spellbook, ink sprites, sky pirates, "
+        "the Archivist Guild, moon-oracle librarians, and a banished dragon clan argue over "
+        "a missing star map before an eclipse in three hours. Keep it fantastical, tense but "
+        "playful, and make the eclipse the time pressure."
+    )
+    brief = build_story_brief(seed=seed, language="en").brief
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+    first_turn = service.advance(
+        response.session.session_id,
+        AdvanceTurnRequest(chosen_option_index=0),
+        player_user_id="usr_test",
+        include_agent_trace=True,
+    )
+    second_turn = service.advance(
+        response.session.session_id,
+        AdvanceTurnRequest(chosen_option_index=0),
+        player_user_id="usr_test",
+        include_agent_trace=True,
+    )
+
+    assert infer_template_tension_profile(response.template) == "fantasy_sci_fi"
+    visible_text = " ".join(
+        [
+            response.opening.content,
+            first_turn.narrator_message.content,
+            second_turn.narrator_message.content,
+            *[option.label for option in first_turn.narrator_message.options],
+            *[option.hint or "" for option in first_turn.narrator_message.options],
+        ]
+    ).casefold()
+    assert "eclipse-lit library" in visible_text
+    assert "eclipse mark" in visible_text
+    assert "star map" in visible_text
+    for residue in (
+        "timing trail",
+        "table mistake",
+        "handoff",
+        "mix-up",
+        "scapegoat",
+        "takes the fall",
+        "fight",
+        "blackmail",
+        "已经",
+    ):
+        assert residue not in visible_text
 
 
 def test_create_template_cozy_fit_prompt_can_fallback_to_playable_opening(
