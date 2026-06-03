@@ -842,6 +842,14 @@ function StoryBriefCard({
   const secondary = brief.cast_plan.secondary_background_entities
   const omitted = brief.cast_plan.omitted_entities
   const decisions = brief.constraint_dispositions.slice(0, 8)
+  const collapseSupportedDetails = canGenerate && !compact
+  const primaryCast = (
+    <BriefEntityList
+      label={t("create.brief_primary_cast")}
+      items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+      empty={t("create.brief_empty")}
+    />
+  )
   const metaFields = (
     <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
       <BriefField label={t("create.brief_profile")} value={t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
@@ -880,6 +888,34 @@ function StoryBriefCard({
       ) : null}
     </>
   )
+  const warningBlock = brief.warnings.length > 0 || brief.revision_suggestions.length > 0 ? (
+    <div style={cpStyles.briefWarningBlock}>
+      {brief.warnings.slice(0, 3).map((warning) => (
+        <div key={warning} style={cpStyles.briefWarningLine}>{warning}</div>
+      ))}
+      {brief.revision_suggestions.slice(0, 2).map((suggestion) => (
+        <div key={suggestion} style={cpStyles.briefSuggestionLine}>{suggestion}</div>
+      ))}
+    </div>
+  ) : null
+  const revisionActions = brief.revision_actions.length > 0 ? (
+    <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
+      <span style={cpStyles.briefFieldLabel}>{t("create.brief_revision_actions")}</span>
+      <div style={cpStyles.briefRevisionActionRow}>
+        {brief.revision_actions.slice(0, 5).map((action) => (
+          <button
+            key={action.action_id}
+            type="button"
+            style={cpStyles.briefRevisionAction}
+            title={action.description}
+            onClick={() => onApplyRevisionAction(action.seed_append)}
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  ) : null
 
   return (
     <section style={{ ...cpStyles.briefRail, ...(compact ? cpStyles.briefRailCompact : null) }}>
@@ -903,11 +939,7 @@ function StoryBriefCard({
       {compact ? (
         <>
           <div style={cpStyles.briefPrimaryCompact}>
-            <BriefEntityList
-              label={t("create.brief_primary_cast")}
-              items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-              empty={t("create.brief_empty")}
-            />
+            {primaryCast}
           </div>
           <BriefDetailsDisclosure label={t("create.brief_details_toggle")}>
             {metaFields}
@@ -919,48 +951,35 @@ function StoryBriefCard({
       ) : (
         <>
           {metaFields}
-          <div style={cpStyles.briefCastGrid}>
-            <BriefEntityList
-              label={t("create.brief_primary_cast")}
-              items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-              empty={t("create.brief_empty")}
-            />
-            {secondaryCast}
-          </div>
-          {omittedCast}
-          {planDetails}
+          {collapseSupportedDetails ? (
+            <>
+              <div style={cpStyles.briefPrimaryCompact}>
+                {primaryCast}
+              </div>
+              <BriefDetailsDisclosure label={t("create.brief_details_toggle")}>
+                {secondaryCast}
+                {omittedCast}
+                {planDetails}
+                {warningBlock}
+                {revisionActions}
+              </BriefDetailsDisclosure>
+            </>
+          ) : (
+            <>
+              <div style={cpStyles.briefCastGrid}>
+                {primaryCast}
+                {secondaryCast}
+              </div>
+              {omittedCast}
+              {planDetails}
+            </>
+          )}
         </>
       )}
-      {brief.warnings.length > 0 || brief.revision_suggestions.length > 0 ? (
-        <div style={cpStyles.briefWarningBlock}>
-          {brief.warnings.slice(0, 3).map((warning) => (
-            <div key={warning} style={cpStyles.briefWarningLine}>{warning}</div>
-          ))}
-          {brief.revision_suggestions.slice(0, 2).map((suggestion) => (
-            <div key={suggestion} style={cpStyles.briefSuggestionLine}>{suggestion}</div>
-          ))}
-        </div>
-      ) : null}
-      {brief.revision_actions.length > 0 ? (
-        <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
-          <span style={cpStyles.briefFieldLabel}>{t("create.brief_revision_actions")}</span>
-          <div style={cpStyles.briefRevisionActionRow}>
-            {brief.revision_actions.slice(0, 5).map((action) => (
-              <button
-                key={action.action_id}
-                type="button"
-                style={cpStyles.briefRevisionAction}
-                title={action.description}
-                onClick={() => onApplyRevisionAction(action.seed_append)}
-              >
-                {action.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      {collapseSupportedDetails ? null : warningBlock}
+      {collapseSupportedDetails ? null : revisionActions}
       <div style={cpStyles.briefFooter}>
-        <span>{brief.runtime_fit_rationale}</span>
+        <span>{canGenerate ? t("create.brief_footer_ready_hint") : brief.runtime_fit_rationale}</span>
         <strong>{canGenerate ? t("create.brief_footer_ready") : t("create.brief_revise_first")}</strong>
       </div>
     </section>

@@ -5944,6 +5944,7 @@ const ppStyles: Record<string, CSSProperties> = {
   actionArea: {
     marginTop: 12,
     padding: "14px 0 0",
+    scrollMarginTop: 92,
     borderTop: "1px solid rgba(236,204,152,0.18)",
     borderRight: "none",
     borderBottom: "none",
@@ -6001,9 +6002,8 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 10,
   },
   actionDiscoveryCueTop: {
-    position: "sticky" as const,
-    top: 56,
-    zIndex: 5,
+    position: "relative" as const,
+    zIndex: 1,
     marginBottom: 12,
   },
   actionDiscoveryCueCopy: {
