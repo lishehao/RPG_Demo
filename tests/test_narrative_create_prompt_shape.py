@@ -347,6 +347,15 @@ def test_create_template_uses_reliable_opening_first_for_heavy_mars_brief(
     assert response.story_brief_consistency.status == "pass"
     assert "Theatre Club" in response.opening.content
     assert "Earth Media" in response.opening.content
+    background_cast = {
+        member.display_name: member
+        for member in response.template.cast
+        if "background stakeholder" in member.role.lower()
+    }
+    assert "Theatre Club" in background_cast
+    assert "Earth Media" in background_cast
+    assert "protected context" in background_cast["Theatre Club"].relation_to_protagonist.lower()
+    assert "protected context" in background_cast["Earth Media"].relation_to_protagonist.lower()
     assert "backup oxygen tank" not in response.opening.content
     assert "At the Mars colony talent show" in response.opening.content
     assert "oxygen rumor" in response.opening.content
@@ -555,6 +564,12 @@ def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
     assert response.opening.options
     assert "cupcake labels become" in response.opening.content.casefold()
     assert "cupcake labels becomes" not in response.opening.content.casefold()
+    role_labels = {role.label for role in response.template.player_role_options}
+    assert "Label checker" in role_labels
+    assert "Callback keeper" not in role_labels
+    option_labels = " ".join(option.label for option in response.opening.options).casefold()
+    assert "cupcake labels" in option_labels
+    assert "missing prop" not in option_labels
     visible_opening_text = " ".join(
         [
             response.opening.content,
@@ -583,18 +598,38 @@ def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
         player_user_id="usr_test",
         include_agent_trace=True,
     )
+    second_turn = service.advance(
+        response.session.session_id,
+        AdvanceTurnRequest(chosen_option_index=0),
+        player_user_id="usr_test",
+        include_agent_trace=True,
+    )
     events = repo.list_agent_events(response.session.session_id)
 
     assert turn.narrator_message.options
+    assert second_turn.narrator_message.options
     assert "AI service" not in turn.narrator_message.content
+    assert "AI service" not in second_turn.narrator_message.content
     assert "fallback" not in turn.narrator_message.content.casefold()
-    assert [event.event_type for event in events] == [
+    assert "fallback" not in second_turn.narrator_message.content.casefold()
+    assert turn.narrator_message.content != second_turn.narrator_message.content
+    assert "shifts after" not in second_turn.narrator_message.content.casefold()
+    assert "cupcake labels" in turn.narrator_message.content.casefold()
+    assert "cupcake labels" in second_turn.narrator_message.content.casefold()
+    assert [event.event_type for event in events[:3]] == [
+        "agent_plan",
+        "step_judge",
+        "contract_judge",
+    ]
+    assert [event.event_type for event in events[3:]] == [
         "agent_plan",
         "step_judge",
         "contract_judge",
     ]
     assert events[1].payload.status == "pass"
     assert events[2].payload.status == "pass"
+    assert events[4].payload.status == "pass"
+    assert events[5].payload.status == "pass"
 
 
 def test_create_template_brief_consistency_failure_is_user_actionable_422(

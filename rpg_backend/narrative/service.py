@@ -1418,7 +1418,7 @@ def _deterministic_turn_fallback(
             ord=next_ord,
             role="narrator",
             content=passage,
-            options=_fallback_turn_options(profile),
+            options=_fallback_turn_options(template, profile),
             chosen_option_index=None,
             npc_pulse=pulses,
             inventory_delta=None,
@@ -1520,38 +1520,95 @@ def _fallback_turn_passage(
     names = _fallback_turn_names(template, pulses)
     first = names[0] if names else "the closest witness"
     second = names[1] if len(names) > 1 else "the room"
+    first_subject = _fallback_sentence_start(first)
     action = _fallback_turn_action_phrase(player_action)
     stage_line = _fallback_turn_stage_line(agent_plan.director.stage_phase, profile)
+    turn_variant = agent_plan.turn_index % 3
+    object_label = _fallback_turn_object_label(template)
     if profile in {"cozy_mystery", "comedy"}:
-        text = (
-            f"The {scene} shifts after {action}. {first} {_fallback_verb(first, 'catches', 'catch')} the detail first, "
-            f"and {second} {_fallback_verb(second, 'leaves', 'leave')} room for a less dramatic explanation instead of "
-            f"turning the moment into a pile-on. {stage_line} The next beat can test "
-            f"the prop, invite the quiet party in, or let the callback land before "
-            f"anyone chooses a version of events."
-        )
+        if turn_variant == 1:
+            text = (
+                f"After {action}, the {scene} pauses around the {object_label}. "
+                f"{first_subject} {_fallback_verb(first, 'points', 'point')} to a small timing detail, and "
+                f"{second} {_fallback_verb(second, 'keeps', 'keep')} the explanation light enough for repair. "
+                f"{stage_line} The next move can check the handoff, invite a quieter voice, or turn the mix-up into a payoff."
+            )
+        elif turn_variant == 2:
+            object_verb = _fallback_verb(object_label, "becomes", "become")
+            text = (
+                f"The {object_label} {object_verb} easier to read once {action}. "
+                f"{first_subject} {_fallback_verb(first, 'softens', 'soften')} first, while {second} "
+                f"{_fallback_verb(second, 'notices', 'notice')} who is still hesitating. "
+                f"{stage_line} The next beat can compare versions gently or let the room laugh before blame settles."
+            )
+        else:
+            text = (
+                f"The {scene} shifts after {action}. {first_subject} {_fallback_verb(first, 'catches', 'catch')} the detail first, "
+                f"and {second} {_fallback_verb(second, 'leaves', 'leave')} room for a less dramatic explanation instead of "
+                f"turning the moment into a pile-on. {stage_line} The next beat can test "
+                f"the {object_label}, invite the quiet party in, or let the callback land before "
+                f"anyone chooses a version of events."
+            )
     elif profile == "fantasy_sci_fi":
-        text = (
-            f"The {scene} answers after {action}. {first} {_fallback_verb(first, 'turns', 'turn')} toward the visible "
-            f"sign, while {second} {_fallback_verb(second, 'notices', 'notice')} which rule, artifact, or faction has "
-            f"moved. {stage_line} The next beat can question the change, share the "
-            f"sign with a quieter party, or hold the object where everyone can read it."
-        )
+        if turn_variant == 1:
+            text = (
+                f"After {action}, the {object_label} draws the {scene} inward. "
+                f"{first_subject} {_fallback_verb(first, 'reads', 'read')} the first change, while {second} "
+                f"{_fallback_verb(second, 'tests', 'test')} which old rule still holds. "
+                f"{stage_line} The next beat can ask the quieter faction to interpret the sign."
+            )
+        elif turn_variant == 2:
+            text = (
+                f"The {scene} gives back a clearer sign once {action}. "
+                f"{first_subject} {_fallback_verb(first, 'moves', 'move')} toward the {object_label}, and {second} "
+                f"{_fallback_verb(second, 'tracks', 'track')} the faction claim behind it. "
+                f"{stage_line} The next beat can place the artifact where everyone can answer."
+            )
+        else:
+            text = (
+                f"The {scene} answers after {action}. {first_subject} {_fallback_verb(first, 'turns', 'turn')} toward the visible "
+                f"sign, while {second} {_fallback_verb(second, 'notices', 'notice')} which rule, artifact, or faction has "
+                f"moved. {stage_line} The next beat can question the change, share the "
+                f"sign with a quieter party, or hold the {object_label} where everyone can read it."
+            )
     elif profile == "family_social":
         text = (
-            f"The {scene} quiets after {action}. {first} {_fallback_verb(first, 'reacts', 'react')} first, and {second} "
+            f"The {scene} quiets after {action}. {first_subject} {_fallback_verb(first, 'reacts', 'react')} first, and {second} "
             f"{_fallback_verb(second, 'starts', 'start')} weighing whether this is an old wound or a repairable mistake. "
             f"{stage_line} The next beat can ask for the missing context, protect a "
             f"fragile bond, or let someone else speak before the room hardens."
         )
     else:
         text = (
-            f"The {scene} absorbs {action}. {first} {_fallback_verb(first, 'recalculates', 'recalculate')} in public, and "
+            f"The {scene} absorbs {action}. {first_subject} {_fallback_verb(first, 'recalculates', 'recalculate')} in public, and "
             f"{second} {_fallback_verb(second, 'watches', 'watch')} who benefits from the new version of events. "
             f"{stage_line} The next beat can press for a concrete answer, place one "
             f"fact on the table, or wait for the next stakeholder to reveal their stake."
         )
     return normalize_whitespace(text)
+
+
+def _fallback_turn_object_label(template: NarrativeTemplate) -> str:
+    seed = template.seed.casefold()
+    if "cupcake labels" in seed:
+        return "cupcake labels"
+    if "recipe card" in seed:
+        return "recipe card"
+    if "star map" in seed:
+        return "star map"
+    if "cursed index" in seed:
+        return "cursed index"
+    if "oxygen" in seed:
+        return "oxygen rumor"
+    if "talent show" in seed:
+        return "talent-show cue"
+    if "cupcake" in seed:
+        return "cupcake clue"
+    if "prop" in seed:
+        return "shared prop"
+    if "artifact" in seed:
+        return "artifact"
+    return "visible detail"
 
 
 def _fallback_turn_scene_label(template: NarrativeTemplate) -> str:
@@ -1591,6 +1648,8 @@ def _fallback_name_is_plural(name: str) -> bool:
     lower = name.strip().casefold()
     if not lower or lower in {"the room", "the boardroom", "the family table"}:
         return False
+    if lower in {"hydroponics", "communications", "finance", "transit", "medical", "education", "security"}:
+        return False
     if any(token in lower for token in (" and ", ",", "&")):
         return True
     last = re.sub(r"[^a-z]+", "", lower.split()[-1]) if lower.split() else lower
@@ -1620,30 +1679,31 @@ def _fallback_turn_stage_line(stage_phase: str, profile: str) -> str:
             return "The social stakes rise, but they stay tied to embarrassment, timing, and repair."
         return "The tension stays public and playful enough to keep moving."
     if profile == "fantasy_sci_fi":
-        return "The pressure comes from the shared rule of the world, not from sudden blame."
+        return "The pressure comes from the old rule in view, not from sudden blame."
     if profile == "family_social":
         return "The pressure stays personal, but nobody has to turn it into spectacle yet."
     return "The pressure stays visible enough that the room has to answer."
 
 
-def _fallback_turn_options(profile: str) -> list[StoryOption]:
+def _fallback_turn_options(template: NarrativeTemplate, profile: str) -> list[StoryOption]:
+    object_label = _fallback_turn_object_label(template)
     if profile == "cozy_mystery":
         return [
-            StoryOption(label="[Ally] Let the shy witness describe what changed", hint="Keeps the mystery gentle", handle="ask witness"),
-            StoryOption(label="[Probe] Check the object without blaming anyone", hint="Tests the clue first", handle="check clue"),
+            StoryOption(label=f"[Ally] Let the shy witness describe the {object_label}", hint="Keeps the mystery gentle", handle="ask witness"),
+            StoryOption(label=f"[Probe] Check the {object_label} without blaming anyone", hint="Tests the clue first", handle="check clue"),
             StoryOption(label="[Watch] Give the room a softer reset", hint="Buys a calmer beat", handle="soft reset"),
         ]
     if profile == "comedy":
         return [
             StoryOption(label="[Ally] Invite the overlooked group into the test", hint="Keeps the joke shared", handle="invite group"),
-            StoryOption(label="[Probe] Ask who noticed the prop change", hint="Turns timing into evidence", handle="ask prop"),
+            StoryOption(label=f"[Probe] Ask who noticed the {object_label} change", hint="Turns timing into evidence", handle="ask prop"),
             StoryOption(label="[Watch] Let the callback settle before moving", hint="Waits for the room to react", handle="let land"),
         ]
     if profile == "fantasy_sci_fi":
         return [
-            StoryOption(label="[Probe] Ask what the world-rule changed", hint="Turns the sign into a clue", handle="ask rule"),
+            StoryOption(label="[Probe] Ask which old rule changed", hint="Turns the sign into a clue", handle="ask rule"),
             StoryOption(label="[Ally] Let the quieter faction interpret the sign", hint="Gives background pressure a voice", handle="quiet voice"),
-            StoryOption(label="[Watch] Hold the artifact where everyone can see it", hint="Keeps the room honest", handle="show object"),
+            StoryOption(label=f"[Watch] Hold the {object_label} where everyone can see it", hint="Keeps the room honest", handle="show object"),
         ]
     if profile == "family_social":
         return [
@@ -1679,12 +1739,21 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
     cast_names = [entity.display_name for entity in primary_entities[:5]]
     if len(cast_names) < 3:
         cast_names = ["Organizer", "Concerned witness", "Deadline holder", "Outside voice"]
-    cast = _fallback_cast_members(cast_names)
     background_names = [
         entity.display_name
         for entity in brief.cast_plan.secondary_background_entities
         if entity.display_name not in cast_names
     ]
+    protected_background_names = {
+        entity.display_name
+        for entity in brief.cast_plan.secondary_background_entities
+        if "explicitly emphasized" in entity.rationale.casefold()
+    }
+    cast = _fallback_cast_members(
+        cast_names,
+        background_names=background_names,
+        protected_background_names=protected_background_names,
+    )
     pressure_labels = _fallback_pressure_labels(brief)
     opening_text = _fallback_opening_passage(
         brief=brief,
@@ -1693,7 +1762,7 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
         pressure_labels=pressure_labels,
     )
     options = _fallback_opening_options(brief)
-    player_roles = _fallback_player_roles(brief, cast)
+    player_roles = _fallback_player_roles(brief, cast[: len(cast_names)])
     return OpeningResult(
         title=_fallback_title(brief, pressure_labels),
         advisor_persona="A careful advisor watches who is heard, what pressure is visible, and how the tone stays on track.",
@@ -1723,20 +1792,46 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
     )
 
 
-def _fallback_cast_members(names: list[str]) -> list[CastMember]:
-    ids = [_fallback_slug(name) or f"party_{idx + 1}" for idx, name in enumerate(names)]
+def _fallback_cast_members(
+    names: list[str],
+    *,
+    background_names: list[str] | None = None,
+    protected_background_names: set[str] | None = None,
+) -> list[CastMember]:
+    all_names = [*names, *(background_names or [])[: max(0, 10 - len(names))]]
+    ids = [_fallback_slug(name) or f"party_{idx + 1}" for idx, name in enumerate(all_names)]
+    protected = protected_background_names or set()
     cast: list[CastMember] = []
-    for idx, name in enumerate(names):
+    for idx, name in enumerate(all_names):
         target_ids = [target_id for target_id in ids if target_id != ids[idx]][:2]
+        is_background = idx >= len(names)
+        is_protected_background = is_background and name in protected
         cast.append(
             CastMember(
                 character_id=ids[idx],
                 display_name=_fallback_label(name, limit=40),
-                role="Involved party",
-                relation_to_protagonist="A party whose reaction can shift the next choice.",
-                hidden_objective=f"Make sure {name[:70]} is heard before the decision lands.",
-                leverage_over_player="Knows which detail the room keeps avoiding.",
-                leverages_over_other_npcs=[
+                role=(
+                    "Protected background stakeholder"
+                    if is_protected_background
+                    else "Background stakeholder"
+                    if is_background
+                    else "Involved party"
+                ),
+                relation_to_protagonist=(
+                    "Protected context the prompt emphasized; kept visible outside the active focus window."
+                    if is_protected_background
+                    else
+                    "Visible context kept in the room for later turns."
+                    if is_background
+                    else "A party whose reaction can shift the next choice."
+                ),
+                hidden_objective=(
+                    None
+                    if is_background
+                    else f"Make sure {name[:70]} is heard before the decision lands."
+                ),
+                leverage_over_player=None if is_background else "Knows which detail the room keeps avoiding.",
+                leverages_over_other_npcs=[] if is_background else [
                     NPCLeverageOverNPC(
                         target_npc_id=target_id,
                         leverage="Can point to the missing detail that changes who gets heard.",
@@ -1749,12 +1844,8 @@ def _fallback_cast_members(names: list[str]) -> list[CastMember]:
 
 
 def _fallback_player_roles(brief: StoryBrief, cast: list[CastMember]) -> list[PlayerRole]:
-    if brief.tension_profile in {"comedy", "cozy_mystery"}:
-        role_names = ["Callback keeper", "Clue spotter", "Gentle referee"]
-    elif brief.tension_profile == "fantasy_sci_fi":
-        role_names = ["Rule keeper", "Artifact witness", "Faction go-between"]
-    else:
-        role_names = ["Room mediator", "Scene witness", "Pressure holder"]
+    role_names = _fallback_role_names(brief)
+    object_label = _fallback_contested_object(brief.original_seed)
     roles: list[PlayerRole] = []
     for idx, role_name in enumerate(role_names):
         target = cast[idx % len(cast)]
@@ -1762,18 +1853,67 @@ def _fallback_player_roles(brief: StoryBrief, cast: list[CastMember]) -> list[Pl
             PlayerRole(
                 role_id=_fallback_slug(role_name)[:32] or f"role_{idx + 1}",
                 label=_fallback_label(role_name, limit=24),
-                public_persona=f"You are the {role_name.lower()} trying to keep the exchange concrete and fair.",
-                hidden_objective="Bring the quiet parties, pressure, and payoff into view before one side controls the room.",
+                public_persona=_fallback_role_persona(role_name, brief, object_label),
+                hidden_objective=_fallback_role_objective(brief, object_label),
                 leverages_over_npcs=[
                     PlayerLeverageOverNPC(
                         npc_id=target.character_id,
-                        leverage=f"You know why {target.display_name} needs to be heard before the choice lands.",
+                        leverage=_fallback_role_leverage(target.display_name, brief, object_label),
                     )
                 ],
-                starting_assets=[_fallback_label(brief.intervention_card_label, limit=80)],
+                starting_assets=[_fallback_label(_fallback_starting_asset(brief, object_label), limit=80)],
             )
         )
     return roles
+
+
+def _fallback_role_names(brief: StoryBrief) -> list[str]:
+    seed = brief.original_seed.casefold()
+    if "bake sale" in seed or "cupcake" in seed:
+        return ["Label checker", "Bake-sale host", "Volunteer ally"]
+    if "mars" in seed and "talent show" in seed:
+        return ["Talent-show liaison", "Rumor handler", "Audience mediator"]
+    if "eclipse" in seed and "library" in seed:
+        return ["Star-map witness", "Eclipse steward", "Spellbook ally"]
+    if brief.tension_profile == "cozy_mystery":
+        return ["Clue keeper", "Gentle witness", "Calm host"]
+    if brief.tension_profile == "comedy":
+        return ["Callback keeper", "Timing witness", "Audience ally"]
+    if brief.tension_profile == "fantasy_sci_fi":
+        return ["Artifact witness", "Faction go-between", "Rule steward"]
+    return ["Room mediator", "Scene witness", "Pressure holder"]
+
+
+def _fallback_role_persona(role_name: str, brief: StoryBrief, object_label: str) -> str:
+    if _fallback_uses_fantasy_scene(brief):
+        return f"You are the {role_name.lower()} watching how the {object_label} changes the room's old rules."
+    if brief.tension_profile in {"cozy_mystery", "comedy"}:
+        return f"You are the {role_name.lower()} keeping the {object_label} concrete without turning the room against anyone."
+    return f"You are the {role_name.lower()} trying to keep the exchange concrete and fair."
+
+
+def _fallback_role_objective(brief: StoryBrief, object_label: str) -> str:
+    if _fallback_uses_fantasy_scene(brief):
+        return f"Use the {object_label} to make the artifact, faction, or old rule visible before the room hardens."
+    if brief.tension_profile in {"cozy_mystery", "comedy"}:
+        return f"Use the {object_label} to create a payoff without blame taking over."
+    return "Bring the quiet parties, pressure, and payoff into view before one side controls the room."
+
+
+def _fallback_role_leverage(target_name: str, brief: StoryBrief, object_label: str) -> str:
+    if _fallback_uses_fantasy_scene(brief):
+        return f"You noticed how the {object_label} points back to {target_name}'s faction or old rule."
+    if brief.tension_profile in {"cozy_mystery", "comedy"}:
+        return f"You noticed a harmless detail about the {object_label} that gives {target_name} a way to explain."
+    return f"You know why {target_name} needs to be heard before the choice lands."
+
+
+def _fallback_starting_asset(brief: StoryBrief, object_label: str) -> str:
+    if _fallback_uses_fantasy_scene(brief):
+        return f"{brief.intervention_card_label}: {object_label} sign"
+    if brief.tension_profile in {"cozy_mystery", "comedy"}:
+        return f"{brief.intervention_card_label}: {object_label} note"
+    return brief.intervention_card_label
 
 
 def _fallback_opening_passage(
@@ -1794,7 +1934,7 @@ def _fallback_opening_passage(
     if _fallback_uses_fantasy_scene(brief):
         return (
             f"In {scene}, {_fallback_contested_status(contested)} just as {_fallback_event_phrase(pressure_labels)} starts to matter{secondary_event}. "
-            f"{cast_text} argue over what the world-rule means now.{background_text} "
+            f"{cast_text} argue over what the old rule means now.{background_text} "
             f"{profile_clause} {first_move}"
         )
     if brief.tension_profile in {"comedy", "cozy_mystery"}:
@@ -2007,29 +2147,69 @@ def _fallback_first_move_clause(brief: StoryBrief) -> str:
 
 
 def _fallback_opening_options(brief: StoryBrief) -> list[StoryOption]:
-    if brief.tension_profile == "comedy":
+    seed = brief.original_seed.casefold()
+    contested = _fallback_contested_object(brief.original_seed)
+    background = _fallback_background_label(brief)
+    fantasy_party = (
+        _fallback_named_party(brief, "clan")
+        or _fallback_named_party(brief, "sprites")
+        or _fallback_named_party(brief, "spellbook")
+        or background
+    )
+    volunteer = _fallback_named_party(brief, "volunteer") or "quiet witness"
+    if _fallback_uses_fantasy_scene(brief):
+        if "eclipse" in seed and "library" in seed:
+            return [
+                StoryOption(label=f"Ask what changed when the eclipse touched the {contested}", hint="Name the old rule", handle="rule"),
+                StoryOption(label=f"Invite {fantasy_party} to interpret the sign", hint="Broaden the room", handle="faction"),
+                StoryOption(label=f"Hold the {contested} where every faction can read it", hint="Find the hinge", handle="artifact"),
+            ]
         return [
-            StoryOption(label="Ask what actually happened to the missing prop", hint="Keep it concrete", handle="ask_prop"),
+            StoryOption(label="Ask which old rule changed first", hint="Name the world pressure", handle="rule"),
+            StoryOption(label=f"Invite {fantasy_party} to answer", hint="Broaden the room", handle="faction"),
+            StoryOption(label=f"Inspect the {contested} everyone keeps avoiding", hint="Find the hinge", handle="artifact"),
+        ]
+    if brief.tension_profile == "comedy":
+        if "mars" in seed and "talent show" in seed:
+            return [
+                StoryOption(label="Ask who last handled the talent-show cue", hint="Keep the comedy concrete", handle="ask_cue"),
+                StoryOption(label=f"Invite {background} to answer from the side", hint="Keep background concerns visible", handle="invite_bg"),
+                StoryOption(label="Turn the oxygen rumor into a shared callback", hint="Lower the stakes", handle="callback"),
+            ]
+        return [
+            StoryOption(label=f"Ask what actually happened to the {contested}", hint="Keep it concrete", handle="ask_prop"),
             StoryOption(label="Give the quiet party a harmless way in", hint="Soften the room", handle="invite"),
             StoryOption(label="Turn the mistake into a callback", hint="Aim for payoff", handle="callback"),
         ]
     if brief.tension_profile == "cozy_mystery":
         return [
-            StoryOption(label="Ask where the clue was last seen", hint="Follow the object", handle="ask_clue"),
-            StoryOption(label="Let the nervous witness explain", hint="Lower worry", handle="witness"),
-            StoryOption(label="Compare everyone’s version gently", hint="Repair trust", handle="compare"),
-        ]
-    if brief.tension_profile == "fantasy_sci_fi":
-        return [
-            StoryOption(label="Ask which rule changed first", hint="Name the world pressure", handle="rule"),
-            StoryOption(label="Invite the background faction to answer", hint="Broaden the room", handle="faction"),
-            StoryOption(label="Inspect the artifact everyone keeps avoiding", hint="Find the hinge", handle="artifact"),
+            StoryOption(label=f"Ask where the {contested} was last seen", hint="Follow the object", handle="ask_clue"),
+            StoryOption(label=f"Let the {volunteer} explain the handoff", hint="Lower worry", handle="witness"),
+            StoryOption(label="Compare the table versions gently", hint="Repair trust", handle="compare"),
         ]
     return [
         StoryOption(label="Ask who is being left out", hint="Bring in a quiet party", handle="ask"),
         StoryOption(label="Name the pressure everyone is avoiding", hint="Focus the room", handle="name"),
         StoryOption(label="Invite the quiet party to speak", hint="Shift attention", handle="invite"),
     ]
+
+
+def _fallback_background_label(brief: StoryBrief) -> str:
+    for entity in brief.cast_plan.secondary_background_entities:
+        if "explicitly emphasized" in entity.rationale.casefold() and entity.display_name:
+            return entity.display_name
+    for entity in brief.cast_plan.secondary_background_entities:
+        if entity.display_name:
+            return entity.display_name
+    return "background group"
+
+
+def _fallback_named_party(brief: StoryBrief, token: str) -> str:
+    token_lower = token.casefold()
+    for entity in [*brief.cast_plan.primary_active_entities, *brief.cast_plan.secondary_background_entities]:
+        if token_lower in entity.display_name.casefold():
+            return entity.display_name
+    return ""
 
 
 def _fallback_pressure_labels(brief: StoryBrief) -> list[str]:

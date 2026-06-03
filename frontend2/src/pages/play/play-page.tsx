@@ -87,6 +87,12 @@ function leveragePlayInput(card: LeverageCardView, language: NarrativeStoryHisto
   return `I reveal the leverage I hold over ${card.target_name}: ${card.leverage}`
 }
 
+function isBackgroundStakeholder(member: NarrativeStoryHistoryResponse["template"]["cast"][number]): boolean {
+  const role = member.role.toLowerCase()
+  const relation = member.relation_to_protagonist.toLowerCase()
+  return role.includes("background stakeholder") || relation.includes("visible context")
+}
+
 export function PlayPage({
   sessionId,
   reviewerMode = false,
@@ -341,6 +347,9 @@ export function PlayPage({
   const castNameById: Record<string, string> = Object.fromEntries(
     story.template.cast.map((c) => [c.character_id, c.display_name]),
   )
+  const headerCast = story.template.cast
+    .filter((member) => !isBackgroundStakeholder(member))
+    .map((member) => member.display_name)
   // Live inventory derived from role.starting_assets + Σ delta over
   // narrator messages. Mirrors backend compute_current_inventory.
   const liveInventory = computeLiveInventory(
@@ -384,7 +393,7 @@ export function PlayPage({
       <Header
         onBackHome={onBackHome}
         title={story.template.title}
-        cast={story.template.cast.map((c) => c.display_name)}
+        cast={headerCast}
         turnCount={story.session.turn_count}
         turnBudget={story.session.turn_budget}
         coverUrl={cover}
@@ -893,6 +902,19 @@ function RunContextPanel({
   )
   const visibleInventory = liveInventory.slice(0, 3)
   const hiddenInventoryCount = Math.max(0, liveInventory.length - visibleInventory.length)
+  const backgroundStakeholders = story.template.cast
+    .filter(isBackgroundStakeholder)
+    .sort((a, b) => {
+      const aProtected = a.relation_to_protagonist.toLowerCase().includes("protected context")
+      const bProtected = b.relation_to_protagonist.toLowerCase().includes("protected context")
+      return Number(bProtected) - Number(aProtected)
+    })
+    .map((member) => member.display_name)
+  const visibleBackgroundStakeholders = backgroundStakeholders.slice(0, 3)
+  const hiddenBackgroundStakeholderCount = Math.max(
+    0,
+    backgroundStakeholders.length - visibleBackgroundStakeholders.length,
+  )
   const renderInventoryLine = () =>
     visibleInventory.length > 0 ? (
       <div style={ppStyles.runInventoryLine}>
@@ -907,6 +929,25 @@ function RunContextPanel({
           {hiddenInventoryCount > 0 ? (
             <span style={ppStyles.runInventoryMore}>
               {t("play.run_assets_more", { count: hiddenInventoryCount })}
+            </span>
+          ) : null}
+        </span>
+      </div>
+    ) : null
+  const renderVisibleContextLine = () =>
+    visibleBackgroundStakeholders.length > 0 ? (
+      <div style={ppStyles.runInventoryLine}>
+        <span style={ppStyles.runInventoryKicker}>{t("play.visible_context_label")}</span>
+        <span style={ppStyles.runInventoryItems}>
+          {visibleBackgroundStakeholders.map((item, index) => (
+            <span key={`${item}-${index}`} style={ppStyles.runInventoryItem}>
+              {index > 0 ? <span style={ppStyles.runInventoryDivider}>·</span> : null}
+              <span>{item}</span>
+            </span>
+          ))}
+          {hiddenBackgroundStakeholderCount > 0 ? (
+            <span style={ppStyles.runInventoryMore}>
+              {t("play.visible_context_more", { count: hiddenBackgroundStakeholderCount })}
             </span>
           ) : null}
         </span>
@@ -954,6 +995,7 @@ function RunContextPanel({
             </strong>
           </div>
         ) : null}
+        {renderVisibleContextLine()}
         {renderInventoryLine()}
         {renderRunProgress()}
       </motion.section>
@@ -983,6 +1025,7 @@ function RunContextPanel({
           <strong style={ppStyles.runContextObjectiveText}>{role.hidden_objective}</strong>
         </div>
       ) : null}
+      {renderVisibleContextLine()}
       {renderInventoryLine()}
       {renderRunProgress()}
     </motion.section>
