@@ -31,7 +31,7 @@ export const PIPELINE_STEPS = [
     eyebrow: "01",
     title: "Seed Router",
     summary: "Classifies setting, conflict, language and story shell before generation starts.",
-    proof: "The reviewer seed is deliberately office + entertainment + betrayal, which routes into the current hand-drawn case-file demo surface.",
+    proof: "The reviewer seed is deliberately office + entertainment + betrayal, which routes into the existing manhwa-style business scandal asset family.",
   },
   {
     eyebrow: "02",

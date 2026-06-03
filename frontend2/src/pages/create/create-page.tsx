@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
   NarrativeDifficulty,
@@ -13,6 +13,7 @@ import { useAuth } from "../../app/auth-context"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { useLanguage, useT, type Lang, type StringKey } from "../../shared/lib/i18n"
 import { itemTransition, transitions } from "../../shared/lib/motion-presets"
+import { PAGE_BG } from "../../shared/lib/webtoon-assets"
 
 const SEED_EXAMPLE_KEYS: StringKey[] = [
   "create.example_seed_1",
@@ -239,27 +240,16 @@ export function CreatePage({
     if (typeof navigator === "undefined") return "Ctrl"
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
   }, [])
-  const busyPhase = busyElapsedSeconds >= 36
-    ? "reliable"
-    : busyElapsedSeconds >= 18
-      ? "checking"
-      : busyElapsedSeconds > 0
-        ? "drafting"
-        : "starting"
-  const busyLabel = busyPhase === "reliable"
-    ? t("create.building_reliable_elapsed", { seconds: busyElapsedSeconds })
-    : busyPhase === "checking"
+  const busyLabel =
+    busyElapsedSeconds >= 18
       ? t("create.building_checking_elapsed", { seconds: busyElapsedSeconds })
-      : busyPhase === "drafting"
-        ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
-        : t("create.building_label")
-  const busyStageIndex = busyElapsedSeconds >= 48
-    ? 3
-    : busyElapsedSeconds >= 36
-      ? 2
-      : busyElapsedSeconds >= 18
-        ? 1
-        : 0
+      : busyElapsedSeconds > 0
+      ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
+      : t("create.building_label")
+  const busyStageIndex = Math.min(
+    BUSY_STAGE_KEYS.length - 1,
+    Math.max(0, Math.floor(busyElapsedSeconds / 3)),
+  )
   const primaryCtaLabel = busy
     ? t("create.cta_busy")
     : briefBusy
@@ -764,9 +754,9 @@ const BUSY_TIP_KEYS: StringKey[] = [
 ]
 
 const BUSY_STAGE_KEYS: StringKey[] = [
-  "create.busy_stage_drafting",
-  "create.busy_stage_checking",
-  "create.busy_stage_reliable",
+  "create.busy_stage_cast",
+  "create.busy_stage_leverage",
+  "create.busy_stage_opening",
   "create.busy_stage_ready",
 ]
 
@@ -845,48 +835,9 @@ function StoryBriefCard({
   const secondary = brief.cast_plan.secondary_background_entities
   const omitted = brief.cast_plan.omitted_entities
   const decisions = brief.constraint_dispositions.slice(0, 8)
-  const metaFields = (
-    <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
-      <BriefField label={t("create.brief_profile")} value={t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
-      <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
-      <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
-    </div>
-  )
-  const secondaryCast = (
-    <BriefEntityList
-      label={t("create.brief_secondary_cast")}
-      items={secondary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-      empty={t("create.brief_empty")}
-    />
-  )
-  const omittedCast = omitted.length > 0 ? (
-    <BriefPlanSection
-      label={t("create.brief_omitted_cast")}
-      items={omitted.map((entity) => ({ label: entity.display_name, rationale: entity.rationale }))}
-      empty={t("create.brief_empty")}
-    />
-  ) : null
-  const planDetails = (
-    <>
-      <BriefPlanSection label={t("create.brief_event_pressure")} items={[...brief.time_event_anchors, ...brief.world_setting_pressure]} empty={t("create.brief_empty")} />
-      <BriefPlanSection label={t("create.brief_constraints")} items={brief.constraints} empty={t("create.brief_empty")} />
-      <BriefPlanSection label={t("create.brief_tone_constraints")} items={brief.tone_constraints} empty={t("create.brief_empty")} />
-      {decisions.length > 0 ? (
-        <div style={cpStyles.briefConstraintRow}>
-          {decisions.map((decision) => (
-            <span key={`${decision.disposition}:${decision.label}`} style={cpStyles.briefConstraintChip} title={decision.rationale}>
-              <span style={cpStyles.briefConstraintKind}>{t(CONSTRAINT_DISPOSITION_LABEL_KEYS[decision.disposition])}</span>
-              {decision.label}
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </>
-  )
 
   return (
     <section style={{ ...cpStyles.briefRail, ...(compact ? cpStyles.briefRailCompact : null) }}>
-      <span style={cpStyles.briefTape} aria-hidden />
       <div style={cpStyles.briefHeader}>
         <span style={cpStyles.briefEyebrow}>{t("create.brief_card_label")}</span>
         <span
@@ -900,37 +851,43 @@ function StoryBriefCard({
       </div>
       <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
-      {compact ? (
-        <>
-          <div style={cpStyles.briefPrimaryCompact}>
-            <BriefEntityList
-              label={t("create.brief_primary_cast")}
-              items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-              empty={t("create.brief_empty")}
-            />
-          </div>
-          <BriefDetailsDisclosure label={t("create.brief_details_toggle")}>
-            {metaFields}
-            {secondaryCast}
-            {omittedCast}
-            {planDetails}
-          </BriefDetailsDisclosure>
-        </>
-      ) : (
-        <>
-          {metaFields}
-          <div style={cpStyles.briefCastGrid}>
-            <BriefEntityList
-              label={t("create.brief_primary_cast")}
-              items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-              empty={t("create.brief_empty")}
-            />
-            {secondaryCast}
-          </div>
-          {omittedCast}
-          {planDetails}
-        </>
-      )}
+      <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
+        <BriefField label={t("create.brief_profile")} value={t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
+        <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
+        <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
+      </div>
+      <div style={{ ...cpStyles.briefCastGrid, ...(compact ? cpStyles.briefCastGridCompact : null) }}>
+        <BriefEntityList
+          label={t("create.brief_primary_cast")}
+          items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+          empty={t("create.brief_empty")}
+        />
+        <BriefEntityList
+          label={t("create.brief_secondary_cast")}
+          items={secondary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+          empty={t("create.brief_empty")}
+        />
+      </div>
+      {omitted.length > 0 ? (
+        <BriefPlanSection
+          label={t("create.brief_omitted_cast")}
+          items={omitted.map((entity) => ({ label: entity.display_name, rationale: entity.rationale }))}
+          empty={t("create.brief_empty")}
+        />
+      ) : null}
+      <BriefPlanSection label={t("create.brief_event_pressure")} items={[...brief.time_event_anchors, ...brief.world_setting_pressure]} empty={t("create.brief_empty")} />
+      <BriefPlanSection label={t("create.brief_constraints")} items={brief.constraints} empty={t("create.brief_empty")} />
+      <BriefPlanSection label={t("create.brief_tone_constraints")} items={brief.tone_constraints} empty={t("create.brief_empty")} />
+      {decisions.length > 0 ? (
+        <div style={cpStyles.briefConstraintRow}>
+          {decisions.map((decision) => (
+            <span key={`${decision.disposition}:${decision.label}`} style={cpStyles.briefConstraintChip} title={decision.rationale}>
+              <span style={cpStyles.briefConstraintKind}>{t(CONSTRAINT_DISPOSITION_LABEL_KEYS[decision.disposition])}</span>
+              {decision.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
       {brief.warnings.length > 0 || brief.revision_suggestions.length > 0 ? (
         <div style={cpStyles.briefWarningBlock}>
           {brief.warnings.slice(0, 3).map((warning) => (
@@ -1033,19 +990,10 @@ function BriefPlanSection({
   )
 }
 
-function BriefDetailsDisclosure({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <details style={cpStyles.briefDetailDisclosure}>
-      <summary style={cpStyles.briefDetailSummary}>{label}</summary>
-      <div style={cpStyles.briefDetailBody}>{children}</div>
-    </details>
-  )
-}
-
 const busyTipStyles: Record<string, CSSProperties> = {
   tip: {
     fontSize: 13,
-    color: "rgba(91,65,31,0.86)",
+    color: "rgba(245,210,140,0.92)",
     lineHeight: 1.55,
     fontStyle: "italic" as const,
     textAlign: "left" as const,
@@ -1059,8 +1007,8 @@ const busyStageStyles: Record<string, CSSProperties> = {
     display: "grid",
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
     gap: 0,
-    borderTop: "1px dashed rgba(87,60,29,0.28)",
-    borderBottom: "1px dashed rgba(87,60,29,0.2)",
+    borderTop: "1px solid rgba(255,255,255,0.12)",
+    borderBottom: "1px solid rgba(255,255,255,0.09)",
   },
   railCompact: {
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -1071,7 +1019,7 @@ const busyStageStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     gap: 6,
     padding: "8px 10px 8px 0",
-    color: "rgba(58,42,25,0.44)",
+    color: "rgba(255,255,255,0.42)",
     borderTop: "1px solid transparent",
     transform: "translateY(-1px)",
   },
@@ -1079,11 +1027,11 @@ const busyStageStyles: Record<string, CSSProperties> = {
     padding: "7px 8px 7px 0",
   },
   stageActive: {
-    color: "rgba(61,42,18,0.94)",
-    borderTop: "1px solid rgba(123,82,28,0.68)",
+    color: "rgba(255,226,178,0.96)",
+    borderTop: "1px solid rgba(245,200,120,0.76)",
   },
   stageComplete: {
-    color: "rgba(58,42,25,0.64)",
+    color: "rgba(255,255,255,0.68)",
   },
   stageMark: {
     flex: "0 0 auto",
@@ -1091,7 +1039,7 @@ const busyStageStyles: Record<string, CSSProperties> = {
     fontSize: 10,
     lineHeight: 1,
     fontWeight: 820,
-    color: "rgba(126,83,24,0.8)",
+    color: "rgba(245,200,120,0.72)",
     fontFamily: "var(--font-ui)",
   },
   stageText: {
@@ -1108,40 +1056,26 @@ const busyStageStyles: Record<string, CSSProperties> = {
 const cpStyles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100%",
-    background: "var(--story-page)",
-    backgroundSize: "auto",
+    background: `linear-gradient(180deg, rgba(20,16,12,0.55) 0%, rgba(20,16,12,0.92) 60%, var(--bg) 100%), url(${PAGE_BG.create})`,
+    backgroundSize: "cover",
     backgroundPosition: "center top",
     backgroundAttachment: "fixed",
   },
   header: {
     padding: "18px 40px",
-    borderBottom: "1px solid rgba(76,53,29,0.18)",
-    color: "var(--text)",
-    background: "rgba(255,246,228,0.54)",
-    backdropFilter: "blur(8px)",
+    borderBottom: "1px solid rgba(255,255,255,0.1)",
+    color: "white",
   },
   brandLink: { display: "inline-flex", alignItems: "center", gap: 8 },
   brandName: { fontFamily: "var(--font-narrative)", fontSize: 17 },
 
-  main: { padding: "56px 40px 80px", display: "flex", justifyContent: "center" },
+  main: { padding: "72px 40px 80px", display: "flex", justifyContent: "center" },
   mainCompact: {
-    padding: "34px 18px 56px",
+    padding: "48px 40px 72px",
   },
-  inner: {
-    width: "100%",
-    maxWidth: 760,
-    padding: "30px 34px 28px",
-    color: "#352719",
-    background: "var(--story-paper-panel)",
-    border: "var(--story-ink-border)",
-    borderRadius: 6,
-    boxShadow: "var(--story-sketch-shadow), inset 0 0 0 1px rgba(255,255,255,0.36)",
-    transform: "rotate(-0.18deg)",
-  },
+  inner: { width: "100%", maxWidth: 720 },
   innerCompact: {
     maxWidth: 520,
-    padding: "24px 18px 22px",
-    transform: "none",
   },
 
   title: {
@@ -1154,8 +1088,8 @@ const cpStyles: Record<string, CSSProperties> = {
     marginRight: 0,
     marginBottom: 16,
     marginLeft: 0,
-    color: "#332516",
-    textShadow: "0 1px 0 rgba(255,255,255,0.45)",
+    color: "white",
+    textShadow: "0 2px 18px rgba(0,0,0,0.5)",
   },
   titleCompact: {
     fontSize: 36,
@@ -1164,20 +1098,18 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   kicker: {
     display: "inline-block",
-    marginBottom: 24,
-    padding: "4px 8px",
-    background: "rgba(212,168,83,0.16)",
-    border: "1px dashed rgba(101,73,38,0.42)",
-    borderRadius: 4,
+    marginBottom: 28,
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
     letterSpacing: 0,
     textTransform: "none",
-    color: "rgba(87,55,18,0.9)",
-    transform: "rotate(-0.6deg)",
   },
   sub: {
     fontSize: 16,
     lineHeight: 1.55,
-    color: "rgba(55,41,25,0.78)",
+    color: "rgba(255,255,255,0.78)",
     marginTop: 0,
     marginRight: 0,
     marginBottom: 10,
@@ -1194,7 +1126,7 @@ const cpStyles: Record<string, CSSProperties> = {
     marginRight: 0,
     marginBottom: 30,
     marginLeft: 0,
-    color: "rgba(111,73,22,0.9)",
+    color: "rgba(245,210,140,0.92)",
     fontSize: 13,
     lineHeight: 1.45,
     fontWeight: 650,
@@ -1207,13 +1139,7 @@ const cpStyles: Record<string, CSSProperties> = {
 
   textareaWrap: {
     position: "relative",
-    padding: "12px 14px 14px",
     marginBottom: 7,
-    background: "var(--story-ruled-paper)",
-    backgroundPosition: "0 0, 42px 0",
-    border: "var(--story-ink-border)",
-    borderRadius: 6,
-    boxShadow: "var(--story-note-shadow), inset 0 0 0 1px rgba(255,255,255,0.38)",
   },
   editorMeta: {
     display: "flex",
@@ -1221,7 +1147,7 @@ const cpStyles: Record<string, CSSProperties> = {
     justifyContent: "space-between",
     gap: 12,
     marginBottom: 18,
-    color: "rgba(57,42,25,0.48)",
+    color: "rgba(255,255,255,0.44)",
     fontSize: 11,
     lineHeight: 1.25,
     letterSpacing: 0,
@@ -1240,7 +1166,7 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   examplesLabel: {
     fontSize: 12,
-    color: "rgba(55,41,25,0.62)",
+    color: "rgba(255,255,255,0.62)",
     letterSpacing: 0,
     lineHeight: 1.45,
   },
@@ -1262,18 +1188,17 @@ const cpStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     columnGap: 7,
     rowGap: 2,
-    padding: "7px 9px 8px",
-    background: "rgba(255,248,226,0.48)",
-    border: "1px dashed rgba(91,65,31,0.24)",
-    borderRadius: 5,
-    color: "rgba(53,39,24,0.78)",
+    padding: "5px 0 6px",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    color: "rgba(255,255,255,0.76)",
     cursor: "pointer",
     fontFamily: "var(--font-narrative)",
     textAlign: "left" as const,
-    boxShadow: "2px 3px 0 rgba(75,48,20,0.1)",
   },
   exampleLineIndex: {
-    color: "rgba(126,82,24,0.76)",
+    color: "rgba(245,200,120,0.68)",
     fontFamily: "var(--font-ui)",
     fontSize: 11,
     lineHeight: 1.25,
@@ -1281,12 +1206,12 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   exampleLineText: {
     minWidth: 0,
-    color: "rgba(53,39,24,0.8)",
+    color: "rgba(255,255,255,0.78)",
     fontSize: 12.6,
     lineHeight: 1.42,
   },
   exampleLineUse: {
-    color: "rgba(126,82,24,0.82)",
+    color: "rgba(245,200,120,0.76)",
     fontFamily: "var(--font-ui)",
     fontSize: 10.5,
     lineHeight: 1.25,
@@ -1296,31 +1221,31 @@ const cpStyles: Record<string, CSSProperties> = {
   textarea: {
     width: "100%",
     minHeight: 200,
-    padding: "7px 0 7px 36px",
+    padding: "12px 0 14px",
     background: "transparent",
     border: "none",
-    borderBottom: "1px dashed rgba(91,65,31,0.22)",
+    borderBottom: "1px solid rgba(245,200,120,0.28)",
     borderRadius: 0,
     fontFamily: "var(--font-narrative)",
     fontSize: 16,
     lineHeight: 1.65,
-    color: "#2f2518",
+    color: "var(--text)",
     resize: "vertical",
     outline: "none",
     transition: "border-color 200ms",
   },
   textareaCompact: {
     minHeight: 118,
-    padding: "6px 0 7px 24px",
+    padding: "10px 0 12px",
     fontSize: 15,
   },
   count: {
     fontSize: 11,
-    color: "rgba(57,42,25,0.48)",
+    color: "rgba(255,255,255,0.44)",
     letterSpacing: 0,
   },
   shortcutHint: {
-    color: "rgba(107,70,19,0.72)",
+    color: "rgba(245,200,120,0.66)",
     fontSize: 11,
     fontWeight: 720,
     whiteSpace: "nowrap" as const,
@@ -1350,7 +1275,7 @@ const cpStyles: Record<string, CSSProperties> = {
     rowGap: 6,
   },
   settingLabel: {
-    color: "rgba(55,41,25,0.6)",
+    color: "rgba(255,255,255,0.54)",
     fontSize: 11.5,
     lineHeight: 1.1,
     fontWeight: 680,
@@ -1367,12 +1292,12 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   segmentBtn: {
     minWidth: 0,
-    padding: "5px 8px 6px",
-    background: "rgba(255,248,226,0.32)",
-    border: "1px dashed rgba(87,60,29,0.22)",
-    borderBottom: "1px solid rgba(87,60,29,0.32)",
-    borderRadius: 5,
-    color: "rgba(51,37,22,0.76)",
+    padding: "0 0 5px",
+    background: "transparent",
+    border: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.16)",
+    borderRadius: 0,
+    color: "rgba(255,255,255,0.72)",
     display: "inline-flex",
     alignItems: "baseline",
     gap: 5,
@@ -1381,13 +1306,11 @@ const cpStyles: Record<string, CSSProperties> = {
     cursor: "pointer",
   },
   segmentBtnActive: {
-    color: "#2d2114",
-    background: "rgba(212,168,83,0.24)",
-    borderColor: "rgba(126,82,24,0.48)",
-    boxShadow: "2px 3px 0 rgba(68,43,18,0.13)",
+    color: "white",
+    borderBottom: "1px solid rgba(245,200,120,0.72)",
   },
   segmentBtnWarn: {
-    borderColor: "rgba(160,71,45,0.46)",
+    borderBottom: "1px solid rgba(220,108,74,0.72)",
   },
   segmentMain: {
     fontSize: 13,
@@ -1396,7 +1319,7 @@ const cpStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   segmentMeta: {
-    color: "rgba(107,70,19,0.78)",
+    color: "rgba(245,200,120,0.82)",
     fontSize: 11,
     lineHeight: 1.2,
     fontWeight: 650,
@@ -1405,7 +1328,7 @@ const cpStyles: Record<string, CSSProperties> = {
 
   settingsDetails: {
     marginTop: 16,
-    borderTop: "1px dashed rgba(87,60,29,0.24)",
+    borderTop: "none",
   },
   settingsDetailsFocused: {
     marginTop: 4,
@@ -1418,7 +1341,7 @@ const cpStyles: Record<string, CSSProperties> = {
     padding: "8px 0",
     cursor: "pointer",
     listStyle: "none",
-    color: "rgba(48,35,21,0.86)",
+    color: "rgba(255,255,255,0.86)",
   },
   settingsSummaryMain: {
     minWidth: 0,
@@ -1428,7 +1351,7 @@ const cpStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   settingsSummaryLabel: {
-    color: "rgba(55,41,25,0.58)",
+    color: "rgba(255,255,255,0.52)",
     fontSize: 11.5,
     fontWeight: 680,
     letterSpacing: 0,
@@ -1436,12 +1359,12 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   settingsSummaryValue: {
     minWidth: 0,
-    color: "rgba(51,37,22,0.78)",
+    color: "rgba(255,245,230,0.82)",
     fontSize: 12.5,
     lineHeight: 1.35,
   },
   settingsToggleHint: {
-    color: "rgba(107,70,19,0.84)",
+    color: "rgba(245,200,120,0.84)",
     fontSize: 11,
     fontWeight: 760,
     letterSpacing: 0,
@@ -1450,7 +1373,7 @@ const cpStyles: Record<string, CSSProperties> = {
 
   fieldLabel: {
     fontSize: 12,
-    color: "rgba(55,41,25,0.62)",
+    color: "var(--text-muted)",
     letterSpacing: 0,
     textTransform: "none",
     marginBottom: 12,
@@ -1461,36 +1384,36 @@ const cpStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
     gap: "0 24px",
     marginBottom: 32,
-    borderTop: "1px solid rgba(87,60,29,0.22)",
+    borderTop: "1px solid rgba(255,255,255,0.14)",
   },
   optionGridCompact: {
     display: "grid",
     gridTemplateColumns: "1fr",
     gap: 0,
     marginBottom: 28,
-    borderTop: "1px solid rgba(87,60,29,0.22)",
+    borderTop: "1px solid rgba(255,255,255,0.14)",
   },
   visBtn: {
     textAlign: "left",
     padding: "16px 18px",
     background: "transparent",
     border: "none",
-    borderBottom: "1px solid rgba(87,60,29,0.2)",
+    borderBottom: "1px solid rgba(255,255,255,0.14)",
     borderRadius: 0,
-    color: "rgba(51,37,22,0.86)",
+    color: "var(--text)",
     cursor: "pointer",
     transition: "border-color 180ms, color 180ms",
   },
   visBtnActive: {
     background: "transparent",
-    borderBottom: "1px solid rgba(126,82,24,0.72)",
-    color: "#2d2114",
+    borderBottom: "1px solid rgba(245,200,120,0.72)",
+    color: "white",
   },
   visBtnLabel: { fontSize: 15, fontWeight: 600, marginBottom: 6 },
-  visBtnDesc: { fontSize: 12, color: "rgba(55,41,25,0.62)", lineHeight: 1.4 },
+  visBtnDesc: { fontSize: 12, color: "var(--text-muted)", lineHeight: 1.4 },
   budgetTime: {
     fontSize: 12,
-    color: "rgba(107,70,19,0.84)",
+    color: "var(--accent)",
     fontWeight: 500,
   },
 
@@ -1499,23 +1422,23 @@ const cpStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "1fr 1fr",
     gap: "0 24px",
     marginBottom: 32,
-    borderTop: "1px solid rgba(87,60,29,0.22)",
+    borderTop: "1px solid rgba(255,255,255,0.14)",
   },
   difficultyBtn: {
     textAlign: "left",
     padding: "16px 18px",
     background: "transparent",
     border: "none",
-    borderBottom: "1px solid rgba(87,60,29,0.2)",
+    borderBottom: "1px solid rgba(255,255,255,0.14)",
     borderRadius: 0,
-    color: "rgba(51,37,22,0.86)",
+    color: "rgba(255,255,255,0.86)",
     cursor: "pointer",
     transition: "border-color 180ms, color 180ms",
   },
   difficultyBtnActive: {
     background: "transparent",
-    borderBottom: "1px solid rgba(126,82,24,0.72)",
-    color: "#2d2114",
+    borderBottom: "1px solid rgba(245,200,120,0.72)",
+    color: "white",
   },
   difficultyBtnGauntlet: {
     borderBottom: "1px solid #dc6b4a",
@@ -1527,50 +1450,26 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   difficultyBtnTagline: {
     fontSize: 12,
-    color: "rgba(107,70,19,0.84)",
+    color: "var(--accent)",
     fontWeight: 500,
   },
   difficultyBtnDesc: {
     fontSize: 12,
-    color: "rgba(55,41,25,0.62)",
+    color: "rgba(255,255,255,0.62)",
     lineHeight: 1.45,
   },
 
-  error: {
-    marginBottom: 16,
-    padding: "8px 10px",
-    fontSize: 13,
-    color: "var(--warn)",
-    background: "var(--warn-soft)",
-    border: "1px dashed rgba(169,73,63,0.34)",
-    borderRadius: 5,
-  },
+  error: { marginBottom: 16, fontSize: 13, color: "var(--warn)" },
   briefRail: {
-    position: "relative" as const,
     marginTop: 6,
     marginBottom: 20,
-    padding: "18px 16px 16px",
-    border: "1px solid rgba(76,53,29,0.3)",
-    borderRadius: 6,
-    background: "var(--story-paper-card)",
-    color: "rgba(49,36,22,0.84)",
-    boxShadow: "var(--story-note-shadow)",
+    padding: "14px 0 12px",
+    borderTop: "1px solid rgba(245,200,120,0.28)",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
+    color: "rgba(255,255,255,0.82)",
   },
   briefRailCompact: {
     marginBottom: 18,
-    padding: "16px 12px 14px",
-  },
-  briefTape: {
-    position: "absolute" as const,
-    top: -10,
-    left: 24,
-    width: 72,
-    height: 18,
-    background: "var(--story-tape)",
-    border: "1px solid rgba(115,83,43,0.18)",
-    boxShadow: "0 2px 4px rgba(72,47,22,0.1)",
-    transform: "rotate(-1.2deg)",
-    pointerEvents: "none" as const,
   },
   briefHeader: {
     display: "flex",
@@ -1580,34 +1479,34 @@ const cpStyles: Record<string, CSSProperties> = {
     marginBottom: 8,
   },
   briefEyebrow: {
-    color: "rgba(107,70,19,0.86)",
+    color: "rgba(245,200,120,0.82)",
     fontSize: 11.5,
     lineHeight: 1.2,
     fontWeight: 820,
     letterSpacing: 0,
   },
   briefFitPill: {
-    color: "rgba(70,98,48,0.92)",
+    color: "rgba(194,255,212,0.86)",
     fontSize: 11,
     lineHeight: 1.2,
     fontWeight: 780,
     whiteSpace: "nowrap" as const,
   },
   briefBetaNote: {
-    color: "rgba(68,55,40,0.62)",
+    color: "rgba(245,210,140,0.78)",
     fontSize: 11.5,
     lineHeight: 1.42,
     marginBottom: 8,
   },
   briefFitPillWarn: {
-    color: "var(--warn)",
+    color: "rgba(255,170,132,0.92)",
   },
   briefPremise: {
     marginTop: 0,
     marginRight: 0,
     marginBottom: 12,
     marginLeft: 0,
-    color: "rgba(49,36,22,0.9)",
+    color: "rgba(255,245,230,0.9)",
     fontSize: 14,
     lineHeight: 1.52,
     fontFamily: "var(--font-narrative)",
@@ -1628,14 +1527,14 @@ const cpStyles: Record<string, CSSProperties> = {
     gap: 3,
   },
   briefFieldLabel: {
-    color: "rgba(68,55,40,0.52)",
+    color: "rgba(255,255,255,0.48)",
     fontSize: 10.5,
     lineHeight: 1.15,
     fontWeight: 760,
     letterSpacing: 0,
   },
   briefFieldValue: {
-    color: "rgba(49,36,22,0.82)",
+    color: "rgba(255,255,255,0.82)",
     fontSize: 12,
     lineHeight: 1.36,
   },
@@ -1648,20 +1547,13 @@ const cpStyles: Record<string, CSSProperties> = {
   briefCastGridCompact: {
     gridTemplateColumns: "1fr",
   },
-  briefPrimaryCompact: {
-    marginBottom: 10,
-    padding: "8px 9px",
-    borderLeft: "2px solid rgba(98,114,71,0.36)",
-    borderRadius: 5,
-    background: "rgba(255,248,226,0.5)",
-  },
   briefList: {
     minWidth: 0,
     display: "grid",
     gap: 3,
   },
   briefListValue: {
-    color: "rgba(49,36,22,0.76)",
+    color: "rgba(255,255,255,0.76)",
     fontSize: 12.5,
     lineHeight: 1.38,
   },
@@ -1672,7 +1564,7 @@ const cpStyles: Record<string, CSSProperties> = {
   briefStackedItem: {
     display: "grid",
     gap: 2,
-    color: "rgba(49,36,22,0.64)",
+    color: "rgba(255,255,255,0.62)",
     fontSize: 11.4,
     lineHeight: 1.32,
   },
@@ -1688,7 +1580,7 @@ const cpStyles: Record<string, CSSProperties> = {
   briefPlanItem: {
     display: "grid",
     gap: 2,
-    color: "rgba(49,36,22,0.64)",
+    color: "rgba(255,255,255,0.62)",
     fontSize: 11.4,
     lineHeight: 1.32,
   },
@@ -1703,14 +1595,14 @@ const cpStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     gap: 5,
     maxWidth: "100%",
-    color: "rgba(49,36,22,0.76)",
+    color: "rgba(255,255,255,0.74)",
     fontSize: 11.5,
     lineHeight: 1.25,
-    borderBottom: "1px solid rgba(76,53,29,0.18)",
+    borderBottom: "1px solid rgba(255,255,255,0.13)",
     paddingBottom: 3,
   },
   briefConstraintKind: {
-    color: "rgba(107,70,19,0.76)",
+    color: "rgba(245,200,120,0.72)",
     fontSize: 10,
     fontWeight: 800,
   },
@@ -1720,32 +1612,14 @@ const cpStyles: Record<string, CSSProperties> = {
     marginBottom: 11,
   },
   briefWarningLine: {
-    color: "var(--warn)",
+    color: "rgba(255,170,132,0.95)",
     fontSize: 12,
     lineHeight: 1.38,
   },
   briefSuggestionLine: {
-    color: "rgba(107,70,19,0.84)",
+    color: "rgba(245,210,140,0.86)",
     fontSize: 12,
     lineHeight: 1.38,
-  },
-  briefDetailDisclosure: {
-    marginBottom: 11,
-    borderTop: "1px dashed rgba(76,53,29,0.2)",
-    borderBottom: "1px dashed rgba(76,53,29,0.16)",
-    padding: "7px 0",
-  },
-  briefDetailSummary: {
-    cursor: "pointer",
-    color: "rgba(68,55,40,0.7)",
-    fontSize: 11.5,
-    lineHeight: 1.3,
-    fontWeight: 820,
-  },
-  briefDetailBody: {
-    display: "grid",
-    gap: 8,
-    paddingTop: 9,
   },
   briefRevisionActions: {
     display: "grid",
@@ -1758,10 +1632,10 @@ const cpStyles: Record<string, CSSProperties> = {
     gap: 7,
   },
   briefRevisionAction: {
-    border: "1px dashed rgba(107,70,19,0.32)",
+    border: "1px solid rgba(245,200,120,0.32)",
     borderRadius: 6,
-    background: "rgba(157,91,47,0.08)",
-    color: "rgba(61,42,18,0.88)",
+    background: "rgba(245,200,120,0.07)",
+    color: "rgba(255,238,210,0.88)",
     fontSize: 11.5,
     fontWeight: 760,
     lineHeight: 1.2,
@@ -1771,7 +1645,7 @@ const cpStyles: Record<string, CSSProperties> = {
   briefFooter: {
     display: "grid",
     gap: 3,
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(255,255,255,0.58)",
     fontSize: 11.5,
     lineHeight: 1.42,
   },
@@ -1792,10 +1666,10 @@ const cpStyles: Record<string, CSSProperties> = {
     minHeight: 34,
     padding: "4px 0",
     border: "none",
-    borderBottom: "1px solid rgba(107,70,19,0.38)",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
     borderRadius: 0,
     background: "transparent",
-    color: "rgba(92,55,18,0.96)",
+    color: "rgba(255,226,178,0.96)",
     fontSize: 14,
     fontWeight: 880,
     lineHeight: 1.25,
@@ -1808,7 +1682,7 @@ const cpStyles: Record<string, CSSProperties> = {
     border: "none",
     borderRadius: 0,
     background: "transparent",
-    color: "rgba(49,36,22,0.62)",
+    color: "rgba(255,255,255,0.56)",
     fontSize: 13,
     fontWeight: 700,
     lineHeight: 1.3,
@@ -1841,7 +1715,7 @@ const cpStyles: Record<string, CSSProperties> = {
     display: "inline-flex",
     alignItems: "center",
     gap: 10,
-    color: "rgba(92,55,18,0.86)",
+    color: "rgba(255,226,178,0.92)",
     width: "100%",
   },
   busyLabel: {
@@ -1854,7 +1728,7 @@ const cpStyles: Record<string, CSSProperties> = {
   busySignalLine: {
     height: 1,
     flex: "1 1 auto",
-    background: "linear-gradient(90deg, rgba(157,91,47,0.46), rgba(157,91,47,0.04))",
+    background: "linear-gradient(90deg, rgba(245,200,120,0.56), rgba(245,200,120,0.04))",
     transform: "translateY(1px)",
   },
 }

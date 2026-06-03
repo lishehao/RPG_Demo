@@ -1,15 +1,13 @@
 /* Tiny Stories — Design Tokens
  *
  * COLOR SEMANTICS (mental model the player should pick up):
- *   --accent (burnt orange #9d5b2f): "the stakes / the prize / what matters"
+ *   --accent (gold #d4a853): "the stakes / the prize / what matters"
  *     CTAs, ending gold splash, oracle hints, inventory acquired,
  *     leverage chips, highlight reel cards, peak narration banner
- *   --accent-green (olive #627247): "growth / route / safe momentum"
- *     calm system notes, optional secondary emphasis, storybook flourishes
- *   --warn (brick #a9493f): "danger / collapse / failure"
+ *   --warn (warm red #e07a5f): "danger / collapse / failure"
  *     gauntlet badge, error boxes, GAME OVER, collapsed tier,
  *     destructive actions
- *   purple #7758a6 / rgba(119,88,166): "private / interior / role"
+ *   purple #7e58c8 / rgba(140,100,200): "private / interior / role"
  *     player role banner, inventory hidden info, diary panel,
  *     oracle vignette, NPC inter-leverage network panel
  *   --text / --text-muted / --text-faint: neutral hierarchy
@@ -20,82 +18,30 @@
  * collapsed red-black) reinforces this same mental model.
  */
 :root {
-  --paper: #f3e4c7;
-  --paper-soft: #fff6e4;
-  --paper-cream: #fbefd7;
-  --paper-aged: #e2caa3;
-  --paper-shadow: rgba(83, 55, 26, 0.18);
-  --ink: #2d241a;
-  --ink-muted: rgba(45, 36, 26, 0.7);
-  --ink-faint: rgba(45, 36, 26, 0.46);
-  --charcoal: #1f1a15;
-  --text-on-ink: #fff2dd;
-  --text-on-ink-muted: rgba(255, 242, 221, 0.72);
-  --text-on-ink-faint: rgba(255, 242, 221, 0.48);
-  --bg: var(--paper);
-  --bg-elev: var(--paper-soft);
-  --bg-elev-2: var(--paper-cream);
-  --bg-elev-3: var(--paper-aged);
-  --line: rgba(70, 52, 32, 0.18);
-  --line-strong: rgba(70, 52, 32, 0.32);
-  --text: var(--ink);
-  --text-muted: var(--ink-muted);
-  --text-faint: var(--ink-faint);
-  --accent: #9d5b2f;
-  --accent-soft: rgba(157, 91, 47, 0.18);
-  --accent-softer: rgba(157, 91, 47, 0.08);
-  --accent-green: #627247;
-  --accent-green-soft: rgba(98, 114, 71, 0.16);
-  --warn: #a9493f;
-  --warn-soft: rgba(169, 73, 63, 0.16);
-  --debug: #5d5f8f;
-  --debug-soft: rgba(93, 95, 143, 0.16);
+  --bg: #0c0c10;
+  --bg-elev: #15161c;
+  --bg-elev-2: #1d1f27;
+  --bg-elev-3: #25272f;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --text: #f4efe6;
+  --text-muted: rgba(244, 239, 230, 0.62);
+  --text-faint: rgba(244, 239, 230, 0.38);
+  --accent: #d4a853;
+  --accent-soft: rgba(212, 168, 83, 0.18);
+  --accent-softer: rgba(212, 168, 83, 0.08);
+  --warn: #e07a5f;
+  --warn-soft: rgba(224, 122, 95, 0.18);
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 8px;
   --font-ui: "Inter", system-ui, -apple-system, sans-serif;
   --font-narrative: "Newsreader", Georgia, "Songti SC", serif;
-  --paper-texture:
-    radial-gradient(circle at 18% 14%, rgba(124, 95, 55, 0.13) 0 1px, transparent 1.3px),
-    radial-gradient(circle at 76% 38%, rgba(98, 114, 71, 0.07) 0 1px, transparent 1.4px),
-    linear-gradient(115deg, rgba(255, 255, 255, 0.28), transparent 34%, rgba(118, 75, 34, 0.07) 86%);
-  --shadow-soft: 0 20px 44px rgba(83, 55, 26, 0.14), 0 1px 0 rgba(255, 255, 255, 0.42) inset;
-  --shadow-watercolor: 0 18px 42px rgba(99, 75, 42, 0.13), 0 10px 26px rgba(98, 114, 71, 0.07);
-  --shadow-drawer: -24px 0 60px rgba(83, 55, 26, 0.2);
-  --sketch-offset: 2px;
-  --story-page:
-    radial-gradient(circle at 12% 8%, rgba(255, 246, 220, 0.72), transparent 28%),
-    radial-gradient(circle at 78% 18%, rgba(98, 114, 71, 0.13), transparent 31%),
-    radial-gradient(circle at 50% 108%, rgba(157, 91, 47, 0.14), transparent 40%),
-    var(--paper-texture),
-    linear-gradient(180deg, #f0dfbd 0%, #e4cfaa 58%, #d8bb8b 100%);
-  --story-paper-panel:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 40%),
-    repeating-linear-gradient(0deg, rgba(84, 60, 31, 0.045) 0 1px, transparent 1px 31px),
-    #f6e7c8;
-  --story-paper-card:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 42%),
-    #fff3dc;
-  --story-ruled-paper:
-    repeating-linear-gradient(0deg, transparent 0 31px, rgba(74, 91, 126, 0.09) 32px),
-    linear-gradient(90deg, rgba(169, 73, 63, 0.12) 0 1px, transparent 1px),
-    rgba(255, 248, 226, 0.9);
-  --story-ink-border: 1px solid rgba(76, 53, 29, 0.34);
-  --story-sketch-shadow: 5px 7px 0 rgba(72, 47, 22, 0.16), var(--shadow-watercolor);
-  --story-note-shadow: 3px 4px 0 rgba(72, 47, 22, 0.14), 0 12px 26px rgba(83, 55, 26, 0.1);
-  --story-tape: rgba(230, 196, 125, 0.52);
+  --shadow-drawer: -24px 0 60px rgba(0, 0, 0, 0.5);
 }
 
 * { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: var(--font-ui);
-  color: var(--text);
-  background-color: var(--bg);
-  background-image: var(--paper-texture);
-  background-attachment: fixed;
-  -webkit-font-smoothing: antialiased;
-}
+body { margin: 0; font-family: var(--font-ui); color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
 input, textarea { font-family: inherit; color: inherit; }
 
@@ -114,7 +60,7 @@ input, textarea { font-family: inherit; color: inherit; }
   color: var(--accent);
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(157, 91, 47, 0.3);
+  border-bottom: 1px solid rgba(212, 168, 83, 0.28);
 }
 .ts-tag--muted {
   color: var(--text-muted);
@@ -136,24 +82,23 @@ input, textarea { font-family: inherit; color: inherit; }
 }
 .ts-btn--primary {
   background: var(--accent);
-  color: var(--text-on-ink);
+  color: #1a1408;
   font-weight: 600;
-  box-shadow: 0 10px 24px rgba(157, 91, 47, 0.16);
 }
-.ts-btn--primary:hover { background: #b16b3a; transform: translateY(-1px); }
+.ts-btn--primary:hover { background: #e1b969; transform: translateY(-1px); }
 .ts-btn--secondary {
   height: auto;
   padding: 5px 0 4px;
   border-radius: 0;
   background: transparent;
   border-color: transparent;
-  border-bottom-color: rgba(157, 91, 47, 0.34);
-  color: var(--accent);
+  border-bottom-color: rgba(212, 168, 83, 0.34);
+  color: rgba(246, 221, 176, 0.92);
   font-weight: 650;
 }
 .ts-btn--secondary:hover {
-  color: var(--accent-green);
-  border-bottom-color: rgba(98, 114, 71, 0.48);
+  color: var(--accent);
+  border-bottom-color: rgba(212, 168, 83, 0.56);
   background: transparent;
 }
 .ts-btn--ghost {
@@ -189,40 +134,16 @@ input, textarea { font-family: inherit; color: inherit; }
 }
 @keyframes tsBlink { 50% { opacity: 0; } }
 @keyframes tsPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(157, 91, 47, 0.38); }
-  50%      { box-shadow: 0 0 0 6px rgba(157, 91, 47, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 83, 0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(212, 168, 83, 0); }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: rgba(70, 52, 32, 0.18); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(70, 52, 32, 0.3); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.06); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.12); }
 ::-webkit-scrollbar-track { background: transparent; }
 textarea::placeholder, input::placeholder { color: var(--text-faint); }
 textarea:focus, input:focus { border-color: var(--line-strong); }
-
-.ts-paper-surface {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-watercolor);
-}
-
-.ts-sketch-border {
-  position: relative;
-  border: 1px solid var(--line-strong);
-}
-
-.ts-sketch-border::before {
-  content: "";
-  position: absolute;
-  inset: calc(var(--sketch-offset) * -1);
-  pointer-events: none;
-  border: 1px solid rgba(70, 52, 32, 0.16);
-  border-radius: inherit;
-  transform: rotate(-0.35deg);
-}
-
-.ts-accent-green { color: var(--accent-green); }
-.ts-accent-orange { color: var(--accent); }
 
 /* Focus rings — visible only on keyboard nav (focus-visible). Mouse
  * clicks don't show the ring (no spurious outline on every click).
@@ -233,14 +154,14 @@ textarea:focus, input:focus { border-color: var(--line-strong); }
 button:focus-visible,
 a:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid rgba(157, 91, 47, 0.72);
+  outline: 2px solid rgba(212, 168, 83, 0.65);
   outline-offset: 2px;
   border-radius: 4px;
 }
 textarea:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 2px solid rgba(157, 91, 47, 0.66);
+  outline: 2px solid rgba(212, 168, 83, 0.55);
   outline-offset: 1px;
   border-color: var(--accent);
 }

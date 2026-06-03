@@ -69,16 +69,6 @@ type ActionCommitmentSummary = {
 }
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
-const SCAFFOLD_PARTY_DISPLAY_NAMES = new Set([
-  "player",
-  "mix-up witness",
-  "embarrassed helper",
-  "deadline host",
-  "deadline holder",
-  "concerned witness",
-  "outside voice",
-  "organizer",
-])
 
 function fitTextareaToContent(node: HTMLTextAreaElement | null) {
   if (!node) return
@@ -95,16 +85,6 @@ function leveragePlayInput(card: LeverageCardView, language: NarrativeStoryHisto
     return `我亮出手里针对 ${card.target_name} 的把柄：${card.leverage}`
   }
   return `I reveal the leverage I hold over ${card.target_name}: ${card.leverage}`
-}
-
-function isBackgroundStakeholder(member: NarrativeStoryHistoryResponse["template"]["cast"][number]): boolean {
-  const role = member.role.toLowerCase()
-  const relation = member.relation_to_protagonist.toLowerCase()
-  return role.includes("background stakeholder") || relation.includes("visible context")
-}
-
-function isScaffoldPartyDisplayName(name: string): boolean {
-  return SCAFFOLD_PARTY_DISPLAY_NAMES.has(name.trim().toLowerCase())
 }
 
 export function PlayPage({
@@ -150,8 +130,6 @@ export function PlayPage({
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
-  const canDockAdvisor = useCompactLayout("(min-width: 1024px)")
-  const advisorDocked = advisorOpen && canDockAdvisor
   const canRequestAgentTrace = reviewerMode && auth.canViewAgentTrace
 
   // Initial load: story + (if already completed) the ending.
@@ -404,13 +382,13 @@ export function PlayPage({
       <Header
         onBackHome={onBackHome}
         title={story.template.title}
+        cast={story.template.cast.map((c) => c.display_name)}
         turnCount={story.session.turn_count}
         turnBudget={story.session.turn_budget}
         coverUrl={cover}
-        advisorDocked={advisorDocked}
       />
 
-      <main style={{ ...ppStyles.main, ...(advisorDocked ? ppStyles.mainAdvisorDocked : null) }}>
+      <main style={ppStyles.main}>
         <div className="play-story-column" style={ppStyles.storyColumn} ref={scrollerRef}>
           <RunContextPanel
             story={story}
@@ -900,7 +878,7 @@ function RunContextPanel({
   const runStatusText = isComplete
     ? t("play.status_done")
     : t("play.status_turns_left", { count: turnsRemaining })
-  const runMetaText = [stage, runStatusText].filter(Boolean).join(" · ")
+  const runMetaText = [stage, runStatusText, privateResourceText].filter(Boolean).join(" · ")
   const runProgressLabel = t("stage_bar.aria", {
     turn: turnsCompleted,
     total: turnBudget,
@@ -912,20 +890,6 @@ function RunContextPanel({
   )
   const visibleInventory = liveInventory.slice(0, 3)
   const hiddenInventoryCount = Math.max(0, liveInventory.length - visibleInventory.length)
-  const backgroundStakeholders = story.template.cast
-    .filter(isBackgroundStakeholder)
-    .filter((member) => !isScaffoldPartyDisplayName(member.display_name))
-    .sort((a, b) => {
-      const aProtected = a.relation_to_protagonist.toLowerCase().includes("protected context")
-      const bProtected = b.relation_to_protagonist.toLowerCase().includes("protected context")
-      return Number(bProtected) - Number(aProtected)
-    })
-    .map((member) => member.display_name)
-  const visibleBackgroundStakeholders = backgroundStakeholders.slice(0, 3)
-  const hiddenBackgroundStakeholderCount = Math.max(
-    0,
-    backgroundStakeholders.length - visibleBackgroundStakeholders.length,
-  )
   const renderInventoryLine = () =>
     visibleInventory.length > 0 ? (
       <div style={ppStyles.runInventoryLine}>
@@ -940,25 +904,6 @@ function RunContextPanel({
           {hiddenInventoryCount > 0 ? (
             <span style={ppStyles.runInventoryMore}>
               {t("play.run_assets_more", { count: hiddenInventoryCount })}
-            </span>
-          ) : null}
-        </span>
-      </div>
-    ) : null
-  const renderVisibleContextLine = () =>
-    visibleBackgroundStakeholders.length > 0 ? (
-      <div style={ppStyles.runInventoryLine}>
-        <span style={ppStyles.runInventoryKicker}>{t("play.visible_context_label")}</span>
-        <span style={ppStyles.runInventoryItems}>
-          {visibleBackgroundStakeholders.map((item, index) => (
-            <span key={`${item}-${index}`} style={ppStyles.runInventoryItem}>
-              {index > 0 ? <span style={ppStyles.runInventoryDivider}>·</span> : null}
-              <span>{item}</span>
-            </span>
-          ))}
-          {hiddenBackgroundStakeholderCount > 0 ? (
-            <span style={ppStyles.runInventoryMore}>
-              {t("play.visible_context_more", { count: hiddenBackgroundStakeholderCount })}
             </span>
           ) : null}
         </span>
@@ -1001,22 +946,12 @@ function RunContextPanel({
         </div>
         {role ? (
           <div style={ppStyles.runCompactObjective}>
-            <span style={ppStyles.runCompactObjectiveLabel}>{t("play.run_goal_label")}</span>
             <strong style={ppStyles.runCompactObjectiveText}>
               {role.hidden_objective}
             </strong>
           </div>
         ) : null}
-        <div style={ppStyles.runSupportStack}>
-          {renderVisibleContextLine()}
-          {renderInventoryLine()}
-          {privateResourceText ? (
-            <div style={ppStyles.runInventoryLine}>
-              <span style={ppStyles.runInventoryKicker}>{t("play.run_resource_label")}</span>
-              <span style={ppStyles.runInventoryItems}>{privateResourceText}</span>
-            </div>
-          ) : null}
-        </div>
+        {renderInventoryLine()}
         {renderRunProgress()}
       </motion.section>
     )
@@ -1042,20 +977,10 @@ function RunContextPanel({
       </div>
       {role ? (
         <div style={ppStyles.runContextObjectiveLine}>
-          <span style={ppStyles.runContextObjectiveLabel}>{t("play.run_goal_label")}</span>
           <strong style={ppStyles.runContextObjectiveText}>{role.hidden_objective}</strong>
         </div>
       ) : null}
-      <div style={ppStyles.runSupportStack}>
-        {renderVisibleContextLine()}
-        {renderInventoryLine()}
-        {privateResourceText ? (
-          <div style={ppStyles.runInventoryLine}>
-            <span style={ppStyles.runInventoryKicker}>{t("play.run_resource_label")}</span>
-            <span style={ppStyles.runInventoryItems}>{privateResourceText}</span>
-          </div>
-        ) : null}
-      </div>
+      {renderInventoryLine()}
       {renderRunProgress()}
     </motion.section>
   )
@@ -1349,7 +1274,6 @@ function Header({
   turnCount,
   turnBudget,
   coverUrl,
-  advisorDocked = false,
 }: {
   onBackHome: () => void
   title: string
@@ -1357,24 +1281,19 @@ function Header({
   turnCount?: number
   turnBudget?: number
   coverUrl?: string
-  advisorDocked?: boolean
 }) {
   const t = useT()
   const compactHeader = useCompactLayout()
   const showCoverHeader = Boolean(coverUrl && !compactHeader)
-  const baseHeaderStyle: CSSProperties = showCoverHeader
+  const headerStyle: CSSProperties = showCoverHeader
     ? {
         ...ppStyles.header,
         ...ppStyles.headerWithCover,
-        backgroundImage: `linear-gradient(180deg, rgba(42,32,22,0.34) 0%, rgba(42,32,22,0.78) 100%), url(${coverUrl})`,
+        backgroundImage: `linear-gradient(180deg, rgba(20,16,12,0.55) 0%, rgba(20,16,12,0.92) 100%), url(${coverUrl})`,
       }
     : compactHeader
       ? { ...ppStyles.header, ...ppStyles.headerCompact }
-      : ppStyles.header
-  const headerStyle: CSSProperties =
-    advisorDocked && !compactHeader
-      ? { ...baseHeaderStyle, ...ppStyles.headerAdvisorDocked }
-      : baseHeaderStyle
+    : ppStyles.header
 
   const showProgress = typeof turnCount === "number" && typeof turnBudget === "number"
   const pct = showProgress ? Math.min(100, (turnCount! / turnBudget!) * 100) : 0
@@ -1397,7 +1316,7 @@ function Header({
           <Truncated
             style={
               showCoverHeader
-                ? { ...ppStyles.headerTitleLine, color: "white", textShadow: "0 2px 14px rgba(0,0,0,0.62)" }
+                ? { ...ppStyles.headerTitleLine, color: "white" }
                 : { ...ppStyles.headerTitleLine, ...(compactHeader ? ppStyles.headerTitleLineCompact : null) }
             }
           >
@@ -1407,7 +1326,7 @@ function Header({
             <div
               style={
                 showCoverHeader
-                  ? { ...ppStyles.headerCast, color: "rgba(255,255,255,0.80)", textShadow: "0 2px 12px rgba(0,0,0,0.58)" }
+                  ? { ...ppStyles.headerCast, color: "rgba(255,255,255,0.78)" }
                   : ppStyles.headerCast
               }
               title={cast.join(" · ")}
@@ -1421,17 +1340,7 @@ function Header({
             </div>
           ) : null}
         </div>
-        {!compactHeader && showProgress ? (
-          <span
-            style={
-              showCoverHeader
-                ? { ...ppStyles.headerTurnsDesktop, ...ppStyles.headerTurnsDesktopOnCover }
-                : ppStyles.headerTurnsDesktop
-            }
-          >
-            {t("play.header_turn_count_short", { current: turnCount!, total: turnBudget! })}
-          </span>
-        ) : compactHeader && showProgress ? (
+        {compactHeader && showProgress ? (
           <span style={ppStyles.headerTurnsCompact}>
             {t("play.header_turn_count_short", { current: turnCount!, total: turnBudget! })}
           </span>
@@ -1918,7 +1827,6 @@ function StoryBeat({
         : intensity === "rising"
           ? { ...ppStyles.narratorBeat, ...ppStyles.narratorBeatRising }
           : ppStyles.narratorBeat
-    const visibleBeatStyle = isLatestNarrator ? { ...beatStyle, ...ppStyles.narratorBeatLatest } : beatStyle
     const textStyle =
       intensity === "peak"
         ? { ...ppStyles.narratorText, ...ppStyles.narratorTextPeak }
@@ -1933,7 +1841,7 @@ function StoryBeat({
         variants={itemVariants}
         transition={itemTransition}
         style={{
-          ...visibleBeatStyle,
+          ...beatStyle,
           position: "relative",
           ...(isBookmarked ? ppStyles.narratorBeatBookmarked : null),
         }}
@@ -1978,9 +1886,6 @@ function StoryBeat({
             }
             aria-hidden
           />
-        ) : null}
-        {isLatestNarrator ? (
-          <div style={ppStyles.narratorBeatKicker}>{t("play.current_scene_label")}</div>
         ) : null}
         {beatSignal ? (
           <motion.div
@@ -4995,13 +4900,7 @@ function TypingDots() {
 // ---------------------------------------------------------------------------
 
 const ppStyles: Record<string, CSSProperties> = {
-  page: {
-    minHeight: "100%",
-    background: "var(--story-page)",
-    backgroundAttachment: "fixed",
-    display: "flex",
-    flexDirection: "column",
-  },
+  page: { minHeight: "100%", background: "var(--bg)", display: "flex", flexDirection: "column" },
   centerNote: {
     flex: 1,
     display: "flex",
@@ -5016,20 +4915,14 @@ const ppStyles: Record<string, CSSProperties> = {
     borderBottom: "1px solid var(--line)",
     display: "flex",
     flexDirection: "column",
-    background: "rgba(255,246,228,0.88)",
-    backdropFilter: "blur(10px)",
+    background: "var(--bg)",
     position: "sticky",
     top: 0,
     zIndex: 5,
   },
   headerCompact: {
-    background: "rgba(255,246,228,0.94)",
+    background: "rgba(12,12,16,0.94)",
     backdropFilter: "blur(12px)",
-  },
-  headerAdvisorDocked: {
-    position: "relative",
-    top: "auto",
-    zIndex: 2,
   },
   headerRow: {
     padding: "16px 32px",
@@ -5047,11 +4940,11 @@ const ppStyles: Record<string, CSSProperties> = {
   headerWithCover: {
     backgroundSize: "cover",
     backgroundPosition: "center 35%",
-    borderBottom: "1px solid rgba(76,53,29,0.18)",
+    borderBottom: "1px solid rgba(255,255,255,0.1)",
   },
   progressTrack: {
     height: 3,
-    background: "rgba(76,53,29,0.14)",
+    background: "rgba(255,255,255,0.08)",
     position: "relative",
   },
   progressFill: {
@@ -5082,8 +4975,8 @@ const ppStyles: Record<string, CSSProperties> = {
   backBtnCompact: {
     width: "auto",
     padding: "0 0 3px",
-    borderBottom: "1px solid rgba(76,53,29,0.20)",
-    color: "rgba(49,36,22,0.76)",
+    borderBottom: "1px solid rgba(255,255,255,0.16)",
+    color: "rgba(244,239,230,0.82)",
     whiteSpace: "nowrap" as const,
   },
   headerTitle: { flex: 1, textAlign: "center", minWidth: 0 },
@@ -5097,7 +4990,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   headerTitleLineCompact: {
     fontSize: 15,
-    color: "rgba(49,36,22,0.94)",
+    color: "rgba(255,255,255,0.90)",
   },
   headerCast: {
     fontSize: 12,
@@ -5108,21 +5001,8 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap",
   },
   headerTurns: { marginLeft: 8 },
-  headerTurnsDesktop: {
-    minWidth: 90,
-    textAlign: "right" as const,
-    color: "rgba(68,55,40,0.68)",
-    fontSize: 12,
-    fontWeight: 760,
-    whiteSpace: "nowrap" as const,
-    letterSpacing: 0,
-  },
-  headerTurnsDesktopOnCover: {
-    color: "rgba(255,255,255,0.86)",
-    textShadow: "0 2px 12px rgba(0,0,0,0.48)",
-  },
   headerTurnsCompact: {
-    color: "rgba(107,70,19,0.86)",
+    color: "rgba(245,200,120,0.82)",
     fontSize: 12,
     fontWeight: 720,
     whiteSpace: "nowrap" as const,
@@ -5130,39 +5010,20 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   headerSpacer: { width: 90 },
 
-  main: {
-    flex: 1,
-    display: "flex",
-    justifyContent: "center",
-    overflow: "visible",
-    transition: "padding-right 180ms ease",
-  },
-  mainAdvisorDocked: {
-    paddingRight: 380,
-  },
-  storyColumn: {
-    width: "calc(100% - 32px)",
-    maxWidth: 940,
-    margin: "18px 16px 0",
-    padding: "24px 36px 132px",
-    overflowY: "visible",
-    background: "linear-gradient(180deg, rgba(255,250,240,0.92) 0%, rgba(255,247,232,0.82) 100%)",
-    border: "1px solid rgba(76,53,29,0.10)",
-    borderRadius: 8,
-    boxShadow: "0 16px 42px rgba(72,47,22,0.09)",
-  },
+  main: { flex: 1, display: "flex", justifyContent: "center", overflow: "visible" },
+  storyColumn: { width: "100%", maxWidth: 840, padding: "28px 32px 120px", overflowY: "visible" },
 
   runContextPanel: {
-    margin: "0 0 20px",
-    paddingTop: 2,
+    margin: "0 0 16px",
+    paddingTop: 10,
     paddingRight: 0,
-    paddingBottom: 18,
+    paddingBottom: 7,
     paddingLeft: 0,
-    borderBottom: "1px solid rgba(76,53,29,0.14)",
+    borderBottom: "none",
     backgroundSize: "auto",
     backgroundPosition: "initial",
     boxShadow: "none",
-    overflow: "visible",
+    overflow: "hidden",
   },
   runContextPanelCompact: {
     margin: "0 0 12px",
@@ -5182,7 +5043,7 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 3,
   },
   runCompactRoleTag: {
-    color: "rgba(47,35,24,0.78)",
+    color: "rgba(205,180,245,0.62)",
     fontSize: 11.5,
     fontWeight: 720,
     letterSpacing: 0,
@@ -5191,7 +5052,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runCompactRoleTitle: {
     minWidth: 0,
-    color: "rgba(48,35,21,0.96)",
+    color: "rgba(255,245,230,0.96)",
     fontFamily: "var(--font-narrative)",
     fontSize: 19,
     lineHeight: 1.15,
@@ -5199,7 +5060,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runCompactMeta: {
     gridColumn: "1 / -1",
-    color: "rgba(47,35,24,0.58)",
+    color: "var(--text-faint)",
     fontSize: 10.5,
     lineHeight: 1.2,
     fontWeight: 650,
@@ -5211,20 +5072,16 @@ const ppStyles: Record<string, CSSProperties> = {
   runCompactObjective: {
     marginTop: 6,
     maxWidth: 560,
-    padding: "7px 9px 8px",
-    background: "rgba(255,248,226,0.48)",
-    borderLeft: "2px solid rgba(93,95,143,0.34)",
-    borderRadius: 5,
   },
   runCompactObjectiveLabel: {
-    color: "rgba(47,35,24,0.72)",
+    color: "rgba(205,180,245,0.58)",
     fontSize: 9.5,
     fontWeight: 700,
     letterSpacing: 0,
     textTransform: "none" as const,
   },
   runCompactObjectiveText: {
-    color: "rgba(34,25,17,0.94)",
+    color: "rgba(244,239,230,0.72)",
     fontFamily: "var(--font-narrative)",
     fontSize: 13.5,
     lineHeight: 1.38,
@@ -5240,10 +5097,10 @@ const ppStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "auto minmax(0, 1fr) auto",
     alignItems: "baseline",
     columnGap: 10,
-    rowGap: 7,
+    rowGap: 5,
   },
   runContextMeta: {
-    color: "rgba(47,35,24,0.58)",
+    color: "var(--text-faint)",
     fontSize: 11,
     lineHeight: 1.2,
     fontWeight: 650,
@@ -5253,17 +5110,13 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   runContextObjectiveLine: {
-    marginTop: 10,
+    marginTop: 7,
     maxWidth: 680,
     minWidth: 0,
-    display: "grid",
-    gap: 3,
-    paddingLeft: 12,
-    borderLeft: "2px solid rgba(93,95,143,0.30)",
   },
   runContextObjectiveLabel: {
-    color: "rgba(47,35,24,0.76)",
-    fontSize: 10.5,
+    color: "rgba(205,180,245,0.62)",
+    fontSize: 10,
     lineHeight: 1.1,
     fontWeight: 700,
     letterSpacing: 0,
@@ -5272,31 +5125,27 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runContextObjectiveText: {
     minWidth: 0,
-    color: "rgba(34,25,17,0.94)",
+    color: "rgba(255,245,230,0.76)",
     fontFamily: "var(--font-narrative)",
-    fontSize: 15,
-    lineHeight: 1.45,
+    fontSize: 14,
+    lineHeight: 1.42,
     fontWeight: 500,
   },
   runInventoryLine: {
-    marginTop: 0,
-    padding: "4px 8px 5px",
+    marginTop: 6,
     display: "flex",
     alignItems: "baseline",
     columnGap: 8,
     rowGap: 3,
     flexWrap: "wrap" as const,
     minWidth: 0,
-    color: "rgba(49,36,22,0.68)",
+    color: "rgba(232,218,205,0.58)",
     fontSize: 11.5,
     lineHeight: 1.35,
-    background: "rgba(255,248,226,0.52)",
-    border: "1px solid rgba(76,53,29,0.10)",
-    borderRadius: 5,
   },
   runInventoryKicker: {
     flexShrink: 0,
-    color: "rgba(107,70,19,0.82)",
+    color: "rgba(245,200,120,0.72)",
     fontSize: 10.5,
     fontWeight: 760,
     letterSpacing: 0,
@@ -5310,26 +5159,18 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 2,
     flexWrap: "wrap" as const,
   },
-  runSupportStack: {
-    marginTop: 12,
-    display: "flex",
-    alignItems: "baseline",
-    columnGap: 10,
-    rowGap: 5,
-    flexWrap: "wrap" as const,
-  },
   runInventoryItem: {
     display: "inline-flex",
     alignItems: "baseline",
     columnGap: 6,
-    color: "rgba(49,36,22,0.70)",
+    color: "rgba(255,245,230,0.70)",
     fontWeight: 650,
   },
   runInventoryDivider: {
-    color: "rgba(76,53,29,0.24)",
+    color: "rgba(255,255,255,0.22)",
   },
   runInventoryMore: {
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(232,218,205,0.44)",
     fontWeight: 650,
   },
   runContextGrid: {
@@ -5353,7 +5194,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runKicker: {
     fontSize: 11.5,
-    color: "rgba(47,35,24,0.72)",
+    color: "rgba(205,180,245,0.62)",
     letterSpacing: 0,
     textTransform: "none" as const,
     fontWeight: 720,
@@ -5368,7 +5209,7 @@ const ppStyles: Record<string, CSSProperties> = {
   runRoleBadge: {
     padding: 0,
     background: "transparent",
-    color: "rgba(90,72,113,0.92)",
+    color: "rgba(205,180,245,0.96)",
     borderRadius: 0,
     fontSize: 10.5,
     fontWeight: 700,
@@ -5380,7 +5221,7 @@ const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "var(--font-narrative)",
     fontSize: 27,
     lineHeight: 1.1,
-    color: "rgba(48,35,21,0.96)",
+    color: "white",
     fontWeight: 500,
     textShadow: "none",
   },
@@ -5393,7 +5234,7 @@ const ppStyles: Record<string, CSSProperties> = {
     margin: 0,
     fontSize: 13,
     lineHeight: 1.5,
-    color: "rgba(49,36,22,0.64)",
+    color: "rgba(244,239,230,0.64)",
   },
   runObjective: {
     maxWidth: 580,
@@ -5459,14 +5300,14 @@ const ppStyles: Record<string, CSSProperties> = {
     width: "100%",
     maxWidth: 680,
     height: 2,
-    background: "rgba(76,53,29,0.16)",
+    background: "rgba(255,255,255,0.12)",
     overflow: "hidden",
   },
   runProgressFill: {
     position: "absolute" as const,
     inset: "0 auto 0 0",
     display: "block",
-    background: "rgba(157,91,47,0.76)",
+    background: "rgba(212,168,83,0.76)",
   },
   runPrivateSummary: {
     marginTop: 9,
@@ -5487,7 +5328,7 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 7,
   },
   runPrivateSummaryLabel: {
-    color: "rgba(90,72,113,0.68)",
+    color: "rgba(205,180,245,0.60)",
     fontSize: 10,
     lineHeight: 1.1,
     fontWeight: 700,
@@ -5495,21 +5336,21 @@ const ppStyles: Record<string, CSSProperties> = {
     textTransform: "none" as const,
   },
   runPrivateSummaryText: {
-    color: "rgba(49,36,22,0.58)",
+    color: "rgba(244,239,230,0.58)",
     fontSize: 11.5,
     lineHeight: 1.4,
   },
   runCastLine: {
     marginTop: 10,
     paddingTop: 8,
-    borderTop: "1px dashed rgba(76,53,29,0.16)",
+    borderTop: "1px solid rgba(255,255,255,0.045)",
     display: "flex",
     alignItems: "baseline",
     gap: 8,
     minWidth: 0,
   },
   runCastLineLabel: {
-    color: "rgba(68,55,40,0.52)",
+    color: "rgba(232,218,205,0.46)",
     fontSize: 10,
     fontWeight: 700,
     letterSpacing: 0,
@@ -5518,7 +5359,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runCastLineText: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.64)",
+    color: "rgba(244,239,230,0.64)",
     fontSize: 12,
     lineHeight: 1.25,
   },
@@ -5554,16 +5395,17 @@ const ppStyles: Record<string, CSSProperties> = {
     minWidth: 0,
     lineHeight: 1.15,
   },
-  runCastName: { fontSize: 12, color: "rgba(48,35,21,0.9)", fontWeight: 600 },
-  runCastRole: { fontSize: 10, color: "rgba(49,36,22,0.5)", marginTop: 1 },
+  runCastName: { fontSize: 12, color: "white", fontWeight: 600 },
+  runCastRole: { fontSize: 10, color: "rgba(244,239,230,0.50)", marginTop: 1 },
   runtimeInspector: {
     margin: "0 0 24px",
-    padding: "12px 14px 14px",
-    background:
-      "repeating-linear-gradient(0deg, transparent 0 27px, rgba(93,95,143,0.08) 28px), rgba(249,241,221,0.72)",
-    border: "1px dashed rgba(93,95,143,0.24)",
-    borderRadius: 6,
-    boxShadow: "2px 3px 0 rgba(72,47,22,0.12)",
+    padding: "10px 0 12px",
+    background: "transparent",
+    border: "none",
+    borderTop: "1px solid rgba(212,168,83,0.20)",
+    borderBottom: "none",
+    borderRadius: 0,
+    boxShadow: "none",
   },
   runtimeInspectorHeader: {
     display: "flex",
@@ -5576,7 +5418,7 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 10.5,
     letterSpacing: 0,
     textTransform: "none" as const,
-    color: "var(--debug)",
+    color: "var(--accent)",
     fontWeight: 700,
   },
   runtimeInspectorGrid: {
@@ -5597,7 +5439,7 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 6,
   },
   runtimeInspectorRowLabel: {
-    color: "rgba(68,55,40,0.52)",
+    color: "rgba(232,218,205,0.46)",
     fontSize: 10.5,
     lineHeight: 1.2,
     fontWeight: 700,
@@ -5605,7 +5447,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   runtimeInspectorRowValue: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.82)",
+    color: "rgba(255,245,230,0.82)",
     fontSize: 12,
     lineHeight: 1.25,
     fontWeight: 760,
@@ -5644,7 +5486,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   agentTraceDetails: {
     marginTop: 6,
-    borderTop: "1px dashed rgba(93,95,143,0.18)",
+    borderTop: "1px solid rgba(255,255,255,0.08)",
   },
   agentTraceDetailsSummaryReady: {
     display: "inline-flex",
@@ -5653,7 +5495,7 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   agentTraceSummaryCue: {
-    color: "var(--debug)",
+    color: "rgba(245,200,120,0.88)",
     fontSize: 11,
     lineHeight: 1.35,
     fontWeight: 720,
@@ -5676,7 +5518,7 @@ const ppStyles: Record<string, CSSProperties> = {
   agentTraceValue: {
     minWidth: 0,
     maxWidth: 420,
-    color: "rgba(49,36,22,0.82)",
+    color: "rgba(255,245,230,0.82)",
     fontSize: 11.5,
     lineHeight: 1.3,
     fontWeight: 720,
@@ -5686,7 +5528,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   agentTraceEmpty: {
     paddingTop: 8,
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(232,218,205,0.52)",
     fontSize: 12,
     lineHeight: 1.45,
   },
@@ -5721,7 +5563,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   goalsTitle: {
     fontSize: 11.5,
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(232,218,205,0.50)",
     letterSpacing: 0,
   },
   goalRow: {
@@ -5732,7 +5574,7 @@ const ppStyles: Record<string, CSSProperties> = {
     maxWidth: "100%",
   },
   goalDivider: {
-    color: "rgba(76,53,29,0.22)",
+    color: "rgba(255,255,255,0.18)",
     fontSize: 11,
     fontWeight: 900,
     flexShrink: 0,
@@ -5740,7 +5582,7 @@ const ppStyles: Record<string, CSSProperties> = {
   goalText: {
     minWidth: 0,
     fontSize: 12.5,
-    color: "rgba(49,36,22,0.80)",
+    color: "rgba(255,245,230,0.82)",
     fontFamily: "var(--font-narrative)",
     lineHeight: 1.35,
     overflow: "hidden",
@@ -5749,7 +5591,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   goalStakes: {
     fontSize: 11,
-    color: "rgba(68,55,40,0.48)",
+    color: "rgba(232,218,205,0.42)",
     marginTop: 0,
     paddingLeft: 0,
     fontStyle: "italic",
@@ -5792,7 +5634,7 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 6,
   },
   outcomeReceiptKicker: {
-    color: "rgba(107,70,19,0.84)",
+    color: "rgba(245,210,140,0.84)",
     fontSize: 10.5,
     fontWeight: 760,
     letterSpacing: 0,
@@ -5801,7 +5643,7 @@ const ppStyles: Record<string, CSSProperties> = {
     flexShrink: 0,
   },
   outcomeReceiptInlineLabel: {
-    color: "rgba(68,55,40,0.5)",
+    color: "rgba(232,218,205,0.48)",
     fontSize: 10.5,
     fontWeight: 720,
     letterSpacing: 0,
@@ -5816,7 +5658,7 @@ const ppStyles: Record<string, CSSProperties> = {
     columnGap: 8,
     rowGap: 4,
     flexWrap: "wrap" as const,
-    color: "rgba(49,36,22,0.84)",
+    color: "rgba(255,245,230,0.84)",
   },
   outcomeReceiptSentenceCompact: {
     columnGap: 7,
@@ -5847,7 +5689,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   outcomeReceiptItemLabel: {
     flexShrink: 0,
-    color: "rgba(68,55,40,0.48)",
+    color: "rgba(232,218,205,0.44)",
     fontSize: 10.2,
     lineHeight: 1.15,
     fontWeight: 720,
@@ -5857,7 +5699,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   outcomeReceiptValue: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.88)",
+    color: "rgba(255,245,230,0.88)",
     fontSize: 11.8,
     fontWeight: 850,
     lineHeight: 1.25,
@@ -5872,16 +5714,16 @@ const ppStyles: Record<string, CSSProperties> = {
     lineHeight: 1.3,
   },
   outcomeReceiptChipSafe: {
-    color: "rgba(71,110,75,0.92)",
+    color: "rgba(190,235,210,0.92)",
   },
   outcomeReceiptChipTense: {
-    color: "rgba(107,70,19,0.9)",
+    color: "rgba(246,221,176,0.94)",
   },
   outcomeReceiptChipDanger: {
-    color: "var(--warn)",
+    color: "rgba(255,190,170,0.94)",
   },
   outcomeReceiptChipGold: {
-    color: "rgba(107,70,19,0.9)",
+    color: "rgba(246,221,176,0.94)",
   },
   leveragePayoff: {
     marginTop: 12,
@@ -5909,7 +5751,7 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(255,188,165,0.96)",
   },
   leveragePayoffKicker: {
-    color: "rgba(107,70,19,0.84)",
+    color: "rgba(255,224,156,0.88)",
     fontSize: 10.5,
     fontWeight: 720,
     letterSpacing: 0,
@@ -5926,7 +5768,7 @@ const ppStyles: Record<string, CSSProperties> = {
     maxWidth: "100%",
   },
   leveragePayoffEvidence: {
-    color: "rgba(49,36,22,0.90)",
+    color: "rgba(255,245,230,0.90)",
     fontFamily: "var(--font-narrative)",
     fontSize: 12.5,
     lineHeight: 1.28,
@@ -5937,7 +5779,7 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   leveragePayoffMetaValue: {
-    color: "rgba(49,36,22,0.84)",
+    color: "rgba(255,245,230,0.84)",
     fontSize: 11.5,
     lineHeight: 1.28,
     minWidth: 0,
@@ -5946,12 +5788,12 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   leveragePayoffMetaDivider: {
-    color: "rgba(76,53,29,0.24)",
+    color: "rgba(255,255,255,0.20)",
     fontWeight: 900,
   },
   leveragePayoffReasonText: {
     minWidth: 0,
-    color: "rgba(68,55,40,0.52)",
+    color: "rgba(235,226,216,0.48)",
     fontSize: 11.5,
     lineHeight: 1.28,
     fontStyle: "italic" as const,
@@ -5994,14 +5836,14 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 5,
   },
   intentReadDivider: {
-    color: "rgba(76,53,29,0.22)",
+    color: "rgba(255,255,255,0.16)",
     fontSize: 11,
     fontWeight: 900,
     flexShrink: 0,
   },
   intentReadLaneValue: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.78)",
+    color: "rgba(255,245,230,0.78)",
     fontSize: 11.5,
     lineHeight: 1.25,
     fontWeight: 750,
@@ -6036,14 +5878,14 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   pulseImpactTitle: {
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(255,245,230,0.58)",
     fontSize: 11,
     fontWeight: 750,
     letterSpacing: 0,
     textTransform: "none" as const,
   },
   pulseImpactCount: {
-    color: "rgba(68,55,40,0.42)",
+    color: "rgba(244,239,230,0.42)",
     fontSize: 11,
     fontWeight: 700,
     letterSpacing: 0,
@@ -6081,12 +5923,12 @@ const ppStyles: Record<string, CSSProperties> = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "rgba(49,36,22,0.78)",
+    color: "rgba(255,245,230,0.78)",
     fontSize: 11,
     fontWeight: 900,
   },
   pulseImpactDelta: {
-    color: "rgba(49,36,22,0.76)",
+    color: "rgba(255,245,230,0.76)",
     fontSize: 10,
     lineHeight: 1.1,
     fontWeight: 780,
@@ -6101,7 +5943,7 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   pulseImpactName: {
-    color: "rgba(49,36,22,0.96)",
+    color: "rgba(255,245,230,0.96)",
     fontSize: 12.5,
     lineHeight: 1.2,
   },
@@ -6125,7 +5967,7 @@ const ppStyles: Record<string, CSSProperties> = {
   pulseImpactInline: {
     marginTop: 8,
     paddingTop: 6,
-    borderTop: "1px dashed rgba(76,53,29,0.16)",
+    borderTop: "1px solid rgba(255,255,255,0.055)",
     display: "flex",
     alignItems: "baseline",
     columnGap: 10,
@@ -6157,7 +5999,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   pulseImpactInlineName: {
     minWidth: 0,
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(232,218,205,0.58)",
     fontSize: 10.5,
     lineHeight: 1.18,
     overflow: "hidden",
@@ -6165,15 +6007,15 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   pulseImpactInlineDelta: {
-    color: "rgba(49,36,22,0.76)",
+    color: "rgba(255,245,230,0.76)",
     fontSize: 10.5,
     lineHeight: 1.18,
     whiteSpace: "nowrap" as const,
   },
-  pulseShift_warmer: { color: "rgba(68,116,73,0.88)" },
-  pulseShift_colder: { color: "rgba(68,83,126,0.88)" },
-  pulseShift_wary: { color: "rgba(142,92,24,0.9)" },
-  pulseShift_broken: { color: "rgba(169,73,63,0.94)" },
+  pulseShift_warmer: { color: "rgba(174,224,194,0.88)" },
+  pulseShift_colder: { color: "rgba(175,192,230,0.86)" },
+  pulseShift_wary: { color: "rgba(230,198,132,0.88)" },
+  pulseShift_broken: { color: "rgba(255,188,168,0.92)" },
   pulseShift_steady: {},
 
   // Ending tier badge over banner image
@@ -6202,36 +6044,13 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(255,255,255,0.78)",
   },
 
-  narratorBeat: {
-    marginBottom: 28,
-    position: "relative" as const,
-    padding: "17px 42px 17px 18px",
-    background: "rgba(255,248,226,0.62)",
-    border: "1px solid rgba(76,53,29,0.18)",
-    borderRadius: 6,
-    boxShadow: "2px 3px 0 rgba(72,47,22,0.1)",
-  },
-  narratorBeatLatest: {
-    padding: "20px 44px 22px 20px",
-    background: "rgba(255,251,242,0.98)",
-    border: "1px solid rgba(76,53,29,0.28)",
-    boxShadow: "0 20px 44px rgba(72,47,22,0.13), 2px 3px 0 rgba(72,47,22,0.08)",
-  },
-  narratorBeatKicker: {
-    marginBottom: 8,
-    color: "rgba(107,70,19,0.80)",
-    fontSize: 11,
-    lineHeight: 1.2,
-    fontWeight: 820,
-    letterSpacing: 0,
-    textTransform: "none" as const,
-  },
+  narratorBeat: { marginBottom: 32, position: "relative" as const, paddingRight: 36 },
   // Bookmarked beat — soft accent ring on the left edge, signals
   // "you marked this" without competing with the rising/peak intensity
   // ramp.
   narratorBeatBookmarked: {
-    background: "linear-gradient(90deg, var(--accent-soft) 0%, rgba(255,248,226,0.72) 34%, rgba(255,248,226,0.62) 100%)",
-    borderColor: "rgba(157,91,47,0.34)",
+    background: "linear-gradient(90deg, var(--accent-soft) 0%, transparent 16%)",
+    borderRadius: 0,
   },
   beatBookmarkBtn: {
     position: "absolute" as const,
@@ -6257,7 +6076,7 @@ const ppStyles: Record<string, CSSProperties> = {
     display: "inline-flex",
     alignItems: "baseline",
     columnGap: 6,
-    color: "rgba(68,55,40,0.66)",
+    color: "rgba(246,221,176,0.80)",
     fontSize: 11.2,
     lineHeight: 1.25,
     fontWeight: 720,
@@ -6269,20 +6088,20 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   narratorBeatRising: {
     marginBottom: 38,
-    paddingLeft: 18,
-    paddingTop: 18,
+    paddingLeft: 0,
+    paddingTop: 8,
   },
   narratorBeatPeak: {
     marginBottom: 48,
-    paddingLeft: 18,
-    paddingTop: 20,
-    paddingRight: 18,
-    background: "rgba(255,242,214,0.74)",
+    paddingLeft: 0,
+    paddingTop: 12,
+    paddingRight: 4,
+    background: "transparent",
   },
   narratorText: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 17,
-    lineHeight: 1.82,
+    fontSize: 16.5,
+    lineHeight: 1.85,
     color: "var(--text)",
     whiteSpace: "pre-wrap",
   },
@@ -6295,7 +6114,7 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 19,
     lineHeight: 1.95,
     letterSpacing: 0,
-    color: "rgba(49,36,22,0.96)",
+    color: "rgba(255,235,210,0.96)",
   },
   beatSceneBanner: {
     height: 140,
@@ -6305,12 +6124,12 @@ const ppStyles: Record<string, CSSProperties> = {
     marginRight: -4,
     marginTop: -12,
     marginBottom: 18,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   beatDecorRising: {
     width: 36,
     height: 1,
-    background: "rgba(93,95,143,0.55)",
+    background: "rgba(140,100,200,0.55)",
     marginBottom: 12,
   },
   beatDecorPeak: {
@@ -6332,11 +6151,11 @@ const ppStyles: Record<string, CSSProperties> = {
     background: "transparent",
   },
   beatSignalPeak: {
-    color: "rgba(107,70,19,0.96)",
+    color: "rgba(245,210,140,0.96)",
     background: "transparent",
   },
   beatSignalRising: {
-    color: "rgba(90,72,113,0.88)",
+    color: "rgba(205,190,255,0.88)",
     background: "transparent",
   },
   beatSignalMark: {
@@ -6354,7 +6173,7 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   beatSignalTitle: {
-    color: "rgba(49,36,22,0.96)",
+    color: "rgba(255,245,230,0.96)",
     fontSize: 11,
     fontWeight: 720,
     letterSpacing: 0,
@@ -6383,21 +6202,20 @@ const ppStyles: Record<string, CSSProperties> = {
 
   playerBeat: {
     marginBottom: 28,
-    padding: "10px 14px 11px",
-    border: "1px dashed rgba(76,53,29,0.18)",
-    borderRadius: 6,
-    background: "rgba(250,239,212,0.52)",
-    boxShadow: "2px 3px 0 rgba(72,47,22,0.08)",
+    paddingLeft: 0,
+    border: "none",
   },
   playerBeatLeverageMove: {
-    borderColor: "rgba(157,91,47,0.26)",
-    background: "rgba(255,244,220,0.64)",
+    paddingLeft: 0,
+    border: "none",
+    borderRadius: 0,
+    background: "transparent",
   },
   playerHandleText: {
     fontSize: 11.5,
     fontFamily: "var(--font-narrative)",
     fontWeight: 600,
-    color: "rgba(68,55,40,0.66)",
+    color: "rgba(232,218,205,0.66)",
     background: "transparent",
     padding: 0,
     border: "none",
@@ -6413,7 +6231,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   playerLabel: {
     fontSize: 11,
-    color: "rgba(107,70,19,0.78)",
+    color: "rgba(212,168,83,0.72)",
     letterSpacing: 0,
     textTransform: "none" as const,
     fontWeight: 720,
@@ -6447,7 +6265,7 @@ const ppStyles: Record<string, CSSProperties> = {
     minWidth: 0,
     fontSize: 12,
     lineHeight: 1.35,
-    color: "rgba(49,36,22,0.86)",
+    color: "rgba(255,235,200,0.90)",
     fontFamily: "var(--font-narrative)",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -6455,7 +6273,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   playerDiaryTag: {
     fontSize: 10.5,
-    color: "rgba(90,72,113,0.86)",
+    color: "rgba(180,150,230,0.85)",
     letterSpacing: 0,
     textTransform: "none" as const,
     fontWeight: 700,
@@ -6464,7 +6282,7 @@ const ppStyles: Record<string, CSSProperties> = {
     minWidth: 0,
     fontSize: 12,
     lineHeight: 1.35,
-    color: "rgba(72,55,100,0.82)",
+    color: "rgba(220,210,240,0.92)",
     fontFamily: "var(--font-narrative)",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -6472,31 +6290,24 @@ const ppStyles: Record<string, CSSProperties> = {
   },
 
   actionArea: {
-    marginTop: 20,
-    padding: "18px 0 0",
-    borderTop: "1px solid rgba(76,53,29,0.16)",
-    borderRight: "none",
-    borderBottom: "none",
-    borderLeft: "none",
-    borderRadius: 0,
+    marginTop: 18,
+    paddingTop: 4,
+    paddingBottom: 10,
+    borderTop: "none",
     position: "relative" as const,
     background: "transparent",
     backdropFilter: "none",
-    boxShadow: "none",
     zIndex: 1,
   },
   turnGuide: {
-    marginBottom: 14,
+    marginBottom: 8,
     paddingTop: 0,
     paddingRight: 0,
-    paddingBottom: 8,
+    paddingBottom: 4,
     paddingLeft: 0,
     display: "block",
     borderRadius: 0,
-    borderTop: "none",
-    borderRight: "none",
-    borderBottom: "1px dashed rgba(76,53,29,0.14)",
-    borderLeft: "none",
+    border: "none",
     background: "transparent",
   },
   turnGuideCompact: {
@@ -6529,15 +6340,14 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   turnGuideTitle: {
-    color: "rgba(49,36,22,0.95)",
-    fontSize: 15.5,
+    color: "rgba(255,245,230,0.95)",
+    fontSize: 13,
     lineHeight: 1.2,
     flexShrink: 0,
-    fontWeight: 820,
   },
   turnGuideDetail: {
-    color: "rgba(68,55,40,0.68)",
-    fontSize: 12.5,
+    color: "var(--text-muted)",
+    fontSize: 12,
     lineHeight: 1.35,
     minWidth: "min(100%, 240px)",
     whiteSpace: "normal" as const,
@@ -6555,7 +6365,7 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   sceneReadLabel: {
-    color: "rgba(68,55,40,0.60)",
+    color: "var(--text-faint)",
     fontSize: 10.5,
     fontWeight: 720,
     letterSpacing: 0,
@@ -6579,7 +6389,7 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 4,
   },
   sceneReadName: {
-    color: "rgba(68,55,40,0.64)",
+    color: "var(--text-faint)",
     fontSize: 10.5,
     fontWeight: 720,
     letterSpacing: 0,
@@ -6589,14 +6399,14 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   sceneReadJoiner: {
-    color: "rgba(76,53,29,0.22)",
+    color: "rgba(255,255,255,0.18)",
     fontSize: 9.5,
     fontWeight: 900,
     flexShrink: 0,
   },
   sceneReadValue: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.80)",
+    color: "rgba(255,245,230,0.88)",
     fontSize: 11.5,
     lineHeight: 1.2,
     overflow: "hidden",
@@ -6619,15 +6429,14 @@ const ppStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     columnGap: 12,
     rowGap: 4,
-    padding: "9px 10px 10px 12px",
-    background: "rgba(255,248,226,0.48)",
+    padding: "8px 0 10px 11px",
+    background: "transparent",
     borderTop: "none",
     borderRight: "none",
     borderLeftWidth: 2,
     borderLeftStyle: "solid",
-    borderLeftColor: "rgba(157,91,47,0.24)",
-    borderBottom: "1px dashed rgba(76,53,29,0.16)",
-    borderRadius: 5,
+    borderLeftColor: "rgba(212,168,83,0.18)",
+    borderBottom: "1px solid rgba(255,255,255,0.055)",
     color: "var(--text)",
     textAlign: "left" as const,
     cursor: "pointer",
@@ -6639,9 +6448,8 @@ const ppStyles: Record<string, CSSProperties> = {
     padding: "8px 0 10px 10px",
   },
   leverageSummaryButtonOpen: {
-    color: "rgba(49,36,22,0.96)",
-    background: "rgba(255,243,216,0.78)",
-    borderLeftColor: "rgba(157,91,47,0.58)",
+    color: "rgba(255,236,198,0.96)",
+    borderLeftColor: "rgba(245,200,120,0.58)",
   },
   leverageEmptySummary: {
     width: "100%",
@@ -6654,7 +6462,7 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "var(--text)",
   },
   leverageEmptyBadge: {
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(232,218,205,0.58)",
     fontSize: 10.5,
     lineHeight: 1.1,
     fontWeight: 720,
@@ -6671,7 +6479,7 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 3,
   },
   leverageSummaryEyebrow: {
-    color: "rgba(107,70,19,0.82)",
+    color: "rgba(212,168,83,0.82)",
     fontSize: 10.8,
     lineHeight: 1.1,
     fontWeight: 720,
@@ -6680,7 +6488,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   leverageSummaryText: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.95)",
+    color: "rgba(255,245,230,0.95)",
     fontSize: 13.5,
     lineHeight: 1.18,
     overflow: "hidden",
@@ -6690,7 +6498,7 @@ const ppStyles: Record<string, CSSProperties> = {
   leverageSummaryMeta: {
     minWidth: 0,
     gridColumn: "1 / -1",
-    color: "rgba(68,55,40,0.6)",
+    color: "rgba(232,218,205,0.60)",
     fontSize: 11.5,
     lineHeight: 1.28,
     fontWeight: 600,
@@ -6701,7 +6509,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   leverageSummaryToggle: {
     justifySelf: "end",
-    color: "rgba(107,70,19,0.92)",
+    color: "rgba(255,222,160,0.94)",
     fontSize: 11.5,
     fontWeight: 820,
     letterSpacing: 0,
@@ -6730,10 +6538,9 @@ const ppStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     columnGap: 12,
     rowGap: 4,
-    padding: "8px 9px 9px",
-    background: "rgba(255,248,226,0.42)",
-    border: "1px dashed rgba(76,53,29,0.16)",
-    borderRadius: 5,
+    padding: "8px 0 9px",
+    background: "transparent",
+    border: "none",
     color: "var(--text)",
     cursor: "pointer",
     outline: "none",
@@ -6741,8 +6548,7 @@ const ppStyles: Record<string, CSSProperties> = {
   leverageMiniCardArmed: {
     paddingLeft: 0,
     boxShadow: "none",
-    color: "rgba(49,36,22,0.96)",
-    background: "rgba(255,243,216,0.82)",
+    color: "rgba(255,236,198,0.96)",
   },
   leverageMiniCardUsed: {
     opacity: 0.34,
@@ -6750,7 +6556,7 @@ const ppStyles: Record<string, CSSProperties> = {
     filter: "grayscale(0.45)",
   },
   leverageMiniTarget: {
-    color: "rgba(49,36,22,0.96)",
+    color: "rgba(255,245,230,0.96)",
     fontSize: 12.5,
     lineHeight: 1.25,
     minWidth: 0,
@@ -6759,7 +6565,7 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   leverageMiniDivider: {
-    color: "rgba(76,53,29,0.22)",
+    color: "rgba(255,255,255,0.18)",
     fontSize: 11,
     fontWeight: 900,
     flexShrink: 0,
@@ -6767,7 +6573,7 @@ const ppStyles: Record<string, CSSProperties> = {
   leverageMiniText: {
     gridColumn: "1 / -1",
     minWidth: 0,
-    color: "rgba(68,55,40,0.72)",
+    color: "rgba(232,218,205,0.72)",
     fontSize: 12,
     lineHeight: 1.38,
     overflow: "hidden",
@@ -6777,7 +6583,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   leverageMiniActionHint: {
     justifySelf: "end",
-    color: "rgba(107,70,19,0.84)",
+    color: "rgba(212,168,83,0.80)",
     fontSize: 10.5,
     fontWeight: 720,
     letterSpacing: 0,
@@ -6791,14 +6597,14 @@ const ppStyles: Record<string, CSSProperties> = {
     marginTop: 0,
     padding: "7px 0 8px",
     borderTop: "none",
-    borderBottom: "1px dashed rgba(76,53,29,0.14)",
+    borderBottom: "1px solid rgba(255,255,255,0.045)",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
   },
   leverageSpentLabel: {
-    color: "rgba(68,55,40,0.38)",
+    color: "rgba(232,218,205,0.32)",
     fontSize: 10.5,
     fontWeight: 700,
     letterSpacing: 0,
@@ -6807,7 +6613,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   leverageSpentTargets: {
     minWidth: 0,
-    color: "rgba(68,55,40,0.52)",
+    color: "rgba(232,218,205,0.50)",
     fontSize: 11,
     lineHeight: 1.25,
     overflow: "hidden",
@@ -6820,7 +6626,7 @@ const ppStyles: Record<string, CSSProperties> = {
     marginBottom: 14,
     padding: "12px 0 0",
     border: "none",
-    borderTop: "1px dashed rgba(157,91,47,0.24)",
+    borderTop: "1px solid rgba(245,200,120,0.20)",
     borderRadius: 0,
     background: "transparent",
     boxShadow: "none",
@@ -6846,14 +6652,14 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   leverageRevealTitle: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.95)",
+    color: "rgba(255,245,230,0.95)",
     fontFamily: "var(--font-narrative)",
     fontSize: 17,
     lineHeight: 1.25,
     fontWeight: 520,
   },
   leverageRevealHint: {
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(232,218,205,0.54)",
     fontSize: 11.5,
     lineHeight: 1.35,
   },
@@ -6869,7 +6675,7 @@ const ppStyles: Record<string, CSSProperties> = {
   leverageRevealEvidenceLabel: {
     display: "block",
     marginBottom: 3,
-    color: "rgba(107,70,19,0.78)",
+    color: "rgba(245,200,120,0.78)",
     fontSize: 10.5,
     lineHeight: 1.2,
     fontWeight: 720,
@@ -6877,7 +6683,7 @@ const ppStyles: Record<string, CSSProperties> = {
     textTransform: "none" as const,
   },
   leverageRevealEvidence: {
-    color: "rgba(49,36,22,0.88)",
+    color: "rgba(255,238,210,0.88)",
     fontSize: 14,
     lineHeight: 1.48,
     fontFamily: "var(--font-narrative)",
@@ -6909,7 +6715,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   leverageRevealCeremonyText: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.86)",
+    color: "rgba(255,245,230,0.90)",
     fontSize: 11.5,
     lineHeight: 1.22,
     fontWeight: 800,
@@ -6933,7 +6739,7 @@ const ppStyles: Record<string, CSSProperties> = {
     border: "none",
     borderRadius: 0,
     background: "transparent",
-    color: "rgba(107,70,19,0.96)",
+    color: "rgba(255,222,160,0.96)",
     fontSize: 13,
     fontWeight: 850,
     lineHeight: 1.25,
@@ -6948,14 +6754,14 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 14,
   },
   actionPrimaryLineDisabled: {
-    color: "rgba(68,55,40,0.42)",
+    color: "rgba(232,218,205,0.46)",
     opacity: 0.58,
     cursor: "default",
   },
   inlineActionDisabled: {
     opacity: 0.52,
     cursor: "default",
-    borderBottomColor: "rgba(76,53,29,0.12)",
+    borderBottomColor: "rgba(232,218,205,0.12)",
   },
   commitTextButton: {
     height: "auto",
@@ -6982,9 +6788,9 @@ const ppStyles: Record<string, CSSProperties> = {
     borderRight: "none",
     borderLeft: "none",
     borderRadius: 0,
-    borderBottom: "1px solid rgba(107,70,19,0.3)",
+    borderBottom: "1px solid rgba(212,168,83,0.24)",
     background: "transparent",
-    color: "rgba(107,70,19,0.88)",
+    color: "rgba(246,221,176,0.88)",
     display: "inline-flex",
     alignItems: "center",
     fontSize: 12.5,
@@ -7003,57 +6809,50 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   optionBtn: {
     textAlign: "left",
-    minHeight: 76,
-    padding: "13px 14px 14px 15px",
-    background: "rgba(255,253,247,0.78)",
-    borderTopWidth: 1,
-    borderTopStyle: "solid",
-    borderTopColor: "rgba(76,53,29,0.10)",
-    borderRightWidth: 1,
-    borderRightStyle: "solid",
-    borderRightColor: "rgba(76,53,29,0.10)",
+    minHeight: 70,
+    padding: "10px 0 11px 12px",
+    background: "transparent",
+    borderTop: "none",
+    borderRight: "none",
     borderBottomWidth: 1,
     borderBottomStyle: "solid",
-    borderBottomColor: "rgba(76,53,29,0.14)",
-    borderLeftWidth: 3,
+    borderBottomColor: "rgba(255,255,255,0.055)",
+    borderLeftWidth: 2,
     borderLeftStyle: "solid",
-    borderLeftColor: "rgba(157,91,47,0.22)",
-    borderRadius: 5,
+    borderLeftColor: "rgba(212,168,83,0.20)",
+    borderRadius: 0,
     color: "var(--text)",
     cursor: "pointer",
-    transition: "background 160ms, border-color 160ms, color 160ms, opacity 160ms, transform 160ms",
+    transition: "background 160ms, border-color 160ms, color 160ms, opacity 160ms",
     fontFamily: "inherit",
     outline: "none",
-    WebkitTapHighlightColor: "rgba(157,91,47,0.14)",
+    WebkitTapHighlightColor: "rgba(245,200,120,0.14)",
   },
   optionBtnCompact: {
-    minHeight: 76,
-    padding: "11px 10px 12px 12px",
+    minHeight: 74,
+    padding: "10px 0 12px 11px",
   },
   // Picked state stays typographic so the action list does not read as
   // boxed UI stacked inside the story.
   optionBtnSelected: {
-    background: "rgba(255,243,216,0.96)",
-    color: "rgba(49,36,22,0.98)",
-    borderLeftColor: "rgba(157,91,47,0.78)",
-    borderTopColor: "rgba(157,91,47,0.20)",
-    borderRightColor: "rgba(157,91,47,0.18)",
-    borderBottomColor: "rgba(157,91,47,0.26)",
+    background: "transparent",
+    color: "rgba(255,238,205,0.98)",
+    borderLeftColor: "rgba(245,200,120,0.78)",
+    borderBottomColor: "rgba(245,200,120,0.24)",
   },
   optionBtnExpanded: {
-    color: "rgba(49,36,22,0.98)",
+    color: "rgba(255,238,205,0.98)",
   },
   optionBtnDeemphasized: {
-    background: "rgba(255,248,226,0.24)",
+    background: "transparent",
     boxShadow: "none",
-    color: "rgba(49,36,22,0.58)",
-    borderLeftColor: "rgba(157,91,47,0.12)",
+    borderLeftColor: "rgba(212,168,83,0.10)",
   },
   optionBtnPicked: {
-    background: "rgba(255,243,216,0.88)",
-    color: "rgba(49,36,22,0.98)",
-    borderLeftColor: "rgba(157,91,47,0.86)",
-    borderBottomColor: "rgba(157,91,47,0.24)",
+    background: "transparent",
+    color: "rgba(255,238,205,0.98)",
+    borderLeftColor: "rgba(245,200,120,0.86)",
+    borderBottomColor: "rgba(245,200,120,0.24)",
   },
   optionConfirmPanel: {
     marginTop: -1,
@@ -7127,7 +6926,7 @@ const ppStyles: Record<string, CSSProperties> = {
     padding: 0,
     border: "none",
     background: "transparent",
-    color: "rgba(72,55,100,0.82)",
+    color: "rgba(220,210,240,0.82)",
     display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr) auto",
     alignItems: "center",
@@ -7138,7 +6937,7 @@ const ppStyles: Record<string, CSSProperties> = {
     outline: "none",
   },
   diaryAttachPreviewFilled: {
-    color: "rgba(107,70,19,0.92)",
+    color: "rgba(246,221,176,0.92)",
   },
   diaryAttachPreviewEmpty: {
     width: "fit-content",
@@ -7156,7 +6955,7 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   diaryAttachTag: {
-    color: "rgba(90,72,113,0.88)",
+    color: "rgba(222,202,255,0.94)",
     fontSize: 10.5,
     fontWeight: 700,
     letterSpacing: 0,
@@ -7165,7 +6964,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   diaryAttachText: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.78)",
+    color: "rgba(232,222,245,0.82)",
     fontSize: 12.5,
     lineHeight: 1.4,
     overflow: "hidden",
@@ -7173,20 +6972,20 @@ const ppStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   diaryAttachEdit: {
-    color: "rgba(107,70,19,0.88)",
+    color: "rgba(244,214,164,0.94)",
     fontSize: 11,
     fontWeight: 700,
     whiteSpace: "nowrap" as const,
   },
   diaryAttachEmptyText: {
-    color: "rgba(90,72,113,0.82)",
+    color: "rgba(222,202,255,0.86)",
     fontSize: 12.5,
     fontWeight: 750,
     lineHeight: 1.35,
     whiteSpace: "nowrap" as const,
   },
   diaryAttachEmptyHint: {
-    color: "rgba(68,55,40,0.48)",
+    color: "rgba(232,222,245,0.44)",
     fontSize: 11.5,
     lineHeight: 1.35,
     fontWeight: 620,
@@ -7235,7 +7034,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   resolvingTitle: {
     flexShrink: 0,
-    color: "rgba(107,70,19,0.68)",
+    color: "rgba(255,232,190,0.60)",
     fontSize: 10.5,
     lineHeight: 1.15,
     fontWeight: 720,
@@ -7252,7 +7051,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   resolvingReceiptMeta: {
     flexShrink: 0,
-    color: "rgba(68,55,40,0.54)",
+    color: "rgba(246,221,176,0.50)",
     fontSize: 10.5,
     fontWeight: 700,
     letterSpacing: 0,
@@ -7261,7 +7060,7 @@ const ppStyles: Record<string, CSSProperties> = {
   resolvingMoveText: {
     minWidth: 0,
     flex: "1 1 180px",
-    color: "rgba(49,36,22,0.82)",
+    color: "rgba(255,245,230,0.80)",
     fontFamily: "var(--font-narrative)",
     fontSize: 13,
     lineHeight: 1.35,
@@ -7276,18 +7075,18 @@ const ppStyles: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 7,
     flex: "0 1 auto",
-    color: "rgba(68,55,40,0.62)",
+    color: "rgba(246,221,176,0.64)",
   },
   resolvingStatus: {
     flexShrink: 0,
-    color: "rgba(68,55,40,0.56)",
+    color: "rgba(232,218,205,0.50)",
     fontSize: 11,
     lineHeight: 1.25,
     fontWeight: 700,
     fontStyle: "italic" as const,
   },
   resolvingProgressText: {
-    color: "rgba(107,70,19,0.72)",
+    color: "rgba(246,221,176,0.66)",
     fontSize: 11.5,
     lineHeight: 1.25,
     fontWeight: 760,
@@ -7309,11 +7108,11 @@ const ppStyles: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "baseline",
     gap: 6,
-    color: "rgba(68,55,40,0.62)",
+    color: "rgba(228,214,255,0.66)",
   },
   resolvingPrivateLabel: {
     flexShrink: 0,
-    color: "rgba(90,72,113,0.68)",
+    color: "rgba(222,202,255,0.66)",
     fontSize: 10.5,
     fontWeight: 700,
     letterSpacing: 0,
@@ -7321,7 +7120,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   resolvingPrivateCopy: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.64)",
+    color: "rgba(232,222,245,0.64)",
     fontSize: 11.5,
     lineHeight: 1.35,
     overflow: "hidden",
@@ -7357,7 +7156,7 @@ const ppStyles: Record<string, CSSProperties> = {
     minWidth: 16,
     height: "auto",
     fontSize: 11.5,
-    color: "rgba(107,70,19,0.76)",
+    color: "rgba(212,168,83,0.70)",
     background: "transparent",
     border: "none",
     borderRadius: 0,
@@ -7368,7 +7167,7 @@ const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 850,
   },
   optionHintInline: {
-    color: "rgba(68,55,40,0.58)",
+    color: "rgba(232,218,205,0.54)",
     fontSize: 12,
     lineHeight: 1.3,
     fontWeight: 560,
@@ -7396,7 +7195,7 @@ const ppStyles: Record<string, CSSProperties> = {
     borderTop: "none",
     borderRight: "none",
     borderLeft: "none",
-    borderBottom: "1px dashed rgba(76,53,29,0.24)",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
     borderRadius: 0,
     fontFamily: "var(--font-narrative)",
     fontSize: 15,
@@ -7429,7 +7228,7 @@ const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 700,
   },
   freeEmptyHint: {
-    color: "rgba(68,55,40,0.50)",
+    color: "rgba(232,218,205,0.48)",
     fontSize: 12.5,
     lineHeight: 1.35,
     fontWeight: 700,
@@ -7460,7 +7259,7 @@ const ppStyles: Record<string, CSSProperties> = {
     minHeight: 26,
     background: "none",
     border: "none",
-    color: "rgba(107,70,19,0.82)",
+    color: "rgba(246,221,176,0.82)",
     padding: 0,
     cursor: "pointer",
     textAlign: "left",
@@ -7468,19 +7267,19 @@ const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "inherit",
   },
   alternateActionLabel: {
-    color: "rgba(107,70,19,0.82)",
+    color: "rgba(246,221,176,0.76)",
     fontSize: 12.5,
     lineHeight: 1.25,
     fontWeight: 780,
   },
   alternateActionHint: {
-    color: "rgba(68,55,40,0.48)",
+    color: "rgba(232,218,205,0.44)",
     fontSize: 11.5,
     lineHeight: 1.35,
   },
 
   diaryLaneEdit: {
-    color: "rgba(90,72,113,0.86)",
+    color: "rgba(180,150,230,0.90)",
     fontSize: 11,
     fontWeight: 700,
   },
@@ -7501,13 +7300,13 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   diaryKicker: {
-    color: "rgba(90,72,113,0.84)",
+    color: "rgba(222,202,255,0.82)",
     fontSize: 11.5,
     lineHeight: 1.2,
     fontWeight: 760,
   },
   diaryMeta: {
-    color: "rgba(68,55,40,0.54)",
+    color: "rgba(226,214,246,0.58)",
     fontSize: 11.2,
     lineHeight: 1.25,
     fontWeight: 620,
@@ -7516,11 +7315,11 @@ const ppStyles: Record<string, CSSProperties> = {
     width: "100%",
     background: "transparent",
     border: "none",
-    borderBottom: "1px solid rgba(90,72,113,0.24)",
+    borderBottom: "1px solid rgba(222,202,255,0.22)",
     borderRadius: 0,
     fontSize: 13.5,
     lineHeight: 1.45,
-    color: "rgba(49,36,22,0.94)",
+    color: "rgba(238,228,252,0.97)",
     padding: "2px 0 6px",
     resize: "none" as const,
     overflowY: "hidden",
@@ -7542,7 +7341,7 @@ const ppStyles: Record<string, CSSProperties> = {
     border: "none",
     borderRadius: 0,
     background: "transparent",
-    color: "rgba(90,72,113,0.78)",
+    color: "rgba(226,214,246,0.76)",
     display: "inline-flex",
     alignItems: "center",
     fontSize: 12,
@@ -7554,7 +7353,7 @@ const ppStyles: Record<string, CSSProperties> = {
   busyShim: {
     marginTop: 24,
     paddingTop: 20,
-    borderTop: "1px dashed rgba(76,53,29,0.16)",
+    borderTop: "1px solid rgba(255,255,255,0.065)",
     color: "var(--text-faint)",
     fontSize: 13,
     fontStyle: "italic",
@@ -7567,7 +7366,7 @@ const ppStyles: Record<string, CSSProperties> = {
     border: "none",
     borderRadius: 0,
     fontSize: 13,
-    color: "var(--warn)",
+    color: "rgba(255,226,214,0.94)",
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) auto",
     alignItems: "start",
@@ -7583,27 +7382,27 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 5,
   },
   errorInlineKicker: {
-    color: "rgba(169,73,63,0.86)",
+    color: "rgba(255,205,190,0.86)",
     fontSize: 10.5,
     fontWeight: 720,
     letterSpacing: 0,
     textTransform: "none" as const,
   },
   errorInlineTitle: {
-    color: "rgba(49,36,22,0.96)",
+    color: "rgba(255,245,230,0.96)",
     fontSize: 14,
     lineHeight: 1.25,
   },
-  errorInlineText: { minWidth: 0, color: "rgba(102,53,43,0.82)", lineHeight: 1.4 },
+  errorInlineText: { minWidth: 0, color: "rgba(255,226,214,0.82)", lineHeight: 1.4 },
   errorInlineSignal: {
     minWidth: 0,
-    color: "rgba(102,53,43,0.66)",
+    color: "rgba(255,226,214,0.66)",
     fontSize: 11.5,
     lineHeight: 1.35,
   },
   errorInlineSignalLabel: {
     marginRight: 6,
-    color: "rgba(169,73,63,0.78)",
+    color: "rgba(255,205,190,0.78)",
     fontWeight: 720,
     letterSpacing: 0,
     textTransform: "none" as const,
@@ -7619,9 +7418,9 @@ const ppStyles: Record<string, CSSProperties> = {
     padding: "0 0 2px",
     borderRadius: 0,
     border: "none",
-    borderBottom: "1px solid rgba(169,73,63,0.2)",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
     background: "transparent",
-    color: "rgba(102,53,43,0.82)",
+    color: "rgba(255,245,230,0.82)",
     fontSize: 11,
     lineHeight: 1.2,
     overflow: "hidden",
@@ -7635,9 +7434,9 @@ const ppStyles: Record<string, CSSProperties> = {
     minHeight: 32,
     background: "transparent",
     border: "none",
-    borderBottom: "1px solid rgba(107,70,19,0.34)",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
     borderRadius: 0,
-    color: "rgba(107,70,19,0.96)",
+    color: "rgba(255,226,178,0.96)",
     cursor: "pointer",
     fontFamily: "inherit",
     fontWeight: 800,
@@ -7988,17 +7787,17 @@ const ppStyles: Record<string, CSSProperties> = {
     right: 24,
     width: "auto",
     height: 34,
-    background: "var(--story-paper-card)",
-    color: "rgba(49,36,22,0.84)",
-    border: "1px solid rgba(76,53,29,0.24)",
-    borderRadius: 999,
-    padding: "6px 10px",
+    background: "transparent",
+    color: "rgba(255,245,230,0.84)",
+    border: "none",
+    borderRadius: 0,
+    padding: 0,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
     cursor: "pointer",
-    boxShadow: "var(--story-note-shadow)",
+    boxShadow: "none",
     zIndex: 20,
     textAlign: "center" as const,
     backdropFilter: "none",
@@ -8013,11 +7812,11 @@ const ppStyles: Record<string, CSSProperties> = {
     padding: 0,
   },
   fabLabel: {
-    color: "rgba(107,70,19,0.92)",
+    color: "rgba(255,226,178,0.92)",
     fontSize: 13,
     lineHeight: 1.2,
     fontWeight: 800,
-    borderBottom: "1px solid rgba(107,70,19,0.34)",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
     paddingBottom: 3,
     whiteSpace: "nowrap" as const,
   },
@@ -8026,7 +7825,7 @@ const ppStyles: Record<string, CSSProperties> = {
     height: 32,
     borderRadius: "50%",
     objectFit: "cover",
-    border: "1px solid rgba(107,70,19,0.28)",
+    border: "1px solid rgba(212,168,83,0.28)",
     boxShadow: "none",
     flexShrink: 0,
   },
@@ -8034,11 +7833,11 @@ const ppStyles: Record<string, CSSProperties> = {
     position: "fixed",
     inset: 0,
     background:
-      "linear-gradient(90deg, rgba(83,55,26,0) 0%, rgba(83,55,26,0.08) 58%, rgba(83,55,26,0.24) 100%)",
+      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.08) 58%, rgba(0,0,0,0.30) 100%)",
     zIndex: 30,
   },
   advisorBackdropCompact: {
-    background: "linear-gradient(180deg, rgba(83,55,26,0.08) 0%, rgba(83,55,26,0.32) 100%)",
+    background: "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.42) 100%)",
   },
   advisorPanel: {
     position: "fixed",
@@ -8048,14 +7847,15 @@ const ppStyles: Record<string, CSSProperties> = {
     width: "min(380px, 92vw)",
     paddingLeft: 0,
     boxSizing: "border-box",
-    background: "var(--story-paper-panel)",
+    background:
+      "linear-gradient(90deg, rgba(10,9,9,0.34) 0%, rgba(10,9,9,0.84) 22%, rgba(10,9,9,0.97) 100%)",
     backdropFilter: "none",
     WebkitBackdropFilter: "none",
-    borderLeft: "1px solid rgba(76,53,29,0.24)",
+    borderLeft: "none",
     display: "flex",
     flexDirection: "column",
     zIndex: 31,
-    boxShadow: "-28px 0 60px rgba(83,55,26,0.22)",
+    boxShadow: "-30px 0 72px rgba(0,0,0,0.26)",
     overflow: "hidden",
   },
   advisorPanelCompact: {
@@ -8068,8 +7868,8 @@ const ppStyles: Record<string, CSSProperties> = {
     paddingLeft: 0,
     borderLeft: "none",
     borderTop: "none",
-    background: "var(--story-paper-panel)",
-    boxShadow: "0 -32px 72px rgba(83,55,26,0.28)",
+    background: "linear-gradient(180deg, rgba(10,9,9,0.995) 0%, rgba(8,7,7,0.995) 100%)",
+    boxShadow: "0 -32px 72px rgba(0,0,0,0.48)",
   },
   advisorPanelCompactReading: {
     maxHeight: "min(68dvh, calc(100dvh - 64px))",
@@ -8104,7 +7904,7 @@ const ppStyles: Record<string, CSSProperties> = {
   advisorTitle: { fontFamily: "var(--font-narrative)", fontSize: 14.5, color: "var(--text)" },
   advisorPersona: {
     fontSize: 11,
-    color: "rgba(68,55,40,0.52)",
+    color: "rgba(232,218,205,0.48)",
     lineHeight: 1.35,
     marginTop: 3,
     maxWidth: 268,
@@ -8136,7 +7936,7 @@ const ppStyles: Record<string, CSSProperties> = {
     rowGap: 3,
   },
   advisorContextKicker: {
-    color: "rgba(107,70,19,0.78)",
+    color: "rgba(245,210,140,0.78)",
     fontSize: 10.5,
     fontWeight: 760,
     letterSpacing: 0,
@@ -8144,7 +7944,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   advisorContextText: {
     minWidth: 0,
-    color: "rgba(49,36,22,0.58)",
+    color: "rgba(245,235,224,0.58)",
     fontSize: 11.5,
     lineHeight: 1.35,
     whiteSpace: "normal" as const,
@@ -8155,7 +7955,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   advisorContextTextCompact: {
     WebkitLineClamp: 2,
-    color: "rgba(49,36,22,0.66)",
+    color: "rgba(245,235,224,0.66)",
     lineHeight: 1.42,
   },
   advisorMessages: {
@@ -8198,22 +7998,22 @@ const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   advisorTranscriptLineOracle: {
-    color: "rgba(49,36,22,0.96)",
+    color: "rgba(255,235,200,0.96)",
   },
   advisorTranscriptSpeaker: {
     flexShrink: 0,
-    color: "rgba(68,55,40,0.5)",
+    color: "rgba(232,218,205,0.48)",
     fontSize: 10,
     fontWeight: 760,
     letterSpacing: 0,
     textTransform: "none" as const,
   },
   advisorTranscriptSpeakerPlayer: {
-    color: "rgba(107,70,19,0.72)",
+    color: "rgba(212,168,83,0.72)",
   },
   advisorBubblePlayer: {
     background: "transparent",
-    color: "rgba(49,36,22,0.94)",
+    color: "rgba(255,245,230,0.94)",
     padding: "0",
     borderRadius: 0,
     fontSize: 14,
@@ -8236,7 +8036,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   advisorBubbleOracle: {
     background: "transparent",
-    color: "rgba(49,36,22,0.96)",
+    color: "rgba(255,235,200,0.96)",
     padding: 0,
     borderRadius: 0,
     fontSize: 14,
@@ -8248,7 +8048,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   oracleBadge: {
     fontSize: 10.5,
-    color: "rgba(107,70,19,0.92)",
+    color: "rgba(245,210,140,0.92)",
     letterSpacing: 0,
     fontWeight: 720,
     marginBottom: 0,
@@ -8325,7 +8125,7 @@ const ppStyles: Record<string, CSSProperties> = {
     gap: 6,
   },
   advisorSuggestionLabel: {
-    color: "rgba(68,55,40,0.5)",
+    color: "rgba(232,218,205,0.48)",
     fontSize: 11,
     fontWeight: 650,
     letterSpacing: 0,
@@ -8357,7 +8157,7 @@ const ppStyles: Record<string, CSSProperties> = {
     borderLeft: "none",
     borderBottom: "none",
     background: "transparent",
-    color: "rgba(49,36,22,0.74)",
+    color: "rgba(255,235,205,0.74)",
     fontSize: 11.5,
     lineHeight: 1.35,
     fontFamily: "inherit",
@@ -8371,7 +8171,7 @@ const ppStyles: Record<string, CSSProperties> = {
     width: "100%",
     padding: "6px 0 8px",
     borderBottom: "none",
-    color: "rgba(49,36,22,0.82)",
+    color: "rgba(255,238,214,0.82)",
     fontFamily: "var(--font-narrative)",
     fontSize: 13,
     lineHeight: 1.42,
@@ -8381,7 +8181,7 @@ const ppStyles: Record<string, CSSProperties> = {
   advisorSuggestionChipComposerCompact: {
     width: "100%",
     padding: "2px 0",
-    color: "rgba(49,36,22,0.78)",
+    color: "rgba(255,238,214,0.78)",
     fontSize: 12,
     lineHeight: 1.38,
   },
@@ -8390,7 +8190,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
   advisorSuggestionArrow: {
     flexShrink: 0,
-    color: "rgba(107,70,19,0.82)",
+    color: "rgba(245,200,120,0.82)",
     fontSize: 12,
     lineHeight: 1,
   },
@@ -8417,7 +8217,7 @@ const ppStyles: Record<string, CSSProperties> = {
     borderTop: "none",
     borderRight: "none",
     borderLeft: "none",
-    borderBottom: "1px dashed rgba(76,53,29,0.22)",
+    borderBottom: "1px solid rgba(255,255,255,0.075)",
     borderRadius: 0,
     fontSize: 14,
     lineHeight: 1.5,
@@ -8450,9 +8250,9 @@ const ppStyles: Record<string, CSSProperties> = {
     padding: "8px 0 4px",
     background: "transparent",
     border: "none",
-    borderBottom: "1px solid rgba(107,70,19,0.34)",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
     borderRadius: 0,
-    color: "rgba(107,70,19,0.96)",
+    color: "rgba(255,226,178,0.96)",
     cursor: "pointer",
     fontFamily: "inherit",
     fontSize: 13,

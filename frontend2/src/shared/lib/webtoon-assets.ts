@@ -1,22 +1,6 @@
-// Maps stable story / character / theme keys to visual assets. Demo-facing
-// surfaces route through curated/generated, text-free illustration panels;
-// older /webtoons/ pools remain only for deferred avatar/advisor identity work
-// and catalog/debug references.
-
-const GENERATED_BASE = "/illustrations/generated"
-
-export const GENERATED_ASSETS = {
-  coverNeutral: `${GENERATED_BASE}/cover-neutral-storyboard-desk.webp`,
-  coverCozy: `${GENERATED_BASE}/cover-cozy-bake-sale.webp`,
-  coverFantasy: `${GENERATED_BASE}/cover-fantasy-library-eclipse.webp`,
-  coverSciFiMars: `${GENERATED_BASE}/cover-sci-fi-mars-colony-talent-show.webp`,
-  coverHighDrama: `${GENERATED_BASE}/cover-high-drama-boardroom.webp`,
-  reviewerEvidence: `${GENERATED_BASE}/reviewer-evidence-board-clean.webp`,
-  advisorNotebook: `${GENERATED_BASE}/advisor-notebook-desk.webp`,
-  emptyPlaza: `${GENERATED_BASE}/empty-plaza-story-cards.webp`,
-  endingReflection: `${GENERATED_BASE}/ending-reflection-notebook.webp`,
-  objectCardSheet: `${GENERATED_BASE}/object-card-sheet.webp`,
-} as const
+// Maps stable story / character / theme keys to webtoon-style illustrations
+// in /webtoons/. Keep all path strings here so design output and runtime
+// resolution stay in sync — Claude Design references the same URLs verbatim.
 
 const SHELLS = [
   "campus_romance",
@@ -32,7 +16,6 @@ const SHELLS = [
   "palace_drama",
 ] as const
 type Shell = (typeof SHELLS)[number]
-type StoryCoverProfile = "cozy_comedy" | "fantasy_sci_fi" | "high_drama_social" | "neutral"
 
 // Each shell has five variants now; pick is deterministic by template_id hash
 // so the same template always shows the same cover, but two templates of the
@@ -160,97 +143,6 @@ const THEME_TO_SHELL: Record<string, Shell> = {
   mystery: "urban_supernatural",
 }
 
-const STORY_COVER_BY_PROFILE: Record<StoryCoverProfile, string> = {
-  cozy_comedy: "/illustrations/story-cover-cozy-comedy.svg",
-  fantasy_sci_fi: "/illustrations/story-cover-fantasy-sci-fi.svg",
-  high_drama_social: "/illustrations/story-cover-high-drama-social.svg",
-  neutral: "/illustrations/story-cover-neutral.svg",
-}
-
-const TENSION_PROFILE_TO_COVER: Record<string, StoryCoverProfile> = {
-  comedy: "cozy_comedy",
-  cozy_mystery: "cozy_comedy",
-  fantasy_sci_fi: "fantasy_sci_fi",
-  high_drama: "high_drama_social",
-  family_social: "high_drama_social",
-}
-
-const COVER_PROFILE_KEYWORDS: Record<StoryCoverProfile, readonly string[]> = {
-  fantasy_sci_fi: [
-    "mars", "colony", "oxygen", "space", "planet", "alien", "sci-fi", "sci fi",
-    "science fiction", "dragon", "spell", "magic", "magical", "library", "eclipse",
-    "wizard", "apprentice", "artifact", "technical", "faction", "clan",
-    "火星", "殖民", "氧气", "太空", "星球", "龙", "魔法", "图书馆", "日食",
-  ],
-  cozy_comedy: [
-    "cozy", "comedy", "comic", "funny", "bake sale", "cupcake", "talent show",
-    "theatre", "theater", "misunderstanding", "callback", "embarrass", "playful",
-    "low stakes", "gentle", "neighborhood", "volunteer", "fun",
-    "喜剧", "搞笑", "温馨", "轻松", "误会", "才艺", "烘焙", "纸杯蛋糕",
-  ],
-  high_drama_social: [
-    "board", "vote", "cfo", "founder", "union", "investor", "chair", "company",
-    "office", "inheritance", "estate", "will", "scandal", "press", "trial",
-    "courtroom", "deadline", "public pressure", "family dinner", "conflict",
-    "董事", "投票", "创始", "工会", "投资", "公司", "遗产", "丑闻", "法庭",
-  ],
-  neutral: [],
-}
-
-const STRONG_SCI_FI_SETTING_KEYWORDS = [
-  "mars", "colony", "oxygen", "space", "sci-fi", "sci fi", "science fiction",
-  "planet", "alien", "orbital", "station", "space station", "airlock",
-  "hydroponic", "hydroponics", "faction",
-  "火星", "殖民", "氧气", "太空", "星球", "轨道", "空间站", "气闸", "水培",
-  "阵营", "派系",
-] as const
-
-function hasStrongSciFiSetting(corpus: string): boolean {
-  return STRONG_SCI_FI_SETTING_KEYWORDS.some((keyword) => corpus.includes(keyword))
-}
-
-function storyCoverFromProfile(profile: StoryCoverProfile): string {
-  return STORY_COVER_BY_PROFILE[profile]
-}
-
-function generatedCoverFromProfile(profile: StoryCoverProfile, corpus = ""): string {
-  const lower = corpus.toLowerCase()
-  if (hasStrongSciFiSetting(lower)) {
-    return GENERATED_ASSETS.coverSciFiMars
-  }
-  if (profile === "cozy_comedy") return GENERATED_ASSETS.coverCozy
-  if (profile === "fantasy_sci_fi") return GENERATED_ASSETS.coverFantasy
-  if (profile === "high_drama_social") return GENERATED_ASSETS.coverHighDrama
-  return GENERATED_ASSETS.coverNeutral
-}
-
-export function resolveGeneratedCoverForText(corpus: string, explicitProfile?: string | null): string {
-  const profile = inferCoverProfileFromText(corpus, explicitProfile)
-  return generatedCoverFromProfile(profile, corpus)
-}
-
-function countKeywordHits(corpus: string, keywords: readonly string[]): number {
-  return keywords.reduce((total, keyword) => total + (corpus.includes(keyword) ? 1 : 0), 0)
-}
-
-function inferCoverProfileFromText(corpus: string, explicitProfile?: string | null): StoryCoverProfile {
-  const lower = corpus.toLowerCase()
-  if (hasStrongSciFiSetting(lower)) return "fantasy_sci_fi"
-
-  const explicit = explicitProfile ? TENSION_PROFILE_TO_COVER[explicitProfile] : undefined
-  if (explicit) return explicit
-
-  const hits = {
-    fantasy_sci_fi: countKeywordHits(lower, COVER_PROFILE_KEYWORDS.fantasy_sci_fi),
-    cozy_comedy: countKeywordHits(lower, COVER_PROFILE_KEYWORDS.cozy_comedy),
-    high_drama_social: countKeywordHits(lower, COVER_PROFILE_KEYWORDS.high_drama_social),
-  }
-  if (hits.fantasy_sci_fi > 0 && hits.fantasy_sci_fi >= hits.cozy_comedy) return "fantasy_sci_fi"
-  if (hits.cozy_comedy > 0) return "cozy_comedy"
-  if (hits.high_drama_social > 0) return "high_drama_social"
-  return "neutral"
-}
-
 function stableHash(input: string): number {
   let h = 5381
   for (let i = 0; i < input.length; i += 1) {
@@ -288,8 +180,9 @@ function shellVariantSlug(shell: Shell, key: string): string {
 
 /** Cover image for a world card / story drawer / world detail hero. */
 export function getCoverByStoryId(storyId: string, theme?: string | null): string {
-  const corpus = `${theme ?? ""} ${storyId}`
-  return resolveGeneratedCoverForText(corpus, theme)
+  const themed = theme ? THEME_TO_SHELL[theme] : undefined
+  const shell = themed ?? pick(SHELLS, storyId)
+  return `/webtoons/shells/${shellVariantSlug(shell, storyId)}.jpg`
 }
 
 // ───────── portraits ─────────
@@ -316,33 +209,29 @@ export function getDefaultAvatar(gender?: "female" | "male"): string {
 
 /** Background art for the play stage, picked by the current beat phase. */
 export function getSceneByPhase(phase: string | null | undefined, key = "default"): string {
-  void key
-  if (phase === "pressure") return GENERATED_ASSETS.coverHighDrama
-  if (phase === "reversal") return GENERATED_ASSETS.objectCardSheet
-  if (phase === "reveal") return GENERATED_ASSETS.reviewerEvidence
-  if (phase === "terminal") return GENERATED_ASSETS.endingReflection
-  return GENERATED_ASSETS.coverNeutral
+  const slug = (SEGMENT_PHASES.find((p) => p === phase) ?? "opening") as SegmentPhase
+  return `/webtoons/segments/${pick(SEGMENT_PHASE_POOLS[slug], `segment|${slug}|${key}`)}.jpg`
 }
 
 // ───────── endings ─────────
 
 /** Ending artwork. Hash by ending_id so each ending always uses the same canvas. */
 export function getEndingArtwork(endingId: string | null | undefined): string {
-  void endingId
-  return GENERATED_ASSETS.endingReflection
+  const key = endingId ?? "default"
+  return `/webtoons/endings/${pick(ENDING_VARIANTS, key)}.jpg`
 }
 
 // ───────── page-level backgrounds ─────────
 
 export const PAGE_BG = {
-  splash: GENERATED_ASSETS.coverNeutral,
-  home: GENERATED_ASSETS.coverNeutral,
-  create: GENERATED_ASSETS.advisorNotebook,
-  generating: GENERATED_ASSETS.objectCardSheet,
-  login: GENERATED_ASSETS.reviewerEvidence,
+  splash: "/webtoons/ui/splash.jpg",
+  home: "/webtoons/ui/library_bg.jpg",
+  create: "/webtoons/ui/create_bg.jpg",
+  generating: "/webtoons/ui/loading_bg.jpg",
+  login: "/webtoons/ui/auth_bg.jpg",
 } as const
 
-export const LOGO_URL = GENERATED_ASSETS.objectCardSheet
+export const LOGO_URL = "/webtoons/ui/logo.png"
 
 // ───────── peak narration close-ups ─────────
 // 13 cinematic close-up images used as full-bleed banners on "peak"
@@ -370,19 +259,15 @@ const PEAK_CLOSEUPS = [
 // ───────── catalog (handy for design review / debugging) ─────────
 
 export const ASSET_CATALOG = {
-  generated: Object.values(GENERATED_ASSETS),
-  storyCovers: Object.values(STORY_COVER_BY_PROFILE),
-  legacyWebtoonsRetained: {
-    shells: SHELLS.flatMap((s) => shellVariantSlugs(s).map((slug) => `/webtoons/shells/${slug}.jpg`)),
-    avatars: {
-      female: AVATAR_FEMALE.map((s) => `/webtoons/avatars/${s}.jpg`),
-      male: AVATAR_MALE.map((s) => `/webtoons/avatars/${s}.jpg`),
-    },
-    advisors: ADVISOR_AVATARS.map((s) => `/webtoons/advisors/${s}.jpg`),
-    segments: segmentSlugs().map((s) => `/webtoons/segments/${s}.jpg`),
-    endings: ENDING_VARIANTS.map((s) => `/webtoons/endings/${s}.jpg`),
-    peaks: PEAK_CLOSEUPS.map((s) => `/webtoons/peaks/${s}.jpg`),
+  shells: SHELLS.flatMap((s) => shellVariantSlugs(s).map((slug) => `/webtoons/shells/${slug}.jpg`)),
+  avatars: {
+    female: AVATAR_FEMALE.map((s) => `/webtoons/avatars/${s}.jpg`),
+    male: AVATAR_MALE.map((s) => `/webtoons/avatars/${s}.jpg`),
   },
+  advisors: ADVISOR_AVATARS.map((s) => `/webtoons/advisors/${s}.jpg`),
+  segments: segmentSlugs().map((s) => `/webtoons/segments/${s}.jpg`),
+  endings: ENDING_VARIANTS.map((s) => `/webtoons/endings/${s}.jpg`),
+  peaks: PEAK_CLOSEUPS.map((s) => `/webtoons/peaks/${s}.jpg`),
 } as const
 
 // ───────── narrative (template/session) helpers ─────────
@@ -396,11 +281,6 @@ type LooseTemplate = {
   seed: string
   title?: string
   cast: LooseCast[]
-  story_brief?: {
-    tension_profile?: string | null
-    genre_tone?: string | null
-    story_kernel?: string | null
-  } | null
 }
 
 const SHELL_KEYWORDS: Record<Shell, readonly string[]> = {
@@ -501,20 +381,11 @@ function inferGender(role: string, relation: string): "female" | "male" {
   return stableHash(`${role}|${relation}`) % 2 === 0 ? "female" : "male"
 }
 
-/** Cover for a template card / hero.
- * Curated SVG panels are intentionally text-free and broad enough for live
- * generated premises, avoiding old text-heavy JPG covers that could expose
- * unrelated language or mismatched story cues.
- */
+/** Cover for a template card / hero. Uses variant -01/-02 deterministically
+ *  per template so two templates of the same shell get different visuals. */
 export function getCoverForTemplate(template: LooseTemplate): string {
-  const corpus = [
-    template.seed,
-    template.title ?? "",
-    template.story_brief?.genre_tone ?? "",
-    template.story_brief?.story_kernel ?? "",
-    template.cast.map((c) => `${c.display_name} ${c.role} ${c.relation_to_protagonist}`).join(" "),
-  ].join(" ")
-  return resolveGeneratedCoverForText(corpus, template.story_brief?.tension_profile)
+  const shell = inferShell(template)
+  return `/webtoons/shells/${shellVariantSlug(shell, template.template_id)}.jpg`
 }
 
 /** Stable per-character avatar within a template. */
@@ -537,42 +408,65 @@ export function getAdvisorAvatar(templateId: string, _persona: string): string {
 }
 
 // ───────── ending illustrations ─────────
-// One safe reflection canvas replaces the old dark ending set for demo
-// screenshots. Ending-specific illustration batches are deferred.
+// Each backend ENDING_LABELS entry maps to a Codex-generated v2 illustration
+// at /webtoons/endings/v2/{slug}.jpg. The mapping is deliberate (not random)
+// so the same label always shows the same image — the visual symbolism of
+// the ending is part of the shareable identity.
+
+const ENDING_LABEL_TO_SLUG: Record<string, string> = {
+  孤狼: "loner",
+  共谋: "conspiracy",
+  复仇: "vengeance",
+  和解: "reconciliation",
+  牺牲: "sacrifice",
+  自由: "liberation",
+  沉沦: "fallen",
+  救赎: "redemption",
+  失控: "unraveling",
+  反噬: "backfire",
+  同谋: "ally",
+  决裂: "severance",
+  回归: "return",
+  破碎: "broken",
+  夺回: "reclaim",
+}
+
+/** Illustration for an ending label. Falls back to 'unraveling' for any
+ *  label not in the table (which would be a bug — backend snaps off-pool
+ *  labels to '失控' anyway). */
 export function getEndingIllustration(label: string | null | undefined): string {
-  void label
-  return GENERATED_ASSETS.endingReflection
+  if (!label) return "/webtoons/endings/v2/unraveling.jpg"
+  const slug = ENDING_LABEL_TO_SLUG[label] ?? "unraveling"
+  return `/webtoons/endings/v2/${slug}.jpg`
 }
 
 // ───────── tier splash banners ─────────
-// Legacy tier-specific JPG overlays are disabled for the P0 demo-safe pass.
-// The common generated ending canvas now carries the closing visual.
+// Victory / compromised / collapsed splashes layer over the ending
+// illustration to amplify the emotional beat of the closing screen.
+// All three tiers now have their own splash so the trio feels intentional.
 
 export function getTierSplash(
   tier: "victory" | "compromised" | "collapsed" | null | undefined,
 ): string | null {
-  void tier
+  if (tier === "victory") return "/webtoons/splashes/victory.jpg"
+  if (tier === "collapsed") return "/webtoons/splashes/game_over.jpg"
+  if (tier === "compromised") return "/webtoons/splashes/compromised.jpg"
   return null
 }
 
 // ───────── empty state ─────────
 
 export function getEmptyPlazaImage(): string {
-  return GENERATED_ASSETS.emptyPlaza
+  return "/webtoons/empty/plaza.jpg"
 }
 
 export function getPeakCloseUp(messageOrd: number): string {
-  const generatedPeakPool = [
-    GENERATED_ASSETS.objectCardSheet,
-    GENERATED_ASSETS.reviewerEvidence,
-    GENERATED_ASSETS.coverHighDrama,
-    GENERATED_ASSETS.endingReflection,
-  ] as const
-  return pick(generatedPeakPool, `generated-peak|${messageOrd}`)
+  const slug = pick(PEAK_CLOSEUPS, `peak|${messageOrd}`)
+  return `/webtoons/peaks/${slug}.jpg`
 }
 
 // ───────── advisor oracle vignette ─────────
 // Single atmospheric texture layered behind oracle reply bubbles to
 // make the "I paid a turn for this" moment feel ritualistic.
 
-export const ORACLE_VIGNETTE = GENERATED_ASSETS.advisorNotebook
+export const ORACLE_VIGNETTE = "/webtoons/oracle/vignette.jpg"

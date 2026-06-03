@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "check": "tsc --noEmit",
-    "check:cover-routing": "node scripts/assert-cover-routing.mjs"
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "motion": "^12.38.0",
