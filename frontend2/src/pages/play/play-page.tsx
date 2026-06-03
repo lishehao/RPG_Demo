@@ -15,6 +15,7 @@ import type {
 } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
 import { useAuth } from "../../app/auth-context"
+import { EmptyState } from "../../shared/ui/empty-state"
 import { LoadingShim } from "../../shared/ui/loading-shim"
 import { Truncated } from "../../shared/ui/truncated"
 import { useBookmarks } from "../../shared/lib/bookmarks"
@@ -368,7 +369,15 @@ export function PlayPage({
       <div style={ppStyles.page}>
         <Header onBackHome={onBackHome} title="" />
         {error ? (
-          <div style={ppStyles.centerNote}>{t("play.load_failed", { error })}</div>
+          <EmptyState
+            title={t("play.error_title")}
+            hint={error}
+            action={
+              <button style={ppStyles.emptyPrimaryAction} type="button" onClick={onBackHome}>
+                {t("play.error_back_home")}
+              </button>
+            }
+          />
         ) : (
           <LoadingShim label={t("play.loading_story")} />
         )}
@@ -4706,6 +4715,19 @@ const ppStyles: Record<string, CSSProperties> = {
     justifyContent: "center",
     color: "var(--text-muted)",
     fontSize: 14,
+  },
+  emptyPrimaryAction: {
+    width: "fit-content",
+    padding: "8px 0 7px",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.42)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,172,0.96)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 850,
   },
 
   header: {
