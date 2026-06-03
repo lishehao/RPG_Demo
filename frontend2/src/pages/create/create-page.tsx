@@ -239,16 +239,27 @@ export function CreatePage({
     if (typeof navigator === "undefined") return "Ctrl"
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
   }, [])
-  const busyLabel =
-    busyElapsedSeconds >= 18
-      ? t("create.building_checking_elapsed", { seconds: busyElapsedSeconds })
+  const busyPhase = busyElapsedSeconds >= 36
+    ? "reliable"
+    : busyElapsedSeconds >= 18
+      ? "checking"
       : busyElapsedSeconds > 0
-      ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
-      : t("create.building_label")
-  const busyStageIndex = Math.min(
-    BUSY_STAGE_KEYS.length - 1,
-    Math.max(0, Math.floor(busyElapsedSeconds / 3)),
-  )
+        ? "drafting"
+        : "starting"
+  const busyLabel = busyPhase === "reliable"
+    ? t("create.building_reliable_elapsed", { seconds: busyElapsedSeconds })
+    : busyPhase === "checking"
+      ? t("create.building_checking_elapsed", { seconds: busyElapsedSeconds })
+      : busyPhase === "drafting"
+        ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
+        : t("create.building_label")
+  const busyStageIndex = busyElapsedSeconds >= 48
+    ? 3
+    : busyElapsedSeconds >= 36
+      ? 2
+      : busyElapsedSeconds >= 18
+        ? 1
+        : 0
   const primaryCtaLabel = busy
     ? t("create.cta_busy")
     : briefBusy
@@ -753,9 +764,9 @@ const BUSY_TIP_KEYS: StringKey[] = [
 ]
 
 const BUSY_STAGE_KEYS: StringKey[] = [
-  "create.busy_stage_cast",
-  "create.busy_stage_leverage",
-  "create.busy_stage_opening",
+  "create.busy_stage_drafting",
+  "create.busy_stage_checking",
+  "create.busy_stage_reliable",
   "create.busy_stage_ready",
 ]
 

@@ -323,9 +323,13 @@ def test_create_template_uses_reliable_opening_first_for_heavy_mars_brief(
     assert "Theatre Club" in response.opening.content
     assert "Earth Media" in response.opening.content
     assert "backup oxygen tank" not in response.opening.content
-    assert "At Mars colony, the talent show" in response.opening.content
+    assert "At the Mars colony talent show" in response.opening.content
+    assert "oxygen rumor" in response.opening.content
+    assert "callback" in response.opening.content
     assert "crowd the first decision" not in response.opening.content
     assert "talent show, Mars colony is already underway" not in response.opening.content
+    assert "visible mistake" not in response.opening.content
+    assert "cleaner way to talk" not in response.opening.content
     visible_text = " ".join(
         [
             response.template.title,
@@ -458,7 +462,11 @@ def test_create_template_uses_brief_fallback_after_opening_parse_failure(
     assert response.story_brief_consistency.status == "pass"
     assert "已经" not in response.opening.content
     assert "eclipse" in response.opening.content.lower()
-    assert "shy apprentice spellbook" in response.opening.content
+    assert "floating dragon library" in response.opening.content
+    assert "shy apprentice spellbook" in response.opening.content.lower()
+    assert "missing star map" in response.opening.content
+    assert "library setting" not in response.opening.content
+    assert "visible mistake" not in response.opening.content
     assert response.session.session_id
 
 
@@ -490,8 +498,12 @@ def test_create_template_cozy_fit_prompt_can_fallback_to_playable_opening(
 
     assert response.story_brief_consistency is not None
     assert response.story_brief_consistency.status == "pass"
+    assert "At the neighborhood bake sale" in response.opening.content
     assert "PTA treasurer" in response.opening.content
     assert "cupcake judge" in response.opening.content
+    assert "missing recipe card" in response.opening.content
+    assert "visible mistake" not in response.opening.content
+    assert "cleaner way to talk" not in response.opening.content
     assert response.opening.options
     assert response.session.session_id
 

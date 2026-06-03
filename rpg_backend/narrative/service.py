@@ -4,6 +4,7 @@ import secrets
 import re
 from concurrent.futures import ThreadPoolExecutor
 
+from rpg_backend.author.normalize import normalize_whitespace
 from rpg_backend.config import Settings, get_settings
 from rpg_backend.narrative.contracts import (
     AdvanceTurnRequest,
@@ -1440,50 +1441,207 @@ def _fallback_opening_passage(
     background_names: list[str],
     pressure_labels: list[str],
 ) -> str:
-    cast_text = ", ".join(cast_names)
-    scene_setup = _fallback_scene_setup(pressure_labels)
-    background_text = _fallback_background_sentence(background_names)
-    profile_clause = _fallback_profile_clause(brief)
+    cast_text = _fallback_names_text(cast_names)
+    seed = brief.original_seed
+    scene = _fallback_scene_label(brief, pressure_labels)
+    contested = _fallback_contested_object(seed)
+    secondary_event = _fallback_secondary_event_clause(pressure_labels, scene)
+    background_text = _fallback_background_sentence(background_names, brief=brief)
+    profile_clause = _fallback_profile_clause(brief, contested=contested)
+    first_move = _fallback_first_move_clause(brief)
+    if _fallback_uses_fantasy_scene(brief):
+        return (
+            f"In {scene}, {_fallback_contested_status(contested)} just as {_fallback_event_phrase(pressure_labels)} starts to matter{secondary_event}. "
+            f"{cast_text} argue over what the world-rule means now.{background_text} "
+            f"{profile_clause} {first_move}"
+        )
+    if brief.tension_profile in {"comedy", "cozy_mystery"}:
+        return (
+            f"At {scene}, {cast_text} are gathered around the {contested} while the room is still deciding "
+            f"whether this is a mix-up, a performance note, or a public embarrassment{secondary_event}.{background_text} "
+            f"{profile_clause} {first_move}"
+        )
     return (
-        f"{scene_setup} {cast_text} cluster around the visible mistake, each trying to explain it before someone else "
-        f"turns the room their way.{background_text} {profile_clause} "
-        f"Your first move can give the room a cleaner way to talk before the loudest version hardens."
+        f"At {scene}, {cast_text} are already circling the {contested}, each trying to make the first public account stick{secondary_event}."
+        f"{background_text} {profile_clause} {first_move}"
     )
 
 
-def _fallback_scene_setup(pressure_labels: list[str]) -> str:
-    setting_labels = [
+def _fallback_scene_label(brief: StoryBrief, pressure_labels: list[str]) -> str:
+    seed = brief.original_seed.lower()
+    event = _fallback_event_label(pressure_labels)
+    setting = _fallback_setting_label(brief, pressure_labels)
+    if "mars" in seed and event and "talent show" in event.lower():
+        return "the Mars colony talent show"
+    if "bake sale" in seed:
+        return "the neighborhood bake sale" if "neighborhood" in seed else "the bake sale"
+    if "floating dragon library" in seed:
+        return "the floating dragon library"
+    if "library" in seed:
+        return "the library"
+    if setting and event and setting.lower() not in event.lower():
+        return f"the {setting} {event}"
+    if event:
+        return f"the {event}"
+    if setting:
+        return f"the {setting}"
+    return "the public room"
+
+
+def _fallback_setting_label(brief: StoryBrief, pressure_labels: list[str]) -> str:
+    labels = [
         label
-        for label in pressure_labels
+        for label in [*[item.label for item in brief.world_setting_pressure], *pressure_labels]
         if any(token in label.lower() for token in ("mars", "colony", "library", "school", "sale", "setting"))
     ]
-    event_labels = [label for label in pressure_labels if label not in setting_labels]
-    setting = setting_labels[0] if setting_labels else ""
-    event = event_labels[0] if event_labels else "the public moment"
-    extra_event = f", with the {event_labels[1]} close enough to matter" if len(event_labels) > 1 else ""
-    if setting and event:
-        return f"At {setting}, the {event} has already gone sideways{extra_event}."
+    if not labels:
+        return ""
+    label = labels[0]
+    if label.lower() == "library setting":
+        return "library"
+    return label
+
+
+def _fallback_event_label(pressure_labels: list[str]) -> str:
+    setting_terms = ("mars", "colony", "library", "school", "setting")
+    for label in pressure_labels:
+        lower = label.lower()
+        if not any(token in lower for token in setting_terms):
+            return label
+    return ""
+
+
+def _fallback_event_phrase(pressure_labels: list[str]) -> str:
+    event = _fallback_event_label(pressure_labels)
     if event:
-        return f"The {event} has already gone sideways{extra_event}."
-    return "The room has already found the mistake everyone wants to explain."
+        return f"the {event}"
+    return "the deadline"
 
 
-def _fallback_background_sentence(background_names: list[str]) -> str:
+def _fallback_secondary_event_clause(pressure_labels: list[str], scene: str) -> str:
+    scene_lower = scene.lower()
+    primary = _fallback_event_label(pressure_labels).lower()
+    setting_terms = ("mars", "colony", "library", "school", "sale", "setting")
+    for label in pressure_labels:
+        lower = label.lower()
+        if any(token in lower for token in setting_terms):
+            continue
+        if lower and lower not in scene_lower and lower != primary:
+            return f" before the {label}"
+    return ""
+
+
+def _fallback_contested_object(seed: str) -> str:
+    lower = seed.lower()
+    if "recipe card" in lower:
+        return "missing recipe card"
+    if "star map" in lower:
+        return "missing star map"
+    if "stealing oxygen" in lower or "stolen oxygen" in lower:
+        return "oxygen rumor"
+    if "missing cupcake" in lower:
+        return "missing cupcake"
+    if "prop" in lower:
+        return "shared prop"
+    phrase_patterns = [
+        r"\bmissing\s+([a-z][a-z\s-]{2,60}?)(?:\s+before|\s+during|\s+at|\s+with|[,.!:;]|$)",
+        r"\bstolen\s+([a-z][a-z\s-]{2,60}?)(?:\s+before|\s+during|\s+at|\s+with|[,.!:;]|$)",
+        r"\bstealing\s+([a-z][a-z\s-]{2,60}?)(?:\s+before|\s+during|\s+at|\s+with|[,.!:;]|$)",
+        r"\bswapped\s+([a-z][a-z\s-]{2,60}?)(?:\s+before|\s+during|\s+at|\s+with|[,.!:;]|$)",
+        r"\bsame\s+([a-z][a-z\s-]{2,40}?)(?:\s+before|\s+during|\s+at|\s+with|[,.!:;]|$)",
+    ]
+    for pattern in phrase_patterns:
+        match = re.search(pattern, lower)
+        if match:
+            return _fallback_object_label(match.group(1))
+    if "oxygen" in lower:
+        return "oxygen rumor"
+    if "cupcake" in lower:
+        return "cupcake mix-up"
+    return "contested detail"
+
+
+def _fallback_object_label(value: str) -> str:
+    text = normalize_whitespace(value).strip(" -—:;,.!?")
+    stop_phrases = (
+        "with no",
+        "with lower",
+        "only misunderstandings",
+        "keep it",
+        "no violence",
+        "no blackmail",
+        "no betrayal",
+    )
+    lower = text.lower()
+    for stop in stop_phrases:
+        idx = lower.find(stop)
+        if idx > 0:
+            text = text[:idx].strip()
+            lower = text.lower()
+    words = text.split()
+    if len(words) > 6:
+        text = " ".join(words[:6])
+    if lower.startswith(("a ", "an ", "the ")):
+        return text
+    return text or "contested detail"
+
+
+def _fallback_contested_status(contested: str) -> str:
+    lower = contested.lower()
+    if lower.startswith("missing "):
+        return f"the {contested} is still unaccounted for"
+    if lower.endswith("rumor"):
+        return f"the {contested} is spreading"
+    return f"the {contested} has become the room's hinge"
+
+
+def _fallback_uses_fantasy_scene(brief: StoryBrief) -> bool:
+    lower = " ".join(
+        [
+            brief.original_seed,
+            brief.genre_tone,
+            brief.story_kernel,
+            *[item.label for item in brief.world_setting_pressure],
+        ]
+    ).lower()
+    return any(token in lower for token in ("fantasy", "dragon", "spell", "magic", "library", "eclipse", "star map"))
+
+
+def _fallback_background_sentence(background_names: list[str], *, brief: StoryBrief) -> str:
     if not background_names:
         return ""
-    visible = ", ".join(background_names[:5])
-    return f" {visible} hover close enough to object, react, or pull one missing detail back into view."
+    visible = _fallback_names_text(background_names[:5])
+    if brief.tension_profile == "comedy":
+        return f" {visible} stay close enough to react, heckle gently, or turn the next beat into a callback."
+    if _fallback_uses_fantasy_scene(brief):
+        return f" {visible} remain at the edge of the stacks, close enough for one old rule or faction claim to matter."
+    return f" {visible} stay close enough to object, react, or pull one missing detail back into view."
 
 
-def _fallback_profile_clause(brief: StoryBrief) -> str:
+def _fallback_names_text(names: list[str]) -> str:
+    if not names:
+        return ""
+    first, *rest = names
+    return ", ".join([_fallback_sentence_start(first), *rest])
+
+
+def _fallback_sentence_start(value: str) -> str:
+    text = value.strip()
+    if not text:
+        return text
+    return text[0].upper() + text[1:] if text[0].islower() else text
+
+
+def _fallback_profile_clause(brief: StoryBrief, *, contested: str) -> str:
     if brief.tension_profile == "comedy":
         return (
-            "The trouble stays social: timing, embarrassment, missing props, and the joke that will either save the room "
-            "or make everyone look worse."
+            f"The trouble stays social: timing, embarrassment, and whether the {contested} becomes a harmless callback "
+            "instead of a culprit hunt."
         )
     if brief.tension_profile == "cozy_mystery":
         return (
-            "The trouble stays gentle and concrete: clues, mixed signals, and a reveal that can repair trust instead of breaking it."
+            f"The trouble stays gentle and concrete: the {contested}, mixed signals, and a reveal that can repair trust "
+            "instead of breaking it."
         )
     if brief.tension_profile == "fantasy_sci_fi":
         return (
@@ -1492,6 +1650,16 @@ def _fallback_profile_clause(brief: StoryBrief) -> str:
     if brief.tension_profile == "family_social":
         return "Old loyalties and misread intentions press against the room, but the first choice can still steer toward repair."
     return "The first choice will turn hidden pressure into a public shift."
+
+
+def _fallback_first_move_clause(brief: StoryBrief) -> str:
+    if brief.tension_profile == "comedy":
+        return "Your first move can name a handoff, invite the quiet voice in, or set up the joke before blame takes over."
+    if brief.tension_profile == "cozy_mystery":
+        return "Your first move can follow a concrete clue, lower the room's worry, or give the nervous witness room to speak."
+    if _fallback_uses_fantasy_scene(brief):
+        return "Your first move can test the rule, ask the overlooked faction in, or inspect the artifact everyone is avoiding."
+    return "Your first move can bring in the quiet party before the loudest version hardens."
 
 
 def _fallback_opening_options(brief: StoryBrief) -> list[StoryOption]:
