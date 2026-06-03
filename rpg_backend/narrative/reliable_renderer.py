@@ -186,7 +186,12 @@ def _fallback_turn_passage(
     second = names[1] if len(names) > 1 else "the room"
     first_subject = _fallback_sentence_start(first)
     action = _fallback_turn_action_phrase(player_action)
-    after_action = _fallback_turn_after_phrase(action)
+    after_action = _fallback_turn_action_reference(
+        action,
+        profile=profile,
+        turn_index=agent_plan.turn_index,
+        template=template,
+    )
     stage_line = _fallback_turn_stage_line(agent_plan.director.stage_phase, profile)
     turn_variant = agent_plan.turn_index % 5
     object_label = _fallback_turn_object_label(template)
@@ -399,6 +404,66 @@ def _fallback_turn_after_phrase(action_phrase: str) -> str:
     if action_phrase.startswith("your move"):
         return "your move"
     return action_phrase
+
+
+def _fallback_turn_action_reference(
+    action_phrase: str,
+    *,
+    profile: str,
+    turn_index: int,
+    template: NarrativeTemplate,
+) -> str:
+    """Reference the player move without echoing the same option text forever."""
+    early_reference = _fallback_turn_after_phrase(action_phrase)
+    if turn_index <= 2:
+        return early_reference
+
+    object_label = _fallback_turn_object_label(template)
+    if profile == "fantasy_sci_fi":
+        variants = (
+            "the latest reading of the mark",
+            "the artifact check you kept in view",
+            "the quieter faction's answer",
+            "the eclipse-lit question",
+            f"the choice to hold the {object_label} where the room can read it",
+            "the newest rule the library revealed",
+        )
+    elif profile in {"cozy_mystery", "comedy"}:
+        if "mars" in template.seed.casefold():
+            variants = (
+                "the latest public check",
+                "the talent-show floor reset",
+                "the oxygen-rumor cue you kept visible",
+                "the choice to let another group answer",
+                "the audience-facing repair",
+                "the shared explanation you kept playful",
+            )
+        else:
+            variants = (
+                "the latest gentle check",
+                f"the small {object_label} detail you kept visible",
+                "the choice to give the quieter voice room",
+                "the calmer room reset",
+                "the practical clue everyone can verify",
+                "the shared laugh before blame could settle",
+            )
+    elif profile == "family_social":
+        variants = (
+            "the latest careful question",
+            "the room you gave someone to explain",
+            "the missing context you kept in view",
+            "the choice to protect repair before rupture",
+            "the quieter version of the old wound",
+        )
+    else:
+        variants = (
+            "the latest public move",
+            "the concrete fact you put in view",
+            "the question the room now has to answer",
+            "the choice to wait for the next stakeholder",
+            "the version of events you kept visible",
+        )
+    return variants[turn_index % len(variants)]
 
 
 def _fallback_turn_stage_line(stage_phase: str, profile: str) -> str:

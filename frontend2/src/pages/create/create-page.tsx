@@ -843,6 +843,7 @@ function StoryBriefCard({
   const omitted = brief.cast_plan.omitted_entities
   const decisions = brief.constraint_dispositions.slice(0, 8)
   const collapseSupportedDetails = canGenerate && !compact
+  const collapseNotFitDetails = brief.runtime_fit_status === "not_fit" && !compact
   const primaryCast = (
     <BriefEntityList
       label={t("create.brief_primary_cast")}
@@ -950,7 +951,7 @@ function StoryBriefCard({
         </>
       ) : (
         <>
-          {metaFields}
+          {collapseNotFitDetails ? null : metaFields}
           {collapseSupportedDetails ? (
             <>
               <div style={cpStyles.briefPrimaryCompact}>
@@ -962,6 +963,20 @@ function StoryBriefCard({
                 {planDetails}
                 {warningBlock}
                 {revisionActions}
+              </BriefDetailsDisclosure>
+            </>
+          ) : collapseNotFitDetails ? (
+            <>
+              <div style={cpStyles.briefPrimaryCompact}>
+                {primaryCast}
+              </div>
+              {warningBlock}
+              {revisionActions}
+              <BriefDetailsDisclosure label={t("create.brief_details_toggle")}>
+                {metaFields}
+                {secondaryCast}
+                {omittedCast}
+                {planDetails}
               </BriefDetailsDisclosure>
             </>
           ) : (
@@ -976,8 +991,8 @@ function StoryBriefCard({
           )}
         </>
       )}
-      {collapseSupportedDetails ? null : warningBlock}
-      {collapseSupportedDetails ? null : revisionActions}
+      {collapseSupportedDetails || collapseNotFitDetails ? null : warningBlock}
+      {collapseSupportedDetails || collapseNotFitDetails ? null : revisionActions}
       <div style={cpStyles.briefFooter}>
         <span>{canGenerate ? t("create.brief_footer_ready_hint") : brief.runtime_fit_rationale}</span>
         <strong>{canGenerate ? t("create.brief_footer_ready") : t("create.brief_revise_first")}</strong>

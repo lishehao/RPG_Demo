@@ -452,14 +452,15 @@ def test_mars_reliable_turns_vary_without_escalating_or_losing_background(
     contents = _advance_reliable_turn_contents(
         service,
         response.session.session_id,
-        count=4,
+        count=8,
     )
     visible_text = " ".join([response.opening.content, *contents]).casefold()
 
     assert "Theatre Club" in response.opening.content
     assert "Earth Media" in response.opening.content
-    assert len(set(contents)) >= 4
+    assert len(set(contents)) >= 8
     assert "oxygen rumor" in visible_text
+    assert visible_text.count("invite the overlooked group into the test") <= 3
     for residue in (
         "oxygen heist",
         "backup oxygen tank",
@@ -610,7 +611,7 @@ def test_fantasy_reliable_turns_avoid_comedy_residue_when_prompt_is_playful(
     contents = _advance_reliable_turn_contents(
         service,
         response.session.session_id,
-        count=5,
+        count=8,
     )
     latest_narrator = [
         m for m in repo.list_story_messages(response.session.session_id) if m.role == "narrator"
@@ -625,10 +626,11 @@ def test_fantasy_reliable_turns_avoid_comedy_residue_when_prompt_is_playful(
             *[option.hint or "" for option in latest_narrator.options],
         ]
     ).casefold()
-    assert len(set(contents)) >= 5
+    assert len(set(contents)) >= 8
     assert "eclipse-lit library" in visible_text
     assert "eclipse mark" in visible_text
     assert "star map" in visible_text
+    assert visible_text.count("ask what the eclipse changed in the stacks") <= 3
     for residue in (
         "timing trail",
         "table mistake",
@@ -810,14 +812,15 @@ def test_cozy_reliable_turns_remain_varied_over_long_session(
     contents = _advance_reliable_turn_contents(
         service,
         response.session.session_id,
-        count=6,
+        count=10,
     )
     visible_text = " ".join(contents).casefold()
     starters = {content.split(".", 1)[0] for content in contents}
 
-    assert len(set(contents)) >= 5
+    assert len(set(contents)) >= 10
     assert len(starters) >= 5
     assert visible_text.count("cupcake labels") >= 4
+    assert visible_text.count("let the shy witness describe the cupcake labels") <= 3
     assert "cupcake labels keeps" not in visible_text
     for residue in (
         "fallback",

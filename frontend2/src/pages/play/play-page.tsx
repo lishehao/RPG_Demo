@@ -443,6 +443,31 @@ export function PlayPage({
       />
     )
   }
+  const renderEarlierTurnRow = (m: NarrativeStoryMessage, idx: number) => {
+    let rowLabel = m.role === "player" ? t("play.earlier_turn_player") : t("play.earlier_turn_narrator", { ord: m.ord })
+    let rowText = m.content
+    if (m.role === "player" && idx > 0) {
+      const prev = story.messages[idx - 1]
+      if (
+        prev?.role === "narrator" &&
+        prev.chosen_option_index != null &&
+        prev.options[prev.chosen_option_index]
+      ) {
+        const pickedOption = prev.options[prev.chosen_option_index]
+        const parsedPickedOption = parseOptionLabel(pickedOption.label)
+        rowLabel = parsedPickedOption.tag
+          ? t("play.earlier_turn_player_with_tag", { tag: parsedPickedOption.tag })
+          : t("play.earlier_turn_player")
+        rowText = parsedPickedOption.body || pickedOption.label
+      }
+    }
+    return (
+      <div key={`earlier-${m.role}-${m.ord}`} style={ppStyles.earlierTurnRow}>
+        <span style={ppStyles.earlierTurnRowLabel}>{rowLabel}</span>
+        <span style={ppStyles.earlierTurnRowText}>{truncateRecoveryText(rowText, 142)}</span>
+      </div>
+    )
+  }
 
   return (
     <div style={ppStyles.page}>
@@ -523,9 +548,19 @@ export function PlayPage({
                 <span style={ppStyles.earlierTurnsHint}>{t("play.earlier_turns_hint")}</span>
               </summary>
               <div style={ppStyles.earlierTurnsBody}>
-                {earlierMessages.map((m, idx) => renderStoryBeat(m, idx))}
+                {earlierMessages.map((m, idx) => renderEarlierTurnRow(m, idx))}
               </div>
             </details>
+          ) : null}
+
+          {shouldGroupEarlierTurns ? (
+            <div style={ppStyles.currentArcStrip}>
+              <span style={ppStyles.currentArcLabel}>{t("play.current_arc_label")}</span>
+              <strong style={ppStyles.currentArcTitle}>{t("play.current_arc_title")}</strong>
+              <span style={ppStyles.currentArcText}>
+                {t("play.current_arc_detail", { count: visibleMessages.length })}
+              </span>
+            </div>
           ) : null}
 
           {visibleMessages.map((m, localIdx) =>
@@ -5722,9 +5757,63 @@ const ppStyles: Record<string, CSSProperties> = {
     textAlign: "right" as const,
   },
   earlierTurnsBody: {
-    marginTop: 14,
-    paddingTop: 14,
+    marginTop: 12,
+    paddingTop: 10,
     borderTop: "1px solid rgba(236,204,152,0.12)",
+    display: "grid",
+    gap: 6,
+  },
+  earlierTurnRow: {
+    minWidth: 0,
+    display: "grid",
+    gridTemplateColumns: "86px minmax(0, 1fr)",
+    alignItems: "baseline",
+    gap: 10,
+    padding: "6px 0",
+    borderBottom: "1px solid rgba(236,204,152,0.075)",
+  },
+  earlierTurnRowLabel: {
+    color: "rgba(208,138,79,0.78)",
+    fontSize: 10.8,
+    lineHeight: 1.25,
+    fontWeight: 820,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  },
+  earlierTurnRowText: {
+    minWidth: 0,
+    color: "var(--text-muted)",
+    fontSize: 12,
+    lineHeight: 1.36,
+  },
+  currentArcStrip: {
+    marginTop: -3,
+    marginBottom: 14,
+    padding: "10px 13px",
+    display: "grid",
+    gap: 3,
+    border: "1px solid rgba(236,204,152,0.14)",
+    borderLeft: "2px solid rgba(148,164,109,0.42)",
+    borderRadius: 3,
+    background: "rgba(255,255,255,0.032)",
+  },
+  currentArcLabel: {
+    color: "rgba(148,164,109,0.88)",
+    fontSize: 10.5,
+    lineHeight: 1.15,
+    fontWeight: 840,
+  },
+  currentArcTitle: {
+    color: "var(--text)",
+    fontSize: 13.5,
+    lineHeight: 1.2,
+    fontWeight: 820,
+  },
+  currentArcText: {
+    color: "var(--text-muted)",
+    fontSize: 12,
+    lineHeight: 1.35,
   },
 
   narratorBeat: {
