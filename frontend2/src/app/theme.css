@@ -1584,9 +1584,10 @@ kbd {
     width: fit-content !important;
     max-width: calc(100% - 48px) !important;
     margin: 8px 24px 34px auto !important;
-    padding: 0 !important;
+    padding: 6px 8px !important;
     justify-content: flex-end !important;
-    box-shadow: none !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.24) !important;
   }
   .advisor-fab__label {
     display: inline !important;
