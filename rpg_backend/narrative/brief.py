@@ -185,6 +185,8 @@ _NON_ENTITY_EXACT = {
     "no betrayal",
     "no public pressure",
     "no villains",
+    "no conflict",
+    "low conflict",
     "betrayal",
     "public pressure",
     "or public pressure",
@@ -388,7 +390,10 @@ def build_story_brief(
     clean_seed = " ".join(seed.strip().split())
     profile = desired_tension_profile or infer_tension_profile(clean_seed)
     title, kernel, intervention = _PROFILE_KERNELS[profile]
-    mentioned_entities = _extract_entities(clean_seed)
+    mentioned_entities = _dedupe_preserving_order([
+        *_extract_entities(clean_seed),
+        *_emphasized_entity_names(clean_seed),
+    ])
     cast_plan = _build_cast_plan(clean_seed, mentioned_entities, profile)
     warnings: list[str] = []
     revision_suggestions: list[str] = []
@@ -648,11 +653,20 @@ def _clean_entity(raw: str) -> str:
     text = re.sub(r"\([^)]*\)", "", raw).strip(" .!?\"'“”‘’")
     if ":" in text:
         prefix, suffix = text.rsplit(":", 1)
-        if re.search(r"\b(?:story|premise|scene|prompt|no villains?)\b", prefix, re.I):
+        if re.search(r"\b(?:story|premise|scene|prompt|no villains?|groups?|departments?|factions?|entities?)\b", prefix, re.I):
             text = suffix
     text = re.sub(r"^\s*no\s+villains?\s*:\s*", "", text, flags=re.I)
+    text = _ENTITY_LEADING_NOISE_RE.sub("", text)
     text = _LIST_MARKER_RE.sub("", text)
     text = _ENTITY_LEADING_NOISE_RE.sub("", text)
+    text = re.sub(r"\.\s*(?:also|each|keep|no|before|after|during)\b.*$", "", text, flags=re.I)
+    text = re.sub(
+        r"\s+\bas\b\s+(?:a\s+|an\s+|the\s+)?(?:visible\s+)?background\b.*$",
+        "",
+        text,
+        flags=re.I,
+    )
+    text = re.sub(r"\s+\bconcerns?\b\s*$", "", text, flags=re.I)
     text = re.sub(r"\b(the|a|an|one|with|featuring|including|departments?|factions?|cast)\b", "", text, flags=re.I)
     text = re.sub(r"^\s*(?:or|and)\s+", "", text, flags=re.I)
     text = _ENTITY_TRAILING_RE.sub("", text)
@@ -1079,7 +1093,7 @@ def _strip_entity_exclusion_segments(seed: str) -> str:
     text = re.sub(r"\bkeep it\b[^.!?;]*", "", text, flags=re.I)
     text = re.sub(r"\bmake it\b[^.!?;]*", "", text, flags=re.I)
     text = re.sub(
-        r"\bno\s+(?:public pressure|betrayal|blackmail|violence|villains?)\b",
+        r"\bno\s+(?:public pressure|betrayal|blackmail|violence|villains?|conflict)\b",
         "",
         text,
         flags=re.I,
@@ -1096,6 +1110,10 @@ def _canonical_entity_key(value: str) -> str:
 
 def _emphasized_entity_keys(seed: str, entities: list[str]) -> set[str]:
     keys = {_canonical_entity_key(name) for name in _emphasized_entity_names(seed)}
+    if re.search(r"\btalent\s+show\b", seed, re.I):
+        for entity in entities:
+            if re.search(r"\btheat(?:re|er)\s+club\b", entity, re.I):
+                keys.add(_canonical_entity_key(entity))
     for entity in entities:
         escaped = re.escape(entity)
         if len(re.findall(rf"\b{escaped}\b", seed, flags=re.I)) > 1:

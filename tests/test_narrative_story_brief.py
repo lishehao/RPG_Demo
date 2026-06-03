@@ -210,6 +210,33 @@ def test_story_brief_protects_emphasized_entities_under_ten_entity_cap() -> None
     assert "Hydroponics" in response.brief.premise_summary
 
 
+def test_story_brief_handles_colon_department_list_and_background_represent_clause() -> None:
+    seed = (
+        "On Mars colony, make a lower-stakes comedy talent show with ten departments: "
+        "Hydroponics, Oxygen, Security, Medical, Education, Waste Recycling, Transit, "
+        "Finance, Communications, and Theatre Club. Also represent Earth Media as a "
+        "visible background stakeholder before the final broadcast."
+    )
+
+    response = build_story_brief(seed=seed, language="en", desired_tension_profile="comedy")
+    names = _cast_names(response)
+    active_or_background = {
+        entity.display_name
+        for entity in [
+            *response.brief.cast_plan.primary_active_entities,
+            *response.brief.cast_plan.secondary_background_entities,
+        ]
+    }
+    omitted = {entity.display_name for entity in response.brief.cast_plan.omitted_entities}
+
+    assert "Hydroponics" in names
+    assert "ten Hydroponics" not in names
+    assert "Theatre Club. Also" not in names
+    assert "Theatre Club" in active_or_background
+    assert "Earth Media" in active_or_background
+    assert "Earth Media" not in omitted
+
+
 def test_story_brief_revision_guidance_does_not_become_cast() -> None:
     base = (
         "On Mars colony, a comedy talent show involves Engineering, Hydroponics, "
@@ -461,7 +488,7 @@ def test_story_brief_filters_exact_small_cast_no_public_pressure_fragments() -> 
     response = build_story_brief(
         seed=(
             "A quiet two-person laundromat story: one customer and one attendant "
-            "try to return a lost wedding ring, no villains, no public pressure, no betrayal."
+            "try to return a lost wedding ring, no villains, no public pressure, no conflict, no betrayal."
         ),
         language="en",
     )
@@ -474,6 +501,7 @@ def test_story_brief_filters_exact_small_cast_no_public_pressure_fragments() -> 
     assert {"customer", "attendant"}.issubset(names)
     assert "quiet two-person laundromat story: customer" not in names
     assert "no public pressure" not in names
+    assert "no conflict" not in names
     assert "betrayal" not in names
     assert "wedding ring" in constraints
     assert "ring" not in constraints

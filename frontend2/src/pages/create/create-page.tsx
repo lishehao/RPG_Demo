@@ -450,7 +450,6 @@ export function CreatePage({
             <StoryBriefCard
               brief={activeBriefResponse.brief}
               canGenerate={activeBriefResponse.can_generate}
-              nextStep={activeBriefResponse.next_step}
               compact={compactLayout}
               onApplyRevisionAction={handleApplyRevisionAction}
             />
@@ -830,13 +829,11 @@ function BusyTip() {
 function StoryBriefCard({
   brief,
   canGenerate,
-  nextStep,
   compact,
   onApplyRevisionAction,
 }: {
   brief: NarrativeStoryBrief
   canGenerate: boolean
-  nextStep: string
   compact: boolean
   onApplyRevisionAction: (seedAppend: string) => void
 }) {
@@ -898,6 +895,7 @@ function StoryBriefCard({
           {t(FIT_STATUS_LABEL_KEYS[brief.runtime_fit_status])}
         </span>
       </div>
+      <p style={cpStyles.briefIntro}>{t("create.brief_card_intro")}</p>
       <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
       {compact ? (
@@ -961,7 +959,7 @@ function StoryBriefCard({
       ) : null}
       <div style={cpStyles.briefFooter}>
         <span>{brief.runtime_fit_rationale}</span>
-        <strong>{canGenerate ? nextStep : t("create.brief_revise_first")}</strong>
+        <strong>{canGenerate ? t("create.brief_footer_ready") : t("create.brief_revise_first")}</strong>
       </div>
     </section>
   )
@@ -1592,6 +1590,16 @@ const cpStyles: Record<string, CSSProperties> = {
     lineHeight: 1.2,
     fontWeight: 780,
     whiteSpace: "nowrap" as const,
+  },
+  briefIntro: {
+    marginTop: 6,
+    marginRight: 0,
+    marginBottom: 6,
+    marginLeft: 0,
+    color: "rgba(49,36,22,0.82)",
+    fontSize: 13,
+    lineHeight: 1.45,
+    fontWeight: 720,
   },
   briefBetaNote: {
     color: "rgba(68,55,40,0.62)",
