@@ -336,6 +336,7 @@ export function getEndingArtwork(endingId: string | null | undefined): string {
 
 export const PAGE_BG = {
   splash: GENERATED_ASSETS.coverNeutral,
+  homeHero: "/illustrations/soft-east-asian/homepage-hero-desktop.webp",
   home: GENERATED_ASSETS.coverNeutral,
   create: GENERATED_ASSETS.advisorNotebook,
   generating: GENERATED_ASSETS.objectCardSheet,

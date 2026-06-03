@@ -92,12 +92,9 @@ export function HomePage({
       <Header onHome={() => {}} onCreate={onOpenCreate} createVariant="link" />
 
       <main style={{ ...hpStyles.main, ...(compactHome ? hpStyles.mainCompact : null) }}>
-        {/* Webtoon-cinematic hero — full-bleed splash background, text
-            left-aligned over a vertical fade. Style brief: like Naver
-            webtoon / Solo Leveling landing — single sustained scene
-            anchored by a serif title. Bullet list moved to a smaller
-            "how it works" rail under plaza so the hero stays as a
-            single dramatic beat. */}
+        {/* Soft East Asian art plate over the retained premium product
+            shell: full-bleed illustration, left-aligned text over dark
+            negative space, and no parchment UI treatment. */}
         <motion.section
           style={{ ...hpStyles.hero, ...(compactHome ? hpStyles.heroCompact : null) }}
           initial="initial"
@@ -643,7 +640,7 @@ const hpStyles: Record<string, CSSProperties> = {
     // without a hard seam. Horizontal gradient on the left so text
     // sits on solid darkness regardless of where the figures land
     // in the source painting.
-    backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.92) 0%, rgba(12,12,16,0.55) 38%, rgba(12,12,16,0.18) 70%, rgba(12,12,16,0) 100%), linear-gradient(180deg, rgba(12,12,16,0.05) 0%, rgba(12,12,16,0.45) 80%, var(--bg) 100%), url(${PAGE_BG.splash})`,
+    backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.92) 0%, rgba(12,12,16,0.55) 38%, rgba(12,12,16,0.18) 70%, rgba(12,12,16,0) 100%), linear-gradient(180deg, rgba(12,12,16,0.05) 0%, rgba(12,12,16,0.45) 80%, var(--bg) 100%), url(${PAGE_BG.homeHero})`,
     backgroundSize: "cover",
     backgroundPosition: "center 30%",
     color: "white",
@@ -654,8 +651,8 @@ const hpStyles: Record<string, CSSProperties> = {
   heroCompact: {
     minHeight: 392,
     marginBottom: 16,
-    backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.94) 0%, rgba(12,12,16,0.62) 48%, rgba(12,12,16,0.16) 100%), linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.38) 72%, var(--bg) 100%), url(${PAGE_BG.splash})`,
-    backgroundPosition: "center 33%",
+    backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.94) 0%, rgba(12,12,16,0.62) 48%, rgba(12,12,16,0.16) 100%), linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.38) 72%, var(--bg) 100%), url(${PAGE_BG.homeHero})`,
+    backgroundPosition: "center 36%",
     alignItems: "flex-end",
   },
   heroInner: {
