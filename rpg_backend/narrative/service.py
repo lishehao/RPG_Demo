@@ -64,6 +64,7 @@ from rpg_backend.narrative.gateway import (
 from rpg_backend.narrative.judges import judge_contract, judge_step
 from rpg_backend.narrative.reliable_renderer import (
     render_reliable_ending,
+    render_reliable_ending_highlights,
     render_reliable_opening,
     render_reliable_turn,
 )
@@ -775,7 +776,13 @@ class NarrativeService:
         # ~9s sequential to ~5s.
         highlights = []
         branches = []
-        if not used_reliable_ending:
+        if used_reliable_ending:
+            highlights = render_reliable_ending_highlights(
+                template=template,
+                history=full_history,
+                player_role=player_role,
+            )
+        else:
             with ThreadPoolExecutor(max_workers=2) as pool:
                 hl_future = pool.submit(
                     synthesize_highlights,

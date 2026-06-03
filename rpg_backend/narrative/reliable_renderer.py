@@ -7,6 +7,7 @@ from rpg_backend.narrative.contracts import (
     AgentPlan,
     CastMember,
     FailureCondition,
+    Highlight,
     NarrativeTemplate,
     NPCLeverageOverNPC,
     NPCPulse,
@@ -101,6 +102,7 @@ def render_reliable_ending(
     secondary = names[1] if len(names) > 1 else "the room"
     role_label = player_role.label if player_role else "your role"
     last_player_action = _fallback_last_player_action(history)
+    last_player_memory = _fallback_ending_action_memory(last_player_action)
     if template.language == "zh":
         return EndingResult(
             label="和解" if profile in {"cozy_mystery", "comedy"} else "夺回",
@@ -115,28 +117,29 @@ def render_reliable_ending(
     if profile in {"cozy_mystery", "comedy"}:
         return EndingResult(
             label="和解",
-            subtitle="I let the room repair itself.",
+            subtitle="The room keeps the kinder version.",
             passage=normalize_whitespace(
-                f"The {scene} lands softly instead of turning into a pile-on. "
-                f"As {role_label}, you keep the {object_label} visible long enough for {primary} "
-                f"and {secondary} to answer with something the room can check. The final move "
-                f"turns {last_player_action} into a shared callback: nobody has to be blamed for "
-                f"the scene to make sense. By turn {turn_count}, the pressure has not vanished, "
-                f"but it has become small enough for the group to laugh, repair, and remember "
-                f"what actually happened."
+                f"The {scene} settles around a version everyone can repeat without turning it "
+                f"into a pile-on. As {role_label}, you keep the {object_label} visible long "
+                f"enough for {primary} and {secondary} to answer with something the room can "
+                f"check. {last_player_memory} becomes the shared callback. Nobody has to be "
+                f"blamed for the scene to make sense; the clue, the witness, and the public "
+                f"reaction finally point in the same gentle direction. By turn {turn_count}, "
+                f"the pressure has not vanished, but it has become small enough for the group "
+                f"to laugh, repair, and remember what actually happened."
             ),
         )
     if profile == "fantasy_sci_fi":
         return EndingResult(
             label="夺回",
-            subtitle="I held the mark in the light.",
+            subtitle="The last sign holds.",
             passage=normalize_whitespace(
-                f"The {scene} closes around the {object_label} like a final page turning. "
-                f"As {role_label}, you keep the last sign where every faction can read it, and "
+                f"The {scene} closes around the {object_label} like a final page turning. As "
+                f"{role_label}, you keep the last sign where every faction can read it, and "
                 f"{primary} answers before {secondary} can fold the old rule back into shadow. "
-                f"The final move makes {last_player_action} part of the library's record. By "
-                f"turn {turn_count}, the eclipse has not solved every claim, but it has made "
-                f"one truth visible enough for the room to carry forward."
+                f"{last_player_memory} becomes part of the library's record. By turn "
+                f"{turn_count}, the eclipse has not solved every claim, but it has made one "
+                f"truth visible enough for the room to carry forward."
             ),
         )
     if profile == "family_social":
@@ -162,6 +165,66 @@ def render_reliable_ending(
             f"ends with a record the room can inspect instead of another hidden bargain."
         ),
     )
+
+
+def render_reliable_ending_highlights(
+    *,
+    template: NarrativeTemplate,
+    history: list[StoryMessage],
+    player_role: PlayerRole | None,
+) -> list[Highlight]:
+    """Deterministic highlight reel for reliable endings.
+
+    Live highlight synthesis is unavailable on the reliable no-gateway path.
+    These compact moments make the coda feel earned without fabricating
+    alternate branches or requiring a model call.
+    """
+    narrator_messages = [message for message in history if message.role == "narrator"]
+    if not narrator_messages:
+        return []
+    profile = infer_template_tension_profile(template)
+    object_label = _fallback_turn_object_label(template)
+    role_label = player_role.label if player_role else "the player role"
+    picks = _fallback_highlight_picks(narrator_messages)
+    if template.language == "zh":
+        rows = [
+            ("开局压力", f"{role_label}把{object_label}留在场内。"),
+            ("中段转向", "局面从扩散转向可验证的线索。"),
+            ("最终落点", "最后的选择让房间有了能复述的结论。"),
+        ]
+    elif profile in {"cozy_mystery", "comedy"}:
+        rows = [
+            ("Gentle clue", f"{role_label} kept the {object_label} public without raising the temperature."),
+            ("Room reset", "The run shifted from worry into a repairable shared account."),
+            ("Final repair", "The last beat gave the room a version it could repeat kindly."),
+        ]
+    elif profile == "fantasy_sci_fi":
+        rows = [
+            ("First sign", f"{role_label} kept the {object_label} tied to the world rule."),
+            ("Rule narrows", "The factions had to answer the visible mark instead of hiding behind claims."),
+            ("Final reading", "The ending made one truth clear enough for the library to carry forward."),
+        ]
+    else:
+        rows = [
+            ("Public pressure", f"{role_label} kept one concrete detail visible."),
+            ("Account shifts", "The room had to answer a more specific version of events."),
+            ("Final record", "The last beat left a public account the room could inspect."),
+        ]
+    highlights: list[Highlight] = []
+    used_ords: set[int] = set()
+    for message, (headline, why) in zip(picks, rows, strict=False):
+        if message.ord in used_ords:
+            continue
+        used_ords.add(message.ord)
+        highlights.append(
+            Highlight(
+                beat_ord=message.ord,
+                headline=headline,
+                body_excerpt=_fallback_highlight_excerpt(message.content),
+                why_pivotal=why,
+            )
+        )
+    return highlights
 
 
 def infer_template_tension_profile(template: NarrativeTemplate) -> str:
@@ -277,17 +340,53 @@ def _fallback_turn_passage(
         template=template,
     )
     stage_line = _fallback_turn_stage_line(agent_plan.director.stage_phase, profile)
-    turn_variant = agent_plan.turn_index % 5
     object_label = _fallback_turn_object_label(template)
+    arc_phase = _fallback_turn_arc_phase(agent_plan.turn_index, agent_plan.turn_budget)
+    arc_line = _fallback_turn_arc_line(
+        profile=profile,
+        arc_phase=arc_phase,
+        scene=scene,
+        object_label=object_label,
+        first=first,
+        second=second,
+        template=template,
+    )
+    turn_variant = agent_plan.turn_index % 5
     fantasy_rule = _fallback_fantasy_rule_label(template)
     fantasy_sign = _fallback_fantasy_sign_label(template, object_label)
     if profile in {"cozy_mystery", "comedy"}:
-        if turn_variant == 1:
+        if arc_phase == "coda":
+            text = (
+                f"The last choice closes the loop at the {scene}. {first_subject} "
+                f"{_fallback_verb(first, 'accepts', 'accept')} the practical reading of the {object_label}, and "
+                f"{second} {_fallback_verb(second, 'helps', 'help')} carry the kinder version back to the room. {arc_line}"
+            )
+        elif arc_phase == "finale":
+            text = (
+                f"By now, the {scene} has a shared record: the {object_label}, {first}, and {second} "
+                f"all point toward a harmless explanation. {first_subject} {_fallback_verb(first, 'names', 'name')} the detail without raising the temperature, "
+                f"and {second} {_fallback_verb(second, 'keeps', 'keep')} the room from turning it into another worry. "
+                f"{arc_line}"
+            )
+        elif arc_phase == "payoff":
+            text = (
+                f"The room no longer needs another search around the {object_label}. After {after_action}, "
+                f"{first_subject} {_fallback_verb(first, 'connects', 'connect')} the practical clue to the public reaction, while "
+                f"{second} {_fallback_verb(second, 'lets', 'let')} the softer version breathe. "
+                f"{arc_line}"
+            )
+        elif arc_phase == "turn":
+            text = (
+                f"The {scene} changes shape after {after_action}: the question is less about who caused the worry and more about "
+                f"which version everyone can check. {first_subject} {_fallback_verb(first, 'holds', 'hold')} onto the small useful fact, and "
+                f"{second} {_fallback_verb(second, 'answers', 'answer')} before the room can drift back into guessing. {arc_line}"
+            )
+        elif turn_variant == 1:
             text = (
                 f"After {after_action}, the {scene} pauses around the {object_label}. "
                 f"{first_subject} {_fallback_verb(first, 'points', 'point')} to a harmless cue, and "
                 f"{second} {_fallback_verb(second, 'keeps', 'keep')} the explanation light enough for repair. "
-                f"{stage_line} The next move can re-check the {object_label}, invite a quieter voice, or turn the shared confusion into a payoff."
+                f"{stage_line} {arc_line}"
             )
         elif turn_variant == 2:
             object_verb = _fallback_verb(object_label, "becomes", "become")
@@ -295,14 +394,14 @@ def _fallback_turn_passage(
                 f"The {object_label} {object_verb} easier to read after {after_action}. "
                 f"{first_subject} {_fallback_verb(first, 'softens', 'soften')} first, while {second} "
                 f"{_fallback_verb(second, 'notices', 'notice')} who is still hesitating. "
-                f"{stage_line} The next beat can compare versions gently or let the room laugh before blame settles."
+                f"{stage_line} {arc_line}"
             )
         elif turn_variant == 3:
             text = (
                 f"A calmer thread opens in the {scene} after {after_action}. "
                 f"{first_subject} {_fallback_verb(first, 'names', 'name')} what the {object_label} actually shows, and "
                 f"{second} {_fallback_verb(second, 'finds', 'find')} a way to answer without turning defensive. "
-                f"{stage_line} The next move can give the quiet party a clean line or make the shared mistake useful."
+                f"{stage_line} {arc_line}"
             )
         elif turn_variant == 4:
             anchor_verb = _fallback_verb(object_label, "keeps", "keep")
@@ -310,67 +409,163 @@ def _fallback_turn_passage(
                 f"The {object_label} {anchor_verb} everyone anchored after {after_action}. "
                 f"{first_subject} {_fallback_verb(first, 'checks', 'check')} the small practical detail, while {second} "
                 f"{_fallback_verb(second, 'reads', 'read')} whether the crowd is ready to smile instead of point fingers. "
-                f"{stage_line} The next beat can turn that practical clue into a public repair."
+                f"{stage_line} {arc_line}"
             )
         else:
             text = (
                 f"The {scene} resets around the {object_label} after {after_action}. {first_subject} {_fallback_verb(first, 'catches', 'catch')} the detail first, "
                 f"and {second} {_fallback_verb(second, 'leaves', 'leave')} room for a less dramatic explanation instead of "
-                f"turning the moment into a pile-on. {stage_line} The next beat can test "
-                f"the {object_label}, invite the quiet party in, or let the callback land before "
-                f"anyone chooses a version of events."
+                f"turning the moment into a pile-on. {stage_line} {arc_line}"
             )
     elif profile == "fantasy_sci_fi":
-        if turn_variant == 1:
+        if arc_phase == "coda":
+            text = (
+                f"The final sign holds in the {scene}. {first_subject} {_fallback_verb(first, 'keeps', 'keep')} the {object_label} "
+                f"under the {fantasy_sign}, and {second} {_fallback_verb(second, 'answers', 'answer')} before the old claim can vanish. {arc_line}"
+            )
+        elif arc_phase == "finale":
+            text = (
+                f"By now, the {scene} has narrowed to one readable sign. {first_subject} "
+                f"{_fallback_verb(first, 'sets', 'set')} the {object_label} where the {fantasy_sign} cannot be hidden, and "
+                f"{second} {_fallback_verb(second, 'answers', 'answer')} the old wording in front of the room. {arc_line}"
+            )
+        elif arc_phase == "payoff":
+            text = (
+                f"The {fantasy_sign} stops behaving like a mystery and starts acting like evidence after {after_action}. "
+                f"{first_subject} {_fallback_verb(first, 'reads', 'read')} the change against the shelves, while {second} "
+                f"{_fallback_verb(second, 'keeps', 'keep')} the faction claim from slipping back into shadow. {arc_line}"
+            )
+        elif arc_phase == "turn":
+            text = (
+                f"The {scene} shifts under the {fantasy_sign} after {after_action}. "
+                f"{first_subject} {_fallback_verb(first, 'finds', 'find')} the part of the {fantasy_rule} that still binds, and "
+                f"{second} {_fallback_verb(second, 'has', 'have')} to answer the artifact in public. {arc_line}"
+            )
+        elif turn_variant == 1:
             text = (
                 f"After {after_action}, the {object_label} draws the {scene} inward. "
                 f"{first_subject} {_fallback_verb(first, 'reads', 'read')} how the {fantasy_sign} changes the stacks, while {second} "
                 f"{_fallback_verb(second, 'tests', 'test')} which {fantasy_rule} still holds. "
-                f"{stage_line} The next beat can ask a quieter faction to interpret the eclipse mark."
+                f"{stage_line} {arc_line}"
             )
         elif turn_variant == 2:
             text = (
                 f"The {scene} gives back a clearer {fantasy_sign} after {after_action}. "
                 f"{first_subject} {_fallback_verb(first, 'moves', 'move')} toward the {object_label}, and {second} "
                 f"{_fallback_verb(second, 'tracks', 'track')} the faction claim behind it. "
-                f"{stage_line} The next beat can place the artifact under the eclipse light where every faction can answer."
+                f"{stage_line} {arc_line}"
             )
         elif turn_variant == 3:
             text = (
                 f"A new line of light crosses the {object_label} after {after_action}. "
                 f"{first_subject} {_fallback_verb(first, 'reads', 'read')} the {fantasy_sign} against the shelves, while {second} "
                 f"{_fallback_verb(second, 'listens', 'listen')} for which faction still knows the old wording. "
-                f"{stage_line} The next beat can let the library itself narrow the question."
+                f"{stage_line} {arc_line}"
             )
         elif turn_variant == 4:
             text = (
                 f"The {scene} holds its breath after {after_action}. "
                 f"{first_subject} {_fallback_verb(first, 'sets', 'set')} the {object_label} where the {fantasy_sign} can be seen, and "
                 f"{second} {_fallback_verb(second, 'measures', 'measure')} which old promise still binds the room. "
-                f"{stage_line} The next beat can ask the quiet faction what the eclipse has made visible."
+                f"{stage_line} {arc_line}"
             )
         else:
             text = (
                 f"The {scene} answers after {after_action}. {first_subject} {_fallback_verb(first, 'turns', 'turn')} toward the {fantasy_sign}, "
                 f"while {second} {_fallback_verb(second, 'notices', 'notice')} which artifact or faction moved in the margins. "
-                f"{stage_line} The next beat can question the change, share the eclipse mark with a quieter party, "
-                f"or hold the {object_label} where everyone can read it."
+                f"{stage_line} {arc_line}"
             )
     elif profile == "family_social":
         text = (
             f"The {scene} quiets after {after_action}. {first_subject} {_fallback_verb(first, 'reacts', 'react')} first, and {second} "
             f"{_fallback_verb(second, 'starts', 'start')} weighing whether this is an old wound or a repairable mistake. "
-            f"{stage_line} The next beat can ask for the missing context, protect a "
-            f"fragile bond, or let someone else speak before the room hardens."
+            f"{stage_line} {arc_line}"
         )
     else:
         text = (
             f"The {scene} absorbs {action}. {first_subject} {_fallback_verb(first, 'recalculates', 'recalculate')} in public, and "
             f"{second} {_fallback_verb(second, 'watches', 'watch')} who benefits from the new version of events. "
-            f"{stage_line} The next beat can press for a concrete answer, place one "
-            f"fact on the table, or wait for the next stakeholder to reveal their stake."
+            f"{stage_line} {arc_line}"
         )
     return normalize_whitespace(text)
+
+
+def _fallback_turn_arc_phase(turn_index: int, turn_budget: int) -> str:
+    remaining = max(0, turn_budget - turn_index)
+    if remaining <= 0:
+        return "coda"
+    if remaining <= 1:
+        return "finale"
+    if remaining <= 3:
+        return "payoff"
+    if turn_index >= max(4, int(turn_budget * 0.48)):
+        return "turn"
+    if turn_index >= 3:
+        return "build"
+    return "setup"
+
+
+def _fallback_turn_arc_line(
+    *,
+    profile: str,
+    arc_phase: str,
+    scene: str,
+    object_label: str,
+    first: str,
+    second: str,
+    template: NarrativeTemplate,
+) -> str:
+    is_mars = "mars" in template.seed.casefold()
+    object_be = _fallback_verb(object_label, "is", "are")
+    if profile in {"cozy_mystery", "comedy"}:
+        if is_mars:
+            lines = {
+                "setup": "The next move can keep the talent-show audience laughing while the rumor stays checkable.",
+                "build": "The scene is becoming less about the rumor itself and more about who gets to explain it before the broadcast.",
+                "turn": f"The {scene} now has to choose a public version that includes the overlooked voices.",
+                "payoff": f"The {object_label} {object_be} close to becoming a shared joke instead of a private worry.",
+                "finale": f"The final stretch is about letting {first} and {second} share one version the colony can repeat.",
+                "coda": f"The coda can now leave the colony with one public version and no private villain.",
+            }
+        else:
+            lines = {
+                "setup": f"The next move can re-check the {object_label}, invite a quieter voice, or turn the shared confusion into a payoff.",
+                "build": "The table is starting to see a pattern instead of a culprit.",
+                "turn": f"The {scene} now has to decide which small detail becomes the shared account.",
+                "payoff": f"The {object_label} {object_be} close to becoming a repair the whole room can understand.",
+                "finale": f"The final stretch is about naming the kind version clearly enough for {first} and {second} to carry it forward.",
+                "coda": "The coda can now leave the room with a kinder story than the one it started with.",
+            }
+        return lines[arc_phase]
+    if profile == "fantasy_sci_fi":
+        lines = {
+            "setup": "The next beat can ask a quieter faction to interpret the sign without turning the room against them.",
+            "build": f"The {scene} is starting to read the {object_label} as a rule, not just a prize.",
+            "turn": f"The room has to decide which faction can speak for the {object_label} under the eclipse light.",
+            "payoff": f"The {object_label} {object_be} close to becoming a record the factions cannot rewrite alone.",
+            "finale": f"The final stretch is about making one reading visible enough for {first} and {second} to answer.",
+            "coda": f"The coda can now leave the {scene} with one reading the factions have to remember.",
+        }
+        return lines[arc_phase]
+    if profile == "family_social":
+        lines = {
+            "setup": "The next beat can ask for missing context before the room hardens.",
+            "build": "The argument is starting to show the older hurt underneath.",
+            "turn": "The room has to choose repair before the loudest version becomes permanent.",
+            "payoff": "The final repair is close enough that one honest answer can change the room.",
+            "finale": f"The final stretch is about leaving {first} and {second} with a way back to each other.",
+            "coda": "The coda can now leave the room with a repairable version of the old hurt.",
+        }
+        return lines[arc_phase]
+    lines = {
+        "setup": "The next beat can press for a concrete answer without deciding the whole room yet.",
+        "build": "The public account is getting specific enough to test.",
+        "turn": "The room has to decide which version of events can survive scrutiny.",
+        "payoff": "The pressure is close to becoming a record someone has to answer.",
+        "finale": f"The final stretch is about leaving {first} and {second} with one inspectable account.",
+        "coda": "The coda can now leave one public account in place.",
+    }
+    return lines[arc_phase]
 
 
 def _fallback_turn_object_label(template: NarrativeTemplate) -> str:
@@ -602,6 +797,28 @@ def _fallback_ending_names(template: NarrativeTemplate) -> list[str]:
     return names[:3] or [member.display_name for member in template.cast[:3]]
 
 
+def _fallback_highlight_picks(messages: list[StoryMessage]) -> list[StoryMessage]:
+    if len(messages) <= 3:
+        return messages
+    indexes = [0, len(messages) // 2, len(messages) - 1]
+    picks: list[StoryMessage] = []
+    seen: set[int] = set()
+    for index in indexes:
+        message = messages[index]
+        if message.ord in seen:
+            continue
+        seen.add(message.ord)
+        picks.append(message)
+    return picks
+
+
+def _fallback_highlight_excerpt(content: str) -> str:
+    excerpt = normalize_whitespace(content)
+    if len(excerpt) > 360:
+        excerpt = f"{excerpt[:357].rstrip()}..."
+    return excerpt or "The room changed shape around the player's choice."
+
+
 def _fallback_last_player_action(history: list[StoryMessage]) -> str:
     player_message = next((message for message in reversed(history) if message.role == "player"), None)
     if player_message is None:
@@ -614,6 +831,16 @@ def _fallback_last_player_action(history: list[StoryMessage]) -> str:
     if action[:1].isupper():
         action = action[:1].lower() + action[1:]
     return action
+
+
+def _fallback_ending_action_memory(action: str) -> str:
+    text = normalize_whitespace(action)
+    if not text:
+        return "The final choice"
+    lower = text.casefold()
+    if lower.startswith(("let ", "ask ", "invite ", "hold ", "check ", "give ", "show ", "name ", "keep ")):
+        return f"The choice to {text}"
+    return _fallback_sentence_start(text)
 
 
 def render_reliable_opening(brief: StoryBrief, *, language: str) -> OpeningResult:

@@ -452,14 +452,17 @@ def test_mars_reliable_turns_vary_without_escalating_or_losing_background(
     contents = _advance_reliable_turn_contents(
         service,
         response.session.session_id,
-        count=8,
+        count=11,
     )
     visible_text = " ".join([response.opening.content, *contents]).casefold()
 
     assert "Theatre Club" in response.opening.content
     assert "Earth Media" in response.opening.content
-    assert len(set(contents)) >= 8
+    assert len(set(contents)) >= 11
     assert "oxygen rumor" in visible_text
+    assert "shared joke" in visible_text
+    assert "public version" in visible_text
+    assert "final stretch" in visible_text
     assert visible_text.count("invite the overlooked group into the test") <= 3
     for residue in (
         "oxygen heist",
@@ -611,7 +614,7 @@ def test_fantasy_reliable_turns_avoid_comedy_residue_when_prompt_is_playful(
     contents = _advance_reliable_turn_contents(
         service,
         response.session.session_id,
-        count=8,
+        count=11,
     )
     latest_narrator = [
         m for m in repo.list_story_messages(response.session.session_id) if m.role == "narrator"
@@ -626,10 +629,12 @@ def test_fantasy_reliable_turns_avoid_comedy_residue_when_prompt_is_playful(
             *[option.hint or "" for option in latest_narrator.options],
         ]
     ).casefold()
-    assert len(set(contents)) >= 8
+    assert len(set(contents)) >= 11
     assert "eclipse-lit library" in visible_text
     assert "eclipse mark" in visible_text
     assert "star map" in visible_text
+    assert "factions cannot rewrite" in visible_text
+    assert "final stretch" in visible_text
     assert visible_text.count("ask what the eclipse changed in the stacks") <= 3
     for residue in (
         "timing trail",
@@ -812,15 +817,18 @@ def test_cozy_reliable_turns_remain_varied_over_long_session(
     contents = _advance_reliable_turn_contents(
         service,
         response.session.session_id,
-        count=10,
+        count=12,
     )
     visible_text = " ".join(contents).casefold()
     starters = {content.split(".", 1)[0] for content in contents}
 
-    assert len(set(contents)) >= 10
-    assert len(starters) >= 5
+    assert len(set(contents)) >= 12
+    assert len(starters) >= 7
     assert visible_text.count("cupcake labels") >= 4
     assert visible_text.count("let the shy witness describe the cupcake labels") <= 3
+    assert "shared record" in visible_text
+    assert "final stretch" in visible_text
+    assert "room no longer needs another search" in visible_text
     assert "cupcake labels keeps" not in visible_text
     for residue in (
         "fallback",
@@ -875,22 +883,35 @@ def test_cozy_reliable_final_turn_records_ending_without_gateway(
     assert final_turn.ending is not None
     assert final_turn.ending.label
     assert final_turn.ending.passage
+    assert len(final_turn.ending.highlights) >= 3
     ending_text = " ".join(
         [
             final_turn.ending.subtitle,
             final_turn.ending.passage,
+            *[highlight.headline for highlight in final_turn.ending.highlights],
+            *[highlight.why_pivotal for highlight in final_turn.ending.highlights],
         ]
     ).casefold()
     assert "ai service" not in ending_text
     assert "fallback" not in ending_text
     assert "brief" not in ending_text
     assert "contract" not in ending_text
+    assert "turns let" not in ending_text
+    assert "final move turns" not in ending_text
+    assert "the room keeps the kinder version" in ending_text
+    assert "final repair" in ending_text
 
     history = service.get_story_history(response.session.session_id, player_user_id="usr_test")
+    persisted_ending = service.get_session_ending(
+        response.session.session_id,
+        player_user_id="usr_test",
+    )
     events = repo.list_agent_events(response.session.session_id)
 
     assert history.session.turn_count == 12
     assert history.session.ending_label == final_turn.ending.label
+    assert persisted_ending is not None
+    assert len(persisted_ending.highlights) >= 3
     assert len(history.messages) == 25
     assert len([message for message in history.messages if message.role == "player"]) == 12
     assert len([message for message in history.messages if message.role == "narrator"]) == 13
