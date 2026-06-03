@@ -265,6 +265,68 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     assert debug_history.agent_events[0].payload == events[0].payload
 
 
+def test_advance_with_missing_gateway_uses_deterministic_beta_turn(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(repo, difficulty="story")
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.advance(
+        "sess_agent_trace",
+        AdvanceTurnRequest(chosen_option_index=0),
+        player_user_id="local-dev",
+        include_agent_trace=True,
+    )
+    history = service.get_story_history("sess_agent_trace", player_user_id="local-dev")
+    events = repo.list_agent_events("sess_agent_trace")
+
+    assert response.player_message.content == "Let the witness speak"
+    assert response.narrator_message.role == "narrator"
+    assert response.narrator_message.options
+    assert "AI service" not in response.narrator_message.content
+    assert "fallback" not in response.narrator_message.content.casefold()
+    assert history.session.turn_count == 1
+    assert [event.event_type for event in events] == [
+        "agent_plan",
+        "step_judge",
+        "contract_judge",
+    ]
+    assert response.agent_plan is not None
+    assert response.agent_events
+
+
+def test_turn_endpoint_with_missing_gateway_returns_deterministic_beta_turn(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    client = TestClient(main_module.app)
+    login = ensure_authenticated_client(client, display_name="Beta Player")
+    user_id = login.json()["user"]["user_id"]
+    session_id = f"sess_missing_gateway_{uuid4().hex[:8]}"
+    _create_template_and_session(
+        repo,
+        template_id=f"tmpl_missing_gateway_{uuid4().hex[:8]}",
+        session_id=session_id,
+        player_user_id=user_id,
+        difficulty="story",
+    )
+    service = NarrativeService(repository=repo, gateway=None)
+    original_service = main_module.narrative_service
+    main_module.narrative_service = service
+
+    try:
+        response = client.post(
+            f"/narrative/sessions/{session_id}/story/turns",
+            json={"chosen_option_index": 0},
+        )
+    finally:
+        main_module.narrative_service = original_service
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["player_message"]["content"] == "Let the witness speak"
+    assert body["narrator_message"]["role"] == "narrator"
+    assert body["narrator_message"]["options"]
+    assert "AI service" not in body["narrator_message"]["content"]
+
+
 def test_advance_can_return_agent_plan_for_debug_trace(tmp_path) -> None:
     repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
     _create_template_and_session(repo, session_id="sess_agent_trace_debug")

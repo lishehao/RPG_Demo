@@ -157,6 +157,30 @@ def test_story_brief_route_returns_small_cast_warning() -> None:
     assert body["brief"]["warnings"]
 
 
+def test_create_template_with_story_brief_uses_reliable_opening_when_gateway_missing(
+    tmp_path,
+) -> None:
+    seed = (
+        "A board vote comedy where the CFO, founder, union observer, and investor chair "
+        "argue over a missing launch memo before the public livestream."
+    )
+    brief = build_story_brief(seed=seed, language="en").brief
+    assert narrative_service_module._story_brief_prefers_reliable_opening(brief) is False
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    assert response.session.session_id.startswith("sess_")
+    assert response.opening.role == "narrator"
+    assert response.opening.options
+    assert "AI service" not in response.opening.content
+    assert response.story_brief_consistency is not None
+
+
 def test_generate_opening_injects_reviewed_story_brief() -> None:
     brief = build_story_brief(
         seed="A comedy launch night where the missing contract is hidden in a cupcake box.",

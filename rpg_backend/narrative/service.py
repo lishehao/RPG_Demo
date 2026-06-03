@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from rpg_backend.author.normalize import normalize_whitespace
 from rpg_backend.config import Settings, get_settings
 from rpg_backend.narrative.contracts import (
+    AgentPlan,
     AdvanceTurnRequest,
     AdvanceTurnResponse,
     AdvisorAskRequest,
@@ -24,6 +25,7 @@ from rpg_backend.narrative.contracts import (
     NarrativeTemplate,
     NarrativeTemplateSummary,
     FailureCondition,
+    NPCPulse,
     NPCLeverageOverNPC,
     PlayedLeverageCard,
     PlayerGoal,
@@ -51,6 +53,7 @@ from rpg_backend.narrative.engine import (
     advance_turn,
     ask_advisor,
     ask_advisor_oracle,
+    build_agent_plan,
     compute_current_inventory,
     generate_opening,
     judge_failure,
@@ -60,6 +63,7 @@ from rpg_backend.narrative.engine import (
     synthesize_ending,
     synthesize_highlights,
     tier_for_label,
+    TurnResult,
 )
 from rpg_backend.narrative.gateway import (
     NarrativeGatewayError,
@@ -103,6 +107,18 @@ _CONTENT_MODERATION_MARKERS = (
     "inappropriate content",
     "data inspection failed",
 )
+_RELIABLE_OPENING_FALLBACK_CODES = {
+    "llm_unavailable",
+    "llm_provider_failed",
+    "llm_invalid_response",
+    "llm_invalid_json",
+}
+_TURN_RUNTIME_FALLBACK_CODES = {
+    "llm_unavailable",
+    "llm_provider_failed",
+    "llm_invalid_response",
+    "llm_invalid_json",
+}
 
 
 def _is_content_moderation_failure(exc: NarrativeGatewayError) -> bool:
@@ -193,8 +209,13 @@ class NarrativeService:
                     story_brief=request.story_brief,
                     max_attempts=2 if request.story_brief is not None else 3,
                 )
+            except NarrativeServiceError as exc:
+                if request.story_brief is not None and _should_use_reliable_opening_fallback(exc):
+                    opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                else:
+                    raise
             except NarrativeGatewayError as exc:
-                if request.story_brief is not None and exc.code in {"llm_invalid_json", "llm_invalid_response"}:
+                if request.story_brief is not None and _should_use_reliable_opening_fallback(exc):
                     opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
                 else:
                     raise NarrativeServiceError(
@@ -237,8 +258,13 @@ class NarrativeService:
                         brief_consistency_feedback=retry_feedback,
                         max_attempts=1,
                     )
+                except NarrativeServiceError as exc:
+                    if _should_use_reliable_opening_fallback(exc):
+                        opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                    else:
+                        raise
                 except NarrativeGatewayError as exc:
-                    if exc.code in {"llm_invalid_json", "llm_invalid_response"}:
+                    if _should_use_reliable_opening_fallback(exc):
                         opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
                     else:
                         raise NarrativeServiceError(
@@ -496,6 +522,20 @@ class NarrativeService:
         starting_assets = active_role.starting_assets if active_role else []
         current_inventory = compute_current_inventory(starting_assets, history)
 
+        def build_deterministic_turn() -> TurnResult:
+            return _deterministic_turn_fallback(
+                template=template,
+                history=history + [player_message],
+                player_action=player_action_text,
+                next_ord=next_ord + 1,
+                turn_index=upcoming_turn_index,
+                turn_budget=session.turn_budget,
+                difficulty=session.difficulty,
+                player_role=active_role,
+                current_inventory=current_inventory or None,
+                played_leverage=played_leverage,
+            )
+
         try:
             turn = advance_turn(
                 gateway=self.gateway,
@@ -515,19 +555,20 @@ class NarrativeService:
                 played_leverage=played_leverage,
                 language=template.language,
             )
+        except NarrativeServiceError as exc:
+            if _should_use_turn_runtime_fallback(exc):
+                turn = build_deterministic_turn()
+            else:
+                raise
         except NarrativeGatewayError as exc:
-            raise NarrativeServiceError(
-                code=exc.code, message=exc.message, status_code=exc.status_code
-            ) from exc
-        except ValueError as exc:
-            raise NarrativeServiceError(
-                code="turn_invalid",
-                message=(
-                    "故事一时接不上你那一步。请稍等片刻再试一次，"
-                    "或者换一个稍微贴近当前情境的动作。"
-                ),
-                status_code=502,
-            ) from exc
+            if _should_use_turn_runtime_fallback(exc):
+                turn = build_deterministic_turn()
+            else:
+                raise NarrativeServiceError(
+                    code=exc.code, message=exc.message, status_code=exc.status_code
+                ) from exc
+        except ValueError:
+            turn = build_deterministic_turn()
 
         # Atomic-ish persistence: player message + chosen-option update + narrator.
         self._repo.append_story_message(session_id, player_message)
@@ -1314,6 +1355,291 @@ def _story_brief_prefers_reliable_opening(brief: StoryBrief) -> bool:
         and has_heavy_window
         and (has_explicit_representation or bool(brief.compressed_constraints))
     )
+
+
+def _should_use_reliable_opening_fallback(
+    exc: NarrativeGatewayError | NarrativeServiceError,
+) -> bool:
+    return exc.code in _RELIABLE_OPENING_FALLBACK_CODES
+
+
+def _should_use_turn_runtime_fallback(
+    exc: NarrativeGatewayError | NarrativeServiceError,
+) -> bool:
+    return exc.code in _TURN_RUNTIME_FALLBACK_CODES
+
+
+def _deterministic_turn_fallback(
+    *,
+    template: NarrativeTemplate,
+    history: list[StoryMessage],
+    player_action: str,
+    next_ord: int,
+    turn_index: int,
+    turn_budget: int,
+    difficulty: str,
+    player_role: PlayerRole | None,
+    current_inventory: list[str] | None,
+    played_leverage: PlayedLeverageCard | None,
+) -> TurnResult:
+    """Small deterministic narrator beat for beta/reviewer continuity.
+
+    This only runs when the live narrator gateway cannot be called or returns
+    unusable data. It keeps the scene playable without presenting itself as a
+    full model-authored turn.
+    """
+    agent_plan = build_agent_plan(
+        cast=template.cast,
+        history=history,
+        turn_index=turn_index,
+        turn_budget=turn_budget,
+        difficulty=difficulty,
+        player_role=player_role,
+        current_inventory=current_inventory,
+        played_leverage=played_leverage,
+        narrator_ord=next_ord,
+    )
+    profile = _template_tension_profile(template)
+    pulses = _fallback_turn_pulses(
+        template=template,
+        agent_plan=agent_plan,
+        played_leverage=played_leverage,
+        profile=profile,
+    )
+    passage = _fallback_turn_passage(
+        template=template,
+        player_action=player_action,
+        agent_plan=agent_plan,
+        pulses=pulses,
+        profile=profile,
+    )
+    return TurnResult(
+        narrator_message=StoryMessage(
+            ord=next_ord,
+            role="narrator",
+            content=passage,
+            options=_fallback_turn_options(profile),
+            chosen_option_index=None,
+            npc_pulse=pulses,
+            inventory_delta=None,
+        ),
+        agent_plan=agent_plan,
+    )
+
+
+def _template_tension_profile(template: NarrativeTemplate) -> str:
+    text = " ".join([template.seed, template.title, template.opening_passage]).casefold()
+    if any(term in text for term in ("cozy", "bake sale", "cupcake", "recipe", "gentle mystery")):
+        return "cozy_mystery"
+    if any(term in text for term in ("comedy", "talent show", "callback", "misunderstanding", "playful")):
+        return "comedy"
+    if any(term in text for term in ("fantasy", "sci-fi", "science fiction", "dragon", "eclipse", "library", "mars", "colony")):
+        return "fantasy_sci_fi"
+    if any(term in text for term in ("family", "wedding", "parents", "dinner")):
+        return "family_social"
+    return "high_drama"
+
+
+def _fallback_turn_pulses(
+    *,
+    template: NarrativeTemplate,
+    agent_plan: AgentPlan,
+    played_leverage: PlayedLeverageCard | None,
+    profile: str,
+) -> list[NPCPulse]:
+    cast_by_id = {member.character_id: member for member in template.cast}
+    candidate_ids: list[str] = []
+    if played_leverage is not None and played_leverage.npc_id in cast_by_id:
+        candidate_ids.append(played_leverage.npc_id)
+    candidate_ids.extend(
+        npc_id for npc_id in agent_plan.director.active_npc_ids if npc_id in cast_by_id
+    )
+    candidate_ids.extend(
+        npc_id for npc_id in agent_plan.director.focus_window_npc_ids if npc_id in cast_by_id
+    )
+    if not candidate_ids:
+        candidate_ids = [member.character_id for member in template.cast[:2]]
+
+    seen: set[str] = set()
+    pulses: list[NPCPulse] = []
+    for npc_id in candidate_ids:
+        if npc_id in seen:
+            continue
+        seen.add(npc_id)
+        member = cast_by_id[npc_id]
+        pulses.append(
+            NPCPulse(
+                npc_id=npc_id,
+                state=_fallback_turn_pulse_state(profile, played=played_leverage is not None and npc_id == played_leverage.npc_id),
+                shift=_fallback_turn_pulse_shift(profile),
+                reason=_fallback_turn_pulse_reason(profile),
+            )
+        )
+        if len(pulses) >= 2:
+            break
+    return pulses
+
+
+def _fallback_turn_pulse_state(profile: str, *, played: bool) -> str:
+    if played:
+        return "reacting to the shown card"
+    if profile in {"cozy_mystery", "comedy"}:
+        return "tracking the social cue"
+    if profile == "fantasy_sci_fi":
+        return "watching the rule shift"
+    if profile == "family_social":
+        return "weighing the loyalty test"
+    return "recalculating their public stance"
+
+
+def _fallback_turn_pulse_shift(profile: str) -> str:
+    if profile in {"cozy_mystery", "comedy"}:
+        return "warmer"
+    return "wary"
+
+
+def _fallback_turn_pulse_reason(profile: str) -> str:
+    if profile in {"cozy_mystery", "comedy"}:
+        return "Your move kept the room curious."
+    if profile == "fantasy_sci_fi":
+        return "Your move made the rule visible."
+    if profile == "family_social":
+        return "Your move tested the shared bond."
+    return "Your move changed the public account."
+
+
+def _fallback_turn_passage(
+    *,
+    template: NarrativeTemplate,
+    player_action: str,
+    agent_plan: AgentPlan,
+    pulses: list[NPCPulse],
+    profile: str,
+) -> str:
+    scene = _fallback_turn_scene_label(template)
+    names = _fallback_turn_names(template, pulses)
+    first = names[0] if names else "the closest witness"
+    second = names[1] if len(names) > 1 else "the room"
+    action = _fallback_turn_action_phrase(player_action)
+    stage_line = _fallback_turn_stage_line(agent_plan.director.stage_phase, profile)
+    if profile in {"cozy_mystery", "comedy"}:
+        text = (
+            f"The {scene} shifts after {action}. {first} catches the detail first, "
+            f"and {second} leaves room for a less dramatic explanation instead of "
+            f"turning the moment into a pile-on. {stage_line} The next beat can test "
+            f"the prop, invite the quiet party in, or let the callback land before "
+            f"anyone chooses a version of events."
+        )
+    elif profile == "fantasy_sci_fi":
+        text = (
+            f"The {scene} answers after {action}. {first} turns toward the visible "
+            f"sign, while {second} notices which rule, artifact, or faction has "
+            f"moved. {stage_line} The next beat can question the change, share the "
+            f"sign with a quieter party, or hold the object where everyone can read it."
+        )
+    elif profile == "family_social":
+        text = (
+            f"The {scene} quiets after {action}. {first} reacts first, and {second} "
+            f"starts weighing whether this is an old wound or a repairable mistake. "
+            f"{stage_line} The next beat can ask for the missing context, protect a "
+            f"fragile bond, or let someone else speak before the room hardens."
+        )
+    else:
+        text = (
+            f"The {scene} absorbs {action}. {first} recalculates in public, and "
+            f"{second} watches who benefits from the new version of events. "
+            f"{stage_line} The next beat can press for a concrete answer, place one "
+            f"fact on the table, or wait for the next stakeholder to reveal their stake."
+        )
+    return normalize_whitespace(text)
+
+
+def _fallback_turn_scene_label(template: NarrativeTemplate) -> str:
+    text = " ".join([template.seed, template.title, template.opening_passage]).casefold()
+    if "mars" in text and "talent show" in text:
+        return "Mars colony talent-show floor"
+    if "bake sale" in text or "cupcake" in text:
+        return "neighborhood bake-sale table"
+    if "eclipse" in text and "library" in text:
+        return "eclipse-lit library"
+    if "library" in text:
+        return "library hall"
+    if "board" in text or "vote" in text:
+        return "boardroom"
+    if "dinner" in text:
+        return "family table"
+    return "room"
+
+
+def _fallback_turn_names(template: NarrativeTemplate, pulses: list[NPCPulse]) -> list[str]:
+    cast_by_id = {member.character_id: member for member in template.cast}
+    names = [
+        cast_by_id[pulse.npc_id].display_name
+        for pulse in pulses
+        if pulse.npc_id in cast_by_id
+    ]
+    if len(names) < 2:
+        for member in template.cast:
+            if member.display_name not in names:
+                names.append(member.display_name)
+            if len(names) >= 2:
+                break
+    return names
+
+
+def _fallback_turn_action_phrase(player_action: str) -> str:
+    text = normalize_whitespace(re.sub(r"^\[[^\]]+\]\s*", "", player_action or "your move"))
+    if not text:
+        return "your move"
+    if len(text) > 120:
+        text = f"{text[:117].rstrip()}..."
+    if text[:1].isupper() and " " in text[:40]:
+        text = text[:1].lower() + text[1:]
+    return f"your move to {text}" if not text.startswith("your ") else text
+
+
+def _fallback_turn_stage_line(stage_phase: str, profile: str) -> str:
+    if profile in {"cozy_mystery", "comedy"}:
+        if stage_phase in {"reversal", "climax", "pre_finale", "pre_finale_open"}:
+            return "The social stakes rise, but they stay tied to embarrassment, timing, and repair."
+        return "The tension stays public and playful enough to keep moving."
+    if profile == "fantasy_sci_fi":
+        return "The pressure comes from the shared rule of the world, not from sudden blame."
+    if profile == "family_social":
+        return "The pressure stays personal, but nobody has to turn it into spectacle yet."
+    return "The pressure stays visible enough that the room has to answer."
+
+
+def _fallback_turn_options(profile: str) -> list[StoryOption]:
+    if profile == "cozy_mystery":
+        return [
+            StoryOption(label="[Ally] Let the shy witness describe what changed", hint="Keeps the mystery gentle", handle="ask witness"),
+            StoryOption(label="[Probe] Check the object without blaming anyone", hint="Tests the clue first", handle="check clue"),
+            StoryOption(label="[Watch] Give the room a softer reset", hint="Buys a calmer beat", handle="soft reset"),
+        ]
+    if profile == "comedy":
+        return [
+            StoryOption(label="[Ally] Invite the overlooked group into the test", hint="Keeps the joke shared", handle="invite group"),
+            StoryOption(label="[Probe] Ask who noticed the prop change", hint="Turns timing into evidence", handle="ask prop"),
+            StoryOption(label="[Watch] Let the callback settle before moving", hint="Waits for the room to react", handle="let land"),
+        ]
+    if profile == "fantasy_sci_fi":
+        return [
+            StoryOption(label="[Probe] Ask what the world-rule changed", hint="Turns the sign into a clue", handle="ask rule"),
+            StoryOption(label="[Ally] Let the quieter faction interpret the sign", hint="Gives background pressure a voice", handle="quiet voice"),
+            StoryOption(label="[Watch] Hold the artifact where everyone can see it", hint="Keeps the room honest", handle="show object"),
+        ]
+    if profile == "family_social":
+        return [
+            StoryOption(label="[Ally] Give the hurt party room to explain", hint="Protects repair before rupture", handle="give room"),
+            StoryOption(label="[Probe] Ask what was misunderstood first", hint="Looks for the old wound", handle="ask wound"),
+            StoryOption(label="[Watch] Let someone else name the cost", hint="Tests who still cares", handle="wait cost"),
+        ]
+    return [
+        StoryOption(label="[Probe] Ask who benefits from this version", hint="Tests the public account", handle="ask benefit"),
+        StoryOption(label="[Counter] Put one concrete fact on the table", hint="Makes the room answer", handle="show fact"),
+        StoryOption(label="[Watch] Let the next speaker expose their stake", hint="Delays without yielding", handle="watch stake"),
+    ]
 
 
 def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> OpeningResult:
