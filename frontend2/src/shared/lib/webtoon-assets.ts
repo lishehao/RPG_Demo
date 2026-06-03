@@ -225,6 +225,7 @@ export function getEndingArtwork(endingId: string | null | undefined): string {
 
 export const PAGE_BG = {
   splash: "/webtoons/ui/splash.jpg",
+  homeHero: "/illustrations/soft-east-asian/homepage-hero-desktop.webp",
   home: "/webtoons/ui/library_bg.jpg",
   create: "/webtoons/ui/create_bg.jpg",
   generating: "/webtoons/ui/loading_bg.jpg",

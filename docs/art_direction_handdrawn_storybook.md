@@ -11,6 +11,20 @@ The target is a premium illustrated case notebook: clean controls, strong text
 contrast, warm but not beige-monotone surfaces, and line-art/world imagery in
 places where the user is orienting to a story.
 
+## Accepted Soft East Asian Homepage Rule
+
+- The active homepage direction is Korean-premium product chrome with soft
+  contemporary Chinese / East Asian hand-drawn art plates layered behind it.
+- The homepage hero may use generated background-only illustration when it is
+  text-safe, UI-free, and composed with dark negative space for real interface
+  copy.
+- Do not turn the homepage into a beige/parchment interface. Controls,
+  typography, spacing, and CTA hierarchy should stay crisp and product-grade.
+- Do not use generated plates that contain readable interface text, pseudo UI,
+  signage, logos, watermarks, or foreign-language artifacts.
+- Current accepted V1 homepage asset:
+  `/illustrations/soft-east-asian/homepage-hero-desktop.webp`.
+
 ## Visual Tokens
 
 - `surface`: warm off-white and light cream for product panels.
