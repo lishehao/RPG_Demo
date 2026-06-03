@@ -126,15 +126,55 @@ replace basic UI affordances or make controls harder to scan.
 ## Current Implementation Notes
 
 - Core UI tokens are warm-neutral and restrained.
-- Play/template cover surfaces use a small curated SVG set under
-  `/illustrations/story-cover-*.svg`: neutral storyboard, cozy/comedy,
-  fantasy/sci-fi, and high-drama/social. Selection is deterministic from
-  profile and lightweight seed/title/cast keywords.
+- Demo-facing generated assets live under `/illustrations/generated/*.webp`.
+  They are optimized derivatives of the built-in Image Generation pack, not
+  raw 3MB PNG drops.
+- Play/template cover surfaces route through generated broad-profile covers:
+  neutral storyboard, cozy/comedy, fantasy/sci-fi, Mars/sci-fi, and
+  high-drama/social. Selection is deterministic from profile and lightweight
+  seed/title/cast keywords.
+- Page-level first-run backgrounds now use generated workspace/evidence images
+  instead of dark legacy `/webtoons/ui` backgrounds.
+- Empty states, ending/replay hero imagery, oracle vignette, and peak beat
+  close-ups use generated notebook/evidence/object-card imagery for demo-safe
+  consistency.
+- Reviewer and portfolio CSS backgrounds that bypassed the central asset helper
+  now point at generated evidence/object/ending images.
 - Reviewer mode includes an illustration slot using
   `/illustrations/case-notebook-panel.svg` as a bounded reference asset.
+- The small curated SVG story-cover set remains in the repo as a lightweight
+  fallback/reference layer, but active template cards prefer the richer
+  generated cover set.
+- Legacy `/webtoons` assets are deliberately retained for cast portraits and
+  advisor portraits until a proper role-reference/advisor batch exists. Do not
+  flatten live cast identity with the current two generic generated portraits.
+- `frontend2/src/shared/lib/format.ts` still contains an unused legacy shell
+  cover table; remove or align it only if a future owner verifies it is dead or
+  reactivates that helper.
 - The prior hand-drawn repair fixes remain required: play objective contrast,
   reviewer copy consistency, mobile Brief hierarchy, cozy cap rationale, and
   advisor/header overlap.
+
+## P0 Generated Asset Mapping
+
+| Asset | Active use |
+| --- | --- |
+| `/illustrations/generated/cover-neutral-storyboard-desk.webp` | Home/splash background, neutral generated cover, opening scene fallback |
+| `/illustrations/generated/cover-cozy-bake-sale.webp` | Cozy/comedy generated cover |
+| `/illustrations/generated/cover-fantasy-library-eclipse.webp` | Fantasy/sci-fi generated cover |
+| `/illustrations/generated/cover-sci-fi-mars-colony-talent-show.webp` | Mars/oxygen/colony generated cover |
+| `/illustrations/generated/cover-high-drama-boardroom.webp` | High-drama generated cover and pressure/peak visual |
+| `/illustrations/generated/reviewer-evidence-board-clean.webp` | Reviewer hero, portfolio inspector, login/evidence surfaces, reveal/peak visual |
+| `/illustrations/generated/advisor-notebook-desk.webp` | Create background and oracle vignette |
+| `/illustrations/generated/empty-plaza-story-cards.webp` | Empty plaza/shared empty-state imagery |
+| `/illustrations/generated/ending-reflection-notebook.webp` | Ending/replay hero and portfolio final visual |
+| `/illustrations/generated/object-card-sheet.webp` | Generating background, portfolio loop visual, reversal/peak visual |
+
+| Deferred generated assets | Reason |
+| --- | --- |
+| `reviewer-evidence-board-candidate-with-possible-marks.png` | Possible pseudo-writing/marking risk |
+| `role-portrait-neutral-figure.png` | Too specific for broad live cast identity |
+| `role-portrait-comedy-helper.png` | Too specific for broad live cast/advisor identity |
 
 ## Future Asset System Notes
 
