@@ -19,6 +19,7 @@ from rpg_backend.narrative.contracts import (
     StoryOption,
 )
 from rpg_backend.narrative.engine import generate_opening
+from rpg_backend.narrative.profile_vocabulary import reliable_profile_vocabulary
 from rpg_backend.narrative.repository import NarrativeRepository
 from rpg_backend.narrative.service import NarrativeService, NarrativeServiceError
 from rpg_backend.responses_transport import ResponsesJSONResponse
@@ -180,6 +181,17 @@ def test_create_template_with_story_brief_uses_reliable_opening_when_gateway_mis
     assert response.opening.options
     assert "AI service" not in response.opening.content
     assert response.story_brief_consistency is not None
+
+
+def test_reliable_profile_vocabulary_is_profile_specific() -> None:
+    cozy = reliable_profile_vocabulary("cozy_mystery")
+    comedy = reliable_profile_vocabulary("comedy")
+    fantasy = reliable_profile_vocabulary("fantasy_sci_fi")
+
+    assert "clue trail" in cozy.opening_uncertainty
+    assert "timing trail" in comedy.first_move_clause
+    assert "old rule" in fantasy.stage_line("hook")
+    assert "handoff" not in comedy.first_move_clause.casefold()
 
 
 def test_generate_opening_injects_reviewed_story_brief() -> None:
@@ -544,6 +556,7 @@ def test_create_template_cozy_fit_prompt_can_fallback_to_playable_opening(
     assert "missing recipe card" in response.opening.content
     assert "visible mistake" not in response.opening.content
     assert "cleaner way to talk" not in response.opening.content
+    assert "handoff" not in response.opening.content.casefold()
     assert response.opening.options
     assert response.session.session_id
 
@@ -627,6 +640,8 @@ def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
     assert "fallback" not in second_turn.narrator_message.content.casefold()
     assert turn.narrator_message.content != second_turn.narrator_message.content
     assert "once your move" not in second_turn.narrator_message.content.casefold()
+    assert "handoff" not in turn.narrator_message.content.casefold()
+    assert "handoff" not in second_turn.narrator_message.content.casefold()
     assert "after you let" in second_turn.narrator_message.content.casefold()
     assert "shifts after" not in second_turn.narrator_message.content.casefold()
     assert "cupcake labels" in turn.narrator_message.content.casefold()

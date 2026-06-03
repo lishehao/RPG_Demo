@@ -71,6 +71,7 @@ from rpg_backend.narrative.gateway import (
     get_narrative_gateway,
 )
 from rpg_backend.narrative.judges import judge_contract, judge_step
+from rpg_backend.narrative.profile_vocabulary import reliable_profile_vocabulary
 from rpg_backend.narrative.repository import NarrativeNotFoundError, NarrativeRepository
 
 
@@ -1483,29 +1484,15 @@ def _fallback_turn_pulses(
 def _fallback_turn_pulse_state(profile: str, *, played: bool) -> str:
     if played:
         return "reacting to the shown card"
-    if profile in {"cozy_mystery", "comedy"}:
-        return "tracking the social cue"
-    if profile == "fantasy_sci_fi":
-        return "watching the rule shift"
-    if profile == "family_social":
-        return "weighing the loyalty test"
-    return "recalculating their public stance"
+    return reliable_profile_vocabulary(profile).pulse_state
 
 
 def _fallback_turn_pulse_shift(profile: str) -> str:
-    if profile in {"cozy_mystery", "comedy"}:
-        return "warmer"
-    return "wary"
+    return reliable_profile_vocabulary(profile).pulse_shift
 
 
 def _fallback_turn_pulse_reason(profile: str) -> str:
-    if profile in {"cozy_mystery", "comedy"}:
-        return "Your move kept the room curious."
-    if profile == "fantasy_sci_fi":
-        return "Your move made the rule visible."
-    if profile == "family_social":
-        return "Your move tested the shared bond."
-    return "Your move changed the public account."
+    return reliable_profile_vocabulary(profile).pulse_reason
 
 
 def _fallback_turn_passage(
@@ -1532,7 +1519,7 @@ def _fallback_turn_passage(
                 f"After {after_action}, the {scene} pauses around the {object_label}. "
                 f"{first_subject} {_fallback_verb(first, 'points', 'point')} to a small timing detail, and "
                 f"{second} {_fallback_verb(second, 'keeps', 'keep')} the explanation light enough for repair. "
-                f"{stage_line} The next move can check the handoff, invite a quieter voice, or turn the mix-up into a payoff."
+                f"{stage_line} The next move can check the timing trail, invite a quieter voice, or turn the table mistake into a payoff."
             )
         elif turn_variant == 2:
             object_verb = _fallback_verb(object_label, "becomes", "become")
@@ -1683,15 +1670,7 @@ def _fallback_turn_after_phrase(action_phrase: str) -> str:
 
 
 def _fallback_turn_stage_line(stage_phase: str, profile: str) -> str:
-    if profile in {"cozy_mystery", "comedy"}:
-        if stage_phase in {"reversal", "climax", "pre_finale", "pre_finale_open"}:
-            return "The social stakes rise, but they stay tied to embarrassment, timing, and repair."
-        return "The tension stays public and playful enough to keep moving."
-    if profile == "fantasy_sci_fi":
-        return "The pressure comes from the old rule in view, not from sudden blame."
-    if profile == "family_social":
-        return "The pressure stays personal, but nobody has to turn it into spectacle yet."
-    return "The pressure stays visible enough that the room has to answer."
+    return reliable_profile_vocabulary(profile).stage_line(stage_phase)
 
 
 def _fallback_turn_options(template: NarrativeTemplate, profile: str) -> list[StoryOption]:
@@ -1955,9 +1934,10 @@ def _fallback_opening_passage(
             f"{profile_clause} {first_move}"
         )
     if brief.tension_profile in {"comedy", "cozy_mystery"}:
+        uncertainty = reliable_profile_vocabulary(brief.tension_profile).opening_uncertainty
         return (
             f"At {scene}, the {contested} {_fallback_verb(contested, 'has', 'have')} pulled {cast_text_mid_sentence} into the same public moment while the room is still deciding "
-            f"whether this is a mix-up, a performance note, or a public embarrassment{secondary_event}.{background_text} "
+            f"{uncertainty}{secondary_event}.{background_text} "
             f"{profile_clause} {first_move}"
         )
     return (
@@ -2213,13 +2193,9 @@ def _fallback_profile_clause(brief: StoryBrief, *, contested: str) -> str:
 
 
 def _fallback_first_move_clause(brief: StoryBrief) -> str:
-    if brief.tension_profile == "comedy":
-        return "Your first move can name a handoff, invite the quiet voice in, or set up the joke before blame takes over."
-    if brief.tension_profile == "cozy_mystery":
-        return "Your first move can follow a concrete clue, lower the room's worry, or give the nervous witness room to speak."
     if _fallback_uses_fantasy_scene(brief):
-        return "Your first move can test the rule, ask the overlooked faction in, or inspect the artifact everyone is avoiding."
-    return "Your first move can bring in the quiet party before the loudest version hardens."
+        return reliable_profile_vocabulary("fantasy_sci_fi").first_move_clause
+    return reliable_profile_vocabulary(brief.tension_profile).first_move_clause
 
 
 def _fallback_opening_options(brief: StoryBrief) -> list[StoryOption]:
@@ -2260,7 +2236,7 @@ def _fallback_opening_options(brief: StoryBrief) -> list[StoryOption]:
     if brief.tension_profile == "cozy_mystery":
         return [
             StoryOption(label=f"Ask where the {contested} was last seen", hint="Follow the object", handle="ask_clue"),
-            StoryOption(label=f"Let the {volunteer} explain the handoff", hint="Lower worry", handle="witness"),
+            StoryOption(label=f"Let the {volunteer} explain the clue trail", hint="Lower worry", handle="witness"),
             StoryOption(label="Compare the table versions gently", hint="Repair trust", handle="compare"),
         ]
     return [
