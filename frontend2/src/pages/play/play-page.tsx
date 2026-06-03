@@ -129,6 +129,12 @@ export function PlayPage({
   const canDockAdvisor = useCompactLayout("(min-width: 1024px)")
   const advisorDocked = advisorOpen && canDockAdvisor
   const canRequestAgentTrace = reviewerMode && auth.canViewAgentTrace
+  const agentTraceAccessPending = reviewerMode && auth.loading
+
+  useEffect(() => {
+    if (!reviewerMode) return
+    void auth.refresh()
+  }, [auth.refresh, reviewerMode])
 
   // Initial load: story + (if already completed) the ending.
   useEffect(() => {
@@ -520,6 +526,7 @@ export function PlayPage({
               agentPlan={latestAgentPlan}
               agentEvents={latestAgentEvents}
               agentTraceAccessGranted={canRequestAgentTrace}
+              agentTraceAccessPending={agentTraceAccessPending}
             />
           ) : null}
 
@@ -1013,6 +1020,7 @@ function RuntimeInspector({
   agentPlan,
   agentEvents,
   agentTraceAccessGranted,
+  agentTraceAccessPending,
 }: {
   story: NarrativeStoryHistoryResponse
   ending: NarrativeEnding | null
@@ -1022,6 +1030,7 @@ function RuntimeInspector({
   agentPlan: NarrativeAgentPlan | null
   agentEvents: NarrativeAgentEvent[]
   agentTraceAccessGranted: boolean
+  agentTraceAccessPending: boolean
 }) {
   const { lang } = useLanguage()
   const t = useT()
@@ -1167,9 +1176,11 @@ function RuntimeInspector({
           </div>
         ) : (
           <div style={ppStyles.agentTraceEmpty}>
-            {agentTraceAccessGranted
-              ? t("play.agent_trace_empty")
-              : t("play.agent_trace_unauthorized")}
+            {agentTraceAccessPending
+              ? t("play.agent_trace_checking")
+              : agentTraceAccessGranted
+                ? t("play.agent_trace_empty")
+                : t("play.agent_trace_unauthorized")}
           </div>
         )}
       </details>

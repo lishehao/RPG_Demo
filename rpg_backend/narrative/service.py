@@ -62,7 +62,11 @@ from rpg_backend.narrative.gateway import (
     get_narrative_gateway,
 )
 from rpg_backend.narrative.judges import judge_contract, judge_step
-from rpg_backend.narrative.reliable_renderer import render_reliable_opening, render_reliable_turn
+from rpg_backend.narrative.reliable_renderer import (
+    render_reliable_ending,
+    render_reliable_opening,
+    render_reliable_turn,
+)
 from rpg_backend.narrative.repository import NarrativeNotFoundError, NarrativeRepository
 
 
@@ -731,11 +735,15 @@ class NarrativeService:
         *,
         player_role: PlayerRole | None = None,
     ) -> NarrativeEnding | None:
-        """Synthesize the ending and persist it. Logs and silently no-ops on
-        LLM failure — the player can still read the final narrator beat;
-        the frontend will show 'ending generation failed, refresh' if it
-        sees is_complete=False on a budget-reached turn."""
+        """Synthesize and persist the ending.
+
+        If live ending synthesis is unavailable after the final turn has
+        already persisted, use the deterministic reliable ending path so the
+        player receives a coherent completion response instead of a false
+        turn failure. Repository write failures still surface.
+        """
         full_history = self._repo.list_story_messages(session_id)
+        used_reliable_ending = False
         try:
             result = synthesize_ending(
                 gateway=self.gateway,
@@ -747,45 +755,69 @@ class NarrativeService:
                 player_role=player_role,
                 language=template.language,
             )
-        except (NarrativeGatewayError, ValueError) as exc:
+        except (NarrativeGatewayError, NarrativeServiceError, ValueError) as exc:
             print(
-                f"[narrative.service] ending synthesis failed for session={session_id}: {exc}",
+                "[narrative.service] ending synthesis failed "
+                f"for session={session_id}; using reliable ending: {exc}",
                 flush=True,
             )
-            return None
+            result = render_reliable_ending(
+                template=template,
+                history=full_history,
+                turn_count=max(1, len([m for m in full_history if m.role == "narrator"]) - 1),
+                player_role=player_role,
+            )
+            used_reliable_ending = True
         tier = tier_for_label(result.label)
         # Synthesize highlights + branches AFTER ending exists. Both
         # non-fatal — return [] on any failure. Run in parallel since
         # they're independent LLM calls — cuts post-game wait from
         # ~9s sequential to ~5s.
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            hl_future = pool.submit(
-                synthesize_highlights,
-                gateway=self.gateway,
-                seed=template.seed,
-                title=template.title,
-                cast=template.cast,
-                history=full_history,
-                ending_label=result.label,
-                ending_subtitle=result.subtitle,
-                player_role=player_role,
-                language=template.language,
-            )
-            br_future = pool.submit(
-                synthesize_branches,
-                gateway=self.gateway,
-                seed=template.seed,
-                title=template.title,
-                cast=template.cast,
-                history=full_history,
-                ending_label=result.label,
-                ending_tier=tier,
-                ending_passage=result.passage,
-                player_role=player_role,
-                language=template.language,
-            )
-            highlights = hl_future.result()
-            branches = br_future.result()
+        highlights = []
+        branches = []
+        if not used_reliable_ending:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                hl_future = pool.submit(
+                    synthesize_highlights,
+                    gateway=self.gateway,
+                    seed=template.seed,
+                    title=template.title,
+                    cast=template.cast,
+                    history=full_history,
+                    ending_label=result.label,
+                    ending_subtitle=result.subtitle,
+                    player_role=player_role,
+                    language=template.language,
+                )
+                br_future = pool.submit(
+                    synthesize_branches,
+                    gateway=self.gateway,
+                    seed=template.seed,
+                    title=template.title,
+                    cast=template.cast,
+                    history=full_history,
+                    ending_label=result.label,
+                    ending_tier=tier,
+                    ending_passage=result.passage,
+                    player_role=player_role,
+                    language=template.language,
+                )
+                try:
+                    highlights = hl_future.result()
+                except Exception as exc:  # noqa: BLE001
+                    print(
+                        f"[narrative.service] ending highlights failed for session={session_id}: {exc}",
+                        flush=True,
+                    )
+                    highlights = []
+                try:
+                    branches = br_future.result()
+                except Exception as exc:  # noqa: BLE001
+                    print(
+                        f"[narrative.service] ending branches failed for session={session_id}: {exc}",
+                        flush=True,
+                    )
+                    branches = []
         self._repo.record_session_ending(
             session_id,
             label=result.label,

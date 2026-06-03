@@ -18,7 +18,7 @@ from rpg_backend.narrative.contracts import (
     StoryMessage,
     StoryOption,
 )
-from rpg_backend.narrative.engine import OpeningResult, TurnResult, build_agent_plan
+from rpg_backend.narrative.engine import EndingResult, OpeningResult, TurnResult, build_agent_plan
 from rpg_backend.narrative.profile_vocabulary import reliable_profile_vocabulary
 
 
@@ -77,6 +77,90 @@ def render_reliable_turn(
             inventory_delta=None,
         ),
         agent_plan=agent_plan,
+    )
+
+
+def render_reliable_ending(
+    *,
+    template: NarrativeTemplate,
+    history: list[StoryMessage],
+    turn_count: int,
+    player_role: PlayerRole | None,
+) -> EndingResult:
+    """Deterministic closing beat for reliable beta runs.
+
+    This is intentionally compact: it gives the player a coherent end state
+    when live ending synthesis is unavailable, without pretending to be a rich
+    live-model finale.
+    """
+    profile = infer_template_tension_profile(template)
+    scene = _fallback_turn_scene_label(template)
+    object_label = _fallback_turn_object_label(template)
+    names = _fallback_ending_names(template)
+    primary = names[0] if names else "the closest witness"
+    secondary = names[1] if len(names) > 1 else "the room"
+    role_label = player_role.label if player_role else "your role"
+    last_player_action = _fallback_last_player_action(history)
+    if template.language == "zh":
+        return EndingResult(
+            label="和解" if profile in {"cozy_mystery", "comedy"} else "夺回",
+            subtitle="我把最后一刻稳住了。",
+            passage=normalize_whitespace(
+                f"{scene}终于安静下来。你以{role_label}的身份把{object_label}留在众人看得见的地方，"
+                f"最后一步{last_player_action}让{primary}和{secondary}都必须回应眼前的事实。"
+                f"这一局没有靠更大的冲突收尾，而是靠已经积累的线索、压力和选择落地。"
+                f"第{turn_count}回合结束时，房间还有余波，但故事已经给出一个可以分享的结局。"
+            ),
+        )
+    if profile in {"cozy_mystery", "comedy"}:
+        return EndingResult(
+            label="和解",
+            subtitle="I let the room repair itself.",
+            passage=normalize_whitespace(
+                f"The {scene} lands softly instead of turning into a pile-on. "
+                f"As {role_label}, you keep the {object_label} visible long enough for {primary} "
+                f"and {secondary} to answer with something the room can check. The final move "
+                f"turns {last_player_action} into a shared callback: nobody has to be blamed for "
+                f"the scene to make sense. By turn {turn_count}, the pressure has not vanished, "
+                f"but it has become small enough for the group to laugh, repair, and remember "
+                f"what actually happened."
+            ),
+        )
+    if profile == "fantasy_sci_fi":
+        return EndingResult(
+            label="夺回",
+            subtitle="I held the mark in the light.",
+            passage=normalize_whitespace(
+                f"The {scene} closes around the {object_label} like a final page turning. "
+                f"As {role_label}, you keep the last sign where every faction can read it, and "
+                f"{primary} answers before {secondary} can fold the old rule back into shadow. "
+                f"The final move makes {last_player_action} part of the library's record. By "
+                f"turn {turn_count}, the eclipse has not solved every claim, but it has made "
+                f"one truth visible enough for the room to carry forward."
+            ),
+        )
+    if profile == "family_social":
+        return EndingResult(
+            label="回归",
+            subtitle="I left room for repair.",
+            passage=normalize_whitespace(
+                f"The {scene} settles around the {object_label} and the old argument finally "
+                f"has a shape everyone can see. As {role_label}, you keep the final move tied "
+                f"to {last_player_action}, giving {primary} and {secondary} a way to answer "
+                f"without hardening the room. By turn {turn_count}, not every hurt is solved, "
+                f"but the scene ends with enough context for repair to continue."
+            ),
+        )
+    return EndingResult(
+        label="自由",
+        subtitle="I kept the public account clear.",
+        passage=normalize_whitespace(
+            f"The {scene} stops chasing rumors and gathers around the {object_label}. "
+            f"As {role_label}, you make the final move concrete: {last_player_action}. "
+            f"{primary} has to answer in public, while {secondary} can no longer control the "
+            f"only version of events. By turn {turn_count}, the pressure remains, but the run "
+            f"ends with a record the room can inspect instead of another hidden bargain."
+        ),
     )
 
 
@@ -507,6 +591,29 @@ def _fallback_turn_options(template: NarrativeTemplate, profile: str) -> list[St
         StoryOption(label="[Counter] Put one concrete fact on the table", hint="Makes the room answer", handle="show fact"),
         StoryOption(label="[Watch] Let the next speaker expose their stake", hint="Delays without yielding", handle="watch stake"),
     ]
+
+
+def _fallback_ending_names(template: NarrativeTemplate) -> list[str]:
+    names = [
+        member.display_name
+        for member in template.cast
+        if not _fallback_is_scaffold_party_name(member.display_name)
+    ]
+    return names[:3] or [member.display_name for member in template.cast[:3]]
+
+
+def _fallback_last_player_action(history: list[StoryMessage]) -> str:
+    player_message = next((message for message in reversed(history) if message.role == "player"), None)
+    if player_message is None:
+        return "the last careful move"
+    action = normalize_whitespace(re.sub(r"^\[[^\]]+\]\s*", "", player_message.content))
+    if not action:
+        return "the last careful move"
+    if len(action) > 96:
+        action = f"{action[:93].rstrip()}..."
+    if action[:1].isupper():
+        action = action[:1].lower() + action[1:]
+    return action
 
 
 def render_reliable_opening(brief: StoryBrief, *, language: str) -> OpeningResult:

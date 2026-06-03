@@ -844,6 +844,70 @@ def test_cozy_reliable_turns_remain_varied_over_long_session(
         assert residue not in visible_text
 
 
+def test_cozy_reliable_final_turn_records_ending_without_gateway(
+    tmp_path,
+) -> None:
+    seed = (
+        "At a neighborhood bake sale, three parents and a shy teen volunteer "
+        "try to find who swapped the cupcake labels. Keep it cozy and funny, "
+        "no blackmail, no betrayal, no corporate stakes."
+    )
+    brief = build_story_brief(seed=seed, language="en").brief
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", story_brief=brief, turn_budget=12),
+        owner_user_id="usr_test",
+    )
+
+    final_turn = None
+    for _ in range(12):
+        final_turn = service.advance(
+            response.session.session_id,
+            AdvanceTurnRequest(chosen_option_index=0),
+            player_user_id="usr_test",
+            include_agent_trace=True,
+        )
+
+    assert final_turn is not None
+    assert final_turn.is_complete is True
+    assert final_turn.ending is not None
+    assert final_turn.ending.label
+    assert final_turn.ending.passage
+    ending_text = " ".join(
+        [
+            final_turn.ending.subtitle,
+            final_turn.ending.passage,
+        ]
+    ).casefold()
+    assert "ai service" not in ending_text
+    assert "fallback" not in ending_text
+    assert "brief" not in ending_text
+    assert "contract" not in ending_text
+
+    history = service.get_story_history(response.session.session_id, player_user_id="usr_test")
+    events = repo.list_agent_events(response.session.session_id)
+
+    assert history.session.turn_count == 12
+    assert history.session.ending_label == final_turn.ending.label
+    assert len(history.messages) == 25
+    assert len([message for message in history.messages if message.role == "player"]) == 12
+    assert len([message for message in history.messages if message.role == "narrator"]) == 13
+    assert len(events) == 36
+    assert events[-3].event_type == "agent_plan"
+    assert events[-2].event_type == "step_judge"
+    assert events[-1].event_type == "contract_judge"
+
+    with pytest.raises(NarrativeServiceError) as exc_info:
+        service.advance(
+            response.session.session_id,
+            AdvanceTurnRequest(chosen_option_index=0),
+            player_user_id="usr_test",
+        )
+    assert exc_info.value.code == "session_complete"
+
+
 def test_create_template_brief_consistency_failure_is_user_actionable_422(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
