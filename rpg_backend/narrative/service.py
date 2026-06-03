@@ -1524,30 +1524,30 @@ def _fallback_turn_passage(
     stage_line = _fallback_turn_stage_line(agent_plan.director.stage_phase, profile)
     if profile in {"cozy_mystery", "comedy"}:
         text = (
-            f"The {scene} shifts after {action}. {first} catches the detail first, "
-            f"and {second} leaves room for a less dramatic explanation instead of "
+            f"The {scene} shifts after {action}. {first} {_fallback_verb(first, 'catches', 'catch')} the detail first, "
+            f"and {second} {_fallback_verb(second, 'leaves', 'leave')} room for a less dramatic explanation instead of "
             f"turning the moment into a pile-on. {stage_line} The next beat can test "
             f"the prop, invite the quiet party in, or let the callback land before "
             f"anyone chooses a version of events."
         )
     elif profile == "fantasy_sci_fi":
         text = (
-            f"The {scene} answers after {action}. {first} turns toward the visible "
-            f"sign, while {second} notices which rule, artifact, or faction has "
+            f"The {scene} answers after {action}. {first} {_fallback_verb(first, 'turns', 'turn')} toward the visible "
+            f"sign, while {second} {_fallback_verb(second, 'notices', 'notice')} which rule, artifact, or faction has "
             f"moved. {stage_line} The next beat can question the change, share the "
             f"sign with a quieter party, or hold the object where everyone can read it."
         )
     elif profile == "family_social":
         text = (
-            f"The {scene} quiets after {action}. {first} reacts first, and {second} "
-            f"starts weighing whether this is an old wound or a repairable mistake. "
+            f"The {scene} quiets after {action}. {first} {_fallback_verb(first, 'reacts', 'react')} first, and {second} "
+            f"{_fallback_verb(second, 'starts', 'start')} weighing whether this is an old wound or a repairable mistake. "
             f"{stage_line} The next beat can ask for the missing context, protect a "
             f"fragile bond, or let someone else speak before the room hardens."
         )
     else:
         text = (
-            f"The {scene} absorbs {action}. {first} recalculates in public, and "
-            f"{second} watches who benefits from the new version of events. "
+            f"The {scene} absorbs {action}. {first} {_fallback_verb(first, 'recalculates', 'recalculate')} in public, and "
+            f"{second} {_fallback_verb(second, 'watches', 'watch')} who benefits from the new version of events. "
             f"{stage_line} The next beat can press for a concrete answer, place one "
             f"fact on the table, or wait for the next stakeholder to reveal their stake."
         )
@@ -1585,6 +1585,22 @@ def _fallback_turn_names(template: NarrativeTemplate, pulses: list[NPCPulse]) ->
             if len(names) >= 2:
                 break
     return names
+
+
+def _fallback_name_is_plural(name: str) -> bool:
+    lower = name.strip().casefold()
+    if not lower or lower in {"the room", "the boardroom", "the family table"}:
+        return False
+    if any(token in lower for token in (" and ", ",", "&")):
+        return True
+    last = re.sub(r"[^a-z]+", "", lower.split()[-1]) if lower.split() else lower
+    if last.endswith(("ss", "us")):
+        return False
+    return last.endswith("s")
+
+
+def _fallback_verb(name: str, singular: str, plural: str) -> str:
+    return plural if _fallback_name_is_plural(name) else singular
 
 
 def _fallback_turn_action_phrase(player_action: str) -> str:
@@ -1904,11 +1920,11 @@ def _fallback_object_label(value: str) -> str:
         if idx > 0:
             text = text[:idx].strip()
             lower = text.lower()
+    text = re.sub(r"^(?:a|an|the)\s+", "", text, flags=re.I)
+    lower = text.lower()
     words = text.split()
     if len(words) > 6:
         text = " ".join(words[:6])
-    if lower.startswith(("a ", "an ", "the ")):
-        return text
     return text or "contested detail"
 
 
@@ -1936,12 +1952,13 @@ def _fallback_uses_fantasy_scene(brief: StoryBrief) -> bool:
 def _fallback_background_sentence(background_names: list[str], *, brief: StoryBrief) -> str:
     if not background_names:
         return ""
-    visible = _fallback_names_text(background_names[:5])
+    names = background_names[:5]
+    visible = _fallback_names_text(names)
     if brief.tension_profile == "comedy":
-        return f" {visible} stay close enough to react, heckle gently, or turn the next beat into a callback."
+        return f" {visible} {_fallback_verb(visible, 'stays', 'stay')} close enough to react, heckle gently, or turn the next beat into a callback."
     if _fallback_uses_fantasy_scene(brief):
-        return f" {visible} remain at the edge of the stacks, close enough for one old rule or faction claim to matter."
-    return f" {visible} stay close enough to object, react, or pull one missing detail back into view."
+        return f" {visible} {_fallback_verb(visible, 'remains', 'remain')} at the edge of the stacks, close enough for one old rule or faction claim to matter."
+    return f" {visible} {_fallback_verb(visible, 'stays', 'stay')} close enough to object, react, or pull one missing detail back into view."
 
 
 def _fallback_names_text(names: list[str]) -> str:
@@ -1960,8 +1977,9 @@ def _fallback_sentence_start(value: str) -> str:
 
 def _fallback_profile_clause(brief: StoryBrief, *, contested: str) -> str:
     if brief.tension_profile == "comedy":
+        callback_verb = _fallback_verb(contested, "becomes", "become")
         return (
-            f"The trouble stays social: timing, embarrassment, and whether the {contested} becomes a harmless callback "
+            f"The trouble stays social: timing, embarrassment, and whether the {contested} {callback_verb} a harmless callback "
             "instead of a culprit hunt."
         )
     if brief.tension_profile == "cozy_mystery":

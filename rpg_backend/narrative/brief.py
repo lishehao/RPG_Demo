@@ -183,6 +183,7 @@ _NON_ENTITY_EXACT = {
     "minutes",
     "no violence",
     "no betrayal",
+    "no public pressure",
     "no villains",
     "betrayal",
     "public pressure",
@@ -645,6 +646,10 @@ def _entity_source_parts(seed: str) -> list[str]:
 
 def _clean_entity(raw: str) -> str:
     text = re.sub(r"\([^)]*\)", "", raw).strip(" .!?\"'“”‘’")
+    if ":" in text:
+        prefix, suffix = text.rsplit(":", 1)
+        if re.search(r"\b(?:story|premise|scene|prompt|no villains?)\b", prefix, re.I):
+            text = suffix
     text = re.sub(r"^\s*no\s+villains?\s*:\s*", "", text, flags=re.I)
     text = _LIST_MARKER_RE.sub("", text)
     text = _ENTITY_LEADING_NOISE_RE.sub("", text)
@@ -799,9 +804,9 @@ def _fallback_entities(seed: str, profile: TensionProfile) -> list[str]:
     if "family" in lowered or "dinner" in lowered:
         return ["host", "estranged relative", "loyal witness", "outside claimant"]
     if profile == "cozy_mystery":
-        return ["player", "keeper of the clue", "gentle suspect", "outside witness"]
+        return ["player", "keeper of the clue", "gentle witness", "outside witness"]
     if profile == "comedy":
-        return ["player", "mistaken accuser", "embarrassed witness", "deadline enforcer"]
+        return ["player", "mix-up witness", "embarrassed helper", "deadline host"]
     return ["player", "rival", "witness", "deadline holder"]
 
 
@@ -858,7 +863,7 @@ def _constraint_items(seed: str) -> list[StoryBriefPlanItem]:
                 rationale="Preserved as an exclusion; it should not become active cast.",
             )
         )
-    if re.search(r"\bwithout\b[^.!?;]*\bpublic pressure\b", seed, re.I):
+    if re.search(r"\b(?:without\b[^.!?;]*\bpublic pressure|no\s+public pressure)\b", seed, re.I):
         items.append(
             StoryBriefPlanItem(
                 label="avoid public pressure",
@@ -1073,6 +1078,12 @@ def _strip_entity_exclusion_segments(seed: str) -> str:
     text = re.sub(r"\bwithout\b[^.!?;]*", "", seed, flags=re.I)
     text = re.sub(r"\bkeep it\b[^.!?;]*", "", text, flags=re.I)
     text = re.sub(r"\bmake it\b[^.!?;]*", "", text, flags=re.I)
+    text = re.sub(
+        r"\bno\s+(?:public pressure|betrayal|blackmail|violence|villains?)\b",
+        "",
+        text,
+        flags=re.I,
+    )
     return text
 
 

@@ -9,6 +9,7 @@ import rpg_backend.narrative.service as narrative_service_module
 from rpg_backend.main import app
 from rpg_backend.narrative.brief import build_story_brief
 from rpg_backend.narrative.contracts import (
+    AdvanceTurnRequest,
     CastMember,
     CreateTemplateRequest,
     PlayerRole,
@@ -530,6 +531,70 @@ def test_create_template_cozy_fit_prompt_can_fallback_to_playable_opening(
     assert "cleaner way to talk" not in response.opening.content
     assert response.opening.options
     assert response.session.session_id
+
+
+def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
+    tmp_path,
+) -> None:
+    seed = (
+        "At a neighborhood bake sale, three parents and a shy teen volunteer "
+        "try to find who swapped the cupcake labels. Keep it cozy and funny, "
+        "no blackmail, no betrayal, no corporate stakes."
+    )
+    brief = build_story_brief(seed=seed, language="en").brief
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    assert response.story_brief_consistency is not None
+    assert response.story_brief_consistency.status == "pass"
+    assert response.opening.options
+    assert "cupcake labels become" in response.opening.content.casefold()
+    assert "cupcake labels becomes" not in response.opening.content.casefold()
+    visible_opening_text = " ".join(
+        [
+            response.opening.content,
+            *[option.label for option in response.opening.options],
+            *[option.hint or "" for option in response.opening.options],
+            *[role.label for role in response.template.player_role_options],
+            *[role.public_persona for role in response.template.player_role_options],
+        ]
+    ).casefold()
+    for taboo in (
+        "accuse",
+        "fight",
+        "scapegoat",
+        "takes the fall",
+        "security footage",
+        "hacking",
+        "permanent position",
+        "blackmail",
+        "betrayal",
+    ):
+        assert taboo not in visible_opening_text
+
+    turn = service.advance(
+        response.session.session_id,
+        AdvanceTurnRequest(chosen_option_index=0),
+        player_user_id="usr_test",
+        include_agent_trace=True,
+    )
+    events = repo.list_agent_events(response.session.session_id)
+
+    assert turn.narrator_message.options
+    assert "AI service" not in turn.narrator_message.content
+    assert "fallback" not in turn.narrator_message.content.casefold()
+    assert [event.event_type for event in events] == [
+        "agent_plan",
+        "step_judge",
+        "contract_judge",
+    ]
+    assert events[1].payload.status == "pass"
+    assert events[2].payload.status == "pass"
 
 
 def test_create_template_brief_consistency_failure_is_user_actionable_422(

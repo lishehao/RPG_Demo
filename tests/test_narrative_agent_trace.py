@@ -290,6 +290,8 @@ def test_advance_with_missing_gateway_uses_deterministic_beta_turn(tmp_path) -> 
         "step_judge",
         "contract_judge",
     ]
+    assert events[1].payload.status == "pass"
+    assert events[2].payload.status == "pass"
     assert response.agent_plan is not None
     assert response.agent_events
 
