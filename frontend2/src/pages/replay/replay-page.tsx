@@ -96,11 +96,21 @@ export function ReplayPage({
     )
   }
 
+  const endingLabelText = replay.ending
+    ? ENDING_LABEL_DISPLAY[lang][replay.ending.label] ?? replay.ending.label
+    : ""
+  const replayTitle = replayDisplayTitle({
+    title: replay.template_title,
+    completed: replay.completed,
+    endingLabel: endingLabelText,
+    t,
+  })
+  const replaySeedText = replay.template_seed.trim()
   // Build a synthetic template-like object so we can reuse the cover helper.
   const templateLike = {
     template_id: sessionId, // stable hash on session_id for the cover pick
-    seed: replay.template_seed,
-    title: replay.template_title,
+    seed: replaySeedText || replayTitle,
+    title: replayTitle,
     cast: replay.cast,
   }
   // For completed replays, use the ending-specific illustration as the
@@ -144,8 +154,8 @@ export function ReplayPage({
             {t("replay.crumb_back_home")}
           </button>
           <div style={rpStyles.replayBadge}>{t("replay.badge")}</div>
-          <h1 style={rpStyles.title}>{replay.template_title}</h1>
-          <p style={rpStyles.heroSeed}>"{replay.template_seed}"</p>
+          <h1 style={rpStyles.title}>{replayTitle}</h1>
+          {replaySeedText ? <p style={rpStyles.heroSeed}>"{replaySeedText}"</p> : null}
           <div style={rpStyles.heroMetaLine}>
             {castLine ? <span>{castLine}</span> : null}
             {castLine ? <span style={rpStyles.heroMetaDot}>·</span> : null}
@@ -161,7 +171,7 @@ export function ReplayPage({
           {replay.completed && replay.ending ? (
             <div style={rpStyles.heroEnding}>
               <div style={rpStyles.heroEndingLabel}>
-                {ENDING_LABEL_DISPLAY[lang][replay.ending.label] ?? replay.ending.label}
+                {endingLabelText}
               </div>
               <div style={rpStyles.heroEndingSubtitle}>{endingSubtitleText}</div>
             </div>
@@ -197,7 +207,7 @@ export function ReplayPage({
             <div style={rpStyles.payoffGrid}>
               <div style={rpStyles.payoffResult}>
                 <div style={rpStyles.payoffLabel}>
-                  {ENDING_LABEL_DISPLAY[lang][replay.ending.label] ?? replay.ending.label}
+                  {endingLabelText}
                 </div>
                 <h2 style={rpStyles.payoffTitle}>{endingSubtitleText}</h2>
                 <p style={rpStyles.payoffLead}>
@@ -346,7 +356,7 @@ export function ReplayPage({
           {replay.ending ? (
             <div style={rpStyles.endingCard}>
               <div style={rpStyles.endingLabelChip}>
-                {ENDING_LABEL_DISPLAY[lang][replay.ending.label] ?? replay.ending.label}
+                {endingLabelText}
               </div>
               <h2 style={rpStyles.endingSubtitle}>{endingSubtitleText}</h2>
               <div style={rpStyles.endingPassage}>{replay.ending.passage}</div>
@@ -394,10 +404,53 @@ function replayChangedEntityNames(
   const names: string[] = []
   for (const pulse of message?.npc_pulse ?? []) {
     if (pulse.shift === "steady") continue
-    const name = castNameById[pulse.npc_id] ?? pulse.npc_id
+    const name = replayDisplayNameForEntity(pulse.npc_id, castNameById)
     if (!names.includes(name)) names.push(name)
   }
   return names.slice(0, 3)
+}
+
+function replayDisplayTitle({
+  title,
+  completed,
+  endingLabel,
+  t,
+}: {
+  title: string
+  completed: boolean
+  endingLabel: string
+  t: ReturnType<typeof useT>
+}): string {
+  const cleaned = title.replace(/\s+/g, " ").trim()
+  if (cleaned && cleaned !== "Shared private story") return cleaned
+  if (completed && endingLabel) {
+    return t("replay.private_completed_title", { label: endingLabel })
+  }
+  return t("replay.private_in_progress_title")
+}
+
+function replayDisplayNameForEntity(id: string, castNameById: Record<string, string>): string {
+  const direct = castNameById[id]?.trim()
+  if (direct) return direct
+  const normalizedId = replayNormalizeEntityKey(id)
+  for (const [castId, displayName] of Object.entries(castNameById)) {
+    if (
+      replayNormalizeEntityKey(castId) === normalizedId ||
+      replayNormalizeEntityKey(displayName) === normalizedId
+    ) {
+      return displayName
+    }
+  }
+  return replayHumanizeEntityId(id)
+}
+
+function replayNormalizeEntityKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "")
+}
+
+function replayHumanizeEntityId(id: string): string {
+  const cleaned = id.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim()
+  return cleaned || id
 }
 
 function replayLeadSentence(text: string, fallback: string): string {

@@ -1,4 +1,4 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, type Ref, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react"
 import type {
   NarrativeAgentEventPayload,
@@ -172,7 +172,9 @@ export function PlayPage({
   // The page uses native document scroll for a less pane-like reading
   // feel, but this still tolerates older nested-scroll layouts.
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const endingPayoffRef = useRef<HTMLElement | null>(null)
   const previousScrollStoryRef = useRef<{ sessionId: string; messageCount: number } | null>(null)
+  const previousCompletionKeyRef = useRef<string | null>(null)
   useEffect(() => {
     const el = scrollerRef.current
     if (!el || !story || story.session.ending_label) return
@@ -224,6 +226,46 @@ export function PlayPage({
       window.clearTimeout(lateLayoutTimer)
     }
   }, [story, story?.messages.length, story?.session.ending_label, story?.session.session_id])
+
+  useEffect(() => {
+    if (!story || !ending || !story.session.ending_label) return
+    const completionKey = `${story.session.session_id}:${story.session.ending_label}:${story.session.turn_count}`
+    if (previousCompletionKeyRef.current === completionKey) return
+    previousCompletionKeyRef.current = completionKey
+    if (typeof window === "undefined" || typeof document === "undefined") return
+
+    const prefersReducedMotion =
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const smoothBehavior: ScrollBehavior = prefersReducedMotion ? "auto" : "smooth"
+
+    let secondFrame = 0
+    const scrollToPayoff = (behavior: ScrollBehavior) => {
+      const target =
+        endingPayoffRef.current ??
+        document.querySelector<HTMLElement>("[data-play-ending-payoff='true']")
+      if (!target) return
+      target.focus({ preventScroll: true })
+      const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
+      const root = document.scrollingElement ?? document.documentElement
+      const rect = target.getBoundingClientRect()
+      root.scrollTo({
+        top: Math.max(0, rect.top + root.scrollTop - headerHeight - 18),
+        behavior,
+      })
+    }
+
+    const firstFrame = window.requestAnimationFrame(() => {
+      scrollToPayoff(smoothBehavior)
+      secondFrame = window.requestAnimationFrame(() => scrollToPayoff("auto"))
+    })
+    const lateLayoutTimer = window.setTimeout(() => scrollToPayoff("auto"), 260)
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      if (secondFrame) window.cancelAnimationFrame(secondFrame)
+      window.clearTimeout(lateLayoutTimer)
+    }
+  }, [ending, ending?.label, story, story?.session.ending_label, story?.session.session_id, story?.session.turn_count])
 
   const handleAdvance = useCallback(
     async (action: PlayAdvanceAction) => {
@@ -477,6 +519,7 @@ export function PlayPage({
   const endingScreen = isComplete && ending ? (
     <EndingScreen
       ending={ending}
+      payoffRef={endingPayoffRef}
       sessionId={sessionId}
       templateId={story.template.template_id}
       messages={story.messages}
@@ -1407,6 +1450,7 @@ function Header({
 
 function EndingScreen({
   ending,
+  payoffRef,
   sessionId,
   templateId,
   messages,
@@ -1418,6 +1462,7 @@ function EndingScreen({
   onBackHome,
 }: {
   ending: NarrativeEnding
+  payoffRef?: Ref<HTMLElement>
   sessionId: string
   templateId: string
   messages: NarrativeStoryMessage[]
@@ -1556,6 +1601,9 @@ function EndingScreen({
   const highlightCount = mergedHighlights.length
   return (
     <motion.section
+      ref={payoffRef}
+      data-play-ending-payoff="true"
+      tabIndex={-1}
       style={ppStyles.endingSection}
       initial={skipChoreography ? "animate" : "initial"}
       animate="animate"
@@ -7518,7 +7566,7 @@ const ppStyles: Record<string, CSSProperties> = {
     letterSpacing: 0,
   },
 
-  endingSection: { marginTop: 40 },
+  endingSection: { marginTop: 40, scrollMarginTop: 96, outline: "none" },
   endingDivider: {
     display: "flex",
     alignItems: "center",

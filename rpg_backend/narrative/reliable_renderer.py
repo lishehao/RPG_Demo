@@ -125,8 +125,8 @@ def render_reliable_ending(
                 f"check. {last_player_memory} becomes the shared callback. Nobody has to be "
                 f"blamed for the scene to make sense; the clue, the witness, and the public "
                 f"reaction finally point in the same gentle direction. By turn {turn_count}, "
-                f"the pressure has not vanished, but it has become small enough for the group "
-                f"to laugh, repair, and remember what actually happened."
+                f"the room is not simply calmer; it has a callback it can retell without "
+                f"making anyone the villain."
             ),
         )
     if profile == "fantasy_sci_fi":
@@ -524,8 +524,8 @@ def _fallback_turn_arc_line(
                 "build": "The scene is becoming less about the rumor itself and more about who gets to explain it before the broadcast.",
                 "turn": f"The {scene} now has to choose a public version that includes the overlooked voices.",
                 "payoff": f"The {object_label} {object_be} close to becoming a shared joke instead of a private worry.",
-                "finale": f"The final stretch is about letting {first} and {second} share one version the colony can repeat.",
-                "coda": f"The coda can now leave the colony with one public version and no private villain.",
+                "finale": f"The final stretch is about turning the oxygen-rumor beat into a callback {first} and {second} can repeat without making a villain.",
+                "coda": "The coda can leave the colony with a public joke, a checked rumor, and no private villain.",
             }
         else:
             lines = {
@@ -533,8 +533,8 @@ def _fallback_turn_arc_line(
                 "build": "The table is starting to see a pattern instead of a culprit.",
                 "turn": f"The {scene} now has to decide which small detail becomes the shared account.",
                 "payoff": f"The {object_label} {object_be} close to becoming a repair the whole room can understand.",
-                "finale": f"The final stretch is about naming the kind version clearly enough for {first} and {second} to carry it forward.",
-                "coda": "The coda can now leave the room with a kinder story than the one it started with.",
+                "finale": f"The final stretch is no longer about finding a culprit; it is about letting {first} and {second} prove the kinder version out loud.",
+                "coda": "The coda can now leave the room with a remembered callback, not another search.",
             }
         return lines[arc_phase]
     if profile == "fantasy_sci_fi":
@@ -543,8 +543,8 @@ def _fallback_turn_arc_line(
             "build": f"The {scene} is starting to read the {object_label} as a rule, not just a prize.",
             "turn": f"The room has to decide which faction can speak for the {object_label} under the eclipse light.",
             "payoff": f"The {object_label} {object_be} close to becoming a record the factions cannot rewrite alone.",
-            "finale": f"The final stretch is about making one reading visible enough for {first} and {second} to answer.",
-            "coda": f"The coda can now leave the {scene} with one reading the factions have to remember.",
+            "finale": f"The final stretch is about making one reading visible enough for {first} and {second} to defend when the stacks remember it.",
+            "coda": f"The coda can now leave the {scene} with one marked page the factions have to keep in the record.",
         }
         return lines[arc_phase]
     if profile == "family_social":

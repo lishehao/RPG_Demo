@@ -463,6 +463,7 @@ def test_mars_reliable_turns_vary_without_escalating_or_losing_background(
     assert "shared joke" in visible_text
     assert "public version" in visible_text
     assert "final stretch" in visible_text
+    assert "oxygen-rumor beat into a callback" in visible_text
     assert visible_text.count("invite the overlooked group into the test") <= 3
     for residue in (
         "oxygen heist",
@@ -635,6 +636,7 @@ def test_fantasy_reliable_turns_avoid_comedy_residue_when_prompt_is_playful(
     assert "star map" in visible_text
     assert "factions cannot rewrite" in visible_text
     assert "final stretch" in visible_text
+    assert "defend when the stacks remember it" in visible_text
     assert visible_text.count("ask what the eclipse changed in the stacks") <= 3
     for residue in (
         "timing trail",
@@ -829,6 +831,7 @@ def test_cozy_reliable_turns_remain_varied_over_long_session(
     assert "shared record" in visible_text
     assert "final stretch" in visible_text
     assert "room no longer needs another search" in visible_text
+    assert "remembered callback" in visible_text
     assert "cupcake labels keeps" not in visible_text
     for residue in (
         "fallback",
@@ -899,6 +902,7 @@ def test_cozy_reliable_final_turn_records_ending_without_gateway(
     assert "turns let" not in ending_text
     assert "final move turns" not in ending_text
     assert "the room keeps the kinder version" in ending_text
+    assert "callback it can retell" in ending_text
     assert "final repair" in ending_text
 
     history = service.get_story_history(response.session.session_id, player_user_id="usr_test")
