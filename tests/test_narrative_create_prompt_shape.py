@@ -360,6 +360,12 @@ def test_create_template_uses_reliable_opening_first_for_heavy_mars_brief(
     assert "At the Mars colony talent show" in response.opening.content
     assert "oxygen rumor" in response.opening.content
     assert "callback" in response.opening.content
+    first_sentence = response.opening.content.split(".", 1)[0]
+    assert "Waste Recycling" not in first_sentence
+    assert "Transit" not in first_sentence
+    assert "Finance" not in first_sentence
+    assert "Theatre Club" not in first_sentence
+    assert "Earth Media" not in first_sentence
     assert "crowd the first decision" not in response.opening.content
     assert "talent show, Mars colony is already underway" not in response.opening.content
     assert "visible mistake" not in response.opening.content
@@ -620,6 +626,8 @@ def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
     assert "fallback" not in turn.narrator_message.content.casefold()
     assert "fallback" not in second_turn.narrator_message.content.casefold()
     assert turn.narrator_message.content != second_turn.narrator_message.content
+    assert "once your move" not in second_turn.narrator_message.content.casefold()
+    assert "after you let" in second_turn.narrator_message.content.casefold()
     assert "shifts after" not in second_turn.narrator_message.content.casefold()
     assert "cupcake labels" in turn.narrator_message.content.casefold()
     assert "cupcake labels" in second_turn.narrator_message.content.casefold()

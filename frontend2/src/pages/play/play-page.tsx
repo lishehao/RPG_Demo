@@ -325,6 +325,13 @@ export function PlayPage({
       restoreFocus()
     }, 90)
   }, [])
+  const scrollToActions = useCallback(() => {
+    if (typeof document === "undefined") return
+    document.getElementById("play-next-actions")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    })
+  }, [])
 
   const lastNarrator = story
     ? [...story.messages].reverse().find((m) => m.role === "narrator") ?? null
@@ -507,6 +514,13 @@ export function PlayPage({
               />
             )
           })}
+
+          {compactPlayChrome && actionAreaVisible ? (
+            <button type="button" style={ppStyles.mobileActionJump} onClick={scrollToActions}>
+              <span>{t("play.mobile_action_jump")}</span>
+              <span aria-hidden>↓</span>
+            </button>
+          ) : null}
 
           <AnimatePresence>
             {error ? (
@@ -875,6 +889,7 @@ function RunContextPanel({
 }) {
   const t = useT()
   const compactRunContext = useCompactLayout("(max-width: 680px)")
+  const [contextExpanded, setContextExpanded] = useState(false)
   const role = story.session.player_role
   const upcomingTurn = Math.min(turnBudget - 1, turnsCompleted + 1)
   const stageKey = stageForLocal(upcomingTurn, turnBudget)
@@ -921,7 +936,9 @@ function RunContextPanel({
       return Number(bProtected) - Number(aProtected)
     })
     .map((member) => member.display_name)
-  const visibleBackgroundStakeholders = backgroundStakeholders.slice(0, 3)
+  const visibleBackgroundStakeholders = contextExpanded
+    ? backgroundStakeholders
+    : backgroundStakeholders.slice(0, 3)
   const hiddenBackgroundStakeholderCount = Math.max(
     0,
     backgroundStakeholders.length - visibleBackgroundStakeholders.length,
@@ -956,10 +973,17 @@ function RunContextPanel({
               <span>{item}</span>
             </span>
           ))}
-          {hiddenBackgroundStakeholderCount > 0 ? (
-            <span style={ppStyles.runInventoryMore}>
-              {t("play.visible_context_more", { count: hiddenBackgroundStakeholderCount })}
-            </span>
+          {backgroundStakeholders.length > 3 ? (
+            <button
+              type="button"
+              style={ppStyles.runInventoryMoreButton}
+              onClick={() => setContextExpanded((value) => !value)}
+              aria-expanded={contextExpanded}
+            >
+              {contextExpanded
+                ? t("play.visible_context_less")
+                : t("play.visible_context_more", { count: hiddenBackgroundStakeholderCount })}
+            </button>
           ) : null}
         </span>
       </div>
@@ -3794,6 +3818,7 @@ function ActionArea({
 
   return (
     <motion.div
+      id="play-next-actions"
       data-play-action-area="true"
       style={ppStyles.actionArea}
       initial={{ opacity: 0, y: 8 }}
@@ -5332,6 +5357,18 @@ const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(68,55,40,0.58)",
     fontWeight: 650,
   },
+  runInventoryMoreButton: {
+    margin: 0,
+    padding: 0,
+    border: "none",
+    borderBottom: "1px dotted rgba(107,70,19,0.32)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(68,55,40,0.64)",
+    font: "inherit",
+    fontWeight: 720,
+    cursor: "pointer",
+  },
   runContextGrid: {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1.35fr) minmax(230px, 0.65fr)",
@@ -6484,6 +6521,25 @@ const ppStyles: Record<string, CSSProperties> = {
     backdropFilter: "none",
     boxShadow: "none",
     zIndex: 1,
+  },
+  mobileActionJump: {
+    marginTop: 10,
+    marginBottom: 2,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    width: "fit-content",
+    padding: "5px 0",
+    borderTop: 0,
+    borderRight: 0,
+    borderLeft: 0,
+    borderBottom: "1px solid rgba(107,70,19,0.26)",
+    background: "transparent",
+    color: "rgba(86,56,24,0.86)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: 12.5,
+    fontWeight: 780,
   },
   turnGuide: {
     marginBottom: 14,

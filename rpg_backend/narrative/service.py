@@ -1522,13 +1522,14 @@ def _fallback_turn_passage(
     second = names[1] if len(names) > 1 else "the room"
     first_subject = _fallback_sentence_start(first)
     action = _fallback_turn_action_phrase(player_action)
+    after_action = _fallback_turn_after_phrase(action)
     stage_line = _fallback_turn_stage_line(agent_plan.director.stage_phase, profile)
     turn_variant = agent_plan.turn_index % 3
     object_label = _fallback_turn_object_label(template)
     if profile in {"cozy_mystery", "comedy"}:
         if turn_variant == 1:
             text = (
-                f"After {action}, the {scene} pauses around the {object_label}. "
+                f"After {after_action}, the {scene} pauses around the {object_label}. "
                 f"{first_subject} {_fallback_verb(first, 'points', 'point')} to a small timing detail, and "
                 f"{second} {_fallback_verb(second, 'keeps', 'keep')} the explanation light enough for repair. "
                 f"{stage_line} The next move can check the handoff, invite a quieter voice, or turn the mix-up into a payoff."
@@ -1536,14 +1537,14 @@ def _fallback_turn_passage(
         elif turn_variant == 2:
             object_verb = _fallback_verb(object_label, "becomes", "become")
             text = (
-                f"The {object_label} {object_verb} easier to read once {action}. "
+                f"The {object_label} {object_verb} easier to read after {after_action}. "
                 f"{first_subject} {_fallback_verb(first, 'softens', 'soften')} first, while {second} "
                 f"{_fallback_verb(second, 'notices', 'notice')} who is still hesitating. "
                 f"{stage_line} The next beat can compare versions gently or let the room laugh before blame settles."
             )
         else:
             text = (
-                f"The {scene} shifts after {action}. {first_subject} {_fallback_verb(first, 'catches', 'catch')} the detail first, "
+                f"The {scene} shifts after {after_action}. {first_subject} {_fallback_verb(first, 'catches', 'catch')} the detail first, "
                 f"and {second} {_fallback_verb(second, 'leaves', 'leave')} room for a less dramatic explanation instead of "
                 f"turning the moment into a pile-on. {stage_line} The next beat can test "
                 f"the {object_label}, invite the quiet party in, or let the callback land before "
@@ -1552,28 +1553,28 @@ def _fallback_turn_passage(
     elif profile == "fantasy_sci_fi":
         if turn_variant == 1:
             text = (
-                f"After {action}, the {object_label} draws the {scene} inward. "
+                f"After {after_action}, the {object_label} draws the {scene} inward. "
                 f"{first_subject} {_fallback_verb(first, 'reads', 'read')} the first change, while {second} "
                 f"{_fallback_verb(second, 'tests', 'test')} which old rule still holds. "
                 f"{stage_line} The next beat can ask the quieter faction to interpret the sign."
             )
         elif turn_variant == 2:
             text = (
-                f"The {scene} gives back a clearer sign once {action}. "
+                f"The {scene} gives back a clearer sign after {after_action}. "
                 f"{first_subject} {_fallback_verb(first, 'moves', 'move')} toward the {object_label}, and {second} "
                 f"{_fallback_verb(second, 'tracks', 'track')} the faction claim behind it. "
                 f"{stage_line} The next beat can place the artifact where everyone can answer."
             )
         else:
             text = (
-                f"The {scene} answers after {action}. {first_subject} {_fallback_verb(first, 'turns', 'turn')} toward the visible "
+                f"The {scene} answers after {after_action}. {first_subject} {_fallback_verb(first, 'turns', 'turn')} toward the visible "
                 f"sign, while {second} {_fallback_verb(second, 'notices', 'notice')} which rule, artifact, or faction has "
                 f"moved. {stage_line} The next beat can question the change, share the "
                 f"sign with a quieter party, or hold the {object_label} where everyone can read it."
             )
     elif profile == "family_social":
         text = (
-            f"The {scene} quiets after {action}. {first_subject} {_fallback_verb(first, 'reacts', 'react')} first, and {second} "
+            f"The {scene} quiets after {after_action}. {first_subject} {_fallback_verb(first, 'reacts', 'react')} first, and {second} "
             f"{_fallback_verb(second, 'starts', 'start')} weighing whether this is an old wound or a repairable mistake. "
             f"{stage_line} The next beat can ask for the missing context, protect a "
             f"fragile bond, or let someone else speak before the room hardens."
@@ -1673,6 +1674,14 @@ def _fallback_turn_action_phrase(player_action: str) -> str:
     return f"your move to {text}" if not text.startswith("your ") else text
 
 
+def _fallback_turn_after_phrase(action_phrase: str) -> str:
+    if action_phrase.startswith("your move to "):
+        return f"you {action_phrase.removeprefix('your move to ')}"
+    if action_phrase.startswith("your move"):
+        return "your move"
+    return action_phrase
+
+
 def _fallback_turn_stage_line(stage_phase: str, profile: str) -> str:
     if profile in {"cozy_mystery", "comedy"}:
         if stage_phase in {"reversal", "climax", "pre_finale", "pre_finale_open"}:
@@ -1759,6 +1768,7 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
         brief=brief,
         cast_names=_fallback_opening_focus_names(cast_names),
         background_names=background_names,
+        protected_background_names=protected_background_names,
         pressure_labels=pressure_labels,
     )
     options = _fallback_opening_options(brief)
@@ -1921,15 +1931,21 @@ def _fallback_opening_passage(
     brief: StoryBrief,
     cast_names: list[str],
     background_names: list[str],
+    protected_background_names: set[str] | None = None,
     pressure_labels: list[str],
 ) -> str:
-    cast_text = _fallback_names_text(cast_names)
-    cast_text_mid_sentence = _fallback_names_text(cast_names, sentence_start=False)
+    active_cast_names, context_names = _fallback_opening_name_groups(
+        cast_names,
+        background_names,
+        protected_background_names=protected_background_names or set(),
+    )
+    cast_text = _fallback_names_text(active_cast_names)
+    cast_text_mid_sentence = _fallback_names_text(active_cast_names, sentence_start=False)
     seed = brief.original_seed
     scene = _fallback_scene_label(brief, pressure_labels)
     contested = _fallback_contested_object(seed)
     secondary_event = _fallback_secondary_event_clause(pressure_labels, scene)
-    background_text = _fallback_background_sentence(background_names, brief=brief)
+    background_text = _fallback_background_sentence(context_names, brief=brief)
     profile_clause = _fallback_profile_clause(brief, contested=contested)
     first_move = _fallback_first_move_clause(brief)
     if _fallback_uses_fantasy_scene(brief):
@@ -1948,6 +1964,29 @@ def _fallback_opening_passage(
         f"At {scene}, {cast_text} are already circling the {contested}, each trying to make the first public account stick{secondary_event}."
         f"{background_text} {profile_clause} {first_move}"
     )
+
+
+def _fallback_opening_name_groups(
+    cast_names: list[str],
+    background_names: list[str],
+    *,
+    protected_background_names: set[str],
+) -> tuple[list[str], list[str]]:
+    active_limit = 3 if len(cast_names) > 4 else 5
+    active = cast_names[:active_limit]
+    ordered_background_names = sorted(
+        [*cast_names[active_limit:], *background_names],
+        key=lambda name: (0 if name in protected_background_names else 1, name.casefold()),
+    )
+    seen: set[str] = set()
+    background: list[str] = []
+    for name in ordered_background_names:
+        key = name.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        background.append(name)
+    return active or cast_names[:5] or ["the key parties"], background
 
 
 def _fallback_scene_label(brief: StoryBrief, pressure_labels: list[str]) -> str:
