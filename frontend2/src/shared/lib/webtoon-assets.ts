@@ -1,6 +1,22 @@
-// Maps stable story / character / theme keys to visual assets. Template cover
-// surfaces now use curated, text-free illustration panels; older /webtoons/
-// pools remain for avatars, endings, and legacy scene accents.
+// Maps stable story / character / theme keys to visual assets. Demo-facing
+// surfaces route through curated/generated, text-free illustration panels;
+// older /webtoons/ pools remain only for deferred avatar/advisor identity work
+// and catalog/debug references.
+
+const GENERATED_BASE = "/illustrations/generated"
+
+export const GENERATED_ASSETS = {
+  coverNeutral: `${GENERATED_BASE}/cover-neutral-storyboard-desk.webp`,
+  coverCozy: `${GENERATED_BASE}/cover-cozy-bake-sale.webp`,
+  coverFantasy: `${GENERATED_BASE}/cover-fantasy-library-eclipse.webp`,
+  coverSciFiMars: `${GENERATED_BASE}/cover-sci-fi-mars-colony-talent-show.webp`,
+  coverHighDrama: `${GENERATED_BASE}/cover-high-drama-boardroom.webp`,
+  reviewerEvidence: `${GENERATED_BASE}/reviewer-evidence-board-clean.webp`,
+  advisorNotebook: `${GENERATED_BASE}/advisor-notebook-desk.webp`,
+  emptyPlaza: `${GENERATED_BASE}/empty-plaza-story-cards.webp`,
+  endingReflection: `${GENERATED_BASE}/ending-reflection-notebook.webp`,
+  objectCardSheet: `${GENERATED_BASE}/object-card-sheet.webp`,
+} as const
 
 const SHELLS = [
   "campus_romance",
@@ -185,6 +201,20 @@ function storyCoverFromProfile(profile: StoryCoverProfile): string {
   return STORY_COVER_BY_PROFILE[profile]
 }
 
+function generatedCoverFromProfile(profile: StoryCoverProfile, corpus = ""): string {
+  const lower = corpus.toLowerCase()
+  if (
+    profile === "fantasy_sci_fi" &&
+    (lower.includes("mars") || lower.includes("colony") || lower.includes("oxygen") || lower.includes("火星"))
+  ) {
+    return GENERATED_ASSETS.coverSciFiMars
+  }
+  if (profile === "cozy_comedy") return GENERATED_ASSETS.coverCozy
+  if (profile === "fantasy_sci_fi") return GENERATED_ASSETS.coverFantasy
+  if (profile === "high_drama_social") return GENERATED_ASSETS.coverHighDrama
+  return GENERATED_ASSETS.coverNeutral
+}
+
 function countKeywordHits(corpus: string, keywords: readonly string[]): number {
   return keywords.reduce((total, keyword) => total + (corpus.includes(keyword) ? 1 : 0), 0)
 }
@@ -270,29 +300,33 @@ export function getDefaultAvatar(gender?: "female" | "male"): string {
 
 /** Background art for the play stage, picked by the current beat phase. */
 export function getSceneByPhase(phase: string | null | undefined, key = "default"): string {
-  const slug = (SEGMENT_PHASES.find((p) => p === phase) ?? "opening") as SegmentPhase
-  return `/webtoons/segments/${pick(SEGMENT_PHASE_POOLS[slug], `segment|${slug}|${key}`)}.jpg`
+  void key
+  if (phase === "pressure") return GENERATED_ASSETS.coverHighDrama
+  if (phase === "reversal") return GENERATED_ASSETS.objectCardSheet
+  if (phase === "reveal") return GENERATED_ASSETS.reviewerEvidence
+  if (phase === "terminal") return GENERATED_ASSETS.endingReflection
+  return GENERATED_ASSETS.coverNeutral
 }
 
 // ───────── endings ─────────
 
 /** Ending artwork. Hash by ending_id so each ending always uses the same canvas. */
 export function getEndingArtwork(endingId: string | null | undefined): string {
-  const key = endingId ?? "default"
-  return `/webtoons/endings/${pick(ENDING_VARIANTS, key)}.jpg`
+  void endingId
+  return GENERATED_ASSETS.endingReflection
 }
 
 // ───────── page-level backgrounds ─────────
 
 export const PAGE_BG = {
-  splash: "/webtoons/ui/splash.jpg",
-  home: "/webtoons/ui/library_bg.jpg",
-  create: "/webtoons/ui/create_bg.jpg",
-  generating: "/webtoons/ui/loading_bg.jpg",
-  login: "/webtoons/ui/auth_bg.jpg",
+  splash: GENERATED_ASSETS.coverNeutral,
+  home: GENERATED_ASSETS.coverNeutral,
+  create: GENERATED_ASSETS.advisorNotebook,
+  generating: GENERATED_ASSETS.objectCardSheet,
+  login: GENERATED_ASSETS.reviewerEvidence,
 } as const
 
-export const LOGO_URL = "/webtoons/ui/logo.png"
+export const LOGO_URL = GENERATED_ASSETS.objectCardSheet
 
 // ───────── peak narration close-ups ─────────
 // 13 cinematic close-up images used as full-bleed banners on "peak"
@@ -320,16 +354,19 @@ const PEAK_CLOSEUPS = [
 // ───────── catalog (handy for design review / debugging) ─────────
 
 export const ASSET_CATALOG = {
-  shells: SHELLS.flatMap((s) => shellVariantSlugs(s).map((slug) => `/webtoons/shells/${slug}.jpg`)),
+  generated: Object.values(GENERATED_ASSETS),
   storyCovers: Object.values(STORY_COVER_BY_PROFILE),
-  avatars: {
-    female: AVATAR_FEMALE.map((s) => `/webtoons/avatars/${s}.jpg`),
-    male: AVATAR_MALE.map((s) => `/webtoons/avatars/${s}.jpg`),
+  legacyWebtoonsRetained: {
+    shells: SHELLS.flatMap((s) => shellVariantSlugs(s).map((slug) => `/webtoons/shells/${slug}.jpg`)),
+    avatars: {
+      female: AVATAR_FEMALE.map((s) => `/webtoons/avatars/${s}.jpg`),
+      male: AVATAR_MALE.map((s) => `/webtoons/avatars/${s}.jpg`),
+    },
+    advisors: ADVISOR_AVATARS.map((s) => `/webtoons/advisors/${s}.jpg`),
+    segments: segmentSlugs().map((s) => `/webtoons/segments/${s}.jpg`),
+    endings: ENDING_VARIANTS.map((s) => `/webtoons/endings/${s}.jpg`),
+    peaks: PEAK_CLOSEUPS.map((s) => `/webtoons/peaks/${s}.jpg`),
   },
-  advisors: ADVISOR_AVATARS.map((s) => `/webtoons/advisors/${s}.jpg`),
-  segments: segmentSlugs().map((s) => `/webtoons/segments/${s}.jpg`),
-  endings: ENDING_VARIANTS.map((s) => `/webtoons/endings/${s}.jpg`),
-  peaks: PEAK_CLOSEUPS.map((s) => `/webtoons/peaks/${s}.jpg`),
 } as const
 
 // ───────── narrative (template/session) helpers ─────────
@@ -462,7 +499,7 @@ export function getCoverForTemplate(template: LooseTemplate): string {
     template.cast.map((c) => `${c.display_name} ${c.role} ${c.relation_to_protagonist}`).join(" "),
   ].join(" ")
   const profile = inferCoverProfileFromText(corpus, template.story_brief?.tension_profile)
-  return storyCoverFromProfile(profile)
+  return generatedCoverFromProfile(profile, corpus)
 }
 
 /** Stable per-character avatar within a template. */
@@ -485,65 +522,42 @@ export function getAdvisorAvatar(templateId: string, _persona: string): string {
 }
 
 // ───────── ending illustrations ─────────
-// Each backend ENDING_LABELS entry maps to a Codex-generated v2 illustration
-// at /webtoons/endings/v2/{slug}.jpg. The mapping is deliberate (not random)
-// so the same label always shows the same image — the visual symbolism of
-// the ending is part of the shareable identity.
-
-const ENDING_LABEL_TO_SLUG: Record<string, string> = {
-  孤狼: "loner",
-  共谋: "conspiracy",
-  复仇: "vengeance",
-  和解: "reconciliation",
-  牺牲: "sacrifice",
-  自由: "liberation",
-  沉沦: "fallen",
-  救赎: "redemption",
-  失控: "unraveling",
-  反噬: "backfire",
-  同谋: "ally",
-  决裂: "severance",
-  回归: "return",
-  破碎: "broken",
-  夺回: "reclaim",
-}
-
-/** Illustration for an ending label. Falls back to 'unraveling' for any
- *  label not in the table (which would be a bug — backend snaps off-pool
- *  labels to '失控' anyway). */
+// One safe reflection canvas replaces the old dark ending set for demo
+// screenshots. Ending-specific illustration batches are deferred.
 export function getEndingIllustration(label: string | null | undefined): string {
-  if (!label) return "/webtoons/endings/v2/unraveling.jpg"
-  const slug = ENDING_LABEL_TO_SLUG[label] ?? "unraveling"
-  return `/webtoons/endings/v2/${slug}.jpg`
+  void label
+  return GENERATED_ASSETS.endingReflection
 }
 
 // ───────── tier splash banners ─────────
-// Victory / compromised / collapsed splashes layer over the ending
-// illustration to amplify the emotional beat of the closing screen.
-// All three tiers now have their own splash so the trio feels intentional.
+// Legacy tier-specific JPG overlays are disabled for the P0 demo-safe pass.
+// The common generated ending canvas now carries the closing visual.
 
 export function getTierSplash(
   tier: "victory" | "compromised" | "collapsed" | null | undefined,
 ): string | null {
-  if (tier === "victory") return "/webtoons/splashes/victory.jpg"
-  if (tier === "collapsed") return "/webtoons/splashes/game_over.jpg"
-  if (tier === "compromised") return "/webtoons/splashes/compromised.jpg"
+  void tier
   return null
 }
 
 // ───────── empty state ─────────
 
 export function getEmptyPlazaImage(): string {
-  return "/webtoons/empty/plaza.jpg"
+  return GENERATED_ASSETS.emptyPlaza
 }
 
 export function getPeakCloseUp(messageOrd: number): string {
-  const slug = pick(PEAK_CLOSEUPS, `peak|${messageOrd}`)
-  return `/webtoons/peaks/${slug}.jpg`
+  const generatedPeakPool = [
+    GENERATED_ASSETS.objectCardSheet,
+    GENERATED_ASSETS.reviewerEvidence,
+    GENERATED_ASSETS.coverHighDrama,
+    GENERATED_ASSETS.endingReflection,
+  ] as const
+  return pick(generatedPeakPool, `generated-peak|${messageOrd}`)
 }
 
 // ───────── advisor oracle vignette ─────────
 // Single atmospheric texture layered behind oracle reply bubbles to
 // make the "I paid a turn for this" moment feel ritualistic.
 
-export const ORACLE_VIGNETTE = "/webtoons/oracle/vignette.jpg"
+export const ORACLE_VIGNETTE = GENERATED_ASSETS.advisorNotebook
