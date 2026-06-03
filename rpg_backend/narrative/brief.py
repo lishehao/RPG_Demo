@@ -151,7 +151,7 @@ _LIST_MARKER_RE = re.compile(
     re.I,
 )
 _ENTITY_TRAILING_RE = re.compile(
-    r"\b(?:argue|argues|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
+    r"\b(?:argue|argues|discuss|discusses|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
     r"handle|handles|represent|represents|should|try|tries|find|finds|without|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
     re.I,
 )

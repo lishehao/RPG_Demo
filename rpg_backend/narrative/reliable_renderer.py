@@ -188,7 +188,7 @@ def _fallback_turn_passage(
     action = _fallback_turn_action_phrase(player_action)
     after_action = _fallback_turn_after_phrase(action)
     stage_line = _fallback_turn_stage_line(agent_plan.director.stage_phase, profile)
-    turn_variant = agent_plan.turn_index % 3
+    turn_variant = agent_plan.turn_index % 5
     object_label = _fallback_turn_object_label(template)
     fantasy_rule = _fallback_fantasy_rule_label(template)
     fantasy_sign = _fallback_fantasy_sign_label(template, object_label)
@@ -208,9 +208,24 @@ def _fallback_turn_passage(
                 f"{_fallback_verb(second, 'notices', 'notice')} who is still hesitating. "
                 f"{stage_line} The next beat can compare versions gently or let the room laugh before blame settles."
             )
+        elif turn_variant == 3:
+            text = (
+                f"A calmer thread opens in the {scene} after {after_action}. "
+                f"{first_subject} {_fallback_verb(first, 'names', 'name')} what the {object_label} actually shows, and "
+                f"{second} {_fallback_verb(second, 'finds', 'find')} a way to answer without turning defensive. "
+                f"{stage_line} The next move can give the quiet party a clean line or make the shared mistake useful."
+            )
+        elif turn_variant == 4:
+            anchor_verb = _fallback_verb(object_label, "keeps", "keep")
+            text = (
+                f"The {object_label} {anchor_verb} everyone anchored after {after_action}. "
+                f"{first_subject} {_fallback_verb(first, 'checks', 'check')} the small practical detail, while {second} "
+                f"{_fallback_verb(second, 'reads', 'read')} whether the crowd is ready to smile instead of point fingers. "
+                f"{stage_line} The next beat can turn that practical clue into a public repair."
+            )
         else:
             text = (
-                f"The {scene} shifts after {after_action}. {first_subject} {_fallback_verb(first, 'catches', 'catch')} the detail first, "
+                f"The {scene} resets around the {object_label} after {after_action}. {first_subject} {_fallback_verb(first, 'catches', 'catch')} the detail first, "
                 f"and {second} {_fallback_verb(second, 'leaves', 'leave')} room for a less dramatic explanation instead of "
                 f"turning the moment into a pile-on. {stage_line} The next beat can test "
                 f"the {object_label}, invite the quiet party in, or let the callback land before "
@@ -230,6 +245,20 @@ def _fallback_turn_passage(
                 f"{first_subject} {_fallback_verb(first, 'moves', 'move')} toward the {object_label}, and {second} "
                 f"{_fallback_verb(second, 'tracks', 'track')} the faction claim behind it. "
                 f"{stage_line} The next beat can place the artifact under the eclipse light where every faction can answer."
+            )
+        elif turn_variant == 3:
+            text = (
+                f"A new line of light crosses the {object_label} after {after_action}. "
+                f"{first_subject} {_fallback_verb(first, 'reads', 'read')} the {fantasy_sign} against the shelves, while {second} "
+                f"{_fallback_verb(second, 'listens', 'listen')} for which faction still knows the old wording. "
+                f"{stage_line} The next beat can let the library itself narrow the question."
+            )
+        elif turn_variant == 4:
+            text = (
+                f"The {scene} holds its breath after {after_action}. "
+                f"{first_subject} {_fallback_verb(first, 'sets', 'set')} the {object_label} where the {fantasy_sign} can be seen, and "
+                f"{second} {_fallback_verb(second, 'measures', 'measure')} which old promise still binds the room. "
+                f"{stage_line} The next beat can ask the quiet faction what the eclipse has made visible."
             )
         else:
             text = (
@@ -286,7 +315,7 @@ def _fallback_fantasy_rule_label(template: NarrativeTemplate) -> str:
         return "star-map rule"
     if "cursed index" in text:
         return "index rule"
-    return "world rule"
+    return "old rule"
 
 
 def _fallback_fantasy_sign_label(template: NarrativeTemplate, object_label: str) -> str:
@@ -299,7 +328,7 @@ def _fallback_fantasy_sign_label(template: NarrativeTemplate, object_label: str)
         return "index mark"
     if object_label and object_label != "visible detail":
         return f"{object_label} sign"
-    return "world sign"
+    return "old sign"
 
 
 def _fallback_turn_scene_label(template: NarrativeTemplate) -> str:

@@ -118,6 +118,24 @@ class _OpeningCaptureGateway:
         )
 
 
+def _advance_reliable_turn_contents(
+    service: NarrativeService,
+    session_id: str,
+    *,
+    count: int,
+) -> list[str]:
+    contents: list[str] = []
+    for _ in range(count):
+        turn = service.advance(
+            session_id,
+            AdvanceTurnRequest(chosen_option_index=0),
+            player_user_id="usr_test",
+            include_agent_trace=True,
+        )
+        contents.append(turn.narrator_message.content)
+    return contents
+
+
 def test_create_template_surfaces_small_cast_prompt_shape_error(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
@@ -413,6 +431,54 @@ def test_create_template_uses_reliable_opening_first_for_heavy_mars_brief(
         assert internal_term not in visible_text
 
 
+def test_mars_reliable_turns_vary_without_escalating_or_losing_background(
+    tmp_path,
+) -> None:
+    seed = (
+        "On Mars colony, a comedy talent show with ten groups - Hydroponics, Oxygen, "
+        "Security, Medical, Education, Waste Recycling, Transit, Finance, Communications, "
+        "Theatre Club, and Earth Media before the final broadcast. Keep it lower-stakes "
+        "and funny: no violence, no blackmail. Each group should represent Theatre Club "
+        "and Earth Media concerns."
+    )
+    brief = build_story_brief(seed=seed, language="en").brief
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+    contents = _advance_reliable_turn_contents(
+        service,
+        response.session.session_id,
+        count=4,
+    )
+    visible_text = " ".join([response.opening.content, *contents]).casefold()
+
+    assert "Theatre Club" in response.opening.content
+    assert "Earth Media" in response.opening.content
+    assert len(set(contents)) >= 4
+    assert "oxygen rumor" in visible_text
+    for residue in (
+        "oxygen heist",
+        "backup oxygen tank",
+        "blackmail",
+        "violence",
+        "fight",
+        "scapegoat",
+        "takes the fall",
+        "permanent position",
+        "security footage",
+        "hacking",
+        "timing trail",
+        "table mistake",
+        "handoff",
+        "mix-up witness",
+    ):
+        assert residue not in visible_text
+
+
 def test_create_template_uses_brief_fallback_after_repeated_consistency_failure(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
@@ -541,29 +607,25 @@ def test_fantasy_reliable_turns_avoid_comedy_residue_when_prompt_is_playful(
         CreateTemplateRequest(seed=seed, language="en", story_brief=brief),
         owner_user_id="usr_test",
     )
-    first_turn = service.advance(
+    contents = _advance_reliable_turn_contents(
+        service,
         response.session.session_id,
-        AdvanceTurnRequest(chosen_option_index=0),
-        player_user_id="usr_test",
-        include_agent_trace=True,
+        count=5,
     )
-    second_turn = service.advance(
-        response.session.session_id,
-        AdvanceTurnRequest(chosen_option_index=0),
-        player_user_id="usr_test",
-        include_agent_trace=True,
-    )
+    latest_narrator = [
+        m for m in repo.list_story_messages(response.session.session_id) if m.role == "narrator"
+    ][-1]
 
     assert infer_template_tension_profile(response.template) == "fantasy_sci_fi"
     visible_text = " ".join(
         [
             response.opening.content,
-            first_turn.narrator_message.content,
-            second_turn.narrator_message.content,
-            *[option.label for option in first_turn.narrator_message.options],
-            *[option.hint or "" for option in first_turn.narrator_message.options],
+            *contents,
+            *[option.label for option in latest_narrator.options],
+            *[option.hint or "" for option in latest_narrator.options],
         ]
     ).casefold()
+    assert len(set(contents)) >= 5
     assert "eclipse-lit library" in visible_text
     assert "eclipse mark" in visible_text
     assert "star map" in visible_text
@@ -727,6 +789,56 @@ def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
     assert events[2].payload.status == "pass"
     assert events[4].payload.status == "pass"
     assert events[5].payload.status == "pass"
+
+
+def test_cozy_reliable_turns_remain_varied_over_long_session(
+    tmp_path,
+) -> None:
+    seed = (
+        "At a neighborhood bake sale, three parents and a shy teen volunteer "
+        "try to find who swapped the cupcake labels. Keep it cozy and funny, "
+        "no blackmail, no betrayal, no corporate stakes."
+    )
+    brief = build_story_brief(seed=seed, language="en").brief
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+    contents = _advance_reliable_turn_contents(
+        service,
+        response.session.session_id,
+        count=6,
+    )
+    visible_text = " ".join(contents).casefold()
+    starters = {content.split(".", 1)[0] for content in contents}
+
+    assert len(set(contents)) >= 5
+    assert len(starters) >= 5
+    assert visible_text.count("cupcake labels") >= 4
+    assert "cupcake labels keeps" not in visible_text
+    for residue in (
+        "fallback",
+        "ai service",
+        "once your move",
+        "your move to",
+        "handoff",
+        "mix-up witness",
+        "timing trail",
+        "table mistake",
+        "accuse",
+        "fight",
+        "scapegoat",
+        "takes the fall",
+        "security footage",
+        "hacking",
+        "permanent position",
+        "blackmail",
+        "betrayal",
+    ):
+        assert residue not in visible_text
 
 
 def test_create_template_brief_consistency_failure_is_user_actionable_422(

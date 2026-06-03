@@ -74,6 +74,8 @@ import {
 } from "./play-view-model"
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
+const LONG_HISTORY_THRESHOLD = 7
+const LONG_HISTORY_VISIBLE_BEATS = 6
 
 function fitTextareaToContent(node: HTMLTextAreaElement | null) {
   if (!node) return
@@ -379,6 +381,68 @@ export function PlayPage({
         t,
       })
     : null
+  const shouldGroupEarlierTurns =
+    story.messages.length > LONG_HISTORY_THRESHOLD && !isComplete
+  const visibleHistoryStart = shouldGroupEarlierTurns
+    ? Math.max(0, story.messages.length - LONG_HISTORY_VISIBLE_BEATS)
+    : 0
+  const earlierMessages = shouldGroupEarlierTurns
+    ? story.messages.slice(0, visibleHistoryStart)
+    : []
+  const visibleMessages = story.messages.slice(visibleHistoryStart)
+  const renderStoryBeat = (m: NarrativeStoryMessage, idx: number) => {
+    // For player messages that picked an option, find the previous narrator
+    // beat and look up the displayed option. Keeping the original idx matters
+    // when older turns are grouped into the disclosure below.
+    let pickedHandle: string | undefined
+    let pickedActionText: string | undefined
+    let previousPlayerMessage: NarrativeStoryMessage | undefined
+    const hasFollowingPlayerEcho =
+      m.role === "narrator" && story.messages[idx + 1]?.role === "player"
+    if (m.role === "player" && idx > 0) {
+      const prev = story.messages[idx - 1]
+      if (
+        prev?.role === "narrator" &&
+        prev.chosen_option_index != null &&
+        prev.options[prev.chosen_option_index]
+      ) {
+        const pickedOption = prev.options[prev.chosen_option_index]
+        const parsedPickedOption = parseOptionLabel(pickedOption.label)
+        pickedHandle = parsedPickedOption.tag || undefined
+        pickedActionText = parsedPickedOption.body || pickedOption.label
+      }
+    }
+    if (m.role === "narrator" && idx > 0) {
+      const prev = story.messages[idx - 1]
+      if (prev?.role === "player") {
+        previousPlayerMessage = prev
+      }
+    }
+    return (
+      <StoryBeat
+        key={`${m.role}-${m.ord}`}
+        message={m}
+        previousPlayerMessage={previousPlayerMessage}
+        castNameById={castNameById}
+        intensity={
+          m.role === "narrator"
+            ? computeBeatIntensity(m, turnBudget)
+            : "calm"
+        }
+        sceneUrl={m.role === "narrator" ? getPeakCloseUp(m.ord) : undefined}
+        pickedHandle={pickedHandle}
+        pickedActionText={pickedActionText}
+        isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}
+        hasFollowingPlayerEcho={hasFollowingPlayerEcho}
+        isBookmarked={m.role === "narrator" && bookmarkedOrds.has(m.ord)}
+        onToggleBookmark={
+          m.role === "narrator" && !isComplete
+            ? () => toggleBookmark(m.ord)
+            : undefined
+        }
+      />
+    )
+  }
 
   return (
     <div style={ppStyles.page}>
@@ -452,60 +516,21 @@ export function PlayPage({
             </div>
           ) : null}
 
-          {story.messages.map((m, idx) => {
-            // For player messages that picked an option, find the
-            // previous narrator beat and look up the displayed option.
-            // Using this in StoryBeat lets us render the exact option the
-            // player chose instead of a terse backend handle like "let him".
-            let pickedHandle: string | undefined
-            let pickedActionText: string | undefined
-            let previousPlayerMessage: NarrativeStoryMessage | undefined
-            const hasFollowingPlayerEcho =
-              m.role === "narrator" && story.messages[idx + 1]?.role === "player"
-            if (m.role === "player" && idx > 0) {
-              const prev = story.messages[idx - 1]
-              if (
-                prev?.role === "narrator" &&
-                prev.chosen_option_index != null &&
-                prev.options[prev.chosen_option_index]
-              ) {
-                const pickedOption = prev.options[prev.chosen_option_index]
-                const parsedPickedOption = parseOptionLabel(pickedOption.label)
-                pickedHandle = parsedPickedOption.tag || undefined
-                pickedActionText = parsedPickedOption.body || pickedOption.label
-              }
-            }
-            if (m.role === "narrator" && idx > 0) {
-              const prev = story.messages[idx - 1]
-              if (prev?.role === "player") {
-                previousPlayerMessage = prev
-              }
-            }
-            return (
-              <StoryBeat
-                key={`${m.role}-${m.ord}`}
-                message={m}
-                previousPlayerMessage={previousPlayerMessage}
-                castNameById={castNameById}
-                intensity={
-                  m.role === "narrator"
-                    ? computeBeatIntensity(m, turnBudget)
-                    : "calm"
-                }
-                sceneUrl={m.role === "narrator" ? getPeakCloseUp(m.ord) : undefined}
-                pickedHandle={pickedHandle}
-                pickedActionText={pickedActionText}
-                isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}
-                hasFollowingPlayerEcho={hasFollowingPlayerEcho}
-                isBookmarked={m.role === "narrator" && bookmarkedOrds.has(m.ord)}
-                onToggleBookmark={
-                  m.role === "narrator" && !isComplete
-                    ? () => toggleBookmark(m.ord)
-                    : undefined
-                }
-              />
-            )
-          })}
+          {earlierMessages.length > 0 ? (
+            <details style={ppStyles.earlierTurnsDisclosure}>
+              <summary style={ppStyles.earlierTurnsSummary}>
+                <span>{t("play.earlier_turns_summary", { count: earlierMessages.length })}</span>
+                <span style={ppStyles.earlierTurnsHint}>{t("play.earlier_turns_hint")}</span>
+              </summary>
+              <div style={ppStyles.earlierTurnsBody}>
+                {earlierMessages.map((m, idx) => renderStoryBeat(m, idx))}
+              </div>
+            </details>
+          ) : null}
+
+          {visibleMessages.map((m, localIdx) =>
+            renderStoryBeat(m, visibleHistoryStart + localIdx),
+          )}
 
           {!compactPlayChrome && actionAreaVisible ? (
             <button
@@ -5668,6 +5693,38 @@ const ppStyles: Record<string, CSSProperties> = {
   endingTierTrigger: {
     fontSize: 11,
     color: "rgba(255,255,255,0.78)",
+  },
+
+  earlierTurnsDisclosure: {
+    marginBottom: 18,
+    padding: "11px 14px 12px",
+    border: "1px solid rgba(236,204,152,0.13)",
+    borderLeft: "2px solid rgba(236,204,152,0.24)",
+    borderRadius: 3,
+    background: "rgba(255,255,255,0.028)",
+    color: "var(--text-muted)",
+  },
+  earlierTurnsSummary: {
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 12,
+    color: "var(--text)",
+    fontSize: 13,
+    lineHeight: 1.35,
+    fontWeight: 760,
+  },
+  earlierTurnsHint: {
+    color: "var(--text-faint)",
+    fontSize: 11.5,
+    fontWeight: 560,
+    textAlign: "right" as const,
+  },
+  earlierTurnsBody: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTop: "1px solid rgba(236,204,152,0.12)",
   },
 
   narratorBeat: {
