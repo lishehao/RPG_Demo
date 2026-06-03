@@ -197,16 +197,25 @@ const COVER_PROFILE_KEYWORDS: Record<StoryCoverProfile, readonly string[]> = {
   neutral: [],
 }
 
+const STRONG_SCI_FI_SETTING_KEYWORDS = [
+  "mars", "colony", "oxygen", "space", "sci-fi", "sci fi", "science fiction",
+  "planet", "alien", "orbital", "station", "space station", "airlock",
+  "hydroponic", "hydroponics", "faction",
+  "火星", "殖民", "氧气", "太空", "星球", "轨道", "空间站", "气闸", "水培",
+  "阵营", "派系",
+] as const
+
+function hasStrongSciFiSetting(corpus: string): boolean {
+  return STRONG_SCI_FI_SETTING_KEYWORDS.some((keyword) => corpus.includes(keyword))
+}
+
 function storyCoverFromProfile(profile: StoryCoverProfile): string {
   return STORY_COVER_BY_PROFILE[profile]
 }
 
 function generatedCoverFromProfile(profile: StoryCoverProfile, corpus = ""): string {
   const lower = corpus.toLowerCase()
-  if (
-    profile === "fantasy_sci_fi" &&
-    (lower.includes("mars") || lower.includes("colony") || lower.includes("oxygen") || lower.includes("火星"))
-  ) {
+  if (hasStrongSciFiSetting(lower)) {
     return GENERATED_ASSETS.coverSciFiMars
   }
   if (profile === "cozy_comedy") return GENERATED_ASSETS.coverCozy
@@ -215,15 +224,22 @@ function generatedCoverFromProfile(profile: StoryCoverProfile, corpus = ""): str
   return GENERATED_ASSETS.coverNeutral
 }
 
+export function resolveGeneratedCoverForText(corpus: string, explicitProfile?: string | null): string {
+  const profile = inferCoverProfileFromText(corpus, explicitProfile)
+  return generatedCoverFromProfile(profile, corpus)
+}
+
 function countKeywordHits(corpus: string, keywords: readonly string[]): number {
   return keywords.reduce((total, keyword) => total + (corpus.includes(keyword) ? 1 : 0), 0)
 }
 
 function inferCoverProfileFromText(corpus: string, explicitProfile?: string | null): StoryCoverProfile {
+  const lower = corpus.toLowerCase()
+  if (hasStrongSciFiSetting(lower)) return "fantasy_sci_fi"
+
   const explicit = explicitProfile ? TENSION_PROFILE_TO_COVER[explicitProfile] : undefined
   if (explicit) return explicit
 
-  const lower = corpus.toLowerCase()
   const hits = {
     fantasy_sci_fi: countKeywordHits(lower, COVER_PROFILE_KEYWORDS.fantasy_sci_fi),
     cozy_comedy: countKeywordHits(lower, COVER_PROFILE_KEYWORDS.cozy_comedy),
@@ -273,7 +289,7 @@ function shellVariantSlug(shell: Shell, key: string): string {
 /** Cover image for a world card / story drawer / world detail hero. */
 export function getCoverByStoryId(storyId: string, theme?: string | null): string {
   const corpus = `${theme ?? ""} ${storyId}`
-  return storyCoverFromProfile(inferCoverProfileFromText(corpus, theme))
+  return resolveGeneratedCoverForText(corpus, theme)
 }
 
 // ───────── portraits ─────────
@@ -498,8 +514,7 @@ export function getCoverForTemplate(template: LooseTemplate): string {
     template.story_brief?.story_kernel ?? "",
     template.cast.map((c) => `${c.display_name} ${c.role} ${c.relation_to_protagonist}`).join(" "),
   ].join(" ")
-  const profile = inferCoverProfileFromText(corpus, template.story_brief?.tension_profile)
-  return generatedCoverFromProfile(profile, corpus)
+  return resolveGeneratedCoverForText(corpus, template.story_brief?.tension_profile)
 }
 
 /** Stable per-character avatar within a template. */
