@@ -403,6 +403,24 @@ export function PlayPage({
             isComplete={isComplete}
           />
 
+          {compactPlayChrome && actionAreaVisible ? (
+            <button
+              type="button"
+              style={{
+                ...ppStyles.actionDiscoveryCue,
+                ...ppStyles.actionDiscoveryCueCompact,
+                ...ppStyles.actionDiscoveryCueTop,
+              }}
+              onClick={scrollToActions}
+            >
+              <span style={ppStyles.actionDiscoveryCueCopy}>
+                <strong style={ppStyles.actionDiscoveryCueTitle}>{t("play.action_discovery_label")}</strong>
+                <span style={ppStyles.actionDiscoveryCueDetail}>{t("play.action_discovery_detail")}</span>
+              </span>
+              <span style={ppStyles.actionDiscoveryCueArrow} aria-hidden>↓</span>
+            </button>
+          ) : null}
+
           {reviewerMode ? (
             <RuntimeInspector
               story={story}
@@ -489,10 +507,17 @@ export function PlayPage({
             )
           })}
 
-          {compactPlayChrome && actionAreaVisible ? (
-            <button type="button" style={ppStyles.mobileActionJump} onClick={scrollToActions}>
-              <span>{t("play.mobile_action_jump")}</span>
-              <span aria-hidden>↓</span>
+          {!compactPlayChrome && actionAreaVisible ? (
+            <button
+              type="button"
+              style={{ ...ppStyles.actionDiscoveryCue, ...ppStyles.actionDiscoveryCueAfterBeat }}
+              onClick={scrollToActions}
+            >
+              <span style={ppStyles.actionDiscoveryCueCopy}>
+                <strong style={ppStyles.actionDiscoveryCueTitle}>{t("play.action_discovery_label")}</strong>
+                <span style={ppStyles.actionDiscoveryCueDetail}>{t("play.action_discovery_detail")}</span>
+              </span>
+              <span style={ppStyles.actionDiscoveryCueArrow} aria-hidden>↓</span>
             </button>
           ) : null}
 
@@ -4488,7 +4513,9 @@ const ppStyles: Record<string, CSSProperties> = {
   backBtnOnCover: {
     color: "white",
     background: "transparent",
-    border: "none",
+    borderTop: "none",
+    borderRight: "none",
+    borderLeft: "none",
     borderBottom: "1px solid rgba(255,255,255,0.30)",
     borderRadius: 0,
     padding: "0 0 4px",
@@ -4499,7 +4526,10 @@ const ppStyles: Record<string, CSSProperties> = {
     fontSize: 13,
     color: "var(--text-muted)",
     background: "none",
-    border: "none",
+    borderTop: "none",
+    borderRight: "none",
+    borderBottom: "none",
+    borderLeft: "none",
     cursor: "pointer",
     padding: 4,
     width: 90,
@@ -4570,7 +4600,7 @@ const ppStyles: Record<string, CSSProperties> = {
     width: "calc(100% - 32px)",
     maxWidth: 940,
     margin: "18px 16px 0",
-    padding: "24px 36px 132px",
+    padding: "20px 34px 108px",
     overflowY: "visible",
     background: "linear-gradient(180deg, rgba(23,18,13,0.94) 0%, rgba(13,11,9,0.96) 100%)",
     border: "1px solid rgba(236,204,152,0.14)",
@@ -4579,10 +4609,10 @@ const ppStyles: Record<string, CSSProperties> = {
   },
 
   runContextPanel: {
-    margin: "0 0 20px",
+    margin: "0 0 14px",
     paddingTop: 2,
     paddingRight: 0,
-    paddingBottom: 18,
+    paddingBottom: 12,
     paddingLeft: 0,
     borderBottom: "1px solid var(--line)",
     backgroundSize: "auto",
@@ -5641,7 +5671,7 @@ const ppStyles: Record<string, CSSProperties> = {
   },
 
   narratorBeat: {
-    marginBottom: 28,
+    marginBottom: 18,
     position: "relative" as const,
     padding: "17px 42px 17px 18px",
     background: "rgba(255,255,255,0.035)",
@@ -5651,7 +5681,7 @@ const ppStyles: Record<string, CSSProperties> = {
     boxShadow: "none",
   },
   narratorBeatLatest: {
-    padding: "20px 44px 22px 20px",
+    padding: "17px 40px 18px 18px",
     background: "linear-gradient(180deg, rgba(255,255,255,0.070), rgba(255,255,255,0.040))",
     border: "1px solid rgba(236,204,152,0.24)",
     borderLeft: "3px solid rgba(208,138,79,0.72)",
@@ -5912,8 +5942,8 @@ const ppStyles: Record<string, CSSProperties> = {
   },
 
   actionArea: {
-    marginTop: 20,
-    padding: "18px 0 0",
+    marginTop: 12,
+    padding: "14px 0 0",
     borderTop: "1px solid rgba(236,204,152,0.18)",
     borderRight: "none",
     borderBottom: "none",
@@ -5943,6 +5973,69 @@ const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "inherit",
     fontSize: 12.5,
     fontWeight: 780,
+  },
+  actionDiscoveryCue: {
+    marginTop: 0,
+    marginBottom: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+    width: "100%",
+    padding: "11px 14px",
+    border: "1px solid rgba(208,138,79,0.32)",
+    borderRadius: 3,
+    background: "linear-gradient(135deg, rgba(208,138,79,0.16), rgba(255,255,255,0.035))",
+    color: "var(--text)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    textAlign: "left" as const,
+    boxShadow: "0 14px 34px rgba(0,0,0,0.18)",
+  },
+  actionDiscoveryCueAfterBeat: {
+    marginTop: -6,
+    marginBottom: 12,
+  },
+  actionDiscoveryCueCompact: {
+    padding: "10px 12px",
+    gap: 10,
+  },
+  actionDiscoveryCueTop: {
+    position: "sticky" as const,
+    top: 56,
+    zIndex: 5,
+    marginBottom: 12,
+  },
+  actionDiscoveryCueCopy: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 2,
+  },
+  actionDiscoveryCueTitle: {
+    color: "var(--text)",
+    fontSize: 13.5,
+    lineHeight: 1.1,
+    fontWeight: 840,
+  },
+  actionDiscoveryCueDetail: {
+    color: "var(--text-muted)",
+    fontSize: 12,
+    lineHeight: 1.25,
+  },
+  actionDiscoveryCueArrow: {
+    flex: "0 0 auto",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    border: "1px solid rgba(208,138,79,0.28)",
+    color: "rgba(245,205,150,0.94)",
+    background: "rgba(0,0,0,0.16)",
+    fontSize: 14,
+    fontWeight: 820,
   },
   turnGuide: {
     marginBottom: 14,

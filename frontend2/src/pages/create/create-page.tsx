@@ -895,7 +895,9 @@ function StoryBriefCard({
           {t(FIT_STATUS_LABEL_KEYS[brief.runtime_fit_status])}
         </span>
       </div>
-      <p style={cpStyles.briefIntro}>{t("create.brief_card_intro")}</p>
+      <p style={cpStyles.briefIntro}>
+        {t(canGenerate ? "create.brief_card_intro_ready" : "create.brief_card_intro_blocked")}
+      </p>
       <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
       {compact ? (

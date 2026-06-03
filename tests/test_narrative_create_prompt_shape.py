@@ -189,8 +189,8 @@ def test_reliable_profile_vocabulary_is_profile_specific() -> None:
     comedy = reliable_profile_vocabulary("comedy")
     fantasy = reliable_profile_vocabulary("fantasy_sci_fi")
 
-    assert "clue trail" in cozy.opening_uncertainty
-    assert "timing trail" in comedy.first_move_clause
+    assert "concrete clue" in cozy.opening_uncertainty
+    assert "harmless cue" in comedy.first_move_clause
     assert "old rule" in fantasy.stage_line("hook")
     assert "handoff" not in comedy.first_move_clause.casefold()
 
@@ -701,6 +701,14 @@ def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
     assert "once your move" not in second_turn.narrator_message.content.casefold()
     assert "handoff" not in turn.narrator_message.content.casefold()
     assert "handoff" not in second_turn.narrator_message.content.casefold()
+    for residue in (
+        "mix-up witness",
+        "timing trail",
+        "table mistake",
+    ):
+        assert residue not in visible_opening_text
+        assert residue not in turn.narrator_message.content.casefold()
+        assert residue not in second_turn.narrator_message.content.casefold()
     assert "after you let" in second_turn.narrator_message.content.casefold()
     assert "shifts after" not in second_turn.narrator_message.content.casefold()
     assert "cupcake labels" in turn.narrator_message.content.casefold()

@@ -196,9 +196,9 @@ def _fallback_turn_passage(
         if turn_variant == 1:
             text = (
                 f"After {after_action}, the {scene} pauses around the {object_label}. "
-                f"{first_subject} {_fallback_verb(first, 'points', 'point')} to a small timing detail, and "
+                f"{first_subject} {_fallback_verb(first, 'points', 'point')} to a harmless cue, and "
                 f"{second} {_fallback_verb(second, 'keeps', 'keep')} the explanation light enough for repair. "
-                f"{stage_line} The next move can check the timing trail, invite a quieter voice, or turn the table mistake into a payoff."
+                f"{stage_line} The next move can re-check the {object_label}, invite a quieter voice, or turn the shared confusion into a payoff."
             )
         elif turn_variant == 2:
             object_verb = _fallback_verb(object_label, "becomes", "become")
@@ -945,8 +945,8 @@ def _fallback_opening_options(brief: StoryBrief) -> list[StoryOption]:
     if brief.tension_profile == "cozy_mystery":
         return [
             StoryOption(label=f"Ask where the {contested} was last seen", hint="Follow the object", handle="ask_clue"),
-            StoryOption(label=f"Let the {volunteer} explain the clue trail", hint="Lower worry", handle="witness"),
-            StoryOption(label="Compare the table versions gently", hint="Repair trust", handle="compare"),
+            StoryOption(label=f"Let the {volunteer} explain the concrete clue", hint="Lower worry", handle="witness"),
+            StoryOption(label="Compare the story versions gently", hint="Repair trust", handle="compare"),
         ]
     return [
         StoryOption(label="Ask who is being left out", hint="Bring in a quiet party", handle="ask"),

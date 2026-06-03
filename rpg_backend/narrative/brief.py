@@ -817,10 +817,14 @@ def _fallback_entities(seed: str, profile: TensionProfile) -> list[str]:
         return ["player", "partner", "family elder", "unexpected witness"]
     if "family" in lowered or "dinner" in lowered:
         return ["host", "estranged relative", "loyal witness", "outside claimant"]
+    if profile in {"cozy_mystery", "comedy"} and any(
+        token in lowered for token in ("bake sale", "cupcake", "labels", "recipe")
+    ):
+        return ["bake-sale host", "label helper", "curious parent"]
     if profile == "cozy_mystery":
         return ["player", "keeper of the clue", "gentle witness", "outside witness"]
     if profile == "comedy":
-        return ["player", "mix-up witness", "embarrassed helper", "deadline host"]
+        return ["player", "quiet helper", "event host", "audience witness"]
     return ["player", "rival", "witness", "deadline holder"]
 
 

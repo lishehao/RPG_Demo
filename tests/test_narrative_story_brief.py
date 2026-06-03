@@ -338,6 +338,10 @@ def test_story_brief_small_cozy_prompt_does_not_use_cap_rationale() -> None:
     assert plan.input_entity_count < 10
     assert "three parents" in planned_names
     assert "shy teen volunteer" in planned_names
+    assert "mix-up witness" not in planned_names
+    assert "bake-sale host" in planned_names or "bake-sale host" in {
+        entity.display_name.lower() for entity in plan.omitted_entities
+    }
     assert all("10-entity planning cap" not in rationale for rationale in omitted_rationales)
 
 
