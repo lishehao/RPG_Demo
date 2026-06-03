@@ -1,5 +1,5 @@
 import { type CSSProperties, useEffect, useState } from "react"
-import type { NarrativePublicReplayResponse } from "../../api/contracts"
+import type { NarrativePublicReplayResponse, NarrativeStoryMessage } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
@@ -115,6 +115,20 @@ export function ReplayPage({
     : ""
   const castLine = replay.cast.map((c) => c.display_name).join(" · ")
   const hasPreviewHighlights = Boolean(replay.ending?.highlights && replay.ending.highlights.length > 0)
+  const castNameById = Object.fromEntries(replay.cast.map((c) => [c.character_id, c.display_name]))
+  const finalPlayerMessage = [...replay.messages].reverse().find((m) => m.role === "player")
+  const finalNarratorMessage = [...replay.messages].reverse().find((m) => m.role === "narrator")
+  const replayPayoffHighlights = replay.ending?.highlights?.slice(0, 3) ?? []
+  const replayChangedNames = replayChangedEntityNames(finalNarratorMessage, castNameById)
+  const replayChangedText =
+    replayChangedNames.length > 0
+      ? replayChangedNames.join(" · ")
+      : replayPayoffHighlights[0]?.headline ??
+        (replay.ending ? (ENDING_LABEL_DISPLAY[lang][replay.ending.label] ?? replay.ending.label) : replay.template_title)
+  const replayWhy =
+    replayPayoffHighlights.find((h) => h.why_pivotal.trim().length > 0)?.why_pivotal ||
+    (replay.ending ? replayLeadSentence(replay.ending.passage, t("replay.payoff_default_why")) : "")
+  const replayFinalMove = replaySummarizeFinalMove(finalPlayerMessage, t("replay.payoff_default_move"))
 
   return (
     <div style={rpStyles.page}>
@@ -172,6 +186,60 @@ export function ReplayPage({
       </div>
 
       <main style={rpStyles.main}>
+        {replay.completed && replay.ending ? (
+          <section style={rpStyles.payoffSummary}>
+            <div style={rpStyles.payoffTopLine}>
+              <span style={rpStyles.payoffKicker}>{t("replay.payoff_kicker")}</span>
+              <span style={rpStyles.payoffMeta}>
+                {t("replay.payoff_turn_meta", { count: replay.turn_count })}
+              </span>
+            </div>
+            <div style={rpStyles.payoffGrid}>
+              <div style={rpStyles.payoffResult}>
+                <div style={rpStyles.payoffLabel}>
+                  {ENDING_LABEL_DISPLAY[lang][replay.ending.label] ?? replay.ending.label}
+                </div>
+                <h2 style={rpStyles.payoffTitle}>{endingSubtitleText}</h2>
+                <p style={rpStyles.payoffLead}>
+                  {replayLeadSentence(replay.ending.passage, replay.ending.subtitle)}
+                </p>
+                <div style={rpStyles.payoffFinalMove}>
+                  <span style={rpStyles.payoffRowLabel}>{t("replay.payoff_final_move")}</span>
+                  <span style={rpStyles.payoffRowText}>{replayFinalMove}</span>
+                </div>
+              </div>
+              <div style={rpStyles.payoffLedger}>
+                <div style={rpStyles.payoffLedgerRow}>
+                  <span style={rpStyles.payoffLedgerLabel}>{t("replay.payoff_changed")}</span>
+                  <span style={rpStyles.payoffLedgerValue}>{replayChangedText}</span>
+                </div>
+                <div style={rpStyles.payoffLedgerRow}>
+                  <span style={rpStyles.payoffLedgerLabel}>{t("replay.payoff_why")}</span>
+                  <span style={rpStyles.payoffLedgerValue}>{replayWhy}</span>
+                </div>
+                <div style={rpStyles.payoffLedgerRow}>
+                  <span style={rpStyles.payoffLedgerLabel}>{t("replay.payoff_highlights")}</span>
+                  <span style={rpStyles.payoffLedgerValue}>
+                    {replay.ending.highlights && replay.ending.highlights.length > 0
+                      ? t("replay.payoff_highlight_count", { count: replay.ending.highlights.length })
+                      : t("replay.payoff_no_highlights")}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {replayPayoffHighlights.length > 0 ? (
+              <div style={rpStyles.payoffHighlightStrip}>
+                {replayPayoffHighlights.map((h, i) => (
+                  <div key={`payoff-${h.beat_ord}-${i}`} style={rpStyles.payoffHighlight}>
+                    <span style={rpStyles.payoffHighlightIndex}>{i + 1}</span>
+                    <span style={rpStyles.payoffHighlightText}>{h.headline}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
         {/* Preview / Full view-mode toggle. Hidden when there are no
             highlights to preview (incomplete run or LLM failure) —
             in that case "full" is the only sensible mode anyway. */}
@@ -310,6 +378,39 @@ export function ReplayPage({
       </main>
     </div>
   )
+}
+
+function replaySummarizeFinalMove(message: NarrativeStoryMessage | undefined, fallback: string): string {
+  const raw = message?.content?.trim()
+  if (!raw) return fallback
+  const leverage = message?.played_leverage?.leverage?.trim()
+  return replayClampText(leverage ? `${raw} · ${leverage}` : raw, 170)
+}
+
+function replayChangedEntityNames(
+  message: NarrativeStoryMessage | undefined,
+  castNameById: Record<string, string>,
+): string[] {
+  const names: string[] = []
+  for (const pulse of message?.npc_pulse ?? []) {
+    if (pulse.shift === "steady") continue
+    const name = castNameById[pulse.npc_id] ?? pulse.npc_id
+    if (!names.includes(name)) names.push(name)
+  }
+  return names.slice(0, 3)
+}
+
+function replayLeadSentence(text: string, fallback: string): string {
+  const cleaned = text.replace(/\s+/g, " ").trim()
+  if (!cleaned) return fallback
+  const sentence = cleaned.match(/^(.{1,180}?[.!?。！？])(\s|$)/u)?.[1] ?? cleaned
+  return replayClampText(sentence, 220)
+}
+
+function replayClampText(text: string, limit: number): string {
+  const cleaned = text.replace(/\s+/g, " ").trim()
+  if (cleaned.length <= limit) return cleaned
+  return `${cleaned.slice(0, limit).trimEnd()}...`
 }
 
 /**
@@ -566,6 +667,130 @@ const rpStyles: Record<string, CSSProperties> = {
     textAlign: "left",
   },
   main: { maxWidth: 720, margin: "-40px auto 0", padding: "0 32px 80px", position: "relative", zIndex: 2 },
+
+  payoffSummary: {
+    marginBottom: 28,
+    padding: "20px 0 22px",
+    borderTop: "1px solid rgba(245,200,120,0.22)",
+    borderBottom: "1px solid rgba(255,255,255,0.09)",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
+  },
+  payoffTopLine: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: 14,
+    flexWrap: "wrap" as const,
+    marginBottom: 18,
+  },
+  payoffKicker: {
+    color: "rgba(245,200,120,0.92)",
+    fontSize: 12,
+    lineHeight: 1.35,
+    fontWeight: 760,
+    letterSpacing: 0,
+  },
+  payoffMeta: {
+    color: "var(--text-muted)",
+    fontSize: 12,
+    lineHeight: 1.35,
+    fontWeight: 650,
+  },
+  payoffGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 22,
+    alignItems: "start",
+  },
+  payoffResult: {
+    minWidth: 0,
+  },
+  payoffLabel: {
+    color: "var(--accent)",
+    fontSize: 12.5,
+    lineHeight: 1.35,
+    fontWeight: 700,
+    marginBottom: 12,
+  },
+  payoffTitle: {
+    fontFamily: "var(--font-narrative)",
+    fontSize: 24,
+    lineHeight: 1.32,
+    fontWeight: 400,
+    color: "var(--text)",
+    margin: "0 0 14px",
+  },
+  payoffLead: {
+    margin: "0 0 18px",
+    color: "rgba(255,235,210,0.88)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 15,
+    lineHeight: 1.65,
+  },
+  payoffFinalMove: {
+    display: "grid",
+    gridTemplateColumns: "94px minmax(0, 1fr)",
+    gap: 12,
+    padding: "12px 0 0",
+    borderTop: "1px solid rgba(255,255,255,0.085)",
+  },
+  payoffRowLabel: {
+    color: "rgba(245,200,120,0.78)",
+    fontSize: 11.5,
+    lineHeight: 1.4,
+    fontWeight: 760,
+  },
+  payoffRowText: {
+    color: "var(--text)",
+    fontSize: 13,
+    lineHeight: 1.6,
+  },
+  payoffLedger: {
+    borderTop: "1px solid rgba(255,255,255,0.085)",
+  },
+  payoffLedgerRow: {
+    display: "grid",
+    gridTemplateColumns: "96px minmax(0, 1fr)",
+    gap: 12,
+    padding: "12px 0",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
+  },
+  payoffLedgerLabel: {
+    color: "var(--text-faint)",
+    fontSize: 11.5,
+    lineHeight: 1.45,
+    fontWeight: 700,
+  },
+  payoffLedgerValue: {
+    color: "rgba(255,235,210,0.9)",
+    fontSize: 13,
+    lineHeight: 1.55,
+  },
+  payoffHighlightStrip: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: 0,
+    marginTop: 14,
+    borderTop: "1px solid rgba(255,255,255,0.075)",
+  },
+  payoffHighlight: {
+    display: "grid",
+    gridTemplateColumns: "24px minmax(0, 1fr)",
+    gap: 8,
+    padding: "12px 12px 0 0",
+    borderRight: "1px solid rgba(255,255,255,0.055)",
+  },
+  payoffHighlightIndex: {
+    color: "rgba(245,200,120,0.72)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 12,
+    lineHeight: 1.35,
+  },
+  payoffHighlightText: {
+    color: "var(--text)",
+    fontSize: 12.5,
+    lineHeight: 1.45,
+  },
 
   section: { marginBottom: 28 },
   sectionLabel: {

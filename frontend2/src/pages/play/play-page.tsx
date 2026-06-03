@@ -388,7 +388,7 @@ export function PlayPage({
       })
     : null
   const shouldGroupEarlierTurns =
-    story.messages.length > LONG_HISTORY_THRESHOLD && !isComplete
+    story.messages.length > LONG_HISTORY_THRESHOLD
   const visibleHistoryStart = shouldGroupEarlierTurns
     ? Math.max(0, story.messages.length - LONG_HISTORY_VISIBLE_BEATS)
     : 0
@@ -474,6 +474,36 @@ export function PlayPage({
       </div>
     )
   }
+  const endingScreen = isComplete && ending ? (
+    <EndingScreen
+      ending={ending}
+      sessionId={sessionId}
+      templateId={story.template.template_id}
+      messages={story.messages}
+      castNameById={castNameById}
+      bookmarkedOrds={bookmarkedOrds}
+      shareCopied={shareCopied}
+      onShare={() => {
+        const url = `${window.location.origin}/#/replay/${sessionId}`
+        navigator.clipboard.writeText(url).then(
+          () => {
+            setShareCopied(true)
+            setTimeout(() => setShareCopied(false), 2200)
+          },
+          () => {
+            // Fallback: show URL in an alert if clipboard fails
+            window.prompt(t("play.share_prompt"), url)
+          },
+        )
+      }}
+      onPlayAgain={() => {
+        // Land on the template detail page where the user can pick a
+        // different role and start a fresh session.
+        window.location.hash = `#/template/${story.template.template_id}`
+      }}
+      onBackHome={onBackHome}
+    />
+  ) : null
 
   return (
     <div style={ppStyles.page}>
@@ -497,6 +527,8 @@ export function PlayPage({
             leverageCards={leverageCards}
             isComplete={isComplete}
           />
+
+          {endingScreen}
 
           {compactPlayChrome && actionAreaVisible ? (
             <button
@@ -656,40 +688,6 @@ export function PlayPage({
                   ? t("play.finale_one_left")
                   : t("play.finale_two_left")}
             </motion.div>
-          ) : null}
-
-          {/* Ending screen — only when the session has finished */}
-          {isComplete && ending ? (
-            <EndingScreen
-              ending={ending}
-              sessionId={sessionId}
-              templateId={story.template.template_id}
-              messages={story.messages}
-              bookmarkedOrds={bookmarkedOrds}
-              shareCopied={shareCopied}
-              onShare={() => {
-                const url = `${window.location.origin}/#/replay/${sessionId}`
-                navigator.clipboard.writeText(url).then(
-                  () => {
-                    setShareCopied(true)
-                    setTimeout(() => setShareCopied(false), 2200)
-                  },
-                  () => {
-                    // Fallback: show URL in an alert if clipboard fails
-                    window.prompt(t("play.share_prompt"), url)
-                  },
-                )
-              }}
-              onPlayAgain={() => {
-                // Land on the template detail page where the user can
-                // pick a different role and start a fresh session. We
-                // deliberately don't auto-pick a different role for
-                // them — letting them browse the role cards is part
-                // of the replay loop.
-                window.location.hash = `#/template/${story.template.template_id}`
-              }}
-              onBackHome={onBackHome}
-            />
           ) : null}
 
           {/* Action area pinned at the bottom of the story column.
@@ -1412,6 +1410,7 @@ function EndingScreen({
   sessionId,
   templateId,
   messages,
+  castNameById,
   bookmarkedOrds,
   shareCopied,
   onShare,
@@ -1422,6 +1421,7 @@ function EndingScreen({
   sessionId: string
   templateId: string
   messages: NarrativeStoryMessage[]
+  castNameById: Record<string, string>
   bookmarkedOrds: Set<number>
   shareCopied: boolean
   onShare: () => void
@@ -1515,6 +1515,7 @@ function EndingScreen({
   const illustration = getEndingIllustration(ending.label)
   const endingDisplayLabel = displayEndingLabel(ending.label, lang)
   const endingSubtitle = lang === "en" ? `"${ending.subtitle}"` : `「${ending.subtitle}」`
+  const compactEndingPayoff = useCompactLayout("(max-width: 720px)")
   const tier = ending.tier ?? "compromised"
   const tierSplash = getTierSplash(tier)
   const tierVisuals: Record<string, { ribbon: string; labelColor: string; gradient: string; badgeText: string }> = {
@@ -1538,6 +1539,21 @@ function EndingScreen({
     },
   }
   const tv = tierVisuals[tier]
+  const playerTurnCount = messages.filter((m) => m.role === "player").length
+  const finalPlayerMessage = [...messages].reverse().find((m) => m.role === "player")
+  const finalNarratorMessage = [...messages].reverse().find((m) => m.role === "narrator")
+  const finalMoveText = summarizeEndingFinalMove(finalPlayerMessage, t("play.ending_payoff_default_move"))
+  const changedNames = changedEntityNames(finalNarratorMessage, castNameById)
+  const payoffHighlights = mergedHighlights.slice(0, 3)
+  const codaLead = endingLeadSentence(ending.passage, ending.subtitle)
+  const payoffWhy =
+    mergedHighlights.find((h) => h.why_pivotal.trim().length > 0)?.why_pivotal ||
+    endingLeadSentence(ending.passage, t("play.ending_payoff_default_why"))
+  const changedText =
+    changedNames.length > 0
+      ? changedNames.join(" · ")
+      : payoffHighlights[0]?.headline ?? endingDisplayLabel
+  const highlightCount = mergedHighlights.length
   return (
     <motion.section
       style={ppStyles.endingSection}
@@ -1560,62 +1576,187 @@ function EndingScreen({
         transition={itemTransition}
         style={ppStyles.endingCard}
       >
-        {/* Illustrated banner — the visual punctuation that makes the
-            ending feel like a closed object the player can screenshot. */}
         <motion.div
-          initial={initialOr({ opacity: 0, scale: 1.06 })}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={transitions.slow}
-          style={{
-            ...ppStyles.endingHero,
-            backgroundImage: `${tv.gradient}, url(${illustration})`,
-          }}
+          initial={initialOr({ opacity: 0, y: 12 })}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: delayOr(0.2), ...itemTransition }}
+          style={ppStyles.endingPayoffShell}
         >
-          {tierSplash ? (
-            <motion.div
-              initial={initialOr({ opacity: 0, scale: 1.12 })}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: delayOr(0.25), ...transitions.ceremony }}
-              style={{
-                ...ppStyles.endingSplashOverlay,
-                backgroundImage: `url(${tierSplash})`,
-              }}
-            />
-          ) : null}
-          <div style={ppStyles.endingTierBadge}>
-            <span style={ppStyles.endingTierBadgeText}>{tv.badgeText}</span>
-            {ending.early_terminated && ending.failure_trigger ? (
-              <span style={ppStyles.endingTierTrigger}>
-                {t("play.ending_trigger_prefix", { trigger: ending.failure_trigger })}
-              </span>
-            ) : null}
+          <div style={ppStyles.endingPayoffRail}>
+            <span style={ppStyles.endingPayoffKicker}>{t("play.ending_payoff_kicker")}</span>
+            <span style={ppStyles.endingPayoffMeta}>
+              {tv.badgeText} · {t("play.ending_payoff_turn_meta", { count: playerTurnCount || messages.length })}
+            </span>
           </div>
+          <div
+            style={{
+              ...ppStyles.endingPayoffGrid,
+              ...(compactEndingPayoff ? ppStyles.endingPayoffGridCompact : null),
+            }}
+          >
+            <div style={ppStyles.endingPayoffCopy}>
+              <motion.div
+                initial={initialOr({ opacity: 0, scale: 0.6 })}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={skipChoreography ? transitions.snap : labelChipSpring}
+                style={{ ...ppStyles.endingLabelChip, color: tv.labelColor }}
+              >
+                {endingDisplayLabel}
+              </motion.div>
+              <motion.h2
+                initial={initialOr({ opacity: 0, y: 14 })}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: delayOr(0.45), ...itemTransition }}
+                style={ppStyles.endingPayoffTitle}
+              >
+                {endingSubtitle}
+              </motion.h2>
+              <motion.p
+                initial={initialOr({ opacity: 0 })}
+                animate={{ opacity: 1 }}
+                transition={{ delay: delayOr(0.65), ...transitions.slow }}
+                style={ppStyles.endingPayoffLead}
+              >
+                {codaLead}
+              </motion.p>
+              <motion.div
+                initial={initialOr({ opacity: 0, y: 8 })}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: delayOr(0.78), ...itemTransition }}
+                style={ppStyles.endingPayoffFinalMove}
+              >
+                <span style={ppStyles.endingPayoffRowLabel}>
+                  {t("play.ending_payoff_final_move")}
+                </span>
+                <span style={ppStyles.endingPayoffRowText}>{finalMoveText}</span>
+              </motion.div>
+            </div>
+            <motion.div
+              initial={initialOr({ opacity: 0, scale: 1.04 })}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={transitions.slow}
+              style={{
+                ...ppStyles.endingPayoffArt,
+                ...(compactEndingPayoff ? ppStyles.endingPayoffArtCompact : null),
+                backgroundImage: `${tv.gradient}, url(${illustration})`,
+              }}
+            >
+              {tierSplash ? (
+                <motion.div
+                  initial={initialOr({ opacity: 0, scale: 1.12 })}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: delayOr(0.25), ...transitions.ceremony }}
+                  style={{
+                    ...ppStyles.endingSplashOverlay,
+                    backgroundImage: `url(${tierSplash})`,
+                  }}
+                />
+              ) : null}
+              <div style={ppStyles.endingTierBadge}>
+                <span style={ppStyles.endingTierBadgeText}>{tv.badgeText}</span>
+                {ending.early_terminated && ending.failure_trigger ? (
+                  <span style={ppStyles.endingTierTrigger}>
+                    {t("play.ending_trigger_prefix", { trigger: ending.failure_trigger })}
+                  </span>
+                ) : null}
+              </div>
+            </motion.div>
+          </div>
+          <motion.div
+            initial={initialOr({ opacity: 0, y: 10 })}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: delayOr(0.9), ...itemTransition }}
+            style={ppStyles.endingPayoffLedger}
+          >
+            <div style={ppStyles.endingPayoffLedgerRow}>
+              <span style={ppStyles.endingPayoffLedgerLabel}>{t("play.ending_payoff_changed")}</span>
+              <span style={ppStyles.endingPayoffLedgerValue}>{changedText}</span>
+            </div>
+            <div style={ppStyles.endingPayoffLedgerRow}>
+              <span style={ppStyles.endingPayoffLedgerLabel}>{t("play.ending_payoff_why")}</span>
+              <span style={ppStyles.endingPayoffLedgerValue}>{payoffWhy}</span>
+            </div>
+            <div style={ppStyles.endingPayoffLedgerRow}>
+              <span style={ppStyles.endingPayoffLedgerLabel}>{t("play.ending_payoff_saved")}</span>
+              <span style={ppStyles.endingPayoffLedgerValue}>
+                {highlightCount > 0
+                  ? t("play.ending_payoff_highlight_count", { count: highlightCount })
+                  : t("play.ending_payoff_no_highlights")}
+              </span>
+            </div>
+          </motion.div>
+          {payoffHighlights.length > 0 ? (
+            <motion.div
+              initial={initialOr({ opacity: 0, y: 10 })}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: delayOr(1.0), ...itemTransition }}
+              style={ppStyles.endingPayoffHighlights}
+            >
+              {payoffHighlights.map((h, i) => (
+                <div key={`payoff-${h.beat_ord}-${i}`} style={ppStyles.endingPayoffHighlight}>
+                  <span style={ppStyles.endingPayoffHighlightIndex}>{i + 1}</span>
+                  <span style={ppStyles.endingPayoffHighlightText}>{h.headline}</span>
+                </div>
+              ))}
+            </motion.div>
+          ) : null}
+          <motion.div
+            initial={initialOr({ opacity: 0, y: 8 })}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: delayOr(1.08), ...itemTransition }}
+            style={ppStyles.endingActions}
+          >
+            <div style={ppStyles.endingActionsRow}>
+              <motion.button
+                onClick={onShare}
+                type="button"
+                style={ppStyles.endingPrimaryAction}
+                whileHover={{ scale: 1.02 }}
+                whileTap={tapPress}
+                key={shareCopied ? "copied" : "default"}
+                initial={shareCopied ? { scale: 0.92 } : false}
+                animate={shareCopied ? { scale: [0.92, 1.06, 1] } : { scale: 1 }}
+                transition={transitions.base}
+              >
+                {shareCopied ? t("play.ending_share_copied") : t("play.ending_share")}
+              </motion.button>
+              <motion.button
+                style={ppStyles.endingTextAction}
+                onClick={onPlayAgain}
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={tapPress}
+              >
+                {t("play.ending_replay")}
+              </motion.button>
+              <motion.button
+                style={ppStyles.endingTextActionMuted}
+                onClick={onBackHome}
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={tapPress}
+              >
+                {t("action.back_home")}
+              </motion.button>
+            </div>
+            <p style={ppStyles.endingShareHint}>
+              {t("play.ending_share_hint")}
+            </p>
+          </motion.div>
         </motion.div>
         <div style={ppStyles.endingCardInner}>
         <motion.div
-          initial={initialOr({ opacity: 0, scale: 0.6 })}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={
-            skipChoreography
-              ? transitions.snap
-              : labelChipSpring
-          }
-          style={{ ...ppStyles.endingLabelChip, color: tv.labelColor }}
-        >
-          {endingDisplayLabel}
-        </motion.div>
-        <motion.h2
-          initial={initialOr({ opacity: 0, y: 14 })}
+          initial={initialOr({ opacity: 0, y: 8 })}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: delayOr(0.6), ...itemTransition }}
-          style={ppStyles.endingSubtitle}
+          transition={{ delay: delayOr(1.15), ...itemTransition }}
+          style={ppStyles.endingCodaLabel}
         >
-          {endingSubtitle}
-        </motion.h2>
+          {t("play.ending_payoff_coda_label")}
+        </motion.div>
         <motion.div
           initial={initialOr({ opacity: 0 })}
           animate={{ opacity: 1 }}
-          transition={{ delay: delayOr(0.85), ...transitions.slow }}
+          transition={{ delay: delayOr(1.2), ...transitions.slow }}
           style={ppStyles.endingPassage}
         >
           {ending.passage}
@@ -1722,55 +1863,6 @@ function EndingScreen({
           </motion.section>
         ) : null}
 
-        <motion.div
-          initial={initialOr({ opacity: 0, y: 8 })}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: delayOr(1.7), ...itemTransition }}
-          style={ppStyles.endingActions}
-        >
-          <div style={ppStyles.endingActionsRow}>
-            <motion.button
-              onClick={onShare}
-              type="button"
-              style={ppStyles.endingPrimaryAction}
-              whileHover={{ scale: 1.02 }}
-              whileTap={tapPress}
-              key={shareCopied ? "copied" : "default"}
-              initial={shareCopied ? { scale: 0.92 } : false}
-              animate={shareCopied ? { scale: [0.92, 1.06, 1] } : { scale: 1 }}
-              transition={transitions.base}
-            >
-              {shareCopied ? t("play.ending_share_copied") : t("play.ending_share")}
-            </motion.button>
-            {/* Replay-with-different-role — closes the loop. Without
-                this, finishing a run was a dead end; user had to nav
-                back home → find template → re-pick role. Now it's
-                one click. We deliberately route through the template
-                detail page rather than auto-picking a new role —
-                seeing the role cards is part of the re-engagement. */}
-            <motion.button
-              style={ppStyles.endingTextAction}
-              onClick={onPlayAgain}
-              type="button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={tapPress}
-            >
-              {t("play.ending_replay")}
-            </motion.button>
-            <motion.button
-              style={ppStyles.endingTextActionMuted}
-              onClick={onBackHome}
-              type="button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={tapPress}
-            >
-              {t("action.back_home")}
-            </motion.button>
-          </div>
-          <p style={ppStyles.endingShareHint}>
-            {t("play.ending_share_hint")}
-          </p>
-        </motion.div>
         </div>
       </motion.div>
     </motion.section>
@@ -2332,6 +2424,41 @@ function displayEndingLabel(label: string, lang: ReturnType<typeof useLanguage>[
   return label
     .replace(/_/g, " ")
     .replace(/\b\w/g, (m) => m.toUpperCase())
+}
+
+function summarizeEndingFinalMove(message: NarrativeStoryMessage | undefined, fallback: string): string {
+  const raw = message?.content?.trim()
+  if (!raw) return fallback
+  const parsed = parseOptionLabel(raw)
+  const publicMove = parsed.body || raw
+  const leverage = message?.played_leverage?.leverage?.trim()
+  return clampPayoffText(leverage ? `${publicMove} · ${leverage}` : publicMove, 170)
+}
+
+function changedEntityNames(
+  message: NarrativeStoryMessage | undefined,
+  castNameById: Record<string, string>,
+): string[] {
+  const names: string[] = []
+  for (const pulse of message?.npc_pulse ?? []) {
+    if (pulse.shift === "steady") continue
+    const name = castNameById[pulse.npc_id] ?? pulse.npc_id
+    if (!names.includes(name)) names.push(name)
+  }
+  return names.slice(0, 3)
+}
+
+function endingLeadSentence(text: string, fallback: string): string {
+  const cleaned = text.replace(/\s+/g, " ").trim()
+  if (!cleaned) return fallback
+  const sentence = cleaned.match(/^(.{1,180}?[.!?。！？])(\s|$)/u)?.[1] ?? cleaned
+  return clampPayoffText(sentence, 220)
+}
+
+function clampPayoffText(text: string, limit: number): string {
+  const cleaned = text.replace(/\s+/g, " ").trim()
+  if (cleaned.length <= limit) return cleaned
+  return `${cleaned.slice(0, limit).trimEnd()}...`
 }
 
 function SceneReadStrip({
@@ -7417,6 +7544,140 @@ const ppStyles: Record<string, CSSProperties> = {
     boxShadow: "none",
     overflow: "visible",
   },
+  endingPayoffShell: {
+    padding: "22px 0 24px",
+    borderTop: "1px solid rgba(245,200,120,0.22)",
+    borderBottom: "1px solid rgba(255,255,255,0.09)",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
+  },
+  endingPayoffRail: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 14,
+    flexWrap: "wrap" as const,
+    marginBottom: 18,
+  },
+  endingPayoffKicker: {
+    color: "rgba(245,200,120,0.92)",
+    fontSize: 12,
+    fontWeight: 760,
+    letterSpacing: 0,
+  },
+  endingPayoffMeta: {
+    color: "var(--text-muted)",
+    fontSize: 12,
+    lineHeight: 1.35,
+    fontWeight: 650,
+  },
+  endingPayoffGrid: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1.08fr) minmax(220px, 0.92fr)",
+    gap: 24,
+    alignItems: "stretch",
+  },
+  endingPayoffGridCompact: {
+    gridTemplateColumns: "minmax(0, 1fr)",
+    gap: 16,
+  },
+  endingPayoffCopy: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "center",
+  },
+  endingPayoffTitle: {
+    fontFamily: "var(--font-narrative)",
+    fontSize: 30,
+    lineHeight: 1.28,
+    fontWeight: 400,
+    margin: "0 0 14px",
+    color: "var(--text)",
+  },
+  endingPayoffLead: {
+    margin: "0 0 18px",
+    color: "rgba(255,235,210,0.88)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 15.5,
+    lineHeight: 1.7,
+  },
+  endingPayoffFinalMove: {
+    display: "grid",
+    gridTemplateColumns: "96px minmax(0, 1fr)",
+    gap: 14,
+    padding: "12px 0 0",
+    borderTop: "1px solid rgba(255,255,255,0.085)",
+  },
+  endingPayoffRowLabel: {
+    color: "rgba(245,200,120,0.78)",
+    fontSize: 11.5,
+    lineHeight: 1.4,
+    fontWeight: 760,
+  },
+  endingPayoffRowText: {
+    minWidth: 0,
+    color: "var(--text)",
+    fontSize: 13.5,
+    lineHeight: 1.6,
+  },
+  endingPayoffArt: {
+    minHeight: 220,
+    position: "relative" as const,
+    overflow: "hidden",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    borderRadius: 3,
+    boxShadow: "0 18px 48px rgba(0,0,0,0.32)",
+  },
+  endingPayoffArtCompact: {
+    minHeight: 158,
+  },
+  endingPayoffLedger: {
+    marginTop: 20,
+    borderTop: "1px solid rgba(255,255,255,0.085)",
+  },
+  endingPayoffLedgerRow: {
+    display: "grid",
+    gridTemplateColumns: "124px minmax(0, 1fr)",
+    gap: 16,
+    padding: "12px 0",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
+  },
+  endingPayoffLedgerLabel: {
+    color: "var(--text-faint)",
+    fontSize: 11.5,
+    lineHeight: 1.45,
+    fontWeight: 700,
+  },
+  endingPayoffLedgerValue: {
+    color: "rgba(255,235,210,0.9)",
+    fontSize: 13,
+    lineHeight: 1.55,
+  },
+  endingPayoffHighlights: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: 0,
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
+  },
+  endingPayoffHighlight: {
+    display: "grid",
+    gridTemplateColumns: "24px minmax(0, 1fr)",
+    gap: 8,
+    padding: "12px 12px 12px 0",
+    borderRight: "1px solid rgba(255,255,255,0.055)",
+  },
+  endingPayoffHighlightIndex: {
+    color: "rgba(245,200,120,0.72)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 12,
+    lineHeight: 1.35,
+  },
+  endingPayoffHighlightText: {
+    color: "var(--text)",
+    fontSize: 12.5,
+    lineHeight: 1.45,
+  },
   endingHero: {
     width: "100%",
     height: 210,
@@ -7435,6 +7696,13 @@ const ppStyles: Record<string, CSSProperties> = {
     pointerEvents: "none",
   },
   endingCardInner: { padding: "22px 0 28px" },
+  endingCodaLabel: {
+    color: "rgba(245,200,120,0.82)",
+    fontSize: 12.5,
+    fontWeight: 720,
+    letterSpacing: 0,
+    marginBottom: 12,
+  },
   endingLabelChip: {
     display: "inline-block",
     padding: "0 0 4px",
@@ -7666,7 +7934,7 @@ const ppStyles: Record<string, CSSProperties> = {
     flex: 1,
   },
 
-  endingActions: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 },
+  endingActions: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12, marginTop: 18 },
   endingActionsRow: {
     display: "flex",
     alignItems: "center",
