@@ -889,15 +889,28 @@ kbd {
   margin-left: calc(50% - 50vw);
   padding: 68px max(32px, calc((100vw - 1180px) / 2 + 32px));
   border: none;
+  color: rgba(255,250,242,0.98);
   background:
-    linear-gradient(90deg, rgba(12,12,16,0.96), rgba(12,12,16,0.68)),
+    linear-gradient(90deg, rgba(8,8,12,0.98) 0%, rgba(8,8,12,0.9) 48%, rgba(8,8,12,0.58) 78%, rgba(8,8,12,0.36) 100%),
+    linear-gradient(180deg, rgba(8,8,12,0.12), rgba(8,8,12,0.48)),
     url("/illustrations/generated/ending-reflection-notebook.webp");
   background-size: cover;
   background-position: center 42%;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.35);
+}
+.portfolio-final .portfolio-kicker {
+  color: rgba(245,210,140,0.92);
+}
+.portfolio-final h2 {
+  max-width: 760px;
+  color: rgba(255,250,242,0.98);
+  text-shadow: 0 2px 14px rgba(0,0,0,0.55);
 }
 .portfolio-final p {
   max-width: 680px;
   margin-bottom: 28px;
+  color: rgba(255,250,242,0.9);
+  text-shadow: 0 1px 10px rgba(0,0,0,0.6);
 }
 
 .reviewer-main {

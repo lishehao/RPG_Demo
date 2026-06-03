@@ -133,6 +133,9 @@ replace basic UI affordances or make controls harder to scan.
   neutral storyboard, cozy/comedy, fantasy/sci-fi, Mars/sci-fi, and
   high-drama/social. Selection is deterministic from profile and lightweight
   seed/title/cast keywords.
+- Strong setting/world keywords override tone. Mars, colony, oxygen, space,
+  sci-fi, faction, orbital, or hydroponics signals use the Mars/sci-fi cover
+  even when the story tension profile is comedy/cozy.
 - Page-level first-run backgrounds now use generated workspace/evidence images
   instead of dark legacy `/webtoons/ui` backgrounds.
 - Empty states, ending/replay hero imagery, oracle vignette, and peak beat
