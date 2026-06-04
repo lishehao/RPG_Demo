@@ -13,7 +13,7 @@ import {
   YOUTUBE_DEMO_URL,
 } from "./portfolio-data"
 
-const PORTFOLIO_VIDEO_POSTER = "/illustrations/soft-east-asian/homepage-hero-desktop.webp"
+const PORTFOLIO_VIDEO_POSTER = "/illustrations/art-v12/portfolio-proof-desk.webp"
 
 export function PortfolioPage({
   onBackHome,

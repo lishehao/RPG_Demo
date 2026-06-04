@@ -3,19 +3,24 @@
 // older /webtoons/ pools remain only for deferred avatar/advisor identity work
 // and catalog/debug references.
 
-const GENERATED_BASE = "/illustrations/generated"
+const ART_V12_BASE = "/illustrations/art-v12"
 
 export const GENERATED_ASSETS = {
-  coverNeutral: `${GENERATED_BASE}/cover-neutral-storyboard-desk.webp`,
-  coverCozy: `${GENERATED_BASE}/cover-cozy-bake-sale.webp`,
-  coverFantasy: `${GENERATED_BASE}/cover-fantasy-library-eclipse.webp`,
-  coverSciFiMars: `${GENERATED_BASE}/cover-sci-fi-mars-colony-talent-show.webp`,
-  coverHighDrama: `${GENERATED_BASE}/cover-high-drama-boardroom.webp`,
-  reviewerEvidence: `${GENERATED_BASE}/reviewer-evidence-board-clean.webp`,
-  advisorNotebook: `${GENERATED_BASE}/advisor-notebook-desk.webp`,
-  emptyPlaza: `${GENERATED_BASE}/empty-plaza-story-cards.webp`,
-  endingReflection: `${GENERATED_BASE}/ending-reflection-notebook.webp`,
-  objectCardSheet: `${GENERATED_BASE}/object-card-sheet.webp`,
+  coverNeutral: `${ART_V12_BASE}/brief-card-sheet.webp`,
+  coverCozy: `${ART_V12_BASE}/cover-cozy-social.webp`,
+  coverFantasy: `${ART_V12_BASE}/cover-fantasy-modern-library.webp`,
+  coverSciFiMars: `${ART_V12_BASE}/cover-mars-colony-talent.webp`,
+  coverHighDrama: `${ART_V12_BASE}/cover-high-drama-committee.webp`,
+  reviewerEvidence: `${ART_V12_BASE}/reviewer-evidence-desk.webp`,
+  advisorNotebook: `${ART_V12_BASE}/advisor-companion-phone.webp`,
+  emptyPlaza: `${ART_V12_BASE}/empty-state-card-glow.webp`,
+  endingReflection: `${ART_V12_BASE}/ending-coda-night.webp`,
+  objectCardSheet: `${ART_V12_BASE}/brief-card-sheet.webp`,
+  createWorkspace: `${ART_V12_BASE}/create-guide-workspace.webp`,
+  homeHeroDesktop: `${ART_V12_BASE}/home-hero-desktop.webp`,
+  homeHeroMobile: `${ART_V12_BASE}/home-hero-mobile.webp`,
+  loadingDawn: `${ART_V12_BASE}/loading-dawn-card.webp`,
+  portfolioProof: `${ART_V12_BASE}/portfolio-proof-desk.webp`,
 } as const
 
 const SHELLS = [
@@ -336,11 +341,12 @@ export function getEndingArtwork(endingId: string | null | undefined): string {
 
 export const PAGE_BG = {
   splash: GENERATED_ASSETS.coverNeutral,
-  homeHero: "/illustrations/soft-east-asian/homepage-hero-desktop.webp",
+  homeHero: GENERATED_ASSETS.homeHeroDesktop,
+  homeHeroMobile: GENERATED_ASSETS.homeHeroMobile,
   home: GENERATED_ASSETS.coverNeutral,
-  create: GENERATED_ASSETS.advisorNotebook,
-  generating: GENERATED_ASSETS.objectCardSheet,
-  login: GENERATED_ASSETS.reviewerEvidence,
+  create: GENERATED_ASSETS.createWorkspace,
+  generating: GENERATED_ASSETS.loadingDawn,
+  login: GENERATED_ASSETS.emptyPlaza,
 } as const
 
 export const LOGO_URL = GENERATED_ASSETS.objectCardSheet

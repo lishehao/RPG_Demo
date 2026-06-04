@@ -251,8 +251,8 @@ export function ReplayPage({
         ) : null}
 
         {/* Preview / Full view-mode toggle. Hidden when there are no
-            highlights to preview (incomplete run or LLM failure) —
-            in that case "full" is the only sensible mode anyway. */}
+            highlights to preview; in that case "full" is the only
+            sensible mode anyway. */}
         {hasPreviewHighlights ? (
           <div style={rpStyles.viewModeRow}>
             <span style={rpStyles.viewModeLabel}>

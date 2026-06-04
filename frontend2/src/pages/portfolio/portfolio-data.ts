@@ -49,7 +49,7 @@ export const PIPELINE_STEPS = [
     eyebrow: "04",
     title: "Advisor Channel",
     summary: "A parallel sidechat gives the player an outside reader without taking control away from them.",
-    proof: "For portfolio review, this shows a second LLM-mediated surface that is context-aware but role-separated from the narrator.",
+    proof: "For portfolio review, this shows a second story-aware companion surface that stays role-separated from the narrator.",
   },
   {
     eyebrow: "05",

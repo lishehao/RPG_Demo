@@ -465,7 +465,7 @@ kbd {
   background-image:
     linear-gradient(90deg, rgba(12,12,16,0.96) 0%, rgba(12,12,16,0.76) 46%, rgba(12,12,16,0.20) 100%),
     linear-gradient(180deg, rgba(12,12,16,0.08) 0%, rgba(12,12,16,0.90) 100%),
-    url("/illustrations/generated/reviewer-evidence-board-clean.webp");
+    url("/illustrations/art-v12/reviewer-evidence-desk.webp");
 }
 
 .portfolio-hero__content,
@@ -481,29 +481,29 @@ kbd {
 .story-illustration-slot {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(76,53,29,0.18);
-  border-radius: var(--radius-lg);
+  border: 1px solid rgba(245,200,120,0.18);
+  border-radius: var(--radius-md);
   background:
-    linear-gradient(140deg, rgba(255,255,255,0.42), rgba(255,255,255,0) 42%),
-    var(--story-paper-card);
-  box-shadow: var(--story-note-shadow);
+    linear-gradient(180deg, rgba(8,8,12,0.04), rgba(8,8,12,0.72)),
+    rgba(10,10,14,0.82);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.42);
 }
 .story-illustration-slot::after {
   content: "";
   position: absolute;
-  inset: 9px;
-  border: 1px dashed rgba(76,53,29,0.16);
-  border-radius: 6px;
+  inset: 0;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius-sm);
   pointer-events: none;
 }
 .story-illustration-slot__label {
   position: absolute;
   left: 16px;
   bottom: 14px;
-  color: rgba(47,35,24,0.62);
-  background: rgba(255,250,242,0.72);
-  border: 1px solid rgba(76,53,29,0.14);
-  border-radius: 5px;
+  color: rgba(255,250,242,0.78);
+  background: rgba(8,8,12,0.64);
+  border: 1px solid rgba(245,200,120,0.18);
+  border-radius: var(--radius-sm);
   padding: 4px 7px;
   font-size: 10px;
   line-height: 1.15;
@@ -585,7 +585,7 @@ kbd {
   border-radius: var(--radius-md);
   background:
     linear-gradient(180deg, rgba(5,5,6,0.18), rgba(5,5,6,0.72)),
-    url("/illustrations/soft-east-asian/homepage-hero-desktop.webp");
+    url("/illustrations/art-v12/portfolio-proof-desk.webp");
   background-size: cover;
   background-position: center;
   box-shadow: 0 36px 100px rgba(0,0,0,0.48);
@@ -771,7 +771,7 @@ kbd {
   border-radius: 0;
   background:
     linear-gradient(180deg, rgba(12,12,16,0.08), rgba(12,12,16,0.88)),
-    url("/illustrations/generated/reviewer-evidence-board-clean.webp");
+    url("/illustrations/art-v12/reviewer-evidence-desk.webp");
   background-size: cover;
   background-position: center;
 }
@@ -819,7 +819,7 @@ kbd {
   border-radius: 0;
   background:
     linear-gradient(180deg, rgba(12,12,16,0.08), rgba(12,12,16,0.86)),
-    url("/illustrations/generated/object-card-sheet.webp");
+    url("/illustrations/art-v12/brief-card-sheet.webp");
   background-size: cover;
   background-position: center;
 }
@@ -913,7 +913,7 @@ kbd {
   background:
     linear-gradient(90deg, rgba(8,8,12,0.98) 0%, rgba(8,8,12,0.9) 48%, rgba(8,8,12,0.58) 78%, rgba(8,8,12,0.36) 100%),
     linear-gradient(180deg, rgba(8,8,12,0.12), rgba(8,8,12,0.48)),
-    url("/illustrations/generated/ending-reflection-notebook.webp");
+    url("/illustrations/art-v12/ending-coda-night.webp");
   background-size: cover;
   background-position: center 42%;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.35);
@@ -951,7 +951,7 @@ kbd {
     radial-gradient(circle at 82% 16%, rgba(245, 200, 120, 0.16), transparent 28%),
     linear-gradient(90deg, rgba(8,8,12,0.97) 0%, rgba(8,8,12,0.9) 50%, rgba(8,8,12,0.44) 100%),
     linear-gradient(180deg, rgba(8,8,12,0.15), rgba(8,8,12,0.88)),
-    url("/illustrations/generated/reviewer-evidence-board-clean.webp");
+    url("/illustrations/art-v12/reviewer-evidence-desk.webp");
   background-size: cover;
   background-position: center;
   box-shadow: 0 36px 110px rgba(0,0,0,0.48);
@@ -992,7 +992,7 @@ kbd {
   border-radius: var(--radius-md);
   background-image:
     linear-gradient(180deg, rgba(8,8,12,0.05), rgba(8,8,12,0.72)),
-    url("/illustrations/generated/reviewer-evidence-board-clean.webp");
+    url("/illustrations/art-v12/reviewer-evidence-desk.webp");
   background-size: cover;
   background-position: center;
   box-shadow: 0 24px 70px rgba(0,0,0,0.42);
@@ -1452,12 +1452,12 @@ kbd {
     min-width: 0;
     flex: 1 1 auto;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 10px;
   }
   .topbar-link { display: none; }
   .topbar-create-link,
   .topbar-login-link {
-    display: inline-flex;
+    display: none;
   }
   .topbar-lang {
     flex-shrink: 0;

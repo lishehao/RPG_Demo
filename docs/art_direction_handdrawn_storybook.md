@@ -22,8 +22,9 @@ places where the user is orienting to a story.
   typography, spacing, and CTA hierarchy should stay crisp and product-grade.
 - Do not use generated plates that contain readable interface text, pseudo UI,
   signage, logos, watermarks, or foreign-language artifacts.
-- Current accepted V1 homepage asset:
-  `/illustrations/soft-east-asian/homepage-hero-desktop.webp`.
+- Current accepted V12 homepage assets:
+  `/illustrations/art-v12/home-hero-desktop.webp` and
+  `/illustrations/art-v12/home-hero-mobile.webp`.
 
 ## Visual Tokens
 
@@ -38,7 +39,7 @@ places where the user is orienting to a story.
 - `illustration-wash`: low-saturation watercolor or pencil wash inside image
   slots, not behind dense text.
 - `shadow`: soft product shadow, with only slight hand-made irregularity.
-- `radius`: 6-8px for controls and cards.
+- `radius`: 2-4px for controls, hard plates, and story surfaces.
 - `font-ui`: current UI font for controls and dense metadata.
 - `font-story`: current narrative serif for prose, titles, and passages.
 
@@ -134,64 +135,64 @@ replace basic UI affordances or make controls harder to scan.
 - Do not use scribble fonts for body text or important labels.
 - Do not draw characters into every UI state.
 - Do not add large batches of generated images without a named asset list,
-  art-direction review, and repository-size plan.
+  art-direction review, QA notes, and repository-size plan.
 - Do not let visual texture reduce perceived engineering quality.
 
 ## Current Implementation Notes
 
-- Core UI tokens are warm-neutral and restrained.
-- Demo-facing generated assets live under `/illustrations/generated/*.webp`.
-  They are optimized derivatives of the built-in Image Generation pack, not
-  raw 3MB PNG drops.
-- Play/template cover surfaces route through generated broad-profile covers:
-  neutral storyboard, cozy/comedy, fantasy/sci-fi, Mars/sci-fi, and
-  high-drama/social. Selection is deterministic from profile and lightweight
-  seed/title/cast keywords.
+- Core UI tokens follow the Cloud3 hard-plate system: premium dark editorial
+  shell, 2-4px radius, no pill buttons, no nested card stacks, no parchment UI
+  chrome.
+- Active demo-facing art now lives under `/illustrations/art-v12/*.webp`.
+  These are optimized WebP derivatives of built-in Image Generation outputs,
+  not raw multi-megabyte PNG drops.
+- Play/template cover surfaces route through broad-profile V12 covers: neutral
+  brief-card desk, cozy/social, Mars/colony, modern fantasy/library, and
+  high-drama/committee. Selection stays deterministic from profile and
+  lightweight seed/title/cast keywords.
 - Strong setting/world keywords override tone. Mars, colony, oxygen, space,
   sci-fi, faction, orbital, or hydroponics signals use the Mars/sci-fi cover
   even when the story tension profile is comedy/cozy.
-- Page-level first-run backgrounds now use generated workspace/evidence images
-  instead of dark legacy `/webtoons/ui` backgrounds.
-- Empty states, ending/replay hero imagery, oracle vignette, and peak beat
-  close-ups use generated notebook/evidence/object-card imagery for demo-safe
-  consistency.
+- Page-level first-run backgrounds now use V12 workspace, loading, empty, and
+  mobile-specific homepage assets instead of older generated or webtoon
+  backgrounds.
 - Reviewer and portfolio CSS backgrounds that bypassed the central asset helper
-  now point at generated evidence/object/ending images.
-- Reviewer mode includes an illustration slot using
-  `/illustrations/case-notebook-panel.svg` as a bounded reference asset.
-- The small curated SVG story-cover set remains in the repo as a lightweight
-  fallback/reference layer, but active template cards prefer the richer
-  generated cover set.
-- Legacy `/webtoons` assets are deliberately retained for cast portraits and
-  advisor portraits until a proper role-reference/advisor batch exists. Do not
-  flatten live cast identity with the current two generic generated portraits.
+  now point at V12 reviewer, portfolio, brief-card, and ending images.
+- Reviewer illustration slots use dark hard image plates; the pale paper/dashed
+  slot treatment is no longer the active Cloud3 rule.
+- The small curated SVG story-cover set and older `/illustrations/generated`
+  pack remain as lightweight fallback/reference layers, but active demo-facing
+  code prefers the V12 set.
+- Legacy `/webtoons` assets are deliberately retained for cast portraits,
+  advisor portraits, and logo only until a proper role-reference/advisor batch
+  exists. Do not flatten live cast identity with generic concept portraits.
 - `frontend2/src/shared/lib/format.ts` still contains an unused legacy shell
   cover table; remove or align it only if a future owner verifies it is dead or
   reactivates that helper.
-- The prior hand-drawn repair fixes remain required: play objective contrast,
-  reviewer copy consistency, mobile Brief hierarchy, cozy cap rationale, and
-  advisor/header overlap.
 
-## P0 Generated Asset Mapping
+## V12 Asset Mapping
 
 | Asset | Active use |
 | --- | --- |
-| `/illustrations/generated/cover-neutral-storyboard-desk.webp` | Home/splash background, neutral generated cover, opening scene fallback |
-| `/illustrations/generated/cover-cozy-bake-sale.webp` | Cozy/comedy generated cover |
-| `/illustrations/generated/cover-fantasy-library-eclipse.webp` | Fantasy/sci-fi generated cover |
-| `/illustrations/generated/cover-sci-fi-mars-colony-talent-show.webp` | Mars/oxygen/colony generated cover |
-| `/illustrations/generated/cover-high-drama-boardroom.webp` | High-drama generated cover and pressure/peak visual |
-| `/illustrations/generated/reviewer-evidence-board-clean.webp` | Reviewer hero, portfolio inspector, login/evidence surfaces, reveal/peak visual |
-| `/illustrations/generated/advisor-notebook-desk.webp` | Create background and oracle vignette |
-| `/illustrations/generated/empty-plaza-story-cards.webp` | Empty plaza/shared empty-state imagery |
-| `/illustrations/generated/ending-reflection-notebook.webp` | Ending/replay hero and portfolio final visual |
-| `/illustrations/generated/object-card-sheet.webp` | Generating background, portfolio loop visual, reversal/peak visual |
+| `/illustrations/art-v12/home-hero-desktop.webp` | Homepage desktop first viewport and story deck |
+| `/illustrations/art-v12/home-hero-mobile.webp` | Homepage 390px compact hero |
+| `/illustrations/art-v12/create-guide-workspace.webp` | Create / Story Guide Agent background |
+| `/illustrations/art-v12/brief-card-sheet.webp` | Neutral cover, Brief Story Card/object-card surfaces, portfolio loop |
+| `/illustrations/art-v12/cover-cozy-social.webp` | Cozy/comedy/social generated cover |
+| `/illustrations/art-v12/cover-mars-colony-talent.webp` | Mars/oxygen/colony/sci-fi generated cover |
+| `/illustrations/art-v12/cover-fantasy-modern-library.webp` | Fantasy/modern-library generated cover |
+| `/illustrations/art-v12/cover-high-drama-committee.webp` | High-drama/social pressure generated cover |
+| `/illustrations/art-v12/reviewer-evidence-desk.webp` | Reviewer hero/art slot, portfolio inspector, reveal visual |
+| `/illustrations/art-v12/portfolio-proof-desk.webp` | Portfolio demo poster and video fallback surface |
+| `/illustrations/art-v12/ending-coda-night.webp` | Ending/replay payoff and portfolio final band |
+| `/illustrations/art-v12/empty-state-card-glow.webp` | Login and empty/shared waiting surfaces |
+| `/illustrations/art-v12/loading-dawn-card.webp` | Generating/wait-state background |
+| `/illustrations/art-v12/advisor-companion-phone.webp` | Advisor/oracle vignette, not avatar replacement |
 
-| Deferred generated assets | Reason |
+| Reference/deferred V12 assets | Reason |
 | --- | --- |
-| `reviewer-evidence-board-candidate-with-possible-marks.png` | Possible pseudo-writing/marking risk |
-| `role-portrait-neutral-figure.png` | Too specific for broad live cast identity |
-| `role-portrait-comedy-helper.png` | Too specific for broad live cast/advisor identity |
+| `/illustrations/art-v12/reference-character-prop-sheet.webp` | Character/prop language reference only; not active UI |
+| `/illustrations/art-v12/reference-cast-cluster-community.webp` | Useful group-cast direction, but too fixed for live avatar routing |
 
 ## Future Asset System Notes
 

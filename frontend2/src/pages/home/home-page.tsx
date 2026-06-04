@@ -724,8 +724,8 @@ const hpStyles: Record<string, CSSProperties> = {
   heroCompact: {
     minHeight: 0,
     marginBottom: 16,
-    backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.94) 0%, rgba(12,12,16,0.62) 48%, rgba(12,12,16,0.16) 100%), linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.38) 72%, var(--bg) 100%), url(${PAGE_BG.homeHero})`,
-    backgroundPosition: "center 36%",
+    backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.94) 0%, rgba(12,12,16,0.62) 48%, rgba(12,12,16,0.16) 100%), linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.38) 72%, var(--bg) 100%), url(${PAGE_BG.homeHeroMobile})`,
+    backgroundPosition: "center 24%",
   },
   heroFrame: {
     minHeight: 468,

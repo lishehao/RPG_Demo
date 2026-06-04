@@ -1,6 +1,7 @@
 import { type CSSProperties, type ReactNode } from "react"
 import { Header } from "../../shared/ui/header"
 import { useLanguage } from "../../shared/lib/i18n"
+import { PAGE_BG } from "../../shared/lib/webtoon-assets"
 
 /**
  * Minimal "About / Terms / Privacy" stub. Single page covering:
@@ -59,39 +60,52 @@ type AboutContent = {
 }
 
 const apStyles: Record<string, CSSProperties> = {
-  page: { minHeight: "100%", background: "var(--bg)" },
-  main: { maxWidth: 720, margin: "0 auto", padding: "56px 32px 80px" },
+  page: {
+    minHeight: "100%",
+    background:
+      `linear-gradient(90deg, rgba(8,8,12,0.98) 0%, rgba(8,8,12,0.92) 58%, rgba(8,8,12,0.72) 100%), linear-gradient(180deg, rgba(8,8,12,0.06) 0%, var(--bg) 92%), url(${PAGE_BG.login})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    color: "var(--text)",
+  },
+  main: { maxWidth: 820, margin: "0 auto", padding: "64px 32px 88px" },
   title: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: 400,
-    margin: "0 0 36px",
+    margin: "0 0 40px",
+    color: "rgba(255,250,242,0.98)",
   },
-  section: { marginBottom: 36 },
+  section: {
+    marginBottom: 0,
+    padding: "26px 0 28px",
+    borderTop: "1px solid rgba(255,255,255,0.10)",
+  },
   h2: {
-    fontFamily: "var(--font-narrative)",
-    fontSize: 20,
-    fontWeight: 500,
+    fontFamily: "var(--font-ui)",
+    fontSize: 13,
+    fontWeight: 760,
     margin: "0 0 14px",
-    color: "var(--text)",
+    color: "rgba(245,200,120,0.88)",
+    letterSpacing: 0,
   },
   p: {
     fontSize: 15,
     lineHeight: 1.75,
-    color: "var(--text-muted)",
+    color: "rgba(244,239,230,0.82)",
     margin: "0 0 14px",
   },
   ul: {
     fontSize: 15,
     lineHeight: 1.75,
-    color: "var(--text-muted)",
+    color: "rgba(244,239,230,0.82)",
     paddingLeft: 22,
     margin: "0 0 14px",
   },
   link: { color: "var(--accent)", textDecoration: "underline" },
   footer: {
     paddingTop: 32,
-    borderTop: "1px dashed var(--line)",
+    borderTop: "1px solid rgba(255,255,255,0.10)",
     marginTop: 24,
   },
   backAction: {
@@ -100,7 +114,7 @@ const apStyles: Record<string, CSSProperties> = {
     border: "none",
     borderBottom: "1px solid var(--line-strong)",
     borderRadius: 0,
-    color: "var(--text-muted)",
+    color: "rgba(244,239,230,0.78)",
     cursor: "pointer",
     fontFamily: "inherit",
     fontSize: 14,
@@ -123,7 +137,7 @@ const aboutContentZh: AboutContent = {
             朋友玩同一个开场.
           </p>
           <p style={apStyles.p}>
-            所有故事都是 LLM 实时生成的 — 意味着每一局都不一样,也意味着
+            所有故事都由 AI story system 实时生成 — 意味着每一局都不一样,也意味着
             偶尔可能出现不连贯、不合理或不符合你预期的内容.这是它有趣的
             地方,也是它当前的局限.
           </p>
@@ -153,9 +167,9 @@ const aboutContentZh: AboutContent = {
       body: (
         <>
           <p style={apStyles.p}>
-            我们使用第三方 AI 服务(阿里云 Qwen / DeepSeek 等),它们有自己
-            的内容审查机制.某些种子或玩法可能被服务端拒绝 — 这通常表现为
-            顾问回复 "踩到红线" 或者故事接不上某个动作.请尝试换个角度.
+            系统会对不适合互动短剧的种子和动作做安全检查.某些种子或玩法
+            可能被拒绝 — 这通常表现为顾问回复 "踩到红线" 或者故事接不上
+            某个动作.请尝试换个角度.
           </p>
           <p style={apStyles.p}>
             <strong>请不要:</strong>
@@ -176,7 +190,7 @@ const aboutContentZh: AboutContent = {
       body: (
         <p style={apStyles.p}>
           这是一个 AI 生成内容的产品.所有故事、角色、对话都是虚构的.
-          如果某个情节恰好与现实人物或事件相似,那是 LLM 训练数据的副作用,
+          如果某个情节恰好与现实人物或事件相似,那是生成系统的巧合,
           不代表本产品的立场.剧情中的选择、顾问的建议都不是任何形式的
           生活/法律/情感建议 — 它们是戏剧的一部分.
         </p>
@@ -202,7 +216,7 @@ const aboutContentEn: AboutContent = {
             invite them to play the same opening.
           </p>
           <p style={apStyles.p}>
-            Every run is generated live by an LLM — every session is
+            Every run is generated live by the AI story system: every session is
             different, and occasionally the output may be incoherent,
             implausible or different from what you expected. That's the
             charm and the current limitation.
@@ -234,11 +248,10 @@ const aboutContentEn: AboutContent = {
       body: (
         <>
           <p style={apStyles.p}>
-            We use third-party AI services (Aliyun Qwen / DeepSeek
-            and similar) which apply their own content moderation.
-            Some seeds or actions may be rejected at the provider —
-            you'll usually see this as the advisor replying "off-limits"
-            or the story not advancing on a given action. Try a
+            The product applies safety checks to seeds and player actions.
+            Some ideas may be rejected because they do not fit an interactive
+            short-drama run. You'll usually see this as the advisor replying
+            "off-limits" or the story not advancing on a given action. Try a
             different angle.
           </p>
           <p style={apStyles.p}>
@@ -263,7 +276,7 @@ const aboutContentEn: AboutContent = {
         <p style={apStyles.p}>
           This product generates AI content. All stories, characters,
           and dialogue are fictional. Any resemblance to real people
-          or events is an artifact of LLM training data, not an
+          or events is a coincidence of live generation, not an
           endorsement by us. In-story choices and advisor suggestions
           are NOT life, legal or emotional advice — they're part of
           the drama.
