@@ -230,6 +230,12 @@ export function CreatePage({
   const activeBriefResponse =
     briefResponse && briefResponseKey === currentBriefKey ? briefResponse : null
   const activeBrief = activeBriefResponse?.brief ?? null
+  const activeRevisionDirection =
+    activeBriefResponse?.brief.revision_actions[0]?.description ??
+    activeBriefResponse?.next_step ??
+    null
+  const localRevisionDirection =
+    localFitBlocker?.actions[0]?.description ?? t("create.guide_not_fit_revision_fallback")
   const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
   const showBackAction = hasSeed || busy || briefBusy
   const showSeedExamples = !hasSeed && !busy && !briefBusy
@@ -609,10 +615,17 @@ export function CreatePage({
                   <strong style={cpStyles.messageTitle}>{t("create.guide_not_fit_title")}</strong>
                   <div style={cpStyles.notFitPanel}>
                     <p style={cpStyles.messageText}>
-                      <strong>{t("create.guide_not_fit_why_label")}</strong>{" "}
+                      <strong>{t("create.guide_not_fit_unsupported_label")}</strong>{" "}
                       {localFitBlocker.rationale}
                     </p>
-                    <p style={cpStyles.messageText}>{t("create.guide_not_fit_supported_shape")}</p>
+                    <p style={cpStyles.messageText}>
+                      <strong>{t("create.guide_not_fit_supported_label")}</strong>{" "}
+                      {t("create.guide_not_fit_supported_shape")}
+                    </p>
+                    <p style={cpStyles.messageText}>
+                      <strong>{t("create.guide_not_fit_revision_label")}</strong>{" "}
+                      {localRevisionDirection}
+                    </p>
                     <p style={cpStyles.messageText}>{t("create.guide_not_fit_next_step")}</p>
                   </div>
                   <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
@@ -668,10 +681,17 @@ export function CreatePage({
                   ) : (
                     <div style={cpStyles.notFitPanel}>
                       <p style={cpStyles.messageText}>
-                        <strong>{t("create.guide_not_fit_why_label")}</strong>{" "}
+                        <strong>{t("create.guide_not_fit_unsupported_label")}</strong>{" "}
                         {activeBriefResponse.brief.runtime_fit_rationale}
                       </p>
-                      <p style={cpStyles.messageText}>{t("create.guide_not_fit_supported_shape")}</p>
+                      <p style={cpStyles.messageText}>
+                        <strong>{t("create.guide_not_fit_supported_label")}</strong>{" "}
+                        {t("create.guide_not_fit_supported_shape")}
+                      </p>
+                      <p style={cpStyles.messageText}>
+                        <strong>{t("create.guide_not_fit_revision_label")}</strong>{" "}
+                        {activeRevisionDirection}
+                      </p>
                       <p style={cpStyles.messageText}>{t("create.guide_not_fit_next_step")}</p>
                     </div>
                   )}
