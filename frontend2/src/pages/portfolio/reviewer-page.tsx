@@ -14,7 +14,7 @@ import {
 function reviewerLaunchError(err: unknown): string {
   const message = friendlyError(err, "Could not launch the reviewer demo.")
   if (message.toLowerCase().includes("ai service isn't configured")) {
-    return "Local AI service is not configured, so this live reviewer run cannot launch. The Runtime Inspector appears after a configured reviewer run starts."
+    return "This curated live run is unavailable in this local demo. Use the normal author flow, or open a reviewed session link to inspect Runtime Inspector evidence."
   }
   return message
 }
@@ -78,8 +78,7 @@ export function ReviewerPage({
           <p>
             A locked English demo path designed for portfolio review. It starts
             a real session, opens a hand-drawn case-file play surface, and
-            exposes the runtime inspector when the local AI gateway is
-            configured.
+            exposes the runtime inspector after the reviewed run starts.
           </p>
           <blockquote>"{REVIEWER_DEMO_SEED}"</blockquote>
           <div className="reviewer-actions">

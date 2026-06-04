@@ -184,6 +184,7 @@ _NON_ENTITY_EXACT = {
     "no violence",
     "no betrayal",
     "no public pressure",
+    "no villain",
     "no villains",
     "no conflict",
     "low conflict",

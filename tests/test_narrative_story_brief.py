@@ -535,6 +535,27 @@ def test_story_brief_filters_discuss_clause_from_small_cast_focus() -> None:
     assert "avoid public pressure" in constraints
 
 
+def test_story_brief_filters_singular_no_villain_from_small_cast_focus() -> None:
+    response = build_story_brief(
+        seed=(
+            "A quiet two-person laundromat story: customer and attendant discuss a "
+            "wedding ring. No public pressure, no villain."
+        ),
+        language="en",
+    )
+
+    names = {name.lower() for name in _cast_names(response)}
+    constraints = {item.label.lower() for item in response.brief.constraints}
+
+    assert response.can_generate is False
+    assert response.brief.runtime_fit_status == "not_fit"
+    assert {"customer", "attendant"}.issubset(names)
+    assert "no villain" not in names
+    assert "no villains" in constraints
+    assert "avoid public pressure" in constraints
+    assert "wedding ring" in constraints
+
+
 def test_story_brief_warns_when_comedy_premise_has_life_or_death_stakes() -> None:
     response = build_story_brief(
         seed=(
