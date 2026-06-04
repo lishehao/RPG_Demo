@@ -49,28 +49,31 @@ export function EmptyState({
 
 const styles: Record<string, CSSProperties> = {
   wrap: {
-    maxWidth: 520,
+    width: "min(620px, calc(100% - 32px))",
+    maxWidth: 620,
     margin: "60px auto",
-    background: "var(--hard-panel)",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(13,15,20,0.95), rgba(8,9,13,0.98))",
     borderRadius: 2,
-    border: "var(--hard-border)",
-    boxShadow: "var(--shadow-soft)",
+    border: "1px solid rgba(245,200,120,0.16)",
+    borderTop: "3px solid rgba(148,164,109,0.52)",
+    boxShadow: "0 30px 92px rgba(0,0,0,0.44), inset 0 1px 0 rgba(255,255,255,0.07)",
     overflow: "hidden",
   },
   hero: {
     width: "100%",
-    height: 160,
+    height: 188,
     backgroundSize: "cover",
     backgroundPosition: "center",
   },
   body: {
-    padding: "22px 24px 28px",
-    textAlign: "center" as const,
+    padding: "24px 26px 30px",
+    textAlign: "left" as const,
     color: "var(--text-muted)",
   },
   title: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 22,
+    fontSize: 25,
     fontWeight: 500,
     color: "var(--text)",
     margin: "0 0 10px",
@@ -80,11 +83,12 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13.5,
     lineHeight: 1.7,
     margin: "0 0 18px",
-    fontStyle: "italic" as const,
+    fontStyle: "normal" as const,
   },
   action: {
     display: "flex",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     gap: 8,
+    flexWrap: "wrap",
   },
 }

@@ -533,11 +533,30 @@ export function CreatePage({
                     : t("create.brief_cta_idle")}
               </strong>
               <span style={cpStyles.agentSignalLine}>{settingsSummary}</span>
+              <div style={cpStyles.agentSignalMetaGrid}>
+                <span style={cpStyles.agentSignalMetaItem}>
+                  <span style={cpStyles.agentSignalMetaLabel}>{t("create.field_budget")}</span>
+                  <strong>{t(selectedBudget.labelKey)}</strong>
+                </span>
+                <span style={cpStyles.agentSignalMetaItem}>
+                  <span style={cpStyles.agentSignalMetaLabel}>{t("create.field_difficulty")}</span>
+                  <strong>{t(selectedDifficulty.labelKey)}</strong>
+                </span>
+                <span style={cpStyles.agentSignalMetaItem}>
+                  <span style={cpStyles.agentSignalMetaLabel}>{t("create.field_story_lang")}</span>
+                  <strong>{selectedLanguage.label}</strong>
+                </span>
+              </div>
             </div>
           </section>
 
           <section style={{ ...cpStyles.workspace, ...(compactLayout ? cpStyles.workspaceCompact : null) }}>
             <div style={{ ...cpStyles.conversationPanel, ...(compactLayout ? cpStyles.conversationPanelCompact : null) }}>
+              <div style={cpStyles.guideWorkbenchStrip} aria-hidden>
+                <span style={cpStyles.guideWorkbenchTrack} />
+                <span style={cpStyles.guideWorkbenchMeter} />
+                <span style={cpStyles.guideWorkbenchMeterAlt} />
+              </div>
               <div style={cpStyles.threadTop}>
                 <span style={cpStyles.threadEyebrow}>{t("create.prompt_fit_hint")}</span>
                 <span style={cpStyles.threadState}>
@@ -1209,11 +1228,13 @@ function StoryBriefCard({
           {t(FIT_STATUS_LABEL_KEYS[brief.runtime_fit_status])}
         </span>
       </div>
-      <p style={cpStyles.briefIntro}>
-        {t(canGenerate ? "create.brief_card_intro_ready" : "create.brief_card_intro_blocked")}
-      </p>
-      <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
-      <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
+      <div style={cpStyles.briefLeadPanel}>
+        <p style={cpStyles.briefIntro}>
+          {t(canGenerate ? "create.brief_card_intro_ready" : "create.brief_card_intro_blocked")}
+        </p>
+        <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
+        <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
+      </div>
       {compact ? (
         <>
           <div style={cpStyles.briefPrimaryCompact}>
@@ -1420,7 +1441,7 @@ const cpStyles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100%",
     background:
-      `linear-gradient(90deg, rgba(7,8,12,0.96) 0%, rgba(7,8,12,0.82) 45%, rgba(7,8,12,0.48) 100%), linear-gradient(180deg, rgba(7,8,12,0.02) 0%, var(--bg) 88%), url(${PAGE_BG.create})`,
+      `radial-gradient(circle at 74% 16%, rgba(208,138,79,0.18), transparent 30%), radial-gradient(circle at 14% 88%, rgba(148,164,109,0.12), transparent 28%), linear-gradient(90deg, rgba(7,8,12,0.98) 0%, rgba(7,8,12,0.86) 45%, rgba(7,8,12,0.58) 100%), linear-gradient(180deg, rgba(7,8,12,0.02) 0%, var(--bg) 88%), url(${PAGE_BG.create})`,
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundAttachment: "fixed",
@@ -1438,22 +1459,21 @@ const cpStyles: Record<string, CSSProperties> = {
   brandLink: { display: "inline-flex", alignItems: "center", gap: 8 },
   brandName: { fontFamily: "var(--font-narrative)", fontSize: 17 },
 
-  main: { padding: "42px 40px 80px", display: "flex", justifyContent: "center" },
+  main: { padding: "34px 40px 86px", display: "flex", justifyContent: "center" },
   mainCompact: {
-    padding: "22px 14px 54px",
+    padding: "18px 12px 54px",
   },
   inner: {
     width: "100%",
-    maxWidth: 1180,
+    maxWidth: 1220,
     padding: "0",
     color: "var(--text)",
-    background:
-      "linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0) 34%), linear-gradient(180deg, rgba(13,15,20,0.94), rgba(9,10,14,0.97))",
-    border: "1px solid rgba(245,200,120,0.16)",
-    borderRadius: 2,
-    boxShadow: "0 34px 110px rgba(0,0,0,0.54), inset 0 1px 0 rgba(255,255,255,0.08)",
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    boxShadow: "none",
     transform: "none",
-    overflow: "hidden",
+    overflow: "visible",
   },
   innerCompact: {
     maxWidth: 520,
@@ -1461,36 +1481,42 @@ const cpStyles: Record<string, CSSProperties> = {
     transform: "none",
   },
   agentHero: {
-    minHeight: 246,
+    minHeight: 332,
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 0.45fr)",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(330px, 0.42fr)",
     gap: 0,
+    position: "relative" as const,
+    overflow: "hidden",
     background:
-      `linear-gradient(90deg, rgba(8,9,13,0.96) 0%, rgba(8,9,13,0.78) 54%, rgba(8,9,13,0.25) 100%), linear-gradient(180deg, rgba(8,9,13,0.06), rgba(8,9,13,0.72)), url(${GENERATED_ASSETS.advisorNotebook})`,
+      `linear-gradient(90deg, rgba(6,7,10,0.98) 0%, rgba(6,7,10,0.86) 48%, rgba(6,7,10,0.34) 100%), linear-gradient(180deg, rgba(6,7,10,0.03), rgba(6,7,10,0.82)), url(${GENERATED_ASSETS.advisorNotebook})`,
     backgroundSize: "cover",
     backgroundPosition: "center 42%",
-    borderBottom: "1px solid rgba(245,200,120,0.14)",
+    border: "1px solid rgba(245,200,120,0.18)",
+    borderRadius: 2,
+    boxShadow: "0 40px 120px rgba(0,0,0,0.52), inset 0 1px 0 rgba(255,255,255,0.08)",
   },
   agentHeroCompact: {
     gridTemplateColumns: "1fr",
     minHeight: 0,
+    borderRadius: 2,
   },
   heroCopy: {
-    padding: "46px 46px 40px",
+    padding: "58px 52px 70px",
     maxWidth: 700,
   },
   heroCopyCompact: {
-    padding: "28px 20px 26px",
+    padding: "34px 20px 30px",
   },
   agentSignalPanel: {
     alignSelf: "stretch",
     minWidth: 0,
     display: "grid",
     alignContent: "end",
-    gap: 8,
-    padding: "38px 34px 38px",
+    gap: 11,
+    padding: "42px 34px 40px",
     borderLeft: "1px solid rgba(245,200,120,0.14)",
-    background: "rgba(7,8,12,0.58)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.014)), rgba(7,8,12,0.68)",
     backdropFilter: "blur(14px)",
   },
   agentSignalPanelCompact: {
@@ -1518,35 +1544,74 @@ const cpStyles: Record<string, CSSProperties> = {
     fontSize: 12.5,
     lineHeight: 1.45,
   },
+  agentSignalMetaGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 0,
+    marginTop: 6,
+    borderTop: "1px solid rgba(245,200,120,0.14)",
+    borderBottom: "1px solid rgba(245,200,120,0.10)",
+  },
+  agentSignalMetaItem: {
+    minWidth: 0,
+    display: "grid",
+    gap: 4,
+    padding: "11px 10px 12px",
+    borderRight: "1px solid rgba(245,200,120,0.10)",
+  },
+  agentSignalMetaLabel: {
+    color: "rgba(244,239,230,0.44)",
+    fontSize: 10.5,
+    lineHeight: 1.15,
+    fontWeight: 700,
+  },
   workspace: {
+    position: "relative" as const,
+    zIndex: 2,
+    marginTop: -46,
+    padding: "0 24px",
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 360px)",
-    gap: 0,
-    alignItems: "stretch",
+    gap: 18,
+    alignItems: "start",
   },
   workspaceCompact: {
     gridTemplateColumns: "1fr",
+    marginTop: 12,
+    padding: 0,
+    gap: 12,
   },
   conversationPanel: {
     minWidth: 0,
-    padding: "30px 34px 34px",
+    padding: "26px 28px 30px",
     display: "grid",
-    gap: 18,
+    gap: 17,
+    position: "relative" as const,
+    overflow: "hidden",
+    background:
+      `linear-gradient(180deg, rgba(9,10,14,0.92), rgba(7,8,12,0.96)), radial-gradient(circle at 86% 0%, rgba(208,138,79,0.16), transparent 30%), linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 40%), url(${GENERATED_ASSETS.objectCardSheet})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    border: "1px solid rgba(245,200,120,0.17)",
+    borderLeft: "3px solid rgba(208,138,79,0.62)",
+    borderRadius: 2,
+    boxShadow: "0 30px 90px rgba(0,0,0,0.44), inset 0 1px 0 rgba(255,255,255,0.07)",
   },
   conversationPanelCompact: {
-    padding: "22px 16px 24px",
+    padding: "18px 14px 22px",
   },
   controlPanel: {
     minWidth: 0,
-    padding: "26px 24px 28px",
-    borderLeft: "1px solid rgba(245,200,120,0.12)",
+    padding: "24px 22px 26px",
+    border: "1px solid rgba(245,200,120,0.15)",
+    borderTop: "3px solid rgba(148,164,109,0.40)",
+    borderRadius: 2,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)), rgba(8,9,13,0.58)",
+      "linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.018)), rgba(8,9,13,0.78)",
+    boxShadow: "0 24px 76px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.06)",
   },
   controlPanelCompact: {
-    padding: "20px 16px 24px",
-    borderLeft: "none",
-    borderTop: "1px solid rgba(245,200,120,0.12)",
+    padding: "18px 14px 22px",
   },
   controlArt: {
     minHeight: 148,
@@ -1566,6 +1631,26 @@ const cpStyles: Record<string, CSSProperties> = {
     gap: 14,
     paddingBottom: 12,
     borderBottom: "1px solid rgba(245,200,120,0.10)",
+  },
+  guideWorkbenchStrip: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 80px 46px",
+    alignItems: "center",
+    gap: 10,
+    padding: "0 0 11px",
+    borderBottom: "1px solid rgba(245,200,120,0.08)",
+  },
+  guideWorkbenchTrack: {
+    height: 2,
+    background: "linear-gradient(90deg, rgba(245,200,120,0.48), rgba(245,200,120,0.07))",
+  },
+  guideWorkbenchMeter: {
+    height: 6,
+    background: "linear-gradient(90deg, rgba(148,164,109,0.86) 0 54%, rgba(255,255,255,0.12) 54% 100%)",
+  },
+  guideWorkbenchMeterAlt: {
+    height: 6,
+    background: "linear-gradient(90deg, rgba(208,138,79,0.82) 0 72%, rgba(255,255,255,0.12) 72% 100%)",
   },
   threadEyebrow: {
     color: "rgba(245,200,120,0.82)",
@@ -1588,19 +1673,21 @@ const cpStyles: Record<string, CSSProperties> = {
     gap: 12,
   },
   guideMessage: {
-    maxWidth: 680,
+    maxWidth: 690,
     minWidth: 0,
-    padding: "14px 16px 15px",
-    background: "rgba(255,255,255,0.045)",
-    border: "1px solid rgba(245,200,120,0.12)",
+    padding: "16px 18px 17px",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 48%), rgba(255,255,255,0.045)",
+    border: "1px solid rgba(245,200,120,0.14)",
     borderLeft: "3px solid rgba(148,164,109,0.62)",
     borderRadius: 2,
+    boxShadow: "0 16px 42px rgba(0,0,0,0.20)",
   },
   guideMessageResult: {
     maxWidth: "100%",
     display: "grid",
     gap: 12,
-    padding: "15px",
+    padding: "17px",
   },
   guideMessageSuccess: {
     borderLeftColor: "rgba(148,164,109,0.72)",
@@ -1614,11 +1701,13 @@ const cpStyles: Record<string, CSSProperties> = {
     maxWidth: 680,
     minWidth: 0,
     justifySelf: "end",
-    padding: "13px 15px 14px",
-    background: "rgba(208,138,79,0.12)",
+    padding: "14px 16px 15px",
+    background:
+      "linear-gradient(135deg, rgba(208,138,79,0.22), rgba(208,138,79,0.08))",
     border: "1px solid rgba(208,138,79,0.32)",
     borderRight: "3px solid rgba(208,138,79,0.70)",
     borderRadius: 2,
+    boxShadow: "0 18px 46px rgba(0,0,0,0.22)",
   },
   messageSpeaker: {
     display: "block",
@@ -1651,13 +1740,18 @@ const cpStyles: Record<string, CSSProperties> = {
   notFitPanel: {
     display: "grid",
     gap: 8,
-    padding: "9px 10px",
+    padding: "10px 11px",
     border: "1px solid rgba(211,108,88,0.20)",
     background: "rgba(0,0,0,0.14)",
   },
   composerDock: {
     display: "grid",
     gap: 8,
+    marginTop: 1,
+    padding: "12px",
+    background: "rgba(0,0,0,0.20)",
+    border: "1px solid rgba(245,200,120,0.10)",
+    borderRadius: 2,
   },
   guideThinking: {
     maxWidth: 420,
@@ -1740,10 +1834,11 @@ const cpStyles: Record<string, CSSProperties> = {
     position: "relative",
     padding: "0",
     marginBottom: 0,
-    background: "rgba(5,6,10,0.46)",
-    border: "1px solid rgba(245,200,120,0.16)",
+    background: "rgba(5,6,10,0.64)",
+    border: "1px solid rgba(245,200,120,0.20)",
+    borderLeft: "3px solid rgba(208,138,79,0.58)",
     borderRadius: 2,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 16px 46px rgba(0,0,0,0.20)",
   },
   editorMeta: {
     display: "flex",
@@ -1826,8 +1921,8 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   textarea: {
     width: "100%",
-    minHeight: 126,
-    padding: "18px 20px",
+    minHeight: 142,
+    padding: "20px 21px",
     background: "transparent",
     border: "none",
     borderBottom: "none",
@@ -1841,7 +1936,7 @@ const cpStyles: Record<string, CSSProperties> = {
     transition: "border-color 200ms",
   },
   textareaCompact: {
-    minHeight: 96,
+    minHeight: 112,
     padding: "16px 14px",
     fontSize: 15,
   },
@@ -1935,10 +2030,11 @@ const cpStyles: Record<string, CSSProperties> = {
 
   settingsDetails: {
     marginTop: 0,
-    padding: "13px 14px 14px",
-    border: "1px solid rgba(245,200,120,0.12)",
+    padding: "14px 14px 15px",
+    border: "1px solid rgba(245,200,120,0.14)",
     borderRadius: 2,
-    background: "rgba(5,6,10,0.38)",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.045), rgba(255,255,255,0) 42%), rgba(5,6,10,0.44)",
   },
   settingsDetailsFocused: {
     marginTop: 0,
@@ -2083,18 +2179,19 @@ const cpStyles: Record<string, CSSProperties> = {
     position: "relative" as const,
     marginTop: 0,
     marginBottom: 0,
-    padding: "18px 16px 16px",
-    border: "1px solid rgba(245,200,120,0.14)",
-    borderLeft: "3px solid rgba(208,138,79,0.66)",
+    padding: "18px",
+    border: "1px solid rgba(245,200,120,0.18)",
+    borderTop: "3px solid rgba(208,138,79,0.66)",
+    borderLeft: "1px solid rgba(245,200,120,0.18)",
     borderRadius: 2,
     background:
-      "linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0) 42%), rgba(8,9,13,0.66)",
+      "linear-gradient(145deg, rgba(255,255,255,0.085), rgba(255,255,255,0) 40%), linear-gradient(180deg, rgba(13,15,20,0.88), rgba(8,9,13,0.78))",
     color: "var(--text-muted)",
-    boxShadow: "0 18px 54px rgba(0,0,0,0.30)",
+    boxShadow: "0 24px 76px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.07)",
   },
   briefRailCompact: {
     marginBottom: 18,
-    padding: "16px 12px 14px",
+    padding: "15px 12px 14px",
   },
   briefTape: {
     display: "none",
@@ -2121,9 +2218,9 @@ const cpStyles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   briefIntro: {
-    marginTop: 6,
+    marginTop: 0,
     marginRight: 0,
-    marginBottom: 6,
+    marginBottom: 8,
     marginLeft: 0,
     color: "var(--text)",
     fontSize: 13,
@@ -2134,7 +2231,7 @@ const cpStyles: Record<string, CSSProperties> = {
     color: "var(--text-faint)",
     fontSize: 11.5,
     lineHeight: 1.42,
-    marginBottom: 8,
+    marginBottom: 0,
   },
   briefFitPillWarn: {
     color: "rgba(255,170,150,0.96)",
@@ -2142,18 +2239,26 @@ const cpStyles: Record<string, CSSProperties> = {
   briefPremise: {
     marginTop: 0,
     marginRight: 0,
-    marginBottom: 12,
+    marginBottom: 10,
     marginLeft: 0,
     color: "var(--text)",
-    fontSize: 14,
-    lineHeight: 1.52,
+    fontSize: 17,
+    lineHeight: 1.48,
     fontFamily: "var(--font-narrative)",
+  },
+  briefLeadPanel: {
+    margin: "10px 0 14px",
+    padding: "14px 14px 13px",
+    background: "rgba(0,0,0,0.20)",
+    border: "1px solid rgba(245,200,120,0.12)",
+    borderLeft: "3px solid rgba(208,138,79,0.58)",
+    borderRadius: 2,
   },
   briefMetaGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     gap: "12px 18px",
-    marginBottom: 13,
+    marginBottom: 14,
   },
   briefMetaGridCompact: {
     gridTemplateColumns: "1fr",
@@ -2163,6 +2268,10 @@ const cpStyles: Record<string, CSSProperties> = {
     minWidth: 0,
     display: "grid",
     gap: 3,
+    padding: "10px 11px",
+    background: "rgba(255,255,255,0.035)",
+    border: "1px solid rgba(245,200,120,0.09)",
+    borderRadius: 2,
   },
   briefFieldLabel: {
     color: "var(--text-faint)",
@@ -2187,10 +2296,10 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   briefPrimaryCompact: {
     marginBottom: 10,
-    padding: "10px 11px",
+    padding: "11px 12px",
     borderLeft: "2px solid rgba(148,164,109,0.56)",
     borderRadius: 2,
-    background: "rgba(255,255,255,0.04)",
+    background: "rgba(148,164,109,0.07)",
   },
   briefList: {
     minWidth: 0,
@@ -2321,11 +2430,12 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   contractPanel: {
     marginTop: 14,
-    padding: "13px 14px 14px",
-    border: "1px solid rgba(245,200,120,0.12)",
+    padding: "14px 14px 15px",
+    border: "1px solid rgba(245,200,120,0.14)",
     borderLeft: "3px solid rgba(148,164,109,0.54)",
     borderRadius: 2,
-    background: "rgba(255,255,255,0.035)",
+    background:
+      "linear-gradient(135deg, rgba(148,164,109,0.12), rgba(255,255,255,0.02) 56%), rgba(255,255,255,0.035)",
     display: "grid",
     gap: 6,
   },
@@ -2400,9 +2510,9 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   busyCard: {
     marginTop: 14,
-    padding: "13px 14px 14px",
-    background: "rgba(255,255,255,0.035)",
-    border: "1px solid rgba(245,200,120,0.12)",
+    padding: "14px 14px 15px",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(245,200,120,0.14)",
     borderRadius: 2,
     display: "flex",
     flexDirection: "column" as const,

@@ -57,15 +57,22 @@ export function LoadingShim({
 
 const styles: Record<string, CSSProperties> = {
   wrapPage: {
+    width: "min(560px, calc(100% - 32px))",
     minHeight: 260,
-    padding: 80,
+    margin: "64px auto",
+    padding: "54px 36px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     gap: 14,
     color: "var(--text-faint)",
-    background: "var(--story-page)",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(13,15,20,0.94), rgba(8,9,13,0.98))",
+    border: "1px solid rgba(245,200,120,0.15)",
+    borderTop: "3px solid rgba(208,138,79,0.58)",
+    borderRadius: 2,
+    boxShadow: "0 28px 86px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.07)",
   },
   wrapInline: {
     padding: "20px 24px",
@@ -81,7 +88,7 @@ const styles: Record<string, CSSProperties> = {
     gap: 6,
   },
   dot: {
-    width: 16,
+    width: 18,
     height: 6,
     borderRadius: 0,
     background: "linear-gradient(90deg, var(--accent), rgba(148,164,109,0.78))",
@@ -90,7 +97,8 @@ const styles: Record<string, CSSProperties> = {
   label: {
     fontSize: 13,
     color: "var(--text-faint)",
-    fontStyle: "italic",
-    letterSpacing: "0.04em",
+    fontStyle: "normal",
+    letterSpacing: 0,
+    fontWeight: 680,
   },
 }

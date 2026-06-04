@@ -1072,7 +1072,7 @@ const hpStyles: Record<string, CSSProperties> = {
   resumeButtonCompact: {
     gridTemplateColumns: "1fr",
     gap: 12,
-    padding: "18px 0",
+    padding: "18px 16px",
   },
   resumeCopy: {
     minWidth: 0,
