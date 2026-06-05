@@ -4767,6 +4767,8 @@ const ppStyles: Record<string, CSSProperties> = {
     backgroundSize: "cover",
     backgroundPosition: "center 35%",
     borderBottom: "1px solid rgba(236,204,152,0.18)",
+    borderRadius: "0 0 var(--radius-door) var(--radius-door)",
+    overflow: "hidden",
   },
   progressTrack: {
     height: 3,
@@ -4872,7 +4874,7 @@ const ppStyles: Record<string, CSSProperties> = {
     overflowY: "visible",
     background: "var(--hard-panel)",
     border: "var(--hard-border)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     boxShadow: "0 34px 110px rgba(0,0,0,0.45)",
   },
 
@@ -4938,7 +4940,7 @@ const ppStyles: Record<string, CSSProperties> = {
     padding: "7px 9px 8px",
     background: "rgba(255,255,255,0.035)",
     borderLeft: "2px solid rgba(154,148,200,0.38)",
-    borderRadius: 3,
+    borderRadius: "var(--radius-panel)",
   },
   runCompactObjectiveLabel: {
     color: "var(--text-faint)",
@@ -5016,7 +5018,7 @@ const ppStyles: Record<string, CSSProperties> = {
     lineHeight: 1.35,
     background: "rgba(255,255,255,0.035)",
     border: "1px solid var(--line)",
-    borderRadius: 3,
+    borderRadius: "var(--radius-panel)",
   },
   runInventoryKicker: {
     flexShrink: 0,
@@ -5298,7 +5300,7 @@ const ppStyles: Record<string, CSSProperties> = {
     background:
       "linear-gradient(135deg, rgba(154,148,200,0.14), rgba(255,255,255,0.035) 44%, rgba(0,0,0,0.22))",
     border: "1px solid rgba(154,148,200,0.30)",
-    borderRadius: 3,
+    borderRadius: "var(--radius-control)",
     boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
   },
   runtimeInspectorHeader: {
@@ -6407,7 +6409,7 @@ const ppStyles: Record<string, CSSProperties> = {
     justifyContent: "center",
     width: 28,
     height: 28,
-    borderRadius: 999,
+    borderRadius: "var(--radius-control)",
     border: "1px solid rgba(208,138,79,0.28)",
     color: "rgba(245,205,150,0.94)",
     background: "rgba(0,0,0,0.16)",
@@ -6556,7 +6558,7 @@ const ppStyles: Record<string, CSSProperties> = {
     borderLeftStyle: "solid",
     borderLeftColor: "rgba(208,138,79,0.30)",
     borderBottom: "1px solid rgba(236,204,152,0.12)",
-    borderRadius: 3,
+    borderRadius: "var(--radius-control)",
     color: "var(--text)",
     textAlign: "left" as const,
     cursor: "pointer",
@@ -7615,10 +7617,12 @@ const ppStyles: Record<string, CSSProperties> = {
     overflow: "visible",
   },
   endingPayoffShell: {
-    padding: "22px 0 24px",
-    borderTop: "1px solid rgba(245,200,120,0.22)",
-    borderBottom: "1px solid rgba(255,255,255,0.09)",
-    background: "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
+    padding: "22px 24px 24px",
+    border: "1px solid rgba(245,200,120,0.18)",
+    borderLeft: "3px solid rgba(208,138,79,0.62)",
+    borderRadius: "var(--radius-scene-mobile)",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018))",
+    boxShadow: "0 26px 84px rgba(0,0,0,0.32)",
   },
   endingPayoffRail: {
     display: "flex",
@@ -7696,7 +7700,7 @@ const ppStyles: Record<string, CSSProperties> = {
     overflow: "hidden",
     backgroundSize: "cover",
     backgroundPosition: "center",
-    borderRadius: 3,
+    borderRadius: "var(--radius-door)",
     boxShadow: "0 18px 48px rgba(0,0,0,0.32)",
   },
   endingPayoffArtCompact: {

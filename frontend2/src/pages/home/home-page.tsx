@@ -225,22 +225,25 @@ export function HomePage({
                 <button
                   key={intent.id}
                   type="button"
+                  className="story-door"
                   style={hpStyles.heroRailItem}
                   onClick={() => onOpenCreate(intent.id)}
+                  aria-label={`${t("home.story_door_action")}: ${t(intent.titleKey)}. ${t(intent.hookKey)}`}
                 >
                   <span
+                    className="story-door__thumb"
                     style={{
                       ...hpStyles.heroRailThumb,
                       backgroundImage: `linear-gradient(180deg, rgba(8,7,6,0) 25%, rgba(8,7,6,0.72) 100%), url(${intent.image})`,
                     }}
                     aria-hidden
                   />
-                  <span style={hpStyles.heroRailCopy}>
+                  <span className="story-door__copy" style={hpStyles.heroRailCopy}>
                     <span style={hpStyles.heroRailTitle}>{t(intent.titleKey)}</span>
                     <span style={hpStyles.heroRailTone}>{t(intent.moodKey)}</span>
                     <span style={hpStyles.heroRailDetail}>{t(intent.pressureKey)}</span>
                     <span style={hpStyles.heroRailPromise}>{t(intent.ruleKey)}</span>
-                    <span style={hpStyles.heroRailHook}>{t("home.story_door_action")} · {t(intent.hookKey)}</span>
+                    <span style={hpStyles.heroRailHook}>{t("home.story_door_action")} →</span>
                   </span>
                 </button>
               ))}
@@ -737,7 +740,7 @@ const hpStyles: Record<string, CSSProperties> = {
     position: "relative",
     minHeight: 590,
     padding: 0,
-    borderRadius: 0,
+    borderRadius: "var(--radius-scene)",
     overflow: "hidden",
     // Vertical gradient: keep the upper half of the splash visible,
     // fade to product bg at the bottom so cards slide up underneath
@@ -754,11 +757,12 @@ const hpStyles: Record<string, CSSProperties> = {
     alignItems: "stretch",
     borderTop: "1px solid rgba(236,204,152,0.16)",
     borderBottom: "1px solid rgba(236,204,152,0.18)",
-    boxShadow: "0 32px 90px rgba(0,0,0,0.34)",
+    boxShadow: "0 34px 110px rgba(0,0,0,0.42), 0 24px 80px rgba(208,138,79,0.10)",
   },
   heroCompact: {
     minHeight: 0,
     marginBottom: 16,
+    borderRadius: "var(--radius-scene-mobile)",
     backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.94) 0%, rgba(12,12,16,0.62) 48%, rgba(12,12,16,0.16) 100%), linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.38) 72%, var(--bg) 100%), url(${PAGE_BG.homeHeroMobile})`,
     backgroundPosition: "center 24%",
   },
@@ -917,6 +921,7 @@ const hpStyles: Record<string, CSSProperties> = {
     marginBottom: 30,
     borderLeft: "1px solid rgba(236,204,152,0.18)",
     borderBottom: "1px solid rgba(236,204,152,0.18)",
+    borderRadius: "var(--radius-door)",
     background:
       "linear-gradient(180deg, rgba(19,15,11,0.64), rgba(10,8,6,0.72))",
     boxShadow: "-24px 36px 90px rgba(0,0,0,0.38)",
@@ -946,6 +951,7 @@ const hpStyles: Record<string, CSSProperties> = {
     borderTop: "1px solid rgba(236,204,152,0.20)",
     borderLeft: "1px solid rgba(236,204,152,0.20)",
     borderBottom: "1px solid rgba(236,204,152,0.12)",
+    borderRadius: "var(--radius-panel)",
     backdropFilter: "blur(10px)",
   },
   deckKicker: {
@@ -989,6 +995,7 @@ const hpStyles: Record<string, CSSProperties> = {
     borderTop: "1px solid rgba(236,204,152,0.14)",
     borderRight: "1px solid rgba(236,204,152,0.10)",
     borderBottom: "1px solid rgba(236,204,152,0.16)",
+    borderRadius: "var(--radius-panel)",
     backdropFilter: "blur(12px)",
   },
   storyBeatText: {
@@ -1006,16 +1013,19 @@ const hpStyles: Record<string, CSSProperties> = {
     display: "grid",
     gridTemplateColumns: "190px minmax(0, 1fr)",
     alignItems: "stretch",
-    gap: 0,
+    gap: 14,
+    padding: 16,
     borderTop: "1px solid rgba(236,204,152,0.16)",
-    background: "rgba(8,7,6,0.72)",
+    background: "linear-gradient(180deg, rgba(8,7,6,0.82), rgba(8,7,6,0.68))",
     backdropFilter: "blur(10px)",
   },
   heroRailCompact: {
     gridTemplateColumns: "1fr",
+    gap: 10,
+    padding: 12,
   },
   heroRailLabel: {
-    padding: "18px 18px 16px 24px",
+    padding: "4px 10px 0 8px",
     color: "rgba(242,234,220,0.62)",
     fontFamily: "var(--font-mono)",
     fontSize: 10.5,
@@ -1028,22 +1038,24 @@ const hpStyles: Record<string, CSSProperties> = {
   heroRailItems: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 12,
     minWidth: 0,
   },
   heroRailItemsCompact: {
     gridTemplateColumns: "1fr",
+    gap: 10,
   },
   heroRailItem: {
     minWidth: 0,
-    minHeight: 178,
+    minHeight: 214,
     display: "grid",
-    gridTemplateRows: "116px minmax(0, 1fr)",
+    gridTemplateRows: "132px minmax(0, 1fr)",
     alignItems: "stretch",
     gap: 0,
     padding: 0,
-    borderLeft: "1px solid rgba(236,204,152,0.10)",
-    borderBottom: "1px solid rgba(236,204,152,0.10)",
-    background: "transparent",
+    border: "1px solid rgba(236,204,152,0.14)",
+    background: "rgba(7,8,12,0.58)",
+    borderRadius: "var(--radius-door)",
     color: "var(--text)",
     textAlign: "left" as const,
     overflow: "hidden",
@@ -1052,7 +1064,7 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   heroRailThumb: {
     width: "100%",
-    minHeight: 116,
+    minHeight: 132,
     backgroundSize: "cover",
     backgroundPosition: "center",
   },
@@ -1061,7 +1073,7 @@ const hpStyles: Record<string, CSSProperties> = {
     padding: "14px 15px 15px",
     display: "grid",
     alignContent: "center",
-    gap: 7,
+    gap: 6,
     background:
       "linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0) 48%), rgba(7,8,12,0.72)",
   },

@@ -33,6 +33,11 @@
   --radius-sm: 2px;
   --radius-md: 3px;
   --radius-lg: 4px;
+  --radius-control: 4px;
+  --radius-panel: 6px;
+  --radius-door: 10px;
+  --radius-scene: 14px;
+  --radius-scene-mobile: 10px;
   --paper-texture:
     linear-gradient(90deg, rgba(245, 200, 120, 0.035) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px),
@@ -190,6 +195,47 @@ kbd {
   border-radius: 0;
   letter-spacing: 0;
   vertical-align: middle;
+}
+
+/* ------ Story Desk scene softness ------
+   Narrowly applied to entrance/world-door surfaces: evidence rows,
+   transcript rows, reviewer ledgers, and compact controls keep the
+   existing hard editorial geometry. */
+.story-door {
+  transform: translateY(0);
+}
+
+.story-door,
+.story-door__thumb,
+.story-door__copy {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    background 180ms ease;
+}
+
+.story-door:hover,
+.story-door:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(245, 200, 120, 0.34) !important;
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.44),
+    0 0 0 1px rgba(245, 200, 120, 0.08) inset,
+    0 18px 48px rgba(208, 138, 79, 0.12);
+}
+
+.story-door:hover .story-door__thumb,
+.story-door:focus-visible .story-door__thumb {
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.story-door:hover .story-door__copy,
+.story-door:focus-visible .story-door__copy {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0) 48%),
+    rgba(9, 10, 14, 0.86);
 }
 
 /* ------ reduced-motion: kill everything that bounces ------ */
@@ -1421,6 +1467,10 @@ kbd {
 
 /* responsive tweaks */
 @media (max-width: 720px) {
+  :root {
+    --radius-scene: var(--radius-scene-mobile);
+  }
+
   .home-main, .play-main, .create-main { padding-left: 20px; padding-right: 20px; }
   .play-story-column {
     scrollbar-gutter: auto;

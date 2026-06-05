@@ -697,7 +697,7 @@ export function CreatePage({
               ) : null}
 
               {localFitBlocker ? (
-                <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageResult, ...cpStyles.guideMessageBlocked }}>
+                <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageResult, ...cpStyles.guideMessageRevise }}>
                   <span style={cpStyles.messageSpeaker}>{t("create.tag_new")}</span>
                   <strong style={cpStyles.messageTitle}>{t("create.guide_not_fit_title")}</strong>
                   <div style={cpStyles.notFitPanel}>
@@ -756,7 +756,7 @@ export function CreatePage({
                   style={{
                     ...cpStyles.guideMessage,
                     ...cpStyles.guideMessageResult,
-                    ...(activeBriefResponse.can_generate ? cpStyles.guideMessageSuccess : cpStyles.guideMessageBlocked),
+                    ...(activeBriefResponse.can_generate ? cpStyles.guideMessageSuccess : cpStyles.guideMessageRevise),
                   }}
                 >
                   <span style={cpStyles.messageSpeaker}>{t("create.tag_new")}</span>
@@ -1569,13 +1569,13 @@ const cpStyles: Record<string, CSSProperties> = {
     backgroundSize: "cover",
     backgroundPosition: "center 42%",
     border: "1px solid rgba(245,200,120,0.18)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-scene)",
     boxShadow: "0 40px 120px rgba(0,0,0,0.52), inset 0 1px 0 rgba(255,255,255,0.08)",
   },
   agentHeroCompact: {
     gridTemplateColumns: "1fr",
     minHeight: 0,
-    borderRadius: 2,
+    borderRadius: "var(--radius-scene-mobile)",
   },
   heroCopy: {
     padding: "58px 52px 70px",
@@ -1595,11 +1595,13 @@ const cpStyles: Record<string, CSSProperties> = {
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.014)), rgba(7,8,12,0.68)",
     backdropFilter: "blur(14px)",
+    borderRadius: "0 var(--radius-scene) var(--radius-scene) 0",
   },
   agentSignalPanelCompact: {
     borderLeft: "none",
     borderTop: "1px solid rgba(245,200,120,0.12)",
     padding: "18px 20px 20px",
+    borderRadius: "0 0 var(--radius-scene-mobile) var(--radius-scene-mobile)",
   },
   agentSignalKicker: {
     color: "rgba(245,200,120,0.82)",
@@ -1671,7 +1673,7 @@ const cpStyles: Record<string, CSSProperties> = {
     backgroundPosition: "center",
     border: "1px solid rgba(245,200,120,0.17)",
     borderLeft: "3px solid rgba(208,138,79,0.62)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     boxShadow: "0 30px 90px rgba(0,0,0,0.44), inset 0 1px 0 rgba(255,255,255,0.07)",
   },
   conversationPanelCompact: {
@@ -1682,7 +1684,7 @@ const cpStyles: Record<string, CSSProperties> = {
     padding: "24px 22px 26px",
     border: "1px solid rgba(245,200,120,0.15)",
     borderTop: "3px solid rgba(148,164,109,0.40)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.018)), rgba(8,9,13,0.78)",
     boxShadow: "0 24px 76px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.06)",
@@ -1698,7 +1700,7 @@ const cpStyles: Record<string, CSSProperties> = {
     backgroundSize: "cover",
     backgroundPosition: "center",
     border: "1px solid rgba(245,200,120,0.14)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     boxShadow: "0 18px 54px rgba(0,0,0,0.32)",
   },
   threadTop: {
@@ -1751,9 +1753,11 @@ const cpStyles: Record<string, CSSProperties> = {
     minHeight: 206,
     border: "1px solid rgba(245,200,120,0.16)",
     borderLeft: "3px solid rgba(208,138,79,0.64)",
+    borderRadius: "var(--radius-door)",
     background:
       "linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 46%), rgba(5,6,10,0.40)",
     boxShadow: "0 18px 56px rgba(0,0,0,0.28)",
+    overflow: "hidden",
   },
   presetPanelCompact: {
     gridTemplateColumns: "1fr",
@@ -1839,7 +1843,7 @@ const cpStyles: Record<string, CSSProperties> = {
       "linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 48%), rgba(255,255,255,0.045)",
     border: "1px solid rgba(245,200,120,0.14)",
     borderLeft: "3px solid rgba(148,164,109,0.62)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     boxShadow: "0 16px 42px rgba(0,0,0,0.20)",
   },
   guideMessageResult: {
@@ -1856,6 +1860,10 @@ const cpStyles: Record<string, CSSProperties> = {
     borderLeft: "3px solid rgba(211,108,88,0.76)",
     background: "rgba(211,108,88,0.09)",
   },
+  guideMessageRevise: {
+    borderLeft: "3px solid rgba(208,138,79,0.72)",
+    background: "rgba(208,138,79,0.075)",
+  },
   userMessage: {
     maxWidth: 680,
     minWidth: 0,
@@ -1865,7 +1873,7 @@ const cpStyles: Record<string, CSSProperties> = {
       "linear-gradient(135deg, rgba(208,138,79,0.22), rgba(208,138,79,0.08))",
     border: "1px solid rgba(208,138,79,0.32)",
     borderRight: "3px solid rgba(208,138,79,0.70)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     boxShadow: "0 18px 46px rgba(0,0,0,0.22)",
   },
   messageSpeaker: {
@@ -1899,9 +1907,11 @@ const cpStyles: Record<string, CSSProperties> = {
   notFitPanel: {
     display: "grid",
     gap: 6,
-    padding: "8px 10px",
-    border: "1px solid rgba(211,108,88,0.20)",
-    background: "rgba(0,0,0,0.14)",
+    padding: "10px 11px",
+    border: "1px solid rgba(208,138,79,0.18)",
+    borderLeft: "3px solid rgba(208,138,79,0.66)",
+    borderRadius: "var(--radius-panel)",
+    background: "rgba(208,138,79,0.07)",
   },
   composerDock: {
     display: "grid",
@@ -1910,7 +1920,7 @@ const cpStyles: Record<string, CSSProperties> = {
     padding: "12px",
     background: "rgba(0,0,0,0.20)",
     border: "1px solid rgba(245,200,120,0.10)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-control)",
   },
   guideThinking: {
     maxWidth: 420,
@@ -1918,7 +1928,7 @@ const cpStyles: Record<string, CSSProperties> = {
     border: "1px solid rgba(148,164,109,0.22)",
     borderLeft: "3px solid rgba(148,164,109,0.62)",
     background: "rgba(148,164,109,0.08)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
   },
   thinkingPulse: {
     color: "var(--text-muted)",
@@ -1996,7 +2006,7 @@ const cpStyles: Record<string, CSSProperties> = {
     background: "rgba(5,6,10,0.64)",
     border: "1px solid rgba(245,200,120,0.20)",
     borderLeft: "3px solid rgba(208,138,79,0.58)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-control)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 16px 46px rgba(0,0,0,0.20)",
   },
   editorMeta: {
@@ -2050,7 +2060,7 @@ const cpStyles: Record<string, CSSProperties> = {
     background: "rgba(255,255,255,0.035)",
     border: "1px solid rgba(245,200,120,0.10)",
     borderLeft: "2px solid rgba(208,138,79,0.48)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-control)",
     color: "var(--text-muted)",
     cursor: "pointer",
     fontFamily: "var(--font-ui)",
@@ -2155,7 +2165,7 @@ const cpStyles: Record<string, CSSProperties> = {
     padding: "8px 9px 9px",
     background: "rgba(255,255,255,0.035)",
     border: "1px solid rgba(245,200,120,0.10)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-control)",
     color: "var(--text-muted)",
     display: "inline-flex",
     alignItems: "baseline",
@@ -2342,7 +2352,7 @@ const cpStyles: Record<string, CSSProperties> = {
     border: "1px solid rgba(245,200,120,0.18)",
     borderTop: "3px solid rgba(208,138,79,0.66)",
     borderLeft: "1px solid rgba(245,200,120,0.18)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     background:
       `linear-gradient(145deg, rgba(255,255,255,0.085), rgba(255,255,255,0) 40%), linear-gradient(180deg, rgba(13,15,20,0.94), rgba(8,9,13,0.86)), url(${GENERATED_ASSETS.objectCardSheet})`,
     backgroundSize: "cover",
@@ -2374,6 +2384,7 @@ const cpStyles: Record<string, CSSProperties> = {
     border: "1px solid rgba(148,164,109,0.22)",
     borderLeft: "3px solid rgba(148,164,109,0.62)",
     background: "rgba(148,164,109,0.08)",
+    borderRadius: "var(--radius-panel)",
   },
   briefReadyDockCompact: {
     gridTemplateColumns: "1fr",
@@ -2463,7 +2474,7 @@ const cpStyles: Record<string, CSSProperties> = {
     background: "rgba(0,0,0,0.20)",
     border: "1px solid rgba(245,200,120,0.12)",
     borderLeft: "3px solid rgba(208,138,79,0.58)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
   },
   briefMetaGrid: {
     display: "grid",
@@ -2482,7 +2493,7 @@ const cpStyles: Record<string, CSSProperties> = {
     padding: "10px 11px",
     background: "rgba(255,255,255,0.035)",
     border: "1px solid rgba(245,200,120,0.09)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-control)",
   },
   briefFieldLabel: {
     color: "var(--text-faint)",
@@ -2509,7 +2520,7 @@ const cpStyles: Record<string, CSSProperties> = {
     marginBottom: 10,
     padding: "11px 12px",
     borderLeft: "2px solid rgba(148,164,109,0.56)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     background: "rgba(148,164,109,0.07)",
   },
   briefList: {
@@ -2576,10 +2587,10 @@ const cpStyles: Record<string, CSSProperties> = {
     gap: 6,
     marginBottom: 12,
     padding: "10px 11px",
-    border: "1px solid rgba(211,108,88,0.24)",
-    borderLeft: "3px solid rgba(211,108,88,0.74)",
-    background: "rgba(211,108,88,0.10)",
-    borderRadius: 2,
+    border: "1px solid rgba(208,138,79,0.20)",
+    borderLeft: "3px solid rgba(208,138,79,0.68)",
+    background: "rgba(208,138,79,0.08)",
+    borderRadius: "var(--radius-panel)",
   },
   briefWarningLine: {
     color: "rgba(255,218,210,0.94)",
@@ -2621,7 +2632,7 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   briefRevisionAction: {
     border: "1px solid rgba(208,138,79,0.42)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-control)",
     background: "rgba(208,138,79,0.14)",
     color: "var(--text)",
     fontSize: 11.5,
@@ -2644,7 +2655,7 @@ const cpStyles: Record<string, CSSProperties> = {
     padding: "14px 14px 15px",
     border: "1px solid rgba(245,200,120,0.14)",
     borderLeft: "3px solid rgba(148,164,109,0.54)",
-    borderRadius: 2,
+    borderRadius: "var(--radius-panel)",
     background:
       "linear-gradient(135deg, rgba(148,164,109,0.12), rgba(255,255,255,0.02) 56%), rgba(255,255,255,0.035)",
     display: "grid",
