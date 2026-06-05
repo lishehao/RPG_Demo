@@ -728,6 +728,7 @@ export function CreatePage({
                     brief={activeBriefResponse.brief}
                     canGenerate={activeBriefResponse.can_generate}
                     compact={compactLayout}
+                    onGenerate={() => void handleCreate()}
                     onApplyRevisionAction={handleApplyRevisionAction}
                   />
                 </div>
@@ -761,15 +762,6 @@ export function CreatePage({
                     </motion.button>
                   ) : null}
                 </AnimatePresence>
-                {activeBriefResponse?.can_generate && !busy && !briefBusy ? (
-                  <button
-                    style={cpStyles.primaryAction}
-                    onClick={() => void handleCreate()}
-                    type="button"
-                  >
-                    {t("create.brief_cta_generate")}
-                  </button>
-                ) : null}
                 {activeBrief && !busy && !briefBusy ? (
                   <button
                     style={cpStyles.backAction}
@@ -1136,11 +1128,13 @@ function StoryBriefCard({
   brief,
   canGenerate,
   compact,
+  onGenerate,
   onApplyRevisionAction,
 }: {
   brief: NarrativeStoryBrief
   canGenerate: boolean
   compact: boolean
+  onGenerate: () => void
   onApplyRevisionAction: (seedAppend: string) => void
 }) {
   const t = useT()
@@ -1238,6 +1232,21 @@ function StoryBriefCard({
           {t(FIT_STATUS_LABEL_KEYS[brief.runtime_fit_status])}
         </span>
       </div>
+      {canGenerate ? (
+        <div style={{ ...cpStyles.briefReadyDock, ...(compact ? cpStyles.briefReadyDockCompact : null) }}>
+          <div style={cpStyles.briefReadyCopy}>
+            <strong style={cpStyles.briefReadyTitle}>{t("create.brief_ready_title")}</strong>
+            <span style={cpStyles.briefReadyHint}>{t("create.brief_ready_hint")}</span>
+          </div>
+          <button
+            type="button"
+            style={{ ...cpStyles.briefInlineGenerate, ...(compact ? cpStyles.briefInlineGenerateCompact : null) }}
+            onClick={onGenerate}
+          >
+            {t("create.brief_cta_generate")}
+          </button>
+        </div>
+      ) : null}
       <div style={cpStyles.briefLeadPanel}>
         <p style={cpStyles.briefIntro}>
           {t(canGenerate ? "create.brief_card_intro_ready" : "create.brief_card_intro_blocked")}
@@ -1749,8 +1758,8 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   notFitPanel: {
     display: "grid",
-    gap: 8,
-    padding: "10px 11px",
+    gap: 6,
+    padding: "8px 10px",
     border: "1px solid rgba(211,108,88,0.20)",
     background: "rgba(0,0,0,0.14)",
   },
@@ -2212,6 +2221,56 @@ const cpStyles: Record<string, CSSProperties> = {
     justifyContent: "space-between",
     gap: 12,
     marginBottom: 8,
+  },
+  briefReadyDock: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    alignItems: "center",
+    gap: 14,
+    margin: "2px 0 12px",
+    padding: "10px 12px",
+    border: "1px solid rgba(148,164,109,0.22)",
+    borderLeft: "3px solid rgba(148,164,109,0.62)",
+    background: "rgba(148,164,109,0.08)",
+  },
+  briefReadyDockCompact: {
+    gridTemplateColumns: "1fr",
+    gap: 9,
+  },
+  briefReadyCopy: {
+    minWidth: 0,
+    display: "grid",
+    gap: 2,
+  },
+  briefReadyTitle: {
+    color: "rgba(255,250,242,0.96)",
+    fontSize: 12.5,
+    lineHeight: 1.25,
+    fontWeight: 820,
+  },
+  briefReadyHint: {
+    color: "var(--text-muted)",
+    fontSize: 11.5,
+    lineHeight: 1.35,
+  },
+  briefInlineGenerate: {
+    justifySelf: "end",
+    minHeight: 32,
+    padding: "0 0 4px",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.48)",
+    background: "transparent",
+    color: "rgba(245,205,150,0.96)",
+    fontFamily: "inherit",
+    fontSize: 13,
+    lineHeight: 1.25,
+    fontWeight: 880,
+    cursor: "pointer",
+    whiteSpace: "nowrap" as const,
+  },
+  briefInlineGenerateCompact: {
+    justifySelf: "start",
+    whiteSpace: "normal" as const,
   },
   briefEyebrow: {
     color: "rgba(208,138,79,0.88)",

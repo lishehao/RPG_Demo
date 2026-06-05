@@ -13,8 +13,15 @@ import {
 
 function reviewerLaunchError(err: unknown): string {
   const message = friendlyError(err, "Could not launch the reviewer demo.")
-  if (message.toLowerCase().includes("ai service isn't configured")) {
-    return "This curated live run is unavailable in this local demo. Use the normal author flow, or open a reviewed session link to inspect Runtime Inspector evidence."
+  const lower = message.toLowerCase()
+  if (
+    lower.includes("ai service isn't configured") ||
+    lower.includes("ai service is briefly offline") ||
+    lower.includes("can't reach the ai backend") ||
+    lower.includes("this move did not connect") ||
+    lower.includes("server hit a snag")
+  ) {
+    return "This curated reviewer run is unavailable in this build. Use the normal author flow, or open a reviewed session link to inspect Runtime Inspector evidence."
   }
   return message
 }
@@ -45,12 +52,21 @@ export function ReviewerPage({
       if (auth.isAnonymous) {
         await auth.login("portfolio_reviewer")
       }
+      const briefResponse = await api.createNarrativeStoryBrief({
+        seed: REVIEWER_DEMO_SEED,
+        language: "en",
+        desired_tension_profile: "high_drama",
+      })
+      if (!briefResponse.can_generate) {
+        throw new Error("The reviewer seed could not be prepared as a playable Brief.")
+      }
       const response = await api.createNarrativeTemplate({
         seed: REVIEWER_DEMO_SEED,
         visibility: "unlisted",
         turn_budget: 12,
         difficulty: "story",
         language: "en",
+        story_brief: briefResponse.brief,
       })
       onSessionStarted(response.session.session_id)
     } catch (err) {

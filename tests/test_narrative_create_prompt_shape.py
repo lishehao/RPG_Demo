@@ -590,6 +590,7 @@ def test_create_template_uses_brief_fallback_after_opening_parse_failure(
     assert "floating dragon library" in response.opening.content
     assert "shy apprentice spellbook" in response.opening.content.lower()
     assert "missing star map" in response.opening.content
+    assert "banished dragon clan is not scenery" in response.opening.content.lower()
     assert "library setting" not in response.opening.content
     assert "visible mistake" not in response.opening.content
     assert response.session.session_id

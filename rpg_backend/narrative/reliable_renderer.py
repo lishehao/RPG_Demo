@@ -1065,10 +1065,11 @@ def _fallback_opening_passage(
     profile_clause = _fallback_profile_clause(brief, contested=contested)
     first_move = _fallback_first_move_clause(brief)
     if _fallback_uses_fantasy_scene(brief):
+        fantasy_context = _fallback_fantasy_context_sentence(brief)
         return (
             f"In {scene}, {_fallback_contested_status(contested)} just as {_fallback_event_phrase(pressure_labels)} starts to matter{secondary_event}. "
             f"{cast_text} {_fallback_verb(cast_text, 'is', 'are')} trying to read what the old rule means now.{background_text} "
-            f"{profile_clause} {first_move}"
+            f"{fantasy_context}{profile_clause} {first_move}"
         )
     if brief.tension_profile in {"comedy", "cozy_mystery"}:
         uncertainty = reliable_profile_vocabulary(brief.tension_profile).opening_uncertainty
@@ -1104,6 +1105,23 @@ def _fallback_opening_name_groups(
         seen.add(key)
         background.append(name)
     return active or cast_names[:5] or ["the key parties"], background
+
+
+def _fallback_fantasy_context_sentence(brief: StoryBrief) -> str:
+    seed = " ".join(
+        [
+            brief.original_seed,
+            brief.premise_summary,
+            *[entity.display_name for entity in brief.cast_plan.primary_active_entities],
+            *[entity.display_name for entity in brief.cast_plan.secondary_background_entities],
+            *[item.label for item in brief.world_setting_pressure],
+        ]
+    ).casefold()
+    if "banished dragon clan" in seed:
+        return " The banished dragon clan is not scenery; its claim is one of the pressures the room must answer. "
+    if "dragon clan" in seed or "banished clan" in seed:
+        return " The banished clan's claim is not scenery; it is one of the pressures the room must answer. "
+    return ""
 
 
 def _fallback_scene_label(brief: StoryBrief, pressure_labels: list[str]) -> str:

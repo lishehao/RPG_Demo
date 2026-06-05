@@ -283,6 +283,7 @@ export function HomePage({
                   error={error}
                   emptyText={t("home.empty_plaza")}
                   compact={compactHome}
+                  onOpenCreate={onOpenCreate}
                   onOpenTemplate={onOpenTemplate}
                 />
               ) : (
@@ -291,6 +292,7 @@ export function HomePage({
                   error={null}
                   emptyText={t("home.empty_my")}
                   compact={compactHome}
+                  onOpenCreate={onOpenCreate}
                   onOpenTemplate={onOpenTemplate}
                 />
               )}
@@ -564,14 +566,17 @@ function TemplateGrid({
   error,
   emptyText,
   compact,
+  onOpenCreate,
   onOpenTemplate,
 }: {
   templates: NarrativeTemplateSummary[] | null
   error: string | null
   emptyText: string
   compact: boolean
+  onOpenCreate: () => void
   onOpenTemplate: (templateId: string) => void
 }) {
+  const t = useT()
   if (error) {
     return <div style={hpStyles.errorBox}>{error}</div>
   }
@@ -593,6 +598,13 @@ function TemplateGrid({
           }}
         />
         <div style={hpStyles.emptyBody}>{emptyText}</div>
+        <button
+          type="button"
+          style={hpStyles.emptyAction}
+          onClick={onOpenCreate}
+        >
+          {t("home.cta_create")}
+        </button>
       </motion.div>
     )
   }
@@ -1364,12 +1376,24 @@ const hpStyles: Record<string, CSSProperties> = {
     backgroundPosition: "center",
   },
   emptyBody: {
-    padding: "20px 24px 28px",
-    textAlign: "center",
+    padding: "18px 24px 8px",
+    textAlign: "left",
     color: "var(--text-muted)",
     fontSize: 14,
-    fontStyle: "italic",
-    fontFamily: "var(--font-narrative)",
+    lineHeight: 1.5,
+  },
+  emptyAction: {
+    margin: "0 24px 24px",
+    padding: "0 0 4px",
+    border: "none",
+    borderBottom: "1px solid rgba(208,138,79,0.44)",
+    background: "transparent",
+    color: "rgba(245,205,150,0.96)",
+    fontFamily: "inherit",
+    fontSize: 13,
+    fontWeight: 820,
+    lineHeight: 1.25,
+    cursor: "pointer",
   },
 
   footer: {

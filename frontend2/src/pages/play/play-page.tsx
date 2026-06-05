@@ -8138,7 +8138,7 @@ const ppStyles: Record<string, CSSProperties> = {
     right: 0,
     bottom: 0,
     width: "auto",
-    maxHeight: "44dvh",
+    maxHeight: "38dvh",
     paddingLeft: 0,
     borderLeft: "none",
     borderTop: "1px solid rgba(236,204,152,0.16)",
@@ -8147,7 +8147,7 @@ const ppStyles: Record<string, CSSProperties> = {
     boxShadow: "0 -32px 72px rgba(0,0,0,0.42)",
   },
   advisorPanelCompactReading: {
-    maxHeight: "min(68dvh, calc(100dvh - 64px))",
+    maxHeight: "min(58dvh, calc(100dvh - 96px))",
   },
   advisorHeader: {
     display: "flex",
