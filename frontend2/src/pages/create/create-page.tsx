@@ -13,6 +13,7 @@ import { useAuth } from "../../app/auth-context"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { useLanguage, useT, type Lang, type StringKey } from "../../shared/lib/i18n"
 import { itemTransition, transitions } from "../../shared/lib/motion-presets"
+import { getStoryStartIntent, type StoryStartIntentId } from "../../shared/lib/story-start-intents"
 import { GENERATED_ASSETS, PAGE_BG } from "../../shared/lib/webtoon-assets"
 
 const SEED_EXAMPLE_KEYS: StringKey[] = [
@@ -188,9 +189,11 @@ const VISIBILITY_KEY_MAP: Record<
 export function CreatePage({
   onBackHome,
   onSessionStarted,
+  startIntentId,
 }: {
   onBackHome: () => void
   onSessionStarted: (sessionId: string) => void
+  startIntentId?: StoryStartIntentId
 }) {
   const api = useApi()
   const auth = useAuth()
@@ -217,6 +220,7 @@ export function CreatePage({
   const [submittedSeed, setSubmittedSeed] = useState<string | null>(null)
   const [localFitBlocker, setLocalFitBlocker] = useState<LocalFitBlocker | null>(null)
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const appliedStartIntentRef = useRef<StoryStartIntentId | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
   // guarantee that — React batches state updates, so two clicks within
@@ -224,6 +228,7 @@ export function CreatePage({
   const inflightRef = useRef(false)
 
   const seedExamples = useMemo(() => SEED_EXAMPLE_KEYS.map((k) => t(k)), [t])
+  const selectedStartIntent = useMemo(() => getStoryStartIntent(startIntentId), [startIntentId])
   const visibleSeedExamples = compactLayout ? seedExamples.slice(0, 3) : seedExamples
   const hasSeed = Boolean(seed.trim())
   const currentBriefKey = briefKey(seed, storyLanguage, desiredTensionProfile)
@@ -390,9 +395,23 @@ export function CreatePage({
   useEffect(() => {
     if (auth.loading) return
     if (auth.isAnonymous) {
-      window.location.hash = "#/login?next=create"
+      const next = selectedStartIntent ? `create?intent=${selectedStartIntent.id}` : "create"
+      const params = new URLSearchParams({ next })
+      window.location.hash = `#/login?${params.toString()}`
     }
-  }, [auth.loading, auth.isAnonymous])
+  }, [auth.loading, auth.isAnonymous, selectedStartIntent])
+
+  useEffect(() => {
+    if (!selectedStartIntent) return
+    if (appliedStartIntentRef.current === selectedStartIntent.id) return
+    appliedStartIntentRef.current = selectedStartIntent.id
+    const presetSeed = selectedStartIntent.seedDraft[uiLang] ?? selectedStartIntent.seedDraft.en
+    setSeed(presetSeed)
+    setStoryLanguage(uiLang)
+    setDesiredTensionProfile(selectedStartIntent.tensionProfile)
+    setError(null)
+    resetGuideResult()
+  }, [selectedStartIntent, uiLang])
 
   useEffect(() => {
     if (!busy) {
@@ -576,9 +595,48 @@ export function CreatePage({
                       ? t("create.brief_not_fit")
                       : activeBrief
                         ? t(FIT_STATUS_LABEL_KEYS[activeBrief.runtime_fit_status])
-                        : t("create.brief_cta_idle")}
+                  : t("create.brief_cta_idle")}
                 </span>
               </div>
+
+              {selectedStartIntent ? (
+                <div
+                  style={{ ...cpStyles.presetPanel, ...(compactLayout ? cpStyles.presetPanelCompact : null) }}
+                  data-story-start-intent={selectedStartIntent.id}
+                >
+                  <div
+                    style={{
+                      ...cpStyles.presetArt,
+                      backgroundImage: `linear-gradient(180deg, rgba(6,7,10,0.04) 0%, rgba(6,7,10,0.78) 92%), url(${selectedStartIntent.image})`,
+                    }}
+                    aria-hidden
+                  />
+                  <div style={cpStyles.presetBody}>
+                    <span style={cpStyles.presetKicker}>{t("create.preset_kicker")}</span>
+                    <strong style={cpStyles.presetTitle}>{t(selectedStartIntent.titleKey)}</strong>
+                    <div style={cpStyles.presetMetaGrid}>
+                      <span style={cpStyles.presetMetaItem}>
+                        <span>{t("create.preset_mood_label")}</span>
+                        <strong>{t(selectedStartIntent.moodKey)}</strong>
+                      </span>
+                      <span style={cpStyles.presetMetaItem}>
+                        <span>{t("create.preset_pressure_label")}</span>
+                        <strong>{t(selectedStartIntent.pressureKey)}</strong>
+                      </span>
+                    </div>
+                    <span style={cpStyles.presetRule}>{t(selectedStartIntent.ruleKey)}</span>
+                    <span style={cpStyles.presetHook}>{t("create.preset_hook_label")} · {t(selectedStartIntent.hookKey)}</span>
+                    <button
+                      type="button"
+                      style={cpStyles.presetAction}
+                      disabled={briefBusy || busy || !hasSeed}
+                      onClick={() => void handlePlanStory()}
+                    >
+                      {t("create.preset_shape_cta")}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               <div style={cpStyles.messageStack}>
                 <div style={cpStyles.guideMessage}>
@@ -1507,7 +1565,7 @@ const cpStyles: Record<string, CSSProperties> = {
     position: "relative" as const,
     overflow: "hidden",
     background:
-      `linear-gradient(90deg, rgba(6,7,10,0.98) 0%, rgba(6,7,10,0.86) 48%, rgba(6,7,10,0.34) 100%), linear-gradient(180deg, rgba(6,7,10,0.03), rgba(6,7,10,0.82)), url(${GENERATED_ASSETS.advisorNotebook})`,
+      `linear-gradient(90deg, rgba(6,7,10,0.98) 0%, rgba(6,7,10,0.86) 48%, rgba(6,7,10,0.34) 100%), linear-gradient(180deg, rgba(6,7,10,0.03), rgba(6,7,10,0.82)), url(${PAGE_BG.create})`,
     backgroundSize: "cover",
     backgroundPosition: "center 42%",
     border: "1px solid rgba(245,200,120,0.18)",
@@ -1608,7 +1666,7 @@ const cpStyles: Record<string, CSSProperties> = {
     position: "relative" as const,
     overflow: "hidden",
     background:
-      `linear-gradient(180deg, rgba(9,10,14,0.92), rgba(7,8,12,0.96)), radial-gradient(circle at 86% 0%, rgba(208,138,79,0.16), transparent 30%), linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 40%), url(${GENERATED_ASSETS.objectCardSheet})`,
+      "linear-gradient(180deg, rgba(9,10,14,0.94), rgba(7,8,12,0.97)), radial-gradient(circle at 86% 0%, rgba(208,138,79,0.16), transparent 30%), linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 40%)",
     backgroundSize: "cover",
     backgroundPosition: "center",
     border: "1px solid rgba(245,200,120,0.17)",
@@ -1636,7 +1694,7 @@ const cpStyles: Record<string, CSSProperties> = {
     minHeight: 148,
     marginBottom: 22,
     backgroundImage:
-      `linear-gradient(180deg, rgba(8,9,13,0.04), rgba(8,9,13,0.76)), url(${GENERATED_ASSETS.objectCardSheet})`,
+      `linear-gradient(180deg, rgba(8,9,13,0.04), rgba(8,9,13,0.76)), url(${GENERATED_ASSETS.createWorkspace})`,
     backgroundSize: "cover",
     backgroundPosition: "center",
     border: "1px solid rgba(245,200,120,0.14)",
@@ -1687,6 +1745,88 @@ const cpStyles: Record<string, CSSProperties> = {
     textTransform: "uppercase" as const,
     whiteSpace: "nowrap" as const,
   },
+  presetPanel: {
+    display: "grid",
+    gridTemplateColumns: "minmax(170px, 0.34fr) minmax(0, 1fr)",
+    minHeight: 206,
+    border: "1px solid rgba(245,200,120,0.16)",
+    borderLeft: "3px solid rgba(208,138,79,0.64)",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 46%), rgba(5,6,10,0.40)",
+    boxShadow: "0 18px 56px rgba(0,0,0,0.28)",
+  },
+  presetPanelCompact: {
+    gridTemplateColumns: "1fr",
+    minHeight: 0,
+  },
+  presetArt: {
+    minHeight: 206,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  },
+  presetBody: {
+    minWidth: 0,
+    display: "grid",
+    alignContent: "center",
+    gap: 9,
+    padding: "20px 20px 21px",
+  },
+  presetKicker: {
+    color: "rgba(245,200,120,0.82)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 800,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase" as const,
+  },
+  presetTitle: {
+    color: "rgba(255,250,242,0.97)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 22,
+    lineHeight: 1.18,
+    fontWeight: 520,
+  },
+  presetMetaGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 10,
+    marginTop: 1,
+  },
+  presetMetaItem: {
+    display: "grid",
+    gap: 3,
+    paddingTop: 8,
+    borderTop: "1px solid rgba(245,200,120,0.12)",
+    color: "var(--text-faint)",
+    fontSize: 10.5,
+    lineHeight: 1.25,
+  },
+  presetRule: {
+    color: "rgba(148,164,109,0.90)",
+    fontSize: 12.4,
+    lineHeight: 1.42,
+  },
+  presetHook: {
+    color: "var(--text-muted)",
+    fontSize: 12.4,
+    lineHeight: 1.42,
+  },
+  presetAction: {
+    justifySelf: "start",
+    marginTop: 2,
+    minHeight: 32,
+    padding: "3px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.50)",
+    background: "transparent",
+    color: "rgba(245,205,150,0.96)",
+    fontFamily: "inherit",
+    fontSize: 13.2,
+    lineHeight: 1.25,
+    fontWeight: 880,
+    cursor: "pointer",
+  },
   messageStack: {
     display: "grid",
     gap: 12,
@@ -1709,11 +1849,11 @@ const cpStyles: Record<string, CSSProperties> = {
     padding: "17px",
   },
   guideMessageSuccess: {
-    borderLeftColor: "rgba(148,164,109,0.72)",
+    borderLeft: "3px solid rgba(148,164,109,0.72)",
     background: "rgba(148,164,109,0.075)",
   },
   guideMessageBlocked: {
-    borderLeftColor: "rgba(211,108,88,0.76)",
+    borderLeft: "3px solid rgba(211,108,88,0.76)",
     background: "rgba(211,108,88,0.09)",
   },
   userMessage: {
@@ -2027,11 +2167,11 @@ const cpStyles: Record<string, CSSProperties> = {
   segmentBtnActive: {
     color: "var(--text)",
     background: "rgba(208,138,79,0.14)",
-    borderColor: "rgba(208,138,79,0.56)",
+    border: "1px solid rgba(208,138,79,0.56)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   },
   segmentBtnWarn: {
-    borderColor: "rgba(160,71,45,0.46)",
+    border: "1px solid rgba(160,71,45,0.46)",
   },
   segmentMain: {
     fontSize: 13,
@@ -2204,7 +2344,9 @@ const cpStyles: Record<string, CSSProperties> = {
     borderLeft: "1px solid rgba(245,200,120,0.18)",
     borderRadius: 2,
     background:
-      "linear-gradient(145deg, rgba(255,255,255,0.085), rgba(255,255,255,0) 40%), linear-gradient(180deg, rgba(13,15,20,0.88), rgba(8,9,13,0.78))",
+      `linear-gradient(145deg, rgba(255,255,255,0.085), rgba(255,255,255,0) 40%), linear-gradient(180deg, rgba(13,15,20,0.94), rgba(8,9,13,0.86)), url(${GENERATED_ASSETS.objectCardSheet})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
     color: "var(--text-muted)",
     boxShadow: "0 24px 76px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.07)",
   },

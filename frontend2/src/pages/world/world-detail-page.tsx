@@ -685,7 +685,7 @@ const tdStyles: Record<string, CSSProperties> = {
   ownerBadge: {
     background: "transparent",
     color: "var(--accent)",
-    borderColor: "transparent",
+    border: "1px solid transparent",
   },
   metaItem: { fontSize: 12, color: "rgba(255,255,255,0.78)" },
 

@@ -6078,7 +6078,7 @@ const ppStyles: Record<string, CSSProperties> = {
   // ramp.
   narratorBeatBookmarked: {
     background: "linear-gradient(90deg, var(--accent-softer) 0%, rgba(255,255,255,0.040) 48%, rgba(255,255,255,0.026) 100%)",
-    borderColor: "rgba(208,138,79,0.34)",
+    border: "1px solid rgba(208,138,79,0.34)",
   },
   beatBookmarkBtn: {
     position: "absolute" as const,
@@ -6237,7 +6237,7 @@ const ppStyles: Record<string, CSSProperties> = {
     boxShadow: "none",
   },
   playerBeatLeverageMove: {
-    borderColor: "rgba(208,138,79,0.26)",
+    border: "1px solid rgba(208,138,79,0.26)",
     background: "rgba(208,138,79,0.08)",
   },
   playerHandleText: {

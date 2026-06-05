@@ -12,6 +12,7 @@ import { ReplayPage } from "../pages/replay/replay-page"
 import { TemplateDetailPage } from "../pages/world/world-detail-page"
 import { PortfolioPage } from "../pages/portfolio/portfolio-page"
 import { ReviewerPage } from "../pages/portfolio/reviewer-page"
+import { isStoryStartIntentId, type StoryStartIntentId } from "../shared/lib/story-start-intents"
 
 function NotFoundRedirect({ navigate }: { navigate: (next: AppRoute) => void }) {
   useEffect(() => {
@@ -27,7 +28,12 @@ function routeFromLoginNext(next?: string): AppRoute {
   const segments = pathname.split("/").filter(Boolean)
   const params = new URLSearchParams(search)
 
-  if (segments[0] === "create") return { name: "create" }
+  if (segments[0] === "create") {
+    const intent = params.get("intent")
+    return isStoryStartIntentId(intent)
+      ? { name: "create", startIntentId: intent }
+      : { name: "create" }
+  }
   if (segments[0] === "template" && segments[1]) {
     return { name: "template", templateId: segments[1] }
   }
@@ -44,11 +50,15 @@ function routeFromLoginNext(next?: string): AppRoute {
 }
 
 function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
+  const openCreate = (startIntentId?: StoryStartIntentId) => {
+    navigate(startIntentId ? { name: "create", startIntentId } : { name: "create" })
+  }
+
   switch (route.name) {
     case "home":
       return (
         <HomePage
-          onOpenCreate={() => navigate({ name: "create" })}
+          onOpenCreate={openCreate}
           onOpenTemplate={(templateId) => navigate({ name: "template", templateId })}
           onOpenPlay={(sessionId) => navigate({ name: "play", sessionId })}
         />
@@ -58,7 +68,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
         <LoginPage
           next={route.next}
           onBackHome={() => navigate({ name: "home" })}
-          onOpenCreate={() => navigate({ name: "create" })}
+          onOpenCreate={() => openCreate()}
           onLoggedIn={(next) => navigate(routeFromLoginNext(next))}
         />
       )
@@ -67,6 +77,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
         <CreatePage
           onBackHome={() => navigate({ name: "home" })}
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId })}
+          startIntentId={route.startIntentId}
         />
       )
     case "template":
@@ -74,7 +85,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
         <TemplateDetailPage
           templateId={route.templateId}
           onBackHome={() => navigate({ name: "home" })}
-          onOpenCreate={() => navigate({ name: "create" })}
+          onOpenCreate={() => openCreate()}
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId })}
         />
       )
@@ -98,7 +109,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       return (
         <PortfolioPage
           onBackHome={() => navigate({ name: "home" })}
-          onOpenCreate={() => navigate({ name: "create" })}
+          onOpenCreate={() => openCreate()}
           onOpenReviewer={() => navigate({ name: "reviewer" })}
         />
       )
@@ -106,7 +117,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       return (
         <ReviewerPage
           onBackHome={() => navigate({ name: "home" })}
-          onOpenCreate={() => navigate({ name: "create" })}
+          onOpenCreate={() => openCreate()}
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId, reviewer: true })}
         />
       )
@@ -114,7 +125,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       return (
         <AboutPage
           onBackHome={() => navigate({ name: "home" })}
-          onOpenCreate={() => navigate({ name: "create" })}
+          onOpenCreate={() => openCreate()}
         />
       )
   }
@@ -125,7 +136,7 @@ function routeKey(route: AppRoute): string {
   switch (route.name) {
     case "home": return "home"
     case "login": return "login"
-    case "create": return "create"
+    case "create": return route.startIntentId ? `create:${route.startIntentId}` : "create"
     case "about": return "about"
     case "portfolio": return "portfolio"
     case "reviewer": return "reviewer"

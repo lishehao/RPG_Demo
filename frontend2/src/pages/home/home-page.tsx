@@ -10,7 +10,6 @@ import { Header } from "../../shared/ui/header"
 import { LoadingShim } from "../../shared/ui/loading-shim"
 import { Truncated } from "../../shared/ui/truncated"
 import {
-  GENERATED_ASSETS,
   PAGE_BG,
   getCoverForTemplate,
   getEmptyPlazaImage,
@@ -18,15 +17,9 @@ import {
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT, type StringKey } from "../../shared/lib/i18n"
 import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
+import { STORY_START_INTENTS, type StoryStartIntentId } from "../../shared/lib/story-start-intents"
 
 type Tab = "plaza" | "my-templates"
-
-const HOME_SCENARIO_RAIL: ReadonlyArray<{ labelKey: StringKey; image: string; toneKey: StringKey }> = [
-  { labelKey: "home.cloud3_rail_cozy", image: GENERATED_ASSETS.coverCozy, toneKey: "home.cloud3_rail_tone_social" },
-  { labelKey: "home.cloud3_rail_mars", image: GENERATED_ASSETS.coverSciFiMars, toneKey: "home.cloud3_rail_tone_world" },
-  { labelKey: "home.cloud3_rail_fantasy", image: GENERATED_ASSETS.coverFantasy, toneKey: "home.cloud3_rail_tone_object" },
-  { labelKey: "home.cloud3_rail_drama", image: GENERATED_ASSETS.coverHighDrama, toneKey: "home.cloud3_rail_tone_stakes" },
-]
 
 const HOME_BRIEF_META_KEYS: readonly StringKey[] = [
   "home.cloud3_brief_meta_1",
@@ -34,12 +27,19 @@ const HOME_BRIEF_META_KEYS: readonly StringKey[] = [
   "home.cloud3_brief_meta_3",
 ]
 
+const HOME_ACTION_GRAMMAR_KEYS: ReadonlyArray<{ titleKey: StringKey; bodyKey: StringKey }> = [
+  { titleKey: "home.grammar_mood_title", bodyKey: "home.grammar_mood_body" },
+  { titleKey: "home.grammar_brief_title", bodyKey: "home.grammar_brief_body" },
+  { titleKey: "home.grammar_turn_title", bodyKey: "home.grammar_turn_body" },
+  { titleKey: "home.grammar_ending_title", bodyKey: "home.grammar_ending_body" },
+]
+
 export function HomePage({
   onOpenCreate,
   onOpenTemplate,
   onOpenPlay,
 }: {
-  onOpenCreate: () => void
+  onOpenCreate: (startIntentId?: StoryStartIntentId) => void
   onOpenTemplate: (templateId: string) => void
   onOpenPlay: (sessionId: string) => void
 }) {
@@ -147,7 +147,7 @@ export function HomePage({
               >
                 <motion.button
                   style={hpStyles.heroPrimaryAction}
-                  onClick={onOpenCreate}
+                  onClick={() => onOpenCreate()}
                   type="button"
                   whileHover={{ x: 2 }}
                   whileTap={tapPress}
@@ -158,17 +158,36 @@ export function HomePage({
                   <motion.button
                     style={hpStyles.heroSecondaryAction}
                     onClick={() => {
-                      window.location.hash = "#/portfolio"
+                      document.getElementById("story-door-rail")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      })
                     }}
                     type="button"
                     whileHover={{ x: 2 }}
                     whileTap={tapPress}
                   >
-                    {t("home.cta_portfolio")}
+                    {t("home.cta_pick_world")}
                   </motion.button>
-                ) : null}
-              </motion.div>
-            </div>
+              ) : null}
+            </motion.div>
+            <motion.div
+              variants={itemVariants}
+              transition={itemTransition}
+              style={{ ...hpStyles.grammarRail, ...(compactHome ? hpStyles.grammarRailCompact : null) }}
+              aria-label={t("home.grammar_label")}
+            >
+              {HOME_ACTION_GRAMMAR_KEYS.map((item, index) => (
+                <span key={item.titleKey} style={hpStyles.grammarStep}>
+                  <span style={hpStyles.grammarIndex}>{index + 1}</span>
+                  <span style={hpStyles.grammarCopy}>
+                    <strong>{t(item.titleKey)}</strong>
+                    <span>{t(item.bodyKey)}</span>
+                  </span>
+                </span>
+              ))}
+            </motion.div>
+          </div>
 
             <motion.div
               variants={itemVariants}
@@ -195,29 +214,33 @@ export function HomePage({
           </div>
 
           <motion.div
+            id="story-door-rail"
             variants={itemVariants}
             transition={itemTransition}
             style={{ ...hpStyles.heroRail, ...(compactHome ? hpStyles.heroRailCompact : null) }}
           >
             <span style={hpStyles.heroRailLabel}>{t("home.cloud3_rail_label")}</span>
             <div style={{ ...hpStyles.heroRailItems, ...(compactHome ? hpStyles.heroRailItemsCompact : null) }}>
-              {HOME_SCENARIO_RAIL.map((item) => (
+              {STORY_START_INTENTS.map((intent) => (
                 <button
-                  key={item.labelKey}
+                  key={intent.id}
                   type="button"
                   style={hpStyles.heroRailItem}
-                  onClick={onOpenCreate}
+                  onClick={() => onOpenCreate(intent.id)}
                 >
                   <span
                     style={{
                       ...hpStyles.heroRailThumb,
-                      backgroundImage: `linear-gradient(180deg, rgba(8,7,6,0) 25%, rgba(8,7,6,0.72) 100%), url(${item.image})`,
+                      backgroundImage: `linear-gradient(180deg, rgba(8,7,6,0) 25%, rgba(8,7,6,0.72) 100%), url(${intent.image})`,
                     }}
                     aria-hidden
                   />
                   <span style={hpStyles.heroRailCopy}>
-                    <span style={hpStyles.heroRailTitle}>{t(item.labelKey)}</span>
-                    <span style={hpStyles.heroRailTone}>{t(item.toneKey)}</span>
+                    <span style={hpStyles.heroRailTitle}>{t(intent.titleKey)}</span>
+                    <span style={hpStyles.heroRailTone}>{t(intent.moodKey)}</span>
+                    <span style={hpStyles.heroRailDetail}>{t(intent.pressureKey)}</span>
+                    <span style={hpStyles.heroRailPromise}>{t(intent.ruleKey)}</span>
+                    <span style={hpStyles.heroRailHook}>{t("home.story_door_action")} · {t(intent.hookKey)}</span>
                   </span>
                 </button>
               ))}
@@ -601,7 +624,7 @@ function TemplateGrid({
         <button
           type="button"
           style={hpStyles.emptyAction}
-          onClick={onOpenCreate}
+          onClick={() => onOpenCreate()}
         >
           {t("home.cta_create")}
         </button>
@@ -847,6 +870,45 @@ const hpStyles: Record<string, CSSProperties> = {
     fontFamily: "inherit",
     cursor: "pointer",
   },
+  grammarRail: {
+    marginTop: 24,
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: 0,
+    maxWidth: 650,
+    borderTop: "1px solid rgba(245,200,120,0.16)",
+    borderBottom: "1px solid rgba(245,200,120,0.12)",
+    background: "rgba(7,8,12,0.32)",
+    backdropFilter: "blur(8px)",
+  },
+  grammarRailCompact: {
+    marginTop: 18,
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    maxWidth: 330,
+  },
+  grammarStep: {
+    minWidth: 0,
+    display: "grid",
+    gridTemplateColumns: "18px minmax(0, 1fr)",
+    gap: 8,
+    padding: "10px 11px 11px",
+    borderRight: "1px solid rgba(245,200,120,0.10)",
+  },
+  grammarIndex: {
+    color: "rgba(245,200,120,0.80)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 10,
+    lineHeight: 1.35,
+    fontWeight: 820,
+  },
+  grammarCopy: {
+    minWidth: 0,
+    display: "grid",
+    gap: 2,
+    color: "rgba(244,239,230,0.62)",
+    fontSize: 11.2,
+    lineHeight: 1.35,
+  },
   heroStoryDeck: {
     position: "relative" as const,
     minHeight: 380,
@@ -942,7 +1004,7 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   heroRail: {
     display: "grid",
-    gridTemplateColumns: "180px minmax(0, 1fr)",
+    gridTemplateColumns: "190px minmax(0, 1fr)",
     alignItems: "stretch",
     gap: 0,
     borderTop: "1px solid rgba(236,204,152,0.16)",
@@ -965,7 +1027,7 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   heroRailItems: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     minWidth: 0,
   },
   heroRailItemsCompact: {
@@ -973,35 +1035,40 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   heroRailItem: {
     minWidth: 0,
-    minHeight: 96,
+    minHeight: 178,
     display: "grid",
-    gridTemplateColumns: "88px minmax(0, 1fr)",
+    gridTemplateRows: "116px minmax(0, 1fr)",
     alignItems: "stretch",
     gap: 0,
     padding: 0,
     borderLeft: "1px solid rgba(236,204,152,0.10)",
+    borderBottom: "1px solid rgba(236,204,152,0.10)",
     background: "transparent",
     color: "var(--text)",
     textAlign: "left" as const,
     overflow: "hidden",
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   heroRailThumb: {
     width: "100%",
-    minHeight: 96,
+    minHeight: 116,
     backgroundSize: "cover",
     backgroundPosition: "center",
   },
   heroRailCopy: {
     minWidth: 0,
-    padding: "17px 14px 14px",
+    padding: "14px 15px 15px",
     display: "grid",
     alignContent: "center",
-    gap: 6,
+    gap: 7,
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0) 48%), rgba(7,8,12,0.72)",
   },
   heroRailTitle: {
     minWidth: 0,
     color: "rgba(255,247,232,0.90)",
-    fontSize: 13.5,
+    fontSize: 15,
     lineHeight: 1.24,
     fontWeight: 760,
     overflow: "hidden",
@@ -1015,6 +1082,23 @@ const hpStyles: Record<string, CSSProperties> = {
     fontFamily: "var(--font-mono)",
     letterSpacing: "0.03em",
     textTransform: "uppercase" as const,
+  },
+  heroRailDetail: {
+    color: "rgba(244,239,230,0.68)",
+    fontSize: 12.2,
+    lineHeight: 1.35,
+  },
+  heroRailPromise: {
+    color: "rgba(148,164,109,0.88)",
+    fontSize: 11.6,
+    lineHeight: 1.34,
+  },
+  heroRailHook: {
+    marginTop: 2,
+    color: "rgba(245,205,150,0.94)",
+    fontSize: 12,
+    lineHeight: 1.34,
+    fontWeight: 760,
   },
 
   section: { marginTop: 34 },

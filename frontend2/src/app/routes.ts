@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react"
+import { isStoryStartIntentId, type StoryStartIntentId } from "../shared/lib/story-start-intents"
 
 export type AppRoute =
   | { name: "home" }
   | { name: "login"; next?: string }
-  | { name: "create" }
+  | { name: "create"; startIntentId?: StoryStartIntentId }
   | { name: "template"; templateId: string }
   | { name: "play"; sessionId: string; reviewer?: boolean }
   | { name: "replay"; sessionId: string }
@@ -47,7 +48,10 @@ function parseRoute(hash: string): AppRoute {
     return { name: "login", next: params.get("next") ?? undefined }
   }
   if (segments[0] === "create") {
-    return { name: "create" }
+    const intent = params.get("intent")
+    return isStoryStartIntentId(intent)
+      ? { name: "create", startIntentId: intent }
+      : { name: "create" }
   }
   if (segments[0] === "template" && segments[1]) {
     return { name: "template", templateId: segments[1] }
@@ -81,8 +85,13 @@ export function buildHash(route: AppRoute): string {
       }
       return "#/login"
     }
-    case "create":
+    case "create": {
+      if (route.startIntentId) {
+        const params = new URLSearchParams({ intent: route.startIntentId })
+        return `#/create?${params.toString()}`
+      }
       return "#/create"
+    }
     case "template":
       return `#/template/${route.templateId}`
     case "play":

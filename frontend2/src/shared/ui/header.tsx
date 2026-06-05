@@ -7,11 +7,13 @@ export function Header({
   onCreate,
   showCreateButton = true,
   createVariant = "button",
+  showCaseStudy = false,
 }: {
   onHome: () => void
   onCreate: () => void
   showCreateButton?: boolean
   createVariant?: "button" | "link"
+  showCaseStudy?: boolean
 }) {
   const auth = useAuth()
   const { lang, setLang, t } = useLanguage()
@@ -37,18 +39,20 @@ export function Header({
       </button>
 
       <div className="topbar-actions">
-        <button className="topbar-link" type="button" onClick={handlePortfolio}>
-          {t("header.case_study")}
-        </button>
+        {showCaseStudy ? (
+          <button className="topbar-link" type="button" onClick={handlePortfolio}>
+            {t("header.case_study")}
+          </button>
+        ) : null}
 
         <LanguageToggle lang={lang} onSelect={setLang} />
 
         {showCreateButton && createVariant === "link" ? (
-          <button className="topbar-link topbar-create-link" type="button" onClick={onCreate}>
+          <button className="topbar-link topbar-create-link" type="button" onClick={() => onCreate()}>
             {t("header.write_story")}
           </button>
         ) : showCreateButton ? (
-          <button className="topbar-link topbar-create-link" type="button" onClick={onCreate}>
+          <button className="topbar-link topbar-create-link" type="button" onClick={() => onCreate()}>
             {t("header.write_story")}
           </button>
         ) : null}
