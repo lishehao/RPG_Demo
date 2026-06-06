@@ -237,13 +237,6 @@ export function HomePage({
               <br />
               {t("home.hero_title_l2")}
             </motion.h1>
-            <motion.p
-              variants={itemVariants}
-              transition={itemTransition}
-              style={{ ...hpStyles.heroSub, ...(compactHome ? hpStyles.heroSubCompact : null) }}
-            >
-              {t("home.hero_sub")}
-            </motion.p>
             <motion.div
               variants={itemVariants}
               transition={itemTransition}
@@ -258,19 +251,6 @@ export function HomePage({
               >
                 {t("home.cta_create")}
               </motion.button>
-              {!compactHome ? (
-                <motion.button
-                  style={hpStyles.heroSecondaryAction}
-                  onClick={() => {
-                    window.location.hash = "#/portfolio"
-                  }}
-                  type="button"
-                  whileHover={{ x: 2 }}
-                  whileTap={tapPress}
-                >
-                  {t("home.cta_portfolio")}
-                </motion.button>
-              ) : null}
             </motion.div>
           </div>
         </motion.section>
@@ -707,10 +687,9 @@ function CuratedPlazaStories({
           />
           <span style={hpStyles.curatedBody}>
             <span style={hpStyles.curatedTitle}>{story.title[lang]}</span>
-            <Truncated lines={2} style={hpStyles.curatedPressure}>
+            <Truncated lines={1} style={hpStyles.curatedPressure}>
               {story.pressure[lang]}
             </Truncated>
-            <span style={hpStyles.curatedPromise}>{story.promise[lang]}</span>
             <span style={hpStyles.curatedAction}>{lang === "zh" ? "让 Agent 帮我开局 →" : "Ask the agent to open it →"}</span>
           </span>
         </motion.button>
@@ -1141,17 +1120,17 @@ const hpStyles: Record<string, CSSProperties> = {
   curatedGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 18,
-    marginBottom: 28,
+    gap: 14,
+    marginBottom: 24,
   },
   curatedGridCompact: {
     gridTemplateColumns: "1fr",
-    gap: 18,
+    gap: 16,
   },
   curatedStory: {
     display: "grid",
-    gridTemplateColumns: "minmax(140px, 38%) minmax(0, 1fr)",
-    minHeight: 174,
+    gridTemplateColumns: "minmax(132px, 36%) minmax(0, 1fr)",
+    minHeight: 148,
     padding: 0,
     background: "transparent",
     border: "none",
@@ -1166,7 +1145,7 @@ const hpStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "1fr",
   },
   curatedCover: {
-    minHeight: 174,
+    minHeight: 148,
     backgroundSize: "cover",
     backgroundPosition: "center",
     display: "block",
@@ -1176,19 +1155,19 @@ const hpStyles: Record<string, CSSProperties> = {
     flexDirection: "column",
     justifyContent: "center",
     minWidth: 0,
-    padding: "20px 0 20px 18px",
-    gap: 9,
+    padding: "18px 0 18px 16px",
+    gap: 8,
   },
   curatedTitle: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 22,
-    lineHeight: 1.18,
+    fontSize: 20,
+    lineHeight: 1.16,
     color: "var(--text)",
     fontWeight: 500,
   },
   curatedPressure: {
-    fontSize: 13,
-    lineHeight: 1.45,
+    fontSize: 12.5,
+    lineHeight: 1.35,
     color: "var(--text-muted)",
   },
   curatedPromise: {
@@ -1198,11 +1177,11 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   curatedAction: {
     width: "fit-content",
-    marginTop: 3,
+    marginTop: 2,
     paddingBottom: 4,
     borderBottom: "1px solid rgba(245,200,120,0.4)",
     color: "rgba(245,200,120,0.92)",
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: 760,
     lineHeight: 1.2,
   },
