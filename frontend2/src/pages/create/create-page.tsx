@@ -969,6 +969,10 @@ function StoryBriefCard({
   const secondary = brief.cast_plan.secondary_background_entities
   const omitted = brief.cast_plan.omitted_entities
   const decisions = brief.constraint_dispositions.slice(0, 8)
+  const surfacedConstraints = brief.constraints
+    .map((item) => item.label)
+    .filter((label) => label.toLowerCase() !== "core premise")
+    .slice(0, 4)
 
   return (
     <section style={{ ...cpStyles.briefRail, ...(compact ? cpStyles.briefRailCompact : null) }}>
@@ -995,6 +999,13 @@ function StoryBriefCard({
         items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
         empty={t("create.brief_empty")}
       />
+      {surfacedConstraints.length > 0 ? (
+        <BriefList
+          label={t("create.brief_key_details")}
+          items={surfacedConstraints}
+          empty={t("create.brief_empty")}
+        />
+      ) : null}
       {brief.warnings.length > 0 || brief.revision_suggestions.length > 0 ? (
         <div style={cpStyles.briefWarningBlock}>
           {brief.warnings.slice(0, 1).map((warning) => (
