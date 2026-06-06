@@ -234,7 +234,7 @@ def test_create_template_blocks_explicit_small_cast_prompt_before_llm(
     assert exc_info.value.status_code == 422
 
 
-def test_create_template_retries_brief_consistency_language_artifact(
+def test_create_template_uses_brief_fallback_for_consistency_language_artifact(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -308,10 +308,12 @@ def test_create_template_retries_brief_consistency_language_artifact(
         owner_user_id="usr_test",
     )
 
-    assert len(calls) == 2
-    assert calls[1]["brief_consistency_feedback"]
+    assert len(calls) == 1
+    assert calls[0]["max_attempts"] == 1
     assert response.story_brief_consistency is not None
     assert response.story_brief_consistency.status == "pass"
+    assert "已经" not in response.opening.content
+    assert "eclipse" in response.opening.content.lower()
 
 
 def test_create_template_uses_reliable_opening_first_for_heavy_mars_brief(
@@ -639,7 +641,7 @@ def test_create_template_exact_cozy_baseline_reaches_first_turn_without_gateway(
     assert events[5].payload.status == "pass"
 
 
-def test_create_template_brief_consistency_failure_is_user_actionable_422(
+def test_create_template_uses_brief_fallback_after_consistency_failure(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -652,7 +654,10 @@ def test_create_template_brief_consistency_failure_is_user_actionable_422(
         desired_tension_profile="comedy",
     ).brief
 
-    def fake_generate_opening(**_: object) -> object:
+    calls: list[dict[str, object]] = []
+
+    def fake_generate_opening(**kwargs: object) -> object:
+        calls.append(kwargs)
         return type(
             "Opening",
             (),
@@ -706,13 +711,16 @@ def test_create_template_brief_consistency_failure_is_user_actionable_422(
     repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
     service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
 
-    with pytest.raises(NarrativeServiceError) as exc_info:
-        service.create_template(
-            CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
-            owner_user_id="usr_test",
-        )
+    response = service.create_template(
+        CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
 
-    assert exc_info.value.code == "opening_brief_consistency_failed"
-    assert exc_info.value.status_code == 422
-    assert "reduce required entities" in exc_info.value.message.lower()
-    assert "lower stakes" in exc_info.value.message.lower()
+    assert len(calls) == 1
+    assert calls[0]["max_attempts"] == 1
+    assert response.session.session_id.startswith("sess_")
+    assert response.opening.role == "narrator"
+    assert response.opening.options
+    assert response.story_brief_consistency is not None
+    assert response.story_brief_consistency.status == "warn"
+    assert response.story_brief_consistency.should_retry is False

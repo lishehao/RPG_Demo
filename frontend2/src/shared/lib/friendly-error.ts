@@ -85,7 +85,7 @@ const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
   llm_unavailable: "AI 服务还没配置，请联系站点维护人。",
   opening_invalid: "模型返回的开场数据没法用。可以重试，或生成一个更简单、约束更少的开场。",
   opening_prompt_shape_mismatch: "这个开头还不太适合当前运行时。试试 3 个以上人物、一个公开冲突、一个秘密/争夺物，再加一点时间压力。",
-  opening_brief_consistency_failed: "生成的开场没能兑现这张 Brief。试着减少必须出现的实体、放宽代表对象，或把喜剧/温和故事的风险降到道具、误会、社交压力。",
+  opening_brief_consistency_failed: "第一版开场没有足够贴住 Brief。Brief 还保留着；请重新搭建一个更紧的开场，或先改一条设定。",
   advisor_invalid: "顾问没说出有效的话，再问一次。",
 }
 
@@ -107,7 +107,7 @@ const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
   llm_unavailable: "AI service isn't configured. Contact the site maintainer.",
   opening_invalid: "The model returned unusable opening data. Try again, or generate a simpler opening with fewer constraints.",
   opening_prompt_shape_mismatch: "This premise does not fit the current runtime yet. Try 3+ people, one public conflict, one secret or contested object, and time pressure.",
-  opening_brief_consistency_failed: "The opening could not satisfy this Brief yet. Try reducing required entities, relaxing represented factions, or lowering comedy/cozy stakes to props, misunderstandings, and social pressure.",
+  opening_brief_consistency_failed: "The first draft did not honor the Brief strongly enough. The Brief is still saved; build a tighter opening or revise the plan.",
   advisor_invalid: "The advisor didn't say anything usable. Ask again.",
 }
 

@@ -509,6 +509,38 @@ def test_story_brief_filters_laundromat_negated_and_object_focus_fragments() -> 
     assert "avoid public pressure" in constraints
 
 
+def test_story_brief_high_drama_entities_are_not_action_or_pressure_fragments() -> None:
+    response = build_story_brief(
+        seed=(
+            "Minutes before the awards livestream, a famous singer disappears from the control room. "
+            "The player is the anxious publicist, the producer wants to keep the livestream moving, "
+            "the backup dancer witnessed the singer leave, and the award audience is watching. "
+            "The contested pressure is whether to stop the livestream and reveal the disappearance "
+            "before sponsors and fans panic; keep it English and high-drama with no gore."
+        ),
+        language="en",
+    )
+
+    primary_names = {
+        entity.display_name.lower()
+        for entity in response.brief.cast_plan.primary_active_entities
+    }
+    all_names = {name.lower() for name in _cast_names(response)}
+    constraints = {item.label.lower() for item in response.brief.constraints}
+    anchors = {item.label.lower() for item in response.brief.time_event_anchors}
+    pressure = {item.label.lower() for item in response.brief.world_setting_pressure}
+
+    assert response.can_generate is True
+    assert response.brief.runtime_fit_status == "fit"
+    assert {"anxious publicist", "producer", "backup dancer", "award audience"}.issubset(primary_names)
+    assert "backup dancer witnessed singer leave" not in all_names
+    assert "reveal disappearance" not in all_names
+    assert "fans panic" not in all_names
+    assert "disappearance" in constraints
+    assert "awards livestream" in anchors
+    assert "sponsor/fan pressure" in pressure
+
+
 def test_story_brief_warns_when_comedy_premise_has_life_or_death_stakes() -> None:
     response = build_story_brief(
         seed=(

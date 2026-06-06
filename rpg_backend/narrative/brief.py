@@ -152,8 +152,26 @@ _LIST_MARKER_RE = re.compile(
 )
 _ENTITY_TRAILING_RE = re.compile(
     r"\b(?:argue|argues|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
-    r"handle|handles|represent|represents|should|try|tries|find|finds|without|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
+    r"want|wants|handle|handles|represent|represents|witness|witnessed|saw|sees|watch|watches|"
+    r"leave|leaves|left|disappear|disappears|reveal|reveals|panic|panics|stop|stops|keep|keeps|"
+    r"should|try|tries|find|finds|without|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
     re.I,
+)
+_PLAYER_ROLE_PREFIX_RE = re.compile(
+    r"^(?:the\s+)?player\s+(?:is|as|plays?|will\s+be|should\s+be)\s+",
+    re.I,
+)
+_ROLE_CLAUSE_PATTERNS = (
+    re.compile(
+        r"\b(?:the\s+)?player\s+(?:is|as|plays?|will\s+be|should\s+be)\s+([^,.!?;]+)",
+        re.I,
+    ),
+    re.compile(
+        r"\bthe\s+([a-z][a-z\s-]{2,60}?)\s+"
+        r"(?:wants?|needs?|tries?|witness(?:ed)?|saw|sees|is\s+watching|are\s+watching|"
+        r"watch(?:es)?|disappear(?:s)?|left|leaves)\b",
+        re.I,
+    ),
 )
 _ENTITY_LEADING_NOISE_RE = re.compile(
     r"^(?:ten|\d+)\s+(?:groups?|departments?|factions?|parties?|entities?)\s*[-:]\s*",
@@ -178,6 +196,8 @@ _NON_ENTITY_EXACT = {
     "security footage",
     "board",
     "board vote",
+    "livestream",
+    "deadline",
     "talent show",
     "mars",
     "minutes",
@@ -232,6 +252,7 @@ _NON_ENTITY_WORDS = {
     "stakes",
     "talent",
     "show",
+    "livestream",
     "colony",
     "broadcast",
     "eclipse",
@@ -255,6 +276,8 @@ _NON_ENTITY_WORDS = {
 _EVENT_CONSTRAINT_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\btalent show\b", "talent show"),
     (r"\bfinal broadcast\b", "final broadcast"),
+    (r"\bawards?\s+livestream\b", "awards livestream"),
+    (r"\blivestream\b", "livestream deadline"),
     (r"\bboard vote\b", "board vote"),
     (r"\bmidnight\b", "midnight deadline"),
     (r"\beclipse\b", "eclipse"),
@@ -274,6 +297,9 @@ _WORLD_SETTING_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\bmars\b", "Mars setting"),
     (r"\bfantasy library\b", "fantasy library"),
     (r"\bpreschool bake sale\b", "preschool bake sale"),
+    (r"\bcontrol room\b", "control room"),
+    (r"\baudience\b", "audience pressure"),
+    (r"\bsponsors?\b|\bfans?\b", "sponsor/fan pressure"),
     (r"\blibrary\b", "library setting"),
     (r"\bcolony\b", "colony setting"),
 )
@@ -638,6 +664,8 @@ def _extract_entities(seed: str) -> list[str]:
 def _entity_source_parts(seed: str) -> list[str]:
     seed = _strip_entity_exclusion_segments(seed)
     parts: list[str] = []
+    for pattern in _ROLE_CLAUSE_PATTERNS:
+        parts.extend(match.group(1) for match in pattern.finditer(seed))
     for match in _LIST_MARKER_RE.finditer(seed):
         parts.append(seed[match.end() :])
     # Keep the full seed as a fallback, but cleanup aggressively filters
@@ -652,10 +680,13 @@ def _clean_entity(raw: str) -> str:
         prefix, suffix = text.rsplit(":", 1)
         if re.search(r"\b(?:story|premise|scene|prompt|no villains?)\b", prefix, re.I):
             text = suffix
+    text = _PLAYER_ROLE_PREFIX_RE.sub("", text)
     text = re.sub(r"^\s*no\s+villains?\s*:\s*", "", text, flags=re.I)
     text = _LIST_MARKER_RE.sub("", text)
     text = _ENTITY_LEADING_NOISE_RE.sub("", text)
     text = re.sub(r"\b(the|a|an|one|with|featuring|including|departments?|factions?|cast)\b", "", text, flags=re.I)
+    text = re.sub(r"\b(?:is|are|was|were)\s+(?:watching|waiting|present|gathered)\b.*$", "", text, flags=re.I)
+    text = re.sub(r"\bmoving\b.*$", "", text, flags=re.I)
     text = re.sub(r"^\s*(?:or|and)\s+", "", text, flags=re.I)
     text = _ENTITY_TRAILING_RE.sub("", text)
     text = " ".join(text.split())
@@ -890,6 +921,9 @@ def _constraint_items(seed: str) -> list[StoryBriefPlanItem]:
         (r"\bleaked contract\b", "leaked contract"),
         (r"\bcolony oxygen supply\b", "colony oxygen supply"),
         (r"\bwedding\s+ring\b", "wedding ring"),
+        (r"\bdisappearance\b|\bdisappears?\b", "disappearance"),
+        (r"\bawards?\s+livestream\b", "awards livestream"),
+        (r"\blivestream\b", "livestream"),
         (r"\bring\b", "ring"),
     ):
         if label == "ring" and re.search(r"\bwedding\s+ring\b", seed, re.I):

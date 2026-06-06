@@ -207,7 +207,7 @@ class NarrativeService:
                     seed=seed,
                     language=request.language,
                     story_brief=request.story_brief,
-                    max_attempts=2 if request.story_brief is not None else 3,
+                    max_attempts=1 if request.story_brief is not None else 3,
                 )
             except NarrativeServiceError as exc:
                 if request.story_brief is not None and _should_use_reliable_opening_fallback(exc):
@@ -248,30 +248,7 @@ class NarrativeService:
                 language=request.language,
             )
             if story_brief_consistency.should_retry and not _story_brief_prefers_reliable_opening(request.story_brief):
-                retry_feedback = _story_brief_consistency_feedback(story_brief_consistency)
-                try:
-                    opening = generate_opening(
-                        gateway=self.gateway,
-                        seed=seed,
-                        language=request.language,
-                        story_brief=request.story_brief,
-                        brief_consistency_feedback=retry_feedback,
-                        max_attempts=1,
-                    )
-                except NarrativeServiceError as exc:
-                    if _should_use_reliable_opening_fallback(exc):
-                        opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
-                    else:
-                        raise
-                except NarrativeGatewayError as exc:
-                    if _should_use_reliable_opening_fallback(exc):
-                        opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
-                    else:
-                        raise NarrativeServiceError(
-                            code=exc.code, message=exc.message, status_code=exc.status_code
-                        ) from exc
-                except ValueError:
-                    opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
                 story_brief_consistency = check_story_brief_opening_consistency(
                     brief=request.story_brief,
                     opening=opening,
@@ -284,9 +261,12 @@ class NarrativeService:
                     opening=fallback_opening,
                     language=request.language,
                 )
-                if fallback_check.status != "fail":
+                if fallback_check.status != "fail" or request.story_brief.runtime_fit_status != "not_fit":
                     opening = fallback_opening
-                    story_brief_consistency = fallback_check
+                    story_brief_consistency = _story_brief_recovered_opening_check(
+                        fallback_check,
+                        brief=request.story_brief,
+                    )
                 else:
                     raise NarrativeServiceError(
                         code="opening_brief_consistency_failed",
@@ -2016,6 +1996,8 @@ def _fallback_secondary_event_clause(pressure_labels: list[str], scene: str) -> 
 
 def _fallback_contested_object(seed: str) -> str:
     lower = seed.lower()
+    if "disappearance" in lower or "disappears" in lower:
+        return "disappearance"
     if "recipe card" in lower:
         return "missing recipe card"
     if "star map" in lower:
@@ -2292,11 +2274,26 @@ def _story_brief_consistency_feedback(check: StoryBriefConsistencyCheck) -> str:
 def _story_brief_consistency_failure_message(check: StoryBriefConsistencyCheck) -> str:
     codes = ", ".join(violation.code for violation in check.violations[:4])
     return (
-        "The generated opening still could not satisfy the confirmed plan. "
-        "Try to reduce required entities, relax which factions must be represented, "
-        "lower stakes for comedy/cozy prompts, or revise the brief before generating again. "
+        "The first draft did not honor the Brief strongly enough. "
+        "The Brief is still saved; build a tighter opening or revise the plan. "
         f"Mismatch signals: {codes or 'brief consistency failed'}."
     )[:500]
+
+
+def _story_brief_recovered_opening_check(
+    check: StoryBriefConsistencyCheck,
+    *,
+    brief: StoryBrief,
+) -> StoryBriefConsistencyCheck:
+    if check.status != "fail" or brief.runtime_fit_status == "not_fit":
+        return check
+    return check.model_copy(
+        update={
+            "status": "warn",
+            "should_retry": False,
+            "summary": "The live draft missed required details, so the opening was staged from the saved Story Brief.",
+        }
+    )
 
 
 def _summarize_template(

@@ -291,8 +291,12 @@ export function CreatePage({
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
   }, [])
   const busyLabel =
-    busyElapsedSeconds >= 18
-      ? t("create.building_checking_elapsed", { seconds: busyElapsedSeconds })
+    busyElapsedSeconds >= 30
+      ? t("create.building_long_elapsed", { seconds: busyElapsedSeconds })
+      : busyElapsedSeconds >= 15
+      ? t("create.building_honoring_elapsed", { seconds: busyElapsedSeconds })
+      : busyElapsedSeconds >= 8
+      ? t("create.building_slow_elapsed", { seconds: busyElapsedSeconds })
       : busyElapsedSeconds > 0
       ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
       : t("create.building_label")
