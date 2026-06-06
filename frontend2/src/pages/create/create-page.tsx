@@ -229,6 +229,7 @@ export function CreatePage({
   const [busy, setBusy] = useState(false)
   const [briefBusy, setBriefBusy] = useState(false)
   const [busyElapsedSeconds, setBusyElapsedSeconds] = useState(0)
+  const [briefBusyElapsedSeconds, setBriefBusyElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [briefError, setBriefError] = useState<string | null>(null)
   const [briefResponse, setBriefResponse] = useState<NarrativeStoryBriefAdvisorResponse | null>(null)
@@ -300,6 +301,10 @@ export function CreatePage({
     Math.max(0, Math.floor(busyElapsedSeconds / 3)),
   )
   const briefComposerLabel = briefBusy ? t("create.brief_cta_busy") : t("create.brief_cta_idle")
+  const briefPlanningCopy =
+    briefBusyElapsedSeconds >= 10
+      ? t("create.guide_planning_slow")
+      : t("create.guide_planning_now")
 
   const ensureAuthorSession = async (): Promise<boolean> => {
     if (!auth.isAnonymous) return true
@@ -331,6 +336,19 @@ export function CreatePage({
     }, 1000)
     return () => window.clearInterval(id)
   }, [busy])
+
+  useEffect(() => {
+    if (!briefBusy) {
+      setBriefBusyElapsedSeconds(0)
+      return
+    }
+    setBriefBusyElapsedSeconds(0)
+    const startedAt = Date.now()
+    const id = window.setInterval(() => {
+      setBriefBusyElapsedSeconds(Math.max(1, Math.floor((Date.now() - startedAt) / 1000)))
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [briefBusy])
 
   useEffect(() => {
     if (!activeBriefResponse) return
@@ -440,6 +458,15 @@ export function CreatePage({
       setGuideLoopState((current) => markStoryGuideBriefResult(current, response.can_generate, uiLang))
     } catch (err) {
       setBriefError(friendlyError(err, t("create.brief_error_failed")))
+      setGuideLoopState((current) =>
+        canShapeStoryBrief(current)
+          ? {
+              ...current,
+              status: "ready_to_brief",
+              lastNode: "ready_to_shape",
+            }
+          : current,
+      )
     } finally {
       setBriefBusy(false)
     }
@@ -667,11 +694,11 @@ export function CreatePage({
                 />
                 <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
                   <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                  <span style={cpStyles.guideMessageText}>{t("create.guide_planning_now")}</span>
+                  <span style={cpStyles.guideMessageText}>{briefPlanningCopy}</span>
                   <span style={cpStyles.guideScanStages} aria-hidden>
                     <span>Cast</span>
                     <span>Pressure</span>
-                    <span>Rules</span>
+                    <span>Promise</span>
                     <span>Opening</span>
                   </span>
                   <span style={cpStyles.guideScanRail} aria-hidden>

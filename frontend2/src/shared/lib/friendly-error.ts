@@ -114,6 +114,24 @@ const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
 const NETWORK_FALLBACK_ZH = "网络好像断了——检查一下连接再试。"
 const NETWORK_FALLBACK_EN = "Network seems down — check your connection and retry."
 
+const LIVE_ERROR_COPY_ZH: Record<LiveErrorKind, string> = {
+  timeout: "房间响应太久了。本回合没有消耗，你的草稿或动作还保留着。",
+  rate_limited: "线路现在很忙。你的草稿或动作还保留着，稍后再试。",
+  invalid_response: "场景返回得不完整。你的草稿或动作还在，可以重试。",
+  safety_redirect: "这个方向暂时不能进入故事。换一个更适合短剧场的冲突或压力点。",
+  provider_unavailable: "现场叙事线暂时没接上。你的草稿或动作还在，可以稍后重试。",
+  network: NETWORK_FALLBACK_ZH,
+}
+
+const LIVE_ERROR_COPY_EN: Record<LiveErrorKind, string> = {
+  timeout: "The room took too long to answer. No turn was spent; your draft or move is still held.",
+  rate_limited: "The line is busy. Your draft or move is still held; try again in a moment.",
+  invalid_response: "The scene came back incomplete. Your draft or move is still ready.",
+  safety_redirect: "That direction cannot enter play yet. Shift it toward a safer short-scene pressure point.",
+  provider_unavailable: "The live story line did not answer. Your draft or move is still here; retry in a moment.",
+  network: NETWORK_FALLBACK_EN,
+}
+
 const GENERIC_FALLBACK_ZH = "出了点问题，再试一次。"
 const GENERIC_FALLBACK_EN = "Something went wrong. Try again."
 
@@ -129,6 +147,64 @@ const NETWORK_PATTERNS = [
   "ERR_NAME_NOT_RESOLVED",
   "Load failed",
 ]
+
+type LiveErrorKind =
+  | "timeout"
+  | "rate_limited"
+  | "invalid_response"
+  | "safety_redirect"
+  | "provider_unavailable"
+  | "network"
+
+const INVALID_RESPONSE_CODES = new Set([
+  "llm_invalid_json",
+  "llm_invalid_response",
+  "play_llm_invalid_json",
+  "play_llm_invalid_response",
+  "opening_invalid",
+])
+
+const PROVIDER_UNAVAILABLE_CODES = new Set([
+  "llm_provider_failed",
+  "play_llm_provider_failed",
+  "llm_unavailable",
+  "play_llm_config_missing",
+])
+
+function classifyLiveError(err: ApiErrorLike): LiveErrorKind | null {
+  const message = err.message ?? ""
+  const lowerMessage = message.toLowerCase()
+  const status = err.statusCode
+  const code = err.errorCode ?? ""
+
+  if (
+    err.name === "TypeError" ||
+    NETWORK_PATTERNS.some((pattern) => message.includes(pattern))
+  ) {
+    return "network"
+  }
+  if (status === 504 || lowerMessage.includes("timeout") || lowerMessage.includes("timed out")) {
+    return "timeout"
+  }
+  if (
+    status === 429 ||
+    lowerMessage.includes("rate limit") ||
+    lowerMessage.includes("too many requests") ||
+    lowerMessage.includes("pending requests")
+  ) {
+    return "rate_limited"
+  }
+  if (INVALID_RESPONSE_CODES.has(code)) {
+    return "invalid_response"
+  }
+  if (status === 400 && (lowerMessage.includes("safety") || lowerMessage.includes("sensitive"))) {
+    return "safety_redirect"
+  }
+  if (PROVIDER_UNAVAILABLE_CODES.has(code) || status === 502 || status === 503) {
+    return "provider_unavailable"
+  }
+  return null
+}
 
 export function friendlyError(err: unknown, fallback?: string): string {
   const lang = readLang()
@@ -146,12 +222,12 @@ export function friendlyError(err: unknown, fallback?: string): string {
     const e = err as ApiErrorLike
     const message = e.message ?? ""
 
-    // Network detection
-    if (
-      e.name === "TypeError" ||
-      NETWORK_PATTERNS.some((p) => message.includes(p))
-    ) {
-      return networkMsg
+    // Live story/gateway errors first: keep provider/schema details out of
+    // player-facing UI while preserving retry semantics.
+    const liveKind = classifyLiveError(e)
+    if (liveKind) {
+      const liveMap = lang === "en" ? LIVE_ERROR_COPY_EN : LIVE_ERROR_COPY_ZH
+      return liveMap[liveKind]
     }
 
     // Specific API error code first (most precise)

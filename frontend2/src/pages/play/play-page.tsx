@@ -2750,7 +2750,9 @@ function ResolvingTurnPanel({
   const privateIntentCopy = privateIntent?.trim()
   const moveMeta = moveTag?.trim()
   const progressCopy =
-    elapsedSeconds > 0
+    elapsedSeconds >= 10
+      ? t("play.resolve_progress_slow", { seconds: elapsedSeconds })
+      : elapsedSeconds > 0
       ? t("play.resolve_progress_elapsed", { seconds: elapsedSeconds })
       : t("play.resolve_progress")
   const resolveStatus = target
