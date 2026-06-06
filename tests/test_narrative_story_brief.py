@@ -481,6 +481,34 @@ def test_story_brief_filters_exact_small_cast_no_public_pressure_fragments() -> 
     assert "avoid public pressure" in constraints
 
 
+def test_story_brief_filters_laundromat_negated_and_object_focus_fragments() -> None:
+    response = build_story_brief(
+        seed=(
+            "A quiet two-person laundromat story: one customer and one attendant, "
+            "no public pressure, no mystery, no conflict, just a wedding ring on a table."
+        ),
+        language="en",
+    )
+
+    primary_names = {
+        entity.display_name.lower()
+        for entity in response.brief.cast_plan.primary_active_entities
+    }
+    all_names = {name.lower() for name in _cast_names(response)}
+    constraints = {item.label.lower() for item in response.brief.constraints}
+
+    assert response.can_generate is False
+    assert response.brief.runtime_fit_status == "not_fit"
+    assert {"customer", "attendant"}.issubset(primary_names)
+    assert "wedding ring" not in primary_names
+    assert "no mystery" not in all_names
+    assert "no conflict" not in all_names
+    assert "just wedding ring on table" not in all_names
+    assert "just a wedding ring on a table" not in all_names
+    assert "wedding ring" in constraints
+    assert "avoid public pressure" in constraints
+
+
 def test_story_brief_warns_when_comedy_premise_has_life_or_death_stakes() -> None:
     response = build_story_brief(
         seed=(

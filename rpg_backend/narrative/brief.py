@@ -184,6 +184,8 @@ _NON_ENTITY_EXACT = {
     "no violence",
     "no betrayal",
     "no public pressure",
+    "no mystery",
+    "no conflict",
     "no villains",
     "betrayal",
     "public pressure",
@@ -660,6 +662,10 @@ def _clean_entity(raw: str) -> str:
     if not text:
         return ""
     lowered = text.lower()
+    if lowered.startswith("no "):
+        return ""
+    if re.match(r"^just\s+(?:a\s+|an\s+|the\s+)?(?:lost\s+)?wedding\s+ring\b", lowered):
+        return ""
     if lowered in _NON_ENTITY_EXACT:
         return ""
     if re.match(r"^(?:comedy|cozy|mystery|fantasy|sci-fi|sci fi)\s+on\b", lowered):
@@ -1079,7 +1085,13 @@ def _strip_entity_exclusion_segments(seed: str) -> str:
     text = re.sub(r"\bkeep it\b[^.!?;]*", "", text, flags=re.I)
     text = re.sub(r"\bmake it\b[^.!?;]*", "", text, flags=re.I)
     text = re.sub(
-        r"\bno\s+(?:public pressure|betrayal|blackmail|violence|villains?)\b",
+        r"(?:^|[,\n;])\s*no\s+(?:public pressure|betrayal|blackmail|violence|villains?|mystery|conflict)\b[^,.;!?]*",
+        "",
+        text,
+        flags=re.I,
+    )
+    text = re.sub(
+        r"(?:^|[,\n;])\s*just\s+(?:a\s+|an\s+|the\s+)?(?:lost\s+)?wedding\s+ring\b[^,.;!?]*",
         "",
         text,
         flags=re.I,
