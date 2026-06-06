@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import pytest
@@ -724,3 +725,41 @@ def test_create_template_uses_brief_fallback_after_consistency_failure(
     assert response.story_brief_consistency is not None
     assert response.story_brief_consistency.status == "warn"
     assert response.story_brief_consistency.should_retry is False
+
+
+def test_create_template_caps_story_brief_live_opening_latency(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seed = (
+        "Minutes before the awards livestream, a famous singer disappears from the control room. "
+        "The player is the anxious publicist, the producer wants to keep the livestream moving, "
+        "the backup dancer witnessed the singer leave, and the award audience is watching. "
+        "The contested pressure is whether to stop the livestream and reveal the disappearance "
+        "before sponsors and fans panic; keep it English and high-drama with no gore."
+    )
+    brief = build_story_brief(seed=seed, language="en", desired_tension_profile="high_drama").brief
+    calls: list[dict[str, object]] = []
+
+    def slow_generate_opening(**kwargs: object) -> object:
+        calls.append(kwargs)
+        time.sleep(0.05)
+        raise AssertionError("Timed-out live opening result should be discarded")
+
+    monkeypatch.setattr(narrative_service_module, "_STORY_BRIEF_LIVE_OPENING_TIMEOUT_SECONDS", 0.001)
+    monkeypatch.setattr(narrative_service_module, "generate_opening", slow_generate_opening)
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=object())  # type: ignore[arg-type]
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=brief.original_seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["max_attempts"] == 1
+    assert response.session.session_id.startswith("sess_")
+    assert "disappearance" in response.opening.content.lower()
+    assert response.opening.options
+    assert response.story_brief_consistency is not None
+    assert response.story_brief_consistency.status in {"pass", "warn"}

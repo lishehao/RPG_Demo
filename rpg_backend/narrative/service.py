@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import secrets
 import re
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 from rpg_backend.author.normalize import normalize_whitespace
 from rpg_backend.config import Settings, get_settings
@@ -112,7 +112,9 @@ _RELIABLE_OPENING_FALLBACK_CODES = {
     "llm_provider_failed",
     "llm_invalid_response",
     "llm_invalid_json",
+    "opening_live_timeout",
 }
+_STORY_BRIEF_LIVE_OPENING_TIMEOUT_SECONDS = 45.0
 _TURN_RUNTIME_FALLBACK_CODES = {
     "llm_unavailable",
     "llm_provider_failed",
@@ -202,13 +204,21 @@ class NarrativeService:
             opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
         else:
             try:
-                opening = generate_opening(
-                    gateway=self.gateway,
-                    seed=seed,
-                    language=request.language,
-                    story_brief=request.story_brief,
-                    max_attempts=1 if request.story_brief is not None else 3,
-                )
+                if request.story_brief is not None:
+                    opening = _generate_story_brief_live_opening_with_cap(
+                        gateway=self.gateway,
+                        seed=seed,
+                        language=request.language,
+                        story_brief=request.story_brief,
+                    )
+                else:
+                    opening = generate_opening(
+                        gateway=self.gateway,
+                        seed=seed,
+                        language=request.language,
+                        story_brief=request.story_brief,
+                        max_attempts=3,
+                    )
             except NarrativeServiceError as exc:
                 if request.story_brief is not None and _should_use_reliable_opening_fallback(exc):
                     opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
@@ -1335,6 +1345,46 @@ def _story_brief_prefers_reliable_opening(brief: StoryBrief) -> bool:
         and has_heavy_window
         and (has_explicit_representation or bool(brief.compressed_constraints))
     )
+
+
+def _generate_story_brief_live_opening_with_cap(
+    *,
+    gateway: NarrativeLLMGateway,
+    seed: str,
+    language: str,
+    story_brief: StoryBrief,
+) -> OpeningResult:
+    """Run the live opening attempt only until the demo handoff cap.
+
+    The opening result is not persisted until after this function returns, so
+    timing out here cannot create a duplicate template/session. The underlying
+    HTTP call may finish later, but its result is intentionally discarded.
+    """
+    timeout_seconds = _STORY_BRIEF_LIVE_OPENING_TIMEOUT_SECONDS
+    executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="story-brief-live-opening")
+    future = executor.submit(
+        generate_opening,
+        gateway=gateway,
+        seed=seed,
+        language=language,
+        story_brief=story_brief,
+        max_attempts=1,
+    )
+    try:
+        return future.result(timeout=timeout_seconds)
+    except FutureTimeoutError as exc:
+        future.cancel()
+        print(
+            f"[narrative.recovery] operation=opening story_brief_live_timeout seconds={timeout_seconds:g}",
+            flush=True,
+        )
+        raise NarrativeServiceError(
+            code="opening_live_timeout",
+            message="Live opening attempt exceeded the Story Brief demo handoff cap.",
+            status_code=504,
+        ) from exc
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
 
 
 def _should_use_reliable_opening_fallback(
