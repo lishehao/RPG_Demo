@@ -345,6 +345,19 @@ TemplateLanguage = Literal["zh", "en"]
 DEFAULT_TEMPLATE_LANGUAGE: TemplateLanguage = "en"
 
 
+class LocalizedText(BaseModel):
+    """Optional display metadata for non-story chrome.
+
+    Story body, cast, options, and turns remain in the template language.
+    These strings are only for list/replay display surfaces.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    zh: str | None = Field(default=None, max_length=4000)
+    en: str | None = Field(default=None, max_length=4000)
+
+
 class NarrativeTemplate(BaseModel):
     """Full template record (used internally by the service)."""
 
@@ -354,6 +367,8 @@ class NarrativeTemplate(BaseModel):
     owner_user_id: str = Field(min_length=1, max_length=80)
     seed: str = Field(min_length=1, max_length=4000)
     title: str = Field(min_length=1, max_length=120)
+    title_i18n: LocalizedText | None = None
+    summary_i18n: LocalizedText | None = None
     cast: list[CastMember] = Field(min_length=2, max_length=10)
     advisor_persona: str = Field(min_length=1, max_length=200)
     opening_passage: str = Field(min_length=1, max_length=4000)
@@ -384,6 +399,8 @@ class NarrativeTemplateSummary(BaseModel):
     owner_user_id: str
     seed: str
     title: str
+    title_i18n: LocalizedText | None = None
+    summary_i18n: LocalizedText | None = None
     cast: list[CastMember]
     advisor_persona: str
     cover_image_url: str | None = Field(default=None, max_length=1000)
@@ -572,6 +589,8 @@ class NarrativeSessionSummary(BaseModel):
     template_id: str
     template_title: str
     template_seed: str
+    template_title_i18n: LocalizedText | None = None
+    template_summary_i18n: LocalizedText | None = None
     player_user_id: str
     turn_count: int
     turn_budget: int = 12
@@ -691,6 +710,8 @@ class PublicReplayResponse(BaseModel):
     template_forkable: bool = False
     template_title: str
     template_seed: str
+    template_title_i18n: LocalizedText | None = None
+    template_summary_i18n: LocalizedText | None = None
     cast: list[CastMember]
     advisor_persona: str
     cover_image_url: str | None = Field(default=None, max_length=1000)

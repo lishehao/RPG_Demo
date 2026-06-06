@@ -15,6 +15,10 @@ import { EmptyState } from "../../shared/ui/empty-state"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
 import { cascadeDelay, hoverLift, itemTransition, tapPress, transitions } from "../../shared/lib/motion-presets"
 import {
+  getTemplateDisplaySummary,
+  getTemplateDisplayTitle,
+} from "../../shared/lib/localized-story-metadata"
+import {
   getAdvisorAvatar,
   getAvatarForCastMember,
   getCoverForTemplate,
@@ -132,6 +136,7 @@ export function TemplateDetailPage({
   }
 
   const cover = getCoverForTemplate(template)
+  const displayTitle = getTemplateDisplayTitle(template, lang)
   const advisorAvatar = getAdvisorAvatar(template.template_id, template.advisor_persona)
   const selectedRole =
     selectedRoleIndex !== null
@@ -155,7 +160,7 @@ export function TemplateDetailPage({
           <button style={tdStyles.crumb} onClick={onBackHome} type="button">
             {t("world.crumb_back_home")}
           </button>
-          <h1 style={tdStyles.title}>{template.title}</h1>
+          <h1 style={tdStyles.title}>{displayTitle}</h1>
           <div style={tdStyles.metaRow}>
             <span style={tdStyles.badge}>{visibilityLabel(template.visibility, t)}</span>
             <span style={tdStyles.metaItem}>
@@ -370,6 +375,7 @@ function StoryBriefingRail({
   lang: ReturnType<typeof useLanguage>["lang"]
 }) {
   const t = useT()
+  const displaySummary = getTemplateDisplaySummary(template, lang)
   const npcNameById = new Map(template.cast.map((c) => [c.character_id, c.display_name]))
   const edges: Array<{ holder: string; target: string; leverage: string }> = []
   for (const c of template.cast) {
@@ -386,7 +392,7 @@ function StoryBriefingRail({
     <aside style={tdStyles.launchRail}>
       <section style={tdStyles.briefingRail}>
         <div style={tdStyles.sectionLabel}>{t("world.section_briefing")}</div>
-        <div style={tdStyles.seedQuote}>"{template.seed}"</div>
+        <div style={tdStyles.seedQuote}>"{displaySummary}"</div>
 
         <div style={tdStyles.railDivider} />
 

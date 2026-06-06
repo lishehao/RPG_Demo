@@ -825,11 +825,18 @@ export type NarrativeStoryBriefAdvisorResponse = {
   next_step: string
 }
 
+export type NarrativeLocalizedText = {
+  zh?: string | null
+  en?: string | null
+}
+
 export type NarrativeTemplateSummary = {
   template_id: string
   owner_user_id: string
   seed: string
   title: string
+  title_i18n?: NarrativeLocalizedText | null
+  summary_i18n?: NarrativeLocalizedText | null
   cast: NarrativeCastMember[]
   advisor_persona: string
   cover_image_url?: string | null
@@ -848,6 +855,8 @@ export type NarrativeSessionSummary = {
   template_id: string
   template_title: string
   template_seed: string
+  template_title_i18n?: NarrativeLocalizedText | null
+  template_summary_i18n?: NarrativeLocalizedText | null
   player_user_id: string
   turn_count: number
   turn_budget: number
@@ -905,6 +914,8 @@ export type NarrativePublicReplayResponse = {
   template_forkable: boolean
   template_title: string
   template_seed: string
+  template_title_i18n?: NarrativeLocalizedText | null
+  template_summary_i18n?: NarrativeLocalizedText | null
   cover_image_url?: string | null
   cast: NarrativeCastMember[]
   advisor_persona: string

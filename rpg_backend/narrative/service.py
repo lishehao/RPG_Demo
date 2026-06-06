@@ -19,6 +19,7 @@ from rpg_backend.narrative.contracts import (
     CreateTemplateResponse,
     EndingDistributionEntry,
     EndingDistributionResponse,
+    LocalizedText,
     NarrativeEnding,
     NarrativeSession,
     NarrativeSessionSummary,
@@ -305,6 +306,8 @@ class NarrativeService:
             player_role_options=opening.player_role_options,
             visibility=request.visibility,
             language=request.language,
+            title_i18n=_localized_text_for_language(opening.title, request.language),
+            summary_i18n=_localized_text_for_language(seed, request.language),
         )
 
         # Auto-create the creator's session with the requested difficulty.
@@ -1015,6 +1018,8 @@ class NarrativeService:
             template_forkable=is_shareable_template,
             template_title=template.title if is_shareable_template else PRIVATE_REPLAY_TITLE,
             template_seed=template.seed if is_shareable_template else "",
+            template_title_i18n=template.title_i18n if is_shareable_template else None,
+            template_summary_i18n=template.summary_i18n if is_shareable_template else None,
             cast=_public_replay_cast(template.cast) if is_shareable_template else [],
             advisor_persona=template.advisor_persona if is_shareable_template else "",
             cover_image_url=template.cover_image_url if is_shareable_template else None,
@@ -2354,6 +2359,15 @@ def _story_brief_recovered_opening_check(
     )
 
 
+def _localized_text_for_language(value: str, language: str) -> LocalizedText | None:
+    text = value.strip()
+    if not text:
+        return None
+    if language == "zh":
+        return LocalizedText(zh=text)
+    return LocalizedText(en=text)
+
+
 def _summarize_template(
     template: NarrativeTemplate, *, viewer_user_id: str
 ) -> NarrativeTemplateSummary:
@@ -2362,6 +2376,8 @@ def _summarize_template(
         owner_user_id=template.owner_user_id,
         seed=template.seed,
         title=template.title,
+        title_i18n=template.title_i18n,
+        summary_i18n=template.summary_i18n,
         cast=template.cast,
         advisor_persona=template.advisor_persona,
         cover_image_url=template.cover_image_url,
@@ -2384,6 +2400,8 @@ def _summarize_session(
         template_id=session.template_id,
         template_title=template.title,
         template_seed=template.seed,
+        template_title_i18n=template.title_i18n,
+        template_summary_i18n=template.summary_i18n,
         player_user_id=session.player_user_id,
         turn_count=session.turn_count,
         turn_budget=session.turn_budget,

@@ -19,6 +19,7 @@ from rpg_backend.narrative.contracts import (
     FailureCondition,
     Highlight,
     InventoryDelta,
+    LocalizedText,
     NarrativeAgentEvent,
     NarrativeSession,
     NarrativeTemplate,
@@ -40,6 +41,33 @@ class NarrativeNotFoundError(LookupError):
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _dump_localized_text(value: LocalizedText | None) -> str | None:
+    if value is None:
+        return None
+    payload = value.model_dump(mode="json", exclude_none=True)
+    if not payload:
+        return None
+    return json.dumps(payload, ensure_ascii=False)
+
+
+def _load_localized_text(raw: str | None) -> LocalizedText | None:
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except Exception:  # noqa: BLE001
+        return None
+    if not isinstance(payload, dict):
+        return None
+    try:
+        value = LocalizedText.model_validate(payload)
+    except Exception:  # noqa: BLE001
+        return None
+    if not value.zh and not value.en:
+        return None
+    return value
 
 
 class NarrativeRepository:
@@ -65,6 +93,8 @@ class NarrativeRepository:
                 owner_user_id TEXT NOT NULL,
                 seed TEXT NOT NULL,
                 title TEXT NOT NULL,
+                title_i18n_json TEXT,
+                summary_i18n_json TEXT,
                 cast_json TEXT NOT NULL,
                 advisor_persona TEXT NOT NULL,
                 opening_passage TEXT NOT NULL,
@@ -118,6 +148,8 @@ class NarrativeRepository:
             ("failure_conditions_json", "ALTER TABLE narrative_templates ADD COLUMN failure_conditions_json TEXT NOT NULL DEFAULT '[]'"),
             ("player_role_options_json", "ALTER TABLE narrative_templates ADD COLUMN player_role_options_json TEXT NOT NULL DEFAULT '[]'"),
             ("cover_image_url", "ALTER TABLE narrative_templates ADD COLUMN cover_image_url TEXT"),
+            ("title_i18n_json", "ALTER TABLE narrative_templates ADD COLUMN title_i18n_json TEXT"),
+            ("summary_i18n_json", "ALTER TABLE narrative_templates ADD COLUMN summary_i18n_json TEXT"),
             # Pre-i18n templates default to "zh"; this matches the
             # historic behavior where every template was generated in
             # Chinese.
@@ -230,24 +262,28 @@ class NarrativeRepository:
         visibility: TemplateVisibility,
         language: TemplateLanguage = "en",
         cover_image_url: str | None = None,
+        title_i18n: LocalizedText | None = None,
+        summary_i18n: LocalizedText | None = None,
     ) -> NarrativeTemplate:
         created_at = _utc_now()
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO narrative_templates
-                (template_id, owner_user_id, seed, title, cast_json,
+                (template_id, owner_user_id, seed, title, title_i18n_json, summary_i18n_json, cast_json,
                  advisor_persona, opening_passage, opening_options_json,
                  player_goals_json, failure_conditions_json,
                  player_role_options_json,
                  cover_image_url, visibility, language, play_count, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
                 """,
                 (
                     template_id,
                     owner_user_id,
                     seed,
                     title,
+                    _dump_localized_text(title_i18n),
+                    _dump_localized_text(summary_i18n),
                     json.dumps([c.model_dump() for c in cast], ensure_ascii=False),
                     advisor_persona,
                     opening_passage,
@@ -267,6 +303,8 @@ class NarrativeRepository:
             owner_user_id=owner_user_id,
             seed=seed,
             title=title,
+            title_i18n=title_i18n,
+            summary_i18n=summary_i18n,
             cast=cast,
             advisor_persona=advisor_persona,
             opening_passage=opening_passage,
@@ -830,6 +868,8 @@ def _row_to_template(row: sqlite3.Row) -> NarrativeTemplate:
         owner_user_id=row["owner_user_id"],
         seed=row["seed"],
         title=row["title"],
+        title_i18n=_load_localized_text(row["title_i18n_json"] if "title_i18n_json" in keys else None),
+        summary_i18n=_load_localized_text(row["summary_i18n_json"] if "summary_i18n_json" in keys else None),
         cast=cast,
         advisor_persona=row["advisor_persona"],
         opening_passage=row["opening_passage"],

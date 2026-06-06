@@ -18,6 +18,11 @@ import {
 } from "../../shared/lib/webtoon-assets"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
+import {
+  getSessionDisplayTitle,
+  getTemplateDisplaySummary,
+  getTemplateDisplayTitle,
+} from "../../shared/lib/localized-story-metadata"
 import { saveCreateDraftHandoff } from "../../shared/lib/create-draft-handoff"
 import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
 
@@ -475,6 +480,8 @@ function ContinueRunSpotlight({
   onClick: () => void
 }) {
   const t = useT()
+  const { lang } = useLanguage()
+  const displayTitle = getSessionDisplayTitle(session, lang)
   const safeBudget = Math.max(session.turn_budget, 1)
   const turnsPlayed = Math.min(Math.max(session.turn_count, 0), safeBudget)
   const progress = Math.min(1, Math.max(0, turnsPlayed / safeBudget))
@@ -492,7 +499,7 @@ function ContinueRunSpotlight({
     >
       <div style={hpStyles.resumeCopy}>
         <span style={hpStyles.resumeKicker}>{t("home.resume_kicker")}</span>
-        <Truncated lines={2} style={hpStyles.resumeTitle}>{session.template_title}</Truncated>
+        <Truncated lines={2} style={hpStyles.resumeTitle}>{displayTitle}</Truncated>
         <div style={hpStyles.resumeMeta}>
           {t("home.session_progress_meta", {
             current: turnsPlayed,
@@ -529,6 +536,7 @@ function SessionCard({
 }) {
   const { lang } = useLanguage()
   const t = useT()
+  const displayTitle = getSessionDisplayTitle(session, lang)
   const completed = Boolean(session.ending_label)
   const safeBudget = Math.max(session.turn_budget, 1)
   const turnsPlayed = Math.min(Math.max(session.turn_count, 0), safeBudget)
@@ -569,7 +577,7 @@ function SessionCard({
           #{archiveNumber}
         </span>
       ) : null}
-      <Truncated style={hpStyles.sessionTitle}>{session.template_title}</Truncated>
+      <Truncated style={hpStyles.sessionTitle}>{displayTitle}</Truncated>
       {completed ? (
         <>
           <div style={hpStyles.sessionEndingLine}>
@@ -710,6 +718,9 @@ function TemplateCard({
   compact: boolean
 }) {
   const t = useT()
+  const { lang } = useLanguage()
+  const displayTitle = getTemplateDisplayTitle(template, lang)
+  const displaySummary = getTemplateDisplaySummary(template, lang)
   const cover = getCoverForTemplate(template)
   return (
     <motion.button
@@ -732,7 +743,7 @@ function TemplateCard({
       <div style={{ ...hpStyles.cardBody, ...(compact ? hpStyles.cardBodyCompact : null) }}>
         <div>
           <Truncated lines={2} style={hpStyles.cardTitle}>
-            {template.title}
+            {displayTitle}
           </Truncated>
           <Truncated style={hpStyles.cardCast}>
             {template.cast.map((c) => c.display_name).join(" · ")}
@@ -742,7 +753,7 @@ function TemplateCard({
           lines={compact ? 3 : 2}
           style={{ ...hpStyles.cardSeed, ...(compact ? hpStyles.cardSeedCompact : null) }}
         >
-          {`"${template.seed}"`}
+          {`"${displaySummary}"`}
         </Truncated>
         <div style={{ ...hpStyles.cardFooter, ...(compact ? hpStyles.cardFooterCompact : null) }}>
           <span style={hpStyles.cardBadge}>{visibilityLabel(template.visibility, t)}</span>
