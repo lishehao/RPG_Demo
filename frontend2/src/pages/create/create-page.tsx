@@ -444,6 +444,10 @@ export function CreatePage({
     ])
   }
 
+  const focusComposer = () => {
+    window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
+  }
+
   const handlePrimaryAction = async () => {
     if (activeBrief) {
       if (!canGenerateFromBrief) return
@@ -479,19 +483,6 @@ export function CreatePage({
           animate={{ opacity: 1, y: 0 }}
           transition={itemTransition}
         >
-          <span className="ts-tag" style={cpStyles.kicker}>{t("create.tag_new")}</span>
-          <h1 style={{ ...cpStyles.title, ...(compactLayout ? cpStyles.titleCompact : null) }}>
-            {t("create.heading_l1")}
-            <br />
-            {t("create.heading_l2")}
-          </h1>
-          <p style={{ ...cpStyles.sub, ...(compactLayout ? cpStyles.subCompact : null) }}>
-            {t("create.subhead")}
-          </p>
-          <p style={{ ...cpStyles.promptFitHint, ...(compactLayout ? cpStyles.promptFitHintCompact : null) }}>
-            {t("create.prompt_fit_hint")}
-          </p>
-
           <div style={{ ...cpStyles.guideTranscript, ...(compactLayout ? cpStyles.guideTranscriptCompact : null) }}>
             {guideMessages.map((message) => (
               <div
@@ -507,7 +498,86 @@ export function CreatePage({
                 <span style={cpStyles.guideMessageText}>{message.text}</span>
               </div>
             ))}
+            {briefBusy ? (
+              <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
+                <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                <span style={cpStyles.guideMessageText}>{t("create.guide_planning_now")}</span>
+              </div>
+            ) : null}
+            {activeBriefResponse ? (
+              <>
+                <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
+                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                  <div style={cpStyles.guideMessageBody}>
+                    <StoryBriefCard
+                      brief={activeBriefResponse.brief}
+                      canGenerate={activeBriefResponse.can_generate}
+                      nextStep={activeBriefResponse.next_step}
+                      compact={compactLayout}
+                      busy={busy}
+                      onGenerate={() => void handleCreate()}
+                      onKeepCorrecting={focusComposer}
+                      onApplyRevisionAction={handleApplyRevisionAction}
+                    />
+                  </div>
+                </div>
+                <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
+                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                  <span style={cpStyles.guideMessageText}>
+                    {activeBriefResponse.can_generate
+                      ? t("create.guide_brief_ready")
+                      : t("create.guide_brief_not_fit")}
+                  </span>
+                </div>
+              </>
+            ) : null}
           </div>
+
+          <AnimatePresence initial={false}>
+            {showSeedExamples ? (
+              <motion.div
+                key="seed-examples"
+                style={{
+                  ...cpStyles.examplesBlock,
+                  ...(compactLayout ? cpStyles.examplesBlockCompact : null),
+                }}
+                initial={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 14 }}
+                exit={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
+                transition={itemTransition}
+              >
+                <span style={cpStyles.examplesLabel}>{t("create.examples_label")}</span>
+                <div
+                  style={{
+                    ...cpStyles.examplesList,
+                    ...(compactLayout ? cpStyles.examplesListCompact : null),
+                  }}
+                >
+                  {visibleSeedExamples.map((example, index) => (
+                    <button
+                      key={example}
+                      style={cpStyles.exampleLine}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setDraftTurn(example)
+                        window.requestAnimationFrame(() => {
+                          const node = seedTextareaRef.current
+                          if (!node) return
+                          node.focus({ preventScroll: true })
+                        })
+                      }}
+                      disabled={busy || briefBusy}
+                      type="button"
+                    >
+                      <span style={cpStyles.exampleLineIndex}>{index + 1}.</span>
+                      <span style={cpStyles.exampleLineText}>{example}</span>
+                      <span style={cpStyles.exampleLineUse}>{t("create.example_use")}</span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
 
           <div style={cpStyles.textareaWrap}>
             <textarea
@@ -553,41 +623,20 @@ export function CreatePage({
             {correctionCount > 0 ? (
               <span style={cpStyles.count}>{t("create.guide_revision_count", { n: correctionCount })}</span>
             ) : null}
-            {showCreateAction && !compactLayout ? (
+            {showCreateAction && !activeBrief && !compactLayout ? (
               <span style={cpStyles.shortcutHint}>
                 {t("create.submit_shortcut", { mod: submitModKey })}
               </span>
             ) : null}
           </div>
 
-          <div style={{ ...cpStyles.draftLedger, ...(compactLayout ? cpStyles.draftLedgerCompact : null) }}>
-            <span style={cpStyles.draftLedgerLabel}>{t("create.guide_draft_label")}</span>
-            {hasSeed ? (
-              <p style={cpStyles.draftLedgerText}>{seed}</p>
-            ) : (
-              <p style={cpStyles.draftLedgerEmpty}>{t("create.guide_draft_empty")}</p>
-            )}
-          </div>
-
-          {error ? <div style={cpStyles.error}>{error}</div> : null}
-          {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
-          {activeBriefResponse ? (
-            <StoryBriefCard
-              brief={activeBriefResponse.brief}
-              canGenerate={activeBriefResponse.can_generate}
-              nextStep={activeBriefResponse.next_step}
-              compact={compactLayout}
-              onApplyRevisionAction={handleApplyRevisionAction}
-            />
-          ) : null}
-
-          <div
-            style={{
-              ...cpStyles.actions,
-              ...(compactLayout ? cpStyles.actionsCompact : null),
-            }}
-          >
-            <AnimatePresence initial={false}>
+          {!activeBrief ? (
+            <div
+              style={{
+                ...cpStyles.actions,
+                ...(compactLayout ? cpStyles.actionsCompact : null),
+              }}
+            >
               {showCreateAction ? (
                 <motion.button
                   key="create-submit"
@@ -602,74 +651,28 @@ export function CreatePage({
                   type="button"
                   initial={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
                   animate={{ opacity: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? 0.5 : 1, y: 0, height: "auto", marginTop: 0 }}
-                  exit={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
                   transition={itemTransition}
                 >
                   {primaryCtaLabel}
                 </motion.button>
               ) : null}
-            </AnimatePresence>
-            {!compactLayout && activeBrief && !busy && !briefBusy ? (
-              <button
-                style={cpStyles.backAction}
-                onClick={() => void handlePlanStory()}
-                type="button"
-              >
-                {t("create.brief_replan")}
-              </button>
-            ) : null}
-            {!compactLayout && showBackAction ? (
-              <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy || briefBusy} type="button">
-                {t("create.cta_back")}
-              </button>
-            ) : null}
-          </div>
+              {!compactLayout && showBackAction ? (
+                <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy || briefBusy} type="button">
+                  {t("create.cta_back")}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
-          <AnimatePresence initial={false}>
-            {showSeedExamples ? (
-              <motion.div
-                key="seed-examples"
-                style={{
-                  ...cpStyles.examplesBlock,
-                  ...(compactLayout ? cpStyles.examplesBlockCompact : null),
-                }}
-                initial={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 24 }}
-                exit={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
-                transition={itemTransition}
-              >
-                <span style={cpStyles.examplesLabel}>{t("create.examples_label")}</span>
-                <div
-                  style={{
-                    ...cpStyles.examplesList,
-                    ...(compactLayout ? cpStyles.examplesListCompact : null),
-                  }}
-                >
-                  {visibleSeedExamples.map((example, index) => (
-                    <button
-                      key={example}
-                      style={cpStyles.exampleLine}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => {
-                        appendGuideTurn(example)
-                        window.requestAnimationFrame(() => {
-                          const node = seedTextareaRef.current
-                          if (!node) return
-                          node.focus({ preventScroll: true })
-                        })
-                      }}
-                      disabled={busy}
-                      type="button"
-                    >
-                      <span style={cpStyles.exampleLineIndex}>{index + 1}.</span>
-                      <span style={cpStyles.exampleLineText}>{example}</span>
-                      <span style={cpStyles.exampleLineUse}>{t("create.example_use")}</span>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+          {hasSeed && !activeBrief ? (
+            <div style={{ ...cpStyles.draftLedger, ...(compactLayout ? cpStyles.draftLedgerCompact : null) }}>
+              <span style={cpStyles.draftLedgerLabel}>{t("create.guide_draft_label")}</span>
+              <p style={cpStyles.draftLedgerText}>{seed}</p>
+            </div>
+          ) : null}
+
+          {error ? <div style={cpStyles.error}>{error}</div> : null}
+          {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
 
           <details
             style={{
@@ -956,12 +959,18 @@ function StoryBriefCard({
   canGenerate,
   nextStep,
   compact,
+  busy,
+  onGenerate,
+  onKeepCorrecting,
   onApplyRevisionAction,
 }: {
   brief: NarrativeStoryBrief
   canGenerate: boolean
   nextStep: string
   compact: boolean
+  busy: boolean
+  onGenerate: () => void
+  onKeepCorrecting: () => void
   onApplyRevisionAction: (seedAppend: string) => void
 }) {
   const t = useT()
@@ -1085,6 +1094,26 @@ function StoryBriefCard({
       <div style={cpStyles.briefFooter}>
         <span>{brief.runtime_fit_rationale}</span>
         <strong>{canGenerate ? nextStep : t("create.brief_revise_first")}</strong>
+      </div>
+      <div style={cpStyles.briefChatActions}>
+        {canGenerate ? (
+          <button
+            type="button"
+            style={cpStyles.briefChatPrimary}
+            onClick={onGenerate}
+            disabled={busy}
+          >
+            {busy ? t("create.cta_busy") : t("create.brief_cta_generate")}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          style={cpStyles.briefChatSecondary}
+          onClick={onKeepCorrecting}
+          disabled={busy}
+        >
+          {t("create.brief_keep_correcting")}
+        </button>
       </div>
     </section>
   )
@@ -1239,9 +1268,9 @@ const cpStyles: Record<string, CSSProperties> = {
   brandLink: { display: "inline-flex", alignItems: "center", gap: 8 },
   brandName: { fontFamily: "var(--font-narrative)", fontSize: 17 },
 
-  main: { padding: "72px 40px 80px", display: "flex", justifyContent: "center" },
+  main: { padding: "48px 40px 80px", display: "flex", justifyContent: "center" },
   mainCompact: {
-    padding: "48px 40px 72px",
+    padding: "28px 40px 72px",
   },
   inner: { width: "100%", maxWidth: 720 },
   innerCompact: {
@@ -1345,6 +1374,11 @@ const cpStyles: Record<string, CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.52,
     whiteSpace: "pre-wrap" as const,
+  },
+  guideMessageBody: {
+    minWidth: 0,
+    display: "grid",
+    gap: 8,
   },
 
   textareaWrap: {
@@ -1946,6 +1980,42 @@ const cpStyles: Record<string, CSSProperties> = {
     color: "rgba(255,255,255,0.58)",
     fontSize: 11.5,
     lineHeight: 1.42,
+  },
+  briefChatActions: {
+    display: "flex",
+    alignItems: "baseline",
+    flexWrap: "wrap" as const,
+    columnGap: 16,
+    rowGap: 8,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTop: "1px solid rgba(255,255,255,0.10)",
+  },
+  briefChatPrimary: {
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.42)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,178,0.96)",
+    fontSize: 13,
+    fontWeight: 880,
+    lineHeight: 1.25,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  briefChatSecondary: {
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.16)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,255,255,0.62)",
+    fontSize: 12.5,
+    fontWeight: 740,
+    lineHeight: 1.25,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   actions: {
     display: "flex",
