@@ -69,6 +69,7 @@ class NarrativeRepository:
                 advisor_persona TEXT NOT NULL,
                 opening_passage TEXT NOT NULL,
                 opening_options_json TEXT NOT NULL DEFAULT '[]',
+                cover_image_url TEXT,
                 visibility TEXT NOT NULL DEFAULT 'private',
                 play_count INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL
@@ -116,6 +117,7 @@ class NarrativeRepository:
             ("player_goals_json", "ALTER TABLE narrative_templates ADD COLUMN player_goals_json TEXT NOT NULL DEFAULT '[]'"),
             ("failure_conditions_json", "ALTER TABLE narrative_templates ADD COLUMN failure_conditions_json TEXT NOT NULL DEFAULT '[]'"),
             ("player_role_options_json", "ALTER TABLE narrative_templates ADD COLUMN player_role_options_json TEXT NOT NULL DEFAULT '[]'"),
+            ("cover_image_url", "ALTER TABLE narrative_templates ADD COLUMN cover_image_url TEXT"),
             # Pre-i18n templates default to "zh"; this matches the
             # historic behavior where every template was generated in
             # Chinese.
@@ -227,6 +229,7 @@ class NarrativeRepository:
         player_role_options: list[PlayerRole],
         visibility: TemplateVisibility,
         language: TemplateLanguage = "en",
+        cover_image_url: str | None = None,
     ) -> NarrativeTemplate:
         created_at = _utc_now()
         with self._connect() as conn:
@@ -237,8 +240,8 @@ class NarrativeRepository:
                  advisor_persona, opening_passage, opening_options_json,
                  player_goals_json, failure_conditions_json,
                  player_role_options_json,
-                 visibility, language, play_count, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                 cover_image_url, visibility, language, play_count, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
                 """,
                 (
                     template_id,
@@ -252,6 +255,7 @@ class NarrativeRepository:
                     json.dumps([g.model_dump() for g in player_goals], ensure_ascii=False),
                     json.dumps([f.model_dump() for f in failure_conditions], ensure_ascii=False),
                     json.dumps([r.model_dump() for r in player_role_options], ensure_ascii=False),
+                    cover_image_url,
                     visibility,
                     language,
                     created_at,
@@ -267,6 +271,7 @@ class NarrativeRepository:
             advisor_persona=advisor_persona,
             opening_passage=opening_passage,
             opening_options=opening_options,
+            cover_image_url=cover_image_url,
             player_goals=player_goals,
             failure_conditions=failure_conditions,
             player_role_options=player_role_options,
@@ -829,6 +834,7 @@ def _row_to_template(row: sqlite3.Row) -> NarrativeTemplate:
         advisor_persona=row["advisor_persona"],
         opening_passage=row["opening_passage"],
         opening_options=options,
+        cover_image_url=row["cover_image_url"] if "cover_image_url" in keys else None,
         player_goals=goals,
         failure_conditions=conds,
         player_role_options=roles,

@@ -358,6 +358,7 @@ class NarrativeTemplate(BaseModel):
     advisor_persona: str = Field(min_length=1, max_length=200)
     opening_passage: str = Field(min_length=1, max_length=4000)
     opening_options: list[StoryOption] = Field(default_factory=list)
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     # Gauntlet-mode shared scaffolding (lives on the template so all sessions
     # forking the same template fight the same fight). Always populated by
     # the opening engine; only ENFORCED when session.difficulty == "gauntlet".
@@ -385,6 +386,7 @@ class NarrativeTemplateSummary(BaseModel):
     title: str
     cast: list[CastMember]
     advisor_persona: str
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     player_goals: list[PlayerGoal] = Field(default_factory=list)
     failure_conditions: list[FailureCondition] = Field(default_factory=list)
     player_role_options: list[PlayerRole] = Field(default_factory=list)
@@ -691,6 +693,7 @@ class PublicReplayResponse(BaseModel):
     template_seed: str
     cast: list[CastMember]
     advisor_persona: str
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     player_goals: list[PlayerGoal] = Field(default_factory=list)
     player_role: PlayerRole | None = None
     turn_budget: int

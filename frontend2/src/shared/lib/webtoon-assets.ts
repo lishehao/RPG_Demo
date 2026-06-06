@@ -280,6 +280,7 @@ type LooseTemplate = {
   template_id: string
   seed: string
   title?: string
+  cover_image_url?: string | null
   cast: LooseCast[]
 }
 
@@ -381,9 +382,26 @@ function inferGender(role: string, relation: string): "female" | "male" {
   return stableHash(`${role}|${relation}`) % 2 === 0 ? "female" : "male"
 }
 
+function resolveGeneratedCoverUrl(value: string | null | undefined): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  if (/[\n\r"'()\\]/.test(trimmed)) return null
+  if (
+    trimmed.startsWith("/webtoons/")
+    || trimmed.startsWith("/generated/")
+    || trimmed.startsWith("/uploads/")
+    || trimmed.startsWith("https://")
+  ) {
+    return trimmed
+  }
+  return null
+}
+
 /** Cover for a template card / hero. Uses variant -01/-02 deterministically
  *  per template so two templates of the same shell get different visuals. */
 export function getCoverForTemplate(template: LooseTemplate): string {
+  const generatedCover = resolveGeneratedCoverUrl(template.cover_image_url)
+  if (generatedCover) return generatedCover
   const shell = inferShell(template)
   return `/webtoons/shells/${shellVariantSlug(shell, template.template_id)}.jpg`
 }

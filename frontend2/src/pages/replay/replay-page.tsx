@@ -101,14 +101,18 @@ export function ReplayPage({
     template_id: sessionId, // stable hash on session_id for the cover pick
     seed: replay.template_seed,
     title: replay.template_title,
+    cover_image_url: replay.cover_image_url,
     cast: replay.cast,
   }
   // For completed replays, use the ending-specific illustration as the
   // hero — that's the visual identity of *this particular* playthrough.
   // Incomplete replays fall back to the shell cover.
-  const cover = replay.completed && replay.ending
+  const storyCover = getCoverForTemplate(templateLike)
+  const cover = replay.cover_image_url
+    ? storyCover
+    : replay.completed && replay.ending
     ? getEndingIllustration(replay.ending.label)
-    : getCoverForTemplate(templateLike)
+    : storyCover
   const advisorAvatar = getAdvisorAvatar(sessionId, replay.advisor_persona)
   const endingSubtitleText = replay.ending
     ? lang === "en" ? `"${replay.ending.subtitle}"` : `「${replay.ending.subtitle}」`

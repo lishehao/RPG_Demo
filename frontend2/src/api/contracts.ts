@@ -832,6 +832,7 @@ export type NarrativeTemplateSummary = {
   title: string
   cast: NarrativeCastMember[]
   advisor_persona: string
+  cover_image_url?: string | null
   player_goals?: NarrativePlayerGoal[]
   failure_conditions?: NarrativeFailureCondition[]
   player_role_options?: NarrativePlayerRole[]
@@ -904,6 +905,7 @@ export type NarrativePublicReplayResponse = {
   template_forkable: boolean
   template_title: string
   template_seed: string
+  cover_image_url?: string | null
   cast: NarrativeCastMember[]
   advisor_persona: string
   player_goals?: NarrativePlayerGoal[]
