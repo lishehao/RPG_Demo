@@ -454,7 +454,7 @@ export function CreatePage({
   }
 
   return (
-    <div style={cpStyles.page}>
+    <div style={{ ...cpStyles.page, ...(compactLayout ? cpStyles.pageCompact : null) }}>
       <header style={cpStyles.header}>
         <button style={cpStyles.brandLink} onClick={onBackHome}>
           <span
@@ -1222,10 +1222,14 @@ const busyStageStyles: Record<string, CSSProperties> = {
 const cpStyles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100%",
-    background: `linear-gradient(180deg, rgba(20,16,12,0.55) 0%, rgba(20,16,12,0.92) 60%, var(--bg) 100%), url(${PAGE_BG.create})`,
+    background: `linear-gradient(90deg, rgba(4,4,7,0.98) 0%, rgba(8,6,9,0.94) 48%, rgba(22,5,8,0.78) 100%), radial-gradient(circle at 82% 18%, rgba(201,44,32,0.24) 0%, rgba(201,44,32,0.08) 28%, transparent 52%), linear-gradient(180deg, rgba(5,5,8,0.26) 0%, rgba(8,6,8,0.88) 68%, var(--bg) 100%), url(${PAGE_BG.create})`,
     backgroundSize: "cover",
-    backgroundPosition: "center top",
+    backgroundPosition: "58% center",
     backgroundAttachment: "fixed",
+  },
+  pageCompact: {
+    backgroundPosition: "64% top",
+    backgroundAttachment: "scroll",
   },
   header: {
     padding: "18px 40px",
