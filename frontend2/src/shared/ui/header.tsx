@@ -25,10 +25,6 @@ export function Header({
     window.location.hash = "#/login"
   }
 
-  const handlePortfolio = () => {
-    window.location.hash = "#/portfolio"
-  }
-
   return (
     <header className="topbar">
       <button className="brand" onClick={onHome} type="button">
@@ -37,10 +33,6 @@ export function Header({
       </button>
 
       <div className="topbar-actions">
-        <button className="topbar-link" type="button" onClick={handlePortfolio}>
-          {t("header.case_study")}
-        </button>
-
         <LanguageToggle lang={lang} onSelect={setLang} />
 
         {showCreateButton && createVariant === "link" ? (
@@ -66,9 +58,9 @@ export function Header({
               className="topbar-account__pill"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={accountName}
+              title={accountName}
             >
               <span className="topbar-account__avatar">{accountInitial}</span>
-              <span className="topbar-account__name">{accountName}</span>
             </button>
             {menuOpen ? (
               <div className="topbar-account__menu" onMouseLeave={() => setMenuOpen(false)}>
@@ -105,8 +97,8 @@ function LanguageToggle({ lang, onSelect }: { lang: Lang; onSelect: (next: Lang)
             className={`topbar-lang__pill${active ? " topbar-lang__pill--active" : ""}`}
             onClick={() => onSelect(opt.value)}
             aria-pressed={active}
+            aria-label={opt.label}
           >
-            <span className="topbar-lang__full">{opt.label}</span>
             <span className="topbar-lang__short" aria-hidden>
               {opt.value === "zh" ? "中" : "EN"}
             </span>

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react"
 import type {
   NarrativeSessionSummary,
   NarrativeTemplateSummary,
+  NarrativeTensionProfile,
 } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
 import { useAuth } from "../../app/auth-context"
@@ -11,14 +12,118 @@ import { LoadingShim } from "../../shared/ui/loading-shim"
 import { Truncated } from "../../shared/ui/truncated"
 import {
   PAGE_BG,
+  getCoverByStoryId,
   getCoverForTemplate,
   getEmptyPlazaImage,
 } from "../../shared/lib/webtoon-assets"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
+import { saveCreateDraftHandoff } from "../../shared/lib/create-draft-handoff"
 import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
 
 type Tab = "plaza" | "my-templates"
+
+type LocalizedText = {
+  zh: string
+  en: string
+}
+
+type CuratedPlazaStory = {
+  id: string
+  title: LocalizedText
+  pressure: LocalizedText
+  promise: LocalizedText
+  seed: LocalizedText
+  theme: string
+  tensionProfile: NarrativeTensionProfile
+}
+
+const CURATED_PLAZA_STORIES: CuratedPlazaStory[] = [
+  {
+    id: "awards-disappearance",
+    title: {
+      zh: "颁奖夜失踪",
+      en: "Awards Night Disappearance",
+    },
+    pressure: {
+      zh: "直播前，主唱消失，伴舞说自己看见了真相。",
+      en: "Before the livestream, a singer vanishes and a backup dancer saw too much.",
+    },
+    promise: {
+      zh: "高压后台 · 公众危机 · 证词被争夺",
+      en: "Backstage pressure · public fallout · contested witness",
+    },
+    seed: {
+      zh: "颁奖直播开始前十分钟，焦虑的公关、制作人、伴舞和赞助代表发现当红主唱消失。伴舞亲眼看见主唱离开控制室，观众和粉丝正在外面失控，玩家要在直播倒计时里决定要保护谁、公开什么、隐瞒什么。",
+      en: "Ten minutes before an awards livestream, an anxious publicist, a producer, a backup dancer, and a sponsor representative discover that a famous singer has disappeared. The backup dancer saw the singer leave the control room, fans are panicking outside, and the player must decide who to protect, what to reveal, and what to hide before the show goes live.",
+    },
+    theme: "entertainment_scandal",
+    tensionProfile: "high_drama",
+  },
+  {
+    id: "board-gala-recording",
+    title: {
+      zh: "董事会录音",
+      en: "The Board Gala Recording",
+    },
+    pressure: {
+      zh: "并购投票前，前任带着一段能毁掉全场的录音出现。",
+      en: "Before a merger vote, an ex arrives with a recording that can ruin the room.",
+    },
+    promise: {
+      zh: "权力酒会 · 旧关系 · 公开投票",
+      en: "Power gala · old relationship · public vote",
+    },
+    seed: {
+      zh: "董事会晚宴上，联合创始人、投资人、法务主管和玩家的前任围绕一场并购投票互相施压。前任带来一段录音，证明投票前有人做了秘密交易。玩家必须在酒会结束前决定录音交给谁，是否保住公司，还是让某个人当场失势。",
+      en: "At a board gala, a cofounder, an investor, a legal chief, and the player's ex are pressuring each other over a merger vote. The ex arrives with a recording proving someone made a secret deal before the vote. The player must decide who gets the recording, whether the company survives, and who falls in public before the gala ends.",
+    },
+    theme: "office_power",
+    tensionProfile: "high_drama",
+  },
+  {
+    id: "wedding-account-note",
+    title: {
+      zh: "婚礼旧账",
+      en: "The Wedding Account",
+    },
+    pressure: {
+      zh: "婚礼当天，伴郎递来一张写着新娘旧账户的纸条。",
+      en: "On the wedding day, the best man passes a note with the bride's old account.",
+    },
+    promise: {
+      zh: "婚礼现场 · 私密旧账 · 家族目光",
+      en: "Wedding aisle · private account · family watching",
+    },
+    seed: {
+      zh: "婚礼开场前，新郎、新娘、伴郎、伴娘和双方母亲都在休息室等候。伴郎递给玩家一张纸条，上面是新娘多年前的旧账户和一笔无法解释的转账。宾客已经入座，玩家必须决定是私下查清、当众质问，还是让婚礼继续。",
+      en: "Minutes before the wedding procession, the groom, bride, best man, maid of honor, and both mothers are waiting near the aisle. The best man hands the player a note with the bride's old account and an unexplained transfer from years ago. The guests are seated, and the player must decide whether to investigate quietly, confront someone publicly, or let the wedding continue.",
+    },
+    theme: "wedding",
+    tensionProfile: "high_drama",
+  },
+  {
+    id: "campus-scholarship-card",
+    title: {
+      zh: "奖学金夜卡片",
+      en: "Scholarship Night Card",
+    },
+    pressure: {
+      zh: "图书馆闭馆前，三名学生争夺一张会改变奖学金归属的卡片。",
+      en: "Before the library closes, three students fight over a card that can change a scholarship.",
+    },
+    promise: {
+      zh: "校园夜色 · 旧导师 · 发光证据",
+      en: "Campus night · former mentor · glowing evidence",
+    },
+    seed: {
+      zh: "深夜图书馆闭馆前，三名学生、一位前导师和档案管理员围绕一张发光的借阅卡发生争执。这张卡能证明奖学金申请被人调换过，也能毁掉其中一个人的未来。玩家必须决定相信谁，保住谁，或者把证据交出去。",
+      en: "At a city library just before closing, three students, a former mentor, and the archivist argue over a glowing library card. The card can prove that a scholarship application was switched, but it can also ruin one person's future. The player must decide who to believe, who to protect, and whether to hand over the evidence.",
+    },
+    theme: "campus_romance",
+    tensionProfile: "high_drama",
+  },
+]
 
 export function HomePage({
   onOpenCreate,
@@ -32,6 +137,7 @@ export function HomePage({
   const api = useApi()
   const auth = useAuth()
   const t = useT()
+  const { lang } = useLanguage()
   const compactHome = useCompactLayout()
   const [tab, setTab] = useState<Tab>("plaza")
   const [publicTemplates, setPublicTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
@@ -40,6 +146,16 @@ export function HomePage({
   const [error, setError] = useState<string | null>(null)
   const showTemplateTabs = !auth.isAnonymous
   const activeTemplateTab: Tab = showTemplateTabs ? tab : "plaza"
+
+  const handleStartCuratedStory = (story: CuratedPlazaStory) => {
+    saveCreateDraftHandoff({
+      seed: story.seed[lang],
+      language: lang,
+      tensionProfile: story.tensionProfile,
+      source: "plaza_curated",
+    })
+    onOpenCreate()
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -212,13 +328,22 @@ export function HomePage({
               transition={transitions.snap}
             >
               {activeTemplateTab === "plaza" ? (
-                <TemplateGrid
-                  templates={publicTemplates}
-                  error={error}
-                  emptyText={t("home.empty_plaza")}
-                  compact={compactHome}
-                  onOpenTemplate={onOpenTemplate}
-                />
+                <>
+                  <CuratedPlazaStories
+                    stories={CURATED_PLAZA_STORIES}
+                    compact={compactHome}
+                    lang={lang}
+                    onStart={handleStartCuratedStory}
+                  />
+                  <TemplateGrid
+                    templates={publicTemplates}
+                    error={error}
+                    emptyText={t("home.empty_plaza")}
+                    compact={compactHome}
+                    onOpenTemplate={onOpenTemplate}
+                    hideEmpty
+                  />
+                </>
               ) : (
                 <TemplateGrid
                   templates={myTemplates}
@@ -499,12 +624,14 @@ function TemplateGrid({
   emptyText,
   compact,
   onOpenTemplate,
+  hideEmpty = false,
 }: {
   templates: NarrativeTemplateSummary[] | null
   error: string | null
   emptyText: string
   compact: boolean
   onOpenTemplate: (templateId: string) => void
+  hideEmpty?: boolean
 }) {
   if (error) {
     return <div style={hpStyles.errorBox}>{error}</div>
@@ -513,6 +640,7 @@ function TemplateGrid({
     return <LoadingShim variant="inline" />
   }
   if (templates.length === 0) {
+    if (hideEmpty) return null
     return (
       <motion.div
         style={hpStyles.emptyCard}
@@ -540,6 +668,52 @@ function TemplateGrid({
           compact={compact}
           onClick={() => onOpenTemplate(t.template_id)}
         />
+      ))}
+    </div>
+  )
+}
+
+function CuratedPlazaStories({
+  stories,
+  compact,
+  lang,
+  onStart,
+}: {
+  stories: CuratedPlazaStory[]
+  compact: boolean
+  lang: keyof LocalizedText
+  onStart: (story: CuratedPlazaStory) => void
+}) {
+  return (
+    <div style={{ ...hpStyles.curatedGrid, ...(compact ? hpStyles.curatedGridCompact : null) }}>
+      {stories.map((story, idx) => (
+        <motion.button
+          key={story.id}
+          style={{ ...hpStyles.curatedStory, ...(compact ? hpStyles.curatedStoryCompact : null) }}
+          type="button"
+          onClick={() => onStart(story)}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: idx * 0.04, ...itemTransition }}
+          whileHover={{ y: -2 }}
+          whileTap={tapPress}
+        >
+          <span
+            aria-hidden
+            style={{
+              ...hpStyles.curatedCover,
+              backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.08) 0%, rgba(12,12,16,0.72) 100%), url(${getCoverByStoryId(`curated-${story.id}`, story.theme)})`,
+            }}
+          />
+          <span style={hpStyles.curatedBody}>
+            <span style={hpStyles.curatedTitle}>{story.title[lang]}</span>
+            <Truncated lines={2} style={hpStyles.curatedPressure}>
+              {story.pressure[lang]}
+            </Truncated>
+            <span style={hpStyles.curatedPromise}>{story.promise[lang]}</span>
+            <span style={hpStyles.curatedAction}>{lang === "zh" ? "让 Agent 帮我开局 →" : "Ask the agent to open it →"}</span>
+          </span>
+        </motion.button>
       ))}
     </div>
   )
@@ -963,6 +1137,74 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   gridCompact: {
     gap: 28,
+  },
+  curatedGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 18,
+    marginBottom: 28,
+  },
+  curatedGridCompact: {
+    gridTemplateColumns: "1fr",
+    gap: 18,
+  },
+  curatedStory: {
+    display: "grid",
+    gridTemplateColumns: "minmax(140px, 38%) minmax(0, 1fr)",
+    minHeight: 174,
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderTop: "1px solid rgba(245,200,120,0.34)",
+    borderRadius: 0,
+    color: "var(--text)",
+    cursor: "pointer",
+    overflow: "hidden",
+    textAlign: "left",
+  },
+  curatedStoryCompact: {
+    gridTemplateColumns: "1fr",
+  },
+  curatedCover: {
+    minHeight: 174,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    display: "block",
+  },
+  curatedBody: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    minWidth: 0,
+    padding: "20px 0 20px 18px",
+    gap: 9,
+  },
+  curatedTitle: {
+    fontFamily: "var(--font-narrative)",
+    fontSize: 22,
+    lineHeight: 1.18,
+    color: "var(--text)",
+    fontWeight: 500,
+  },
+  curatedPressure: {
+    fontSize: 13,
+    lineHeight: 1.45,
+    color: "var(--text-muted)",
+  },
+  curatedPromise: {
+    fontSize: 11.5,
+    color: "var(--text-faint)",
+    lineHeight: 1.3,
+  },
+  curatedAction: {
+    width: "fit-content",
+    marginTop: 3,
+    paddingBottom: 4,
+    borderBottom: "1px solid rgba(245,200,120,0.4)",
+    color: "rgba(245,200,120,0.92)",
+    fontSize: 12.5,
+    fontWeight: 760,
+    lineHeight: 1.2,
   },
   card: {
     textAlign: "left",

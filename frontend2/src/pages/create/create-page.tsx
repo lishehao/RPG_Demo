@@ -25,6 +25,7 @@ import {
   type StoryGuideNodeName,
 } from "../../shared/lib/story-guide-loop"
 import { PAGE_BG } from "../../shared/lib/webtoon-assets"
+import { takeCreateDraftHandoff } from "../../shared/lib/create-draft-handoff"
 
 const SEED_EXAMPLE_KEYS: StringKey[] = [
   "create.example_seed_1",
@@ -592,6 +593,39 @@ export function CreatePage({
   const focusComposer = () => {
     window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
   }
+
+  useEffect(() => {
+    const handoff = takeCreateDraftHandoff()
+    if (!handoff) return
+    const trimmed = handoff.seed.trim()
+    if (!trimmed) return
+    const decision = advanceStoryGuideLoop(createInitialStoryGuideState(uiLang), trimmed, uiLang)
+    const time = Date.now()
+    if (handoff.language) setStoryLanguage(handoff.language)
+    if (handoff.tensionProfile) setDesiredTensionProfile(handoff.tensionProfile)
+    setSeed(trimmed)
+    setDraftTurn("")
+    setGuideLoopState(decision.state)
+    setBriefResponse(null)
+    setBriefResponseKey(null)
+    setBriefError(null)
+    setError(null)
+    setChatMessages([
+      {
+        id: `user-handoff-${time}`,
+        speaker: "user",
+        text: trimmed,
+      },
+      {
+        id: `guide-handoff-${time}`,
+        speaker: "guide",
+        text: decision.reply,
+        node: decision.node,
+        state: decision.status,
+        ledger: decision.ledger,
+      },
+    ])
+  }, [uiLang])
 
   const handlePrimaryAction = async () => {
     if (activeBrief) {
