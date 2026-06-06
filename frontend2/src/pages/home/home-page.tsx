@@ -12,8 +12,8 @@ import { LoadingShim } from "../../shared/ui/loading-shim"
 import { Truncated } from "../../shared/ui/truncated"
 import {
   PAGE_BG,
+  assignTemplateCovers,
   getCoverByStoryId,
-  getCoverForTemplate,
   getEmptyPlazaImage,
 } from "../../shared/lib/webtoon-assets"
 import { friendlyError } from "../../shared/lib/friendly-error"
@@ -646,12 +646,14 @@ function TemplateGrid({
       </motion.div>
     )
   }
+  const assignedCovers = assignTemplateCovers(templates)
   return (
     <div style={{ ...hpStyles.grid, ...(compact ? hpStyles.gridCompact : null) }}>
       {templates.map((t, idx) => (
         <TemplateCard
           key={t.template_id}
           template={t}
+          cover={assignedCovers[t.template_id]}
           index={idx}
           compact={compact}
           onClick={() => onOpenTemplate(t.template_id)}
@@ -708,11 +710,13 @@ function CuratedPlazaStories({
 
 function TemplateCard({
   template,
+  cover,
   onClick,
   index = 0,
   compact,
 }: {
   template: NarrativeTemplateSummary
+  cover: string
   onClick: () => void
   index?: number
   compact: boolean
@@ -721,7 +725,6 @@ function TemplateCard({
   const { lang } = useLanguage()
   const displayTitle = getTemplateDisplayTitle(template, lang)
   const displaySummary = getTemplateDisplaySummary(template, lang)
-  const cover = getCoverForTemplate(template)
   return (
     <motion.button
       style={{ ...hpStyles.card, ...(compact ? hpStyles.cardCompact : null) }}

@@ -1924,6 +1924,11 @@ def _fallback_role_names(brief: StoryBrief) -> list[str]:
         return ["Callback keeper", "Timing witness", "Audience ally"]
     if brief.tension_profile == "fantasy_sci_fi":
         return ["Artifact witness", "Faction go-between", "Rule steward"]
+    if brief.tension_profile == "high_drama":
+        if "publicist" in seed or "awards livestream" in seed or "singer" in seed:
+            return ["Publicist under pressure", "Witness handler", "Sponsor-room liaison"]
+        if "board" in seed or "merger" in seed or "contract" in seed:
+            return ["Deal-room advocate", "Evidence handler", "Public-account keeper"]
     return ["Room mediator", "Scene witness", "Pressure holder"]
 
 

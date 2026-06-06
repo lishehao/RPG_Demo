@@ -457,6 +457,44 @@ export function advanceStoryGuideLoop(
     }
   }
 
+  if (detectsUnsupportedSmallCastDirection(text)) {
+    const updated = mergeSlots(previousState, extractSlots(text, lang), lang)
+    const slots = {
+      ...updated.slots,
+      active_cast: {
+        ...updated.slots.active_cast,
+        filled: false,
+        evidence: "",
+      },
+      pressure: {
+        ...updated.slots.pressure,
+        filled: false,
+        evidence: "",
+      },
+    }
+    const state: StoryGuideLoopState = {
+      ...updated,
+      acceptedTurns: [...previousState.acceptedTurns, text],
+      slots,
+      status: "needs_field",
+      lastNode: "ask_missing_slot",
+      nextMissing: "active_cast",
+    }
+    return {
+      state,
+      node: "ask_missing_slot",
+      status: "needs_field",
+      reply:
+        lang === "zh"
+          ? "我看到的是两人、低冲突、物件线索。这个 beta 需要至少第三方在场压力或公开后果，才能变成可玩的 Story Brief。加一个旁观者、阵营或必须当场选择的压力。"
+          : "I’m reading this as two people, low conflict, and an object-only thread. This beta needs a third active pressure or public consequence before I shape a Story Brief. Add one watcher, faction, or decision that must be handled in the room.",
+      acceptedText: true,
+      blocked: false,
+      canShapeBrief: false,
+      ledger: buildStoryGuideLedger(state, lang),
+    }
+  }
+
   const updated = mergeSlots(previousState, extractSlots(text, lang), lang)
   const nextMissing = findNextMissing(updated)
   const ready = canShapeStoryBrief({ ...updated, nextMissing })
@@ -639,4 +677,18 @@ function detectsHardConflict(text: string): boolean {
   const forbidsViolence = /\b(no|without|avoid|never)\s+(violence|fight|fighting|killing|murder)\b/i.test(text) || /不要.*(暴力|打斗|杀)|避免.*(暴力|打斗|杀)/.test(text)
   const drivesViolence = /\bmust\s+(fight|kill|murder)\b|\bmain\s+(fight|murder)\b/i.test(text) || /必须.*(打|杀)|主要.*(打斗|杀人)/.test(text)
   return Boolean(forbidsViolence && drivesViolence && lower.length > 0)
+}
+
+function detectsUnsupportedSmallCastDirection(text: string): boolean {
+  const lower = text.toLowerCase()
+  const explicitSmallCast =
+    /\b(two-person|two person|two people|two characters|only two|just two)\b/i.test(text) ||
+    /\bone\s+[a-z-]+\s+and\s+one\s+[a-z-]+/.test(lower)
+  const lowConflict =
+    /\b(no public pressure|no mystery|no conflict|no villains?|low conflict|without conflict)\b/i.test(text) ||
+    /没有公开压力|没有冲突|不要冲突|低冲突/.test(text)
+  const objectOnly =
+    /\b(wedding ring|ring on a table|lost ring)\b/i.test(text) ||
+    /婚戒|戒指/.test(text)
+  return Boolean(explicitSmallCast && lowConflict && objectOnly)
 }

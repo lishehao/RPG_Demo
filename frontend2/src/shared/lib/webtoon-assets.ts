@@ -276,13 +276,110 @@ export const ASSET_CATALOG = {
 // gender (used to pick a female vs. male portrait pool).
 
 type LooseCast = { character_id: string; display_name: string; role: string; relation_to_protagonist: string }
+type LooseLocalizedText = { zh?: string | null; en?: string | null }
 type LooseTemplate = {
   template_id: string
   seed: string
   title?: string
+  title_i18n?: LooseLocalizedText | null
+  summary_i18n?: LooseLocalizedText | null
   cover_image_url?: string | null
   cast: LooseCast[]
 }
+
+type GeneratedCoverKey =
+  | "generated_entertainment_backstage_disappearance"
+  | "generated_office_boardroom_betrayal"
+  | "generated_campus_rain_secret"
+  | "generated_sci_fi_mars_colony_stage"
+  | "generated_fantasy_artifact_auction"
+  | "generated_wedding_aisle_betrayal"
+  | "generated_family_banquet_inheritance"
+  | "generated_rooftop_gala_confrontation"
+  | "generated_hospital_secret_deadline"
+  | "generated_urban_alley_witness"
+
+const GENERATED_COVER_THEME_SHELLS: Record<GeneratedCoverKey, Shell> = {
+  generated_entertainment_backstage_disappearance: "entertainment_scandal",
+  generated_office_boardroom_betrayal: "office_power",
+  generated_campus_rain_secret: "campus_romance",
+  generated_sci_fi_mars_colony_stage: "urban_supernatural",
+  generated_fantasy_artifact_auction: "palace_drama",
+  generated_wedding_aisle_betrayal: "wedding",
+  generated_family_banquet_inheritance: "wealth_families",
+  generated_rooftop_gala_confrontation: "wealth_families",
+  generated_hospital_secret_deadline: "courtroom",
+  generated_urban_alley_witness: "urban_supernatural",
+}
+
+const GENERATED_COVER_FALLBACKS: Record<GeneratedCoverKey, string> = {
+  generated_entertainment_backstage_disappearance:
+    "/webtoons/covers/generated/cover-entertainment-backstage-disappearance-v1.jpg",
+  generated_office_boardroom_betrayal:
+    "/webtoons/covers/generated/cover-office-boardroom-betrayal-v1.jpg",
+  generated_campus_rain_secret:
+    "/webtoons/covers/generated/cover-campus-rain-secret-v1.jpg",
+  generated_sci_fi_mars_colony_stage:
+    "/webtoons/covers/generated/cover-sci-fi-mars-colony-stage-v1.jpg",
+  generated_fantasy_artifact_auction:
+    "/webtoons/covers/generated/cover-fantasy-artifact-auction-v1.jpg",
+  generated_wedding_aisle_betrayal:
+    "/webtoons/covers/generated/cover-wedding-aisle-betrayal-v1.jpg",
+  generated_family_banquet_inheritance:
+    "/webtoons/covers/generated/cover-family-banquet-inheritance-v1.jpg",
+  generated_rooftop_gala_confrontation:
+    "/webtoons/covers/generated/cover-rooftop-gala-confrontation-v1.jpg",
+  generated_hospital_secret_deadline:
+    "/webtoons/covers/generated/cover-hospital-secret-deadline-v1.jpg",
+  generated_urban_alley_witness:
+    "/webtoons/covers/generated/cover-urban-alley-witness-v1.jpg",
+}
+
+const GENERATED_COVER_RULES: Array<{ key: GeneratedCoverKey; keywords: readonly string[] }> = [
+  {
+    key: "generated_sci_fi_mars_colony_stage",
+    keywords: ["mars", "colony", "oxygen", "space", "sci-fi", "science fiction", "talent show", "火星", "殖民", "氧气"],
+  },
+  {
+    key: "generated_fantasy_artifact_auction",
+    keywords: ["artifact", "auction", "relic", "jade", "spellbook", "star-map", "法器", "遗物", "拍卖", "玉"],
+  },
+  {
+    key: "generated_hospital_secret_deadline",
+    keywords: ["hospital", "hospital deadline", "hospital ward", "doctor", "medical", "emergency", "injury", "医院", "病房", "医生", "急诊", "伤情"],
+  },
+  {
+    key: "generated_wedding_aisle_betrayal",
+    keywords: ["wedding", "aisle", "bride", "groom", "chapel", "marriage", "婚礼", "婚纱", "新娘", "新郎"],
+  },
+  {
+    key: "generated_entertainment_backstage_disappearance",
+    keywords: [
+      "backstage", "idol", "singer", "livestream", "awards", "disappearance", "fans",
+      "celebrity", "red carpet", "missing singer", "后台", "偶像", "歌手", "直播", "颁奖", "粉丝",
+    ],
+  },
+  {
+    key: "generated_office_boardroom_betrayal",
+    keywords: ["boardroom", "investor", "merger", "contract", "office", "cofounder", "company", "audit", "董事会", "投资人", "并购", "合同", "公司"],
+  },
+  {
+    key: "generated_campus_rain_secret",
+    keywords: ["campus", "rain", "student", "archive", "library", "secret", "college", "school", "校园", "雨", "学生", "档案", "图书馆", "秘密"],
+  },
+  {
+    key: "generated_family_banquet_inheritance",
+    keywords: ["family", "banquet", "inheritance", "will", "estate", "heir", "wealth", "家族", "宴会", "继承", "遗嘱", "豪门"],
+  },
+  {
+    key: "generated_rooftop_gala_confrontation",
+    keywords: ["rooftop", "gala", "confrontation", "champagne", "wealthy", "party", "天台", "酒会", "对峙", "晚宴"],
+  },
+  {
+    key: "generated_urban_alley_witness",
+    keywords: ["alley", "witness", "neon", "street", "envelope", "pursuer", "urban", "巷", "目击", "霓虹", "街", "信封"],
+  },
+]
 
 const SHELL_KEYWORDS: Record<Shell, readonly string[]> = {
   wealth_families: [
@@ -358,6 +455,47 @@ function inferShell(template: LooseTemplate): Shell {
   return bestShell
 }
 
+function templateCoverCorpus(template: LooseTemplate): string {
+  const metadata = [
+    template.title_i18n?.zh,
+    template.title_i18n?.en,
+    template.summary_i18n?.zh,
+    template.summary_i18n?.en,
+  ].filter(Boolean).join(" ")
+  const corpus = [
+    template.seed,
+    template.title ?? "",
+    metadata,
+    template.cast
+      .map((c) => `${c.display_name} ${c.role} ${c.relation_to_protagonist}`)
+      .join(" "),
+  ].join(" ").toLowerCase()
+  return corpus
+}
+
+function inferGeneratedCoverKey(template: LooseTemplate): GeneratedCoverKey | null {
+  const corpus = templateCoverCorpus(template)
+  for (const rule of GENERATED_COVER_RULES) {
+    if (rule.keywords.some((kw) => corpus.includes(kw.toLowerCase()))) {
+      return rule.key
+    }
+  }
+  return null
+}
+
+function fallbackCoverCandidates(template: LooseTemplate): string[] {
+  const key = inferGeneratedCoverKey(template)
+  const shell = key ? GENERATED_COVER_THEME_SHELLS[key] : inferShell(template)
+  const generated = key ? [GENERATED_COVER_FALLBACKS[key]] : []
+  const shellVariants = shellVariantSlugs(shell).map((slug) => `/webtoons/shells/${slug}.jpg`)
+  const preferredShell = `/webtoons/shells/${shellVariantSlug(shell, template.template_id)}.jpg`
+  const orderedShellVariants = [
+    preferredShell,
+    ...shellVariants.filter((candidate) => candidate !== preferredShell),
+  ]
+  return [...generated, ...orderedShellVariants]
+}
+
 const FEMALE_ROLE_HINTS = [
   "妻", "妻子", "夫人", "母", "妈", "女儿", "妹", "姐", "姑娘", "小姐", "千金",
   "公主", "皇后", "继母", "学姐", "学妹", "女主", "少奶奶", "新娘", "未婚妻",
@@ -402,8 +540,40 @@ function resolveGeneratedCoverUrl(value: string | null | undefined): string | nu
 export function getCoverForTemplate(template: LooseTemplate): string {
   const generatedCover = resolveGeneratedCoverUrl(template.cover_image_url)
   if (generatedCover) return generatedCover
+  const [preferred] = fallbackCoverCandidates(template)
+  if (preferred) return preferred
   const shell = inferShell(template)
   return `/webtoons/shells/${shellVariantSlug(shell, template.template_id)}.jpg`
+}
+
+export function assignTemplateCovers<T extends LooseTemplate>(templates: readonly T[]): Record<string, string> {
+  const assigned: Record<string, string> = {}
+  const usedFallbackCovers = new Set<string>()
+  for (const [index, template] of templates.entries()) {
+    const generatedCover = resolveGeneratedCoverUrl(template.cover_image_url)
+    if (generatedCover) {
+      assigned[template.template_id] = generatedCover
+      usedFallbackCovers.add(generatedCover)
+      continue
+    }
+    const candidates = fallbackCoverCandidates(template)
+    const preferred = candidates[0] ?? getCoverForTemplate(template)
+    let selected = preferred
+    if (usedFallbackCovers.has(selected)) {
+      for (const candidate of candidates) {
+        if (!usedFallbackCovers.has(candidate)) {
+          selected = candidate
+          break
+        }
+      }
+    }
+    if (usedFallbackCovers.has(selected) && candidates.length > 0) {
+      selected = candidates[stableHash(`cover-list|${template.template_id}|${index}`) % candidates.length]
+    }
+    assigned[template.template_id] = selected
+    usedFallbackCovers.add(selected)
+  }
+  return assigned
 }
 
 /** Stable per-character avatar within a template. */

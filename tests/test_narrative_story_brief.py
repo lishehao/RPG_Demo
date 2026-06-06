@@ -536,6 +536,35 @@ def test_story_brief_high_drama_entities_are_not_action_or_pressure_fragments() 
     assert "backup dancer witnessed singer leave" not in all_names
     assert "reveal disappearance" not in all_names
     assert "fans panic" not in all_names
+    assert "control room" not in all_names
+    assert "disappearance" in constraints
+    assert "awards livestream" in anchors
+    assert "sponsor/fan pressure" in pressure
+
+
+def test_story_brief_filters_exact_high_drama_time_action_fragments_from_entities() -> None:
+    response = build_story_brief(
+        seed=(
+            "Ten minutes before the awards livestream, an anxious publicist deciding whether to "
+            "reveal the disappearance faces a producer, a backup dancer witness, fans panicking "
+            "outside, and what to hide from sponsors."
+        ),
+        language="en",
+    )
+
+    names = {name.lower() for name in _cast_names(response)}
+    constraints = {item.label.lower() for item in response.brief.constraints}
+    anchors = {item.label.lower() for item in response.brief.time_event_anchors}
+    pressure = {item.label.lower() for item in response.brief.world_setting_pressure}
+
+    assert response.can_generate is True
+    assert {"anxious publicist", "producer", "backup dancer", "fans"}.issubset(names)
+    assert "ten minutes" not in names
+    assert "anxious publicist deciding whether to" not in names
+    assert "fans panicking outside" not in names
+    assert "what to" not in names
+    assert "what to hide" not in names
+    assert "what to hide from sponsors" not in names
     assert "disappearance" in constraints
     assert "awards livestream" in anchors
     assert "sponsor/fan pressure" in pressure

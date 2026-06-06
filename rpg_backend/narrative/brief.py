@@ -154,7 +154,8 @@ _ENTITY_TRAILING_RE = re.compile(
     r"\b(?:argue|argues|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
     r"want|wants|handle|handles|represent|represents|witness|witnessed|saw|sees|watch|watches|"
     r"leave|leaves|left|disappear|disappears|reveal|reveals|panic|panics|stop|stops|keep|keeps|"
-    r"should|try|tries|find|finds|without|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
+    r"panicking|decide|decides|deciding|gather|gathers|gathered|whether\s+to|should|try|tries|"
+    r"find|finds|without|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
     re.I,
 )
 _PLAYER_ROLE_PREFIX_RE = re.compile(
@@ -170,6 +171,10 @@ _ROLE_CLAUSE_PATTERNS = (
         r"\bthe\s+([a-z][a-z\s-]{2,60}?)\s+"
         r"(?:wants?|needs?|tries?|witness(?:ed)?|saw|sees|is\s+watching|are\s+watching|"
         r"watch(?:es)?|disappear(?:s)?|left|leaves)\b",
+        re.I,
+    ),
+    re.compile(
+        r"\bfaces?\s+(?:a\s+|an\s+|the\s+)?([a-z][a-z\s-]{2,60}?)(?:[,.;!?]|$)",
         re.I,
     ),
 )
@@ -198,6 +203,7 @@ _NON_ENTITY_EXACT = {
     "board vote",
     "livestream",
     "deadline",
+    "control room",
     "talent show",
     "mars",
     "minutes",
@@ -237,6 +243,17 @@ _NON_ENTITY_EXACT = {
     "funny",
     "style",
 }
+_NON_ENTITY_TIME_PHRASE_RE = re.compile(
+    r"^(?:ten|\d+|one|two|three|four|five|six|seven|eight|nine|eleven|twelve)\s+"
+    r"(?:minutes?|hours?|days?|weeks?|months?)$",
+    re.I,
+)
+_NON_ENTITY_ACTION_FRAGMENT_RE = re.compile(
+    r"^(?:what|whether|how|when|where|why)\s+to\b|"
+    r"\b(?:what|whether|how|when|where|why)\s+to\b.*$|"
+    r"\b(?:reveal|hide|stop|keep|decide|deciding|panic|panicking)\b",
+    re.I,
+)
 _NON_ENTITY_WORDS = {
     "tone",
     "kernel",
@@ -694,6 +711,10 @@ def _clean_entity(raw: str) -> str:
         return ""
     lowered = text.lower()
     if lowered.startswith("no "):
+        return ""
+    if _NON_ENTITY_TIME_PHRASE_RE.match(lowered):
+        return ""
+    if _NON_ENTITY_ACTION_FRAGMENT_RE.search(lowered):
         return ""
     if re.match(r"^just\s+(?:a\s+|an\s+|the\s+)?(?:lost\s+)?wedding\s+ring\b", lowered):
         return ""

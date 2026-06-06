@@ -43,6 +43,25 @@ def test_korean_agent_chat_slot_loop_blocks_drug_addiction_before_brief() -> Non
     assert "acceptedText: false" in source
 
 
+def test_korean_agent_chat_slot_loop_blocks_small_cast_object_only_before_brief() -> None:
+    source = (ROOT / "frontend2/src/shared/lib/story-guide-loop.ts").read_text()
+    create_source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
+
+    assert "detectsUnsupportedSmallCastDirection" in source
+    assert "two-person" in source
+    assert "no public pressure" in source
+    assert "wedding ring" in source
+    assert "object-only thread" in source
+    assert "canShapeBrief: false" in source
+
+    unsupported_guard = source.index("detectsUnsupportedSmallCastDirection(text)")
+    ready_assignment = source.index("const ready = canShapeStoryBrief")
+    assert unsupported_guard < ready_assignment
+
+    shape_button_guard = create_source.index("hasSeed && !activeBrief && guideReadyToBrief")
+    assert "guideReadyToBrief" in create_source[shape_button_guard : shape_button_guard + 180]
+
+
 def test_create_page_uses_slot_loop_before_story_brief_generation() -> None:
     source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
 
