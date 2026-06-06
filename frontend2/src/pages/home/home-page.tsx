@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useState } from "react"
+import { type CSSProperties, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
   NarrativeSessionSummary,
@@ -132,11 +132,9 @@ const CURATED_PLAZA_STORIES: CuratedPlazaStory[] = [
 
 export function HomePage({
   onOpenCreate,
-  onOpenTemplate,
   onOpenPlay,
 }: {
   onOpenCreate: () => void
-  onOpenTemplate: (templateId: string) => void
   onOpenPlay: (sessionId: string) => void
 }) {
   const api = useApi()
@@ -149,6 +147,9 @@ export function HomePage({
   const [myTemplates, setMyTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
   const [mySessions, setMySessions] = useState<NarrativeSessionSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [templateStartError, setTemplateStartError] = useState<string | null>(null)
+  const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null)
+  const startingTemplateRef = useRef<string | null>(null)
   const showTemplateTabs = !auth.isAnonymous
   const activeTemplateTab: Tab = showTemplateTabs ? tab : "plaza"
 
@@ -160,6 +161,22 @@ export function HomePage({
       source: "plaza_curated",
     })
     onOpenCreate()
+  }
+
+  const handleStartPublishedTemplate = async (templateId: string) => {
+    if (startingTemplateRef.current) return
+    startingTemplateRef.current = templateId
+    setStartingTemplateId(templateId)
+    setTemplateStartError(null)
+    try {
+      const response = await api.startNarrativeSession(templateId)
+      onOpenPlay(response.session.session_id)
+    } catch (err) {
+      setTemplateStartError(friendlyError(err, t("home.error_start_story")))
+    } finally {
+      startingTemplateRef.current = null
+      setStartingTemplateId(null)
+    }
   }
 
   useEffect(() => {
@@ -301,6 +318,8 @@ export function HomePage({
             </div>
           )}
 
+          {templateStartError ? <div style={hpStyles.errorBox}>{templateStartError}</div> : null}
+
           {/* Cross-fade between plaza ↔ my-templates so switching feels
               like a sibling pivot, not a layout swap. mode="wait"
               keeps the height stable during the transition. */}
@@ -325,7 +344,8 @@ export function HomePage({
                     error={error}
                     emptyText={t("home.empty_plaza")}
                     compact={compactHome}
-                    onOpenTemplate={onOpenTemplate}
+                    onStartTemplate={handleStartPublishedTemplate}
+                    startingTemplateId={startingTemplateId}
                     hideEmpty
                   />
                 </>
@@ -335,7 +355,8 @@ export function HomePage({
                   error={null}
                   emptyText={t("home.empty_my")}
                   compact={compactHome}
-                  onOpenTemplate={onOpenTemplate}
+                  onStartTemplate={handleStartPublishedTemplate}
+                  startingTemplateId={startingTemplateId}
                 />
               )}
             </motion.div>
@@ -611,14 +632,16 @@ function TemplateGrid({
   error,
   emptyText,
   compact,
-  onOpenTemplate,
+  onStartTemplate,
+  startingTemplateId,
   hideEmpty = false,
 }: {
   templates: NarrativeTemplateSummary[] | null
   error: string | null
   emptyText: string
   compact: boolean
-  onOpenTemplate: (templateId: string) => void
+  onStartTemplate: (templateId: string) => void
+  startingTemplateId: string | null
   hideEmpty?: boolean
 }) {
   if (error) {
@@ -656,7 +679,8 @@ function TemplateGrid({
           cover={assignedCovers[t.template_id]}
           index={idx}
           compact={compact}
-          onClick={() => onOpenTemplate(t.template_id)}
+          isStarting={startingTemplateId === t.template_id}
+          onClick={() => onStartTemplate(t.template_id)}
         />
       ))}
     </div>
@@ -714,12 +738,14 @@ function TemplateCard({
   onClick,
   index = 0,
   compact,
+  isStarting = false,
 }: {
   template: NarrativeTemplateSummary
   cover: string
   onClick: () => void
   index?: number
   compact: boolean
+  isStarting?: boolean
 }) {
   const t = useT()
   const { lang } = useLanguage()
@@ -730,6 +756,8 @@ function TemplateCard({
       style={{ ...hpStyles.card, ...(compact ? hpStyles.cardCompact : null) }}
       onClick={onClick}
       type="button"
+      disabled={isStarting}
+      aria-busy={isStarting}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, ...itemTransition }}
@@ -765,7 +793,7 @@ function TemplateCard({
             <span style={hpStyles.cardOwnerBadge}>{t("home.is_owner")}</span>
           ) : null}
           <span style={{ ...hpStyles.cardAction, ...(compact ? hpStyles.cardActionCompact : null) }}>
-            {t("home.card_action")}
+            {isStarting ? t("home.card_starting") : t("home.card_action")}
           </span>
         </div>
       </div>

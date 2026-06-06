@@ -49,7 +49,6 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       return (
         <HomePage
           onOpenCreate={() => navigate({ name: "create" })}
-          onOpenTemplate={(templateId) => navigate({ name: "template", templateId })}
           onOpenPlay={(sessionId) => navigate({ name: "play", sessionId })}
         />
       )

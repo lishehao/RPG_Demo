@@ -289,24 +289,44 @@ type LooseTemplate = {
 
 type GeneratedCoverKey =
   | "generated_entertainment_backstage_disappearance"
+  | "generated_entertainment_backstage_disappearance_v2"
+  | "generated_entertainment_press_hallway_v1"
   | "generated_office_boardroom_betrayal"
+  | "generated_office_boardroom_betrayal_v2"
+  | "generated_office_contract_deadline_v1"
   | "generated_campus_rain_secret"
+  | "generated_campus_rain_secret_v2"
+  | "generated_campus_auditorium_confession_v1"
   | "generated_sci_fi_mars_colony_stage"
   | "generated_fantasy_artifact_auction"
   | "generated_wedding_aisle_betrayal"
+  | "generated_wedding_aisle_betrayal_v2"
+  | "generated_wedding_banquet_reveal_v1"
   | "generated_family_banquet_inheritance"
+  | "generated_family_banquet_inheritance_v2"
+  | "generated_family_will_reading_v1"
   | "generated_rooftop_gala_confrontation"
   | "generated_hospital_secret_deadline"
   | "generated_urban_alley_witness"
 
 const GENERATED_COVER_THEME_SHELLS: Record<GeneratedCoverKey, Shell> = {
   generated_entertainment_backstage_disappearance: "entertainment_scandal",
+  generated_entertainment_backstage_disappearance_v2: "entertainment_scandal",
+  generated_entertainment_press_hallway_v1: "entertainment_scandal",
   generated_office_boardroom_betrayal: "office_power",
+  generated_office_boardroom_betrayal_v2: "office_power",
+  generated_office_contract_deadline_v1: "office_power",
   generated_campus_rain_secret: "campus_romance",
+  generated_campus_rain_secret_v2: "campus_romance",
+  generated_campus_auditorium_confession_v1: "campus_romance",
   generated_sci_fi_mars_colony_stage: "urban_supernatural",
   generated_fantasy_artifact_auction: "palace_drama",
   generated_wedding_aisle_betrayal: "wedding",
+  generated_wedding_aisle_betrayal_v2: "wedding",
+  generated_wedding_banquet_reveal_v1: "wedding",
   generated_family_banquet_inheritance: "wealth_families",
+  generated_family_banquet_inheritance_v2: "wealth_families",
+  generated_family_will_reading_v1: "wealth_families",
   generated_rooftop_gala_confrontation: "wealth_families",
   generated_hospital_secret_deadline: "courtroom",
   generated_urban_alley_witness: "urban_supernatural",
@@ -315,24 +335,72 @@ const GENERATED_COVER_THEME_SHELLS: Record<GeneratedCoverKey, Shell> = {
 const GENERATED_COVER_FALLBACKS: Record<GeneratedCoverKey, string> = {
   generated_entertainment_backstage_disappearance:
     "/webtoons/covers/generated/cover-entertainment-backstage-disappearance-v1.jpg",
+  generated_entertainment_backstage_disappearance_v2:
+    "/webtoons/covers/generated/cover-entertainment-backstage-disappearance-v2.jpg",
+  generated_entertainment_press_hallway_v1:
+    "/webtoons/covers/generated/cover-entertainment-press-hallway-v1.jpg",
   generated_office_boardroom_betrayal:
     "/webtoons/covers/generated/cover-office-boardroom-betrayal-v1.jpg",
+  generated_office_boardroom_betrayal_v2:
+    "/webtoons/covers/generated/cover-office-boardroom-betrayal-v2.jpg",
+  generated_office_contract_deadline_v1:
+    "/webtoons/covers/generated/cover-office-contract-deadline-v1.jpg",
   generated_campus_rain_secret:
     "/webtoons/covers/generated/cover-campus-rain-secret-v1.jpg",
+  generated_campus_rain_secret_v2:
+    "/webtoons/covers/generated/cover-campus-rain-secret-v2.jpg",
+  generated_campus_auditorium_confession_v1:
+    "/webtoons/covers/generated/cover-campus-auditorium-confession-v1.jpg",
   generated_sci_fi_mars_colony_stage:
     "/webtoons/covers/generated/cover-sci-fi-mars-colony-stage-v1.jpg",
   generated_fantasy_artifact_auction:
     "/webtoons/covers/generated/cover-fantasy-artifact-auction-v1.jpg",
   generated_wedding_aisle_betrayal:
     "/webtoons/covers/generated/cover-wedding-aisle-betrayal-v1.jpg",
+  generated_wedding_aisle_betrayal_v2:
+    "/webtoons/covers/generated/cover-wedding-aisle-betrayal-v2.jpg",
+  generated_wedding_banquet_reveal_v1:
+    "/webtoons/covers/generated/cover-wedding-banquet-reveal-v1.jpg",
   generated_family_banquet_inheritance:
     "/webtoons/covers/generated/cover-family-banquet-inheritance-v1.jpg",
+  generated_family_banquet_inheritance_v2:
+    "/webtoons/covers/generated/cover-family-banquet-inheritance-v2.jpg",
+  generated_family_will_reading_v1:
+    "/webtoons/covers/generated/cover-family-will-reading-v1.jpg",
   generated_rooftop_gala_confrontation:
     "/webtoons/covers/generated/cover-rooftop-gala-confrontation-v1.jpg",
   generated_hospital_secret_deadline:
     "/webtoons/covers/generated/cover-hospital-secret-deadline-v1.jpg",
   generated_urban_alley_witness:
     "/webtoons/covers/generated/cover-urban-alley-witness-v1.jpg",
+}
+
+const GENERATED_COVER_FALLBACK_POOLS: Partial<Record<GeneratedCoverKey, readonly GeneratedCoverKey[]>> = {
+  generated_entertainment_backstage_disappearance: [
+    "generated_entertainment_backstage_disappearance",
+    "generated_entertainment_backstage_disappearance_v2",
+    "generated_entertainment_press_hallway_v1",
+  ],
+  generated_office_boardroom_betrayal: [
+    "generated_office_boardroom_betrayal",
+    "generated_office_boardroom_betrayal_v2",
+    "generated_office_contract_deadline_v1",
+  ],
+  generated_campus_rain_secret: [
+    "generated_campus_rain_secret",
+    "generated_campus_rain_secret_v2",
+    "generated_campus_auditorium_confession_v1",
+  ],
+  generated_wedding_aisle_betrayal: [
+    "generated_wedding_aisle_betrayal",
+    "generated_wedding_aisle_betrayal_v2",
+    "generated_wedding_banquet_reveal_v1",
+  ],
+  generated_family_banquet_inheritance: [
+    "generated_family_banquet_inheritance",
+    "generated_family_banquet_inheritance_v2",
+    "generated_family_will_reading_v1",
+  ],
 }
 
 const GENERATED_COVER_RULES: Array<{ key: GeneratedCoverKey; keywords: readonly string[] }> = [
@@ -486,7 +554,11 @@ function inferGeneratedCoverKey(template: LooseTemplate): GeneratedCoverKey | nu
 function fallbackCoverCandidates(template: LooseTemplate): string[] {
   const key = inferGeneratedCoverKey(template)
   const shell = key ? GENERATED_COVER_THEME_SHELLS[key] : inferShell(template)
-  const generated = key ? [GENERATED_COVER_FALLBACKS[key]] : []
+  const generated = key
+    ? [...(GENERATED_COVER_FALLBACK_POOLS[key] ?? [key])].map((generatedKey) => (
+        GENERATED_COVER_FALLBACKS[generatedKey]
+      ))
+    : []
   const shellVariants = shellVariantSlugs(shell).map((slug) => `/webtoons/shells/${slug}.jpg`)
   const preferredShell = `/webtoons/shells/${shellVariantSlug(shell, template.template_id)}.jpg`
   const orderedShellVariants = [
