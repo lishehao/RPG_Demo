@@ -938,6 +938,7 @@ export type NarrativeCreateTemplateResponse = {
   session: NarrativeSessionSummary
   opening: NarrativeStoryMessage
   story_brief_consistency?: NarrativeStoryBriefConsistencyCheck | null
+  opening_recovery?: "tightened_from_brief" | null
 }
 
 export type NarrativeStartSessionResponse = {

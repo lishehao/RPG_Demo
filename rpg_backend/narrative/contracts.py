@@ -745,6 +745,7 @@ class CreateTemplateResponse(BaseModel):
     session: NarrativeSessionSummary
     opening: StoryMessage
     story_brief_consistency: StoryBriefConsistencyCheck | None = None
+    opening_recovery: Literal["tightened_from_brief"] | None = None
 
 
 class StartSessionRequest(BaseModel):

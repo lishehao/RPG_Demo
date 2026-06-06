@@ -33,6 +33,8 @@ const SEED_EXAMPLE_KEYS: StringKey[] = [
   "create.example_seed_4",
 ]
 const STORY_BUTLER_AVATAR = "/webtoons/ui/generated/story-butler-avatar-v1.png"
+const LONG_GENERATE_HANDOFF_THRESHOLD_MS = 30_000
+const LONG_GENERATE_HANDOFF_MIN_MS = 2_000
 
 const VISIBILITY_OPTION_IDS: NarrativeTemplateVisibility[] = ["private", "unlisted", "public"]
 
@@ -228,6 +230,7 @@ export function CreatePage({
   const [desiredTensionProfile, setDesiredTensionProfile] = useState<TensionProfileChoice>("auto")
   const [busy, setBusy] = useState(false)
   const [briefBusy, setBriefBusy] = useState(false)
+  const [openingHandoffLabelKey, setOpeningHandoffLabelKey] = useState<StringKey | null>(null)
   const [busyElapsedSeconds, setBusyElapsedSeconds] = useState(0)
   const [briefBusyElapsedSeconds, setBriefBusyElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -290,8 +293,9 @@ export function CreatePage({
     if (typeof navigator === "undefined") return "Ctrl"
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
   }, [])
-  const busyLabel =
-    busyElapsedSeconds >= 45
+  const busyLabel = openingHandoffLabelKey
+    ? t(openingHandoffLabelKey)
+    : busyElapsedSeconds >= 45
       ? t("create.building_recovering_elapsed", { seconds: busyElapsedSeconds })
       : busyElapsedSeconds >= 30
       ? t("create.building_long_elapsed", { seconds: busyElapsedSeconds })
@@ -333,9 +337,11 @@ export function CreatePage({
   useEffect(() => {
     if (!busy) {
       setBusyElapsedSeconds(0)
+      setOpeningHandoffLabelKey(null)
       return
     }
     setBusyElapsedSeconds(0)
+    setOpeningHandoffLabelKey(null)
     const startedAt = Date.now()
     const id = window.setInterval(() => {
       setBusyElapsedSeconds(Math.max(1, Math.floor((Date.now() - startedAt) / 1000)))
@@ -391,8 +397,10 @@ export function CreatePage({
     if (inflightRef.current) return
     inflightRef.current = true
     setBusy(true)
+    setOpeningHandoffLabelKey(null)
     setError(null)
     try {
+      const startedAt = Date.now()
       const authorReady = await ensureAuthorSession()
       if (!authorReady) {
         setBusy(false)
@@ -407,6 +415,17 @@ export function CreatePage({
         language: storyLanguage,
         story_brief: activeBriefResponse?.can_generate ? activeBriefResponse.brief : null,
       })
+      const openingElapsedMs = Date.now() - startedAt
+      const handoffLabelKey: StringKey | null =
+        response.opening_recovery === "tightened_from_brief"
+          ? "create.building_handoff_recovered"
+          : openingElapsedMs >= LONG_GENERATE_HANDOFF_THRESHOLD_MS
+          ? "create.building_handoff_ready_long"
+          : null
+      if (handoffLabelKey) {
+        setOpeningHandoffLabelKey(handoffLabelKey)
+        await new Promise((resolve) => window.setTimeout(resolve, LONG_GENERATE_HANDOFF_MIN_MS))
+      }
       onSessionStarted(response.session.session_id)
     } catch (err) {
       setError(friendlyError(err, t("create.error_create_failed")))

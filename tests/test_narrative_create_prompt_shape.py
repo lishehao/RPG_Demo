@@ -725,6 +725,7 @@ def test_create_template_uses_brief_fallback_after_consistency_failure(
     assert response.story_brief_consistency is not None
     assert response.story_brief_consistency.status == "warn"
     assert response.story_brief_consistency.should_retry is False
+    assert response.opening_recovery == "tightened_from_brief"
 
 
 def test_create_template_caps_story_brief_live_opening_latency(
@@ -763,3 +764,4 @@ def test_create_template_caps_story_brief_live_opening_latency(
     assert response.opening.options
     assert response.story_brief_consistency is not None
     assert response.story_brief_consistency.status in {"pass", "warn"}
+    assert response.opening_recovery == "tightened_from_brief"

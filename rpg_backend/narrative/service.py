@@ -200,6 +200,7 @@ class NarrativeService:
                 ),
                 status_code=422,
             )
+        opening_recovery: str | None = None
         if request.story_brief is not None and _story_brief_prefers_reliable_opening(request.story_brief):
             opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
         else:
@@ -222,11 +223,13 @@ class NarrativeService:
             except NarrativeServiceError as exc:
                 if request.story_brief is not None and _should_use_reliable_opening_fallback(exc):
                     opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                    opening_recovery = "tightened_from_brief"
                 else:
                     raise
             except NarrativeGatewayError as exc:
                 if request.story_brief is not None and _should_use_reliable_opening_fallback(exc):
                     opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                    opening_recovery = "tightened_from_brief"
                 else:
                     raise NarrativeServiceError(
                         code=exc.code, message=exc.message, status_code=exc.status_code
@@ -244,6 +247,7 @@ class NarrativeService:
                     ) from exc
                 if request.story_brief is not None:
                     opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                    opening_recovery = "tightened_from_brief"
                 else:
                     raise NarrativeServiceError(
                         code="opening_invalid",
@@ -259,6 +263,7 @@ class NarrativeService:
             )
             if story_brief_consistency.should_retry and not _story_brief_prefers_reliable_opening(request.story_brief):
                 opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+                opening_recovery = "tightened_from_brief"
                 story_brief_consistency = check_story_brief_opening_consistency(
                     brief=request.story_brief,
                     opening=opening,
@@ -273,6 +278,7 @@ class NarrativeService:
                 )
                 if fallback_check.status != "fail" or request.story_brief.runtime_fit_status != "not_fit":
                     opening = fallback_opening
+                    opening_recovery = "tightened_from_brief"
                     story_brief_consistency = _story_brief_recovered_opening_check(
                         fallback_check,
                         brief=request.story_brief,
@@ -326,6 +332,7 @@ class NarrativeService:
             session=_summarize_session(session, template),
             opening=opening_message,
             story_brief_consistency=story_brief_consistency,
+            opening_recovery=opening_recovery,
         )
 
     def list_public_templates(self, *, viewer_user_id: str) -> TemplateListResponse:

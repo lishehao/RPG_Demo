@@ -59,3 +59,22 @@ def test_create_page_uses_slot_loop_before_story_brief_generation() -> None:
     shape_button_guard = source.index("hasSeed && !activeBrief && guideReadyToBrief")
     shape_button_label = source.index("{briefComposerLabel}", shape_button_guard)
     assert shape_button_guard < shape_button_label
+
+
+def test_create_page_keeps_long_generate_handoff_visible_before_navigation() -> None:
+    source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert "LONG_GENERATE_HANDOFF_THRESHOLD_MS = 30_000" in source
+    assert "LONG_GENERATE_HANDOFF_MIN_MS = 2_000" in source
+    assert "openingHandoffLabelKey" in source
+    assert "setOpeningHandoffLabelKey(handoffLabelKey)" in source
+
+    handoff_check = source.index("openingElapsedMs >= LONG_GENERATE_HANDOFF_THRESHOLD_MS")
+    template_response = source.index("const response = await api.createNarrativeTemplate")
+    route_start = source.index("onSessionStarted(response.session.session_id)")
+    assert template_response < handoff_check < route_start
+    assert "create.building_handoff_ready" in strings
+    assert "create.building_handoff_ready_long" in strings
+    assert "create.building_handoff_recovered" in strings
+    assert "Opening tightened from the Brief. Entering the scene..." in strings
