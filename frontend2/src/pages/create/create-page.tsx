@@ -13,6 +13,17 @@ import { useAuth } from "../../app/auth-context"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { useLanguage, useT, type Lang, type StringKey } from "../../shared/lib/i18n"
 import { itemTransition, transitions } from "../../shared/lib/motion-presets"
+import {
+  advanceStoryGuideLoop,
+  buildStoryGuideLedger,
+  canShapeStoryBrief,
+  createInitialStoryGuideState,
+  markStoryGuideAnalyzing,
+  markStoryGuideBriefResult,
+  type StoryGuideConversationState,
+  type StoryGuideInlineLedger,
+  type StoryGuideNodeName,
+} from "../../shared/lib/story-guide-loop"
 import { PAGE_BG } from "../../shared/lib/webtoon-assets"
 
 const SEED_EXAMPLE_KEYS: StringKey[] = [
@@ -52,6 +63,9 @@ type GuideMessage = {
   id: string
   speaker: "guide" | "user"
   text: string
+  node?: StoryGuideNodeName
+  state?: StoryGuideConversationState
+  ledger?: StoryGuideInlineLedger
 }
 
 type TensionProfileOptionMeta = {
@@ -200,6 +214,7 @@ export function CreatePage({
   const compactLayout = useCompactLayout()
   const [seed, setSeed] = useState("")
   const [draftTurn, setDraftTurn] = useState("")
+  const [guideLoopState, setGuideLoopState] = useState(() => createInitialStoryGuideState(uiLang))
   const [chatMessages, setChatMessages] = useState<GuideMessage[]>([])
   const [correctionCount, setCorrectionCount] = useState(0)
   const [visibility, setVisibility] = useState<NarrativeTemplateVisibility>("private")
@@ -219,7 +234,9 @@ export function CreatePage({
   const [briefResponse, setBriefResponse] = useState<NarrativeStoryBriefAdvisorResponse | null>(null)
   const [briefResponseKey, setBriefResponseKey] = useState<string | null>(null)
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
   const briefMessageRef = useRef<HTMLDivElement | null>(null)
+  const transcriptEndRef = useRef<HTMLDivElement | null>(null)
   const guestHandleRef = useRef<string | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
@@ -235,6 +252,7 @@ export function CreatePage({
     briefResponse && briefResponseKey === currentBriefKey ? briefResponse : null
   const activeBrief = activeBriefResponse?.brief ?? null
   const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
+  const guideReadyToBrief = guideLoopState.status === "ready_to_brief" && canShapeStoryBrief(guideLoopState)
   const showBackAction = hasSeed || busy || briefBusy
   const showSeedExamples = !hasSeed && !busy && !briefBusy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
@@ -317,10 +335,28 @@ export function CreatePage({
   useEffect(() => {
     if (!activeBriefResponse) return
     const id = window.setTimeout(() => {
+      const transcript = transcriptScrollRef.current
+      if (transcript) {
+        transcript.scrollTo({ top: transcript.scrollHeight, behavior: "auto" })
+        return
+      }
       briefMessageRef.current?.scrollIntoView({ block: "end", behavior: "smooth" })
     }, 40)
     return () => window.clearTimeout(id)
   }, [activeBriefResponse])
+
+  useEffect(() => {
+    if (chatMessages.length === 0 && !briefBusy) return
+    const id = window.setTimeout(() => {
+      const transcript = transcriptScrollRef.current
+      if (transcript) {
+        transcript.scrollTo({ top: transcript.scrollHeight, behavior: "auto" })
+        return
+      }
+      transcriptEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" })
+    }, 40)
+    return () => window.clearTimeout(id)
+  }, [chatMessages.length, briefBusy])
 
   const handleCreate = async () => {
     const trimmed = seed.trim()
@@ -365,9 +401,31 @@ export function CreatePage({
       return
     }
     if (briefBusy || busy) return
+    if (!guideReadyToBrief) {
+      const ledger = buildStoryGuideLedger(guideLoopState, uiLang)
+      setGuideLoopState((current) => ({
+        ...current,
+        status: "needs_field",
+        lastNode: "ask_missing_slot",
+      }))
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: `guide-missing-${Date.now()}-${current.length}`,
+          speaker: "guide",
+          text: ledger.nextQuestion,
+          node: "ask_missing_slot",
+          state: "needs_field",
+          ledger,
+        },
+      ])
+      focusComposer()
+      return
+    }
     setBriefBusy(true)
     setBriefError(null)
     setError(null)
+    setGuideLoopState((current) => markStoryGuideAnalyzing(current, uiLang))
     try {
       const authorReady = await ensureAuthorSession()
       if (!authorReady) return
@@ -379,6 +437,7 @@ export function CreatePage({
       })
       setBriefResponse(response)
       setBriefResponseKey(briefKey(trimmed, storyLanguage, desiredTensionProfile))
+      setGuideLoopState((current) => markStoryGuideBriefResult(current, response.can_generate, uiLang))
     } catch (err) {
       setBriefError(friendlyError(err, t("create.brief_error_failed")))
     } finally {
@@ -387,11 +446,13 @@ export function CreatePage({
   }
 
   const handleApplyRevisionAction = (seedAppend: string) => {
+    const decision = advanceStoryGuideLoop(guideLoopState, seedAppend, uiLang)
     setSeed((current) => {
       const trimmed = current.trim()
       if (trimmed.toLowerCase().includes(seedAppend.toLowerCase())) return current
       return `${trimmed}${trimmed ? "\n\n" : ""}${seedAppend}`
     })
+    setGuideLoopState(decision.state)
     setCorrectionCount((current) => current + 1)
     setChatMessages((current) => [
       ...current,
@@ -403,7 +464,10 @@ export function CreatePage({
       {
         id: `guide-revision-action-${Date.now()}`,
         speaker: "guide",
-        text: t("create.guide_reply_revision"),
+        text: decision.reply,
+        node: decision.node,
+        state: decision.status,
+        ledger: decision.ledger,
       },
     ])
     setBriefResponse(null)
@@ -418,10 +482,37 @@ export function CreatePage({
       setError(t("create.error_seed_required"))
       return
     }
+    const decision = advanceStoryGuideLoop(guideLoopState, trimmed, uiLang)
+    const time = Date.now()
+    if (decision.blocked) {
+      setGuideLoopState(decision.state)
+      setDraftTurn("")
+      setError(null)
+      setBriefResponse(null)
+      setBriefResponseKey(null)
+      setBriefError(null)
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: `user-${time}-${current.length}`,
+          speaker: "user",
+          text: trimmed,
+        },
+        {
+          id: `guide-${time}-${current.length}`,
+          speaker: "guide",
+          text: decision.reply,
+          node: decision.node,
+          state: decision.status,
+        },
+      ])
+      return
+    }
     const hadSeed = Boolean(seed.trim())
     const nextCorrectionCount = hadSeed ? correctionCount + 1 : correctionCount
     const nextSeed = `${seed.trim()}${hadSeed ? "\n\n" : ""}${trimmed}`
     setSeed(nextSeed)
+    setGuideLoopState(decision.state)
     if (hadSeed) setCorrectionCount(nextCorrectionCount)
     setDraftTurn("")
     setError(null)
@@ -431,14 +522,17 @@ export function CreatePage({
     setChatMessages((current) => [
       ...current,
       {
-        id: `user-${Date.now()}-${current.length}`,
+        id: `user-${time}-${current.length}`,
         speaker: "user",
         text: trimmed,
       },
       {
-        id: `guide-${Date.now()}-${current.length}`,
+        id: `guide-${time}-${current.length}`,
         speaker: "guide",
-        text: hadSeed ? t("create.guide_reply_revision") : t("create.guide_reply_seed"),
+        text: decision.reply,
+        node: decision.node,
+        state: decision.status,
+        ledger: decision.ledger,
       },
     ])
   }
@@ -453,11 +547,16 @@ export function CreatePage({
       await handleCreate()
       return
     }
+    if (!guideReadyToBrief) return
     await handlePlanStory()
   }
 
   return (
-    <div style={{ ...cpStyles.page, ...(compactLayout ? cpStyles.pageCompact : null) }}>
+    <div
+      style={{ ...cpStyles.page, ...(compactLayout ? cpStyles.pageCompact : null) }}
+      data-guide-loop-state={guideLoopState.status}
+      data-guide-loop-node={guideLoopState.lastNode}
+    >
       <header style={cpStyles.header}>
         <button style={cpStyles.brandLink} onClick={onBackHome}>
           <span style={cpStyles.brandMark} aria-hidden>✦</span>
@@ -477,7 +576,10 @@ export function CreatePage({
           animate={{ opacity: 1, y: 0 }}
           transition={itemTransition}
         >
-          <div style={{ ...cpStyles.guideTranscript, ...(compactLayout ? cpStyles.guideTranscriptCompact : null) }}>
+          <div
+            ref={transcriptScrollRef}
+            style={{ ...cpStyles.guideTranscript, ...(compactLayout ? cpStyles.guideTranscriptCompact : null) }}
+          >
             {guideMessages.map((message) => {
               const isUser = message.speaker === "user"
               const isIntro = message.id === "guide-open"
@@ -485,6 +587,8 @@ export function CreatePage({
               return (
                 <div
                   key={message.id}
+                  data-guide-node={message.node ?? "static_opening"}
+                  data-guide-state={message.state ?? (isUser ? "collecting" : "empty")}
                   style={{
                     ...cpStyles.guideMessage,
                     ...(isUser ? cpStyles.guideMessageUser : cpStyles.guideMessageGuide),
@@ -516,6 +620,9 @@ export function CreatePage({
                       ...cpStyles.guideMessageContent,
                       ...(isUser ? cpStyles.guideMessageContentUser : null),
                       ...(isIntroFollow ? cpStyles.guideMessageContentIntroFollow : null),
+                      ...(message.state === "redirect" ? cpStyles.guideMessageContentRedirect : null),
+                      ...(message.state === "needs_field" ? cpStyles.guideMessageContentNeedsField : null),
+                      ...(message.state === "ready_to_brief" ? cpStyles.guideMessageContentReady : null),
                     }}
                   >
                     {!isIntroFollow ? (
@@ -534,12 +641,15 @@ export function CreatePage({
                     >
                       {message.text}
                     </span>
+                    {message.ledger ? <GuideInlineLedger ledger={message.ledger} compact={compactLayout} /> : null}
                   </div>
                 </div>
               )
             })}
             {briefBusy ? (
               <div
+                data-guide-node="shape_story_brief"
+                data-guide-state="analyzing"
                 style={{
                   ...cpStyles.guideMessage,
                   ...cpStyles.guideMessageGuide,
@@ -549,11 +659,21 @@ export function CreatePage({
                 <img
                   src={STORY_BUTLER_AVATAR}
                   alt=""
-                  style={{ ...cpStyles.guideAvatar, ...(compactLayout ? cpStyles.guideAvatarCompact : null) }}
+                  style={{
+                    ...cpStyles.guideAvatar,
+                    ...cpStyles.guideAvatarAnalyzing,
+                    ...(compactLayout ? cpStyles.guideAvatarCompact : null),
+                  }}
                 />
                 <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
                   <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
                   <span style={cpStyles.guideMessageText}>{t("create.guide_planning_now")}</span>
+                  <span style={cpStyles.guideScanStages} aria-hidden>
+                    <span>Cast</span>
+                    <span>Pressure</span>
+                    <span>Rules</span>
+                    <span>Opening</span>
+                  </span>
                   <span style={cpStyles.guideScanRail} aria-hidden>
                     <motion.span
                       style={cpStyles.guideScanPulse}
@@ -568,6 +688,8 @@ export function CreatePage({
               <>
                 <div
                   ref={briefMessageRef}
+                  data-guide-node={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
+                  data-guide-state={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
                   style={{
                     ...cpStyles.guideMessage,
                     ...cpStyles.guideMessageGuide,
@@ -594,6 +716,8 @@ export function CreatePage({
                   </div>
                 </div>
                 <div
+                  data-guide-node={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
+                  data-guide-state={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
                   style={{
                     ...cpStyles.guideMessage,
                     ...cpStyles.guideMessageGuide,
@@ -616,6 +740,7 @@ export function CreatePage({
                 </div>
               </>
             ) : null}
+            <div ref={transcriptEndRef} aria-hidden />
           </div>
 
           <AnimatePresence initial={false}>
@@ -686,6 +811,10 @@ export function CreatePage({
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                   e.preventDefault()
+                  if (draftTurn.trim()) {
+                    appendGuideTurn(draftTurn)
+                    return
+                  }
                   void handlePrimaryAction()
                   return
                 }
@@ -708,7 +837,7 @@ export function CreatePage({
                 >
                   {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
                 </button>
-                {hasSeed && !activeBrief ? (
+                {hasSeed && !activeBrief && guideReadyToBrief ? (
                   <button
                     type="button"
                     style={cpStyles.composerBriefAction}
@@ -1019,6 +1148,31 @@ function BusyTip() {
         {t(BUSY_TIP_KEYS[idx])}
       </motion.div>
     </AnimatePresence>
+  )
+}
+
+function GuideInlineLedger({
+  ledger,
+  compact,
+}: {
+  ledger: StoryGuideInlineLedger
+  compact: boolean
+}) {
+  return (
+    <div style={{ ...cpStyles.guideLoopLedger, ...(compact ? cpStyles.guideLoopLedgerCompact : null) }}>
+      <span style={cpStyles.guideLoopLedgerRow}>
+        <strong>{ledger.knownLabel}</strong>
+        <span>{ledger.known}</span>
+      </span>
+      <span style={cpStyles.guideLoopLedgerRow}>
+        <strong>{ledger.stillNeedLabel}</strong>
+        <span>{ledger.stillNeed}</span>
+      </span>
+      <span style={{ ...cpStyles.guideLoopLedgerRow, ...cpStyles.guideLoopLedgerQuestion }}>
+        <strong>{ledger.nextQuestionLabel}</strong>
+        <span>{ledger.nextQuestion}</span>
+      </span>
+    </div>
   )
 }
 
@@ -1589,6 +1743,17 @@ const cpStyles: Record<string, CSSProperties> = {
     borderBottom: "1px solid rgba(212,168,83,0.26)",
     textAlign: "right" as const,
   },
+  guideMessageContentRedirect: {
+    borderLeft: "2px solid rgba(224,122,95,0.78)",
+    paddingLeft: 12,
+    borderBottom: "1px solid rgba(224,122,95,0.30)",
+  },
+  guideMessageContentNeedsField: {
+    borderBottom: "1px solid rgba(212,168,83,0.34)",
+  },
+  guideMessageContentReady: {
+    borderBottom: "1px solid rgba(245,200,120,0.54)",
+  },
   guideMessageContentIntroFollow: {
     paddingBottom: 15,
     borderBottom: "1px solid rgba(212,168,83,0.24)",
@@ -1632,6 +1797,44 @@ const cpStyles: Record<string, CSSProperties> = {
     minWidth: 0,
     display: "grid",
     gap: 8,
+  },
+  guideLoopLedger: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 1.3fr)",
+    gap: 0,
+    marginTop: 3,
+    borderTop: "1px solid rgba(212,168,83,0.22)",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  },
+  guideLoopLedgerCompact: {
+    gridTemplateColumns: "1fr",
+  },
+  guideLoopLedgerRow: {
+    minWidth: 0,
+    display: "grid",
+    gap: 3,
+    padding: "8px 10px 8px 0",
+    borderRight: "1px solid rgba(212,168,83,0.18)",
+    color: "rgba(255,255,255,0.68)",
+    fontSize: 11.5,
+    lineHeight: 1.35,
+  },
+  guideLoopLedgerQuestion: {
+    color: "rgba(255,226,178,0.88)",
+  },
+  guideAvatarAnalyzing: {
+    boxShadow: "0 0 0 1px rgba(0,0,0,0.62), 0 0 24px rgba(212,168,83,0.24), 0 18px 44px rgba(0,0,0,0.36)",
+  },
+  guideScanStages: {
+    display: "inline-flex",
+    flexWrap: "wrap" as const,
+    gap: "7px 12px",
+    color: "rgba(245,200,120,0.70)",
+    fontSize: 10.5,
+    lineHeight: 1.25,
+    fontWeight: 760,
+    letterSpacing: 0.02,
+    textTransform: "uppercase" as const,
   },
   guideScanRail: {
     position: "relative",
