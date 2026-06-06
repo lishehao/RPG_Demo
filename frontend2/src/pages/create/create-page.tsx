@@ -218,6 +218,7 @@ export function CreatePage({
   const [briefResponse, setBriefResponse] = useState<NarrativeStoryBriefAdvisorResponse | null>(null)
   const [briefResponseKey, setBriefResponseKey] = useState<string | null>(null)
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const briefMessageRef = useRef<HTMLDivElement | null>(null)
   const guestHandleRef = useRef<string | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
@@ -233,7 +234,6 @@ export function CreatePage({
     briefResponse && briefResponseKey === currentBriefKey ? briefResponse : null
   const activeBrief = activeBriefResponse?.brief ?? null
   const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
-  const showCreateAction = true
   const showBackAction = hasSeed || busy || briefBusy
   const showSeedExamples = !hasSeed && !busy && !briefBusy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
@@ -280,17 +280,7 @@ export function CreatePage({
     BUSY_STAGE_KEYS.length - 1,
     Math.max(0, Math.floor(busyElapsedSeconds / 3)),
   )
-  const primaryCtaLabel = busy
-    ? t("create.cta_busy")
-    : briefBusy
-      ? t("create.brief_cta_busy")
-      : activeBrief
-        ? canGenerateFromBrief
-          ? t("create.brief_cta_generate")
-          : t("create.brief_cta_blocked")
-        : hasSeed
-          ? t("create.brief_cta_idle")
-          : t("create.cta_empty")
+  const briefComposerLabel = briefBusy ? t("create.brief_cta_busy") : t("create.brief_cta_idle")
 
   const ensureAuthorSession = async (): Promise<boolean> => {
     if (!auth.isAnonymous) return true
@@ -322,6 +312,14 @@ export function CreatePage({
     }, 1000)
     return () => window.clearInterval(id)
   }, [busy])
+
+  useEffect(() => {
+    if (!activeBriefResponse) return
+    const id = window.setTimeout(() => {
+      briefMessageRef.current?.scrollIntoView({ block: "end", behavior: "smooth" })
+    }, 40)
+    return () => window.clearTimeout(id)
+  }, [activeBriefResponse])
 
   const handleCreate = async () => {
     const trimmed = seed.trim()
@@ -501,12 +499,21 @@ export function CreatePage({
             {briefBusy ? (
               <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
                 <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                <span style={cpStyles.guideMessageText}>{t("create.guide_planning_now")}</span>
+                <div style={cpStyles.guideMessageBody}>
+                  <span style={cpStyles.guideMessageText}>{t("create.guide_planning_now")}</span>
+                  <span style={cpStyles.guideScanRail} aria-hidden>
+                    <motion.span
+                      style={cpStyles.guideScanPulse}
+                      animate={{ x: ["-120%", "260%"] }}
+                      transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                  </span>
+                </div>
               </div>
             ) : null}
             {activeBriefResponse ? (
               <>
-                <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
+                <div ref={briefMessageRef} style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
                   <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
                   <div style={cpStyles.guideMessageBody}>
                     <StoryBriefCard
@@ -579,7 +586,7 @@ export function CreatePage({
             ) : null}
           </AnimatePresence>
 
-          <div style={cpStyles.textareaWrap}>
+          <div style={{ ...cpStyles.textareaWrap, ...(activeBrief ? cpStyles.textareaWrapAfterBrief : null) }}>
             <textarea
               ref={seedTextareaRef}
               style={{
@@ -608,14 +615,26 @@ export function CreatePage({
             />
             <div style={{ ...cpStyles.composerBar, ...(compactLayout ? cpStyles.composerBarCompact : null) }}>
               <span style={cpStyles.composerHint}>{t("create.guide_input_hint")}</span>
-              <button
-                type="button"
-                style={cpStyles.composerAction}
-                disabled={!draftTurn.trim() || busy || briefBusy}
-                onClick={() => appendGuideTurn(draftTurn)}
-              >
-                {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
-              </button>
+              <div style={{ ...cpStyles.composerCommands, ...(compactLayout ? cpStyles.composerCommandsCompact : null) }}>
+                <button
+                  type="button"
+                  style={cpStyles.composerAction}
+                  disabled={!draftTurn.trim() || busy || briefBusy}
+                  onClick={() => appendGuideTurn(draftTurn)}
+                >
+                  {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
+                </button>
+                {hasSeed && !activeBrief ? (
+                  <button
+                    type="button"
+                    style={cpStyles.composerBriefAction}
+                    disabled={busy || briefBusy}
+                    onClick={() => void handlePlanStory()}
+                  >
+                    {briefComposerLabel}
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
           <div style={cpStyles.editorMeta}>
@@ -623,52 +642,17 @@ export function CreatePage({
             {correctionCount > 0 ? (
               <span style={cpStyles.count}>{t("create.guide_revision_count", { n: correctionCount })}</span>
             ) : null}
-            {showCreateAction && !activeBrief && !compactLayout ? (
+            {hasSeed && !activeBrief && !compactLayout ? (
               <span style={cpStyles.shortcutHint}>
                 {t("create.submit_shortcut", { mod: submitModKey })}
               </span>
             ) : null}
           </div>
 
-          {!activeBrief ? (
-            <div
-              style={{
-                ...cpStyles.actions,
-                ...(compactLayout ? cpStyles.actionsCompact : null),
-              }}
-            >
-              {showCreateAction ? (
-                <motion.button
-                  key="create-submit"
-                  style={{
-                    ...cpStyles.primaryAction,
-                    opacity: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? 0.5 : 1,
-                    pointerEvents: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? "none" : "auto",
-                    ...(compactLayout ? cpStyles.primaryCtaCompact : null),
-                  }}
-                  disabled={!hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief)}
-                  onClick={() => void handlePrimaryAction()}
-                  type="button"
-                  initial={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
-                  animate={{ opacity: !hasSeed || busy || briefBusy || (activeBrief !== null && !canGenerateFromBrief) ? 0.5 : 1, y: 0, height: "auto", marginTop: 0 }}
-                  transition={itemTransition}
-                >
-                  {primaryCtaLabel}
-                </motion.button>
-              ) : null}
-              {!compactLayout && showBackAction ? (
-                <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy || briefBusy} type="button">
-                  {t("create.cta_back")}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-
-          {hasSeed && !activeBrief ? (
-            <div style={{ ...cpStyles.draftLedger, ...(compactLayout ? cpStyles.draftLedgerCompact : null) }}>
-              <span style={cpStyles.draftLedgerLabel}>{t("create.guide_draft_label")}</span>
-              <p style={cpStyles.draftLedgerText}>{seed}</p>
-            </div>
+          {!compactLayout && showBackAction && !activeBrief ? (
+            <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy || briefBusy} type="button">
+              {t("create.cta_back")}
+            </button>
           ) : null}
 
           {error ? <div style={cpStyles.error}>{error}</div> : null}
@@ -1007,6 +991,7 @@ function StoryBriefCard({
         label={t("create.brief_primary_cast")}
         items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
         empty={t("create.brief_empty")}
+        compactOnly
       />
       {surfacedConstraints.length > 0 ? (
         <BriefList
@@ -1141,22 +1126,28 @@ function BriefEntityList({
   label,
   items,
   empty,
+  compactOnly = false,
 }: {
   label: string
   items: { label: string; detail: string }[]
   empty: string
+  compactOnly?: boolean
 }) {
   return (
     <div style={cpStyles.briefList}>
       <span style={cpStyles.briefFieldLabel}>{label}</span>
-      <div style={cpStyles.briefStackedList}>
-        {items.length > 0 ? items.map((item) => (
-          <span key={item.label} style={cpStyles.briefStackedItem}>
-            <strong>{item.label}</strong>
-            <span>{item.detail}</span>
-          </span>
-        )) : <span style={cpStyles.briefListValue}>{empty}</span>}
-      </div>
+      {compactOnly ? (
+        <span style={cpStyles.briefListValue}>{items.length > 0 ? items.map((item) => item.label).join(" · ") : empty}</span>
+      ) : (
+        <div style={cpStyles.briefStackedList}>
+          {items.length > 0 ? items.map((item) => (
+            <span key={item.label} style={cpStyles.briefStackedItem}>
+              <strong>{item.label}</strong>
+              <span>{item.detail}</span>
+            </span>
+          )) : <span style={cpStyles.briefListValue}>{empty}</span>}
+        </div>
+      )}
     </div>
   )
 }
@@ -1380,14 +1371,39 @@ const cpStyles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 8,
   },
+  guideScanRail: {
+    position: "relative",
+    display: "block",
+    width: "min(280px, 100%)",
+    height: 2,
+    overflow: "hidden",
+    background: "linear-gradient(90deg, rgba(212,168,83,0.10), rgba(128,24,28,0.20), rgba(212,168,83,0.08))",
+  },
+  guideScanPulse: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "34%",
+    height: "100%",
+    background: "linear-gradient(90deg, transparent, rgba(212,168,83,0.88), rgba(224,122,95,0.62), transparent)",
+  },
 
   textareaWrap: {
-    position: "relative",
+    position: "sticky",
+    bottom: 0,
+    zIndex: 4,
     marginBottom: 7,
     borderTop: "1px solid rgba(255,255,255,0.13)",
     borderBottom: "1px solid rgba(245,200,120,0.28)",
-    background: "rgba(12,12,16,0.46)",
+    background: "linear-gradient(180deg, rgba(12,12,16,0.82), rgba(10,8,12,0.92))",
     backdropFilter: "blur(12px)",
+    boxShadow: "0 -18px 38px rgba(0,0,0,0.30)",
+  },
+  textareaWrapAfterBrief: {
+    position: "relative",
+    bottom: "auto",
+    zIndex: 1,
+    boxShadow: "none",
   },
   editorMeta: {
     display: "flex",
@@ -1516,6 +1532,33 @@ const cpStyles: Record<string, CSSProperties> = {
     fontWeight: 850,
     lineHeight: 1.25,
     cursor: "pointer",
+  },
+  composerCommands: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "flex-end",
+    flexWrap: "wrap" as const,
+    gap: "8px 16px",
+  },
+  composerCommandsCompact: {
+    width: "100%",
+    justifyContent: "space-between",
+    gap: "8px 14px",
+  },
+  composerBriefAction: {
+    flex: "0 0 auto",
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(224,122,95,0.44)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,178,0.96)",
+    fontSize: 12.5,
+    fontWeight: 860,
+    lineHeight: 1.25,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   count: {
     fontSize: 11,
