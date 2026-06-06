@@ -47,6 +47,12 @@ const CONSTRAINT_DISPOSITION_LABEL_KEYS = {
 
 type TensionProfileChoice = "auto" | NarrativeTensionProfile
 
+type GuideMessage = {
+  id: string
+  speaker: "guide" | "user"
+  text: string
+}
+
 type TensionProfileOptionMeta = {
   id: TensionProfileChoice
   labelKey: StringKey
@@ -88,6 +94,10 @@ const TENSION_PROFILE_OPTIONS: TensionProfileOptionMeta[] = [
 
 function briefKey(seed: string, language: NarrativeTemplateLanguage, tensionProfile: TensionProfileChoice): string {
   return `${seed.trim()}\n${language}\n${tensionProfile}`
+}
+
+function makeGuestHandle(): string {
+  return `guest_${Math.random().toString(36).slice(2, 8)}`
 }
 
 type BudgetOptionMeta = {
@@ -188,6 +198,9 @@ export function CreatePage({
   const t = useT()
   const compactLayout = useCompactLayout()
   const [seed, setSeed] = useState("")
+  const [draftTurn, setDraftTurn] = useState("")
+  const [chatMessages, setChatMessages] = useState<GuideMessage[]>([])
+  const [correctionCount, setCorrectionCount] = useState(0)
   const [visibility, setVisibility] = useState<NarrativeTemplateVisibility>("private")
   const [turnBudget, setTurnBudget] = useState<number>(12)
   const [difficulty, setDifficulty] = useState<NarrativeDifficulty>("story")
@@ -205,6 +218,7 @@ export function CreatePage({
   const [briefResponse, setBriefResponse] = useState<NarrativeStoryBriefAdvisorResponse | null>(null)
   const [briefResponseKey, setBriefResponseKey] = useState<string | null>(null)
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const guestHandleRef = useRef<string | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
   // guarantee that — React batches state updates, so two clicks within
@@ -229,6 +243,22 @@ export function CreatePage({
   const selectedVisibility = VISIBILITY_KEY_MAP[visibility]
   const selectedTension =
     TENSION_PROFILE_OPTIONS.find((o) => o.id === desiredTensionProfile) ?? TENSION_PROFILE_OPTIONS[0]
+  const guideMessages = useMemo<GuideMessage[]>(
+    () => [
+      {
+        id: "guide-open",
+        speaker: "guide",
+        text: t("create.guide_greeting"),
+      },
+      {
+        id: "guide-open-2",
+        speaker: "guide",
+        text: t("create.guide_greeting_2"),
+      },
+      ...chatMessages,
+    ],
+    [chatMessages, t],
+  )
   const settingsSummary = [
     t(selectedBudget.labelKey),
     t(selectedDifficulty.labelKey),
@@ -262,13 +292,23 @@ export function CreatePage({
           ? t("create.brief_cta_idle")
           : t("create.cta_empty")
 
-  // Author flow requires a real account.
-  useEffect(() => {
-    if (auth.loading) return
-    if (auth.isAnonymous) {
-      window.location.hash = "#/login?next=create"
+  const ensureAuthorSession = async (): Promise<boolean> => {
+    if (!auth.isAnonymous) return true
+    if (auth.loading) {
+      setError(t("create.error_guest_loading"))
+      return false
     }
-  }, [auth.loading, auth.isAnonymous])
+    if (!guestHandleRef.current) {
+      guestHandleRef.current = makeGuestHandle()
+    }
+    try {
+      await auth.login(guestHandleRef.current)
+      return true
+    } catch (err) {
+      setError(friendlyError(err, t("create.error_guest_failed")))
+      return false
+    }
+  }
 
   useEffect(() => {
     if (!busy) {
@@ -294,6 +334,12 @@ export function CreatePage({
     setBusy(true)
     setError(null)
     try {
+      const authorReady = await ensureAuthorSession()
+      if (!authorReady) {
+        setBusy(false)
+        inflightRef.current = false
+        return
+      }
       const response = await api.createNarrativeTemplate({
         seed: trimmed,
         visibility,
@@ -324,6 +370,8 @@ export function CreatePage({
     setBriefError(null)
     setError(null)
     try {
+      const authorReady = await ensureAuthorSession()
+      if (!authorReady) return
       const response = await api.createNarrativeStoryBrief({
         seed: trimmed,
         language: storyLanguage,
@@ -345,10 +393,55 @@ export function CreatePage({
       if (trimmed.toLowerCase().includes(seedAppend.toLowerCase())) return current
       return `${trimmed}${trimmed ? "\n\n" : ""}${seedAppend}`
     })
+    setCorrectionCount((current) => current + 1)
+    setChatMessages((current) => [
+      ...current,
+      {
+        id: `user-revision-action-${Date.now()}`,
+        speaker: "user",
+        text: seedAppend,
+      },
+      {
+        id: `guide-revision-action-${Date.now()}`,
+        speaker: "guide",
+        text: t("create.guide_reply_revision"),
+      },
+    ])
     setBriefResponse(null)
     setBriefResponseKey(null)
     setBriefError(null)
     window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
+  }
+
+  const appendGuideTurn = (rawText: string) => {
+    const trimmed = rawText.trim()
+    if (!trimmed) {
+      setError(t("create.error_seed_required"))
+      return
+    }
+    const hadSeed = Boolean(seed.trim())
+    const nextCorrectionCount = hadSeed ? correctionCount + 1 : correctionCount
+    const nextSeed = `${seed.trim()}${hadSeed ? "\n\n" : ""}${trimmed}`
+    setSeed(nextSeed)
+    if (hadSeed) setCorrectionCount(nextCorrectionCount)
+    setDraftTurn("")
+    setError(null)
+    setBriefResponse(null)
+    setBriefResponseKey(null)
+    setBriefError(null)
+    setChatMessages((current) => [
+      ...current,
+      {
+        id: `user-${Date.now()}-${current.length}`,
+        speaker: "user",
+        text: trimmed,
+      },
+      {
+        id: `guide-${Date.now()}-${current.length}`,
+        speaker: "guide",
+        text: hadSeed ? t("create.guide_reply_revision") : t("create.guide_reply_seed"),
+      },
+    ])
   }
 
   const handlePrimaryAction = async () => {
@@ -399,6 +492,23 @@ export function CreatePage({
             {t("create.prompt_fit_hint")}
           </p>
 
+          <div style={{ ...cpStyles.guideTranscript, ...(compactLayout ? cpStyles.guideTranscriptCompact : null) }}>
+            {guideMessages.map((message) => (
+              <div
+                key={message.id}
+                style={{
+                  ...cpStyles.guideMessage,
+                  ...(message.speaker === "user" ? cpStyles.guideMessageUser : cpStyles.guideMessageGuide),
+                }}
+              >
+                <span style={cpStyles.guideSpeaker}>
+                  {message.speaker === "user" ? t("create.guide_user_label") : t("create.guide_agent_label")}
+                </span>
+                <span style={cpStyles.guideMessageText}>{message.text}</span>
+              </div>
+            ))}
+          </div>
+
           <div style={cpStyles.textareaWrap}>
             <textarea
               ref={seedTextareaRef}
@@ -406,32 +516,57 @@ export function CreatePage({
                 ...cpStyles.textarea,
                 ...(compactLayout ? cpStyles.textareaCompact : {}),
               }}
-              placeholder={compactLayout ? t("create.placeholder_short") : t("create.placeholder")}
-              value={seed}
+              placeholder={compactLayout ? t("create.guide_input_placeholder_short") : t("create.guide_input_placeholder")}
+              value={draftTurn}
               onChange={(e) => {
-                setSeed(e.target.value)
+                setDraftTurn(e.target.value)
                 setError(null)
-                setBriefResponse(null)
-                setBriefResponseKey(null)
-                setBriefError(null)
               }}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                   e.preventDefault()
                   void handlePrimaryAction()
+                  return
+                }
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  appendGuideTurn(draftTurn)
                 }
               }}
               spellCheck={false}
               disabled={busy || briefBusy}
             />
+            <div style={{ ...cpStyles.composerBar, ...(compactLayout ? cpStyles.composerBarCompact : null) }}>
+              <span style={cpStyles.composerHint}>{t("create.guide_input_hint")}</span>
+              <button
+                type="button"
+                style={cpStyles.composerAction}
+                disabled={!draftTurn.trim() || busy || briefBusy}
+                onClick={() => appendGuideTurn(draftTurn)}
+              >
+                {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
+              </button>
+            </div>
           </div>
           <div style={cpStyles.editorMeta}>
             <span style={cpStyles.count}>{t("create.char_count", { n: seed.length })}</span>
+            {correctionCount > 0 ? (
+              <span style={cpStyles.count}>{t("create.guide_revision_count", { n: correctionCount })}</span>
+            ) : null}
             {showCreateAction && !compactLayout ? (
               <span style={cpStyles.shortcutHint}>
                 {t("create.submit_shortcut", { mod: submitModKey })}
               </span>
             ) : null}
+          </div>
+
+          <div style={{ ...cpStyles.draftLedger, ...(compactLayout ? cpStyles.draftLedgerCompact : null) }}>
+            <span style={cpStyles.draftLedgerLabel}>{t("create.guide_draft_label")}</span>
+            {hasSeed ? (
+              <p style={cpStyles.draftLedgerText}>{seed}</p>
+            ) : (
+              <p style={cpStyles.draftLedgerEmpty}>{t("create.guide_draft_empty")}</p>
+            )}
           </div>
 
           {error ? <div style={cpStyles.error}>{error}</div> : null}
@@ -516,12 +651,11 @@ export function CreatePage({
                       style={cpStyles.exampleLine}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
-                        setSeed(example)
+                        appendGuideTurn(example)
                         window.requestAnimationFrame(() => {
                           const node = seedTextareaRef.current
                           if (!node) return
                           node.focus({ preventScroll: true })
-                          node.setSelectionRange(example.length, example.length)
                         })
                       }}
                       disabled={busy}
@@ -856,48 +990,69 @@ function StoryBriefCard({
         <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
         <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
       </div>
-      <div style={{ ...cpStyles.briefCastGrid, ...(compact ? cpStyles.briefCastGridCompact : null) }}>
-        <BriefEntityList
-          label={t("create.brief_primary_cast")}
-          items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-          empty={t("create.brief_empty")}
-        />
-        <BriefEntityList
-          label={t("create.brief_secondary_cast")}
-          items={secondary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-          empty={t("create.brief_empty")}
-        />
-      </div>
-      {omitted.length > 0 ? (
-        <BriefPlanSection
-          label={t("create.brief_omitted_cast")}
-          items={omitted.map((entity) => ({ label: entity.display_name, rationale: entity.rationale }))}
-          empty={t("create.brief_empty")}
-        />
-      ) : null}
-      <BriefPlanSection label={t("create.brief_event_pressure")} items={[...brief.time_event_anchors, ...brief.world_setting_pressure]} empty={t("create.brief_empty")} />
-      <BriefPlanSection label={t("create.brief_constraints")} items={brief.constraints} empty={t("create.brief_empty")} />
-      <BriefPlanSection label={t("create.brief_tone_constraints")} items={brief.tone_constraints} empty={t("create.brief_empty")} />
-      {decisions.length > 0 ? (
-        <div style={cpStyles.briefConstraintRow}>
-          {decisions.map((decision) => (
-            <span key={`${decision.disposition}:${decision.label}`} style={cpStyles.briefConstraintChip} title={decision.rationale}>
-              <span style={cpStyles.briefConstraintKind}>{t(CONSTRAINT_DISPOSITION_LABEL_KEYS[decision.disposition])}</span>
-              {decision.label}
-            </span>
-          ))}
-        </div>
-      ) : null}
+      <BriefEntityList
+        label={t("create.brief_primary_cast")}
+        items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+        empty={t("create.brief_empty")}
+      />
       {brief.warnings.length > 0 || brief.revision_suggestions.length > 0 ? (
         <div style={cpStyles.briefWarningBlock}>
-          {brief.warnings.slice(0, 3).map((warning) => (
+          {brief.warnings.slice(0, 1).map((warning) => (
             <div key={warning} style={cpStyles.briefWarningLine}>{warning}</div>
           ))}
-          {brief.revision_suggestions.slice(0, 2).map((suggestion) => (
+          {brief.revision_suggestions.slice(0, 1).map((suggestion) => (
             <div key={suggestion} style={cpStyles.briefSuggestionLine}>{suggestion}</div>
           ))}
         </div>
       ) : null}
+      <details style={cpStyles.briefDetails}>
+        <summary style={cpStyles.briefDetailsSummary}>
+          <span>{t("create.brief_details_toggle")}</span>
+          <span style={cpStyles.briefDetailsTitle}>{t("create.brief_details_title")}</span>
+        </summary>
+        <div style={{ ...cpStyles.briefCastGrid, ...(compact ? cpStyles.briefCastGridCompact : null) }}>
+          <BriefEntityList
+            label={t("create.brief_primary_cast")}
+            items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+            empty={t("create.brief_empty")}
+          />
+          <BriefEntityList
+            label={t("create.brief_secondary_cast")}
+            items={secondary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
+            empty={t("create.brief_empty")}
+          />
+        </div>
+        {omitted.length > 0 ? (
+          <BriefPlanSection
+            label={t("create.brief_omitted_cast")}
+            items={omitted.map((entity) => ({ label: entity.display_name, rationale: entity.rationale }))}
+            empty={t("create.brief_empty")}
+          />
+        ) : null}
+        <BriefPlanSection label={t("create.brief_event_pressure")} items={[...brief.time_event_anchors, ...brief.world_setting_pressure]} empty={t("create.brief_empty")} />
+        <BriefPlanSection label={t("create.brief_constraints")} items={brief.constraints} empty={t("create.brief_empty")} />
+        <BriefPlanSection label={t("create.brief_tone_constraints")} items={brief.tone_constraints} empty={t("create.brief_empty")} />
+        {decisions.length > 0 ? (
+          <div style={cpStyles.briefConstraintRow}>
+            {decisions.map((decision) => (
+              <span key={`${decision.disposition}:${decision.label}`} style={cpStyles.briefConstraintChip} title={decision.rationale}>
+                <span style={cpStyles.briefConstraintKind}>{t(CONSTRAINT_DISPOSITION_LABEL_KEYS[decision.disposition])}</span>
+                {decision.label}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {brief.warnings.length > 1 || brief.revision_suggestions.length > 1 ? (
+          <div style={cpStyles.briefWarningBlock}>
+            {brief.warnings.slice(1, 3).map((warning) => (
+              <div key={warning} style={cpStyles.briefWarningLine}>{warning}</div>
+            ))}
+            {brief.revision_suggestions.slice(1, 2).map((suggestion) => (
+              <div key={suggestion} style={cpStyles.briefSuggestionLine}>{suggestion}</div>
+            ))}
+          </div>
+        ) : null}
+      </details>
       {brief.revision_actions.length > 0 ? (
         <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
           <span style={cpStyles.briefFieldLabel}>{t("create.brief_revision_actions")}</span>
@@ -1136,10 +1291,54 @@ const cpStyles: Record<string, CSSProperties> = {
     fontSize: 12.5,
     lineHeight: 1.42,
   },
+  guideTranscript: {
+    display: "grid",
+    gap: 0,
+    marginBottom: 16,
+    borderTop: "1px solid rgba(245,200,120,0.28)",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
+    background: "linear-gradient(180deg, rgba(12,12,16,0.58), rgba(12,12,16,0.18))",
+    backdropFilter: "blur(10px)",
+  },
+  guideTranscriptCompact: {
+    marginBottom: 14,
+  },
+  guideMessage: {
+    display: "grid",
+    gridTemplateColumns: "96px minmax(0, 1fr)",
+    gap: 14,
+    padding: "12px 0",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  },
+  guideMessageGuide: {
+    color: "rgba(255,245,230,0.88)",
+  },
+  guideMessageUser: {
+    color: "rgba(255,226,178,0.96)",
+  },
+  guideSpeaker: {
+    color: "rgba(245,200,120,0.72)",
+    fontSize: 11,
+    lineHeight: 1.35,
+    fontWeight: 820,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.03,
+  },
+  guideMessageText: {
+    minWidth: 0,
+    fontFamily: "var(--font-narrative)",
+    fontSize: 14,
+    lineHeight: 1.52,
+    whiteSpace: "pre-wrap" as const,
+  },
 
   textareaWrap: {
     position: "relative",
     marginBottom: 7,
+    borderTop: "1px solid rgba(255,255,255,0.13)",
+    borderBottom: "1px solid rgba(245,200,120,0.28)",
+    background: "rgba(12,12,16,0.46)",
+    backdropFilter: "blur(12px)",
   },
   editorMeta: {
     display: "flex",
@@ -1220,11 +1419,11 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   textarea: {
     width: "100%",
-    minHeight: 200,
-    padding: "12px 0 14px",
+    minHeight: 94,
+    padding: "13px 0 10px",
     background: "transparent",
     border: "none",
-    borderBottom: "1px solid rgba(245,200,120,0.28)",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
     borderRadius: 0,
     fontFamily: "var(--font-narrative)",
     fontSize: 16,
@@ -1235,9 +1434,39 @@ const cpStyles: Record<string, CSSProperties> = {
     transition: "border-color 200ms",
   },
   textareaCompact: {
-    minHeight: 118,
+    minHeight: 86,
     padding: "10px 0 12px",
     fontSize: 15,
+  },
+  composerBar: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 14,
+    padding: "8px 0 11px",
+  },
+  composerBarCompact: {
+    alignItems: "flex-start",
+    flexDirection: "column" as const,
+    gap: 8,
+  },
+  composerHint: {
+    color: "rgba(255,255,255,0.46)",
+    fontSize: 11.5,
+    lineHeight: 1.35,
+  },
+  composerAction: {
+    flex: "0 0 auto",
+    padding: "4px 0",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.38)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,178,0.96)",
+    fontSize: 12.5,
+    fontWeight: 850,
+    lineHeight: 1.25,
+    cursor: "pointer",
   },
   count: {
     fontSize: 11,
@@ -1249,6 +1478,37 @@ const cpStyles: Record<string, CSSProperties> = {
     fontSize: 11,
     fontWeight: 720,
     whiteSpace: "nowrap" as const,
+  },
+  draftLedger: {
+    display: "grid",
+    gap: 6,
+    marginBottom: 18,
+    padding: "11px 0 12px",
+    borderTop: "1px solid rgba(255,255,255,0.10)",
+    borderBottom: "1px solid rgba(255,255,255,0.10)",
+  },
+  draftLedgerCompact: {
+    marginBottom: 16,
+  },
+  draftLedgerLabel: {
+    color: "rgba(245,200,120,0.78)",
+    fontSize: 11,
+    lineHeight: 1.2,
+    fontWeight: 820,
+  },
+  draftLedgerText: {
+    margin: 0,
+    color: "rgba(255,245,230,0.84)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 13.4,
+    lineHeight: 1.5,
+    whiteSpace: "pre-wrap" as const,
+  },
+  draftLedgerEmpty: {
+    margin: 0,
+    color: "rgba(255,255,255,0.48)",
+    fontSize: 12.5,
+    lineHeight: 1.45,
   },
 
   settingsStrip: {
@@ -1546,6 +1806,29 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   briefCastGridCompact: {
     gridTemplateColumns: "1fr",
+  },
+  briefDetails: {
+    marginTop: 11,
+    marginBottom: 12,
+    paddingTop: 9,
+    borderTop: "1px solid rgba(255,255,255,0.10)",
+  },
+  briefDetailsSummary: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 12,
+    color: "rgba(245,200,120,0.84)",
+    fontSize: 11.5,
+    lineHeight: 1.3,
+    fontWeight: 780,
+    cursor: "pointer",
+    listStyle: "none",
+    padding: "2px 0 9px",
+  },
+  briefDetailsTitle: {
+    color: "rgba(255,255,255,0.44)",
+    fontWeight: 650,
   },
   briefList: {
     minWidth: 0,
