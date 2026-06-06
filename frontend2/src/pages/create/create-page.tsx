@@ -21,6 +21,7 @@ const SEED_EXAMPLE_KEYS: StringKey[] = [
   "create.example_seed_3",
   "create.example_seed_4",
 ]
+const STORY_BUTLER_AVATAR = "/webtoons/ui/generated/story-butler-avatar-v1.png"
 
 const VISIBILITY_OPTION_IDS: NarrativeTemplateVisibility[] = ["private", "unlisted", "public"]
 
@@ -459,19 +460,14 @@ export function CreatePage({
     <div style={{ ...cpStyles.page, ...(compactLayout ? cpStyles.pageCompact : null) }}>
       <header style={cpStyles.header}>
         <button style={cpStyles.brandLink} onClick={onBackHome}>
-          <span
-            style={{
-              color: "var(--accent)",
-              fontSize: 22,
-              lineHeight: 1,
-              transform: "translateY(-2px)",
-              display: "inline-block",
-            }}
-          >
-            ·
-          </span>
+          <span style={cpStyles.brandMark} aria-hidden>✦</span>
           <span style={cpStyles.brandName}>Tiny Stories</span>
         </button>
+        <div style={{ ...cpStyles.headerTools, ...(compactLayout ? cpStyles.headerToolsCompact : null) }} aria-hidden>
+          <span style={cpStyles.headerTool}>☼</span>
+          <span style={cpStyles.headerTool}>?</span>
+          <span style={cpStyles.headerTool}>☰</span>
+        </div>
       </header>
 
       <main style={{ ...cpStyles.main, ...(compactLayout ? cpStyles.mainCompact : null) }}>
@@ -482,24 +478,81 @@ export function CreatePage({
           transition={itemTransition}
         >
           <div style={{ ...cpStyles.guideTranscript, ...(compactLayout ? cpStyles.guideTranscriptCompact : null) }}>
-            {guideMessages.map((message) => (
+            {guideMessages.map((message) => {
+              const isUser = message.speaker === "user"
+              const isIntro = message.id === "guide-open"
+              const isIntroFollow = message.id === "guide-open-2"
+              return (
+                <div
+                  key={message.id}
+                  style={{
+                    ...cpStyles.guideMessage,
+                    ...(isUser ? cpStyles.guideMessageUser : cpStyles.guideMessageGuide),
+                    ...(isIntro ? cpStyles.guideMessageIntro : null),
+                    ...(isIntroFollow ? cpStyles.guideMessageIntroFollow : null),
+                    ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                    ...(compactLayout && isUser ? cpStyles.guideMessageUserCompact : null),
+                    ...(compactLayout && isIntroFollow ? cpStyles.guideMessageIntroFollowCompact : null),
+                  }}
+                >
+                  {!isUser && !isIntroFollow ? (
+                    <img
+                      src={STORY_BUTLER_AVATAR}
+                      alt=""
+                      style={{
+                        ...cpStyles.guideAvatar,
+                        ...(isIntro ? cpStyles.guideAvatarIntro : null),
+                        ...(compactLayout ? cpStyles.guideAvatarCompact : null),
+                      }}
+                    />
+                  ) : !isUser ? (
+                    <span
+                      aria-hidden
+                      style={{ ...cpStyles.guideAvatarSpacer, ...(compactLayout ? cpStyles.guideAvatarSpacerCompact : null) }}
+                    />
+                  ) : null}
+                  <div
+                    style={{
+                      ...cpStyles.guideMessageContent,
+                      ...(isUser ? cpStyles.guideMessageContentUser : null),
+                      ...(isIntroFollow ? cpStyles.guideMessageContentIntroFollow : null),
+                    }}
+                  >
+                    {!isIntroFollow ? (
+                      <span style={cpStyles.guideSpeaker}>
+                        {isUser ? t("create.guide_user_label") : t("create.guide_agent_label")}
+                      </span>
+                    ) : null}
+                    <span
+                      style={{
+                        ...cpStyles.guideMessageText,
+                        ...(isIntro ? cpStyles.guideMessageIntroText : null),
+                        ...(isIntro && compactLayout ? cpStyles.guideMessageIntroTextCompact : null),
+                        ...(isIntroFollow ? cpStyles.guideMessageIntroFollowText : null),
+                        ...(isUser ? cpStyles.guideMessageUserText : null),
+                      }}
+                    >
+                      {message.text}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+            {briefBusy ? (
               <div
-                key={message.id}
                 style={{
                   ...cpStyles.guideMessage,
-                  ...(message.speaker === "user" ? cpStyles.guideMessageUser : cpStyles.guideMessageGuide),
+                  ...cpStyles.guideMessageGuide,
+                  ...(compactLayout ? cpStyles.guideMessageCompact : null),
                 }}
               >
-                <span style={cpStyles.guideSpeaker}>
-                  {message.speaker === "user" ? t("create.guide_user_label") : t("create.guide_agent_label")}
-                </span>
-                <span style={cpStyles.guideMessageText}>{message.text}</span>
-              </div>
-            ))}
-            {briefBusy ? (
-              <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
-                <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                <div style={cpStyles.guideMessageBody}>
+                <img
+                  src={STORY_BUTLER_AVATAR}
+                  alt=""
+                  style={{ ...cpStyles.guideAvatar, ...(compactLayout ? cpStyles.guideAvatarCompact : null) }}
+                />
+                <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
+                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
                   <span style={cpStyles.guideMessageText}>{t("create.guide_planning_now")}</span>
                   <span style={cpStyles.guideScanRail} aria-hidden>
                     <motion.span
@@ -513,9 +566,21 @@ export function CreatePage({
             ) : null}
             {activeBriefResponse ? (
               <>
-                <div ref={briefMessageRef} style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
-                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                  <div style={cpStyles.guideMessageBody}>
+                <div
+                  ref={briefMessageRef}
+                  style={{
+                    ...cpStyles.guideMessage,
+                    ...cpStyles.guideMessageGuide,
+                    ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                  }}
+                >
+                  <img
+                    src={STORY_BUTLER_AVATAR}
+                    alt=""
+                    style={{ ...cpStyles.guideAvatar, ...(compactLayout ? cpStyles.guideAvatarCompact : null) }}
+                  />
+                  <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
+                    <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
                     <StoryBriefCard
                       brief={activeBriefResponse.brief}
                       canGenerate={activeBriefResponse.can_generate}
@@ -528,13 +593,26 @@ export function CreatePage({
                     />
                   </div>
                 </div>
-                <div style={{ ...cpStyles.guideMessage, ...cpStyles.guideMessageGuide }}>
-                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                  <span style={cpStyles.guideMessageText}>
+                <div
+                  style={{
+                    ...cpStyles.guideMessage,
+                    ...cpStyles.guideMessageGuide,
+                    ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                  }}
+                >
+                  <img
+                    src={STORY_BUTLER_AVATAR}
+                    alt=""
+                    style={{ ...cpStyles.guideAvatarSmall, ...(compactLayout ? cpStyles.guideAvatarSmallCompact : null) }}
+                  />
+                  <div style={cpStyles.guideMessageContent}>
+                    <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                    <span style={cpStyles.guideMessageText}>
                     {activeBriefResponse.can_generate
                       ? t("create.guide_brief_ready")
                       : t("create.guide_brief_not_fit")}
-                  </span>
+                    </span>
+                  </div>
                 </div>
               </>
             ) : null}
@@ -586,7 +664,13 @@ export function CreatePage({
             ) : null}
           </AnimatePresence>
 
-          <div style={{ ...cpStyles.textareaWrap, ...(activeBrief ? cpStyles.textareaWrapAfterBrief : null) }}>
+          <div
+            style={{
+              ...cpStyles.textareaWrap,
+              ...(compactLayout ? cpStyles.textareaWrapCompact : null),
+              ...(activeBrief ? cpStyles.textareaWrapAfterBrief : null),
+            }}
+          >
             <textarea
               ref={seedTextareaRef}
               style={{
@@ -962,10 +1046,17 @@ function StoryBriefCard({
   const secondary = brief.cast_plan.secondary_background_entities
   const omitted = brief.cast_plan.omitted_entities
   const decisions = brief.constraint_dispositions.slice(0, 8)
+  const primaryNames = primary.map((entity) => entity.display_name).join(" · ")
   const surfacedConstraints = brief.constraints
     .map((item) => item.label)
     .filter((label) => label.toLowerCase() !== "core premise")
     .slice(0, 4)
+  const visiblePressure = [...brief.time_event_anchors, ...brief.world_setting_pressure]
+    .map((item) => item.label)
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(" · ")
+  const visibleRules = surfacedConstraints.length > 0 ? surfacedConstraints.join(" · ") : brief.genre_tone
 
   return (
     <section style={{ ...cpStyles.briefRail, ...(compact ? cpStyles.briefRailCompact : null) }}>
@@ -983,20 +1074,23 @@ function StoryBriefCard({
       <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
       <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
-        <BriefField label={t("create.brief_profile")} value={t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
+        <BriefField label={t("create.brief_profile")} value={brief.genre_tone || t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
+        <BriefField label={t("create.brief_primary_cast")} value={primaryNames || t("create.brief_empty")} />
         <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
+        <BriefField label={t("create.brief_constraints")} value={visibleRules} />
         <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
       </div>
-      <BriefEntityList
-        label={t("create.brief_primary_cast")}
-        items={primary.map((entity) => ({ label: entity.display_name, detail: entity.rationale }))}
-        empty={t("create.brief_empty")}
-        compactOnly
-      />
       {surfacedConstraints.length > 0 ? (
         <BriefList
           label={t("create.brief_key_details")}
           items={surfacedConstraints}
+          empty={t("create.brief_empty")}
+        />
+      ) : null}
+      {visiblePressure ? (
+        <BriefList
+          label={t("create.brief_event_pressure")}
+          items={[visiblePressure]}
           empty={t("create.brief_empty")}
         />
       ) : null}
@@ -1241,31 +1335,91 @@ const busyStageStyles: Record<string, CSSProperties> = {
 
 const cpStyles: Record<string, CSSProperties> = {
   page: {
+    height: "100%",
     minHeight: "100%",
-    background: `linear-gradient(90deg, rgba(4,4,7,0.98) 0%, rgba(8,6,9,0.94) 48%, rgba(22,5,8,0.78) 100%), radial-gradient(circle at 82% 18%, rgba(201,44,32,0.24) 0%, rgba(201,44,32,0.08) 28%, transparent 52%), linear-gradient(180deg, rgba(5,5,8,0.26) 0%, rgba(8,6,8,0.88) 68%, var(--bg) 100%), url(${PAGE_BG.create})`,
+    overflow: "hidden",
+    backgroundColor: "#050507",
+    backgroundImage: `linear-gradient(90deg, rgba(3,3,6,0.99) 0%, rgba(3,3,6,0.97) 30%, rgba(6,4,7,0.88) 50%, rgba(17,4,7,0.34) 78%, rgba(5,4,7,0.44) 100%), radial-gradient(circle at 80% 44%, rgba(201,44,32,0.23) 0%, rgba(201,44,32,0.08) 38%, transparent 64%), linear-gradient(180deg, rgba(5,5,8,0.18) 0%, rgba(5,5,8,0.34) 58%, rgba(5,5,8,0.88) 100%), url(${PAGE_BG.create})`,
     backgroundSize: "cover",
-    backgroundPosition: "58% center",
+    backgroundPosition: "center center",
     backgroundAttachment: "fixed",
   },
   pageCompact: {
-    backgroundPosition: "64% top",
+    overflow: "auto",
+    backgroundImage: `linear-gradient(90deg, rgba(3,3,6,0.99) 0%, rgba(3,3,6,0.94) 56%, rgba(10,4,7,0.72) 100%), radial-gradient(circle at 78% 22%, rgba(201,44,32,0.22) 0%, rgba(201,44,32,0.07) 40%, transparent 66%), linear-gradient(180deg, rgba(5,5,8,0.16) 0%, rgba(5,5,8,0.44) 64%, rgba(5,5,8,0.94) 100%), url(${PAGE_BG.create})`,
+    backgroundPosition: "36% top",
     backgroundAttachment: "scroll",
   },
   header: {
-    padding: "18px 40px",
-    borderBottom: "1px solid rgba(255,255,255,0.1)",
+    minHeight: 58,
+    padding: "0 34px",
+    borderBottom: "1px solid rgba(212,168,83,0.34)",
     color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    background: "linear-gradient(90deg, rgba(4,4,7,0.78), rgba(4,4,7,0.28))",
+    backdropFilter: "blur(8px)",
   },
-  brandLink: { display: "inline-flex", alignItems: "center", gap: 8 },
-  brandName: { fontFamily: "var(--font-narrative)", fontSize: 17 },
+  brandLink: { display: "inline-flex", alignItems: "center", gap: 12 },
+  brandMark: {
+    width: 30,
+    height: 30,
+    borderRadius: "50%",
+    border: "1px solid rgba(212,168,83,0.72)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "rgba(212,168,83,0.94)",
+    fontSize: 15,
+    lineHeight: 1,
+    background: "radial-gradient(circle, rgba(212,168,83,0.10), rgba(5,5,8,0.68))",
+    boxShadow: "0 0 14px rgba(212,168,83,0.18)",
+  },
+  brandName: { fontFamily: "var(--font-narrative)", fontSize: 18, color: "rgba(255,245,230,0.96)" },
+  headerTools: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 22,
+    color: "rgba(245,200,120,0.9)",
+  },
+  headerToolsCompact: {
+    display: "none",
+  },
+  headerTool: {
+    fontSize: 18,
+    lineHeight: 1,
+    fontFamily: "var(--font-ui)",
+  },
 
-  main: { padding: "48px 40px 80px", display: "flex", justifyContent: "center" },
-  mainCompact: {
-    padding: "28px 40px 72px",
+  main: {
+    minHeight: "calc(100vh - 59px)",
+    height: "calc(100vh - 59px)",
+    padding: "24px clamp(34px, 6vw, 82px) 24px",
+    display: "flex",
+    justifyContent: "flex-start",
   },
-  inner: { width: "100%", maxWidth: 720 },
+  mainCompact: {
+    height: "auto",
+    minHeight: "calc(100vh - 59px)",
+    padding: "18px 18px 22px",
+  },
+  inner: {
+    width: "100%",
+    maxWidth: 840,
+    height: "100%",
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    borderLeft: "1px solid rgba(212,168,83,0.30)",
+    paddingLeft: 22,
+  },
   innerCompact: {
     maxWidth: 520,
+    height: "auto",
+    minHeight: "calc(100vh - 100px)",
+    borderLeft: "none",
+    paddingLeft: 0,
   },
 
   title: {
@@ -1328,28 +1482,116 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   guideTranscript: {
     display: "grid",
-    gap: 0,
-    marginBottom: 16,
-    borderTop: "1px solid rgba(245,200,120,0.28)",
-    borderBottom: "1px solid rgba(255,255,255,0.12)",
-    background: "linear-gradient(180deg, rgba(12,12,16,0.58), rgba(12,12,16,0.18))",
-    backdropFilter: "blur(10px)",
+    alignContent: "start",
+    gap: 18,
+    minHeight: 0,
+    flex: "1 1 auto",
+    overflowY: "auto" as const,
+    overscrollBehavior: "contain" as const,
+    scrollbarWidth: "thin" as const,
+    marginTop: 4,
+    marginBottom: 14,
+    padding: "12px 14px 16px 0",
+    background: "transparent",
   },
   guideTranscriptCompact: {
+    gap: 15,
+    overflowY: "visible" as const,
+    marginTop: 0,
     marginBottom: 14,
+    padding: "6px 0 8px",
   },
   guideMessage: {
     display: "grid",
-    gridTemplateColumns: "96px minmax(0, 1fr)",
-    gap: 14,
-    padding: "12px 0",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    gridTemplateColumns: "58px minmax(0, 1fr)",
+    gap: 16,
+    padding: "0",
+    borderBottom: "none",
   },
   guideMessageGuide: {
     color: "rgba(255,245,230,0.88)",
   },
+  guideMessageCompact: {
+    gridTemplateColumns: "46px minmax(0, 1fr)",
+    gap: 12,
+  },
   guideMessageUser: {
+    gridTemplateColumns: "minmax(0, min(560px, 84%))",
+    justifyContent: "end",
+    paddingRight: 0,
     color: "rgba(255,226,178,0.96)",
+  },
+  guideMessageUserCompact: {
+    gridTemplateColumns: "minmax(0, 1fr)",
+    paddingRight: 0,
+  },
+  guideMessageIntro: {
+    gridTemplateColumns: "74px minmax(0, 1fr)",
+    marginBottom: -13,
+  },
+  guideMessageIntroFollow: {
+    gridTemplateColumns: "74px minmax(0, 1fr)",
+    marginBottom: 10,
+  },
+  guideMessageIntroFollowCompact: {
+    gridTemplateColumns: "46px minmax(0, 1fr)",
+    marginTop: -9,
+    marginBottom: 6,
+  },
+  guideAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: "50%",
+    objectFit: "cover",
+    border: "1px solid rgba(212,168,83,0.78)",
+    boxShadow: "0 0 0 1px rgba(0,0,0,0.62), 0 18px 44px rgba(0,0,0,0.36)",
+  },
+  guideAvatarCompact: {
+    width: 42,
+    height: 42,
+  },
+  guideAvatarIntro: {
+    width: 68,
+    height: 68,
+  },
+  guideAvatarSmall: {
+    width: 46,
+    height: 46,
+    borderRadius: "50%",
+    objectFit: "cover",
+    border: "1px solid rgba(212,168,83,0.52)",
+    opacity: 0.88,
+  },
+  guideAvatarSmallCompact: {
+    width: 34,
+    height: 34,
+  },
+  guideAvatarSpacer: {
+    width: 64,
+    height: 1,
+  },
+  guideAvatarSpacerCompact: {
+    width: 42,
+  },
+  guideMessageContent: {
+    minWidth: 0,
+    display: "grid",
+    alignContent: "start",
+    gap: 8,
+    paddingBottom: 12,
+    borderBottom: "1px solid rgba(212,168,83,0.20)",
+  },
+  guideMessageContentUser: {
+    justifySelf: "end",
+    width: "min(100%, 540px)",
+    paddingRight: 14,
+    borderRight: "1px solid rgba(212,168,83,0.86)",
+    borderBottom: "1px solid rgba(212,168,83,0.26)",
+    textAlign: "right" as const,
+  },
+  guideMessageContentIntroFollow: {
+    paddingBottom: 15,
+    borderBottom: "1px solid rgba(212,168,83,0.24)",
   },
   guideSpeaker: {
     color: "rgba(245,200,120,0.72)",
@@ -1362,9 +1604,29 @@ const cpStyles: Record<string, CSSProperties> = {
   guideMessageText: {
     minWidth: 0,
     fontFamily: "var(--font-narrative)",
-    fontSize: 14,
+    fontSize: 15.5,
     lineHeight: 1.52,
     whiteSpace: "pre-wrap" as const,
+    textShadow: "0 2px 18px rgba(0,0,0,0.46)",
+  },
+  guideMessageIntroText: {
+    maxWidth: 620,
+    fontSize: 26,
+    lineHeight: 1.18,
+    color: "rgba(255,245,230,0.98)",
+  },
+  guideMessageIntroTextCompact: {
+    fontSize: 23,
+  },
+  guideMessageIntroFollowText: {
+    maxWidth: 640,
+    color: "rgba(255,245,230,0.80)",
+    fontSize: 16,
+    lineHeight: 1.48,
+  },
+  guideMessageUserText: {
+    color: "rgba(255,245,230,0.96)",
+    fontSize: 15,
   },
   guideMessageBody: {
     minWidth: 0,
@@ -1389,15 +1651,24 @@ const cpStyles: Record<string, CSSProperties> = {
   },
 
   textareaWrap: {
-    position: "sticky",
-    bottom: 0,
+    position: "relative",
+    bottom: "auto",
     zIndex: 4,
-    marginBottom: 7,
-    borderTop: "1px solid rgba(255,255,255,0.13)",
-    borderBottom: "1px solid rgba(245,200,120,0.28)",
-    background: "linear-gradient(180deg, rgba(12,12,16,0.82), rgba(10,8,12,0.92))",
-    backdropFilter: "blur(12px)",
-    boxShadow: "0 -18px 38px rgba(0,0,0,0.30)",
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 118px",
+    gridTemplateRows: "auto",
+    flex: "0 0 auto",
+    marginTop: 0,
+    marginBottom: 8,
+    border: "1px solid rgba(212,168,83,0.76)",
+    borderRadius: 4,
+    background: "linear-gradient(180deg, rgba(5,5,8,0.82), rgba(11,8,12,0.92))",
+    backdropFilter: "blur(14px)",
+    boxShadow: "0 -18px 40px rgba(0,0,0,0.34), 0 0 0 1px rgba(0,0,0,0.48)",
+  },
+  textareaWrapCompact: {
+    gridTemplateColumns: "minmax(0, 1fr)",
+    bottom: "auto",
   },
   textareaWrapAfterBrief: {
     position: "relative",
@@ -1410,7 +1681,7 @@ const cpStyles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     justifyContent: "space-between",
     gap: 12,
-    marginBottom: 18,
+    marginBottom: 10,
     color: "rgba(255,255,255,0.44)",
     fontSize: 11,
     lineHeight: 1.25,
@@ -1418,43 +1689,53 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   examplesBlock: {
     display: "grid",
-    gridTemplateColumns: "104px minmax(0, 1fr)",
+    gridTemplateColumns: "182px minmax(0, 1fr)",
     alignItems: "start",
-    columnGap: 18,
+    columnGap: 16,
     rowGap: 10,
-    marginBottom: 24,
+    flex: "0 0 auto",
+    marginTop: 0,
+    marginBottom: 14,
+    paddingTop: 8,
+    borderTop: "1px solid rgba(212,168,83,0.30)",
   },
   examplesBlockCompact: {
     gridTemplateColumns: "1fr",
     rowGap: 8,
   },
   examplesLabel: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.62)",
-    letterSpacing: 0,
+    fontSize: 11,
+    color: "rgba(245,200,120,0.78)",
+    letterSpacing: 0.04,
     lineHeight: 1.45,
+    textTransform: "uppercase" as const,
+    fontWeight: 760,
   },
   examplesList: {
     minWidth: 0,
     display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    columnGap: 18,
-    rowGap: 6,
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    alignItems: "baseline",
+    gap: 0,
+    overflow: "hidden",
   },
   examplesListCompact: {
+    display: "grid",
     gridTemplateColumns: "1fr",
+    gap: 0,
   },
   exampleLine: {
     width: "100%",
     minWidth: 0,
-    display: "grid",
-    gridTemplateColumns: "20px minmax(0, 1fr) auto",
+    display: "inline-grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
     alignItems: "baseline",
-    columnGap: 7,
+    columnGap: 8,
     rowGap: 2,
-    padding: "5px 0 6px",
+    padding: "4px 12px 5px",
     background: "transparent",
     border: "none",
+    borderRight: "1px solid rgba(212,168,83,0.58)",
     borderRadius: 0,
     color: "rgba(255,255,255,0.76)",
     cursor: "pointer",
@@ -1462,6 +1743,7 @@ const cpStyles: Record<string, CSSProperties> = {
     textAlign: "left" as const,
   },
   exampleLineIndex: {
+    display: "none",
     color: "rgba(245,200,120,0.68)",
     fontFamily: "var(--font-ui)",
     fontSize: 11,
@@ -1473,6 +1755,10 @@ const cpStyles: Record<string, CSSProperties> = {
     color: "rgba(255,255,255,0.78)",
     fontSize: 12.6,
     lineHeight: 1.42,
+    maxWidth: "none",
+    whiteSpace: "nowrap" as const,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
   exampleLineUse: {
     color: "rgba(245,200,120,0.76)",
@@ -1484,11 +1770,12 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   textarea: {
     width: "100%",
-    minHeight: 94,
-    padding: "13px 0 10px",
+    minHeight: 82,
+    padding: "18px 20px 13px",
+    gridColumn: "1",
+    gridRow: "1",
     background: "transparent",
     border: "none",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
     borderRadius: 0,
     fontFamily: "var(--font-narrative)",
     fontSize: 16,
@@ -1499,36 +1786,46 @@ const cpStyles: Record<string, CSSProperties> = {
     transition: "border-color 200ms",
   },
   textareaCompact: {
-    minHeight: 86,
-    padding: "10px 0 12px",
+    minHeight: 104,
+    padding: "14px 15px",
     fontSize: 15,
+    gridColumn: "1",
   },
   composerBar: {
+    gridColumn: "2",
+    gridRow: "1",
     display: "flex",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: 14,
-    padding: "8px 0 11px",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    padding: "12px",
+    borderLeft: "1px solid rgba(212,168,83,0.52)",
   },
   composerBarCompact: {
     alignItems: "flex-start",
     flexDirection: "column" as const,
     gap: 8,
+    gridColumn: "1 / span 2",
+    gridRow: "2",
+    borderLeft: "none",
+    borderTop: "1px solid rgba(212,168,83,0.34)",
+    padding: "9px 14px 11px",
   },
   composerHint: {
+    display: "none",
     color: "rgba(255,255,255,0.46)",
     fontSize: 11.5,
     lineHeight: 1.35,
   },
   composerAction: {
     flex: "0 0 auto",
-    padding: "4px 0",
+    padding: "8px 0",
     border: "none",
-    borderBottom: "1px solid rgba(245,200,120,0.38)",
+    borderBottom: "1px solid rgba(245,200,120,0.56)",
     borderRadius: 0,
     background: "transparent",
     color: "rgba(255,226,178,0.96)",
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: 850,
     lineHeight: 1.25,
     cursor: "pointer",
@@ -1536,10 +1833,10 @@ const cpStyles: Record<string, CSSProperties> = {
   composerCommands: {
     minWidth: 0,
     display: "flex",
-    alignItems: "baseline",
-    justifyContent: "flex-end",
-    flexWrap: "wrap" as const,
-    gap: "8px 16px",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   composerCommandsCompact: {
     width: "100%",
@@ -1548,7 +1845,7 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   composerBriefAction: {
     flex: "0 0 auto",
-    padding: "4px 0",
+    padding: "7px 0",
     border: "none",
     borderBottom: "1px solid rgba(224,122,95,0.44)",
     borderRadius: 0,
@@ -1679,8 +1976,9 @@ const cpStyles: Record<string, CSSProperties> = {
   },
 
   settingsDetails: {
-    marginTop: 16,
+    marginTop: 6,
     borderTop: "none",
+    opacity: 0.72,
   },
   settingsDetailsFocused: {
     marginTop: 4,
@@ -1813,15 +2111,19 @@ const cpStyles: Record<string, CSSProperties> = {
 
   error: { marginBottom: 16, fontSize: 13, color: "var(--warn)" },
   briefRail: {
-    marginTop: 6,
-    marginBottom: 20,
-    padding: "14px 0 12px",
-    borderTop: "1px solid rgba(245,200,120,0.28)",
-    borderBottom: "1px solid rgba(255,255,255,0.12)",
+    marginTop: 4,
+    marginBottom: 4,
+    padding: "12px 14px 11px",
+    border: "1px solid rgba(212,168,83,0.34)",
+    borderTop: "2px solid rgba(212,168,83,0.68)",
+    borderRadius: 4,
+    background: "linear-gradient(180deg, rgba(9,8,11,0.86), rgba(12,8,10,0.72))",
+    boxShadow: "0 18px 54px rgba(0,0,0,0.28)",
     color: "rgba(255,255,255,0.82)",
   },
   briefRailCompact: {
     marginBottom: 18,
+    padding: "12px 12px 11px",
   },
   briefHeader: {
     display: "flex",
@@ -1835,7 +2137,8 @@ const cpStyles: Record<string, CSSProperties> = {
     fontSize: 11.5,
     lineHeight: 1.2,
     fontWeight: 820,
-    letterSpacing: 0,
+    letterSpacing: 0.04,
+    textTransform: "uppercase" as const,
   },
   briefFitPill: {
     color: "rgba(194,255,212,0.86)",
@@ -1859,15 +2162,17 @@ const cpStyles: Record<string, CSSProperties> = {
     marginBottom: 12,
     marginLeft: 0,
     color: "rgba(255,245,230,0.9)",
-    fontSize: 14,
-    lineHeight: 1.52,
+    fontSize: 15,
+    lineHeight: 1.42,
     fontFamily: "var(--font-narrative)",
   },
   briefMetaGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: "12px 18px",
+    gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+    gap: "0",
     marginBottom: 13,
+    borderTop: "1px solid rgba(212,168,83,0.34)",
+    borderBottom: "1px solid rgba(255,255,255,0.10)",
   },
   briefMetaGridCompact: {
     gridTemplateColumns: "1fr",
@@ -1876,7 +2181,9 @@ const cpStyles: Record<string, CSSProperties> = {
   briefField: {
     minWidth: 0,
     display: "grid",
-    gap: 3,
+    gap: 6,
+    padding: "10px 12px",
+    borderRight: "1px solid rgba(212,168,83,0.32)",
   },
   briefFieldLabel: {
     color: "rgba(255,255,255,0.48)",
@@ -1926,6 +2233,8 @@ const cpStyles: Record<string, CSSProperties> = {
     minWidth: 0,
     display: "grid",
     gap: 3,
+    padding: "8px 0",
+    borderTop: "1px solid rgba(255,255,255,0.08)",
   },
   briefListValue: {
     color: "rgba(255,255,255,0.76)",
@@ -2007,9 +2316,10 @@ const cpStyles: Record<string, CSSProperties> = {
     gap: 7,
   },
   briefRevisionAction: {
-    border: "1px solid rgba(245,200,120,0.32)",
-    borderRadius: 6,
-    background: "rgba(245,200,120,0.07)",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
+    borderRadius: 0,
+    background: "transparent",
     color: "rgba(255,238,210,0.88)",
     fontSize: 11.5,
     fontWeight: 760,
@@ -2030,9 +2340,9 @@ const cpStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
     columnGap: 16,
     rowGap: 8,
-    marginTop: 12,
-    paddingTop: 10,
-    borderTop: "1px solid rgba(255,255,255,0.10)",
+    marginTop: 8,
+    paddingTop: 9,
+    borderTop: "1px solid rgba(212,168,83,0.24)",
   },
   briefChatPrimary: {
     padding: "4px 0",
