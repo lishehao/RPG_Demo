@@ -66,6 +66,9 @@ def test_home_editorial_tiles_use_distinct_component_archetypes() -> None:
     assert "function PublishedTileComposition" in home
     assert 'data-home-tile-archetype={archetype}' in home
     assert 'data-home-full-bleed="true"' in home
+    assert 'data-home-reading-band="true"' in home
+    full_bleed = home[home.index("function FullBleedTileImage") : home.index("function TileMediaWell")]
+    assert "hpStyles.fullBleedReadingBand" in full_bleed
     assert 'data-home-framed-editorial="true"' in home
     assert 'data-home-storyboard="true"' in home
     assert 'data-home-cast-dossier="true"' in home
@@ -107,10 +110,15 @@ def test_home_editorial_tiles_keep_starter_and_playable_actions_distinct() -> No
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
+    helper = home[home.index("export function getHomeTileCopy") : home.index("function starterPremiseView")]
     mosaic = home[home.index("function HomeEditorialMosaic") : home.index("function visibilityLabel")]
     curated = home[home.index("function CuratedStoryTile") : home.index("function TemplateCard")]
     template = home[home.index("function TemplateCard") : home.index("function homeTileSpanStyle")]
 
+    assert "type HomeStoryObjectKind" in home
+    assert "type HomeStoryObjectView" in home
+    assert "starterPremiseView(" in mosaic
+    assert "publishedStoryView(" in mosaic
     assert "saveCreateDraftHandoff" not in mosaic
     assert "onStartCurated(item.story)" in mosaic
     assert "onStartTemplate(item.template.template_id)" in mosaic
@@ -118,8 +126,13 @@ def test_home_editorial_tiles_keep_starter_and_playable_actions_distinct() -> No
     assert 'data-story-card-kind="published-story"' in template
     assert 'data-home-tile-span={span}' in curated
     assert 'data-home-tile-span={span}' in template
-    assert "Ask Story Butler" in curated
-    assert 't("home.published_label")' in template
-    assert 't("home.card_action")' in template
+    assert 't("home.starter_action")' in helper
+    assert 't("home.card_action")' in helper
+    assert "view.copy.primaryAction" in curated
+    assert "displayView.copy.primaryAction" in template
+    published_helper = helper[helper.index('kind === "published_story"') : helper.index('kind === "in_progress_run"')]
+    assert "Story Butler" not in published_helper
+    assert "Story Butler" not in template
+    assert '"home.starter_action": "Ask Story Butler →"' in strings
     assert '"home.published_label": "Playable story"' in strings
-    assert '"home.card_action": "Play story →"' in strings
+    assert '"home.card_action": "Enter story →"' in strings

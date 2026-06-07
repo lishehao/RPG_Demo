@@ -75,18 +75,29 @@ def test_home_distinguishes_premise_starters_from_published_playable_stories() -
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
+    helper = home[home.index("export function getHomeTileCopy") : home.index("function starterPremiseView")]
     curated_start = home.index("function CuratedStoryTile")
     template_start = home.index("function TemplateCard")
     curated = home[curated_start:template_start]
     template = home[template_start:home.index("function visibilityLabel")]
 
+    assert "type HomeStoryObjectKind" in home
+    assert "type HomeStoryObjectView" in home
+    assert 'kind === "starter_premise"' in helper
+    assert 'kind === "published_story"' in helper
+    assert 't("home.starter_action")' in helper
+    assert 't("home.card_action")' in helper
+    published_helper = helper[helper.index('kind === "published_story"') : helper.index('kind === "in_progress_run"')]
+    assert "Story Butler" not in published_helper
     assert 'data-story-card-kind="starter-premise"' in curated
-    assert "Premise starter" in curated
-    assert "Ask Story Butler" in curated
+    assert "view.copy.typeLabel" in curated
+    assert "view.copy.primaryAction" in curated
     assert "saveCreateDraftHandoff" not in template
     assert 'data-story-card-kind="published-story"' in template
     assert 'data-home-tile-span={span}' in template
-    assert 't("home.published_label")' in template
-    assert 't("home.card_action")' in template
+    assert "displayView.copy.primaryAction" in template
+    assert "view.copy.typeLabel" in template
     assert '"home.premise_label": "Premise starter"' in strings
+    assert '"home.starter_action": "Ask Story Butler →"' in strings
     assert '"home.published_label": "Playable story"' in strings
+    assert '"home.card_action": "Enter story →"' in strings

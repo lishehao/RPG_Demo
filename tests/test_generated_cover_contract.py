@@ -136,7 +136,9 @@ def test_visible_template_lists_assign_distinct_internal_fallback_covers() -> No
 
     assert "assignTemplateCovers" in home
     assert "const assignedCovers = assignTemplateCovers(templates)" in home
-    assert "cover={tile.cover}" in home
+    assert "publishedStoryView(" in home
+    assert "assignedCovers[template.template_id]" in home
+    assert "view={tile}" in home
 
 
 def test_high_frequency_cover_themes_have_three_generated_variants_before_shells() -> None:
