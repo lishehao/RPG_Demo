@@ -82,10 +82,11 @@ def test_create_page_uses_slot_loop_before_story_brief_generation() -> None:
 
 def test_create_page_keeps_long_generate_handoff_visible_before_navigation() -> None:
     source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
+    options_source = (ROOT / "frontend2/src/pages/create/create-options.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
-    assert "LONG_GENERATE_HANDOFF_THRESHOLD_MS = 30_000" in source
-    assert "LONG_GENERATE_HANDOFF_MIN_MS = 2_000" in source
+    assert "LONG_GENERATE_HANDOFF_THRESHOLD_MS = 30_000" in options_source
+    assert "LONG_GENERATE_HANDOFF_MIN_MS = 2_000" in options_source
     assert "openingHandoffLabelKey" in source
     assert "setOpeningHandoffLabelKey(handoffLabelKey)" in source
 

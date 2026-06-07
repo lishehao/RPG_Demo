@@ -24,9 +24,11 @@ This map documents the current Tiny Stories Korean webtoon demo candidate. It is
   - Korean Agent Chat creation loop.
   - Owns Story Butler transcript UI, prompt starters, Story Brief-as-message, Generate handoff, and explicit visibility row.
   - Story-shape settings are inferred through the Story Butler loop; do not reintroduce a default fixed Length/Difficulty/Language/Tension settings grid.
+  - Current split: `create-page.tsx` container, `components/create-flow-panels.tsx` view panels, `create-options.ts`, `create-types.ts`, `create-styles.ts`, and `hooks/use-compact-layout.ts`.
 - `frontend2/src/pages/play/`
   - Main turn loop, current beat/action structure, live resolving states, advisor drawer, ending payoff.
   - Normal player UI must not expose provider/model/API/schema/debug or reviewer trace terms.
+  - Current split: `play-page.tsx` container, `components/play-flow-panels.tsx` view panels/helpers, `play-types.ts`, `play-styles.ts`, and `hooks/use-compact-layout.ts`.
 - `frontend2/src/pages/replay/`
   - Result-first public replay and Story Desk return loop.
   - Replay can offer a completion CTA near the coda; page-level escape navigation still belongs in the route/header area.
@@ -159,6 +161,6 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:<backend-port> \
 
 ## Future Refactor Notes
 
-- `frontend2/src/pages/create/create-page.tsx` is intentionally large. A future split should extract view-only components first (`TranscriptLane`, `BriefSlate`, `Composer`, `VisibilityControl`) without moving Story Brief API calls or changing flow semantics.
-- `frontend2/src/pages/play/play-page.tsx` is also large. Split only after adding source guards for action submission, resolving states, payoff focus, and reviewer trace separation.
-- Do not introduce broad file moves during release hardening unless tests and browser smoke are budgeted for the move.
+- `frontend2/src/pages/create/create-page.tsx` is now a container. Future work can split the transcript/composer into smaller view-only components.
+- `frontend2/src/pages/play/play-page.tsx` is now a container. `components/play-flow-panels.tsx` remains a large view/helper module; split it further only with source guards for action submission, resolving states, payoff focus, and reviewer trace separation.
+- Backend narrative splitting was deferred in this behavior-preserving pass because `service.py` mixes live opening recovery, persistence, and turn/session semantics. Split it only after adding facade-level contract tests around template creation, session start, turn advance, and replay.

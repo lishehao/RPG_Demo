@@ -1,6 +1,21 @@
 # Create Page: Korean Agent Chat
 
-`create-page.tsx` owns the current Story Butler creation flow. It is intentionally product-heavy and should be changed cautiously.
+`create-page.tsx` owns the current Story Butler creation flow as a route/container. It holds state, API orchestration, and navigation callbacks. View-only pieces live beside it in local modules.
+
+## File Map
+
+- `create-page.tsx`
+  - Route/container state, Story Brief and Generate API calls, guest session prep, transcript state, and navigation.
+- `components/create-flow-panels.tsx`
+  - View-only panels for busy stages, Story Butler ledger rows, Butler read ledger, and the Story Brief production slate.
+- `create-options.ts`
+  - Create constants and option metadata: seed examples, handoff timing, visibility options, budgets, difficulties, language options, tension options.
+- `create-types.ts`
+  - Create-local types shared by the container and view panels.
+- `create-styles.ts`
+  - Create page inline style map.
+- `hooks/use-compact-layout.ts`
+  - Create-specific compact layout media-query hook.
 
 ## Current Interaction Contract
 
@@ -15,7 +30,7 @@
 
 Length, difficulty, story language, and tone are inferred through chat, not shown as a default settings grid.
 
-Examples handled by `shared/lib/story-guide-loop.ts`:
+Examples handled by `shared/lib/story-guide-settings.ts`, with loop orchestration in `shared/lib/story-guide-loop.ts`:
 
 - `short`, `10 min`, `shorter` -> Short run / 8 turns.
 - `15 minutes`, `one sitting` -> One sitting / 12 turns.
@@ -55,14 +70,6 @@ Only the source of story-shape values changed from visible form controls to the 
 - Live opening is capped in backend service code and can recover with a reliable opening while preserving player-safe copy.
 - Normal player copy must not mention provider/model/API/schema/debug/fallback/deterministic.
 
-## Safe Future Split
+## Future Split Notes
 
-If this file is split, prefer view-only extraction first:
-
-- `TranscriptLane`
-- `GuideMessageRow`
-- `StoryBriefSlate`
-- `Composer`
-- `VisibilityControl`
-
-Do not move API orchestration or state transitions in the same patch as a visual split.
+The current split intentionally keeps API orchestration in the container. Further extraction should target view-only pieces first, such as a dedicated `TranscriptLane`, `StoryComposer`, or `VisibilityControl`, without moving Story Brief or Generate state transitions in the same patch.

@@ -7,8 +7,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_story_guide_loop_infers_shape_settings_from_chat_phrases() -> None:
-    source = (ROOT / "frontend2/src/shared/lib/story-guide-loop.ts").read_text()
+    loop_source = (ROOT / "frontend2/src/shared/lib/story-guide-loop.ts").read_text()
+    source = (ROOT / "frontend2/src/shared/lib/story-guide-settings.ts").read_text()
 
+    assert 'from "./story-guide-settings"' in loop_source
     assert "export type StoryGuideSettingDeltas" in source
     assert "inferStoryGuideSettings" in source
     assert "settings.turnBudget = 8" in source
@@ -31,13 +33,14 @@ def test_story_guide_loop_infers_shape_settings_from_chat_phrases() -> None:
 
 def test_privacy_chat_intent_is_guidance_not_silent_publish() -> None:
     loop_source = (ROOT / "frontend2/src/shared/lib/story-guide-loop.ts").read_text()
+    settings_source = (ROOT / "frontend2/src/shared/lib/story-guide-settings.ts").read_text()
     create_source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
 
-    assert "privacyIntent" in loop_source
-    assert "detectPrivacyIntent" in loop_source
-    assert "isPrivacyOnlyRequest" in loop_source
-    assert "make it public" in loop_source
-    assert "public pressure" in loop_source
+    assert "privacyIntent" in settings_source
+    assert "detectPrivacyIntent" in settings_source
+    assert "isPrivacyOnlyRequest" in settings_source
+    assert "make it public" in settings_source
+    assert "public pressure" in settings_source
     assert "I will not silently change publishing from chat" in loop_source
 
     apply_start = create_source.index("const applyStoryGuideSettings")
@@ -68,16 +71,17 @@ def test_create_settings_panel_only_exposes_visibility_control() -> None:
 
 def test_butler_read_surfaces_in_transcript_and_brief_payload_still_uses_values() -> None:
     source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
+    panels_source = (ROOT / "frontend2/src/pages/create/components/create-flow-panels.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert 'data-guide-node="story_shape_read"' in source
     assert "StoryShapeReadLedger" in source
     assert 't("create.butler_read_label")' in source
     assert "shapeRead={storyShapeRead}" in source
-    assert 't("create.setting_run_length")' in source
-    assert 't("create.setting_pressure_mode")' in source
-    assert 't("create.setting_story_language")' in source
-    assert 't("create.setting_tone")' in source
+    assert 't("create.setting_run_length")' in panels_source
+    assert 't("create.setting_pressure_mode")' in panels_source
+    assert 't("create.setting_story_language")' in panels_source
+    assert 't("create.setting_tone")' in panels_source
 
     template_payload = source[source.index("api.createNarrativeTemplate") : source.index("const openingElapsedMs")]
     assert "turn_budget: turnBudget" in template_payload

@@ -44,7 +44,7 @@ def test_reviewer_seed_is_concrete_enough_to_avoid_generic_scaffold_roles() -> N
 
 
 def test_brief_card_surfaces_object_constraints_before_collapsed_details() -> None:
-    source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
+    source = (ROOT / "frontend2/src/pages/create/components/create-flow-panels.tsx").read_text()
 
     visible_constraints_idx = source.index("surfacedConstraints.length")
     collapsed_details_idx = source.index("<details style={cpStyles.briefDetails}>")

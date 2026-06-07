@@ -13,8 +13,8 @@
 ## Page Ownership
 
 - `pages/home/`: Story Desk/home, starter premise doors, published story cards, My Stories.
-- `pages/create/`: Korean webtoon Agent Chat and Story Brief creation flow.
-- `pages/play/`: live turn loop, choices/free input, advisor, current beat, ending payoff.
+- `pages/create/`: Korean webtoon Agent Chat and Story Brief creation flow. Container, styles, options, local types, and view panels are split inside this folder.
+- `pages/play/`: live turn loop, choices/free input, advisor, current beat, ending payoff. Container, styles, local types, layout hook, and panels are split inside this folder.
 - `pages/replay/`: public replay and result-first memory loop.
 - `pages/world/`: generated template detail and direct Play/session entry.
 - `pages/portfolio/`: portfolio and reviewer evidence mode.
@@ -23,7 +23,8 @@
 ## Shared Helpers
 
 - `shared/lib/i18n.ts`: UI strings and locale selection. Story body language is not the same as UI locale.
-- `shared/lib/story-guide-loop.ts`: deterministic Story Butler slot loop and inferred story-shape settings.
+- `shared/lib/story-guide-loop.ts`: deterministic Story Butler slot loop and assistant state transitions.
+- `shared/lib/story-guide-settings.ts`: deterministic story-shape setting inference and privacy-intent classification.
 - `shared/lib/webtoon-assets.ts`: webtoon asset resolver, cover fallback, same-screen cover assignment.
 - `shared/lib/localized-story-metadata.ts`: lightweight title/summary display fallback.
 - `shared/lib/friendly-error.ts`: sanitized player error copy.
