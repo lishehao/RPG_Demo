@@ -69,15 +69,16 @@ def test_create_settings_panel_only_exposes_visibility_control() -> None:
     assert "TENSION_PROFILE_OPTIONS.map" not in details_segment
 
 
-def test_butler_read_surfaces_in_transcript_and_brief_payload_still_uses_values() -> None:
+def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() -> None:
     source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
     panels_source = (ROOT / "frontend2/src/pages/create/components/create-flow-panels.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
-    assert 'data-guide-node="story_shape_read"' in source
-    assert "StoryShapeReadLedger" in source
-    assert 't("create.butler_read_label")' in source
+    assert "GuideInlineLedger" not in source
+    assert 'data-guide-node="story_shape_read"' not in source
+    assert 't("create.butler_read_label")' not in source
     assert "shapeRead={storyShapeRead}" in source
+    assert "StoryShapeReadLedger" in panels_source
     assert 't("create.setting_run_length")' in panels_source
     assert 't("create.setting_pressure_mode")' in panels_source
     assert 't("create.setting_story_language")' in panels_source
@@ -93,12 +94,10 @@ def test_butler_read_surfaces_in_transcript_and_brief_payload_still_uses_values(
     assert "desiredTensionProfile === \"auto\" ? null : desiredTensionProfile" in brief_payload
 
     for key in (
-        '"create.butler_read_label": "Butler read"',
         '"create.setting_run_length": "Run length"',
         '"create.setting_pressure_mode": "Pressure mode"',
         '"create.setting_story_language": "Story language"',
         '"create.setting_tone": "Tone"',
-        '"create.butler_read_label": "管家判断"',
         '"create.setting_run_length": "时长"',
         '"create.setting_pressure_mode": "压力模式"',
         '"create.setting_story_language": "故事语言"',

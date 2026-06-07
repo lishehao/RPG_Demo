@@ -25,7 +25,7 @@ import {
 } from "../../shared/lib/story-guide-loop"
 import { takeCreateDraftHandoff } from "../../shared/lib/create-draft-handoff"
 
-import { BUSY_STAGE_COUNT, BusyStages, BusyTip, GuideInlineLedger, StoryBriefCard, StoryShapeReadLedger } from "./components/create-flow-panels"
+import { BUSY_STAGE_COUNT, BusyStages, BusyTip, StoryBriefCard } from "./components/create-flow-panels"
 import { BUDGET_OPTIONS, DIFFICULTY_OPTIONS, LONG_GENERATE_HANDOFF_MIN_MS, LONG_GENERATE_HANDOFF_THRESHOLD_MS, SEED_EXAMPLE_KEYS, STORY_BUTLER_AVATAR, STORY_LANGUAGE_OPTIONS, TENSION_PROFILE_OPTIONS, VISIBILITY_KEY_MAP, VISIBILITY_OPTION_IDS, briefKey, makeGuestHandle } from "./create-options"
 import { cpStyles } from "./create-styles"
 import type { GuideMessage, StoryShapeRead, TensionProfileChoice } from "./create-types"
@@ -629,7 +629,6 @@ export function CreatePage({
                     >
                       {message.text}
                     </span>
-                    {message.ledger ? <GuideInlineLedger ledger={message.ledger} compact={compactLayout} /> : null}
                   </div>
                 </div>
               )
@@ -707,28 +706,6 @@ export function CreatePage({
                       transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
                     />
                   </span>
-                </div>
-              </div>
-            ) : null}
-            {hasSeed ? (
-              <div
-                data-guide-node="story_shape_read"
-                data-guide-state={guideLoopState.status}
-                style={{
-                  ...cpStyles.guideMessage,
-                  ...cpStyles.guideMessageGuide,
-                  ...(compactLayout ? cpStyles.guideMessageCompact : null),
-                }}
-              >
-                <img
-                  src={STORY_BUTLER_AVATAR}
-                  alt=""
-                  style={{ ...cpStyles.guideAvatarSmall, ...(compactLayout ? cpStyles.guideAvatarSmallCompact : null) }}
-                />
-                <div style={cpStyles.guideMessageContent}>
-                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                  <span style={cpStyles.guideMessageText}>{t("create.butler_read_label")}</span>
-                  <StoryShapeReadLedger shapeRead={storyShapeRead} compact={compactLayout} />
                 </div>
               </div>
             ) : null}
