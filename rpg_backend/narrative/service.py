@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import secrets
 import re
 import time
@@ -2803,10 +2804,69 @@ def _contains_player_debug_terms(value: str) -> bool:
 
 
 def _safe_live_reply(raw: object, fallback: str) -> str:
-    reply = _safe_short_text(raw, fallback, max_len=420)
+    reply = _safe_short_text(_unwrap_story_guide_reply(raw), fallback, max_len=420)
     if _contains_player_debug_terms(reply):
         return fallback
+    if _looks_like_protocol_wrapper(reply):
+        return fallback
     return reply
+
+
+def _unwrap_story_guide_reply(raw: object, *, depth: int = 0) -> object:
+    if depth > 3:
+        return raw
+    if isinstance(raw, dict):
+        return _unwrap_story_guide_reply(raw.get("reply"), depth=depth + 1)
+    if not isinstance(raw, str):
+        return raw
+    text = raw.strip()
+    if not text:
+        return raw
+    decoded = _decode_json_object(text)
+    if decoded is not None:
+        return _unwrap_story_guide_reply(decoded, depth=depth + 1)
+    recovered = _extract_reply_from_json_like_text(text)
+    if recovered:
+        return recovered
+    return raw
+
+
+def _decode_json_object(value: str) -> dict[str, Any] | None:
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError:
+        start = value.find("{")
+        end = value.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        try:
+            decoded = json.loads(value[start : end + 1])
+        except json.JSONDecodeError:
+            return None
+    return decoded if isinstance(decoded, dict) else None
+
+
+def _extract_reply_from_json_like_text(value: str) -> str | None:
+    match = re.search(r'"reply"\s*:\s*("(?:(?:\\.)|[^"\\])*")', value, re.S)
+    if not match:
+        return None
+    quoted = match.group(1)
+    try:
+        decoded = json.loads(quoted)
+    except json.JSONDecodeError:
+        decoded = quoted.strip('"')
+    cleaned = normalize_whitespace(str(decoded))
+    return cleaned or None
+
+
+def _looks_like_protocol_wrapper(value: str) -> bool:
+    stripped = value.strip()
+    if not stripped:
+        return False
+    if stripped.startswith("{") or stripped.endswith("}"):
+        return True
+    lowered = stripped.casefold()
+    return '"reply"' in lowered or "'reply'" in lowered
 
 
 def _apply_live_story_brief_copy(

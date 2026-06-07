@@ -49,6 +49,34 @@ type GuideTurnLike = {
   ledger?: GuideMessage["ledger"] | null
 }
 
+function normalizeGuideReplyText(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return raw
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    if (parsed && typeof parsed === "object" && "reply" in parsed) {
+      const reply = (parsed as { reply?: unknown }).reply
+      if (typeof reply === "string" && reply.trim()) {
+        return normalizeGuideReplyText(reply)
+      }
+    }
+  } catch {
+    const match = trimmed.match(/"reply"\s*:\s*("(?:(?:\\.)|[^"\\])*")/s)
+    if (match?.[1]) {
+      try {
+        const reply = JSON.parse(match[1]) as unknown
+        if (typeof reply === "string" && reply.trim()) return reply.trim()
+      } catch {
+        return match[1].replace(/^"|"$/g, "").trim()
+      }
+    }
+  }
+  if (/^\s*\{/.test(trimmed) || /"reply"\s*:/.test(trimmed)) {
+    return ""
+  }
+  return trimmed
+}
+
 export function CreatePage({
   onBackHome,
   onSessionStarted,
@@ -432,7 +460,7 @@ export function CreatePage({
         {
           id: `guide-${time}-${current.length}`,
           speaker: "guide",
-          text: response.reply,
+          text: normalizeGuideReplyText(response.reply) || t("create.guide_fallback_reply"),
           node: response.node,
           state: response.status,
           ledger: response.ledger ?? undefined,

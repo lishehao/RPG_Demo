@@ -183,6 +183,68 @@ def test_story_butler_turn_uses_live_gateway_and_persists_safe_telemetry(tmp_pat
     assert "redacted-test-key" not in serialized
 
 
+def test_story_butler_turn_unwraps_stringified_reply_json(tmp_path) -> None:
+    transport = _transport(
+        {"reply": '{"reply":"A gala gone wrong already crackles. Who are you in the scene?"}'},
+        usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message="Gala goes wrong.", language="en"),
+        owner_user_id="user_live",
+    )
+
+    assert response.source == "live"
+    assert response.reply == "A gala gone wrong already crackles. Who are you in the scene?"
+    assert '{"reply"' not in response.reply
+    assert "}" not in response.reply
+
+
+def test_story_butler_turn_accepts_natural_text_plaintext_fallback(tmp_path) -> None:
+    transport = _transport(
+        "A gala gone wrong is a clean spark. Who can lose something public in this room?",
+        usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message="Gala goes wrong.", language="en"),
+        owner_user_id="user_live",
+    )
+
+    assert response.source == "live"
+    assert response.reply.startswith("A gala gone wrong is a clean spark")
+    assert '{"reply"' not in response.reply
+
+
+def test_story_butler_turn_recovers_malformed_reply_wrapper(tmp_path) -> None:
+    transport = _transport(
+        {"reply": '{"reply":"The publicist is in the room. What pressure hits first?",}'},
+        usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message="Gala goes wrong.", language="en"),
+        owner_user_id="user_live",
+    )
+
+    assert response.source == "live"
+    assert response.reply == "The publicist is in the room. What pressure hits first?"
+    assert '{"reply"' not in response.reply
+    assert response.ledger is not None
+
+
 def test_story_butler_turn_falls_back_without_gateway_and_records_no_gateway_event(tmp_path) -> None:
     service = NarrativeService(
         repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
@@ -249,4 +311,6 @@ def test_create_page_calls_backend_story_guide_turn_and_shows_thinking_row() -> 
     assert "createNarrativeStoryGuideTurn" in create_page
     assert 'data-guide-node="story_butler_turn"' in create_page
     assert "guideBusy" in create_page
+    assert "normalizeGuideReplyText(response.reply)" in create_page
+    assert '"reply"\\s*:' in create_page
     assert "/narrative/story-guide/turns" in route_map
