@@ -40,7 +40,7 @@ import {
   getAvatarForCastMember,
   getCoverForTemplate,
   getEndingIllustration,
-  getPeakCloseUp,
+  getSceneByPhase,
   getTierSplash,
 } from "../../shared/lib/webtoon-assets"
 import { ppStyles } from "./play-styles"
@@ -72,6 +72,34 @@ function leveragePlayInput(card: LeverageCardView, language: NarrativeStoryHisto
     return `我亮出手里针对 ${card.target_name} 的把柄：${card.leverage}`
   }
   return `I reveal the leverage I hold over ${card.target_name}: ${card.leverage}`
+}
+
+function playSegmentPhaseForMessage(
+  message: NarrativeStoryMessage,
+  turnBudget: number,
+): "opening" | "pressure" | "reversal" | "reveal" | "terminal" {
+  const turnIndex = Math.floor(message.ord / 2)
+  if (turnIndex <= 0) return "opening"
+  if (turnIndex >= turnBudget) return "terminal"
+  const ratio = turnBudget > 0 ? turnIndex / turnBudget : 0
+  if (ratio < 0.35) return "pressure"
+  if (ratio < 0.6) return "reversal"
+  if (ratio < 0.9) return "reveal"
+  return "terminal"
+}
+
+function playSegmentSceneCorpus(
+  story: NarrativeStoryHistoryResponse,
+  message: NarrativeStoryMessage,
+): string {
+  return [
+    story.template.seed,
+    story.template.title,
+    story.template.cast
+      .map((member) => `${member.display_name} ${member.role} ${member.relation_to_protagonist}`)
+      .join(" "),
+    message.content,
+  ].join(" ")
 }
 
 export function PlayPage({
@@ -453,7 +481,15 @@ export function PlayPage({
                     ? computeBeatIntensity(m, turnBudget)
                     : "calm"
                 }
-                sceneUrl={m.role === "narrator" ? getPeakCloseUp(m.ord) : undefined}
+                sceneUrl={
+                  m.role === "narrator"
+                    ? getSceneByPhase(
+                        playSegmentPhaseForMessage(m, turnBudget),
+                        `${story.template.template_id}|${m.ord}`,
+                        playSegmentSceneCorpus(story, m),
+                      )
+                    : undefined
+                }
                 pickedHandle={pickedHandle}
                 pickedActionText={pickedActionText}
                 isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}

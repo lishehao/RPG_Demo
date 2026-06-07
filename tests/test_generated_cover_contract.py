@@ -221,3 +221,51 @@ def test_high_frequency_same_theme_pool_can_cover_six_visible_cards_without_repe
         # internal fallback candidates for same-screen de-dupe. Six visible
         # same-theme cards can therefore avoid identical fallback URLs.
         assert len(set(generated_paths)) + 5 >= 6
+
+
+def test_play_segment_scene_expansion_assets_are_wired() -> None:
+    source = (ROOT / "frontend2/src/shared/lib/webtoon-assets.ts").read_text()
+    manifest = (ROOT / "frontend2/public/webtoons/segments/ASSET_MANIFEST.md").read_text()
+    expected = {
+        "opening_backstage_control_room": "opening_backstage_control_room.jpg",
+        "pressure_backstage_press_crush": "pressure_backstage_press_crush.jpg",
+        "reveal_backstage_empty_spotlight": "reveal_backstage_empty_spotlight.jpg",
+        "opening_office_night_merger": "opening_office_night_merger.jpg",
+        "pressure_office_contract_table": "pressure_office_contract_table.jpg",
+        "reversal_office_elevator_secret": "reversal_office_elevator_secret.jpg",
+        "opening_campus_auditorium_night": "opening_campus_auditorium_night.jpg",
+        "pressure_campus_archive_lock": "pressure_campus_archive_lock.jpg",
+        "reveal_campus_phone_reflection": "reveal_campus_phone_reflection.jpg",
+        "opening_wedding_banquet_hall": "opening_wedding_banquet_hall.jpg",
+        "pressure_wedding_family_table": "pressure_wedding_family_table.jpg",
+        "reversal_wedding_dropped_note": "reversal_wedding_dropped_note.jpg",
+        "opening_family_will_reading": "opening_family_will_reading.jpg",
+        "pressure_family_banquet_standoff": "pressure_family_banquet_standoff.jpg",
+        "terminal_family_empty_mansion": "terminal_family_empty_mansion.jpg",
+    }
+
+    assert "SEGMENT_THEME_POOLS" in source
+    assert "SEGMENT_THEME_RULES" in source
+    assert "getSceneByPhase(phase: string | null | undefined, key = \"default\", corpus = \"\")" in source
+    assert "const themedPool = theme ? SEGMENT_THEME_POOLS[slug][theme] : undefined" in source
+    assert "return `/webtoons/segments/${themedPool[0]}.jpg`" in source
+    assert "return `/webtoons/segments/${pick(SEGMENT_PHASE_POOLS[slug]" in source
+
+    for slug, filename in expected.items():
+        assert slug in source
+        assert filename in manifest
+        assert (ROOT / "frontend2/public/webtoons/segments" / filename).exists()
+
+
+def test_play_route_uses_segment_scene_resolver_for_narrator_beats() -> None:
+    play_source = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    beat_source = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+
+    assert "getSceneByPhase" in play_source
+    assert "playSegmentPhaseForMessage" in play_source
+    assert "playSegmentSceneCorpus" in play_source
+    assert "story.template.seed" in play_source
+    assert "story.template.cast" in play_source
+    assert "getPeakCloseUp" not in play_source
+    assert "const shouldShowSceneBanner = !!sceneUrl && (intensity === \"peak\" || isLatestNarrator)" in beat_source
+    assert "{shouldShowSceneBanner ? (" in beat_source

@@ -1144,6 +1144,7 @@ export function StoryBeat({
     const playedLeverage = previousPlayerMessage?.played_leverage ?? null
     const hasBroken = impactPulses.some((p) => p.shift === "broken")
     const shouldOpenImpactEvidence = impactPulses.some((p) => p.shift === "broken")
+    const shouldShowSceneBanner = !!sceneUrl && (intensity === "peak" || isLatestNarrator)
     const showDetailedOutcome =
       outcomeItems.length > 0 && (isLatestNarrator || hasBroken || intensity === "peak")
     const showDetailedImpactEvidence =
@@ -1222,7 +1223,7 @@ export function StoryBeat({
             {isBookmarked ? "★" : "☆"}
           </button>
         ) : null}
-        {intensity === "peak" && sceneUrl ? (
+        {shouldShowSceneBanner ? (
           <motion.div
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}

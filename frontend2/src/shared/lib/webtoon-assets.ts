@@ -83,6 +83,12 @@ const ADVISOR_AVATARS = [
 
 const SEGMENT_PHASES = ["opening", "pressure", "reversal", "reveal", "terminal"] as const
 type SegmentPhase = (typeof SEGMENT_PHASES)[number]
+type SegmentTheme =
+  | "backstage-entertainment"
+  | "office-boardroom"
+  | "campus"
+  | "wedding"
+  | "family-inheritance"
 
 const SEGMENT_PHASE_POOLS: Record<SegmentPhase, readonly string[]> = {
   opening: [
@@ -117,6 +123,72 @@ const SEGMENT_PHASE_POOLS: Record<SegmentPhase, readonly string[]> = {
     "terminal_empty_boardroom",
   ],
 }
+
+const SEGMENT_THEME_POOLS: Record<SegmentPhase, Partial<Record<SegmentTheme, readonly string[]>>> = {
+  opening: {
+    "backstage-entertainment": ["opening_backstage_control_room", "opening_backstage_vanity"],
+    "office-boardroom": ["opening_office_night_merger"],
+    campus: ["opening_campus_auditorium_night", "opening_campus_rain_gate"],
+    wedding: ["opening_wedding_banquet_hall"],
+    "family-inheritance": ["opening_family_will_reading"],
+  },
+  pressure: {
+    "backstage-entertainment": ["pressure_backstage_press_crush", "pressure_press_hallway"],
+    "office-boardroom": ["pressure_office_contract_table", "pressure_boardroom_vote"],
+    campus: ["pressure_campus_archive_lock"],
+    wedding: ["pressure_wedding_family_table"],
+    "family-inheritance": ["pressure_family_banquet_standoff", "pressure_family_banquet"],
+  },
+  reversal: {
+    "office-boardroom": ["reversal_office_elevator_secret", "reversal_elevator_standoff"],
+    wedding: ["reversal_wedding_dropped_note", "reversal_wedding_aisle"],
+  },
+  reveal: {
+    "backstage-entertainment": ["reveal_backstage_empty_spotlight"],
+    campus: ["reveal_campus_phone_reflection", "reveal_phone_reflection"],
+  },
+  terminal: {
+    "family-inheritance": ["terminal_family_empty_mansion"],
+  },
+}
+
+const SEGMENT_THEME_RULES: Array<{ theme: SegmentTheme; keywords: readonly string[] }> = [
+  {
+    theme: "backstage-entertainment",
+    keywords: [
+      "backstage", "control room", "awards", "livestream", "singer", "idol", "stage", "spotlight",
+      "producer", "sponsor", "fans", "press", "celebrity", "show", "后台", "直播", "歌手", "粉丝", "舞台",
+    ],
+  },
+  {
+    theme: "office-boardroom",
+    keywords: [
+      "office", "boardroom", "merger", "contract", "executive", "investor", "company",
+      "conference", "elevator", "deadline", "董事会", "并购", "合同", "公司", "会议",
+    ],
+  },
+  {
+    theme: "campus",
+    keywords: [
+      "campus", "student", "auditorium", "archive", "library", "college", "school",
+      "scholarship", "confession", "校园", "学生", "礼堂", "档案", "图书馆",
+    ],
+  },
+  {
+    theme: "wedding",
+    keywords: [
+      "wedding", "banquet", "bride", "groom", "aisle", "family table", "dropped note",
+      "marriage", "婚礼", "婚宴", "新娘", "新郎", "请帖",
+    ],
+  },
+  {
+    theme: "family-inheritance",
+    keywords: [
+      "family", "inheritance", "will reading", "sealed will", "mansion", "banquet", "estate",
+      "heir", "家族", "继承", "遗嘱", "豪门", "宴会",
+    ],
+  },
+]
 
 const ENDING_VARIANTS = [
   "burned_alone",
@@ -162,7 +234,11 @@ function shellVariantSlugs(shell: Shell): string[] {
 }
 
 function segmentSlugs(): string[] {
-  return SEGMENT_PHASES.flatMap((phase) => [...SEGMENT_PHASE_POOLS[phase]])
+  const slugs = SEGMENT_PHASES.flatMap((phase) => [
+    ...SEGMENT_PHASE_POOLS[phase],
+    ...Object.values(SEGMENT_THEME_POOLS[phase]).flatMap((pool) => [...(pool ?? [])]),
+  ])
+  return [...new Set(slugs)]
 }
 
 // ───────── covers ─────────
@@ -208,9 +284,24 @@ export function getDefaultAvatar(gender?: "female" | "male"): string {
 // ───────── scenes / segments ─────────
 
 /** Background art for the play stage, picked by the current beat phase. */
-export function getSceneByPhase(phase: string | null | undefined, key = "default"): string {
+export function getSceneByPhase(phase: string | null | undefined, key = "default", corpus = ""): string {
   const slug = (SEGMENT_PHASES.find((p) => p === phase) ?? "opening") as SegmentPhase
+  const theme = inferSegmentTheme(corpus)
+  const themedPool = theme ? SEGMENT_THEME_POOLS[slug][theme] : undefined
+  if (themedPool && themedPool.length > 0) {
+    return `/webtoons/segments/${themedPool[0]}.jpg`
+  }
   return `/webtoons/segments/${pick(SEGMENT_PHASE_POOLS[slug], `segment|${slug}|${key}`)}.jpg`
+}
+
+function inferSegmentTheme(corpus: string): SegmentTheme | null {
+  const normalized = corpus.toLowerCase()
+  for (const rule of SEGMENT_THEME_RULES) {
+    if (rule.keywords.some((kw) => normalized.includes(kw.toLowerCase()))) {
+      return rule.theme
+    }
+  }
+  return null
 }
 
 // ───────── endings ─────────
