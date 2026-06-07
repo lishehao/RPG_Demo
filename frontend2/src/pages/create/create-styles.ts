@@ -106,7 +106,10 @@ export const cpStyles: Record<string, CSSProperties> = {
   topBackButton: {
     flex: "0 0 auto",
     height: 30,
-    padding: "0 0 5px",
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 5,
+    paddingLeft: 0,
     border: "none",
     borderBottom: "1px solid rgba(245,200,120,0.42)",
     borderRadius: 0,

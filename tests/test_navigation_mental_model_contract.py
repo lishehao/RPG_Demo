@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_create_page_has_top_left_back_and_no_buried_bottom_back() -> None:
     source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    styles = (ROOT / "frontend2/src/pages/create/create-styles.ts").read_text()
 
     header_start = source.index("<header")
     main_start = source.index("<main", header_start)
@@ -22,6 +23,11 @@ def test_create_page_has_top_left_back_and_no_buried_bottom_back() -> None:
     assert "backAction:" not in source
     assert '"create.cta_back": "← Story Desk"' in strings
     assert '"create.cta_back": "← 故事入口"' in strings
+
+    top_back = styles[styles.index("topBackButton: {") : styles.index("topBackButtonCompact:", styles.index("topBackButton: {"))]
+    assert "padding:" not in top_back
+    assert "paddingBottom: 5" in top_back
+    assert "paddingLeft: 0" in top_back
 
 
 def test_shared_header_supports_explicit_back_for_secondary_pages() -> None:
