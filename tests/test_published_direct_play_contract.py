@@ -37,8 +37,10 @@ def test_home_story_area_uses_editorial_mosaic_without_main_story_semantics() ->
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
 
     assert "type HomeTileSpan" in home
+    assert "type HomeTileArchetype" in home
     assert "const HOME_MOSAIC_RHYTHM" in home
     assert "export function homeTileSpanForItem" in home
+    assert "export function homeTileArchetypeForItem" in home
     assert "function assignHomeMosaicSpans" in home
     assert "function HomeEditorialMosaic" in home
     assert 'data-home-editorial-mosaic="true"' in home
@@ -52,6 +54,44 @@ def test_home_story_area_uses_editorial_mosaic_without_main_story_semantics() ->
     assert "mainStory" not in home
     assert "leadStory" not in home
     assert "promoted" not in home
+
+
+def test_home_editorial_tiles_use_distinct_component_archetypes() -> None:
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+
+    assert "function FullBleedTileImage" in home
+    assert "function TileMediaWell" in home
+    assert "function CastDossierFrames" in home
+    assert "function StarterTileComposition" in home
+    assert "function PublishedTileComposition" in home
+    assert 'data-home-tile-archetype={archetype}' in home
+    assert 'data-home-full-bleed="true"' in home
+    assert 'data-home-framed-editorial="true"' in home
+    assert 'data-home-storyboard="true"' in home
+    assert 'data-home-cast-dossier="true"' in home
+    assert 'data-home-media-well={variant}' in home
+    assert 'data-home-cast-frame="true"' in home
+
+
+def test_home_tall_dispatch_and_dossier_guards_match_design_rules() -> None:
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+
+    tall_start = home.index('if (archetype === "tall_storyboard")')
+    tall_segment = home[tall_start:home.index('if (archetype === "dispatch_notice")', tall_start)]
+    assert 'data-home-storyboard="true"' in tall_segment
+    assert 'TileMediaWell cover={cover} variant="tall"' in tall_segment
+    assert "FullBleedTileImage" not in tall_segment
+
+    assert 'if (archetype === "dispatch_notice")' in home
+    assert "hpStyles.dispatchTileLayout" in home
+    assert 'variant="sliver"' in home
+
+    dossier_start = home.index("function CastDossierFrames")
+    dossier_segment = home[dossier_start:home.index("function selectDossierCast")]
+    assert "data-home-cast-frame" in dossier_segment
+    assert "portrait" not in dossier_segment.lower()
+    assert "avatar" not in dossier_segment.lower()
+    assert "slice(0, compact ? 2 : 3)" in home
 
 
 def test_home_editorial_tiles_keep_starter_and_playable_actions_distinct() -> None:

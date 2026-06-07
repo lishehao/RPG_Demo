@@ -1,6 +1,7 @@
-import { type CSSProperties, useEffect, useRef, useState } from "react"
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
+  NarrativeCastMember,
   NarrativeSessionSummary,
   NarrativeTemplateSummary,
   NarrativeTensionProfile,
@@ -45,6 +46,12 @@ type CuratedPlazaStory = {
 
 type HomeObjectKind = "starter_premise" | "published_story" | "in_progress" | "completed_memory" | "draft"
 type HomeTileSpan = "feature-wide" | "feature-tall" | "feature-horizontal" | "dispatch" | "notice-wide"
+type HomeTileArchetype =
+  | "full_bleed_cinematic"
+  | "framed_editorial"
+  | "character_dossier"
+  | "dispatch_notice"
+  | "tall_storyboard"
 
 type HomeMosaicBase = {
   id: string
@@ -53,10 +60,12 @@ type HomeMosaicBase = {
   summaryText: string
   themeKey?: string | null
   hasStrongCover: boolean
+  castCount?: number
 }
 
 type HomeMosaicTile<T> = T & {
   span: HomeTileSpan
+  archetype: HomeTileArchetype
 }
 
 const HOME_MOSAIC_RHYTHM: readonly HomeTileSpan[] = [
@@ -113,12 +122,45 @@ export function homeTileSpanForItem(
 function assignHomeMosaicSpans<T extends HomeMosaicBase>(items: T[]): HomeMosaicTile<T>[] {
   let previousSpan: HomeTileSpan | undefined
   let previousTheme: string | null | undefined
+  let previousArchetype: HomeTileArchetype | undefined
+  let fullBleedCount = 0
   return items.map((item, index) => {
     const span = homeTileSpanForItem(item, index, items.length, previousSpan, previousTheme)
+    const archetype = homeTileArchetypeForItem(item, span, fullBleedCount, previousArchetype)
     previousSpan = span
     previousTheme = item.themeKey
-    return { ...item, span }
+    previousArchetype = archetype
+    if (archetype === "full_bleed_cinematic") fullBleedCount += 1
+    return { ...item, span, archetype }
   })
+}
+
+export function homeTileArchetypeForItem(
+  item: HomeMosaicBase,
+  span: HomeTileSpan,
+  fullBleedCount = 0,
+  previousArchetype?: HomeTileArchetype,
+): HomeTileArchetype {
+  const castCount = item.castCount ?? 0
+  const canUseFullBleed =
+    span === "feature-wide" &&
+    item.hasStrongCover &&
+    fullBleedCount < 2 &&
+    previousArchetype !== "full_bleed_cinematic"
+
+  if (span === "feature-tall") {
+    return item.kind === "published_story" && castCount >= 2 ? "character_dossier" : "tall_storyboard"
+  }
+  if (span === "dispatch" || item.kind === "completed_memory") {
+    return "dispatch_notice"
+  }
+  if (item.kind === "published_story" && castCount >= 2 && span !== "feature-wide") {
+    return "character_dossier"
+  }
+  if (canUseFullBleed) {
+    return "full_bleed_cinematic"
+  }
+  return "framed_editorial"
 }
 
 const CURATED_PLAZA_STORIES: CuratedPlazaStory[] = [
@@ -748,6 +790,7 @@ function TemplateGrid({
     summaryText: getTemplateDisplaySummary(template, "en"),
     themeKey: template.cover_image_url ?? template.title,
     hasStrongCover: Boolean(assignedCovers[template.template_id]),
+    castCount: template.cast.length,
     template,
     cover: assignedCovers[template.template_id],
   })))
@@ -762,6 +805,7 @@ function TemplateGrid({
           template={tile.template}
           cover={tile.cover}
           span={tile.span}
+          archetype={tile.archetype}
           index={idx}
           compact={compact}
           isStarting={startingTemplateId === tile.template.template_id}
@@ -800,6 +844,7 @@ function HomeEditorialMosaic({
       summaryText: story.pressure[lang],
       themeKey: story.theme,
       hasStrongCover: true,
+      castCount: 0,
       story,
       cover: getCoverByStoryId(`curated-${story.id}`, story.theme),
     })),
@@ -810,6 +855,7 @@ function HomeEditorialMosaic({
       summaryText: getTemplateDisplaySummary(template, lang),
       themeKey: template.cover_image_url ?? template.title,
       hasStrongCover: Boolean(assignedCovers[template.template_id]),
+      castCount: template.cast.length,
       template,
       cover: assignedCovers[template.template_id],
     }))),
@@ -827,6 +873,7 @@ function HomeEditorialMosaic({
             story={item.story}
             cover={item.cover}
             span={item.span}
+            archetype={item.archetype}
             compact={compact}
             lang={lang}
             index={idx}
@@ -838,6 +885,7 @@ function HomeEditorialMosaic({
             template={item.template}
             cover={item.cover}
             span={item.span}
+            archetype={item.archetype}
             compact={compact}
             index={idx}
             isStarting={startingTemplateId === item.template.template_id}
@@ -855,6 +903,7 @@ function CuratedStoryTile({
   story,
   cover,
   span,
+  archetype,
   compact,
   lang,
   index,
@@ -863,22 +912,39 @@ function CuratedStoryTile({
   story: CuratedPlazaStory
   cover: string
   span: HomeTileSpan
+  archetype: HomeTileArchetype
   compact: boolean
   lang: keyof LocalizedText
   index: number
   onClick: () => void
 }) {
+  const title = story.title[lang]
+  const kicker = lang === "zh" ? "前提开局" : "Premise starter"
+  const action = lang === "zh" ? "让 Story Butler 开局 →" : "Ask Story Butler →"
+  const style = {
+    ...hpStyles.editorialTile,
+    ...hpStyles.editorialTileStarter,
+    ...homeTileSpanStyle(span, compact),
+  }
+  const body = (
+    <>
+      <TileKicker tone="starter">{kicker}</TileKicker>
+      <TileTitle span={span} compact={compact}>{title}</TileTitle>
+      <Truncated lines={span === "dispatch" ? 1 : 2} style={hpStyles.editorialTileDeck}>
+        {story.pressure[lang]}
+      </Truncated>
+      <span style={hpStyles.editorialTileMeta}>{story.promise[lang]}</span>
+      <TileCommand tone="starter">{action}</TileCommand>
+    </>
+  )
   return (
     <motion.button
       key={story.id}
       data-story-card-kind="starter-premise"
       data-home-tile-span={span}
-      aria-label={`${story.title[lang]} · ${lang === "zh" ? "前提开局" : "Premise starter"}`}
-      style={{
-        ...hpStyles.editorialTile,
-        ...hpStyles.editorialTileStarter,
-        ...homeTileSpanStyle(span, compact),
-      }}
+      data-home-tile-archetype={archetype}
+      aria-label={`${title} · ${kicker}`}
+      style={style}
       type="button"
       onClick={onClick}
       initial={{ opacity: 0, y: 10 }}
@@ -887,22 +953,9 @@ function CuratedStoryTile({
       whileHover={{ y: -2 }}
       whileTap={tapPress}
     >
-      <span
-        aria-hidden
-        style={{
-          ...hpStyles.editorialTileImage,
-          backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.02) 0%, rgba(12,12,16,0.28) 45%, rgba(12,12,16,0.86) 100%), url(${cover})`,
-        }}
-      />
-      <span style={hpStyles.editorialTileBody}>
-        <span style={hpStyles.editorialTileKicker}>{lang === "zh" ? "前提开局" : "Premise starter"}</span>
-        <span style={{ ...hpStyles.editorialTileTitle, ...homeTileTitleStyle(span, compact) }}>{story.title[lang]}</span>
-        <Truncated lines={span === "dispatch" ? 1 : 2} style={hpStyles.editorialTileDeck}>
-          {story.pressure[lang]}
-        </Truncated>
-        <span style={hpStyles.editorialTileMeta}>{story.promise[lang]}</span>
-        <span style={hpStyles.editorialTileAction}>{lang === "zh" ? "让 Story Butler 开局 →" : "Ask Story Butler →"}</span>
-      </span>
+      <StarterTileComposition archetype={archetype} cover={cover} span={span} compact={compact}>
+        {body}
+      </StarterTileComposition>
     </motion.button>
   )
 }
@@ -911,6 +964,7 @@ function TemplateCard({
   template,
   cover,
   span,
+  archetype,
   onClick,
   index = 0,
   compact,
@@ -919,6 +973,7 @@ function TemplateCard({
   template: NarrativeTemplateSummary
   cover: string
   span: HomeTileSpan
+  archetype: HomeTileArchetype
   onClick: () => void
   index?: number
   compact: boolean
@@ -928,11 +983,11 @@ function TemplateCard({
   const { lang } = useLanguage()
   const displayTitle = getTemplateDisplayTitle(template, lang)
   const displaySummary = getTemplateDisplaySummary(template, lang)
-  const tightPublishedTile = span === "notice-wide" || span === "dispatch"
   return (
     <motion.button
       data-story-card-kind="published-story"
       data-home-tile-span={span}
+      data-home-tile-archetype={archetype}
       aria-label={`${displayTitle} · ${isStarting ? t("home.card_starting") : t("home.card_action")}`}
       style={{
         ...hpStyles.editorialTile,
@@ -949,42 +1004,278 @@ function TemplateCard({
       whileHover={{ x: 2 }}
       whileTap={tapPress}
     >
+      <PublishedTileComposition
+        archetype={archetype}
+        cover={cover}
+        span={span}
+        compact={compact}
+        template={template}
+        title={displayTitle}
+        summary={displaySummary}
+        isStarting={isStarting}
+      />
+    </motion.button>
+  )
+}
+
+function StarterTileComposition({
+  archetype,
+  cover,
+  span,
+  compact,
+  children,
+}: {
+  archetype: HomeTileArchetype
+  cover: string
+  span: HomeTileSpan
+  compact: boolean
+  children: ReactNode
+}) {
+  if (archetype === "full_bleed_cinematic") {
+    return (
+      <FullBleedTileImage cover={cover} tone="starter">
+        <span style={hpStyles.editorialTileBody}>{children}</span>
+      </FullBleedTileImage>
+    )
+  }
+  if (archetype === "tall_storyboard") {
+    return (
+      <span style={hpStyles.tallStoryboardLayout} data-home-storyboard="true">
+        <TileMediaWell cover={cover} variant="tall" />
+        <span style={hpStyles.tallStoryboardPanel}>{children}</span>
+      </span>
+    )
+  }
+  if (archetype === "dispatch_notice") {
+    return (
+      <span style={hpStyles.dispatchTileLayout}>
+        <TileMediaWell cover={cover} variant="sliver" />
+        <span style={hpStyles.dispatchTextPanel}>{children}</span>
+      </span>
+    )
+  }
+  return (
+    <span style={framedTileLayoutStyle(span, compact)} data-home-framed-editorial="true">
+      <TileMediaWell cover={cover} variant={span === "notice-wide" ? "strip" : "framed"} />
+      <span style={hpStyles.framedTextPanel}>{children}</span>
+    </span>
+  )
+}
+
+function PublishedTileComposition({
+  archetype,
+  cover,
+  span,
+  compact,
+  template,
+  title,
+  summary,
+  isStarting,
+}: {
+  archetype: HomeTileArchetype
+  cover: string
+  span: HomeTileSpan
+  compact: boolean
+  template: NarrativeTemplateSummary
+  title: string
+  summary: string
+  isStarting: boolean
+}) {
+  const t = useT()
+  const tightPublishedTile = span === "notice-wide" || span === "dispatch"
+  const compactDossier = compact || span === "dispatch" || span === "notice-wide"
+  const metadata = (
+    <span style={hpStyles.editorialTileFooter}>
+      <span>{visibilityLabel(template.visibility, t)}</span>
+      <span>{t("home.played_count", { count: template.play_count })}</span>
+      {template.is_owner ? (
+        <span style={hpStyles.editorialTileOwner}>{t("home.is_owner")}</span>
+      ) : null}
+      <TileCommand tone="published">
+        {isStarting ? t("home.card_starting") : t("home.card_action")}
+      </TileCommand>
+    </span>
+  )
+  const standardBody = (
+    <>
+      <TileKicker tone="published">{t("home.published_label")}</TileKicker>
+      <TileTitle span={span} compact={compact} lines={tightPublishedTile ? 1 : 3}>{title}</TileTitle>
+      <Truncated style={hpStyles.editorialTileMeta}>
+        {template.cast.map((c) => c.display_name).join(" · ")}
+      </Truncated>
+      {tightPublishedTile ? null : (
+        <Truncated
+          lines={compact ? 2 : span === "feature-horizontal" ? 1 : 3}
+          style={hpStyles.editorialTileDeck}
+        >
+          {summary}
+        </Truncated>
+      )}
+      {metadata}
+    </>
+  )
+
+  if (archetype === "full_bleed_cinematic") {
+    return (
+      <FullBleedTileImage cover={cover} tone="published">
+        <span style={hpStyles.editorialTileBody}>{standardBody}</span>
+      </FullBleedTileImage>
+    )
+  }
+  if (archetype === "character_dossier") {
+    return (
+      <span style={dossierTileLayoutStyle(span, compact)} data-home-cast-dossier="true">
+        <TileMediaWell cover={cover} variant={span === "feature-tall" ? "tall" : "strip"} />
+        <span style={compactDossier ? { ...hpStyles.dossierTextPanel, ...hpStyles.dossierTextPanelCompact } : hpStyles.dossierTextPanel}>
+          <TileKicker tone="published">{t("home.published_label")}</TileKicker>
+          <TileTitle span={span} compact={compact} lines={span === "feature-tall" ? 3 : 1}>{title}</TileTitle>
+          <CastDossierFrames cast={template.cast} compact={compactDossier} />
+          {span === "feature-tall" ? (
+            <Truncated lines={2} style={hpStyles.editorialTileDeck}>{summary}</Truncated>
+          ) : null}
+          {metadata}
+        </span>
+      </span>
+    )
+  }
+  if (archetype === "dispatch_notice") {
+    return (
+      <span style={hpStyles.dispatchTileLayout}>
+        <TileMediaWell cover={cover} variant="sliver" />
+        <span style={hpStyles.dispatchTextPanel}>{standardBody}</span>
+      </span>
+    )
+  }
+  if (archetype === "tall_storyboard") {
+    return (
+      <span style={hpStyles.tallStoryboardLayout} data-home-storyboard="true">
+        <TileMediaWell cover={cover} variant="tall" />
+        <span style={hpStyles.tallStoryboardPanel}>{standardBody}</span>
+      </span>
+    )
+  }
+  return (
+    <span style={framedTileLayoutStyle(span, compact)} data-home-framed-editorial="true">
+      <TileMediaWell cover={cover} variant={span === "notice-wide" ? "strip" : "framed"} />
+      <span style={hpStyles.framedTextPanel}>{standardBody}</span>
+    </span>
+  )
+}
+
+function FullBleedTileImage({
+  cover,
+  tone,
+  children,
+}: {
+  cover: string
+  tone: "starter" | "published"
+  children: ReactNode
+}) {
+  const overlay =
+    tone === "starter"
+      ? "linear-gradient(180deg, rgba(12,12,16,0.02) 0%, rgba(12,12,16,0.28) 45%, rgba(12,12,16,0.86) 100%)"
+      : "linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.32) 48%, rgba(12,12,16,0.88) 100%)"
+  return (
+    <span style={hpStyles.fullBleedLayout} data-home-full-bleed="true">
       <span
         aria-hidden
         style={{
           ...hpStyles.editorialTileImage,
-          backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.32) 48%, rgba(12,12,16,0.88) 100%), url(${cover})`,
+          backgroundImage: `${overlay}, url(${cover})`,
         }}
       />
-      <span style={hpStyles.editorialTileBody}>
-        <span style={hpStyles.editorialTileKicker}>{t("home.published_label")}</span>
-        <Truncated lines={tightPublishedTile ? 1 : 3} style={{ ...hpStyles.editorialTileTitle, ...homeTileTitleStyle(span, compact) }}>
-          {displayTitle}
-        </Truncated>
-        <Truncated style={hpStyles.editorialTileMeta}>
-          {template.cast.map((c) => c.display_name).join(" · ")}
-        </Truncated>
-        {tightPublishedTile ? null : (
-          <Truncated
-            lines={compact ? 2 : span === "feature-horizontal" ? 1 : 3}
-            style={hpStyles.editorialTileDeck}
-          >
-            {displaySummary}
-          </Truncated>
-        )}
-        <span style={hpStyles.editorialTileFooter}>
-          <span>{visibilityLabel(template.visibility, t)}</span>
-          <span>{t("home.played_count", { count: template.play_count })}</span>
-          {template.is_owner ? (
-            <span style={hpStyles.editorialTileOwner}>{t("home.is_owner")}</span>
-          ) : null}
-          <span style={hpStyles.editorialTileAction}>
-            {isStarting ? t("home.card_starting") : t("home.card_action")}
+      {children}
+    </span>
+  )
+}
+
+function TileMediaWell({
+  cover,
+  variant,
+}: {
+  cover: string
+  variant: "framed" | "strip" | "sliver" | "tall"
+}) {
+  return (
+    <span
+      aria-hidden
+      data-home-media-well={variant}
+      style={{
+        ...hpStyles.mediaWell,
+        ...mediaWellVariantStyle(variant),
+        backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.02) 0%, rgba(12,12,16,0.18) 58%, rgba(12,12,16,0.50) 100%), url(${cover})`,
+      }}
+    />
+  )
+}
+
+function TileKicker({ tone, children }: { tone: "starter" | "published"; children: ReactNode }) {
+  return (
+    <span style={{ ...hpStyles.editorialTileKicker, ...(tone === "starter" ? hpStyles.starterKicker : hpStyles.publishedKicker) }}>
+      {children}
+    </span>
+  )
+}
+
+function TileTitle({
+  span,
+  compact,
+  lines,
+  children,
+}: {
+  span: HomeTileSpan
+  compact: boolean
+  lines?: number
+  children: string
+}) {
+  return (
+    <Truncated lines={lines ?? 3} style={{ ...hpStyles.editorialTileTitle, ...homeTileTitleStyle(span, compact) }}>
+      {children}
+    </Truncated>
+  )
+}
+
+function TileCommand({ tone, children }: { tone: "starter" | "published"; children: ReactNode }) {
+  return (
+    <span style={{ ...hpStyles.editorialTileAction, ...(tone === "starter" ? hpStyles.starterAction : hpStyles.publishedAction) }}>
+      {children}
+    </span>
+  )
+}
+
+function CastDossierFrames({ cast, compact }: { cast: NarrativeCastMember[]; compact: boolean }) {
+  const roles = selectDossierCast(cast, compact)
+  if (roles.length === 0) return null
+  return (
+    <span style={compact ? { ...hpStyles.castDossierRow, ...hpStyles.castDossierRowCompact } : hpStyles.castDossierRow}>
+      {roles.map((member) => (
+        <span
+          key={member.character_id}
+          style={compact ? { ...hpStyles.castDossierFrame, ...hpStyles.castDossierFrameCompact } : hpStyles.castDossierFrame}
+          data-home-cast-frame="true"
+        >
+          <span style={compact ? { ...hpStyles.castDossierInitial, ...hpStyles.castDossierInitialCompact } : hpStyles.castDossierInitial}>{castInitial(member.display_name)}</span>
+          <span style={hpStyles.castDossierText}>
+            <Truncated style={hpStyles.castDossierName}>{member.display_name}</Truncated>
+            {compact ? null : (
+              <Truncated style={hpStyles.castDossierRole}>{member.role || member.relation_to_protagonist}</Truncated>
+            )}
           </span>
         </span>
-      </span>
-    </motion.button>
+      ))}
+    </span>
   )
+}
+
+function selectDossierCast(cast: NarrativeCastMember[], compact: boolean): NarrativeCastMember[] {
+  return cast.filter((member) => member.display_name.trim()).slice(0, compact ? 2 : 3)
+}
+
+function castInitial(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return "?"
+  const first = Array.from(trimmed)[0]
+  return first.toUpperCase()
 }
 
 function homeTileSpanStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
@@ -1008,6 +1299,25 @@ function homeTileTitleStyle(span: HomeTileSpan, compact: boolean): CSSProperties
   if (span === "feature-tall") return { fontSize: 25, lineHeight: 1.08 }
   if (span === "feature-horizontal" || span === "notice-wide") return { fontSize: 22, lineHeight: 1.12 }
   return { fontSize: 17.5, lineHeight: 1.16 }
+}
+
+function framedTileLayoutStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (compact) return hpStyles.framedTileStack
+  if (span === "feature-horizontal") return hpStyles.framedTileSplit
+  return hpStyles.framedTileStack
+}
+
+function dossierTileLayoutStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (compact) return hpStyles.dossierTileCompact
+  if (span === "notice-wide" || span === "feature-horizontal") return hpStyles.dossierTileSplit
+  return hpStyles.dossierTileTall
+}
+
+function mediaWellVariantStyle(variant: "framed" | "strip" | "sliver" | "tall"): CSSProperties {
+  if (variant === "strip") return hpStyles.mediaWellStrip
+  if (variant === "sliver") return hpStyles.mediaWellSliver
+  if (variant === "tall") return hpStyles.mediaWellTall
+  return hpStyles.mediaWellFramed
 }
 
 function visibilityLabel(v: NarrativeTemplateSummary["visibility"], t: ReturnType<typeof useT>): string {
@@ -1378,8 +1688,18 @@ const hpStyles: Record<string, CSSProperties> = {
     minHeight: "100%",
     padding: 0,
     background: "rgba(12,12,16,0.62)",
-    border: "none",
-    borderTop: "1px solid rgba(212,168,83,0.40)",
+    borderTopWidth: 1,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopStyle: "solid",
+    borderRightStyle: "solid",
+    borderBottomStyle: "solid",
+    borderLeftStyle: "solid",
+    borderTopColor: "rgba(212,168,83,0.40)",
+    borderRightColor: "transparent",
+    borderBottomColor: "transparent",
+    borderLeftColor: "transparent",
     borderRadius: 0,
     color: "var(--text)",
     cursor: "pointer",
@@ -1471,6 +1791,200 @@ const hpStyles: Record<string, CSSProperties> = {
     fontSize: 11.6,
     fontWeight: 800,
     lineHeight: 1.2,
+  },
+  starterKicker: {
+    color: "rgba(245,180,132,0.86)",
+  },
+  publishedKicker: {
+    color: "rgba(245,200,120,0.86)",
+  },
+  starterAction: {
+    borderBottomColor: "rgba(224,122,95,0.62)",
+    color: "rgba(245,190,150,0.96)",
+  },
+  publishedAction: {
+    borderBottomColor: "rgba(245,200,120,0.52)",
+    color: "rgba(245,200,120,0.96)",
+  },
+  fullBleedLayout: {
+    position: "relative" as const,
+    display: "block",
+    minHeight: "100%",
+  },
+  framedTileStack: {
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateRows: "minmax(82px, 38%) 1fr",
+    background: "linear-gradient(135deg, rgba(18,14,17,0.96), rgba(38,16,18,0.72))",
+  },
+  framedTileSplit: {
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateColumns: "42% 1fr",
+    background: "linear-gradient(135deg, rgba(18,14,17,0.96), rgba(38,16,18,0.72))",
+  },
+  framedTextPanel: {
+    minWidth: 0,
+    padding: "15px 16px 14px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 7,
+    borderTop: "1px solid rgba(245,200,120,0.13)",
+  },
+  mediaWell: {
+    display: "block",
+    minWidth: 0,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    borderTopWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderLeftWidth: 1,
+    borderTopStyle: "solid",
+    borderRightStyle: "solid",
+    borderBottomStyle: "solid",
+    borderLeftStyle: "solid",
+    borderTopColor: "rgba(245,200,120,0.20)",
+    borderRightColor: "rgba(245,200,120,0.20)",
+    borderBottomColor: "rgba(245,200,120,0.20)",
+    borderLeftColor: "rgba(245,200,120,0.20)",
+    boxShadow: "inset 0 0 34px rgba(0,0,0,0.36)",
+  },
+  mediaWellFramed: {
+    margin: 12,
+    marginBottom: 0,
+    minHeight: 96,
+    aspectRatio: "16 / 9",
+  },
+  mediaWellStrip: {
+    margin: 12,
+    marginBottom: 0,
+    minHeight: 66,
+    aspectRatio: "16 / 6",
+  },
+  mediaWellSliver: {
+    width: 72,
+    minHeight: "100%",
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+  },
+  mediaWellTall: {
+    margin: 12,
+    marginBottom: 0,
+    minHeight: 150,
+    aspectRatio: "4 / 5",
+    backgroundPosition: "center top",
+  },
+  dispatchTileLayout: {
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateColumns: "72px 1fr",
+    background: "linear-gradient(90deg, rgba(42,16,18,0.78), rgba(12,12,16,0.96))",
+    borderLeft: "1px solid rgba(224,122,95,0.50)",
+  },
+  dispatchTextPanel: {
+    minWidth: 0,
+    padding: "15px 15px 13px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 6,
+  },
+  tallStoryboardLayout: {
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateRows: "minmax(172px, 58%) 1fr",
+    background: "linear-gradient(180deg, rgba(24,16,18,0.96), rgba(12,12,16,0.98))",
+  },
+  tallStoryboardPanel: {
+    minWidth: 0,
+    padding: "15px 16px 16px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 7,
+    borderTop: "1px solid rgba(245,200,120,0.16)",
+  },
+  dossierTileCompact: {
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateRows: "76px 1fr",
+    background: "linear-gradient(135deg, rgba(18,14,17,0.98), rgba(44,17,20,0.78))",
+  },
+  dossierTileSplit: {
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateColumns: "35% 1fr",
+    background: "linear-gradient(135deg, rgba(18,14,17,0.98), rgba(44,17,20,0.78))",
+  },
+  dossierTileTall: {
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateRows: "minmax(126px, 38%) 1fr",
+    background: "linear-gradient(180deg, rgba(22,14,17,0.98), rgba(12,12,16,0.98))",
+  },
+  dossierTextPanel: {
+    minWidth: 0,
+    padding: "14px 15px 13px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 7,
+    borderTop: "1px solid rgba(245,200,120,0.13)",
+  },
+  dossierTextPanelCompact: {
+    padding: "11px 13px 10px",
+    gap: 5,
+  },
+  castDossierRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 6,
+  },
+  castDossierRowCompact: {
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 5,
+  },
+  castDossierFrame: {
+    minWidth: 0,
+    display: "grid",
+    gridTemplateRows: "minmax(32px, 38px) auto",
+    background: "linear-gradient(135deg, rgba(54,20,24,0.78), rgba(12,12,16,0.82))",
+    border: "1px solid rgba(245,200,120,0.18)",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  castDossierFrameCompact: {
+    gridTemplateRows: "24px auto",
+  },
+  castDossierInitial: {
+    display: "grid",
+    placeItems: "center",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 22,
+    color: "rgba(255,238,210,0.92)",
+    borderBottom: "1px solid rgba(245,200,120,0.16)",
+  },
+  castDossierInitialCompact: {
+    fontSize: 17,
+  },
+  castDossierText: {
+    minWidth: 0,
+    padding: "4px 5px 5px",
+  },
+  castDossierName: {
+    color: "rgba(255,246,232,0.91)",
+    fontSize: 10.6,
+    fontWeight: 700,
+    lineHeight: 1.15,
+  },
+  castDossierRole: {
+    marginTop: 2,
+    color: "rgba(245,200,120,0.62)",
+    fontSize: 9.4,
+    lineHeight: 1.12,
   },
 
   grid: {
