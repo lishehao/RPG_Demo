@@ -94,6 +94,15 @@ def test_home_tall_dispatch_and_dossier_guards_match_design_rules() -> None:
     assert "slice(0, compact ? 2 : 3)" in home
 
 
+def test_home_story_tiles_do_not_use_unreadable_one_by_one_spans() -> None:
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    span_style = home[home.index("function homeTileSpanStyle") : home.index("function homeTileTitleStyle")]
+
+    assert 'if (span === "dispatch") return { gridColumn: "span 2", gridRow: "span 1" }' in span_style
+    assert 'return { gridColumn: "span 2", gridRow: "span 1" }' in span_style
+    assert 'gridColumn: "span 1", gridRow: "span 1"' not in span_style
+
+
 def test_home_editorial_tiles_keep_starter_and_playable_actions_distinct() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()

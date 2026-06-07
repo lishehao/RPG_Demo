@@ -1290,7 +1290,8 @@ function homeTileSpanStyle(span: HomeTileSpan, compact: boolean): CSSProperties 
   if (span === "feature-tall") return { gridColumn: "span 1", gridRow: "span 3" }
   if (span === "feature-horizontal") return { gridColumn: "span 2", gridRow: "span 1" }
   if (span === "notice-wide") return { gridColumn: "span 2", gridRow: "span 1" }
-  return { gridColumn: "span 1", gridRow: "span 1" }
+  if (span === "dispatch") return { gridColumn: "span 2", gridRow: "span 1" }
+  return { gridColumn: "span 2", gridRow: "span 1" }
 }
 
 function homeTileTitleStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
