@@ -43,6 +43,84 @@ type CuratedPlazaStory = {
   tensionProfile: NarrativeTensionProfile
 }
 
+type HomeObjectKind = "starter_premise" | "published_story" | "in_progress" | "completed_memory" | "draft"
+type HomeTileSpan = "feature-wide" | "feature-tall" | "feature-horizontal" | "dispatch" | "notice-wide"
+
+type HomeMosaicBase = {
+  id: string
+  kind: HomeObjectKind
+  titleText: string
+  summaryText: string
+  themeKey?: string | null
+  hasStrongCover: boolean
+}
+
+type HomeMosaicTile<T> = T & {
+  span: HomeTileSpan
+}
+
+const HOME_MOSAIC_RHYTHM: readonly HomeTileSpan[] = [
+  "feature-wide",
+  "feature-tall",
+  "dispatch",
+  "feature-horizontal",
+  "dispatch",
+  "notice-wide",
+  "feature-wide",
+  "dispatch",
+  "feature-horizontal",
+  "feature-tall",
+  "dispatch",
+  "notice-wide",
+]
+
+export function homeTileSpanForItem(
+  item: HomeMosaicBase,
+  index: number,
+  total: number,
+  previousSpan?: HomeTileSpan,
+  previousTheme?: string | null,
+): HomeTileSpan {
+  const rhythm =
+    total <= 2
+      ? (["feature-horizontal", "feature-horizontal"] as const)
+      : total <= 6
+        ? (["feature-wide", "feature-horizontal", "feature-tall", "dispatch", "notice-wide", "dispatch"] as const)
+        : HOME_MOSAIC_RHYTHM
+
+  let span: HomeTileSpan = rhythm[index % rhythm.length]
+  const longText = item.titleText.length > 42 || item.summaryText.length > 138
+
+  if (item.kind === "in_progress") {
+    span = "feature-horizontal"
+  } else if (item.kind === "completed_memory") {
+    span = "notice-wide"
+  } else if (!item.hasStrongCover && (span === "feature-wide" || span === "feature-tall")) {
+    span = "feature-horizontal"
+  } else if (longText && span === "dispatch") {
+    span = "notice-wide"
+  } else if (item.kind === "starter_premise" && span === "feature-tall" && longText) {
+    span = "feature-horizontal"
+  }
+
+  if (previousSpan === span && previousTheme && item.themeKey === previousTheme) {
+    span = span === "dispatch" ? "feature-horizontal" : "dispatch"
+  }
+
+  return span
+}
+
+function assignHomeMosaicSpans<T extends HomeMosaicBase>(items: T[]): HomeMosaicTile<T>[] {
+  let previousSpan: HomeTileSpan | undefined
+  let previousTheme: string | null | undefined
+  return items.map((item, index) => {
+    const span = homeTileSpanForItem(item, index, items.length, previousSpan, previousTheme)
+    previousSpan = span
+    previousTheme = item.themeKey
+    return { ...item, span }
+  })
+}
+
 const CURATED_PLAZA_STORIES: CuratedPlazaStory[] = [
   {
     id: "awards-disappearance",
@@ -332,23 +410,16 @@ export function HomePage({
               transition={transitions.snap}
             >
               {activeTemplateTab === "plaza" ? (
-                <>
-                  <CuratedPlazaStories
-                    stories={CURATED_PLAZA_STORIES}
-                    compact={compactHome}
-                    lang={lang}
-                    onStart={handleStartCuratedStory}
-                  />
-                  <TemplateGrid
-                    templates={publicTemplates}
-                    error={error}
-                    emptyText={t("home.empty_plaza")}
-                    compact={compactHome}
-                    onStartTemplate={handleStartPublishedTemplate}
-                    startingTemplateId={startingTemplateId}
-                    hideEmpty
-                  />
-                </>
+                <HomeEditorialMosaic
+                  stories={CURATED_PLAZA_STORIES}
+                  templates={publicTemplates}
+                  error={error}
+                  compact={compactHome}
+                  lang={lang}
+                  onStartCurated={handleStartCuratedStory}
+                  onStartTemplate={handleStartPublishedTemplate}
+                  startingTemplateId={startingTemplateId}
+                />
               ) : (
                 <TemplateGrid
                   templates={myTemplates}
@@ -670,74 +741,176 @@ function TemplateGrid({
     )
   }
   const assignedCovers = assignTemplateCovers(templates)
+  const assignedTiles = assignHomeMosaicSpans(templates.map((template) => ({
+    id: template.template_id,
+    kind: "published_story" as const,
+    titleText: getTemplateDisplayTitle(template, "en"),
+    summaryText: getTemplateDisplaySummary(template, "en"),
+    themeKey: template.cover_image_url ?? template.title,
+    hasStrongCover: Boolean(assignedCovers[template.template_id]),
+    template,
+    cover: assignedCovers[template.template_id],
+  })))
   return (
-    <div style={{ ...hpStyles.grid, ...(compact ? hpStyles.gridCompact : null) }}>
-      {templates.map((t, idx) => (
+    <div
+      style={{ ...hpStyles.editorialMosaic, ...(compact ? hpStyles.editorialMosaicCompact : null) }}
+      data-home-editorial-mosaic="true"
+    >
+      {assignedTiles.map((tile, idx) => (
         <TemplateCard
-          key={t.template_id}
-          template={t}
-          cover={assignedCovers[t.template_id]}
+          key={tile.template.template_id}
+          template={tile.template}
+          cover={tile.cover}
+          span={tile.span}
           index={idx}
           compact={compact}
-          isStarting={startingTemplateId === t.template_id}
-          onClick={() => onStartTemplate(t.template_id)}
+          isStarting={startingTemplateId === tile.template.template_id}
+          onClick={() => onStartTemplate(tile.template.template_id)}
         />
       ))}
     </div>
   )
 }
 
-function CuratedPlazaStories({
+function HomeEditorialMosaic({
   stories,
+  templates,
+  error,
   compact,
   lang,
-  onStart,
+  onStartCurated,
+  onStartTemplate,
+  startingTemplateId,
 }: {
   stories: CuratedPlazaStory[]
+  templates: NarrativeTemplateSummary[] | null
+  error: string | null
   compact: boolean
   lang: keyof LocalizedText
-  onStart: (story: CuratedPlazaStory) => void
+  onStartCurated: (story: CuratedPlazaStory) => void
+  onStartTemplate: (templateId: string) => void
+  startingTemplateId: string | null
+}) {
+  const assignedCovers = templates ? assignTemplateCovers(templates) : {}
+  const items = assignHomeMosaicSpans([
+    ...stories.map((story) => ({
+      id: story.id,
+      kind: "starter_premise" as const,
+      titleText: story.title[lang],
+      summaryText: story.pressure[lang],
+      themeKey: story.theme,
+      hasStrongCover: true,
+      story,
+      cover: getCoverByStoryId(`curated-${story.id}`, story.theme),
+    })),
+    ...((templates ?? []).map((template) => ({
+      id: template.template_id,
+      kind: "published_story" as const,
+      titleText: getTemplateDisplayTitle(template, lang),
+      summaryText: getTemplateDisplaySummary(template, lang),
+      themeKey: template.cover_image_url ?? template.title,
+      hasStrongCover: Boolean(assignedCovers[template.template_id]),
+      template,
+      cover: assignedCovers[template.template_id],
+    }))),
+  ])
+
+  return (
+    <>
+      <div
+        style={{ ...hpStyles.editorialMosaic, ...(compact ? hpStyles.editorialMosaicCompact : null) }}
+        data-home-editorial-mosaic="true"
+      >
+        {items.map((item, idx) => item.kind === "starter_premise" ? (
+          <CuratedStoryTile
+            key={item.id}
+            story={item.story}
+            cover={item.cover}
+            span={item.span}
+            compact={compact}
+            lang={lang}
+            index={idx}
+            onClick={() => onStartCurated(item.story)}
+          />
+        ) : (
+          <TemplateCard
+            key={item.id}
+            template={item.template}
+            cover={item.cover}
+            span={item.span}
+            compact={compact}
+            index={idx}
+            isStarting={startingTemplateId === item.template.template_id}
+            onClick={() => onStartTemplate(item.template.template_id)}
+          />
+        ))}
+      </div>
+      {!templates ? <LoadingShim variant="inline" /> : null}
+      {error ? <div style={hpStyles.errorBox}>{error}</div> : null}
+    </>
+  )
+}
+
+function CuratedStoryTile({
+  story,
+  cover,
+  span,
+  compact,
+  lang,
+  index,
+  onClick,
+}: {
+  story: CuratedPlazaStory
+  cover: string
+  span: HomeTileSpan
+  compact: boolean
+  lang: keyof LocalizedText
+  index: number
+  onClick: () => void
 }) {
   return (
-    <div style={{ ...hpStyles.curatedGrid, ...(compact ? hpStyles.curatedGridCompact : null) }}>
-      {stories.map((story, idx) => (
-        <motion.button
-          key={story.id}
-          data-story-card-kind="starter-premise"
-          aria-label={`${story.title[lang]} · ${lang === "zh" ? "前提开局" : "Premise starter"}`}
-          style={{ ...hpStyles.curatedStory, ...(compact ? hpStyles.curatedStoryCompact : null) }}
-          type="button"
-          onClick={() => onStart(story)}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: idx * 0.04, ...itemTransition }}
-          whileHover={{ y: -2 }}
-          whileTap={tapPress}
-        >
-          <span
-            aria-hidden
-            style={{
-              ...hpStyles.curatedCover,
-              backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.08) 0%, rgba(12,12,16,0.72) 100%), url(${getCoverByStoryId(`curated-${story.id}`, story.theme)})`,
-            }}
-          />
-          <span style={hpStyles.curatedBody}>
-            <span style={hpStyles.curatedKicker}>{lang === "zh" ? "前提开局" : "Premise starter"}</span>
-            <span style={hpStyles.curatedTitle}>{story.title[lang]}</span>
-            <Truncated lines={1} style={hpStyles.curatedPressure}>
-              {story.pressure[lang]}
-            </Truncated>
-            <span style={hpStyles.curatedAction}>{lang === "zh" ? "让 Agent 帮我开局 →" : "Ask the agent to open it →"}</span>
-          </span>
-        </motion.button>
-      ))}
-    </div>
+    <motion.button
+      key={story.id}
+      data-story-card-kind="starter-premise"
+      data-home-tile-span={span}
+      aria-label={`${story.title[lang]} · ${lang === "zh" ? "前提开局" : "Premise starter"}`}
+      style={{
+        ...hpStyles.editorialTile,
+        ...hpStyles.editorialTileStarter,
+        ...homeTileSpanStyle(span, compact),
+      }}
+      type="button"
+      onClick={onClick}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04, ...itemTransition }}
+      whileHover={{ y: -2 }}
+      whileTap={tapPress}
+    >
+      <span
+        aria-hidden
+        style={{
+          ...hpStyles.editorialTileImage,
+          backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.02) 0%, rgba(12,12,16,0.28) 45%, rgba(12,12,16,0.86) 100%), url(${cover})`,
+        }}
+      />
+      <span style={hpStyles.editorialTileBody}>
+        <span style={hpStyles.editorialTileKicker}>{lang === "zh" ? "前提开局" : "Premise starter"}</span>
+        <span style={{ ...hpStyles.editorialTileTitle, ...homeTileTitleStyle(span, compact) }}>{story.title[lang]}</span>
+        <Truncated lines={span === "dispatch" ? 1 : 2} style={hpStyles.editorialTileDeck}>
+          {story.pressure[lang]}
+        </Truncated>
+        <span style={hpStyles.editorialTileMeta}>{story.promise[lang]}</span>
+        <span style={hpStyles.editorialTileAction}>{lang === "zh" ? "让 Story Butler 开局 →" : "Ask Story Butler →"}</span>
+      </span>
+    </motion.button>
   )
 }
 
 function TemplateCard({
   template,
   cover,
+  span,
   onClick,
   index = 0,
   compact,
@@ -745,6 +918,7 @@ function TemplateCard({
 }: {
   template: NarrativeTemplateSummary
   cover: string
+  span: HomeTileSpan
   onClick: () => void
   index?: number
   compact: boolean
@@ -754,11 +928,17 @@ function TemplateCard({
   const { lang } = useLanguage()
   const displayTitle = getTemplateDisplayTitle(template, lang)
   const displaySummary = getTemplateDisplaySummary(template, lang)
+  const tightPublishedTile = span === "notice-wide" || span === "dispatch"
   return (
     <motion.button
       data-story-card-kind="published-story"
+      data-home-tile-span={span}
       aria-label={`${displayTitle} · ${isStarting ? t("home.card_starting") : t("home.card_action")}`}
-      style={{ ...hpStyles.card, ...(compact ? hpStyles.cardCompact : null) }}
+      style={{
+        ...hpStyles.editorialTile,
+        ...hpStyles.editorialTilePublished,
+        ...homeTileSpanStyle(span, compact),
+      }}
       onClick={onClick}
       type="button"
       disabled={isStarting}
@@ -769,42 +949,65 @@ function TemplateCard({
       whileHover={{ x: 2 }}
       whileTap={tapPress}
     >
-      <div
+      <span
+        aria-hidden
         style={{
-          ...hpStyles.cardCover,
-          ...(compact ? hpStyles.cardCoverCompact : null),
-          backgroundImage: `url(${cover})`,
+          ...hpStyles.editorialTileImage,
+          backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.32) 48%, rgba(12,12,16,0.88) 100%), url(${cover})`,
         }}
       />
-      <div style={{ ...hpStyles.cardBody, ...(compact ? hpStyles.cardBodyCompact : null) }}>
-        <div>
-          <span style={hpStyles.cardKicker}>{t("home.published_label")}</span>
-          <Truncated lines={2} style={hpStyles.cardTitle}>
-            {displayTitle}
-          </Truncated>
-          <Truncated style={hpStyles.cardCast}>
-            {template.cast.map((c) => c.display_name).join(" · ")}
-          </Truncated>
-        </div>
-        <Truncated
-          lines={compact ? 3 : 2}
-          style={{ ...hpStyles.cardSeed, ...(compact ? hpStyles.cardSeedCompact : null) }}
-        >
-          {`"${displaySummary}"`}
+      <span style={hpStyles.editorialTileBody}>
+        <span style={hpStyles.editorialTileKicker}>{t("home.published_label")}</span>
+        <Truncated lines={tightPublishedTile ? 1 : 3} style={{ ...hpStyles.editorialTileTitle, ...homeTileTitleStyle(span, compact) }}>
+          {displayTitle}
         </Truncated>
-        <div style={{ ...hpStyles.cardFooter, ...(compact ? hpStyles.cardFooterCompact : null) }}>
-          <span style={hpStyles.cardBadge}>{visibilityLabel(template.visibility, t)}</span>
-          <span style={hpStyles.cardPlays}>{t("home.played_count", { count: template.play_count })}</span>
+        <Truncated style={hpStyles.editorialTileMeta}>
+          {template.cast.map((c) => c.display_name).join(" · ")}
+        </Truncated>
+        {tightPublishedTile ? null : (
+          <Truncated
+            lines={compact ? 2 : span === "feature-horizontal" ? 1 : 3}
+            style={hpStyles.editorialTileDeck}
+          >
+            {displaySummary}
+          </Truncated>
+        )}
+        <span style={hpStyles.editorialTileFooter}>
+          <span>{visibilityLabel(template.visibility, t)}</span>
+          <span>{t("home.played_count", { count: template.play_count })}</span>
           {template.is_owner ? (
-            <span style={hpStyles.cardOwnerBadge}>{t("home.is_owner")}</span>
+            <span style={hpStyles.editorialTileOwner}>{t("home.is_owner")}</span>
           ) : null}
-          <span style={{ ...hpStyles.cardAction, ...(compact ? hpStyles.cardActionCompact : null) }}>
+          <span style={hpStyles.editorialTileAction}>
             {isStarting ? t("home.card_starting") : t("home.card_action")}
           </span>
-        </div>
-      </div>
+        </span>
+      </span>
     </motion.button>
   )
+}
+
+function homeTileSpanStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (compact) {
+    return {
+      gridColumn: "auto",
+      gridRow: "auto",
+      minHeight: span === "feature-tall" ? 278 : span === "dispatch" ? 218 : 244,
+    }
+  }
+  if (span === "feature-wide") return { gridColumn: "span 2", gridRow: "span 2" }
+  if (span === "feature-tall") return { gridColumn: "span 1", gridRow: "span 3" }
+  if (span === "feature-horizontal") return { gridColumn: "span 2", gridRow: "span 1" }
+  if (span === "notice-wide") return { gridColumn: "span 2", gridRow: "span 1" }
+  return { gridColumn: "span 1", gridRow: "span 1" }
+}
+
+function homeTileTitleStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (compact) return { fontSize: 24, lineHeight: 1.1 }
+  if (span === "feature-wide") return { fontSize: 30, lineHeight: 1.05 }
+  if (span === "feature-tall") return { fontSize: 25, lineHeight: 1.08 }
+  if (span === "feature-horizontal" || span === "notice-wide") return { fontSize: 22, lineHeight: 1.12 }
+  return { fontSize: 17.5, lineHeight: 1.16 }
 }
 
 function visibilityLabel(v: NarrativeTemplateSummary["visibility"], t: ReturnType<typeof useT>): string {
@@ -1155,6 +1358,119 @@ const hpStyles: Record<string, CSSProperties> = {
     fontStyle: "italic",
     flex: "1 1 0",
     minWidth: 0,
+  },
+
+  editorialMosaic: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gridAutoRows: "clamp(132px, 12vw, 178px)",
+    gridAutoFlow: "dense" as const,
+    gap: 12,
+    marginBottom: 22,
+  },
+  editorialMosaicCompact: {
+    gridTemplateColumns: "1fr",
+    gridAutoRows: "auto",
+    gap: 14,
+  },
+  editorialTile: {
+    position: "relative" as const,
+    minHeight: "100%",
+    padding: 0,
+    background: "rgba(12,12,16,0.62)",
+    border: "none",
+    borderTop: "1px solid rgba(212,168,83,0.40)",
+    borderRadius: 0,
+    color: "var(--text)",
+    cursor: "pointer",
+    overflow: "hidden",
+    textAlign: "left" as const,
+    display: "block",
+    isolation: "isolate" as const,
+    boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.055)",
+    transition: "opacity 180ms, transform 180ms, filter 180ms",
+  },
+  editorialTileStarter: {
+    borderTopColor: "rgba(224,122,95,0.62)",
+  },
+  editorialTilePublished: {
+    borderTopColor: "rgba(212,168,83,0.58)",
+  },
+  editorialTileImage: {
+    position: "absolute" as const,
+    inset: 0,
+    zIndex: 0,
+    display: "block",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    transform: "scale(1.01)",
+  },
+  editorialTileBody: {
+    position: "relative" as const,
+    zIndex: 1,
+    minHeight: "100%",
+    maxHeight: "100%",
+    boxSizing: "border-box" as const,
+    overflow: "hidden",
+    padding: "18px 18px 16px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 7,
+  },
+  editorialTileKicker: {
+    width: "fit-content",
+    color: "rgba(245,200,120,0.82)",
+    fontSize: 10.5,
+    fontWeight: 780,
+    lineHeight: 1.12,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+  },
+  editorialTileTitle: {
+    fontFamily: "var(--font-narrative)",
+    color: "rgba(255,246,232,0.98)",
+    fontWeight: 500,
+    letterSpacing: 0,
+    textShadow: "0 2px 18px rgba(0,0,0,0.44)",
+  },
+  editorialTileDeck: {
+    color: "rgba(244,239,230,0.76)",
+    fontSize: 12.3,
+    lineHeight: 1.42,
+    textShadow: "0 1px 12px rgba(0,0,0,0.56)",
+  },
+  editorialTileMeta: {
+    color: "rgba(244,239,230,0.52)",
+    fontSize: 10.8,
+    lineHeight: 1.32,
+    letterSpacing: 0,
+  },
+  editorialTileFooter: {
+    marginTop: 4,
+    paddingTop: 7,
+    borderTop: "1px solid rgba(255,255,255,0.13)",
+    display: "flex",
+    alignItems: "center",
+    columnGap: 8,
+    rowGap: 5,
+    flexWrap: "wrap" as const,
+    color: "rgba(244,239,230,0.56)",
+    fontSize: 10.8,
+    lineHeight: 1.2,
+  },
+  editorialTileOwner: {
+    color: "rgba(245,200,120,0.78)",
+  },
+  editorialTileAction: {
+    width: "fit-content",
+    marginTop: 2,
+    paddingBottom: 3,
+    borderBottom: "1px solid rgba(245,200,120,0.48)",
+    color: "rgba(245,200,120,0.95)",
+    fontSize: 11.6,
+    fontWeight: 800,
+    lineHeight: 1.2,
   },
 
   grid: {
