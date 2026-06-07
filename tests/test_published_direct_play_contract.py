@@ -56,7 +56,7 @@ def test_home_story_area_uses_editorial_mosaic_without_main_story_semantics() ->
     assert "function HomeEditorialMosaic" in home
     assert 'data-home-editorial-mosaic="true"' in home
     assert "gridTemplateColumns: \"repeat(4, minmax(0, 1fr))\"" in home
-    assert "gridAutoRows: \"clamp(132px, 12vw, 178px)\"" in home
+    assert "gridAutoRows: \"clamp(172px, 12vw, 190px)\"" in home
     assert "gridAutoFlow: \"dense\" as const" in home
     assert "feature-wide" in home
     assert "feature-tall" in home
@@ -77,6 +77,7 @@ def test_home_editorial_tiles_use_regular_rectangular_component_archetypes() -> 
     assert 'data-home-tile-archetype={archetype}' in home
     assert 'data-home-full-bleed="true"' in home
     assert 'data-home-reading-band="true"' in home
+    assert 'data-home-primary-action="true"' in home
     full_bleed = home[home.index("function FullBleedTileImage") : home.index("function TileMediaWell")]
     assert "hpStyles.fullBleedReadingBand" in full_bleed
     assert 'data-home-framed-editorial="true"' in home
@@ -109,6 +110,21 @@ def test_home_story_tiles_stay_regular_rectangular_modules() -> None:
     assert "hpStyles.tallStoryboardLayout" not in home
     assert "hpStyles.dossierTile" not in home
     assert "hpStyles.castDossier" not in home
+    assert "function isSingleRowHomeTileSpan" in home
+    assert "return span === \"feature-horizontal\" || span === \"dispatch\" || span === \"notice-wide\"" in home
+    assert "return hpStyles.framedTileSplit" in home
+    assert "return \"side\"" in home
+
+
+def test_home_story_tiles_do_not_clip_required_contract_content() -> None:
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    editorial_tile = home[home.index("editorialTile: {") : home.index("editorialTileStarter:", home.index("editorialTile: {"))]
+    media_well = home[home.index("mediaWell: {") : home.index("mediaWellFramed:", home.index("mediaWell: {"))]
+
+    assert 'overflow: "visible"' in editorial_tile
+    assert 'overflow: "hidden"' in media_well
+    assert "height: \"calc(100% - 24px)\"" in home
+    assert "framedTextPanelSplit" in home
 
 
 def test_home_story_tiles_do_not_use_unreadable_one_by_one_spans() -> None:

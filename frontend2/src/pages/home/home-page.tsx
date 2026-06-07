@@ -1185,8 +1185,8 @@ function StarterTileComposition({
   }
   return (
     <span style={framedTileLayoutStyle(span, compact)} data-home-framed-editorial="true">
-      <TileMediaWell cover={cover} variant={span === "notice-wide" ? "strip" : "framed"} />
-      <span style={hpStyles.framedTextPanel}>{children}</span>
+      <TileMediaWell cover={cover} variant={tileMediaVariantForSpan(span, compact)} />
+      <span style={framedTextPanelStyle(span, compact)}>{children}</span>
     </span>
   )
 }
@@ -1226,8 +1226,8 @@ function PublishedTileComposition({
   }
   return (
     <span style={framedTileLayoutStyle(span, compact)} data-home-framed-editorial="true">
-      <TileMediaWell cover={view.cover} variant={span === "notice-wide" ? "strip" : "framed"} />
-      <span style={hpStyles.framedTextPanel}>{standardBody}</span>
+      <TileMediaWell cover={view.cover} variant={tileMediaVariantForSpan(span, compact)} />
+      <span style={framedTextPanelStyle(span, compact)}>{standardBody}</span>
     </span>
   )
 }
@@ -1266,7 +1266,7 @@ function TileMediaWell({
   variant,
 }: {
   cover: string
-  variant: "framed" | "strip"
+  variant: "framed" | "side"
 }) {
   return (
     <span
@@ -1309,7 +1309,7 @@ function TileTitle({
 
 function TileCommand({ tone, children }: { tone: HomeTileAccentTone; children: ReactNode }) {
   return (
-    <span style={{ ...hpStyles.editorialTileAction, ...homeTileCommandToneStyle(tone) }}>
+    <span data-home-primary-action="true" style={{ ...hpStyles.editorialTileAction, ...homeTileCommandToneStyle(tone) }}>
       {children}
     </span>
   )
@@ -1355,12 +1355,28 @@ function homeTileTitleStyle(span: HomeTileSpan, compact: boolean): CSSProperties
 
 function framedTileLayoutStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
   if (compact) return hpStyles.framedTileStack
-  if (span === "feature-horizontal") return hpStyles.framedTileSplit
+  if (isSingleRowHomeTileSpan(span)) return hpStyles.framedTileSplit
   return hpStyles.framedTileStack
 }
 
-function mediaWellVariantStyle(variant: "framed" | "strip"): CSSProperties {
-  if (variant === "strip") return hpStyles.mediaWellStrip
+function framedTextPanelStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (!compact && isSingleRowHomeTileSpan(span)) {
+    return { ...hpStyles.framedTextPanel, ...hpStyles.framedTextPanelSplit }
+  }
+  return hpStyles.framedTextPanel
+}
+
+function tileMediaVariantForSpan(span: HomeTileSpan, compact: boolean): "framed" | "side" {
+  if (!compact && isSingleRowHomeTileSpan(span)) return "side"
+  return "framed"
+}
+
+function isSingleRowHomeTileSpan(span: HomeTileSpan): boolean {
+  return span === "feature-horizontal" || span === "dispatch" || span === "notice-wide"
+}
+
+function mediaWellVariantStyle(variant: "framed" | "side"): CSSProperties {
+  if (variant === "side") return hpStyles.mediaWellSide
   return hpStyles.mediaWellFramed
 }
 
@@ -1729,7 +1745,7 @@ const hpStyles: Record<string, CSSProperties> = {
   editorialMosaic: {
     display: "grid",
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gridAutoRows: "clamp(132px, 12vw, 178px)",
+    gridAutoRows: "clamp(172px, 12vw, 190px)",
     gridAutoFlow: "dense" as const,
     gap: 12,
     marginBottom: 22,
@@ -1759,7 +1775,7 @@ const hpStyles: Record<string, CSSProperties> = {
     borderRadius: 0,
     color: "var(--text)",
     cursor: "pointer",
-    overflow: "hidden",
+    overflow: "visible",
     textAlign: "left" as const,
     display: "block",
     isolation: "isolate" as const,
@@ -1779,7 +1795,6 @@ const hpStyles: Record<string, CSSProperties> = {
     display: "block",
     backgroundSize: "cover",
     backgroundPosition: "center",
-    transform: "scale(1.01)",
   },
   editorialTileBody: {
     position: "relative" as const,
@@ -1861,14 +1876,15 @@ const hpStyles: Record<string, CSSProperties> = {
     position: "relative" as const,
     display: "flex",
     alignItems: "flex-end",
+    height: "100%",
     minHeight: "100%",
+    overflow: "hidden",
   },
   fullBleedReadingBand: {
     position: "relative" as const,
     zIndex: 1,
     width: "100%",
     boxSizing: "border-box" as const,
-    overflow: "hidden",
     padding: "18px 18px 16px",
     display: "flex",
     flexDirection: "column" as const,
@@ -1879,19 +1895,22 @@ const hpStyles: Record<string, CSSProperties> = {
     boxShadow: "0 -22px 44px rgba(0,0,0,0.28)",
   },
   framedTileStack: {
+    height: "100%",
     minHeight: "100%",
     display: "grid",
     gridTemplateRows: "minmax(82px, 38%) 1fr",
     background: "linear-gradient(135deg, rgba(18,14,17,0.96), rgba(38,16,18,0.72))",
   },
   framedTileSplit: {
+    height: "100%",
     minHeight: "100%",
     display: "grid",
-    gridTemplateColumns: "42% 1fr",
+    gridTemplateColumns: "minmax(136px, 38%) minmax(0, 1fr)",
     background: "linear-gradient(135deg, rgba(18,14,17,0.96), rgba(38,16,18,0.72))",
   },
   framedTextPanel: {
     minWidth: 0,
+    boxSizing: "border-box" as const,
     padding: "15px 16px 14px",
     display: "flex",
     flexDirection: "column" as const,
@@ -1899,11 +1918,18 @@ const hpStyles: Record<string, CSSProperties> = {
     gap: 7,
     borderTop: "1px solid rgba(245,200,120,0.13)",
   },
+  framedTextPanelSplit: {
+    justifyContent: "center",
+    borderTop: "none",
+    borderLeft: "1px solid rgba(245,200,120,0.13)",
+  },
   mediaWell: {
     display: "block",
     minWidth: 0,
+    boxSizing: "border-box" as const,
     backgroundSize: "cover",
     backgroundPosition: "center",
+    overflow: "hidden",
     borderTopWidth: 1,
     borderRightWidth: 1,
     borderBottomWidth: 1,
@@ -1924,11 +1950,10 @@ const hpStyles: Record<string, CSSProperties> = {
     minHeight: 96,
     aspectRatio: "16 / 9",
   },
-  mediaWellStrip: {
+  mediaWellSide: {
     margin: 12,
-    marginBottom: 0,
-    minHeight: 66,
-    aspectRatio: "16 / 6",
+    minHeight: 0,
+    height: "calc(100% - 24px)",
   },
 
   grid: {
