@@ -2,7 +2,6 @@ import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 
 import { AnimatePresence, motion } from "motion/react"
 import type {
   NarrativeDifficulty,
-  NarrativeCastMember,
   NarrativeSessionSummary,
   NarrativeTemplateSummary,
   NarrativeTemplateLanguage,
@@ -56,9 +55,6 @@ type HomeTileSpan = "feature-wide" | "feature-tall" | "feature-horizontal" | "di
 type HomeTileArchetype =
   | "full_bleed_cinematic"
   | "framed_editorial"
-  | "character_dossier"
-  | "dispatch_notice"
-  | "tall_storyboard"
 type HomeTileAccentTone = "starter" | "play" | "resume" | "memory" | "draft"
 type HomeTileDeckMode = "premise" | "status" | "ending" | "brief"
 
@@ -77,10 +73,8 @@ type HomeStoryObjectView = {
   deck: string
   copy: HomeTileCopy
   metadata?: string[]
-  cast?: NarrativeCastMember[]
   themeKey?: string | null
   hasStrongCover: boolean
-  castCount?: number
 }
 
 type HomeMosaicBase = {
@@ -90,7 +84,6 @@ type HomeMosaicBase = {
   deck: string
   themeKey?: string | null
   hasStrongCover: boolean
-  castCount?: number
 }
 
 type HomeMosaicTile<T> = T & {
@@ -173,22 +166,12 @@ export function homeTileArchetypeForItem(
   fullBleedCount = 0,
   previousArchetype?: HomeTileArchetype,
 ): HomeTileArchetype {
-  const castCount = item.castCount ?? 0
   const canUseFullBleed =
     span === "feature-wide" &&
     item.hasStrongCover &&
     fullBleedCount < 2 &&
     previousArchetype !== "full_bleed_cinematic"
 
-  if (span === "feature-tall") {
-    return item.kind === "published_story" && castCount >= 2 ? "character_dossier" : "tall_storyboard"
-  }
-  if (span === "dispatch" || item.kind === "completed_memory") {
-    return "dispatch_notice"
-  }
-  if (item.kind === "published_story" && castCount >= 2 && span !== "feature-wide") {
-    return "character_dossier"
-  }
   if (canUseFullBleed) {
     return "full_bleed_cinematic"
   }
@@ -257,7 +240,6 @@ function starterPremiseView(
     metadata: [story.promise[lang]],
     themeKey: story.theme,
     hasStrongCover: true,
-    castCount: 0,
   }
 }
 
@@ -275,10 +257,8 @@ function publishedStoryView(
     cover,
     deck: getTemplateDisplaySummary(template, lang),
     copy: getHomeTileCopy("published_story", t, { isStarting }),
-    cast: template.cast,
     themeKey: template.cover_image_url ?? template.title,
     hasStrongCover: Boolean(cover),
-    castCount: template.cast.length,
   }
 }
 
@@ -395,11 +375,7 @@ export function HomePage({
   const activeTemplateTab: Tab = showTemplateTabs ? tab : "plaza"
 
   const ensurePlayableAuthorSession = async (): Promise<boolean> => {
-    if (auth.loading) {
-      setTemplateStartError(t("home.error_start_story"))
-      return false
-    }
-    if (!auth.isAnonymous) return true
+    if (!auth.loading && !auth.isAnonymous) return true
     if (!guestHandleRef.current) {
       guestHandleRef.current = makeGuestHandle()
     }
@@ -1102,7 +1078,7 @@ function CuratedStoryTile({
   const body = (
     <>
       <TileKicker tone={view.copy.accentTone}>{view.copy.typeLabel}</TileKicker>
-      <TileTitle span={span} compact={compact}>{view.title}</TileTitle>
+      <TileTitle span={span} compact={compact} lines={span === "dispatch" || span === "notice-wide" ? 1 : 3}>{view.title}</TileTitle>
       <Truncated lines={span === "dispatch" ? 1 : 2} style={hpStyles.editorialTileDeck}>
         {view.deck}
       </Truncated>
@@ -1181,7 +1157,6 @@ function TemplateCard({
         archetype={archetype}
         span={span}
         compact={compact}
-        template={template}
         view={displayView}
       />
     </motion.button>
@@ -1208,22 +1183,6 @@ function StarterTileComposition({
       </FullBleedTileImage>
     )
   }
-  if (archetype === "tall_storyboard") {
-    return (
-      <span style={hpStyles.tallStoryboardLayout} data-home-storyboard="true">
-        <TileMediaWell cover={cover} variant="tall" />
-        <span style={hpStyles.tallStoryboardPanel}>{children}</span>
-      </span>
-    )
-  }
-  if (archetype === "dispatch_notice") {
-    return (
-      <span style={hpStyles.dispatchTileLayout}>
-        <TileMediaWell cover={cover} variant="sliver" />
-        <span style={hpStyles.dispatchTextPanel}>{children}</span>
-      </span>
-    )
-  }
   return (
     <span style={framedTileLayoutStyle(span, compact)} data-home-framed-editorial="true">
       <TileMediaWell cover={cover} variant={span === "notice-wide" ? "strip" : "framed"} />
@@ -1236,17 +1195,14 @@ function PublishedTileComposition({
   archetype,
   span,
   compact,
-  template,
   view,
 }: {
   archetype: HomeTileArchetype
   span: HomeTileSpan
   compact: boolean
-  template: NarrativeTemplateSummary
   view: HomeStoryObjectView
 }) {
   const tightPublishedTile = span === "notice-wide" || span === "dispatch"
-  const compactDossier = compact || span === "dispatch" || span === "notice-wide"
   const standardBody = (
     <>
       <TileKicker tone={view.copy.accentTone}>{view.copy.typeLabel}</TileKicker>
@@ -1266,36 +1222,6 @@ function PublishedTileComposition({
       <FullBleedTileImage cover={view.cover} tone="published">
         {standardBody}
       </FullBleedTileImage>
-    )
-  }
-  if (archetype === "character_dossier") {
-    return (
-      <span style={dossierTileLayoutStyle(span, compact)} data-home-cast-dossier="true">
-        <TileMediaWell cover={view.cover} variant={span === "feature-tall" ? "tall" : "strip"} />
-        <span style={compactDossier ? { ...hpStyles.dossierTextPanel, ...hpStyles.dossierTextPanelCompact } : hpStyles.dossierTextPanel}>
-          <TileKicker tone={view.copy.accentTone}>{view.copy.typeLabel}</TileKicker>
-          <TileTitle span={span} compact={compact} lines={span === "feature-tall" ? 3 : 1}>{view.title}</TileTitle>
-          <CastDossierFrames cast={template.cast} compact={compactDossier} />
-          <Truncated lines={span === "feature-tall" ? 2 : 1} style={hpStyles.editorialTileDeck}>{view.deck}</Truncated>
-          <TileCommand tone={view.copy.accentTone}>{view.copy.primaryAction}</TileCommand>
-        </span>
-      </span>
-    )
-  }
-  if (archetype === "dispatch_notice") {
-    return (
-      <span style={hpStyles.dispatchTileLayout}>
-        <TileMediaWell cover={view.cover} variant="sliver" />
-        <span style={hpStyles.dispatchTextPanel}>{standardBody}</span>
-      </span>
-    )
-  }
-  if (archetype === "tall_storyboard") {
-    return (
-      <span style={hpStyles.tallStoryboardLayout} data-home-storyboard="true">
-        <TileMediaWell cover={view.cover} variant="tall" />
-        <span style={hpStyles.tallStoryboardPanel}>{standardBody}</span>
-      </span>
     )
   }
   return (
@@ -1340,7 +1266,7 @@ function TileMediaWell({
   variant,
 }: {
   cover: string
-  variant: "framed" | "strip" | "sliver" | "tall"
+  variant: "framed" | "strip"
 }) {
   return (
     <span
@@ -1403,41 +1329,6 @@ function homeTileCommandToneStyle(tone: HomeTileAccentTone): CSSProperties {
   return hpStyles.publishedAction
 }
 
-function CastDossierFrames({ cast, compact }: { cast: NarrativeCastMember[]; compact: boolean }) {
-  const roles = selectDossierCast(cast, compact)
-  if (roles.length === 0) return null
-  return (
-    <span style={compact ? { ...hpStyles.castDossierRow, ...hpStyles.castDossierRowCompact } : hpStyles.castDossierRow}>
-      {roles.map((member) => (
-        <span
-          key={member.character_id}
-          style={compact ? { ...hpStyles.castDossierFrame, ...hpStyles.castDossierFrameCompact } : hpStyles.castDossierFrame}
-          data-home-cast-frame="true"
-        >
-          <span style={compact ? { ...hpStyles.castDossierInitial, ...hpStyles.castDossierInitialCompact } : hpStyles.castDossierInitial}>{castInitial(member.display_name)}</span>
-          <span style={hpStyles.castDossierText}>
-            <Truncated style={hpStyles.castDossierName}>{member.display_name}</Truncated>
-            {compact ? null : (
-              <Truncated style={hpStyles.castDossierRole}>{member.role || member.relation_to_protagonist}</Truncated>
-            )}
-          </span>
-        </span>
-      ))}
-    </span>
-  )
-}
-
-function selectDossierCast(cast: NarrativeCastMember[], compact: boolean): NarrativeCastMember[] {
-  return cast.filter((member) => member.display_name.trim()).slice(0, compact ? 2 : 3)
-}
-
-function castInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "?"
-  const first = Array.from(trimmed)[0]
-  return first.toUpperCase()
-}
-
 function homeTileSpanStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
   if (compact) {
     return {
@@ -1468,16 +1359,8 @@ function framedTileLayoutStyle(span: HomeTileSpan, compact: boolean): CSSPropert
   return hpStyles.framedTileStack
 }
 
-function dossierTileLayoutStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
-  if (compact) return hpStyles.dossierTileCompact
-  if (span === "notice-wide" || span === "feature-horizontal") return hpStyles.dossierTileSplit
-  return hpStyles.dossierTileTall
-}
-
-function mediaWellVariantStyle(variant: "framed" | "strip" | "sliver" | "tall"): CSSProperties {
+function mediaWellVariantStyle(variant: "framed" | "strip"): CSSProperties {
   if (variant === "strip") return hpStyles.mediaWellStrip
-  if (variant === "sliver") return hpStyles.mediaWellSliver
-  if (variant === "tall") return hpStyles.mediaWellTall
   return hpStyles.mediaWellFramed
 }
 
@@ -1932,28 +1815,7 @@ const hpStyles: Record<string, CSSProperties> = {
     fontSize: 12.3,
     lineHeight: 1.42,
     textShadow: "0 1px 12px rgba(0,0,0,0.56)",
-  },
-  editorialTileMeta: {
-    color: "rgba(244,239,230,0.52)",
-    fontSize: 10.8,
-    lineHeight: 1.32,
-    letterSpacing: 0,
-  },
-  editorialTileFooter: {
-    marginTop: 4,
-    paddingTop: 7,
-    borderTop: "1px solid rgba(255,255,255,0.13)",
-    display: "flex",
-    alignItems: "center",
-    columnGap: 8,
-    rowGap: 5,
-    flexWrap: "wrap" as const,
-    color: "rgba(244,239,230,0.56)",
-    fontSize: 10.8,
-    lineHeight: 1.2,
-  },
-  editorialTileOwner: {
-    color: "rgba(245,200,120,0.78)",
+    minHeight: 0,
   },
   editorialTileAction: {
     width: "fit-content",
@@ -1964,6 +1826,8 @@ const hpStyles: Record<string, CSSProperties> = {
     fontSize: 11.6,
     fontWeight: 800,
     lineHeight: 1.2,
+    flexShrink: 0,
+    whiteSpace: "nowrap",
   },
   starterKicker: {
     color: "rgba(245,180,132,0.86)",
@@ -2065,129 +1929,6 @@ const hpStyles: Record<string, CSSProperties> = {
     marginBottom: 0,
     minHeight: 66,
     aspectRatio: "16 / 6",
-  },
-  mediaWellSliver: {
-    width: 72,
-    minHeight: "100%",
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-  },
-  mediaWellTall: {
-    margin: 12,
-    marginBottom: 0,
-    minHeight: 150,
-    aspectRatio: "4 / 5",
-    backgroundPosition: "center top",
-  },
-  dispatchTileLayout: {
-    minHeight: "100%",
-    display: "grid",
-    gridTemplateColumns: "72px 1fr",
-    background: "linear-gradient(90deg, rgba(42,16,18,0.78), rgba(12,12,16,0.96))",
-    borderLeft: "1px solid rgba(224,122,95,0.50)",
-  },
-  dispatchTextPanel: {
-    minWidth: 0,
-    padding: "15px 15px 13px",
-    display: "flex",
-    flexDirection: "column" as const,
-    justifyContent: "flex-end",
-    gap: 6,
-  },
-  tallStoryboardLayout: {
-    minHeight: "100%",
-    display: "grid",
-    gridTemplateRows: "minmax(172px, 58%) 1fr",
-    background: "linear-gradient(180deg, rgba(24,16,18,0.96), rgba(12,12,16,0.98))",
-  },
-  tallStoryboardPanel: {
-    minWidth: 0,
-    padding: "15px 16px 16px",
-    display: "flex",
-    flexDirection: "column" as const,
-    justifyContent: "flex-end",
-    gap: 7,
-    borderTop: "1px solid rgba(245,200,120,0.16)",
-  },
-  dossierTileCompact: {
-    minHeight: "100%",
-    display: "grid",
-    gridTemplateRows: "76px 1fr",
-    background: "linear-gradient(135deg, rgba(18,14,17,0.98), rgba(44,17,20,0.78))",
-  },
-  dossierTileSplit: {
-    minHeight: "100%",
-    display: "grid",
-    gridTemplateColumns: "35% 1fr",
-    background: "linear-gradient(135deg, rgba(18,14,17,0.98), rgba(44,17,20,0.78))",
-  },
-  dossierTileTall: {
-    minHeight: "100%",
-    display: "grid",
-    gridTemplateRows: "minmax(126px, 38%) 1fr",
-    background: "linear-gradient(180deg, rgba(22,14,17,0.98), rgba(12,12,16,0.98))",
-  },
-  dossierTextPanel: {
-    minWidth: 0,
-    padding: "14px 15px 13px",
-    display: "flex",
-    flexDirection: "column" as const,
-    justifyContent: "flex-end",
-    gap: 7,
-    borderTop: "1px solid rgba(245,200,120,0.13)",
-  },
-  dossierTextPanelCompact: {
-    padding: "11px 13px 10px",
-    gap: 5,
-  },
-  castDossierRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: 6,
-  },
-  castDossierRowCompact: {
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 5,
-  },
-  castDossierFrame: {
-    minWidth: 0,
-    display: "grid",
-    gridTemplateRows: "minmax(32px, 38px) auto",
-    background: "linear-gradient(135deg, rgba(54,20,24,0.78), rgba(12,12,16,0.82))",
-    border: "1px solid rgba(245,200,120,0.18)",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  castDossierFrameCompact: {
-    gridTemplateRows: "24px auto",
-  },
-  castDossierInitial: {
-    display: "grid",
-    placeItems: "center",
-    fontFamily: "var(--font-narrative)",
-    fontSize: 22,
-    color: "rgba(255,238,210,0.92)",
-    borderBottom: "1px solid rgba(245,200,120,0.16)",
-  },
-  castDossierInitialCompact: {
-    fontSize: 17,
-  },
-  castDossierText: {
-    minWidth: 0,
-    padding: "4px 5px 5px",
-  },
-  castDossierName: {
-    color: "rgba(255,246,232,0.91)",
-    fontSize: 10.6,
-    fontWeight: 700,
-    lineHeight: 1.15,
-  },
-  castDossierRole: {
-    marginTop: 2,
-    color: "rgba(245,200,120,0.62)",
-    fontSize: 9.4,
-    lineHeight: 1.12,
   },
 
   grid: {

@@ -28,9 +28,15 @@ def test_home_curated_plaza_cards_open_direct_play_sessions() -> None:
     curated = home[
         home.index("const handleStartCuratedStory") : home.index("const handleStartPublishedTemplate")
     ]
+    ensure_guest = home[
+        home.index("const ensurePlayableAuthorSession") : home.index("const handleStartCuratedStory")
+    ]
     assert "saveCreateDraftHandoff" not in home
     assert "source: \"plaza_curated\"" not in home
     assert "onOpenCreate()" not in curated
+    assert "auth.loading" in ensure_guest
+    assert "setTemplateStartError(t(\"home.error_start_story\"))" not in ensure_guest
+    assert "await auth.login(guestHandleRef.current)" in ensure_guest
     assert "api.createNarrativeStoryBrief" in curated
     assert "api.createNarrativeTemplate" in curated
     assert "onOpenPlay(response.session.session_id)" in curated
@@ -61,12 +67,11 @@ def test_home_story_area_uses_editorial_mosaic_without_main_story_semantics() ->
     assert "promoted" not in home
 
 
-def test_home_editorial_tiles_use_distinct_component_archetypes() -> None:
+def test_home_editorial_tiles_use_regular_rectangular_component_archetypes() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
 
     assert "function FullBleedTileImage" in home
     assert "function TileMediaWell" in home
-    assert "function CastDossierFrames" in home
     assert "function StarterTileComposition" in home
     assert "function PublishedTileComposition" in home
     assert 'data-home-tile-archetype={archetype}' in home
@@ -75,31 +80,35 @@ def test_home_editorial_tiles_use_distinct_component_archetypes() -> None:
     full_bleed = home[home.index("function FullBleedTileImage") : home.index("function TileMediaWell")]
     assert "hpStyles.fullBleedReadingBand" in full_bleed
     assert 'data-home-framed-editorial="true"' in home
-    assert 'data-home-storyboard="true"' in home
-    assert 'data-home-cast-dossier="true"' in home
     assert 'data-home-media-well={variant}' in home
-    assert 'data-home-cast-frame="true"' in home
+    archetype_type = home[home.index("type HomeTileArchetype") : home.index("type HomeTileAccentTone")]
+    assert '"full_bleed_cinematic"' in archetype_type
+    assert '"framed_editorial"' in archetype_type
+    assert "character_dossier" not in archetype_type
+    assert "dispatch_notice" not in archetype_type
+    assert "tall_storyboard" not in archetype_type
+    assert 'data-home-storyboard="true"' not in home
+    assert 'data-home-cast-dossier="true"' not in home
+    assert 'data-home-cast-frame="true"' not in home
 
 
-def test_home_tall_dispatch_and_dossier_guards_match_design_rules() -> None:
+def test_home_story_tiles_stay_regular_rectangular_modules() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
 
-    tall_start = home.index('if (archetype === "tall_storyboard")')
-    tall_segment = home[tall_start:home.index('if (archetype === "dispatch_notice")', tall_start)]
-    assert 'data-home-storyboard="true"' in tall_segment
-    assert 'TileMediaWell cover={cover} variant="tall"' in tall_segment
-    assert "FullBleedTileImage" not in tall_segment
-
-    assert 'if (archetype === "dispatch_notice")' in home
-    assert "hpStyles.dispatchTileLayout" in home
-    assert 'variant="sliver"' in home
-
-    dossier_start = home.index("function CastDossierFrames")
-    dossier_segment = home[dossier_start:home.index("function selectDossierCast")]
-    assert "data-home-cast-frame" in dossier_segment
-    assert "portrait" not in dossier_segment.lower()
-    assert "avatar" not in dossier_segment.lower()
-    assert "slice(0, compact ? 2 : 3)" in home
+    selector = home[home.index("export function homeTileArchetypeForItem") : home.index("export function getHomeTileCopy")]
+    assert "character_dossier" not in selector
+    assert "dispatch_notice" not in selector
+    assert "tall_storyboard" not in selector
+    assert 'variant="sliver"' not in home
+    assert 'variant="tall"' not in home
+    assert "clipPath" not in home
+    assert "polygon(" not in home
+    assert "shapeOutside" not in home
+    assert "borderRadius: 999" not in home
+    assert "hpStyles.dispatchTileLayout" not in home
+    assert "hpStyles.tallStoryboardLayout" not in home
+    assert "hpStyles.dossierTile" not in home
+    assert "hpStyles.castDossier" not in home
 
 
 def test_home_story_tiles_do_not_use_unreadable_one_by_one_spans() -> None:
