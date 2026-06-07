@@ -153,7 +153,7 @@ _LIST_MARKER_RE = re.compile(
 _ENTITY_TRAILING_RE = re.compile(
     r"\b(?:argue|argues|fight|fights|investigate|investigates|perform|performs|claim|claims|need|needs|"
     r"want|wants|handle|handles|represent|represents|witness|witnessed|saw|sees|watch|watches|"
-    r"leave|leaves|left|disappear|disappears|reveal|reveals|panic|panics|stop|stops|keep|keeps|"
+    r"leave|leaves|left|discover|discovers|discovered|disappear|disappears|reveal|reveals|panic|panics|stop|stops|keep|keeps|"
     r"panicking|decide|decides|deciding|gather|gathers|gathered|whether\s+to|should|try|tries|"
     r"find|finds|without|before|after|during|over|because|while|when|where|around|at midnight)\b.*$",
     re.I,
@@ -212,6 +212,10 @@ _NON_ENTITY_EXACT = {
     "no public pressure",
     "no mystery",
     "no conflict",
+    "no gore",
+    "no drugs",
+    "no drug use",
+    "no addiction",
     "no villains",
     "betrayal",
     "public pressure",
@@ -289,6 +293,10 @@ _NON_ENTITY_WORDS = {
     "ensure",
     "represent",
     "planner",
+    "gore",
+    "drug",
+    "drugs",
+    "addiction",
 }
 _EVENT_CONSTRAINT_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\btalent show\b", "talent show"),
@@ -304,10 +312,22 @@ _EVENT_CONSTRAINT_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\bpublic reveal\b", "public reveal"),
     (r"\bmissing cupcake\b", "missing cupcake"),
 )
+_NEGATED_CONSTRAINT_TERM_RE = (
+    r"(?:public\s+pressure|betrayal|blackmail|violence|gore|blood|drugs?|drug\s+use|"
+    r"addiction|mystery|conflict|villains?)"
+)
+_NEGATED_ENTITY_FRAGMENT_RE = re.compile(
+    rf"^(?:there\s+(?:is|are)\s+no|no)\s+{_NEGATED_CONSTRAINT_TERM_RE}\b",
+    re.I,
+)
 _NEGATED_CONSTRAINT_PATTERNS: tuple[tuple[str, str], ...] = (
-    (r"\bno blackmail\b", "no blackmail"),
-    (r"\bno betrayal\b", "no betrayal"),
-    (r"\bno violence\b", "no violence"),
+    (r"\b(?:there\s+(?:is|are)\s+)?no\s+blackmail\b", "no blackmail"),
+    (r"\b(?:there\s+(?:is|are)\s+)?no\s+betrayal\b", "no betrayal"),
+    (r"\b(?:there\s+(?:is|are)\s+)?no\s+violence\b", "no violence"),
+    (r"\b(?:there\s+(?:is|are)\s+)?no\s+gore\b", "no gore"),
+    (r"\b(?:there\s+(?:is|are)\s+)?no\s+(?:drugs?|drug\s+use|addiction)\b", "no drugs"),
+    (r"\b(?:there\s+(?:is|are)\s+)?no\s+mystery\b", "no mystery"),
+    (r"\b(?:there\s+(?:is|are)\s+)?no\s+conflict\b", "no conflict"),
 )
 _WORLD_SETTING_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\bmars colony\b", "Mars colony"),
@@ -698,6 +718,7 @@ def _clean_entity(raw: str) -> str:
         if re.search(r"\b(?:story|premise|scene|prompt|no villains?)\b", prefix, re.I):
             text = suffix
     text = _PLAYER_ROLE_PREFIX_RE.sub("", text)
+    text = re.sub(r"^\s*i\s+play\s+(?:as\s+)?(?:a\s+|an\s+|the\s+)?", "", text, flags=re.I)
     text = re.sub(r"^(?:the\s+)?player\s+must\b.*$", "", text, flags=re.I)
     text = re.sub(r"^\s*no\s+villains?\s*:\s*", "", text, flags=re.I)
     text = _LIST_MARKER_RE.sub("", text)
@@ -707,10 +728,13 @@ def _clean_entity(raw: str) -> str:
     text = re.sub(r"\bmoving\b.*$", "", text, flags=re.I)
     text = re.sub(r"^\s*(?:or|and)\s+", "", text, flags=re.I)
     text = _ENTITY_TRAILING_RE.sub("", text)
+    text = re.sub(r"\b(?:is|are)\s*$", "", text, flags=re.I)
     text = " ".join(text.split())
     if not text:
         return ""
     lowered = text.lower()
+    if _NEGATED_ENTITY_FRAGMENT_RE.match(lowered):
+        return ""
     if lowered.startswith("no "):
         return ""
     if _NON_ENTITY_TIME_PHRASE_RE.match(lowered):
@@ -1141,7 +1165,7 @@ def _strip_entity_exclusion_segments(seed: str) -> str:
     text = re.sub(r"\bkeep it\b[^.!?;]*", "", text, flags=re.I)
     text = re.sub(r"\bmake it\b[^.!?;]*", "", text, flags=re.I)
     text = re.sub(
-        r"(?:^|[,\n;])\s*no\s+(?:public pressure|betrayal|blackmail|violence|villains?|mystery|conflict)\b[^,.;!?]*",
+        rf"(?:^|[,\n;.!?])\s*(?:and\s+)?(?:there\s+(?:is|are)\s+no|no)\s+{_NEGATED_CONSTRAINT_TERM_RE}\b[^,.;!?]*",
         "",
         text,
         flags=re.I,

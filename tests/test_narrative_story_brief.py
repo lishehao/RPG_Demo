@@ -542,6 +542,46 @@ def test_story_brief_high_drama_entities_are_not_action_or_pressure_fragments() 
     assert "sponsor/fan pressure" in pressure
 
 
+def test_story_brief_keeps_sentence_form_negated_constraints_out_of_entities() -> None:
+    response = build_story_brief(
+        seed=(
+            "Make it a short English high drama backstage scene where NPCs fight back: "
+            "I play a nervous publicist, Producer Han wants the awards livestream to continue, "
+            "Rina the backup dancer saw singer Seo Mina leave, sponsors and fans are watching, "
+            "and there is no gore."
+        ),
+        language="en",
+        desired_tension_profile="high_drama",
+    )
+
+    primary_names = {
+        entity.display_name.lower()
+        for entity in response.brief.cast_plan.primary_active_entities
+    }
+    all_entities = [
+        *response.brief.cast_plan.primary_active_entities,
+        *response.brief.cast_plan.secondary_background_entities,
+        *response.brief.cast_plan.omitted_entities,
+    ]
+    all_names = {entity.display_name.lower() for entity in all_entities}
+    all_ids = {entity.entity_id.lower() for entity in all_entities}
+    constraints = {item.label.lower() for item in response.brief.constraints}
+    preserved = {label.lower() for label in response.brief.preserved_constraints}
+
+    assert response.can_generate is True
+    assert response.brief.runtime_fit_status == "fit"
+    assert {"nervous publicist", "producer han", "rina backup dancer", "sponsors", "fans"}.issubset(
+        primary_names
+    )
+    assert "there is no gore" not in all_names
+    assert "no gore" not in all_names
+    assert "there_is_no_gore" not in all_ids
+    assert "no_gore" not in all_ids
+    assert "no gore" in constraints
+    assert "no gore" in preserved
+    assert "there is no gore" not in response.brief.premise_summary.lower()
+
+
 def test_story_brief_filters_exact_high_drama_time_action_fragments_from_entities() -> None:
     response = build_story_brief(
         seed=(

@@ -791,3 +791,38 @@ def test_create_template_reliable_opening_avoids_agent_chat_entity_fragments(tmp
     assert "publicist" in opening
     assert "producer" in opening
     assert "backup dancer" in opening
+
+
+def test_create_template_reliable_opening_keeps_negated_constraints_out_of_cast(tmp_path) -> None:
+    seed = (
+        "Make it a short English high drama backstage scene where NPCs fight back: "
+        "I play a nervous publicist, Producer Han wants the awards livestream to continue, "
+        "Rina the backup dancer saw singer Seo Mina leave, sponsors and fans are watching, "
+        "and there is no gore."
+    )
+    brief = build_story_brief(seed=seed, language="en", desired_tension_profile="high_drama").brief
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    cast_blob = " ".join(
+        f"{member.character_id} {member.display_name} {member.role} {member.relation_to_protagonist}"
+        for member in response.template.cast
+    ).lower()
+    opening = response.opening.content.lower()
+
+    assert response.session.session_id.startswith("sess_")
+    assert response.opening.options
+    assert "there_is_no_gore" not in cast_blob
+    assert "no_gore" not in cast_blob
+    assert "there is no gore" not in cast_blob
+    assert "no gore" not in cast_blob
+    assert "there is no gore" not in opening
+    assert "no gore stays" not in opening
+    assert "nervous publicist" in opening
+    assert "producer han" in opening or "producer" in opening
+    assert "rina backup dancer" in opening or "backup dancer" in opening
