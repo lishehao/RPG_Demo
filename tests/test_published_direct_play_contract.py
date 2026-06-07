@@ -195,6 +195,8 @@ def test_home_story_tiles_render_low_information_body_only() -> None:
     assert 'data-home-tile-text-body="title-deck-only"' in body
     assert "<TileTitle" in body
     assert "editorialTileDeck" in body
+    assert "<Truncated" not in body
+    assert "lineClampStyle" in body
     assert "TileKicker" not in curated
     assert "TileCommand" not in curated
     assert "TileKicker" not in published

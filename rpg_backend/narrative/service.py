@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import secrets
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from typing import Any
 
 from rpg_backend.author.normalize import normalize_whitespace
 from rpg_backend.config import Settings, get_settings
@@ -20,6 +22,9 @@ from rpg_backend.narrative.contracts import (
     EndingDistributionEntry,
     EndingDistributionResponse,
     LocalizedText,
+    LLMCallSourceLabel,
+    LLMCallStatus,
+    LLMCallEventListResponse,
     NarrativeEnding,
     NarrativeSession,
     NarrativeSessionSummary,
@@ -40,6 +45,8 @@ from rpg_backend.narrative.contracts import (
     StoryBriefAdvisorResponse,
     StoryBriefConsistencyCheck,
     StoryHistoryResponse,
+    StoryGuideTurnRequest,
+    StoryGuideTurnResponse,
     StoryMessage,
     StoryOption,
     TemplateListResponse,
@@ -73,6 +80,7 @@ from rpg_backend.narrative.gateway import (
 )
 from rpg_backend.narrative.judges import judge_contract, judge_step
 from rpg_backend.narrative.repository import NarrativeNotFoundError, NarrativeRepository
+from rpg_backend.narrative.story_guide import advance_story_guide_loop
 
 
 PRIVATE_REPLAY_TITLE = "Shared private story"
@@ -122,6 +130,40 @@ _TURN_RUNTIME_FALLBACK_CODES = {
     "llm_invalid_response",
     "llm_invalid_json",
 }
+_STORY_GUIDE_SYSTEM_PROMPT = """
+You are Tiny Stories' Story Butler for a Korean-webtoon style interactive story creator.
+Return strict JSON only.
+
+Write one concise, cinematic assistant reply for the player. Use the supplied deterministic slot state as the contract:
+- Ask only the next focused question when status is needs_field.
+- Acknowledge corrections naturally when status is ready_to_brief.
+- Do not mention provider, model, API, JSON, schema, backend, or deterministic fallback.
+- Do not override safety/unsupported decisions from the deterministic contract.
+- Keep the reply under 70 words in English or 120 Chinese characters.
+
+JSON shape:
+{"reply":"player-facing assistant row"}
+"""
+_STORY_BRIEF_SYSTEM_PROMPT = """
+You are Tiny Stories' live Story Brief editor.
+Return strict JSON only.
+
+You receive a deterministic Story Brief candidate that already protects entity hygiene, not-fit gates, and safety boundaries.
+Refine only the readable top-level copy without changing the cast plan, fit status, safety boundaries, or ability to generate.
+Keep entities clean. Do not promote negated constraints into cast.
+Do not mention provider, model, API, JSON, schema, backend, or fallback.
+
+JSON shape:
+{
+  "display_title": "story directory title, 2-6 English words or concise Chinese title, <=52 chars",
+  "display_intro": "one sentence for Home story tiles, <=118 English chars or concise Chinese equivalent",
+  "premise_summary": "1 sentence, <=220 chars",
+  "genre_tone": "short tone line, <=140 chars",
+  "story_kernel": "playable promise, <=190 chars",
+  "adaptation_note": "short note, <=180 chars",
+  "next_step": "player-facing next step, <=180 chars"
+}
+"""
 
 
 def _is_content_moderation_failure(exc: NarrativeGatewayError) -> bool:
@@ -159,9 +201,163 @@ class NarrativeService:
             )
         return self._gateway
 
+    def _trace_start(self) -> int:
+        if self._gateway is None:
+            return 0
+        trace_length = getattr(self._gateway, "trace_length", None)
+        if callable(trace_length):
+            try:
+                return int(trace_length())
+            except Exception:  # noqa: BLE001
+                return 0
+        call_trace = getattr(self._gateway, "call_trace", None)
+        if isinstance(call_trace, list):
+            return len(call_trace)
+        return 0
+
+    def _gateway_trace_since(self, start_index: int) -> list[dict[str, Any]]:
+        if self._gateway is None:
+            return []
+        trace_since = getattr(self._gateway, "trace_since", None)
+        if callable(trace_since):
+            try:
+                return list(trace_since(start_index))
+            except Exception:  # noqa: BLE001
+                return []
+        call_trace = getattr(self._gateway, "call_trace", None)
+        if isinstance(call_trace, list):
+            return [entry for entry in call_trace[max(0, int(start_index)) :] if isinstance(entry, dict)]
+        return []
+
+    def _persist_gateway_trace(
+        self,
+        start_index: int,
+        *,
+        operation_latency_ms: int | None = None,
+        user_id: str | None = None,
+        template_id: str | None = None,
+        session_id: str | None = None,
+        fallback_reason: str | None = None,
+    ) -> None:
+        for entry in self._gateway_trace_since(start_index):
+            usage = entry.get("usage") if isinstance(entry.get("usage"), dict) else {}
+            status = _coerce_llm_call_status(entry.get("status"), entry.get("failure_message_bucket"))
+            source_label: LLMCallSourceLabel = "live_repaired" if status == "repaired" else "live"
+            self._repo.append_llm_call_event(
+                operation=str(entry.get("operation") or "unknown"),
+                status=status,
+                source_label=source_label,
+                latency_ms=_safe_int_or_none(entry.get("latency_ms")),
+                operation_latency_ms=operation_latency_ms,
+                input_tokens=_safe_int_or_none(usage.get("input_tokens")),
+                cached_input_tokens=_safe_int_or_none(usage.get("cached_input_tokens")),
+                output_tokens=_safe_int_or_none(usage.get("output_tokens")),
+                total_tokens=_safe_int_or_none(usage.get("total_tokens")),
+                retry_count=max(
+                    _safe_int_or_none(entry.get("retry_count")) or 0,
+                    max(0, (_safe_int_or_none(entry.get("attempt_index")) or 1) - 1),
+                ),
+                repair_count=_safe_int_or_none(entry.get("repair_count")) or 0,
+                fallback_reason=fallback_reason,
+                response_id=str(entry.get("response_id")) if entry.get("response_id") else None,
+                user_id=user_id,
+                template_id=template_id,
+                session_id=session_id,
+            )
+
+    def _record_llm_fallback_event(
+        self,
+        *,
+        operation: str,
+        user_id: str | None,
+        source_label: LLMCallSourceLabel,
+        fallback_reason: str,
+        template_id: str | None = None,
+        session_id: str | None = None,
+        operation_latency_ms: int | None = None,
+    ) -> None:
+        self._repo.append_llm_call_event(
+            operation=operation,
+            status="fallback_used",
+            source_label=source_label,
+            operation_latency_ms=operation_latency_ms,
+            fallback_reason=fallback_reason[:160],
+            user_id=user_id,
+            template_id=template_id,
+            session_id=session_id,
+        )
+
     # ------------------------------------------------------------------
     # Template authoring
     # ------------------------------------------------------------------
+
+    def create_story_guide_turn(
+        self,
+        request: StoryGuideTurnRequest,
+        *,
+        owner_user_id: str,
+    ) -> StoryGuideTurnResponse:
+        deterministic = advance_story_guide_loop(request.state, request.message, request.language)
+        # Safety and privacy redirects are already product decisions; do not
+        # spend live provider calls on text we deliberately refuse or do not
+        # want to silently mutate.
+        if deterministic.blocked or deterministic.acceptedText is False:
+            self._record_llm_fallback_event(
+                operation="create.story_butler_turn",
+                user_id=owner_user_id,
+                source_label="deterministic_fallback",
+                fallback_reason="pre_provider_redirect_or_non_story_control",
+            )
+            return deterministic
+        if self._gateway is None:
+            self._record_llm_fallback_event(
+                operation="create.story_butler_turn",
+                user_id=owner_user_id,
+                source_label="no_gateway_fallback",
+                fallback_reason="text_gateway_not_configured",
+            )
+            return deterministic.model_copy(update={"source": "no_gateway_fallback"})
+
+        started_at = time.monotonic()
+        trace_start = self._trace_start()
+        try:
+            result = self.gateway.invoke_json(
+                system_prompt=_STORY_GUIDE_SYSTEM_PROMPT,
+                user_payload={
+                    "message": request.message,
+                    "language": request.language,
+                    "current_seed": request.current_seed,
+                    "deterministic_contract": deterministic.model_dump(mode="json"),
+                },
+                operation_name="create.story_butler_turn",
+                max_output_tokens=420,
+                plaintext_fallback_key="reply",
+            )
+            operation_latency_ms = _elapsed_ms(started_at)
+            self._persist_gateway_trace(
+                trace_start,
+                operation_latency_ms=operation_latency_ms,
+                user_id=owner_user_id,
+            )
+            live_reply = _safe_live_reply(result.payload.get("reply"), deterministic.reply)
+            source: LLMCallSourceLabel = "live_repaired" if _trace_had_repair(self._gateway_trace_since(trace_start)) else "live"
+            return deterministic.model_copy(update={"reply": live_reply, "source": source})
+        except Exception as exc:  # noqa: BLE001
+            operation_latency_ms = _elapsed_ms(started_at)
+            self._persist_gateway_trace(
+                trace_start,
+                operation_latency_ms=operation_latency_ms,
+                user_id=owner_user_id,
+                fallback_reason=_fallback_reason_for_exception(exc),
+            )
+            self._record_llm_fallback_event(
+                operation="create.story_butler_turn",
+                user_id=owner_user_id,
+                source_label="deterministic_fallback",
+                fallback_reason=_fallback_reason_for_exception(exc),
+                operation_latency_ms=operation_latency_ms,
+            )
+            return deterministic
 
     def create_story_brief(
         self,
@@ -169,17 +365,88 @@ class NarrativeService:
         *,
         owner_user_id: str,
     ) -> StoryBriefAdvisorResponse:
-        del owner_user_id
         seed = request.seed.strip()
         if not seed:
             raise NarrativeServiceError(
                 code="seed_required", message="Seed must not be empty.", status_code=422
             )
-        return build_story_brief(
+        deterministic = build_story_brief(
             seed=seed,
             language=request.language,
             desired_tension_profile=request.desired_tension_profile,
         )
+        deterministic = deterministic.model_copy(
+            update={
+                "brief": _with_story_brief_display_metadata(
+                    deterministic.brief,
+                    language=request.language,
+                )
+            }
+        )
+        if self._gateway is None:
+            self._record_llm_fallback_event(
+                operation="narrative.story_brief",
+                user_id=owner_user_id,
+                source_label="no_gateway_fallback",
+                fallback_reason="text_gateway_not_configured",
+            )
+            return deterministic.model_copy(update={"runtime_source": "no_gateway_fallback"})
+
+        started_at = time.monotonic()
+        trace_start = self._trace_start()
+        try:
+            result = self.gateway.invoke_json(
+                system_prompt=_STORY_BRIEF_SYSTEM_PROMPT,
+                user_payload={
+                    "seed": seed,
+                    "language": request.language,
+                    "desired_tension_profile": request.desired_tension_profile,
+                    "deterministic_brief": deterministic.brief.model_dump(mode="json"),
+                    "can_generate": deterministic.can_generate,
+                    "next_step": deterministic.next_step,
+                },
+                operation_name="narrative.story_brief",
+                max_output_tokens=700,
+                plaintext_fallback_key="next_step",
+            )
+            operation_latency_ms = _elapsed_ms(started_at)
+            self._persist_gateway_trace(
+                trace_start,
+                operation_latency_ms=operation_latency_ms,
+                user_id=owner_user_id,
+            )
+            brief = _apply_live_story_brief_copy(
+                deterministic.brief,
+                result.payload,
+                language=request.language,
+            )
+            runtime_source: LLMCallSourceLabel = "live_repaired" if _trace_had_repair(self._gateway_trace_since(trace_start)) else "live"
+            next_step = _safe_short_text(result.payload.get("next_step"), deterministic.next_step, max_len=180)
+            return deterministic.model_copy(
+                update={
+                    "brief": brief,
+                    "next_step": next_step,
+                    "source": "live_hybrid_v1",
+                    "runtime_source": runtime_source,
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            operation_latency_ms = _elapsed_ms(started_at)
+            fallback_reason = _fallback_reason_for_exception(exc)
+            self._persist_gateway_trace(
+                trace_start,
+                operation_latency_ms=operation_latency_ms,
+                user_id=owner_user_id,
+                fallback_reason=fallback_reason,
+            )
+            self._record_llm_fallback_event(
+                operation="narrative.story_brief",
+                user_id=owner_user_id,
+                source_label="deterministic_fallback",
+                fallback_reason=fallback_reason,
+                operation_latency_ms=operation_latency_ms,
+            )
+            return deterministic
 
     def create_template(
         self,
@@ -202,8 +469,12 @@ class NarrativeService:
                 status_code=422,
             )
         opening_recovery: str | None = None
+        opening_fallback_reason: str | None = None
+        operation_started_at = time.monotonic()
+        trace_start = self._trace_start()
         if request.story_brief is not None and _story_brief_prefers_reliable_opening(request.story_brief):
             opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
+            opening_fallback_reason = "story_brief_prefers_reliable_opening"
         else:
             try:
                 if request.story_brief is not None:
@@ -225,12 +496,14 @@ class NarrativeService:
                 if request.story_brief is not None and _should_use_reliable_opening_fallback(exc):
                     opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
                     opening_recovery = "tightened_from_brief"
+                    opening_fallback_reason = _fallback_reason_for_exception(exc)
                 else:
                     raise
             except NarrativeGatewayError as exc:
                 if request.story_brief is not None and _should_use_reliable_opening_fallback(exc):
                     opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
                     opening_recovery = "tightened_from_brief"
+                    opening_fallback_reason = _fallback_reason_for_exception(exc)
                 else:
                     raise NarrativeServiceError(
                         code=exc.code, message=exc.message, status_code=exc.status_code
@@ -249,6 +522,7 @@ class NarrativeService:
                 if request.story_brief is not None:
                     opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
                     opening_recovery = "tightened_from_brief"
+                    opening_fallback_reason = _fallback_reason_for_exception(exc)
                 else:
                     raise NarrativeServiceError(
                         code="opening_invalid",
@@ -265,6 +539,7 @@ class NarrativeService:
             if story_brief_consistency.should_retry and not _story_brief_prefers_reliable_opening(request.story_brief):
                 opening = _story_brief_fallback_opening(request.story_brief, language=request.language)
                 opening_recovery = "tightened_from_brief"
+                opening_fallback_reason = "story_brief_consistency_retry"
                 story_brief_consistency = check_story_brief_opening_consistency(
                     brief=request.story_brief,
                     opening=opening,
@@ -280,6 +555,7 @@ class NarrativeService:
                 if fallback_check.status != "fail" or request.story_brief.runtime_fit_status != "not_fit":
                     opening = fallback_opening
                     opening_recovery = "tightened_from_brief"
+                    opening_fallback_reason = "story_brief_consistency_failed"
                     story_brief_consistency = _story_brief_recovered_opening_check(
                         fallback_check,
                         brief=request.story_brief,
@@ -292,11 +568,17 @@ class NarrativeService:
                     )
 
         template_id = _generate_template_id()
+        display_title, display_intro = _template_display_metadata(
+            seed=seed,
+            language=request.language,
+            opening=opening,
+            story_brief=request.story_brief,
+        )
         template = self._repo.create_template(
             template_id=template_id,
             owner_user_id=owner_user_id,
             seed=seed,
-            title=opening.title,
+            title=display_title,
             cast=opening.cast,
             advisor_persona=opening.advisor_persona,
             opening_passage=opening.opening_message.content,
@@ -306,8 +588,8 @@ class NarrativeService:
             player_role_options=opening.player_role_options,
             visibility=request.visibility,
             language=request.language,
-            title_i18n=_localized_text_for_language(opening.title, request.language),
-            summary_i18n=_localized_text_for_language(seed, request.language),
+            title_i18n=_localized_text_for_language(display_title, request.language),
+            summary_i18n=_localized_text_for_language(display_intro, request.language),
         )
 
         # Auto-create the creator's session with the requested difficulty.
@@ -330,6 +612,25 @@ class NarrativeService:
             num_failure_conds=len(opening.failure_conditions),
             num_player_roles=len(opening.player_role_options),
         )
+        operation_latency_ms = _elapsed_ms(operation_started_at)
+        self._persist_gateway_trace(
+            trace_start,
+            operation_latency_ms=operation_latency_ms,
+            user_id=owner_user_id,
+            template_id=template.template_id,
+            session_id=session.session_id,
+            fallback_reason=opening_fallback_reason,
+        )
+        if opening_fallback_reason is not None:
+            self._record_llm_fallback_event(
+                operation="narrative.opening",
+                user_id=owner_user_id,
+                template_id=template.template_id,
+                session_id=session.session_id,
+                source_label="no_gateway_fallback" if opening_fallback_reason == "llm_unavailable" else "deterministic_fallback",
+                fallback_reason=opening_fallback_reason,
+                operation_latency_ms=operation_latency_ms,
+            )
         return CreateTemplateResponse(
             template=_summarize_template(template, viewer_user_id=owner_user_id),
             session=_summarize_session(session, template),
@@ -449,6 +750,15 @@ class NarrativeService:
             agent_events=agent_events,
         )
 
+    def list_llm_call_events(
+        self,
+        session_id: str,
+        *,
+        player_user_id: str,
+    ) -> LLMCallEventListResponse:
+        self._load_session_for_player(session_id, player_user_id)
+        return LLMCallEventListResponse(items=self._repo.list_llm_call_events_for_session(session_id))
+
     # ------------------------------------------------------------------
     # Advance a turn
     # ------------------------------------------------------------------
@@ -536,6 +846,9 @@ class NarrativeService:
                 played_leverage=played_leverage,
             )
 
+        turn_operation_started_at = time.monotonic()
+        turn_trace_start = self._trace_start()
+        turn_fallback_reason: str | None = None
         try:
             turn = advance_turn(
                 gateway=self.gateway,
@@ -558,17 +871,36 @@ class NarrativeService:
         except NarrativeServiceError as exc:
             if _should_use_turn_runtime_fallback(exc):
                 turn = build_deterministic_turn()
+                turn_fallback_reason = _fallback_reason_for_exception(exc)
             else:
+                self._persist_gateway_trace(
+                    turn_trace_start,
+                    operation_latency_ms=_elapsed_ms(turn_operation_started_at),
+                    user_id=player_user_id,
+                    template_id=template.template_id,
+                    session_id=session_id,
+                    fallback_reason=_fallback_reason_for_exception(exc),
+                )
                 raise
         except NarrativeGatewayError as exc:
             if _should_use_turn_runtime_fallback(exc):
                 turn = build_deterministic_turn()
+                turn_fallback_reason = _fallback_reason_for_exception(exc)
             else:
+                self._persist_gateway_trace(
+                    turn_trace_start,
+                    operation_latency_ms=_elapsed_ms(turn_operation_started_at),
+                    user_id=player_user_id,
+                    template_id=template.template_id,
+                    session_id=session_id,
+                    fallback_reason=_fallback_reason_for_exception(exc),
+                )
                 raise NarrativeServiceError(
                     code=exc.code, message=exc.message, status_code=exc.status_code
                 ) from exc
         except ValueError:
             turn = build_deterministic_turn()
+            turn_fallback_reason = "turn_value_error"
 
         # Atomic-ish persistence: player message + chosen-option update + narrator.
         self._repo.append_story_message(session_id, player_message)
@@ -631,10 +963,10 @@ class NarrativeService:
                     failure_conditions=template.failure_conditions,
                     history=full_history,
                 )
-            except (NarrativeGatewayError, ValueError) as exc:
+            except (NarrativeServiceError, NarrativeGatewayError, ValueError) as exc:
                 # Failure judge errors are non-fatal — log and proceed.
                 print(
-                    f"[narrative.service] judge_failure errored for session={session_id}: {exc}",
+                    f"[narrative.service] judge_failure errored for session={session_id}: {_safe_exception_label(exc)}",
                     flush=True,
                 )
                 judgement = None
@@ -649,6 +981,26 @@ class NarrativeService:
 
         if ending_payload is None and is_final_turn:
             ending_payload = self._finalize_session(session_id, template, player_role=active_role)
+
+        turn_operation_latency_ms = _elapsed_ms(turn_operation_started_at)
+        self._persist_gateway_trace(
+            turn_trace_start,
+            operation_latency_ms=turn_operation_latency_ms,
+            user_id=player_user_id,
+            template_id=template.template_id,
+            session_id=session_id,
+            fallback_reason=turn_fallback_reason,
+        )
+        if turn_fallback_reason is not None:
+            self._record_llm_fallback_event(
+                operation="narrative.advance_turn",
+                user_id=player_user_id,
+                template_id=template.template_id,
+                session_id=session_id,
+                source_label="deterministic_fallback",
+                fallback_reason=turn_fallback_reason,
+                operation_latency_ms=turn_operation_latency_ms,
+            )
 
         return AdvanceTurnResponse(
             player_message=player_message,
@@ -757,7 +1109,7 @@ class NarrativeService:
             )
         except (NarrativeGatewayError, ValueError) as exc:
             print(
-                f"[narrative.service] ending synthesis failed for session={session_id}: {exc}",
+                f"[narrative.service] ending synthesis failed for session={session_id}: {_safe_exception_label(exc)}",
                 flush=True,
             )
             return None
@@ -856,7 +1208,7 @@ class NarrativeService:
             )
         except (NarrativeGatewayError, ValueError) as exc:
             print(
-                f"[narrative.service] early-ending synthesis failed for session={session_id}: {exc}",
+                f"[narrative.service] early-ending synthesis failed for session={session_id}: {_safe_exception_label(exc)}",
                 flush=True,
             )
             return None
@@ -2366,6 +2718,270 @@ def _story_brief_recovered_opening_check(
             "summary": "The live draft missed required details, so the opening was staged from the saved Story Brief.",
         }
     )
+
+
+def _elapsed_ms(started_at: float) -> int:
+    return max(0, int(round((time.monotonic() - started_at) * 1000)))
+
+
+def _safe_int_or_none(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return max(0, int(value))
+    return None
+
+
+def _coerce_llm_call_status(raw_status: object, raw_bucket: object) -> LLMCallStatus:
+    status = str(raw_status or "").strip()
+    if status in {
+        "success",
+        "timeout",
+        "rate_limited",
+        "invalid_response",
+        "provider_unavailable",
+        "fallback_used",
+        "repaired",
+        "failed",
+    }:
+        return status  # type: ignore[return-value]
+    bucket = str(raw_bucket or "").strip()
+    if bucket == "timeout":
+        return "timeout"
+    if bucket == "rate_limit":
+        return "rate_limited"
+    if bucket in {"dns", "connection", "auth", "service"}:
+        return "provider_unavailable"
+    return "success" if not bucket else "failed"
+
+
+def _fallback_reason_for_exception(exc: Exception) -> str:
+    code = getattr(exc, "code", None)
+    if isinstance(code, str) and code.strip():
+        return code.strip()[:160]
+    return exc.__class__.__name__[:160]
+
+
+def _safe_exception_label(exc: Exception) -> str:
+    code = getattr(exc, "code", None)
+    status_code = getattr(exc, "status_code", None)
+    if isinstance(code, str) and code.strip():
+        cleaned = code.strip()[:80]
+        if isinstance(status_code, int):
+            return f"{cleaned}:{status_code}"
+        return cleaned
+    return exc.__class__.__name__[:80]
+
+
+def _trace_had_repair(entries: list[dict[str, Any]]) -> bool:
+    return any(str(entry.get("status") or "") == "repaired" or int(entry.get("repair_count") or 0) > 0 for entry in entries)
+
+
+def _safe_short_text(raw: object, fallback: str, *, max_len: int) -> str:
+    if isinstance(raw, str):
+        cleaned = normalize_whitespace(raw)
+        if cleaned:
+            return cleaned[:max_len]
+    return fallback[:max_len]
+
+
+def _contains_player_debug_terms(value: str) -> bool:
+    lowered = value.casefold()
+    return any(
+        term in lowered
+        for term in (
+            "provider",
+            "model",
+            "api",
+            "json",
+            "schema",
+            "backend",
+            "deterministic",
+            "fallback",
+        )
+    )
+
+
+def _safe_live_reply(raw: object, fallback: str) -> str:
+    reply = _safe_short_text(raw, fallback, max_len=420)
+    if _contains_player_debug_terms(reply):
+        return fallback
+    return reply
+
+
+def _apply_live_story_brief_copy(
+    brief: StoryBrief,
+    payload: dict[str, Any],
+    *,
+    language: str,
+) -> StoryBrief:
+    updates: dict[str, object] = {"source": "live_hybrid_v1"}
+    for key, max_len in (
+        ("premise_summary", 260),
+        ("genre_tone", 160),
+        ("story_kernel", 220),
+        ("adaptation_note", 220),
+    ):
+        value = payload.get(key)
+        if isinstance(value, str):
+            cleaned = normalize_whitespace(value)
+            if cleaned and not _contains_player_debug_terms(cleaned):
+                updates[key] = cleaned[:max_len]
+    try:
+        updated = brief.model_copy(update=updates)
+    except Exception:  # noqa: BLE001
+        updated = brief.model_copy(update={"source": "live_hybrid_v1"})
+    return _with_story_brief_display_metadata(
+        updated,
+        language=language,
+        live_payload=payload,
+    )
+
+
+def _with_story_brief_display_metadata(
+    brief: StoryBrief,
+    *,
+    language: str,
+    live_payload: dict[str, Any] | None = None,
+) -> StoryBrief:
+    title_candidate = None
+    intro_candidate = None
+    if isinstance(live_payload, dict):
+        title_candidate = live_payload.get("display_title")
+        intro_candidate = live_payload.get("display_intro")
+    title, intro = _concise_story_display_metadata(
+        language=language,
+        title_candidates=[
+            title_candidate,
+            brief.display_title,
+            _fallback_title(brief, _fallback_pressure_labels(brief)),
+            brief.genre_tone,
+        ],
+        intro_candidates=[
+            intro_candidate,
+            brief.display_intro,
+            brief.premise_summary,
+            brief.story_kernel,
+            brief.original_seed,
+        ],
+    )
+    return brief.model_copy(update={"display_title": title, "display_intro": intro})
+
+
+def _template_display_metadata(
+    *,
+    seed: str,
+    language: str,
+    opening: OpeningResult,
+    story_brief: StoryBrief | None,
+) -> tuple[str, str]:
+    title_candidates: list[object] = []
+    intro_candidates: list[object] = []
+    if story_brief is not None:
+        title_candidates.extend(
+            [
+                story_brief.display_title,
+                _fallback_title(story_brief, _fallback_pressure_labels(story_brief)),
+                story_brief.genre_tone,
+            ]
+        )
+        intro_candidates.extend(
+            [
+                story_brief.display_intro,
+                story_brief.premise_summary,
+                story_brief.story_kernel,
+            ]
+        )
+    title_candidates.extend([opening.title, seed])
+    intro_candidates.extend([seed, opening.opening_message.content])
+    return _concise_story_display_metadata(
+        language=language,
+        title_candidates=title_candidates,
+        intro_candidates=intro_candidates,
+    )
+
+
+def _concise_story_display_metadata(
+    *,
+    language: str,
+    title_candidates: list[object],
+    intro_candidates: list[object],
+) -> tuple[str, str]:
+    title = ""
+    for candidate in title_candidates:
+        title = _clean_display_title(candidate, language=language)
+        if title:
+            break
+    intro = ""
+    for candidate in intro_candidates:
+        intro = _clean_display_intro(candidate, language=language)
+        if intro:
+            break
+    if not title:
+        title = "First Scene" if language != "zh" else "第一幕"
+    if not intro:
+        intro = "A tense first scene waits for your choice." if language != "zh" else "第一幕等待你的选择。"
+    return title, intro
+
+
+def _clean_display_title(raw: object, *, language: str) -> str:
+    text = _clean_display_fragment(raw)
+    if not text or _contains_player_debug_terms(text):
+        return ""
+    text = re.split(r"[。.!?]\s*", text, maxsplit=1)[0].strip()
+    text = re.split(r"\s+[—–-]\s+|[:：]|·", text, maxsplit=1)[0].strip()
+    if language == "zh":
+        return _limit_cjk_display(text, 18)
+    words = re.findall(r"[A-Za-z0-9][A-Za-z0-9'’]*", text)
+    if not words:
+        return ""
+    words = words[:6]
+    if len(words) == 1:
+        words.append("Story")
+    title = " ".join(words)
+    if raw and str(raw).strip().istitle():
+        return _limit_english_display(title, 52)
+    return _limit_english_display(title.title(), 52)
+
+
+def _clean_display_intro(raw: object, *, language: str) -> str:
+    text = _clean_display_fragment(raw)
+    if not text or _contains_player_debug_terms(text):
+        return ""
+    text = re.split(r"(?:#|\\btags?:|\\bmetadata:)", text, flags=re.IGNORECASE)[0].strip()
+    if language == "zh":
+        sentence = re.split(r"[。！？]", text, maxsplit=1)[0].strip()
+        return _limit_cjk_display(sentence, 56)
+    sentence = re.split(r"(?<=[.!?])\\s+", text, maxsplit=1)[0].strip()
+    sentence = _limit_english_display(sentence, 118)
+    if sentence and sentence[-1] not in ".!?":
+        sentence = f"{sentence.rstrip(' ,;:')}."
+    return sentence
+
+
+def _clean_display_fragment(raw: object) -> str:
+    if not isinstance(raw, str):
+        return ""
+    text = normalize_whitespace(raw)
+    text = text.replace("…", " ").replace("...", " ")
+    text = re.sub(r"[#*_`]+", "", text)
+    text = re.sub(r"\\s*(?:->|→)\\s*", " ", text)
+    return normalize_whitespace(text).strip(" -–—·|")
+
+
+def _limit_english_display(text: str, limit: int) -> str:
+    text = normalize_whitespace(text)
+    if len(text) <= limit:
+        return text.strip()
+    clipped = text[:limit].rsplit(" ", 1)[0].strip(" ,;:-–—")
+    return clipped or text[:limit].strip(" ,;:-–—")
+
+
+def _limit_cjk_display(text: str, limit: int) -> str:
+    text = normalize_whitespace(text)
+    if len(text) <= limit:
+        return text.strip()
+    return text[:limit].strip(" ，、；：。！？-–—")
 
 
 def _localized_text_for_language(value: str, language: str) -> LocalizedText | None:

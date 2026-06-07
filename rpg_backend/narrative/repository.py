@@ -19,6 +19,9 @@ from rpg_backend.narrative.contracts import (
     FailureCondition,
     Highlight,
     InventoryDelta,
+    LLMCallEvent,
+    LLMCallSourceLabel,
+    LLMCallStatus,
     LocalizedText,
     NarrativeAgentEvent,
     NarrativeSession,
@@ -216,6 +219,32 @@ class NarrativeRepository:
             """
         )
         connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS narrative_llm_call_events (
+                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                operation TEXT NOT NULL,
+                status TEXT NOT NULL,
+                source_label TEXT NOT NULL,
+                latency_ms INTEGER,
+                operation_latency_ms INTEGER,
+                input_tokens INTEGER,
+                cached_input_tokens INTEGER,
+                output_tokens INTEGER,
+                total_tokens INTEGER,
+                retry_count INTEGER NOT NULL DEFAULT 0,
+                repair_count INTEGER NOT NULL DEFAULT 0,
+                fallback_reason TEXT,
+                response_id TEXT,
+                user_id TEXT,
+                template_id TEXT,
+                session_id TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (template_id) REFERENCES narrative_templates(template_id) ON DELETE SET NULL,
+                FOREIGN KEY (session_id) REFERENCES narrative_sessions(session_id) ON DELETE SET NULL
+            )
+            """
+        )
+        connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_narrative_templates_owner "
             "ON narrative_templates(owner_user_id, created_at DESC)"
         )
@@ -238,6 +267,14 @@ class NarrativeRepository:
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_narrative_agent_events_type "
             "ON narrative_agent_events(session_id, event_type)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_narrative_llm_events_session "
+            "ON narrative_llm_call_events(session_id, created_at)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_narrative_llm_events_user "
+            "ON narrative_llm_call_events(user_id, created_at)"
         )
         connection.commit()
 
@@ -778,6 +815,111 @@ class NarrativeRepository:
                 events.append(event)
         return events
 
+    # ------------------------------------------------------------------
+    # Sanitized LLM call telemetry
+    # ------------------------------------------------------------------
+
+    def append_llm_call_event(
+        self,
+        *,
+        operation: str,
+        status: LLMCallStatus,
+        source_label: LLMCallSourceLabel,
+        latency_ms: int | None = None,
+        operation_latency_ms: int | None = None,
+        input_tokens: int | None = None,
+        cached_input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        total_tokens: int | None = None,
+        retry_count: int = 0,
+        repair_count: int = 0,
+        fallback_reason: str | None = None,
+        response_id: str | None = None,
+        user_id: str | None = None,
+        template_id: str | None = None,
+        session_id: str | None = None,
+    ) -> LLMCallEvent:
+        created_at = _utc_now()
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO narrative_llm_call_events
+                (operation, status, source_label, latency_ms, operation_latency_ms,
+                 input_tokens, cached_input_tokens, output_tokens, total_tokens,
+                 retry_count, repair_count, fallback_reason, response_id,
+                 user_id, template_id, session_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    operation,
+                    status,
+                    source_label,
+                    latency_ms,
+                    operation_latency_ms,
+                    input_tokens,
+                    cached_input_tokens,
+                    output_tokens,
+                    total_tokens,
+                    int(retry_count),
+                    int(repair_count),
+                    fallback_reason,
+                    response_id,
+                    user_id,
+                    template_id,
+                    session_id,
+                    created_at,
+                ),
+            )
+            event_id = int(cur.lastrowid)
+            conn.commit()
+        return LLMCallEvent(
+            event_id=event_id,
+            operation=operation,
+            status=status,
+            source_label=source_label,
+            latency_ms=latency_ms,
+            operation_latency_ms=operation_latency_ms,
+            input_tokens=input_tokens,
+            cached_input_tokens=cached_input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+            retry_count=retry_count,
+            repair_count=repair_count,
+            fallback_reason=fallback_reason,
+            response_id=response_id,
+            user_id=user_id,
+            template_id=template_id,
+            session_id=session_id,
+            created_at=created_at,
+        )
+
+    def list_llm_call_events_for_session(self, session_id: str) -> list[LLMCallEvent]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT *
+                FROM narrative_llm_call_events
+                WHERE session_id = ?
+                ORDER BY event_id ASC
+                """,
+                (session_id,),
+            ).fetchall()
+        return [_row_to_llm_call_event(r) for r in rows]
+
+    def list_recent_llm_call_events_for_user(self, user_id: str, limit: int = 50) -> list[LLMCallEvent]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT *
+                FROM narrative_llm_call_events
+                WHERE user_id = ?
+                ORDER BY event_id DESC
+                LIMIT ?
+                """,
+                (user_id, int(limit)),
+            ).fetchall()
+        return [_row_to_llm_call_event(r) for r in rows]
+
 
 # --------------------------------------------------------------------------
 # Row → model conversions
@@ -805,6 +947,29 @@ def _row_to_agent_event(row: sqlite3.Row) -> NarrativeAgentEvent | None:
         )
     except Exception:  # noqa: BLE001
         return None
+
+
+def _row_to_llm_call_event(row: sqlite3.Row) -> LLMCallEvent:
+    return LLMCallEvent(
+        event_id=int(row["event_id"]),
+        operation=row["operation"],
+        status=row["status"],
+        source_label=row["source_label"],
+        latency_ms=int(row["latency_ms"]) if row["latency_ms"] is not None else None,
+        operation_latency_ms=int(row["operation_latency_ms"]) if row["operation_latency_ms"] is not None else None,
+        input_tokens=int(row["input_tokens"]) if row["input_tokens"] is not None else None,
+        cached_input_tokens=int(row["cached_input_tokens"]) if row["cached_input_tokens"] is not None else None,
+        output_tokens=int(row["output_tokens"]) if row["output_tokens"] is not None else None,
+        total_tokens=int(row["total_tokens"]) if row["total_tokens"] is not None else None,
+        retry_count=int(row["retry_count"] or 0),
+        repair_count=int(row["repair_count"] or 0),
+        fallback_reason=row["fallback_reason"],
+        response_id=row["response_id"],
+        user_id=row["user_id"],
+        template_id=row["template_id"],
+        session_id=row["session_id"],
+        created_at=row["created_at"],
+    )
 
 
 def _row_to_template(row: sqlite3.Row) -> NarrativeTemplate:

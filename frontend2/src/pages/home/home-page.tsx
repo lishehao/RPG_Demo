@@ -1222,12 +1222,14 @@ function HomeTileTextBody({
   return (
     <span data-home-tile-text-body="title-deck-only" style={hpStyles.tileLowInfoBody}>
       <TileTitle span={span} compact={compact} lines={tightTile ? 2 : 3}>{view.title}</TileTitle>
-      <Truncated
-        lines={tightTile ? 2 : compact ? 2 : span === "feature-horizontal" ? 2 : 3}
-        style={hpStyles.editorialTileDeck}
+      <span
+        style={{
+          ...hpStyles.editorialTileDeck,
+          ...lineClampStyle(tightTile ? 2 : compact ? 2 : span === "feature-horizontal" ? 2 : 3),
+        }}
       >
         {view.deck}
-      </Truncated>
+      </span>
     </span>
   )
 }
@@ -1293,10 +1295,34 @@ function TileTitle({
   children: string
 }) {
   return (
-    <Truncated lines={lines ?? 3} style={{ ...hpStyles.editorialTileTitle, ...homeTileTitleStyle(span, compact) }}>
+    <span
+      style={{
+        ...hpStyles.editorialTileTitle,
+        ...homeTileTitleStyle(span, compact),
+        ...lineClampStyle(lines ?? 3),
+      }}
+    >
       {children}
-    </Truncated>
+    </span>
   )
+}
+
+function lineClampStyle(lines: number): CSSProperties {
+  if (lines <= 1) {
+    return {
+      display: "block",
+      maxWidth: "100%",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+    }
+  }
+  return {
+    display: "-webkit-box",
+    WebkitLineClamp: lines,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  }
 }
 
 function homeTileSpanStyle(span: HomeTileSpan, compact: boolean): CSSProperties {

@@ -773,8 +773,10 @@ export type NarrativeCastPlan = {
 
 export type NarrativeStoryBrief = {
   schema_version: "story_brief.v1"
-  source: "deterministic_v1"
+  source: "deterministic_v1" | "live_hybrid_v1"
   original_seed: string
+  display_title?: string | null
+  display_intro?: string | null
   premise_summary: string
   genre_tone: string
   tension_profile: NarrativeTensionProfile
@@ -823,6 +825,98 @@ export type NarrativeStoryBriefAdvisorResponse = {
   brief: NarrativeStoryBrief
   can_generate: boolean
   next_step: string
+  source?: "deterministic_v1" | "live_hybrid_v1"
+  runtime_source?: NarrativeLLMCallSourceLabel
+}
+
+export type NarrativeLLMCallSourceLabel =
+  | "live"
+  | "live_repaired"
+  | "deterministic_fallback"
+  | "no_gateway_fallback"
+
+export type NarrativeStoryGuideConversationState =
+  | "empty"
+  | "collecting"
+  | "needs_field"
+  | "clarify_conflict"
+  | "redirect"
+  | "analyzing"
+  | "ready_to_brief"
+  | "brief_ready"
+  | "brief_not_fit"
+
+export type NarrativeStoryGuideNodeName =
+  | "parse_message"
+  | "safety_gate"
+  | "update_slots"
+  | "ask_missing_slot"
+  | "clarify_conflict"
+  | "redirect_out_of_spec"
+  | "ready_to_shape"
+  | "shape_story_brief"
+  | "brief_ready"
+  | "brief_not_fit"
+
+export type NarrativeStoryGuideSlotId =
+  | "player_role"
+  | "active_cast"
+  | "pressure"
+  | "tone"
+  | "boundaries"
+  | "first_scene_hook"
+
+export type NarrativeStoryGuideSlot = {
+  id: NarrativeStoryGuideSlotId
+  filled: boolean
+  label: string
+  evidence: string
+}
+
+export type NarrativeStoryGuideLoopState = {
+  status: NarrativeStoryGuideConversationState
+  lastNode: NarrativeStoryGuideNodeName
+  slots: Record<NarrativeStoryGuideSlotId, NarrativeStoryGuideSlot>
+  acceptedTurns: string[]
+  blockedTurns: string[]
+  nextMissing: NarrativeStoryGuideSlotId | null
+}
+
+export type NarrativeStoryGuideInlineLedger = {
+  knownLabel: string
+  stillNeedLabel: string
+  nextQuestionLabel: string
+  known: string
+  stillNeed: string
+  nextQuestion: string
+}
+
+export type NarrativeStoryGuideSettingDeltas = {
+  turnBudget?: 8 | 12 | 20 | null
+  difficulty?: NarrativeDifficulty | null
+  language?: NarrativeTemplateLanguage | null
+  tensionProfile?: NarrativeTensionProfile | null
+  privacyIntent?: NarrativeTemplateVisibility | null
+}
+
+export type NarrativeStoryGuideTurnRequest = {
+  message: string
+  language?: NarrativeTemplateLanguage
+  current_seed?: string
+  state?: NarrativeStoryGuideLoopState | null
+}
+
+export type NarrativeStoryGuideTurnResponse = {
+  state: NarrativeStoryGuideLoopState
+  node: NarrativeStoryGuideNodeName
+  status: NarrativeStoryGuideConversationState
+  reply: string
+  acceptedText: boolean
+  blocked: boolean
+  canShapeBrief: boolean
+  settings?: NarrativeStoryGuideSettingDeltas | null
+  ledger?: NarrativeStoryGuideInlineLedger | null
+  source: NarrativeLLMCallSourceLabel
 }
 
 export type NarrativeLocalizedText = {

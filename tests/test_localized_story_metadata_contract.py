@@ -4,7 +4,9 @@ from pathlib import Path
 
 from rpg_backend.narrative.contracts import (
     CastMember,
+    CreateTemplateRequest,
     LocalizedText,
+    StoryBriefAdvisorRequest,
     StoryMessage,
     StoryOption,
 )
@@ -116,6 +118,43 @@ def test_localized_metadata_reaches_summary_and_replay_contracts(tmp_path: Path)
     assert replay.template_title_i18n.zh == "颁奖夜失踪"
     assert replay.template_summary_i18n
     assert replay.template_summary_i18n.zh == "歌手在后台失踪。"
+
+
+def test_generated_templates_store_concise_display_metadata(tmp_path: Path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+    seed = (
+        "Ten minutes before a televised charity gala, an anxious publicist, a producer, "
+        "a sponsor representative, a backup dancer, and a security lead discover that the headline singer "
+        "has vanished from the control room while fans are already chanting outside and the player must decide "
+        "what to reveal, what to hold back, and who to protect before the opening speech starts."
+    )
+
+    brief_response = service.create_story_brief(
+        StoryBriefAdvisorRequest(seed=seed, language="en", desired_tension_profile="high_drama"),
+        owner_user_id="usr_owner",
+    )
+    brief = brief_response.brief
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", visibility="public", story_brief=brief),
+        owner_user_id="usr_owner",
+    )
+    summary = service.list_public_templates(viewer_user_id="usr_viewer").items[0]
+
+    assert brief.display_title
+    assert brief.display_intro
+    assert len(brief.display_title) <= 52
+    assert len(brief.display_intro) <= 118
+    assert response.template.title == response.template.title_i18n.en
+    assert response.template.summary_i18n
+    assert response.template.summary_i18n.en != seed
+    assert len(response.template.title_i18n.en or "") <= 52
+    assert len(response.template.summary_i18n.en or "") <= 118
+    assert "..." not in (response.template.summary_i18n.en or "")
+    assert "…" not in (response.template.summary_i18n.en or "")
+    assert summary.title_i18n
+    assert summary.summary_i18n
+    assert summary.summary_i18n.en == response.template.summary_i18n.en
 
 
 def test_frontend_uses_localized_story_metadata_only_for_display_chrome() -> None:

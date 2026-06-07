@@ -165,6 +165,22 @@ AgentEventType = Literal["agent_plan", "step_judge", "contract_judge"]
 JudgeSource = Literal["deterministic_v1"]
 JudgeStatus = Literal["pass", "warn", "fail"]
 JudgeSeverity = Literal["info", "warn", "error"]
+LLMCallStatus = Literal[
+    "success",
+    "timeout",
+    "rate_limited",
+    "invalid_response",
+    "provider_unavailable",
+    "fallback_used",
+    "repaired",
+    "failed",
+]
+LLMCallSourceLabel = Literal[
+    "live",
+    "live_repaired",
+    "deterministic_fallback",
+    "no_gateway_fallback",
+]
 
 
 class DirectorDecision(BaseModel):
@@ -276,6 +292,41 @@ class NarrativeAgentEvent(BaseModel):
     created_at: str
 
 
+class LLMCallEvent(BaseModel):
+    """Sanitized text-LLM usage/performance evidence.
+
+    Normal player responses do not expose this model. Reviewer/debug
+    endpoints can surface it without provider keys, raw prompts, or headers.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: int = Field(ge=0)
+    operation: str = Field(min_length=1, max_length=120)
+    status: LLMCallStatus
+    source_label: LLMCallSourceLabel
+    latency_ms: int | None = Field(default=None, ge=0)
+    operation_latency_ms: int | None = Field(default=None, ge=0)
+    input_tokens: int | None = Field(default=None, ge=0)
+    cached_input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    retry_count: int = Field(default=0, ge=0)
+    repair_count: int = Field(default=0, ge=0)
+    fallback_reason: str | None = Field(default=None, max_length=160)
+    response_id: str | None = Field(default=None, max_length=160)
+    user_id: str | None = Field(default=None, max_length=80)
+    template_id: str | None = Field(default=None, max_length=80)
+    session_id: str | None = Field(default=None, max_length=80)
+    created_at: str
+
+
+class LLMCallEventListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[LLMCallEvent]
+
+
 class StoryMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -325,7 +376,7 @@ TensionProfile = Literal[
     "fantasy_sci_fi",
     "family_social",
 ]
-StoryBriefSource = Literal["deterministic_v1"]
+StoryBriefSource = Literal["deterministic_v1", "live_hybrid_v1"]
 StoryBriefFitStatus = Literal["fit", "needs_revision", "not_fit"]
 ConstraintDispositionKind = Literal["preserved", "compressed", "dropped", "softened"]
 CastPlanEntityKind = Literal["character", "faction", "object", "setting"]
@@ -481,6 +532,8 @@ class StoryBrief(BaseModel):
     schema_version: Literal["story_brief.v1"] = "story_brief.v1"
     source: StoryBriefSource = "deterministic_v1"
     original_seed: str = Field(min_length=1, max_length=4000)
+    display_title: str | None = Field(default=None, min_length=1, max_length=72)
+    display_intro: str | None = Field(default=None, min_length=1, max_length=140)
     premise_summary: str = Field(min_length=1, max_length=260)
     genre_tone: str = Field(min_length=1, max_length=160)
     tension_profile: TensionProfile
@@ -553,6 +606,114 @@ class StoryBriefAdvisorResponse(BaseModel):
     brief: StoryBrief
     can_generate: bool
     next_step: str = Field(min_length=1, max_length=220)
+    source: StoryBriefSource = "deterministic_v1"
+    runtime_source: LLMCallSourceLabel = "deterministic_fallback"
+
+
+StoryGuideConversationState = Literal[
+    "empty",
+    "collecting",
+    "needs_field",
+    "clarify_conflict",
+    "redirect",
+    "analyzing",
+    "ready_to_brief",
+    "brief_ready",
+    "brief_not_fit",
+]
+StoryGuideNodeName = Literal[
+    "parse_message",
+    "safety_gate",
+    "update_slots",
+    "ask_missing_slot",
+    "clarify_conflict",
+    "redirect_out_of_spec",
+    "ready_to_shape",
+    "shape_story_brief",
+    "brief_ready",
+    "brief_not_fit",
+]
+StoryGuideSlotId = Literal[
+    "player_role",
+    "active_cast",
+    "pressure",
+    "tone",
+    "boundaries",
+    "first_scene_hook",
+]
+
+
+class StoryGuideSlot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: StoryGuideSlotId
+    filled: bool = False
+    label: str = Field(min_length=1, max_length=80)
+    evidence: str = Field(default="", max_length=220)
+
+
+class StoryGuideLoopState(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: StoryGuideConversationState
+    lastNode: StoryGuideNodeName
+    slots: dict[StoryGuideSlotId, StoryGuideSlot]
+    acceptedTurns: list[str] = Field(default_factory=list, max_length=24)
+    blockedTurns: list[str] = Field(default_factory=list, max_length=12)
+    nextMissing: StoryGuideSlotId | None = None
+
+
+class StoryGuideInlineLedger(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    knownLabel: str = Field(min_length=1, max_length=40)
+    stillNeedLabel: str = Field(min_length=1, max_length=40)
+    nextQuestionLabel: str = Field(min_length=1, max_length=40)
+    known: str = Field(min_length=1, max_length=220)
+    stillNeed: str = Field(min_length=1, max_length=220)
+    nextQuestion: str = Field(min_length=1, max_length=220)
+
+
+class StoryGuideSettingDeltas(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    turnBudget: int | None = Field(default=None, ge=4, le=40)
+    difficulty: Difficulty | None = None
+    language: TemplateLanguage | None = None
+    tensionProfile: TensionProfile | None = None
+    privacyIntent: TemplateVisibility | None = None
+
+
+class StoryGuideTurnRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(min_length=1, max_length=1000)
+    language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
+    current_seed: str = Field(default="", max_length=4000)
+    state: StoryGuideLoopState | None = None
+
+    @field_validator("message")
+    @classmethod
+    def _strip_message(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Message must not be empty.")
+        return stripped
+
+
+class StoryGuideTurnResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    state: StoryGuideLoopState
+    node: StoryGuideNodeName
+    status: StoryGuideConversationState
+    reply: str = Field(min_length=1, max_length=420)
+    acceptedText: bool
+    blocked: bool
+    canShapeBrief: bool
+    settings: StoryGuideSettingDeltas | None = None
+    ledger: StoryGuideInlineLedger | None = None
+    source: LLMCallSourceLabel = "deterministic_fallback"
 
 
 # --------------------------------------------------------------------------

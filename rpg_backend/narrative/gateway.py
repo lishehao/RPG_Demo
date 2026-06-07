@@ -24,6 +24,12 @@ class NarrativeLLMGateway:
     transport: ResponsesJSONTransport
     model: str
 
+    def trace_length(self) -> int:
+        return len(self.transport.call_trace)
+
+    def trace_since(self, start_index: int) -> list[dict[str, Any]]:
+        return list(self.transport.call_trace[max(0, int(start_index)) :])
+
     def invoke_json(
         self,
         *,
@@ -31,6 +37,7 @@ class NarrativeLLMGateway:
         user_payload: dict[str, Any],
         operation_name: str,
         max_output_tokens: int | None = 1500,
+        plaintext_fallback_key: str | None = None,
     ) -> ResponsesJSONResponse:
         return self.transport.invoke_json(
             system_prompt=system_prompt,
@@ -38,11 +45,21 @@ class NarrativeLLMGateway:
             max_output_tokens=max_output_tokens,
             operation_name=operation_name,
             response_format_type="json_object",
+            plaintext_fallback_key=plaintext_fallback_key,
         )
 
 
 def _error_factory(code: str, message: str, status_code: int) -> NarrativeGatewayError:
-    return NarrativeGatewayError(code=code, message=message, status_code=status_code)
+    # Provider messages can include masked key fragments or account-specific
+    # diagnostics. Keep the public service error useful without preserving
+    # credential-shaped text.
+    if code == "llm_provider_failed":
+        safe_message = "Text LLM provider call failed."
+    elif code in {"llm_invalid_response", "llm_invalid_json"}:
+        safe_message = "Text LLM response was incomplete."
+    else:
+        safe_message = "Text LLM call failed."
+    return NarrativeGatewayError(code=code, message=safe_message, status_code=status_code)
 
 
 def get_narrative_gateway(settings: Settings | None = None) -> NarrativeLLMGateway | None:

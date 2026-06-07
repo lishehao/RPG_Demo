@@ -60,6 +60,7 @@ from rpg_backend.narrative.contracts import (
     CreateTemplateRequest,
     CreateTemplateResponse,
     EndingDistributionResponse,
+    LLMCallEventListResponse,
     NarrativeEnding,
     NarrativeTemplateSummary,
     PublicReplayResponse,
@@ -68,6 +69,8 @@ from rpg_backend.narrative.contracts import (
     StartSessionResponse,
     StoryBriefAdvisorRequest,
     StoryBriefAdvisorResponse,
+    StoryGuideTurnRequest,
+    StoryGuideTurnResponse,
     StoryHistoryResponse,
     TemplateListResponse,
     UpdateTemplateVisibilityRequest,
@@ -300,7 +303,21 @@ def handle_quota_error(_: Request, exc: QuotaExceededError) -> JSONResponse:
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    active_settings = get_settings()
+    text_llm_configured = bool(
+        active_settings.resolved_play_responses_base_url()
+        and active_settings.resolved_play_responses_api_key()
+        and active_settings.resolved_play_responses_model()
+    )
+    llm_status = "configured" if text_llm_configured else "missing"
+    return {
+        "status": "ok",
+        "text_llm": llm_status,
+        "create_story_butler": llm_status,
+        "story_brief": llm_status,
+        "opening": llm_status,
+        "play_turns": llm_status,
+    }
 
 
 @app.get("/auth/session", response_model=AuthSessionResponse)
@@ -599,6 +616,28 @@ def create_narrative_story_brief(
     return narrative_service.create_story_brief(payload, owner_user_id=session.user.user_id)
 
 
+@app.post("/narrative/story-guide/turns", response_model=StoryGuideTurnResponse)
+def create_narrative_story_guide_turn(
+    payload: StoryGuideTurnRequest,
+    request: Request,
+    session: AuthenticatedSession = Depends(get_required_request_session),
+) -> StoryGuideTurnResponse:
+    """Live-backed Story Butler guide turn for Create.
+
+    The endpoint returns player-safe guide text and structured slot metadata.
+    It uses deterministic safety/slot fallback when the live text gateway is
+    unavailable or when the message is redirected before provider use.
+    """
+    _require_authoring_enabled()
+    _require_non_blank_llm_input(
+        payload.message,
+        code="guide_message_required",
+        message="Message must not be empty.",
+    )
+    _enforce_llm_quota(request, user_id=session.user.user_id)
+    return narrative_service.create_story_guide_turn(payload, owner_user_id=session.user.user_id)
+
+
 @app.post("/narrative/templates", response_model=CreateTemplateResponse)
 def create_narrative_template(
     payload: CreateTemplateRequest,
@@ -682,6 +721,15 @@ def get_narrative_story(
         player_user_id=user.user_id,
         include_agent_trace=agent_trace,
     )
+
+
+@app.get("/narrative/sessions/{session_id}/llm-events", response_model=LLMCallEventListResponse)
+def get_narrative_llm_events(
+    session_id: str,
+    user=Depends(get_required_request_user),
+) -> LLMCallEventListResponse:
+    require_agent_trace_access(user)
+    return narrative_service.list_llm_call_events(session_id, player_user_id=user.user_id)
 
 
 @app.post(

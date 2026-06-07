@@ -21,6 +21,7 @@ export const BACKEND_ROUTE_MAP = {
   listMyWorlds: { method: "GET", path: "/me/worlds" },
 
   // ---------- Narrative (template/session) ----------
+  createNarrativeStoryGuideTurn: { method: "POST", path: "/narrative/story-guide/turns" },
   createNarrativeStoryBrief: { method: "POST", path: "/narrative/story-briefs" },
   createNarrativeTemplate: { method: "POST", path: "/narrative/templates" },
   listPublicNarrativeTemplates: { method: "GET", path: "/narrative/templates" },

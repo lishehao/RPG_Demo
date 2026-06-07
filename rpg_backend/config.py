@@ -186,11 +186,19 @@ class Settings(BaseSettings):
         return self._clean_optional(self.responses_api_key) or self._clean_optional(self.gateway_api_key)
 
     def responses_api_key_pool(self) -> tuple[str, ...]:
-        parsed = self._parse_api_key_pool(self.responses_api_keys)
-        if parsed:
-            return parsed
+        keys: list[str] = []
+        seen: set[str] = set()
         resolved = self.resolved_responses_api_key()
-        return (resolved,) if resolved else ()
+        if resolved:
+            keys.append(resolved)
+            seen.add(resolved)
+        parsed = self._parse_api_key_pool(self.responses_api_keys)
+        for candidate in parsed:
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            keys.append(candidate)
+        return tuple(keys)
 
     def resolved_responses_model(self) -> str:
         return self._clean_optional(self.responses_model) or self._clean_optional(self.gateway_model)
@@ -211,15 +219,17 @@ class Settings(BaseSettings):
         )
 
     def author_responses_api_key_pool(self) -> tuple[str, ...]:
-        parsed = self._parse_api_key_pool(self.responses_author_api_keys)
-        if parsed:
-            return parsed
         keys: list[str] = []
         seen: set[str] = set()
         author_key = self.resolved_author_responses_api_key()
         if author_key:
             keys.append(author_key)
             seen.add(author_key)
+        for candidate in self._parse_api_key_pool(self.responses_author_api_keys):
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            keys.append(candidate)
         for candidate in self.responses_api_key_pool():
             if candidate in seen:
                 continue
@@ -271,15 +281,17 @@ class Settings(BaseSettings):
         return tuple(hosts)
 
     def play_responses_api_key_pool(self) -> tuple[str, ...]:
-        parsed = self._parse_api_key_pool(self.responses_play_api_keys)
-        if parsed:
-            return parsed
         keys: list[str] = []
         seen: set[str] = set()
         play_key = self.resolved_play_responses_api_key()
         if play_key:
             keys.append(play_key)
             seen.add(play_key)
+        for candidate in self._parse_api_key_pool(self.responses_play_api_keys):
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            keys.append(candidate)
         for candidate in self.responses_api_key_pool():
             if candidate in seen:
                 continue

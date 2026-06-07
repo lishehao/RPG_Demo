@@ -18,6 +18,9 @@ import {
   createInitialStoryGuideState,
   markStoryGuideAnalyzing,
   markStoryGuideBriefResult,
+  type StoryGuideConversationState,
+  type StoryGuideLoopState,
+  type StoryGuideNodeName,
   type StoryGuideSettingDeltas,
 } from "../../shared/lib/story-guide-loop"
 import { takeCreateDraftHandoff } from "../../shared/lib/create-draft-handoff"
@@ -27,6 +30,24 @@ import { BUDGET_OPTIONS, DIFFICULTY_OPTIONS, LONG_GENERATE_HANDOFF_MIN_MS, LONG_
 import { cpStyles } from "./create-styles"
 import type { GuideMessage, StoryShapeRead, TensionProfileChoice } from "./create-types"
 import { useCompactLayout } from "./hooks/use-compact-layout"
+
+type GuideTurnLike = {
+  state: StoryGuideLoopState
+  node: StoryGuideNodeName
+  status: StoryGuideConversationState
+  reply: string
+  acceptedText: boolean
+  blocked: boolean
+  canShapeBrief: boolean
+  settings?: {
+    turnBudget?: StoryGuideSettingDeltas["turnBudget"] | null
+    difficulty?: StoryGuideSettingDeltas["difficulty"] | null
+    language?: StoryGuideSettingDeltas["language"] | null
+    tensionProfile?: StoryGuideSettingDeltas["tensionProfile"] | null
+    privacyIntent?: StoryGuideSettingDeltas["privacyIntent"] | null
+  } | null
+  ledger?: GuideMessage["ledger"] | null
+}
 
 export function CreatePage({
   onBackHome,
@@ -44,6 +65,7 @@ export function CreatePage({
   const [draftTurn, setDraftTurn] = useState("")
   const [guideLoopState, setGuideLoopState] = useState(() => createInitialStoryGuideState(uiLang))
   const [chatMessages, setChatMessages] = useState<GuideMessage[]>([])
+  const [guideBusy, setGuideBusy] = useState(false)
   const [correctionCount, setCorrectionCount] = useState(0)
   const [visibility, setVisibility] = useState<NarrativeTemplateVisibility>("private")
   const [turnBudget, setTurnBudget] = useState<number>(12)
@@ -83,7 +105,7 @@ export function CreatePage({
   const activeBrief = activeBriefResponse?.brief ?? null
   const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
   const guideReadyToBrief = guideLoopState.status === "ready_to_brief" && canShapeStoryBrief(guideLoopState)
-  const showSeedExamples = !hasSeed && !busy && !briefBusy
+  const showSeedExamples = !hasSeed && !busy && !briefBusy && !guideBusy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
   const selectedDifficulty = DIFFICULTY_OPTIONS.find((o) => o.id === difficulty) ?? DIFFICULTY_OPTIONS[0]
   const selectedLanguage =
@@ -140,6 +162,7 @@ export function CreatePage({
     briefBusyElapsedSeconds >= 10
       ? t("create.guide_planning_slow")
       : t("create.guide_planning_now")
+  const guideThinkingCopy = t("create.guide_thinking")
 
   const applyStoryGuideSettings = (settings?: StoryGuideSettingDeltas) => {
     if (!settings) return
@@ -362,73 +385,22 @@ export function CreatePage({
     window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
   }
 
-  const appendGuideTurn = (rawText: string) => {
+  const appendGuideTurn = async (rawText: string) => {
     const trimmed = rawText.trim()
     if (!trimmed) {
       setError(t("create.error_seed_required"))
       return
     }
-    const decision = advanceStoryGuideLoop(guideLoopState, trimmed, uiLang)
+    if (guideBusy || briefBusy || busy) return
+    const previousState = guideLoopState
+    const previousSeed = seed
     const time = Date.now()
-    if (decision.blocked) {
-      setGuideLoopState(decision.state)
-      setDraftTurn("")
-      setError(null)
-      setBriefResponse(null)
-      setBriefResponseKey(null)
-      setBriefError(null)
-      setChatMessages((current) => [
-        ...current,
-        {
-          id: `user-${time}-${current.length}`,
-          speaker: "user",
-          text: trimmed,
-        },
-        {
-          id: `guide-${time}-${current.length}`,
-          speaker: "guide",
-          text: decision.reply,
-          node: decision.node,
-          state: decision.status,
-        },
-      ])
-      return
-    }
-    if (!decision.acceptedText) {
-      setGuideLoopState(decision.state)
-      setDraftTurn("")
-      setError(null)
-      setChatMessages((current) => [
-        ...current,
-        {
-          id: `user-${time}-${current.length}`,
-          speaker: "user",
-          text: trimmed,
-        },
-        {
-          id: `guide-${time}-${current.length}`,
-          speaker: "guide",
-          text: decision.reply,
-          node: decision.node,
-          state: decision.status,
-          ledger: decision.ledger,
-        },
-      ])
-      focusComposer()
-      return
-    }
-    applyStoryGuideSettings(decision.settings)
-    const hadSeed = Boolean(seed.trim())
-    const nextCorrectionCount = hadSeed ? correctionCount + 1 : correctionCount
-    const nextSeed = `${seed.trim()}${hadSeed ? "\n\n" : ""}${trimmed}`
-    setSeed(nextSeed)
-    setGuideLoopState(decision.state)
-    if (hadSeed) setCorrectionCount(nextCorrectionCount)
     setDraftTurn("")
     setError(null)
     setBriefResponse(null)
     setBriefResponseKey(null)
     setBriefError(null)
+    setGuideBusy(true)
     setChatMessages((current) => [
       ...current,
       {
@@ -436,15 +408,54 @@ export function CreatePage({
         speaker: "user",
         text: trimmed,
       },
-      {
-        id: `guide-${time}-${current.length}`,
-        speaker: "guide",
-        text: decision.reply,
-        node: decision.node,
-        state: decision.status,
-        ledger: decision.ledger,
-      },
     ])
+    const applyGuideResponse = (response: GuideTurnLike) => {
+      const normalizedSettings: StoryGuideSettingDeltas | undefined = response.settings
+        ? {
+            turnBudget: response.settings.turnBudget ?? undefined,
+            difficulty: response.settings.difficulty ?? undefined,
+            language: response.settings.language ?? undefined,
+            tensionProfile: response.settings.tensionProfile ?? undefined,
+            privacyIntent: response.settings.privacyIntent ?? undefined,
+          }
+        : undefined
+      applyStoryGuideSettings(normalizedSettings)
+      const hadSeed = Boolean(previousSeed.trim())
+      if (response.acceptedText) {
+        const nextSeed = `${previousSeed.trim()}${hadSeed ? "\n\n" : ""}${trimmed}`
+        setSeed(nextSeed)
+        if (hadSeed) setCorrectionCount((current) => current + 1)
+      }
+      setGuideLoopState(response.state)
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: `guide-${time}-${current.length}`,
+          speaker: "guide",
+          text: response.reply,
+          node: response.node,
+          state: response.status,
+          ledger: response.ledger ?? undefined,
+        },
+      ])
+      if (!response.acceptedText) focusComposer()
+    }
+    try {
+      const authorReady = await ensureAuthorSession()
+      if (!authorReady) return
+      const response = await api.createNarrativeStoryGuideTurn({
+        message: trimmed,
+        language: storyLanguage,
+        current_seed: previousSeed,
+        state: previousState,
+      })
+      applyGuideResponse(response)
+    } catch (_err) {
+      const decision = advanceStoryGuideLoop(previousState, trimmed, uiLang)
+      applyGuideResponse(decision)
+    } finally {
+      setGuideBusy(false)
+    }
   }
 
   const focusComposer = () => {
@@ -633,6 +644,44 @@ export function CreatePage({
                 </div>
               </div>
             ) : null}
+            {guideBusy ? (
+              <div
+                data-guide-node="story_butler_turn"
+                data-guide-state="analyzing"
+                style={{
+                  ...cpStyles.guideMessage,
+                  ...cpStyles.guideMessageGuide,
+                  ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                }}
+              >
+                <img
+                  src={STORY_BUTLER_AVATAR}
+                  alt=""
+                  style={{
+                    ...cpStyles.guideAvatar,
+                    ...cpStyles.guideAvatarAnalyzing,
+                    ...(compactLayout ? cpStyles.guideAvatarCompact : null),
+                  }}
+                />
+                <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
+                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                  <span style={cpStyles.guideMessageText}>{guideThinkingCopy}</span>
+                  <span style={cpStyles.guideScanStages} aria-hidden>
+                    <span>Cast</span>
+                    <span>Pressure</span>
+                    <span>Rules</span>
+                    <span>Opening</span>
+                  </span>
+                  <span style={cpStyles.guideScanRail} aria-hidden>
+                    <motion.span
+                      style={cpStyles.guideScanPulse}
+                      animate={{ x: ["-120%", "260%"] }}
+                      transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                  </span>
+                </div>
+              </div>
+            ) : null}
             {hasSeed ? (
               <div
                 data-guide-node="story_shape_read"
@@ -748,7 +797,7 @@ export function CreatePage({
                           node.focus({ preventScroll: true })
                         })
                       }}
-                      disabled={busy || briefBusy}
+                      disabled={busy || briefBusy || guideBusy}
                       type="button"
                     >
                       <span style={cpStyles.exampleLineIndex}>{index + 1}.</span>
@@ -784,7 +833,7 @@ export function CreatePage({
                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                   e.preventDefault()
                   if (draftTurn.trim()) {
-                    appendGuideTurn(draftTurn)
+                    void appendGuideTurn(draftTurn)
                     return
                   }
                   void handlePrimaryAction()
@@ -792,11 +841,11 @@ export function CreatePage({
                 }
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
-                  appendGuideTurn(draftTurn)
+                  void appendGuideTurn(draftTurn)
                 }
               }}
               spellCheck={false}
-              disabled={busy || briefBusy}
+              disabled={busy || briefBusy || guideBusy}
             />
             <div style={{ ...cpStyles.composerBar, ...(compactLayout ? cpStyles.composerBarCompact : null) }}>
               <span style={cpStyles.composerHint}>{t("create.guide_input_hint")}</span>
@@ -804,8 +853,8 @@ export function CreatePage({
                 <button
                   type="button"
                   style={cpStyles.composerAction}
-                  disabled={!draftTurn.trim() || busy || briefBusy}
-                  onClick={() => appendGuideTurn(draftTurn)}
+                  disabled={!draftTurn.trim() || busy || briefBusy || guideBusy}
+                  onClick={() => void appendGuideTurn(draftTurn)}
                 >
                   {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
                 </button>
@@ -813,7 +862,7 @@ export function CreatePage({
                   <button
                     type="button"
                     style={cpStyles.composerBriefAction}
-                    disabled={busy || briefBusy}
+                    disabled={busy || briefBusy || guideBusy}
                     onClick={() => void handlePlanStory()}
                   >
                     {briefComposerLabel}
