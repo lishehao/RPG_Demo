@@ -119,7 +119,7 @@ export function homeTileSpanForItem(
     total <= 2
       ? (["feature-horizontal", "feature-horizontal"] as const)
       : total <= 6
-        ? (["feature-wide", "feature-horizontal", "feature-tall", "dispatch", "notice-wide", "dispatch"] as const)
+        ? (["feature-wide", "feature-horizontal", "notice-wide", "dispatch", "feature-horizontal", "notice-wide"] as const)
         : HOME_MOSAIC_RHYTHM
 
   let span: HomeTileSpan = rhythm[index % rhythm.length]
@@ -133,7 +133,7 @@ export function homeTileSpanForItem(
     span = "feature-horizontal"
   } else if (longText && span === "dispatch") {
     span = "notice-wide"
-  } else if (item.kind === "starter_premise" && span === "feature-tall" && longText) {
+  } else if ((item.kind === "starter_premise" || item.kind === "published_story") && span === "feature-tall") {
     span = "feature-horizontal"
   }
 
@@ -1072,26 +1072,16 @@ function CuratedStoryTile({
 }) {
   const style = {
     ...hpStyles.editorialTile,
-    ...(view.copy.accentTone === "starter" ? hpStyles.editorialTileStarter : hpStyles.editorialTilePublished),
+    ...(view.kind === "starter_premise" ? hpStyles.editorialTileStarter : hpStyles.editorialTilePublished),
     ...homeTileSpanStyle(span, compact),
   }
-  const body = (
-    <>
-      <TileKicker tone={view.copy.accentTone}>{view.copy.typeLabel}</TileKicker>
-      <TileTitle span={span} compact={compact} lines={span === "dispatch" || span === "notice-wide" ? 1 : 3}>{view.title}</TileTitle>
-      <Truncated lines={span === "dispatch" ? 1 : 2} style={hpStyles.editorialTileDeck}>
-        {view.deck}
-      </Truncated>
-      <TileCommand tone={view.copy.accentTone}>{view.copy.primaryAction}</TileCommand>
-    </>
-  )
   return (
     <motion.button
       key={story.id}
       data-story-card-kind="preset-story"
       data-home-tile-span={span}
       data-home-tile-archetype={archetype}
-      aria-label={`${view.title} · ${view.copy.typeLabel}`}
+      aria-label={`${view.title} · ${view.deck} · ${view.copy.primaryAction}`}
       style={style}
       type="button"
       onClick={onClick}
@@ -1104,7 +1094,7 @@ function CuratedStoryTile({
       whileTap={tapPress}
     >
       <StarterTileComposition archetype={archetype} cover={view.cover} span={span} compact={compact}>
-        {body}
+        <HomeTileTextBody view={view} span={span} compact={compact} />
       </StarterTileComposition>
     </motion.button>
   )
@@ -1137,7 +1127,7 @@ function TemplateCard({
       data-story-card-kind="published-story"
       data-home-tile-span={span}
       data-home-tile-archetype={archetype}
-      aria-label={`${displayView.title} · ${displayView.copy.primaryAction}`}
+      aria-label={`${displayView.title} · ${displayView.deck} · ${displayView.copy.primaryAction}`}
       style={{
         ...hpStyles.editorialTile,
         ...hpStyles.editorialTilePublished,
@@ -1202,20 +1192,7 @@ function PublishedTileComposition({
   compact: boolean
   view: HomeStoryObjectView
 }) {
-  const tightPublishedTile = span === "notice-wide" || span === "dispatch"
-  const standardBody = (
-    <>
-      <TileKicker tone={view.copy.accentTone}>{view.copy.typeLabel}</TileKicker>
-      <TileTitle span={span} compact={compact} lines={tightPublishedTile ? 1 : 3}>{view.title}</TileTitle>
-      <Truncated
-        lines={tightPublishedTile ? 1 : compact ? 2 : span === "feature-horizontal" ? 1 : 2}
-        style={hpStyles.editorialTileDeck}
-      >
-        {view.deck}
-      </Truncated>
-      <TileCommand tone={view.copy.accentTone}>{view.copy.primaryAction}</TileCommand>
-    </>
-  )
+  const standardBody = <HomeTileTextBody view={view} span={span} compact={compact} />
 
   if (archetype === "full_bleed_cinematic") {
     return (
@@ -1228,6 +1205,29 @@ function PublishedTileComposition({
     <span style={framedTileLayoutStyle(span, compact)} data-home-framed-editorial="true">
       <TileMediaWell cover={view.cover} variant={tileMediaVariantForSpan(span, compact)} />
       <span style={framedTextPanelStyle(span, compact)}>{standardBody}</span>
+    </span>
+  )
+}
+
+function HomeTileTextBody({
+  view,
+  span,
+  compact,
+}: {
+  view: HomeStoryObjectView
+  span: HomeTileSpan
+  compact: boolean
+}) {
+  const tightTile = span === "notice-wide" || span === "dispatch"
+  return (
+    <span data-home-tile-text-body="title-deck-only" style={hpStyles.tileLowInfoBody}>
+      <TileTitle span={span} compact={compact} lines={tightTile ? 2 : 3}>{view.title}</TileTitle>
+      <Truncated
+        lines={tightTile ? 2 : compact ? 2 : span === "feature-horizontal" ? 2 : 3}
+        style={hpStyles.editorialTileDeck}
+      >
+        {view.deck}
+      </Truncated>
     </span>
   )
 }
@@ -1281,14 +1281,6 @@ function TileMediaWell({
   )
 }
 
-function TileKicker({ tone, children }: { tone: HomeTileAccentTone; children: ReactNode }) {
-  return (
-    <span style={{ ...hpStyles.editorialTileKicker, ...homeTileKickerToneStyle(tone) }}>
-      {children}
-    </span>
-  )
-}
-
 function TileTitle({
   span,
   compact,
@@ -1305,28 +1297,6 @@ function TileTitle({
       {children}
     </Truncated>
   )
-}
-
-function TileCommand({ tone, children }: { tone: HomeTileAccentTone; children: ReactNode }) {
-  return (
-    <span data-home-primary-action="true" style={{ ...hpStyles.editorialTileAction, ...homeTileCommandToneStyle(tone) }}>
-      {children}
-    </span>
-  )
-}
-
-function homeTileKickerToneStyle(tone: HomeTileAccentTone): CSSProperties {
-  if (tone === "starter" || tone === "draft") return hpStyles.starterKicker
-  if (tone === "resume") return hpStyles.resumeKickerTile
-  if (tone === "memory") return hpStyles.memoryKicker
-  return hpStyles.publishedKicker
-}
-
-function homeTileCommandToneStyle(tone: HomeTileAccentTone): CSSProperties {
-  if (tone === "starter" || tone === "draft") return hpStyles.starterAction
-  if (tone === "resume") return hpStyles.resumeAction
-  if (tone === "memory") return hpStyles.memoryAction
-  return hpStyles.publishedAction
 }
 
 function homeTileSpanStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
@@ -1827,10 +1797,18 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   editorialTileDeck: {
     color: "rgba(244,239,230,0.76)",
-    fontSize: 12.3,
-    lineHeight: 1.42,
+    fontSize: 13.1,
+    lineHeight: 1.45,
     textShadow: "0 1px 12px rgba(0,0,0,0.56)",
     minHeight: 0,
+  },
+  tileLowInfoBody: {
+    display: "flex",
+    minWidth: 0,
+    minHeight: 0,
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 9,
   },
   editorialTileAction: {
     width: "fit-content",
@@ -1885,11 +1863,11 @@ const hpStyles: Record<string, CSSProperties> = {
     zIndex: 1,
     width: "100%",
     boxSizing: "border-box" as const,
-    padding: "18px 18px 16px",
+    padding: "20px 20px 18px",
     display: "flex",
     flexDirection: "column" as const,
     justifyContent: "flex-end",
-    gap: 7,
+    gap: 9,
     background: "linear-gradient(180deg, rgba(12,12,16,0.16) 0%, rgba(12,12,16,0.82) 62%, rgba(12,12,16,0.94) 100%)",
     borderTop: "1px solid rgba(245,200,120,0.20)",
     boxShadow: "0 -22px 44px rgba(0,0,0,0.28)",
@@ -1898,24 +1876,24 @@ const hpStyles: Record<string, CSSProperties> = {
     height: "100%",
     minHeight: "100%",
     display: "grid",
-    gridTemplateRows: "minmax(82px, 38%) 1fr",
-    background: "linear-gradient(135deg, rgba(18,14,17,0.96), rgba(38,16,18,0.72))",
+    gridTemplateRows: "minmax(120px, 42%) minmax(0, 1fr)",
+    background: "linear-gradient(135deg, rgba(12,12,16,0.98), rgba(50,15,18,0.78))",
   },
   framedTileSplit: {
     height: "100%",
     minHeight: "100%",
     display: "grid",
     gridTemplateColumns: "minmax(136px, 38%) minmax(0, 1fr)",
-    background: "linear-gradient(135deg, rgba(18,14,17,0.96), rgba(38,16,18,0.72))",
+    background: "linear-gradient(135deg, rgba(12,12,16,0.98), rgba(48,14,18,0.78))",
   },
   framedTextPanel: {
     minWidth: 0,
     boxSizing: "border-box" as const,
-    padding: "15px 16px 14px",
+    padding: "18px 18px 17px",
     display: "flex",
     flexDirection: "column" as const,
-    justifyContent: "flex-end",
-    gap: 7,
+    justifyContent: "center",
+    gap: 9,
     borderTop: "1px solid rgba(245,200,120,0.13)",
   },
   framedTextPanelSplit: {
@@ -1945,10 +1923,11 @@ const hpStyles: Record<string, CSSProperties> = {
     boxShadow: "inset 0 0 34px rgba(0,0,0,0.36)",
   },
   mediaWellFramed: {
-    margin: 12,
+    marginTop: 12,
+    marginRight: 12,
     marginBottom: 0,
-    minHeight: 96,
-    aspectRatio: "16 / 9",
+    marginLeft: 12,
+    minHeight: 110,
   },
   mediaWellSide: {
     margin: 12,

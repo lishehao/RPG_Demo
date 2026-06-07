@@ -91,14 +91,13 @@ def test_home_distinguishes_premise_starters_from_published_playable_stories() -
     assert "Story Butler" not in preset_helper
     assert "Story Butler" not in published_helper
     assert 'data-story-card-kind="preset-story"' in curated
-    assert "view.copy.typeLabel" in curated
+    assert "view.copy.typeLabel" not in curated
     assert "view.copy.primaryAction" in curated
     assert "saveCreateDraftHandoff" not in template
     assert 'data-story-card-kind="published-story"' in template
     assert 'data-home-tile-span={span}' in template
     assert "displayView.copy.primaryAction" in template
-    assert "view.copy.typeLabel" in template
+    assert "view.copy.typeLabel" not in template
+    assert 'data-home-tile-text-body="title-deck-only"' in home
     assert "Story Butler" not in curated
-    assert '"home.premise_label": "Preset story"' in strings
-    assert '"home.published_label": "Playable story"' in strings
     assert '"home.card_action": "Enter story →"' in strings

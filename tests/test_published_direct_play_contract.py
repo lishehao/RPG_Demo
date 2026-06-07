@@ -77,7 +77,7 @@ def test_home_editorial_tiles_use_regular_rectangular_component_archetypes() -> 
     assert 'data-home-tile-archetype={archetype}' in home
     assert 'data-home-full-bleed="true"' in home
     assert 'data-home-reading-band="true"' in home
-    assert 'data-home-primary-action="true"' in home
+    assert 'data-home-tile-text-body="title-deck-only"' in home
     full_bleed = home[home.index("function FullBleedTileImage") : home.index("function TileMediaWell")]
     assert "hpStyles.fullBleedReadingBand" in full_bleed
     assert 'data-home-framed-editorial="true"' in home
@@ -130,10 +130,13 @@ def test_home_story_tiles_do_not_clip_required_contract_content() -> None:
 def test_home_story_tiles_do_not_use_unreadable_one_by_one_spans() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     span_style = home[home.index("function homeTileSpanStyle") : home.index("function homeTileTitleStyle")]
+    span_assigner = home[home.index("export function homeTileSpanForItem") : home.index("function assignHomeMosaicSpans")]
 
     assert 'if (span === "dispatch") return { gridColumn: "span 2", gridRow: "span 1" }' in span_style
     assert 'return { gridColumn: "span 2", gridRow: "span 1" }' in span_style
     assert 'gridColumn: "span 1", gridRow: "span 1"' not in span_style
+    assert 'item.kind === "starter_premise" || item.kind === "published_story"' in span_assigner
+    assert 'span === "feature-tall"' in span_assigner
 
 
 def test_home_editorial_tiles_keep_starter_and_playable_actions_distinct() -> None:
@@ -159,12 +162,14 @@ def test_home_editorial_tiles_keep_starter_and_playable_actions_distinct() -> No
     assert 't("home.card_action")' in helper
     assert "view.copy.primaryAction" in curated
     assert "displayView.copy.primaryAction" in template
+    assert "view.copy.primaryAction}</TileCommand>" not in curated
+    assert "displayView.copy.primaryAction}</TileCommand>" not in template
+    assert "HomeTileTextBody" in curated
+    assert "HomeTileTextBody" in template
     published_helper = helper[helper.index('kind === "published_story"') : helper.index('kind === "in_progress_run"')]
     assert "Story Butler" not in published_helper
     assert "Story Butler" not in template
     assert "Story Butler" not in curated
-    assert '"home.premise_label": "Preset story"' in strings
-    assert '"home.published_label": "Playable story"' in strings
     assert '"home.card_action": "Enter story →"' in strings
 
 
@@ -179,3 +184,22 @@ def test_home_story_tiles_hide_extra_metadata_rows_by_default() -> None:
     assert "visibilityLabel(" not in published
     assert "played_count" not in published
     assert 'template.cast.map((c) => c.display_name).join(" · ")' not in published
+
+
+def test_home_story_tiles_render_low_information_body_only() -> None:
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    curated = home[home.index("function CuratedStoryTile") : home.index("function TemplateCard")]
+    published = home[home.index("function PublishedTileComposition") : home.index("function FullBleedTileImage")]
+    body = home[home.index("function HomeTileTextBody") : home.index("function FullBleedTileImage")]
+
+    assert 'data-home-tile-text-body="title-deck-only"' in body
+    assert "<TileTitle" in body
+    assert "editorialTileDeck" in body
+    assert "TileKicker" not in curated
+    assert "TileCommand" not in curated
+    assert "TileKicker" not in published
+    assert "TileCommand" not in published
+    assert "view.copy.typeLabel" not in curated
+    assert "view.copy.typeLabel" not in published
+    assert "<HomeTileTextBody" in curated
+    assert "<HomeTileTextBody" in published
