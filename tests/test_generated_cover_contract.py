@@ -243,6 +243,23 @@ def test_play_segment_scene_expansion_assets_are_wired() -> None:
         "pressure_family_banquet_standoff": "pressure_family_banquet_standoff.jpg",
         "terminal_family_empty_mansion": "terminal_family_empty_mansion.jpg",
     }
+    expected_clear = {
+        "opening_backstage_control_room_clear_v2": "opening_backstage_control_room_clear_v2.jpg",
+        "pressure_backstage_press_crush_clear_v2": "pressure_backstage_press_crush_clear_v2.jpg",
+        "reveal_backstage_empty_spotlight_clear_v2": "reveal_backstage_empty_spotlight_clear_v2.jpg",
+        "opening_office_night_merger_clear_v2": "opening_office_night_merger_clear_v2.jpg",
+        "pressure_office_contract_table_clear_v2": "pressure_office_contract_table_clear_v2.jpg",
+        "reversal_office_elevator_secret_clear_v2": "reversal_office_elevator_secret_clear_v2.jpg",
+        "opening_campus_auditorium_night_clear_v2": "opening_campus_auditorium_night_clear_v2.jpg",
+        "pressure_campus_archive_lock_clear_v2": "pressure_campus_archive_lock_clear_v2.jpg",
+        "reveal_campus_phone_reflection_clear_v2": "reveal_campus_phone_reflection_clear_v2.jpg",
+        "opening_wedding_banquet_hall_clear_v2": "opening_wedding_banquet_hall_clear_v2.jpg",
+        "pressure_wedding_family_table_clear_v2": "pressure_wedding_family_table_clear_v2.jpg",
+        "reversal_wedding_dropped_note_clear_v2": "reversal_wedding_dropped_note_clear_v2.jpg",
+        "opening_family_will_reading_clear_v2": "opening_family_will_reading_clear_v2.jpg",
+        "pressure_family_banquet_standoff_clear_v2": "pressure_family_banquet_standoff_clear_v2.jpg",
+        "terminal_family_empty_mansion_clear_v2": "terminal_family_empty_mansion_clear_v2.jpg",
+    }
 
     assert "SEGMENT_THEME_POOLS" in source
     assert "SEGMENT_THEME_RULES" in source
@@ -256,6 +273,27 @@ def test_play_segment_scene_expansion_assets_are_wired() -> None:
         assert filename in manifest
         assert (ROOT / "frontend2/public/webtoons/segments" / filename).exists()
 
+    for slug, filename in expected_clear.items():
+        assert slug in source
+        assert filename in manifest
+        assert (ROOT / "frontend2/public/webtoons/segments" / filename).exists()
+
+    assert '"backstage-entertainment": [\n      "opening_backstage_control_room_clear_v2",' in source
+    assert '"backstage-entertainment": [\n      "pressure_backstage_press_crush_clear_v2",' in source
+    assert '"backstage-entertainment": ["reveal_backstage_empty_spotlight_clear_v2"' in source
+    assert '"office-boardroom": ["opening_office_night_merger_clear_v2"' in source
+    assert '"office-boardroom": ["pressure_office_contract_table_clear_v2"' in source
+    assert '"office-boardroom": ["reversal_office_elevator_secret_clear_v2"' in source
+    assert 'campus: ["opening_campus_auditorium_night_clear_v2"' in source
+    assert 'campus: ["pressure_campus_archive_lock_clear_v2"' in source
+    assert 'campus: ["reveal_campus_phone_reflection_clear_v2"' in source
+    assert 'wedding: ["opening_wedding_banquet_hall_clear_v2"' in source
+    assert 'wedding: ["pressure_wedding_family_table_clear_v2"' in source
+    assert 'wedding: ["reversal_wedding_dropped_note_clear_v2"' in source
+    assert '"family-inheritance": ["opening_family_will_reading_clear_v2"' in source
+    assert '"family-inheritance": [\n      "pressure_family_banquet_standoff_clear_v2",' in source
+    assert '"family-inheritance": ["terminal_family_empty_mansion_clear_v2"' in source
+
 
 def test_play_route_uses_segment_scene_resolver_for_narrator_beats() -> None:
     play_source = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
@@ -268,4 +306,8 @@ def test_play_route_uses_segment_scene_resolver_for_narrator_beats() -> None:
     assert "story.template.cast" in play_source
     assert "getPeakCloseUp" not in play_source
     assert "const shouldShowSceneBanner = !!sceneUrl && (intensity === \"peak\" || isLatestNarrator)" in beat_source
-    assert "{shouldShowSceneBanner ? (" in beat_source
+    assert "function SceneParallaxBanner({ sceneUrl }: { sceneUrl: string })" in beat_source
+    assert 'window.matchMedia("(min-width: 721px) and (hover: hover) and (pointer: fine)")' in beat_source
+    assert 'data-play-segment-parallax="true"' in beat_source
+    assert 'data-play-segment-motion={motionEnabled ? "pointer" : "static"}' in beat_source
+    assert "<SceneParallaxBanner sceneUrl={sceneUrl} />" in beat_source

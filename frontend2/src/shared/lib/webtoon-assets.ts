@@ -126,29 +126,41 @@ const SEGMENT_PHASE_POOLS: Record<SegmentPhase, readonly string[]> = {
 
 const SEGMENT_THEME_POOLS: Record<SegmentPhase, Partial<Record<SegmentTheme, readonly string[]>>> = {
   opening: {
-    "backstage-entertainment": ["opening_backstage_control_room", "opening_backstage_vanity"],
-    "office-boardroom": ["opening_office_night_merger"],
-    campus: ["opening_campus_auditorium_night", "opening_campus_rain_gate"],
-    wedding: ["opening_wedding_banquet_hall"],
-    "family-inheritance": ["opening_family_will_reading"],
+    "backstage-entertainment": [
+      "opening_backstage_control_room_clear_v2",
+      "opening_backstage_control_room",
+      "opening_backstage_vanity",
+    ],
+    "office-boardroom": ["opening_office_night_merger_clear_v2", "opening_office_night_merger"],
+    campus: ["opening_campus_auditorium_night_clear_v2", "opening_campus_auditorium_night", "opening_campus_rain_gate"],
+    wedding: ["opening_wedding_banquet_hall_clear_v2", "opening_wedding_banquet_hall"],
+    "family-inheritance": ["opening_family_will_reading_clear_v2", "opening_family_will_reading"],
   },
   pressure: {
-    "backstage-entertainment": ["pressure_backstage_press_crush", "pressure_press_hallway"],
-    "office-boardroom": ["pressure_office_contract_table", "pressure_boardroom_vote"],
-    campus: ["pressure_campus_archive_lock"],
-    wedding: ["pressure_wedding_family_table"],
-    "family-inheritance": ["pressure_family_banquet_standoff", "pressure_family_banquet"],
+    "backstage-entertainment": [
+      "pressure_backstage_press_crush_clear_v2",
+      "pressure_backstage_press_crush",
+      "pressure_press_hallway",
+    ],
+    "office-boardroom": ["pressure_office_contract_table_clear_v2", "pressure_office_contract_table", "pressure_boardroom_vote"],
+    campus: ["pressure_campus_archive_lock_clear_v2", "pressure_campus_archive_lock"],
+    wedding: ["pressure_wedding_family_table_clear_v2", "pressure_wedding_family_table"],
+    "family-inheritance": [
+      "pressure_family_banquet_standoff_clear_v2",
+      "pressure_family_banquet_standoff",
+      "pressure_family_banquet",
+    ],
   },
   reversal: {
-    "office-boardroom": ["reversal_office_elevator_secret", "reversal_elevator_standoff"],
-    wedding: ["reversal_wedding_dropped_note", "reversal_wedding_aisle"],
+    "office-boardroom": ["reversal_office_elevator_secret_clear_v2", "reversal_office_elevator_secret", "reversal_elevator_standoff"],
+    wedding: ["reversal_wedding_dropped_note_clear_v2", "reversal_wedding_dropped_note", "reversal_wedding_aisle"],
   },
   reveal: {
-    "backstage-entertainment": ["reveal_backstage_empty_spotlight"],
-    campus: ["reveal_campus_phone_reflection", "reveal_phone_reflection"],
+    "backstage-entertainment": ["reveal_backstage_empty_spotlight_clear_v2", "reveal_backstage_empty_spotlight"],
+    campus: ["reveal_campus_phone_reflection_clear_v2", "reveal_campus_phone_reflection", "reveal_phone_reflection"],
   },
   terminal: {
-    "family-inheritance": ["terminal_family_empty_mansion"],
+    "family-inheritance": ["terminal_family_empty_mansion_clear_v2", "terminal_family_empty_mansion"],
   },
 }
 

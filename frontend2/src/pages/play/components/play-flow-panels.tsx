@@ -1,4 +1,4 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react"
 import type {
   NarrativeAdvisorMessage,
@@ -42,6 +42,102 @@ import type { ActionCommitmentSummary, LeverageCardView, PlayAdvanceAction } fro
 import { useCompactLayout } from "../hooks/use-compact-layout"
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
+
+type SceneParallaxOffset = {
+  x: number
+  y: number
+}
+
+function SceneParallaxBanner({ sceneUrl }: { sceneUrl: string }) {
+  const reducedMotion = useReducedMotion()
+  const [motionEnabled, setMotionEnabled] = useState(false)
+  const [offset, setOffset] = useState<SceneParallaxOffset>({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (reducedMotion || typeof window === "undefined") {
+      setMotionEnabled(false)
+      setOffset({ x: 0, y: 0 })
+      return
+    }
+
+    const media = window.matchMedia("(min-width: 721px) and (hover: hover) and (pointer: fine)")
+    const sync = () => {
+      setMotionEnabled(media.matches)
+      if (!media.matches) setOffset({ x: 0, y: 0 })
+    }
+    sync()
+    media.addEventListener("change", sync)
+    return () => media.removeEventListener("change", sync)
+  }, [reducedMotion])
+
+  const handlePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    if (!motionEnabled) return
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2
+    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2
+    setOffset({
+      x: Math.max(-1, Math.min(1, x)),
+      y: Math.max(-1, Math.min(1, y)),
+    })
+  }, [motionEnabled])
+
+  const resetOffset = useCallback(() => {
+    setOffset({ x: 0, y: 0 })
+  }, [])
+
+  const transformTransition = motionEnabled
+    ? "transform 210ms cubic-bezier(0.22, 0.61, 0.36, 1)"
+    : "none"
+  const planeTransform = motionEnabled
+    ? `translate3d(${(offset.x * 6).toFixed(2)}px, ${(offset.y * 4).toFixed(2)}px, 0) scale(1.07) rotateX(${(-offset.y * 0.8).toFixed(2)}deg) rotateY(${(offset.x * 1.1).toFixed(2)}deg)`
+    : "translate3d(0, 0, 0) scale(1.05)"
+  const lightTransform = motionEnabled
+    ? `translate3d(${(-offset.x * 3).toFixed(2)}px, ${(-offset.y * 2).toFixed(2)}px, 0) rotate(${(offset.x * 1.2).toFixed(2)}deg)`
+    : "none"
+  const vignetteTransform = motionEnabled
+    ? `translate3d(${(-offset.x * 1.5).toFixed(2)}px, ${(-offset.y * 1).toFixed(2)}px, 0)`
+    : "none"
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 1.015 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={transitions.slow}
+      style={ppStyles.beatSceneBanner}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={resetOffset}
+      onPointerCancel={resetOffset}
+      data-play-segment-parallax="true"
+      data-play-segment-motion={motionEnabled ? "pointer" : "static"}
+      aria-hidden
+    >
+      <div
+        style={{
+          ...ppStyles.beatScenePlane,
+          backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.03) 0%, rgba(12,12,16,0.20) 52%, rgba(12,12,16,0.62) 100%), url(${sceneUrl})`,
+          transform: planeTransform,
+          transition: transformTransition,
+        }}
+        data-play-segment-image="true"
+      />
+      <div
+        style={{
+          ...ppStyles.beatSceneLight,
+          transform: lightTransform,
+          transition: transformTransition,
+        }}
+      />
+      <div
+        style={{
+          ...ppStyles.beatSceneVignette,
+          transform: vignetteTransform,
+          transition: transformTransition,
+        }}
+      />
+      <div style={ppStyles.beatSceneGoldLine} />
+    </motion.div>
+  )
+}
 
 function fitTextareaToContent(node: HTMLTextAreaElement | null) {
   if (!node) return
@@ -1224,16 +1320,7 @@ export function StoryBeat({
           </button>
         ) : null}
         {shouldShowSceneBanner ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={transitions.slow}
-            style={{
-              ...ppStyles.beatSceneBanner,
-              backgroundImage: `linear-gradient(180deg, rgba(20,16,12,0.15) 0%, rgba(20,16,12,0.85) 90%, var(--bg) 100%), url(${sceneUrl})`,
-            }}
-            aria-hidden
-          />
+          <SceneParallaxBanner sceneUrl={sceneUrl} />
         ) : null}
         {intensity === "rising" || intensity === "peak" ? (
           <div
