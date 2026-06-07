@@ -7,11 +7,13 @@ export function Header({
   onCreate,
   showCreateButton = true,
   createVariant = "button",
+  showBackButton = false,
 }: {
   onHome: () => void
   onCreate: () => void
   showCreateButton?: boolean
   createVariant?: "button" | "link"
+  showBackButton?: boolean
 }) {
   const auth = useAuth()
   const { lang, setLang, t } = useLanguage()
@@ -26,11 +28,18 @@ export function Header({
   }
 
   return (
-    <header className="topbar">
-      <button className="brand" onClick={onHome} type="button">
-        <span className="brand-mark">·</span>
-        <strong>Tiny Stories</strong>
-      </button>
+    <header className={`topbar${showBackButton ? " topbar--with-back" : ""}`}>
+      <div className="topbar-left">
+        {showBackButton ? (
+          <button className="topbar-back" onClick={onHome} type="button">
+            {t("action.back_home")}
+          </button>
+        ) : null}
+        <button className="brand" onClick={onHome} type="button">
+          <span className="brand-mark">·</span>
+          <strong>Tiny Stories</strong>
+        </button>
+      </div>
 
       <div className="topbar-actions">
         <LanguageToggle lang={lang} onSelect={setLang} />

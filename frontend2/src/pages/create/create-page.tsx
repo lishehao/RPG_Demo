@@ -22,6 +22,7 @@ import {
   markStoryGuideBriefResult,
   type StoryGuideConversationState,
   type StoryGuideInlineLedger,
+  type StoryGuideSettingDeltas,
   type StoryGuideNodeName,
 } from "../../shared/lib/story-guide-loop"
 import { PAGE_BG } from "../../shared/lib/webtoon-assets"
@@ -69,6 +70,13 @@ type GuideMessage = {
   node?: StoryGuideNodeName
   state?: StoryGuideConversationState
   ledger?: StoryGuideInlineLedger
+}
+
+type StoryShapeRead = {
+  runLength: string
+  pressureMode: string
+  storyLanguage: string
+  tone: string
 }
 
 type TensionProfileOptionMeta = {
@@ -258,7 +266,6 @@ export function CreatePage({
   const activeBrief = activeBriefResponse?.brief ?? null
   const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
   const guideReadyToBrief = guideLoopState.status === "ready_to_brief" && canShapeStoryBrief(guideLoopState)
-  const showBackAction = hasSeed || busy || briefBusy
   const showSeedExamples = !hasSeed && !busy && !briefBusy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
   const selectedDifficulty = DIFFICULTY_OPTIONS.find((o) => o.id === difficulty) ?? DIFFICULTY_OPTIONS[0]
@@ -267,6 +274,12 @@ export function CreatePage({
   const selectedVisibility = VISIBILITY_KEY_MAP[visibility]
   const selectedTension =
     TENSION_PROFILE_OPTIONS.find((o) => o.id === desiredTensionProfile) ?? TENSION_PROFILE_OPTIONS[0]
+  const storyShapeRead: StoryShapeRead = {
+    runLength: `${t(selectedBudget.labelKey)} · ${t(selectedBudget.timeKey)}`,
+    pressureMode: t(selectedDifficulty.labelKey),
+    storyLanguage: selectedLanguage.label,
+    tone: t(selectedTension.labelKey),
+  }
   const guideMessages = useMemo<GuideMessage[]>(
     () => [
       {
@@ -283,13 +296,7 @@ export function CreatePage({
     ],
     [chatMessages, t],
   )
-  const settingsSummary = [
-    t(selectedBudget.labelKey),
-    t(selectedDifficulty.labelKey),
-    selectedLanguage.label,
-    t(selectedTension.labelKey),
-    t(selectedVisibility.labelKey),
-  ].join(" · ")
+  const settingsSummary = t(selectedVisibility.labelKey)
   const submitModKey = useMemo(() => {
     if (typeof navigator === "undefined") return "Ctrl"
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
@@ -316,6 +323,14 @@ export function CreatePage({
     briefBusyElapsedSeconds >= 10
       ? t("create.guide_planning_slow")
       : t("create.guide_planning_now")
+
+  const applyStoryGuideSettings = (settings?: StoryGuideSettingDeltas) => {
+    if (!settings) return
+    if (settings.turnBudget) setTurnBudget(settings.turnBudget)
+    if (settings.difficulty) setDifficulty(settings.difficulty)
+    if (settings.language) setStoryLanguage(settings.language)
+    if (settings.tensionProfile) setDesiredTensionProfile(settings.tensionProfile)
+  }
 
   const ensureAuthorSession = async (): Promise<boolean> => {
     if (!auth.isAnonymous) return true
@@ -500,6 +515,7 @@ export function CreatePage({
 
   const handleApplyRevisionAction = (seedAppend: string) => {
     const decision = advanceStoryGuideLoop(guideLoopState, seedAppend, uiLang)
+    applyStoryGuideSettings(decision.settings)
     setSeed((current) => {
       const trimmed = current.trim()
       if (trimmed.toLowerCase().includes(seedAppend.toLowerCase())) return current
@@ -561,6 +577,30 @@ export function CreatePage({
       ])
       return
     }
+    if (!decision.acceptedText) {
+      setGuideLoopState(decision.state)
+      setDraftTurn("")
+      setError(null)
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: `user-${time}-${current.length}`,
+          speaker: "user",
+          text: trimmed,
+        },
+        {
+          id: `guide-${time}-${current.length}`,
+          speaker: "guide",
+          text: decision.reply,
+          node: decision.node,
+          state: decision.status,
+          ledger: decision.ledger,
+        },
+      ])
+      focusComposer()
+      return
+    }
+    applyStoryGuideSettings(decision.settings)
     const hadSeed = Boolean(seed.trim())
     const nextCorrectionCount = hadSeed ? correctionCount + 1 : correctionCount
     const nextSeed = `${seed.trim()}${hadSeed ? "\n\n" : ""}${trimmed}`
@@ -601,6 +641,7 @@ export function CreatePage({
     if (!trimmed) return
     const decision = advanceStoryGuideLoop(createInitialStoryGuideState(uiLang), trimmed, uiLang)
     const time = Date.now()
+    applyStoryGuideSettings(decision.settings)
     if (handoff.language) setStoryLanguage(handoff.language)
     if (handoff.tensionProfile) setDesiredTensionProfile(handoff.tensionProfile)
     setSeed(trimmed)
@@ -643,11 +684,16 @@ export function CreatePage({
       data-guide-loop-state={guideLoopState.status}
       data-guide-loop-node={guideLoopState.lastNode}
     >
-      <header style={cpStyles.header}>
-        <button style={cpStyles.brandLink} onClick={onBackHome}>
-          <span style={cpStyles.brandMark} aria-hidden>✦</span>
-          <span style={cpStyles.brandName}>Tiny Stories</span>
-        </button>
+      <header style={{ ...cpStyles.header, ...(compactLayout ? cpStyles.headerCompact : null) }}>
+        <div style={cpStyles.headerNav}>
+          <button style={{ ...cpStyles.topBackButton, ...(compactLayout ? cpStyles.topBackButtonCompact : null) }} onClick={onBackHome} type="button">
+            {t("create.cta_back")}
+          </button>
+          <button style={{ ...cpStyles.brandLink, ...(compactLayout ? cpStyles.brandLinkCompact : null) }} onClick={onBackHome} type="button">
+            <span style={{ ...cpStyles.brandMark, ...(compactLayout ? cpStyles.brandMarkCompact : null) }} aria-hidden>✦</span>
+            <span style={{ ...cpStyles.brandName, ...(compactLayout ? cpStyles.brandNameCompact : null) }}>Tiny Stories</span>
+          </button>
+        </div>
         <div style={{ ...cpStyles.headerTools, ...(compactLayout ? cpStyles.headerToolsCompact : null) }} aria-hidden>
           <span style={cpStyles.headerTool}>☼</span>
           <span style={cpStyles.headerTool}>?</span>
@@ -770,6 +816,28 @@ export function CreatePage({
                 </div>
               </div>
             ) : null}
+            {hasSeed ? (
+              <div
+                data-guide-node="story_shape_read"
+                data-guide-state={guideLoopState.status}
+                style={{
+                  ...cpStyles.guideMessage,
+                  ...cpStyles.guideMessageGuide,
+                  ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                }}
+              >
+                <img
+                  src={STORY_BUTLER_AVATAR}
+                  alt=""
+                  style={{ ...cpStyles.guideAvatarSmall, ...(compactLayout ? cpStyles.guideAvatarSmallCompact : null) }}
+                />
+                <div style={cpStyles.guideMessageContent}>
+                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                  <span style={cpStyles.guideMessageText}>{t("create.butler_read_label")}</span>
+                  <StoryShapeReadLedger shapeRead={storyShapeRead} compact={compactLayout} />
+                </div>
+              </div>
+            ) : null}
             {activeBriefResponse ? (
               <>
                 <div
@@ -795,6 +863,7 @@ export function CreatePage({
                       nextStep={activeBriefResponse.next_step}
                       compact={compactLayout}
                       busy={busy}
+                      shapeRead={storyShapeRead}
                       onGenerate={() => void handleCreate()}
                       onKeepCorrecting={focusComposer}
                       onApplyRevisionAction={handleApplyRevisionAction}
@@ -948,12 +1017,6 @@ export function CreatePage({
             ) : null}
           </div>
 
-          {!compactLayout && showBackAction && !activeBrief ? (
-            <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy || briefBusy} type="button">
-              {t("create.cta_back")}
-            </button>
-          ) : null}
-
           {error ? <div style={cpStyles.error}>{error}</div> : null}
           {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
 
@@ -967,7 +1030,7 @@ export function CreatePage({
           >
             <summary style={cpStyles.settingsSummary}>
               <span style={cpStyles.settingsSummaryMain}>
-                <span style={cpStyles.settingsSummaryLabel}>{t("create.settings_label")}</span>
+                <span style={cpStyles.settingsSummaryLabel}>{t("create.field_visibility")}</span>
                 <span style={cpStyles.settingsSummaryValue}>{settingsSummary}</span>
               </span>
               <span style={cpStyles.settingsToggleHint}>
@@ -979,119 +1042,9 @@ export function CreatePage({
                 ...cpStyles.settingsStrip,
                 ...(compactLayout ? cpStyles.settingsStripCompact : null),
               }}
-              aria-label={t("create.settings_label")}
+              aria-label={t("create.field_visibility")}
+              data-create-privacy-settings="true"
             >
-              <div
-                style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
-                }}
-              >
-                <span style={cpStyles.settingLabel}>{t("create.field_budget")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {BUDGET_OPTIONS.map((o) => (
-                    <button
-                      key={o.budget}
-                      style={{
-                        ...cpStyles.segmentBtn,
-                        ...(turnBudget === o.budget ? cpStyles.segmentBtnActive : null),
-                      }}
-                      onClick={() => setTurnBudget(o.budget)}
-                      disabled={busy}
-                      type="button"
-                      title={t(o.descKey)}
-                      aria-pressed={turnBudget === o.budget}
-                    >
-                      <span style={cpStyles.segmentMain}>{t(o.labelKey)}</span>
-                      <span style={cpStyles.segmentMeta}>{t(o.timeKey)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
-                }}
-              >
-                <span style={cpStyles.settingLabel}>{t("create.field_difficulty")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {DIFFICULTY_OPTIONS.map((o) => (
-                    <button
-                      key={o.id}
-                      style={{
-                        ...cpStyles.segmentBtn,
-                        ...(difficulty === o.id ? cpStyles.segmentBtnActive : null),
-                        ...(o.id === "gauntlet" && difficulty === o.id ? cpStyles.segmentBtnWarn : null),
-                      }}
-                      onClick={() => setDifficulty(o.id)}
-                      disabled={busy}
-                      type="button"
-                      title={t(o.descKey)}
-                      aria-pressed={difficulty === o.id}
-                    >
-                      <span style={cpStyles.segmentMain}>{t(o.labelKey)}</span>
-                      <span style={cpStyles.segmentMeta}>{t(o.taglineKey)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
-                }}
-              >
-                <span style={cpStyles.settingLabel}>{t("create.field_story_lang")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {STORY_LANGUAGE_OPTIONS[uiLang].map((o) => (
-                    <button
-                      key={o.id}
-                      style={{
-                        ...cpStyles.segmentBtn,
-                        ...(storyLanguage === o.id ? cpStyles.segmentBtnActive : null),
-                      }}
-                      onClick={() => setStoryLanguage(o.id)}
-                      disabled={busy || briefBusy}
-                      type="button"
-                      title={o.desc}
-                      aria-pressed={storyLanguage === o.id}
-                    >
-                      <span style={cpStyles.segmentMain}>{o.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
-                }}
-              >
-                <span style={cpStyles.settingLabel}>{t("create.field_tension_profile")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {TENSION_PROFILE_OPTIONS.map((o) => (
-                    <button
-                      key={o.id}
-                      style={{
-                        ...cpStyles.segmentBtn,
-                        ...(desiredTensionProfile === o.id ? cpStyles.segmentBtnActive : null),
-                      }}
-                      onClick={() => setDesiredTensionProfile(o.id)}
-                      disabled={busy || briefBusy}
-                      type="button"
-                      title={t(o.descKey)}
-                      aria-pressed={desiredTensionProfile === o.id}
-                    >
-                      <span style={cpStyles.segmentMain}>{t(o.labelKey)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div
                 style={{
                   ...cpStyles.settingGroup,
@@ -1262,12 +1215,47 @@ function GuideInlineLedger({
   )
 }
 
+function StoryShapeReadLedger({
+  shapeRead,
+  compact,
+  inBrief = false,
+}: {
+  shapeRead: StoryShapeRead
+  compact: boolean
+  inBrief?: boolean
+}) {
+  const t = useT()
+  const rows = [
+    { label: t("create.setting_run_length"), value: shapeRead.runLength },
+    { label: t("create.setting_pressure_mode"), value: shapeRead.pressureMode },
+    { label: t("create.setting_story_language"), value: shapeRead.storyLanguage },
+    { label: t("create.setting_tone"), value: shapeRead.tone },
+  ]
+  return (
+    <div
+      style={{
+        ...cpStyles.storyShapeLedger,
+        ...(compact ? cpStyles.storyShapeLedgerCompact : null),
+        ...(inBrief ? cpStyles.storyShapeLedgerInBrief : null),
+      }}
+    >
+      {rows.map((row) => (
+        <span key={row.label} style={cpStyles.storyShapeLedgerRow}>
+          <strong>{row.label}</strong>
+          <span>{row.value}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function StoryBriefCard({
   brief,
   canGenerate,
   nextStep,
   compact,
   busy,
+  shapeRead,
   onGenerate,
   onKeepCorrecting,
   onApplyRevisionAction,
@@ -1277,6 +1265,7 @@ function StoryBriefCard({
   nextStep: string
   compact: boolean
   busy: boolean
+  shapeRead: StoryShapeRead
   onGenerate: () => void
   onKeepCorrecting: () => void
   onApplyRevisionAction: (seedAppend: string) => void
@@ -1313,6 +1302,7 @@ function StoryBriefCard({
       </div>
       <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
+      <StoryShapeReadLedger shapeRead={shapeRead} compact={compact} inBrief />
       <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
         <BriefField label={t("create.brief_profile")} value={brief.genre_tone || t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
         <BriefField label={t("create.brief_primary_cast")} value={primaryNames || t("create.brief_empty")} />
@@ -1601,7 +1591,52 @@ const cpStyles: Record<string, CSSProperties> = {
     background: "linear-gradient(90deg, rgba(4,4,7,0.78), rgba(4,4,7,0.28))",
     backdropFilter: "blur(8px)",
   },
-  brandLink: { display: "inline-flex", alignItems: "center", gap: 12 },
+  headerCompact: {
+    minHeight: 54,
+    padding: "0 16px",
+    gap: 10,
+  },
+  headerNav: {
+    minWidth: 0,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 16,
+  },
+  topBackButton: {
+    flex: "0 0 auto",
+    height: 30,
+    padding: "0 0 5px",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.42)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(255,226,178,0.94)",
+    fontSize: 13,
+    fontWeight: 860,
+    lineHeight: 1,
+    cursor: "pointer",
+    fontFamily: "var(--font-ui)",
+  },
+  topBackButtonCompact: {
+    height: 28,
+    paddingBottom: 4,
+    fontSize: 12.5,
+  },
+  brandLink: {
+    minWidth: 0,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 12,
+    padding: 0,
+    border: "none",
+    borderRadius: 0,
+    background: "transparent",
+    color: "inherit",
+    cursor: "pointer",
+  },
+  brandLinkCompact: {
+    gap: 8,
+  },
   brandMark: {
     width: 30,
     height: 30,
@@ -1616,7 +1651,13 @@ const cpStyles: Record<string, CSSProperties> = {
     background: "radial-gradient(circle, rgba(212,168,83,0.10), rgba(5,5,8,0.68))",
     boxShadow: "0 0 14px rgba(212,168,83,0.18)",
   },
+  brandMarkCompact: {
+    width: 26,
+    height: 26,
+    fontSize: 13,
+  },
   brandName: { fontFamily: "var(--font-narrative)", fontSize: 18, color: "rgba(255,245,230,0.96)" },
+  brandNameCompact: { fontSize: 15 },
   headerTools: {
     display: "inline-flex",
     alignItems: "center",
@@ -1907,6 +1948,31 @@ const cpStyles: Record<string, CSSProperties> = {
   },
   guideLoopLedgerQuestion: {
     color: "rgba(255,226,178,0.88)",
+  },
+  storyShapeLedger: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: 0,
+    marginTop: 5,
+    borderTop: "1px solid rgba(212,168,83,0.34)",
+    borderBottom: "1px solid rgba(255,255,255,0.10)",
+  },
+  storyShapeLedgerCompact: {
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  },
+  storyShapeLedgerInBrief: {
+    marginTop: 0,
+    marginBottom: 12,
+  },
+  storyShapeLedgerRow: {
+    minWidth: 0,
+    display: "grid",
+    gap: 4,
+    padding: "8px 10px 8px 0",
+    borderRight: "1px solid rgba(212,168,83,0.20)",
+    color: "rgba(255,255,255,0.70)",
+    fontSize: 11.5,
+    lineHeight: 1.34,
   },
   guideAvatarAnalyzing: {
     boxShadow: "0 0 0 1px rgba(0,0,0,0.62), 0 0 24px rgba(212,168,83,0.24), 0 18px 44px rgba(0,0,0,0.36)",
@@ -2683,19 +2749,6 @@ const cpStyles: Record<string, CSSProperties> = {
     fontSize: 14,
     fontWeight: 880,
     lineHeight: 1.25,
-    cursor: "pointer",
-    fontFamily: "inherit",
-  },
-  backAction: {
-    height: "auto",
-    padding: "3px 0",
-    border: "none",
-    borderRadius: 0,
-    background: "transparent",
-    color: "rgba(255,255,255,0.56)",
-    fontSize: 13,
-    fontWeight: 700,
-    lineHeight: 1.3,
     cursor: "pointer",
     fontFamily: "inherit",
   },

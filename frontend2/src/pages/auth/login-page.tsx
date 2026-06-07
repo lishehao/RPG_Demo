@@ -73,20 +73,25 @@ export function LoginPage({
   return (
     <div style={{ ...lpStyles.page, ...(compactLayout ? lpStyles.pageCompact : null) }}>
       <header style={{ ...lpStyles.header, ...(compactLayout ? lpStyles.headerCompact : null) }}>
-        <button style={lpStyles.brandLink} onClick={onBackHome}>
-          <span
-            style={{
-              color: "var(--accent)",
-              fontSize: 22,
-              lineHeight: 1,
-              transform: "translateY(-2px)",
-              display: "inline-block",
-            }}
-          >
-            ·
-          </span>
-          <span style={{ fontFamily: "var(--font-narrative)", fontSize: 18 }}>Tiny Stories</span>
-        </button>
+        <div style={lpStyles.headerNav}>
+          <button style={lpStyles.backLink} onClick={onBackHome} type="button">
+            {t("action.back_home")}
+          </button>
+          <button style={lpStyles.brandLink} onClick={onBackHome} type="button">
+            <span
+              style={{
+                color: "var(--accent)",
+                fontSize: 22,
+                lineHeight: 1,
+                transform: "translateY(-2px)",
+                display: "inline-block",
+              }}
+            >
+              ·
+            </span>
+            <span style={{ fontFamily: "var(--font-narrative)", fontSize: 18 }}>Tiny Stories</span>
+          </button>
+        </div>
       </header>
 
       <main style={{ ...lpStyles.main, ...(compactLayout ? lpStyles.mainCompact : null) }}>
@@ -235,8 +240,33 @@ const lpStyles: Record<string, CSSProperties> = {
     backgroundPosition: "58% top",
   },
   header: { padding: "18px 40px", borderBottom: "1px solid rgba(255,255,255,0.10)" },
-  headerCompact: { padding: "16px 30px" },
-  brandLink: { display: "inline-flex", alignItems: "center", gap: 8 },
+  headerCompact: { padding: "16px 20px" },
+  headerNav: { display: "inline-flex", alignItems: "center", gap: 16, minWidth: 0 },
+  backLink: {
+    height: 28,
+    padding: "0 0 5px",
+    border: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.34)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "rgba(245,200,120,0.9)",
+    fontSize: 13,
+    fontWeight: 780,
+    lineHeight: 1,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  brandLink: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    padding: 0,
+    border: "none",
+    borderRadius: 0,
+    background: "transparent",
+    color: "inherit",
+    cursor: "pointer",
+  },
 
   main: {
     display: "flex",

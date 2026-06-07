@@ -2104,6 +2104,10 @@ def _fallback_object_label(value: str) -> str:
         "no violence",
         "no blackmail",
         "no betrayal",
+        "are trapped",
+        "is trapped",
+        "were trapped",
+        "was trapped",
     )
     lower = text.lower()
     for stop in stop_phrases:

@@ -113,7 +113,7 @@ export function TemplateDetailPage({
   if (!template) {
     return (
       <div style={tdStyles.page}>
-        <Header onHome={onBackHome} onCreate={onOpenCreate} createVariant="link" />
+        <Header onHome={onBackHome} onCreate={onOpenCreate} createVariant="link" showBackButton />
         {error ? (
           <EmptyState
             title={t("world.empty_title")}
@@ -147,7 +147,7 @@ export function TemplateDetailPage({
 
   return (
     <div style={tdStyles.page}>
-      <Header onHome={onBackHome} onCreate={onOpenCreate} createVariant="link" />
+      <Header onHome={onBackHome} onCreate={onOpenCreate} createVariant="link" showBackButton />
 
       {/* Hero: shell cover with title overlay */}
       <div
@@ -157,9 +157,6 @@ export function TemplateDetailPage({
         }}
       >
         <div style={tdStyles.heroInner}>
-          <button style={tdStyles.crumb} onClick={onBackHome} type="button">
-            {t("world.crumb_back_home")}
-          </button>
           <h1 style={tdStyles.title}>{displayTitle}</h1>
           <div style={tdStyles.metaRow}>
             <span style={tdStyles.badge}>{visibilityLabel(template.visibility, t)}</span>

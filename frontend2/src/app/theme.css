@@ -222,6 +222,21 @@ kbd {
   display: inline-flex; align-items: baseline; gap: 6px;
   background: none; border: none; padding: 0;
 }
+.topbar-left {
+  display: inline-flex; align-items: center; gap: 18px;
+  min-width: 0;
+}
+.topbar-back {
+  display: inline-flex; align-items: center;
+  height: 26px; padding: 0 0 5px;
+  background: none; border: none; border-radius: 0;
+  border-bottom: 1px solid rgba(245, 200, 120, 0.34);
+  color: rgba(245, 200, 120, 0.9);
+  font-size: 13px; font-weight: 760; line-height: 1;
+  cursor: pointer;
+  font-family: var(--font-ui);
+}
+.topbar-back:hover { color: var(--accent); border-bottom-color: var(--accent); }
 .brand-mark { color: var(--accent); font-size: 20px; }
 .brand strong { font-size: 16px; letter-spacing: 0.04em; }
 
@@ -1186,8 +1201,11 @@ kbd {
     flex-wrap: nowrap;
     gap: 12px;
   }
+  .topbar-left { gap: 10px; flex: 1 1 auto; min-width: 0; }
+  .topbar-back { flex: 0 0 auto; font-size: 12.5px; padding-bottom: 4px; }
   .brand { flex: 0 1 auto; min-width: 0; }
   .brand strong { font-size: 15px; white-space: nowrap; }
+  .topbar--with-back .brand strong { display: none; }
   .topbar-actions {
     width: auto;
     min-width: 0;
@@ -1199,6 +1217,9 @@ kbd {
   .topbar-create-link,
   .topbar-login-link {
     display: inline-flex;
+  }
+  .topbar--with-back .topbar-create-link {
+    display: none;
   }
   .topbar-lang {
     flex-shrink: 0;
@@ -1341,6 +1362,8 @@ kbd {
     padding-inline: 14px;
     gap: 8px;
   }
+  .topbar-left { gap: 8px; }
+  .topbar-back { font-size: 12px; }
   .brand strong { font-size: 14px; }
   .topbar-actions { gap: 8px; }
   .topbar-lang { gap: 6px; }

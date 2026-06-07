@@ -28,7 +28,7 @@ export function PortfolioPage({
 
   return (
     <div className="portfolio-page">
-      <Header onHome={onBackHome} onCreate={onOpenCreate} />
+      <Header onHome={onBackHome} onCreate={onOpenCreate} showBackButton />
       <main className="portfolio-main">
         <motion.section
           className="portfolio-hero"

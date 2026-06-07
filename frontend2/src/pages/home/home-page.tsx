@@ -703,6 +703,8 @@ function CuratedPlazaStories({
       {stories.map((story, idx) => (
         <motion.button
           key={story.id}
+          data-story-card-kind="starter-premise"
+          aria-label={`${story.title[lang]} · ${lang === "zh" ? "前提开局" : "Premise starter"}`}
           style={{ ...hpStyles.curatedStory, ...(compact ? hpStyles.curatedStoryCompact : null) }}
           type="button"
           onClick={() => onStart(story)}
@@ -720,6 +722,7 @@ function CuratedPlazaStories({
             }}
           />
           <span style={hpStyles.curatedBody}>
+            <span style={hpStyles.curatedKicker}>{lang === "zh" ? "前提开局" : "Premise starter"}</span>
             <span style={hpStyles.curatedTitle}>{story.title[lang]}</span>
             <Truncated lines={1} style={hpStyles.curatedPressure}>
               {story.pressure[lang]}
@@ -753,6 +756,8 @@ function TemplateCard({
   const displaySummary = getTemplateDisplaySummary(template, lang)
   return (
     <motion.button
+      data-story-card-kind="published-story"
+      aria-label={`${displayTitle} · ${isStarting ? t("home.card_starting") : t("home.card_action")}`}
       style={{ ...hpStyles.card, ...(compact ? hpStyles.cardCompact : null) }}
       onClick={onClick}
       type="button"
@@ -773,6 +778,7 @@ function TemplateCard({
       />
       <div style={{ ...hpStyles.cardBody, ...(compact ? hpStyles.cardBodyCompact : null) }}>
         <div>
+          <span style={hpStyles.cardKicker}>{t("home.published_label")}</span>
           <Truncated lines={2} style={hpStyles.cardTitle}>
             {displayTitle}
           </Truncated>
@@ -1200,6 +1206,14 @@ const hpStyles: Record<string, CSSProperties> = {
     padding: "18px 0 18px 16px",
     gap: 8,
   },
+  curatedKicker: {
+    width: "fit-content",
+    color: "rgba(245,200,120,0.72)",
+    fontSize: 10.5,
+    fontWeight: 760,
+    lineHeight: 1.15,
+    letterSpacing: 0,
+  },
   curatedTitle: {
     fontFamily: "var(--font-narrative)",
     fontSize: 20,
@@ -1265,6 +1279,15 @@ const hpStyles: Record<string, CSSProperties> = {
     justifyContent: "center",
     gap: 14,
     background: "transparent",
+  },
+  cardKicker: {
+    display: "inline-block",
+    marginBottom: 7,
+    color: "rgba(245,200,120,0.72)",
+    fontSize: 10.5,
+    fontWeight: 760,
+    lineHeight: 1.15,
+    letterSpacing: 0,
   },
   cardBodyCompact: {
     padding: "12px 0 0",

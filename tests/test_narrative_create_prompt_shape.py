@@ -765,3 +765,29 @@ def test_create_template_caps_story_brief_live_opening_latency(
     assert response.story_brief_consistency is not None
     assert response.story_brief_consistency.status in {"pass", "warn"}
     assert response.opening_recovery == "tightened_from_brief"
+
+
+def test_create_template_reliable_opening_avoids_agent_chat_entity_fragments(tmp_path) -> None:
+    seed = (
+        "Make it a short English high drama backstage scene where NPCs fight back. "
+        "A publicist, producer, backup dancer, sponsor, and missing singer are trapped before "
+        "a livestream, and the player must decide what to reveal while fans panic outside."
+    )
+    brief = build_story_brief(seed=seed, language="en", desired_tension_profile="high_drama").brief
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.create_template(
+        CreateTemplateRequest(seed=seed, language="en", story_brief=brief),
+        owner_user_id="usr_test",
+    )
+
+    opening = response.opening.content.lower()
+    assert response.session.session_id.startswith("sess_")
+    assert response.opening.options
+    assert "missing singer are trapped" not in opening
+    assert "singer are trapped" not in opening
+    assert "player must" not in opening
+    assert "publicist" in opening
+    assert "producer" in opening
+    assert "backup dancer" in opening

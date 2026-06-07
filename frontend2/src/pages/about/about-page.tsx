@@ -29,7 +29,7 @@ export function AboutPage({
   const content = lang === "en" ? aboutContentEn : aboutContentZh
   return (
     <div style={apStyles.page}>
-      <Header onHome={onBackHome} onCreate={onOpenCreate} />
+      <Header onHome={onBackHome} onCreate={onOpenCreate} showBackButton />
       <main style={apStyles.main}>
         <h1 style={apStyles.title}>{content.title}</h1>
         {content.sections.map((section, i) => (
@@ -38,15 +38,6 @@ export function AboutPage({
             {section.body}
           </section>
         ))}
-        <div style={apStyles.footer}>
-          <button
-            style={apStyles.backAction}
-            onClick={onBackHome}
-            type="button"
-          >
-            {content.backToHome}
-          </button>
-        </div>
       </main>
     </div>
   )
@@ -55,7 +46,6 @@ export function AboutPage({
 type AboutContent = {
   title: string
   sections: ReadonlyArray<{ heading: string; body: ReactNode }>
-  backToHome: string
 }
 
 const apStyles: Record<string, CSSProperties> = {
@@ -89,28 +79,10 @@ const apStyles: Record<string, CSSProperties> = {
     margin: "0 0 14px",
   },
   link: { color: "var(--accent)", textDecoration: "underline" },
-  footer: {
-    paddingTop: 32,
-    borderTop: "1px dashed var(--line)",
-    marginTop: 24,
-  },
-  backAction: {
-    padding: "0 0 5px",
-    background: "transparent",
-    border: "none",
-    borderBottom: "1px solid var(--line-strong)",
-    borderRadius: 0,
-    color: "var(--text-muted)",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    fontSize: 14,
-    fontWeight: 700,
-  },
 }
 
 const aboutContentZh: AboutContent = {
   title: "关于 Tiny Stories",
-  backToHome: "← 回到首页",
   sections: [
     {
       heading: "这是什么",
@@ -187,7 +159,6 @@ const aboutContentZh: AboutContent = {
 
 const aboutContentEn: AboutContent = {
   title: "About Tiny Stories",
-  backToHome: "← Back to home",
   sections: [
     {
       heading: "What this is",

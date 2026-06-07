@@ -698,11 +698,12 @@ def _clean_entity(raw: str) -> str:
         if re.search(r"\b(?:story|premise|scene|prompt|no villains?)\b", prefix, re.I):
             text = suffix
     text = _PLAYER_ROLE_PREFIX_RE.sub("", text)
+    text = re.sub(r"^(?:the\s+)?player\s+must\b.*$", "", text, flags=re.I)
     text = re.sub(r"^\s*no\s+villains?\s*:\s*", "", text, flags=re.I)
     text = _LIST_MARKER_RE.sub("", text)
     text = _ENTITY_LEADING_NOISE_RE.sub("", text)
     text = re.sub(r"\b(the|a|an|one|with|featuring|including|departments?|factions?|cast)\b", "", text, flags=re.I)
-    text = re.sub(r"\b(?:is|are|was|were)\s+(?:watching|waiting|present|gathered)\b.*$", "", text, flags=re.I)
+    text = re.sub(r"\b(?:is|are|was|were)\s+(?:watching|waiting|present|gathered|trapped|stuck|locked)\b.*$", "", text, flags=re.I)
     text = re.sub(r"\bmoving\b.*$", "", text, flags=re.I)
     text = re.sub(r"^\s*(?:or|and)\s+", "", text, flags=re.I)
     text = _ENTITY_TRAILING_RE.sub("", text)

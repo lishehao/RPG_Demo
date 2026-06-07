@@ -59,7 +59,7 @@ export function ReviewerPage({
 
   return (
     <div className="reviewer-page">
-      <Header onHome={onBackHome} onCreate={onOpenCreate} />
+      <Header onHome={onBackHome} onCreate={onOpenCreate} showBackButton />
       <main className="reviewer-main">
         <motion.section
           className="reviewer-hero"

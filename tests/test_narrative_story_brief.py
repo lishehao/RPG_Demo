@@ -570,6 +570,26 @@ def test_story_brief_filters_exact_high_drama_time_action_fragments_from_entitie
     assert "sponsor/fan pressure" in pressure
 
 
+def test_story_brief_filters_agent_chat_trapped_clause_from_high_drama_entity() -> None:
+    response = build_story_brief(
+        seed=(
+            "Make it a short English high drama backstage scene where NPCs fight back. "
+            "A publicist, producer, backup dancer, sponsor, and missing singer are trapped before "
+            "a livestream, and the player must decide what to reveal while fans panic outside."
+        ),
+        language="en",
+        desired_tension_profile="high_drama",
+    )
+
+    names = {name.lower() for name in _cast_names(response)}
+
+    assert response.can_generate is True
+    assert {"publicist", "producer", "backup dancer", "sponsor", "missing singer"}.issubset(names)
+    assert "missing singer are trapped" not in names
+    assert "player must" not in names
+    assert "are trapped" not in names
+
+
 def test_story_brief_warns_when_comedy_premise_has_life_or_death_stakes() -> None:
     response = build_story_brief(
         seed=(
