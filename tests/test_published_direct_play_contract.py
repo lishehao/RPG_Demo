@@ -9,28 +9,33 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_home_published_template_cards_start_play_sessions_directly() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    published = home[home.index("const handleStartPublishedTemplate") : home.index("useEffect(() => {")]
 
-    assert "api.startNarrativeSession(templateId)" in home
-    assert "onOpenPlay(response.session.session_id)" in home
-    assert "startingTemplateRef.current" in home
+    assert "api.startNarrativeSession(templateId)" in published
+    assert "onOpenPlay(response.session.session_id)" in published
+    assert "startingTemplateRef.current" in published
     assert "onStartTemplate={handleStartPublishedTemplate}" in home
     assert "isStarting={startingTemplateId === tile.template.template_id}" in home
-    assert "createNarrativeStoryBrief" not in home
-    assert "createNarrativeTemplate" not in home
+    assert "createNarrativeStoryBrief" not in published
+    assert "createNarrativeTemplate" not in published
     home_route = app[app.index('case "home":') : app.index('case "login":')]
     assert "onOpenTemplate" not in home_route
 
 
-def test_home_curated_plaza_cards_remain_premise_starters() -> None:
+def test_home_curated_plaza_cards_open_direct_play_sessions() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
 
     curated = home[
         home.index("const handleStartCuratedStory") : home.index("const handleStartPublishedTemplate")
     ]
-    assert "saveCreateDraftHandoff" in curated
-    assert "source: \"plaza_curated\"" in curated
-    assert "onOpenCreate()" in curated
-    assert "startNarrativeSession" not in curated
+    assert "saveCreateDraftHandoff" not in home
+    assert "source: \"plaza_curated\"" not in home
+    assert "onOpenCreate()" not in curated
+    assert "api.createNarrativeStoryBrief" in curated
+    assert "api.createNarrativeTemplate" in curated
+    assert "onOpenPlay(response.session.session_id)" in curated
+    assert 'visibility: "private"' in curated
+    assert "story_brief: briefResponse.brief" in curated
 
 
 def test_home_story_area_uses_editorial_mosaic_without_main_story_semantics() -> None:
@@ -122,17 +127,30 @@ def test_home_editorial_tiles_keep_starter_and_playable_actions_distinct() -> No
     assert "saveCreateDraftHandoff" not in mosaic
     assert "onStartCurated(item.story)" in mosaic
     assert "onStartTemplate(item.template.template_id)" in mosaic
-    assert 'data-story-card-kind="starter-premise"' in curated
+    assert 'data-story-card-kind="preset-story"' in curated
     assert 'data-story-card-kind="published-story"' in template
     assert 'data-home-tile-span={span}' in curated
     assert 'data-home-tile-span={span}' in template
-    assert 't("home.starter_action")' in helper
     assert 't("home.card_action")' in helper
     assert "view.copy.primaryAction" in curated
     assert "displayView.copy.primaryAction" in template
     published_helper = helper[helper.index('kind === "published_story"') : helper.index('kind === "in_progress_run"')]
     assert "Story Butler" not in published_helper
     assert "Story Butler" not in template
-    assert '"home.starter_action": "Ask Story Butler →"' in strings
+    assert "Story Butler" not in curated
+    assert '"home.premise_label": "Preset story"' in strings
     assert '"home.published_label": "Playable story"' in strings
     assert '"home.card_action": "Enter story →"' in strings
+
+
+def test_home_story_tiles_hide_extra_metadata_rows_by_default() -> None:
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    curated = home[home.index("function CuratedStoryTile") : home.index("function TemplateCard")]
+    published = home[home.index("function PublishedTileComposition") : home.index("function FullBleedTileImage")]
+
+    assert "view.metadata?.[0]" not in curated
+    assert "story.promise" not in curated
+    assert "editorialTileFooter" not in published
+    assert "visibilityLabel(" not in published
+    assert "played_count" not in published
+    assert 'template.cast.map((c) => c.display_name).join(" · ")' not in published

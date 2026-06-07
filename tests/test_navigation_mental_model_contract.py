@@ -85,11 +85,12 @@ def test_home_distinguishes_premise_starters_from_published_playable_stories() -
     assert "type HomeStoryObjectView" in home
     assert 'kind === "starter_premise"' in helper
     assert 'kind === "published_story"' in helper
-    assert 't("home.starter_action")' in helper
     assert 't("home.card_action")' in helper
     published_helper = helper[helper.index('kind === "published_story"') : helper.index('kind === "in_progress_run"')]
+    preset_helper = helper[helper.index('kind === "starter_premise"') : helper.index('kind === "published_story"')]
+    assert "Story Butler" not in preset_helper
     assert "Story Butler" not in published_helper
-    assert 'data-story-card-kind="starter-premise"' in curated
+    assert 'data-story-card-kind="preset-story"' in curated
     assert "view.copy.typeLabel" in curated
     assert "view.copy.primaryAction" in curated
     assert "saveCreateDraftHandoff" not in template
@@ -97,7 +98,7 @@ def test_home_distinguishes_premise_starters_from_published_playable_stories() -
     assert 'data-home-tile-span={span}' in template
     assert "displayView.copy.primaryAction" in template
     assert "view.copy.typeLabel" in template
-    assert '"home.premise_label": "Premise starter"' in strings
-    assert '"home.starter_action": "Ask Story Butler →"' in strings
+    assert "Story Butler" not in curated
+    assert '"home.premise_label": "Preset story"' in strings
     assert '"home.published_label": "Playable story"' in strings
     assert '"home.card_action": "Enter story →"' in strings

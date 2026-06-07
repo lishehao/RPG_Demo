@@ -1,9 +1,11 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
+  NarrativeDifficulty,
   NarrativeCastMember,
   NarrativeSessionSummary,
   NarrativeTemplateSummary,
+  NarrativeTemplateLanguage,
   NarrativeTensionProfile,
 } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
@@ -24,8 +26,8 @@ import {
   getTemplateDisplaySummary,
   getTemplateDisplayTitle,
 } from "../../shared/lib/localized-story-metadata"
-import { saveCreateDraftHandoff } from "../../shared/lib/create-draft-handoff"
 import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
+import { makeGuestHandle } from "../create/create-options"
 
 type Tab = "plaza" | "my-templates"
 
@@ -110,6 +112,8 @@ const HOME_MOSAIC_RHYTHM: readonly HomeTileSpan[] = [
   "dispatch",
   "notice-wide",
 ]
+const CURATED_DIRECT_TURN_BUDGET = 12
+const CURATED_DIRECT_DIFFICULTY: NarrativeDifficulty = "story"
 
 export function homeTileSpanForItem(
   item: HomeMosaicBase,
@@ -199,8 +203,8 @@ export function getHomeTileCopy(
   if (kind === "starter_premise") {
     return {
       typeLabel: t("home.premise_label"),
-      primaryAction: t("home.starter_action"),
-      accentTone: "starter",
+      primaryAction: state?.isStarting ? t("home.card_starting") : t("home.card_action"),
+      accentTone: "play",
       deckMode: "premise",
     }
   }
@@ -241,6 +245,7 @@ function starterPremiseView(
   cover: string,
   lang: keyof LocalizedText,
   t: ReturnType<typeof useT>,
+  isStarting = false,
 ): HomeStoryObjectView {
   return {
     id: story.id,
@@ -248,7 +253,7 @@ function starterPremiseView(
     title: story.title[lang],
     cover,
     deck: story.pressure[lang],
-    copy: getHomeTileCopy("starter_premise", t),
+    copy: getHomeTileCopy("starter_premise", t, { isStarting }),
     metadata: [story.promise[lang]],
     themeKey: story.theme,
     hasStrongCover: true,
@@ -383,18 +388,59 @@ export function HomePage({
   const [error, setError] = useState<string | null>(null)
   const [templateStartError, setTemplateStartError] = useState<string | null>(null)
   const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null)
+  const [startingCuratedStoryId, setStartingCuratedStoryId] = useState<string | null>(null)
   const startingTemplateRef = useRef<string | null>(null)
+  const guestHandleRef = useRef<string | null>(null)
   const showTemplateTabs = !auth.isAnonymous
   const activeTemplateTab: Tab = showTemplateTabs ? tab : "plaza"
 
-  const handleStartCuratedStory = (story: CuratedPlazaStory) => {
-    saveCreateDraftHandoff({
-      seed: story.seed[lang],
-      language: lang,
-      tensionProfile: story.tensionProfile,
-      source: "plaza_curated",
-    })
-    onOpenCreate()
+  const ensurePlayableAuthorSession = async (): Promise<boolean> => {
+    if (auth.loading) {
+      setTemplateStartError(t("home.error_start_story"))
+      return false
+    }
+    if (!auth.isAnonymous) return true
+    if (!guestHandleRef.current) {
+      guestHandleRef.current = makeGuestHandle()
+    }
+    await auth.login(guestHandleRef.current)
+    return true
+  }
+
+  const handleStartCuratedStory = async (story: CuratedPlazaStory) => {
+    const lockId = `curated:${story.id}`
+    if (startingTemplateRef.current) return
+    startingTemplateRef.current = lockId
+    setStartingCuratedStoryId(story.id)
+    setTemplateStartError(null)
+    try {
+      const authorReady = await ensurePlayableAuthorSession()
+      if (!authorReady) return
+      const storyLanguage = lang as NarrativeTemplateLanguage
+      const seed = story.seed[lang]
+      const briefResponse = await api.createNarrativeStoryBrief({
+        seed,
+        language: storyLanguage,
+        desired_tension_profile: story.tensionProfile,
+      })
+      if (!briefResponse.can_generate) {
+        throw new Error(t("home.error_start_story"))
+      }
+      const response = await api.createNarrativeTemplate({
+        seed,
+        visibility: "private",
+        turn_budget: CURATED_DIRECT_TURN_BUDGET,
+        difficulty: CURATED_DIRECT_DIFFICULTY,
+        language: storyLanguage,
+        story_brief: briefResponse.brief,
+      })
+      onOpenPlay(response.session.session_id)
+    } catch (err) {
+      setTemplateStartError(friendlyError(err, t("home.error_start_story")))
+    } finally {
+      startingTemplateRef.current = null
+      setStartingCuratedStoryId(null)
+    }
   }
 
   const handleStartPublishedTemplate = async (templateId: string) => {
@@ -575,6 +621,7 @@ export function HomePage({
                   onStartCurated={handleStartCuratedStory}
                   onStartTemplate={handleStartPublishedTemplate}
                   startingTemplateId={startingTemplateId}
+                  startingCuratedStoryId={startingCuratedStoryId}
                 />
               ) : (
                 <TemplateGrid
@@ -949,6 +996,7 @@ function HomeEditorialMosaic({
   onStartCurated,
   onStartTemplate,
   startingTemplateId,
+  startingCuratedStoryId,
 }: {
   stories: CuratedPlazaStory[]
   templates: NarrativeTemplateSummary[] | null
@@ -958,12 +1006,19 @@ function HomeEditorialMosaic({
   onStartCurated: (story: CuratedPlazaStory) => void
   onStartTemplate: (templateId: string) => void
   startingTemplateId: string | null
+  startingCuratedStoryId: string | null
 }) {
   const t = useT()
   const assignedCovers = templates ? assignTemplateCovers(templates) : {}
   const items = assignHomeMosaicSpans([
     ...stories.map((story) => ({
-      ...starterPremiseView(story, getCoverByStoryId(`curated-${story.id}`, story.theme), lang, t),
+      ...starterPremiseView(
+        story,
+        getCoverByStoryId(`curated-${story.id}`, story.theme),
+        lang,
+        t,
+        startingCuratedStoryId === story.id,
+      ),
       id: story.id,
       kind: "starter_premise" as const,
       story,
@@ -997,6 +1052,7 @@ function HomeEditorialMosaic({
             archetype={item.archetype}
             compact={compact}
             index={idx}
+            isStarting={startingCuratedStoryId === item.story.id}
             onClick={() => onStartCurated(item.story)}
           />
         ) : (
@@ -1026,6 +1082,7 @@ function CuratedStoryTile({
   archetype,
   compact,
   index,
+  isStarting,
   onClick,
 }: {
   story: CuratedPlazaStory
@@ -1034,11 +1091,12 @@ function CuratedStoryTile({
   archetype: HomeTileArchetype
   compact: boolean
   index: number
+  isStarting: boolean
   onClick: () => void
 }) {
   const style = {
     ...hpStyles.editorialTile,
-    ...hpStyles.editorialTileStarter,
+    ...(view.copy.accentTone === "starter" ? hpStyles.editorialTileStarter : hpStyles.editorialTilePublished),
     ...homeTileSpanStyle(span, compact),
   }
   const body = (
@@ -1048,20 +1106,21 @@ function CuratedStoryTile({
       <Truncated lines={span === "dispatch" ? 1 : 2} style={hpStyles.editorialTileDeck}>
         {view.deck}
       </Truncated>
-      {view.metadata?.[0] ? <span style={hpStyles.editorialTileMeta}>{view.metadata[0]}</span> : null}
       <TileCommand tone={view.copy.accentTone}>{view.copy.primaryAction}</TileCommand>
     </>
   )
   return (
     <motion.button
       key={story.id}
-      data-story-card-kind="starter-premise"
+      data-story-card-kind="preset-story"
       data-home-tile-span={span}
       data-home-tile-archetype={archetype}
       aria-label={`${view.title} · ${view.copy.typeLabel}`}
       style={style}
       type="button"
       onClick={onClick}
+      disabled={isStarting}
+      aria-busy={isStarting}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, ...itemTransition }}
@@ -1186,37 +1245,19 @@ function PublishedTileComposition({
   template: NarrativeTemplateSummary
   view: HomeStoryObjectView
 }) {
-  const t = useT()
   const tightPublishedTile = span === "notice-wide" || span === "dispatch"
   const compactDossier = compact || span === "dispatch" || span === "notice-wide"
-  const metadata = (
-    <span style={hpStyles.editorialTileFooter}>
-      <span>{visibilityLabel(template.visibility, t)}</span>
-      <span>{t("home.played_count", { count: template.play_count })}</span>
-      {template.is_owner ? (
-        <span style={hpStyles.editorialTileOwner}>{t("home.is_owner")}</span>
-      ) : null}
-      <TileCommand tone={view.copy.accentTone}>
-        {view.copy.primaryAction}
-      </TileCommand>
-    </span>
-  )
   const standardBody = (
     <>
       <TileKicker tone={view.copy.accentTone}>{view.copy.typeLabel}</TileKicker>
       <TileTitle span={span} compact={compact} lines={tightPublishedTile ? 1 : 3}>{view.title}</TileTitle>
-      <Truncated style={hpStyles.editorialTileMeta}>
-        {template.cast.map((c) => c.display_name).join(" · ")}
+      <Truncated
+        lines={tightPublishedTile ? 1 : compact ? 2 : span === "feature-horizontal" ? 1 : 2}
+        style={hpStyles.editorialTileDeck}
+      >
+        {view.deck}
       </Truncated>
-      {tightPublishedTile ? null : (
-        <Truncated
-          lines={compact ? 2 : span === "feature-horizontal" ? 1 : 3}
-          style={hpStyles.editorialTileDeck}
-        >
-          {view.deck}
-        </Truncated>
-      )}
-      {metadata}
+      <TileCommand tone={view.copy.accentTone}>{view.copy.primaryAction}</TileCommand>
     </>
   )
 
@@ -1235,10 +1276,8 @@ function PublishedTileComposition({
           <TileKicker tone={view.copy.accentTone}>{view.copy.typeLabel}</TileKicker>
           <TileTitle span={span} compact={compact} lines={span === "feature-tall" ? 3 : 1}>{view.title}</TileTitle>
           <CastDossierFrames cast={template.cast} compact={compactDossier} />
-          {span === "feature-tall" ? (
-            <Truncated lines={2} style={hpStyles.editorialTileDeck}>{view.deck}</Truncated>
-          ) : null}
-          {metadata}
+          <Truncated lines={span === "feature-tall" ? 2 : 1} style={hpStyles.editorialTileDeck}>{view.deck}</Truncated>
+          <TileCommand tone={view.copy.accentTone}>{view.copy.primaryAction}</TileCommand>
         </span>
       </span>
     )
