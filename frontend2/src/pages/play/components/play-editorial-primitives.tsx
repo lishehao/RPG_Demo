@@ -1,9 +1,14 @@
-import { type CSSProperties, type ReactNode, type RefObject } from "react"
+import { type CSSProperties, type ReactNode, type RefObject, type SyntheticEvent } from "react"
 import type {
   NarrativeNPCPulse,
   NarrativeStoryHistoryResponse,
   NarrativeStoryMessage,
 } from "../../../api/contracts"
+import {
+  getAvatarForCastMember,
+  getDefaultAvatar,
+  getPortraitForCharacter,
+} from "../../../shared/lib/webtoon-assets"
 import { Truncated } from "../../../shared/ui/truncated"
 
 type PlayShellProps = {
@@ -135,6 +140,7 @@ export function SceneSupportRail({
 }) {
   const playerRole = story.session.player_role
   const role = playerRole?.label || playerRole?.public_persona || "You"
+  const playerPortraitUrl = playerPortraitForStory(story)
   const pressure = scenePressureText(story, lastNarrator)
   const actors = sceneActors(story, lastNarrator?.npc_pulse ?? [])
   return (
@@ -147,10 +153,23 @@ export function SceneSupportRail({
       aria-label="Scene support"
     >
       <PrimitiveSection title="You are">
-        <strong style={primitiveStyles.roleTitle}>{role}</strong>
-        {playerRole?.public_persona && playerRole.public_persona !== role ? (
-          <span style={primitiveStyles.roleDetail}>{playerRole.public_persona}</span>
-        ) : null}
+        <div style={primitiveStyles.playerIdentityRow}>
+          <span style={primitiveStyles.playerPortraitFrame}>
+            <img
+              data-play-player-portrait="true"
+              src={playerPortraitUrl}
+              alt=""
+              style={primitiveStyles.portraitImage}
+              onError={handlePortraitError}
+            />
+          </span>
+          <span style={primitiveStyles.playerIdentityText}>
+            <strong style={primitiveStyles.roleTitle}>{role}</strong>
+            {playerRole?.public_persona && playerRole.public_persona !== role ? (
+              <span style={primitiveStyles.roleDetail}>{playerRole.public_persona}</span>
+            ) : null}
+          </span>
+        </div>
       </PrimitiveSection>
       <PrimitiveSection title="Pressure now">
         <span style={primitiveStyles.pressureText}>
@@ -161,7 +180,15 @@ export function SceneSupportRail({
         <div style={primitiveStyles.actorList}>
           {actors.map((actor) => (
             <div key={actor.id} style={primitiveStyles.actorRow}>
-              <span style={primitiveStyles.actorFrame} aria-hidden>{actor.initials}</span>
+              <span style={primitiveStyles.actorFrame}>
+                <img
+                  data-play-cast-portrait="true"
+                  src={actor.avatarUrl}
+                  alt=""
+                  style={primitiveStyles.portraitImage}
+                  onError={handlePortraitError}
+                />
+              </span>
               <span style={primitiveStyles.actorText}>
                 <strong style={primitiveStyles.actorName}>{actor.name}</strong>
                 <span style={primitiveStyles.actorRole}>{actor.role}</span>
@@ -221,15 +248,53 @@ function sceneActors(story: NarrativeStoryHistoryResponse, pulses: NarrativeNPCP
       id: member.character_id,
       name: member.display_name,
       role: member.role || member.relation_to_protagonist || "Scene actor",
-      initials: initialsFor(member.display_name),
+      avatarUrl: getAvatarForCastMember(story.template.template_id, member),
     }))
 }
 
-function initialsFor(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return "?"
-  if (/[\u3400-\u9fff]/.test(name)) return name.trim().slice(0, 1)
-  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?"
+function playerPortraitForStory(story: NarrativeStoryHistoryResponse): string {
+  const playerRole = story.session.player_role
+  const roleText = `${playerRole?.label ?? ""} ${playerRole?.public_persona ?? ""}`.trim()
+  const roleNeedle = roleText.toLowerCase()
+  const matchedCast = roleNeedle
+    ? story.template.cast.find((member) =>
+        [
+          member.character_id,
+          member.display_name,
+          member.role,
+          member.relation_to_protagonist,
+        ]
+          .filter(Boolean)
+          .some((value) => {
+            const normalized = value.toLowerCase()
+            return roleNeedle.includes(normalized) || normalized.includes(roleNeedle)
+          }),
+      )
+    : null
+  if (matchedCast) return getAvatarForCastMember(story.template.template_id, matchedCast)
+  return getPortraitForCharacter(
+    story.template.template_id,
+    playerRole?.role_id || "player",
+    inferPortraitGender(roleText),
+  )
+}
+
+function inferPortraitGender(text: string): "female" | "male" | null {
+  const lower = text.toLowerCase()
+  if (/\b(wife|bride|mother|daughter|sister|actress|singer|publicist|girl|woman|female)\b|新娘|妻子|母亲|女儿|姐姐|妹妹|女人|女生/.test(lower)) {
+    return "female"
+  }
+  if (/\b(husband|groom|father|son|brother|actor|producer|manager|boy|man|male)\b|新郎|丈夫|父亲|儿子|哥哥|弟弟|男人|男生/.test(lower)) {
+    return "male"
+  }
+  return null
+}
+
+function handlePortraitError(event: SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget
+  if (image.dataset.portraitFallback === "true") return
+  image.dataset.portraitFallback = "true"
+  image.src = getDefaultAvatar()
 }
 
 const primitiveStyles: Record<string, CSSProperties> = {
@@ -363,6 +428,28 @@ const primitiveStyles: Record<string, CSSProperties> = {
     letterSpacing: 0,
     textTransform: "none",
   },
+  playerIdentityRow: {
+    display: "grid",
+    gridTemplateColumns: "58px minmax(0, 1fr)",
+    gap: 11,
+    alignItems: "center",
+  },
+  playerIdentityText: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+  },
+  playerPortraitFrame: {
+    width: 58,
+    aspectRatio: "4 / 5",
+    display: "block",
+    overflow: "hidden",
+    border: "1px solid rgba(245,200,120,0.48)",
+    borderTop: "2px solid rgba(245,200,120,0.82)",
+    background: "linear-gradient(135deg, rgba(245,200,120,0.16), rgba(112,24,28,0.36))",
+    boxShadow: "0 12px 24px rgba(0,0,0,0.32)",
+  },
   roleTitle: {
     color: "rgba(255,246,232,0.96)",
     fontFamily: "var(--font-narrative)",
@@ -387,21 +474,27 @@ const primitiveStyles: Record<string, CSSProperties> = {
   },
   actorRow: {
     display: "grid",
-    gridTemplateColumns: "38px minmax(0, 1fr)",
+    gridTemplateColumns: "44px minmax(0, 1fr)",
     gap: 9,
     alignItems: "center",
   },
   actorFrame: {
-    width: 38,
-    aspectRatio: "1",
+    width: 44,
+    aspectRatio: "4 / 5",
     border: "1px solid rgba(245,200,120,0.36)",
+    borderTop: "2px solid rgba(245,200,120,0.70)",
     background: "linear-gradient(135deg, rgba(245,200,120,0.16), rgba(112,24,28,0.36))",
-    color: "rgba(245,200,120,0.92)",
-    display: "grid",
-    placeItems: "center",
-    fontFamily: "var(--font-narrative)",
-    fontSize: 15,
-    lineHeight: 1,
+    display: "block",
+    overflow: "hidden",
+    boxShadow: "0 8px 16px rgba(0,0,0,0.24)",
+  },
+  portraitImage: {
+    width: "100%",
+    height: "100%",
+    display: "block",
+    objectFit: "cover",
+    objectPosition: "center top",
+    filter: "saturate(0.98) contrast(1.04)",
   },
   actorText: {
     minWidth: 0,

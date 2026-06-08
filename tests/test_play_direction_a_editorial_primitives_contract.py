@@ -42,6 +42,26 @@ def test_play_primitives_keep_story_world_mental_model() -> None:
     assert "Story Butler" not in primitives
 
 
+def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
+    primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
+    assets = (ROOT / "frontend2/src/shared/lib/webtoon-assets.ts").read_text()
+
+    assert "getAvatarForCastMember" in primitives
+    assert "getPortraitForCharacter" in primitives
+    assert "getDefaultAvatar" in primitives
+    assert 'data-play-player-portrait="true"' in primitives
+    assert 'data-play-cast-portrait="true"' in primitives
+    assert "<img" in primitives
+    assert "avatarUrl: getAvatarForCastMember" in primitives
+    assert "playerPortraitForStory" in primitives
+    assert "handlePortraitError" in primitives
+    assert "initialsFor" not in primitives
+    assert "actor.initials" not in primitives
+    assert "{actor.initials}" not in primitives
+    assert "/webtoons/avatars/" in assets
+    assert "export function getAvatarForCastMember" in assets
+
+
 def test_direction_a_uses_local_primitives_not_other_ui_kit_paths() -> None:
     package_json = (ROOT / "frontend2/package.json").read_text()
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()

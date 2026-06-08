@@ -37,7 +37,6 @@ import {
 } from "../../shared/lib/motion-presets"
 import {
   getAdvisorAvatar,
-  getAvatarForCastMember,
   getCoverForTemplate,
   getEndingIllustration,
   getSceneByPhase,
