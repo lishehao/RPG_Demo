@@ -873,6 +873,29 @@ export type NarrativeStoryGuideSlot = {
   evidence: string
 }
 
+export type NarrativeStoryGuideMemoryEntry = {
+  role: "user" | "assistant"
+  text: string
+}
+
+export type NarrativeStoryGuideCompressedContext = {
+  scene_summary: string
+  player_role: string
+  cast_or_factions: string[]
+  pressure: string
+  constraints: string[]
+  tone: string
+  open_questions: string[]
+  confirmed_facts: string[]
+  rejected_or_changed_facts: string[]
+  last_question: string
+  readiness_score: number
+  planner_skill: string
+  planner_job: string
+  recent_turns: NarrativeStoryGuideMemoryEntry[]
+  compression_source: NarrativeLLMCallSourceLabel
+}
+
 export type NarrativeStoryGuideLoopState = {
   status: NarrativeStoryGuideConversationState
   lastNode: NarrativeStoryGuideNodeName
@@ -880,6 +903,7 @@ export type NarrativeStoryGuideLoopState = {
   acceptedTurns: string[]
   blockedTurns: string[]
   nextMissing: NarrativeStoryGuideSlotId | null
+  context: NarrativeStoryGuideCompressedContext
 }
 
 export type NarrativeStoryGuideInlineLedger = {

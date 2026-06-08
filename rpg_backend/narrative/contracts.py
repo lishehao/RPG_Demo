@@ -641,6 +641,7 @@ StoryGuideSlotId = Literal[
     "boundaries",
     "first_scene_hook",
 ]
+StoryGuideMemoryRole = Literal["user", "assistant"]
 
 
 class StoryGuideSlot(BaseModel):
@@ -652,6 +653,33 @@ class StoryGuideSlot(BaseModel):
     evidence: str = Field(default="", max_length=220)
 
 
+class StoryGuideMemoryEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: StoryGuideMemoryRole
+    text: str = Field(min_length=1, max_length=420)
+
+
+class StoryGuideCompressedContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scene_summary: str = Field(default="", max_length=260)
+    player_role: str = Field(default="", max_length=160)
+    cast_or_factions: list[str] = Field(default_factory=list, max_length=8)
+    pressure: str = Field(default="", max_length=220)
+    constraints: list[str] = Field(default_factory=list, max_length=8)
+    tone: str = Field(default="", max_length=120)
+    open_questions: list[str] = Field(default_factory=list, max_length=6)
+    confirmed_facts: list[str] = Field(default_factory=list, max_length=12)
+    rejected_or_changed_facts: list[str] = Field(default_factory=list, max_length=8)
+    last_question: str = Field(default="", max_length=220)
+    readiness_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    planner_skill: str = Field(default="", max_length=80)
+    planner_job: str = Field(default="", max_length=180)
+    recent_turns: list[StoryGuideMemoryEntry] = Field(default_factory=list, max_length=12)
+    compression_source: LLMCallSourceLabel = "deterministic_fallback"
+
+
 class StoryGuideLoopState(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -661,6 +689,7 @@ class StoryGuideLoopState(BaseModel):
     acceptedTurns: list[str] = Field(default_factory=list, max_length=24)
     blockedTurns: list[str] = Field(default_factory=list, max_length=12)
     nextMissing: StoryGuideSlotId | None = None
+    context: StoryGuideCompressedContext = Field(default_factory=StoryGuideCompressedContext)
 
 
 class StoryGuideInlineLedger(BaseModel):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import rpg_backend.narrative.service as narrative_service_module
 from rpg_backend.narrative.contracts import (
     CastMember,
     CreateTemplateRequest,
@@ -155,6 +156,96 @@ def test_generated_templates_store_concise_display_metadata(tmp_path: Path) -> N
     assert summary.title_i18n
     assert summary.summary_i18n
     assert summary.summary_i18n.en == response.template.summary_i18n.en
+
+
+def test_generated_display_intro_avoids_incomplete_trailing_clauses() -> None:
+    intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        (
+            "Three students, their former mentor, and the archivist clash over a glowing library card "
+            "that could prove a scholarship application was switched, but it can also ruin one person's future."
+        ),
+        language="en",
+    )
+
+    assert len(intro) <= 118
+    assert intro == "Three students, their former mentor, and the archivist clash over a glowing library card."
+    assert "could prove a." not in intro
+
+    weak_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        (
+            "Ten minutes before the awards livestream, a missing singer puts a backup dancer, "
+            "publicist, producer, and sponsor in"
+        ),
+        language="en",
+    )
+
+    assert weak_intro == ""
+
+    terminal_adverb_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "Three students, their former mentor, and the archivist clash over a glowing library card just",
+        language="en",
+    )
+
+    assert terminal_adverb_intro == ""
+
+    transitive_fragment_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "Ten minutes before the awards livestream, a missing singer sends a backup dancer, publicist, producer, and sponsor.",
+        language="en",
+    )
+    ceremony_fragment_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "A wedding procession is about to begin when a note reveals a secret. Decide whether to act or let the ceremony.",
+        language="en",
+    )
+    proof_fragment_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "Three students, a former mentor, and an archivist clash over a glowing library card that could prove a scholarship.",
+        language="en",
+    )
+    change_fragment_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "Three students, their former mentor, and the archivist clash over a mysterious library card that could change.",
+        language="en",
+    )
+    terminal_conjunction_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "At a wedding, a mysterious note threatens the ceremony and forces you to expose the secret or.",
+        language="en",
+    )
+    planner_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "High drama scene with backup dancer, anxious publicist, producer, sponsor representative, fans; pressure: awards.",
+        language="en",
+    )
+    clipped_cast_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "Just before closing, a glowing library card sparks a quiet argument among three students, a former mentor.",
+        language="en",
+    )
+    beat_chain_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "secret -> leverage -> confrontation -> relationship shift -> ending.",
+        language="en",
+    )
+    expose_fragment_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "At a high-stakes board gala, a secret recording ignites a power struggle that could destroy the company and expose.",
+        language="en",
+    )
+    care_fragment_intro = narrative_service_module._clean_display_intro(  # noqa: SLF001
+        "A glowing library card holds the key to a switched scholarship, but revealing the truth could hurt someone you care.",
+        language="en",
+    )
+
+    assert transitive_fragment_intro == ""
+    assert ceremony_fragment_intro == "A wedding procession is about to begin when a note reveals a secret."
+    assert "let the ceremony" not in ceremony_fragment_intro
+    assert proof_fragment_intro == ""
+    assert change_fragment_intro == ""
+    assert terminal_conjunction_intro == ""
+    assert planner_intro == ""
+    assert clipped_cast_intro == ""
+    assert beat_chain_intro == ""
+    assert expose_fragment_intro == ""
+    assert care_fragment_intro == ""
+
+
+def test_generated_display_title_keeps_possessives_readable() -> None:
+    title = narrative_service_module._clean_display_title("the gala's last secret", language="en")  # noqa: SLF001
+
+    assert title == "The Gala's Last Secret"
 
 
 def test_frontend_uses_localized_story_metadata_only_for_display_chrome() -> None:

@@ -1127,7 +1127,7 @@ def _premise_summary(
             for item in [*(time_event_anchors or []), *(world_setting_pressure or [])]
             if item.label.lower() != "core premise"
         ]
-        summary = f"{_PROFILE_KERNELS[profile][0]} brief with {', '.join(cast_names[:6])}"
+        summary = f"{_PROFILE_KERNELS[profile][0]} scene with {', '.join(cast_names[:6])}"
         if pressure_labels:
             summary += f"; pressure: {', '.join(pressure_labels[:3])}"
         return summary[:257].rstrip(" ,;") + "."

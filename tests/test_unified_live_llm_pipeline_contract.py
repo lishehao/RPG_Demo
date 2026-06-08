@@ -4,10 +4,10 @@ import json
 from types import SimpleNamespace
 
 from rpg_backend.config import Settings
-from rpg_backend.narrative.contracts import StoryBriefAdvisorRequest, StoryGuideTurnRequest
+from rpg_backend.narrative.contracts import StoryBriefAdvisorRequest, StoryGuideCompressedContext, StoryGuideTurnRequest
 from rpg_backend.narrative.gateway import NarrativeLLMGateway, get_narrative_gateway
 from rpg_backend.narrative.repository import NarrativeRepository
-from rpg_backend.narrative.service import NarrativeService
+from rpg_backend.narrative.service import NarrativeService, _safe_story_guide_context
 from rpg_backend.narrative.story_guide import advance_story_guide_loop, story_butler_voice_policy
 from rpg_backend.responses_transport import ResponsesJSONTransport, build_chat_completions_client, usage_to_dict
 
@@ -174,14 +174,39 @@ def test_story_butler_turn_uses_live_gateway_and_persists_safe_telemetry(tmp_pat
     assert response.source == "live"
     assert response.reply.startswith("The gala has pressure")
     assert events
-    assert events[0].operation == "create.story_butler_turn"
-    assert events[0].status == "success"
-    assert events[0].input_tokens == 30
-    assert events[0].cached_input_tokens == 10
-    assert events[0].output_tokens == 18
-    assert events[0].total_tokens == 48
-    serialized = events[0].model_dump_json()
+    operations = {event.operation for event in events}
+    assert "create.story_butler_context" in operations
+    assert "create.story_butler_turn" in operations
+    turn_event = next(event for event in events if event.operation == "create.story_butler_turn")
+    assert turn_event.status == "success"
+    assert turn_event.input_tokens == 30
+    assert turn_event.cached_input_tokens == 10
+    assert turn_event.output_tokens == 18
+    assert turn_event.total_tokens == 48
+    serialized = turn_event.model_dump_json()
     assert "redacted-test-key" not in serialized
+    assert response.state.context.planner_skill
+    assert response.state.context.recent_turns
+
+
+def test_live_context_sanitizer_preserves_deterministic_correction_history() -> None:
+    fallback = StoryGuideCompressedContext(
+        player_role="Actually make me a reporter instead",
+        rejected_or_changed_facts=["superseded player_role: I am a courier carrying the red envelope."],
+    )
+
+    context = _safe_story_guide_context(
+        {
+            "player_role": "Actually make me a reporter instead",
+            "rejected_or_changed_facts": [],
+        },
+        fallback,
+        source="live",
+    )
+
+    assert context.compression_source == "live"
+    assert context.player_role.startswith("Actually make me a reporter")
+    assert any("superseded player_role" in fact for fact in context.rejected_or_changed_facts)
 
 
 def test_story_butler_turn_unwraps_stringified_reply_json(tmp_path) -> None:
@@ -370,6 +395,39 @@ def test_story_guide_handles_me_and_who_as_contextual_short_inputs() -> None:
     policy = story_butler_voice_policy(who_question, message="who")
     assert policy["id"] == "cast_focus"
     assert "two people" in str(policy["example_moves"])
+
+
+def test_story_guide_context_tracks_superseded_facts_and_delegated_choices() -> None:
+    first = advance_story_guide_loop(None, "A crowded street before a parade turns tense.", "en")
+    role = advance_story_guide_loop(first.state, "I am the courier carrying the red envelope.", "en")
+    correction = advance_story_guide_loop(role.state, "Actually I am the reporter chasing the missing envelope.", "en")
+    delegated = advance_story_guide_loop(first.state, "you can decide for me", "en")
+
+    assert first.state.context.scene_summary
+    assert first.state.context.planner_skill == "role_focus"
+    assert role.state.context.player_role.startswith("I am the courier")
+    assert correction.state.context.player_role.startswith("Actually I am the reporter")
+    assert any("superseded player_role" in fact for fact in correction.state.context.rejected_or_changed_facts)
+    assert delegated.acceptedText is True
+    assert delegated.state.slots["player_role"].filled is True
+    assert "Story Butler chooses" in delegated.state.context.player_role
+    assert "Who is the player" not in delegated.reply
+
+
+def test_story_guide_context_is_typed_in_frontend_contracts() -> None:
+    contracts = open("frontend2/src/api/contracts.ts").read()
+    loop_source = open("frontend2/src/shared/lib/story-guide-loop.ts").read()
+
+    for field in (
+        "scene_summary",
+        "player_role",
+        "cast_or_factions",
+        "rejected_or_changed_facts",
+        "readiness_score",
+        "recent_turns",
+    ):
+        assert field in contracts
+        assert field in loop_source
 
 
 def test_story_butler_turn_falls_back_without_gateway_and_records_no_gateway_event(tmp_path) -> None:

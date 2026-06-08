@@ -41,6 +41,29 @@ export type StoryGuideSlot = {
   evidence: string
 }
 
+export type StoryGuideMemoryEntry = {
+  role: "user" | "assistant"
+  text: string
+}
+
+export type StoryGuideCompressedContext = {
+  scene_summary: string
+  player_role: string
+  cast_or_factions: string[]
+  pressure: string
+  constraints: string[]
+  tone: string
+  open_questions: string[]
+  confirmed_facts: string[]
+  rejected_or_changed_facts: string[]
+  last_question: string
+  readiness_score: number
+  planner_skill: string
+  planner_job: string
+  recent_turns: StoryGuideMemoryEntry[]
+  compression_source: "live" | "live_repaired" | "deterministic_fallback" | "no_gateway_fallback"
+}
+
 export type StoryGuideLoopState = {
   status: StoryGuideConversationState
   lastNode: StoryGuideNodeName
@@ -48,6 +71,7 @@ export type StoryGuideLoopState = {
   acceptedTurns: string[]
   blockedTurns: string[]
   nextMissing: StoryGuideSlotId | null
+  context: StoryGuideCompressedContext
 }
 
 export type StoryGuideInlineLedger = {
@@ -208,9 +232,13 @@ const PRESSURE_TERMS = [
   "vote",
   "deadline",
   "decision",
+  "accusation",
+  "argument",
+  "arguing",
   "rumor",
   "recording",
   "letter",
+  "envelope",
   "photo",
   "ring",
   "wedding ring",
@@ -235,11 +263,14 @@ const PRESSURE_TERMS = [
   "pressure",
   "conflict",
   "争议",
+  "争吵",
+  "指控",
   "决定",
   "秘密",
   "投票",
   "期限",
   "录音",
+  "信封",
   "照片",
   "戒指",
   "婚戒",
@@ -360,6 +391,27 @@ export function createInitialStoryGuideState(lang: Lang = "en"): StoryGuideLoopS
     acceptedTurns: [],
     blockedTurns: [],
     nextMissing: "pressure",
+    context: createInitialStoryGuideContext(),
+  }
+}
+
+function createInitialStoryGuideContext(): StoryGuideCompressedContext {
+  return {
+    scene_summary: "",
+    player_role: "",
+    cast_or_factions: [],
+    pressure: "",
+    constraints: [],
+    tone: "",
+    open_questions: [],
+    confirmed_facts: [],
+    rejected_or_changed_facts: [],
+    last_question: "",
+    readiness_score: 0,
+    planner_skill: "",
+    planner_job: "",
+    recent_turns: [],
+    compression_source: "deterministic_fallback",
   }
 }
 
@@ -654,7 +706,10 @@ function mergeSlots(
 function extractSlots(text: string, lang: Lang): Partial<Record<StoryGuideSlotId, string>> {
   const lower = text.toLowerCase()
   const slots: Partial<Record<StoryGuideSlotId, string>> = {}
-  if (/\b(i am|i'm|my role|i play|as the|as a|player is|protagonist is)\b/i.test(text) || /我(是|扮演)|玩家|主角/.test(text)) {
+  if (
+    /\b(i am|i'm|my role|i play|as the|as a|player is|protagonist is|make me|switch me to|change me to|make the player|player should be|i should be)\b/i.test(text) ||
+    /我(是|扮演)|玩家|主角|把我改成|让我当/.test(text)
+  ) {
     slots.player_role = shortEvidence(text)
   }
   const participants = findTerms(text, PARTICIPANT_TERMS)

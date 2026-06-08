@@ -45,6 +45,7 @@ from rpg_backend.narrative.contracts import (
     StoryBriefAdvisorRequest,
     StoryBriefAdvisorResponse,
     StoryBriefConsistencyCheck,
+    StoryGuideCompressedContext,
     StoryHistoryResponse,
     StoryGuideTurnRequest,
     StoryGuideTurnResponse,
@@ -136,8 +137,9 @@ You are Tiny Stories' Story Butler for a Korean-webtoon style interactive story 
 Return strict JSON only.
 
 Write one concise assistant reply for the player. You are a sharp, warm Korean webtoon story editor/butler.
-Use the supplied deterministic slot state and selected voice_skill as the contract:
+Use the supplied compressed_context, deterministic slot state, and selected voice_skill as the contract:
 - Use only details the user supplied or the current draft already contains.
+- Treat compressed_context.confirmed_facts as the current truth and compressed_context.rejected_or_changed_facts as superseded.
 - Follow voice_skill.job and voice_skill.response_shape. Use voice_skill.examples as illustrative shapes, not exact text to copy.
 - Anchor to current scene nouns from voice_skill.grounding_terms or the user's input when possible.
 - If the input is tiny or unclear, use the opening_scene_prompt skill and ask for a grounded scene spark; do not invent genre, cast, setting, or protagonist.
@@ -152,6 +154,32 @@ Use the supplied deterministic slot state and selected voice_skill as the contra
 JSON shape:
 {"reply":"player-facing assistant row"}
 """
+_STORY_GUIDE_CONTEXT_SYSTEM_PROMPT = """
+You are Tiny Stories' Story Butler context compressor and planner.
+Return strict JSON only.
+
+Update a compact story-context object for a guided Korean webtoon story-creation chat.
+Do not write the user-visible assistant reply here. Preserve the latest corrected facts and mark older conflicting facts as superseded.
+Keep only concise, player-safe story facts. Do not mention provider, model, API, JSON, schema, tokens, debug, fallback, or internal prompts.
+Use the deterministic slot state as hard guardrails for safety, readiness, and next missing field.
+
+JSON shape:
+{
+  "scene_summary": "current opening scene/world in one concise phrase",
+  "player_role": "current player role if known",
+  "cast_or_factions": ["2-8 people/groups/factions"],
+  "pressure": "current contested object, decision, or pressure",
+  "constraints": ["boundaries or must-avoid items"],
+  "tone": "tone/run feel",
+  "open_questions": ["current useful missing questions"],
+  "confirmed_facts": ["compact facts that are still true"],
+  "rejected_or_changed_facts": ["superseded facts only"],
+  "last_question": "the next question the Butler should ask",
+  "readiness_score": 0.0,
+  "planner_skill": "one of opening_scene_prompt, role_focus, cast_focus, pressure_focus, tone_focus, boundary_redirect, brief_readiness",
+  "planner_job": "the next internal job in one phrase"
+}
+"""
 _STORY_BRIEF_SYSTEM_PROMPT = """
 You are Tiny Stories' live Story Brief editor.
 Return strict JSON only.
@@ -164,7 +192,7 @@ Do not mention provider, model, API, JSON, schema, backend, or fallback.
 JSON shape:
 {
   "display_title": "story directory title, 2-6 English words or concise Chinese title, <=52 chars",
-  "display_intro": "one sentence for Home story tiles, <=118 English chars or concise Chinese equivalent",
+  "display_intro": "one complete sentence for Home story tiles, <=118 English chars or concise Chinese equivalent; do not end on a clipped clause",
   "premise_summary": "1 sentence, <=220 chars",
   "genre_tone": "short tone line, <=140 chars",
   "story_kernel": "playable promise, <=190 chars",
@@ -295,6 +323,61 @@ class NarrativeService:
             session_id=session_id,
         )
 
+    def _compress_story_guide_context_live(
+        self,
+        deterministic: StoryGuideTurnResponse,
+        *,
+        request: StoryGuideTurnRequest,
+        owner_user_id: str,
+    ) -> StoryGuideTurnResponse:
+        started_at = time.monotonic()
+        trace_start = self._trace_start()
+        try:
+            result = self.gateway.invoke_json(
+                system_prompt=_STORY_GUIDE_CONTEXT_SYSTEM_PROMPT,
+                user_payload={
+                    "message": request.message,
+                    "language": request.language,
+                    "current_seed": request.current_seed,
+                    "previous_assistant_reply": request.previous_assistant_reply,
+                    "previous_context": (request.state.context.model_dump(mode="json") if request.state else None),
+                    "deterministic_state": deterministic.state.model_dump(mode="json"),
+                    "deterministic_reply": deterministic.reply,
+                },
+                operation_name="create.story_butler_context",
+                max_output_tokens=620,
+            )
+            operation_latency_ms = _elapsed_ms(started_at)
+            self._persist_gateway_trace(
+                trace_start,
+                operation_latency_ms=operation_latency_ms,
+                user_id=owner_user_id,
+            )
+            source: LLMCallSourceLabel = "live_repaired" if _trace_had_repair(self._gateway_trace_since(trace_start)) else "live"
+            context = _safe_story_guide_context(result.payload, deterministic.state.context, source=source)
+            return deterministic.model_copy(
+                update={
+                    "state": deterministic.state.model_copy(update={"context": context}),
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            operation_latency_ms = _elapsed_ms(started_at)
+            fallback_reason = _fallback_reason_for_exception(exc)
+            self._persist_gateway_trace(
+                trace_start,
+                operation_latency_ms=operation_latency_ms,
+                user_id=owner_user_id,
+                fallback_reason=fallback_reason,
+            )
+            self._record_llm_fallback_event(
+                operation="create.story_butler_context",
+                user_id=owner_user_id,
+                source_label="deterministic_fallback",
+                fallback_reason=fallback_reason,
+                operation_latency_ms=operation_latency_ms,
+            )
+            return deterministic
+
     # ------------------------------------------------------------------
     # Template authoring
     # ------------------------------------------------------------------
@@ -331,6 +414,11 @@ class NarrativeService:
             )
             return deterministic.model_copy(update={"source": "no_gateway_fallback"})
 
+        deterministic = self._compress_story_guide_context_live(
+            deterministic,
+            request=request,
+            owner_user_id=owner_user_id,
+        )
         started_at = time.monotonic()
         trace_start = self._trace_start()
         try:
@@ -348,6 +436,7 @@ class NarrativeService:
                     "current_seed": request.current_seed,
                     "previous_assistant_reply": request.previous_assistant_reply,
                     "voice_skill": voice_policy,
+                    "compressed_context": deterministic.state.context.model_dump(mode="json"),
                     "deterministic_contract": deterministic.model_dump(mode="json"),
                 },
                 operation_name="create.story_butler_turn",
@@ -2811,6 +2900,81 @@ def _safe_short_text(raw: object, fallback: str, *, max_len: int) -> str:
     return fallback[:max_len]
 
 
+def _safe_story_guide_context(
+    raw: object,
+    fallback: StoryGuideCompressedContext,
+    *,
+    source: LLMCallSourceLabel,
+) -> StoryGuideCompressedContext:
+    payload = raw.get("context") if isinstance(raw, dict) and isinstance(raw.get("context"), dict) else raw
+    if not isinstance(payload, dict):
+        return fallback
+    text_fields = (
+        "scene_summary",
+        "player_role",
+        "pressure",
+        "tone",
+        "last_question",
+        "planner_skill",
+        "planner_job",
+    )
+    updates: dict[str, object] = {}
+    for field in text_fields:
+        value = _safe_context_text(payload.get(field), getattr(fallback, field), max_len=260)
+        if value:
+            updates[field] = value
+    for field, limit in (
+        ("cast_or_factions", 8),
+        ("constraints", 8),
+        ("open_questions", 6),
+        ("confirmed_facts", 12),
+    ):
+        value = _safe_context_list(payload.get(field), getattr(fallback, field), limit=limit)
+        updates[field] = value
+    raw_changed = payload.get("rejected_or_changed_facts")
+    live_changed = raw_changed if isinstance(raw_changed, list) else []
+    updates["rejected_or_changed_facts"] = _safe_context_list(
+        [*fallback.rejected_or_changed_facts, *live_changed],
+        fallback.rejected_or_changed_facts,
+        limit=8,
+    )
+    readiness = payload.get("readiness_score")
+    if isinstance(readiness, int | float):
+        updates["readiness_score"] = max(0.0, min(1.0, float(readiness)))
+    updates["compression_source"] = source
+    try:
+        return fallback.model_copy(update=updates)
+    except Exception:  # noqa: BLE001
+        return fallback.model_copy(update={"compression_source": "deterministic_fallback"})
+
+
+def _safe_context_text(raw: object, fallback: str, *, max_len: int) -> str:
+    if not isinstance(raw, str):
+        return fallback[:max_len]
+    cleaned = normalize_whitespace(raw)
+    if not cleaned or _contains_player_debug_terms(cleaned):
+        return fallback[:max_len]
+    return cleaned[:max_len]
+
+
+def _safe_context_list(raw: object, fallback: list[str], *, limit: int) -> list[str]:
+    values = raw if isinstance(raw, list) else fallback
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for item in values:
+        if not isinstance(item, str):
+            continue
+        value = normalize_whitespace(item)[:220]
+        key = value.casefold()
+        if not value or key in seen or _contains_player_debug_terms(value):
+            continue
+        seen.add(key)
+        cleaned.append(value)
+        if len(cleaned) >= limit:
+            break
+    return cleaned
+
+
 def _contains_player_debug_terms(value: str) -> bool:
     lowered = value.casefold()
     return any(
@@ -3075,19 +3239,28 @@ def _clean_display_title(raw: object, *, language: str) -> str:
     title = " ".join(words)
     if raw and str(raw).strip().istitle():
         return _limit_english_display(title, 52)
-    return _limit_english_display(title.title(), 52)
+    return _limit_english_display(_title_case_english_display(title), 52)
+
+
+def _title_case_english_display(text: str) -> str:
+    title = text.title()
+    return re.sub(r"(['’])S\b", r"\1s", title)
 
 
 def _clean_display_intro(raw: object, *, language: str) -> str:
     text = _clean_display_fragment(raw)
     if not text or _contains_player_debug_terms(text):
         return ""
-    text = re.split(r"(?:#|\\btags?:|\\bmetadata:)", text, flags=re.IGNORECASE)[0].strip()
+    if _contains_internal_display_intro_terms(text):
+        return ""
+    text = re.split(r"(?:#|\btags?:|\bmetadata:)", text, flags=re.IGNORECASE)[0].strip()
     if language == "zh":
         sentence = re.split(r"[。！？]", text, maxsplit=1)[0].strip()
         return _limit_cjk_display(sentence, 56)
-    sentence = re.split(r"(?<=[.!?])\\s+", text, maxsplit=1)[0].strip()
-    sentence = _limit_english_display(sentence, 118)
+    sentence = re.split(r"(?<=[.!?])\s+", text, maxsplit=1)[0].strip()
+    sentence = _limit_english_intro_display(sentence, 118)
+    if _english_intro_has_incomplete_shape(sentence):
+        return ""
     if sentence and sentence[-1] not in ".!?":
         sentence = f"{sentence.rstrip(' ,;:')}."
     return sentence
@@ -3099,7 +3272,7 @@ def _clean_display_fragment(raw: object) -> str:
     text = normalize_whitespace(raw)
     text = text.replace("…", " ").replace("...", " ")
     text = re.sub(r"[#*_`]+", "", text)
-    text = re.sub(r"\\s*(?:->|→)\\s*", " ", text)
+    text = re.sub(r"\s*(?:->|→)\s*", " ", text)
     return normalize_whitespace(text).strip(" -–—·|")
 
 
@@ -3109,6 +3282,67 @@ def _limit_english_display(text: str, limit: int) -> str:
         return text.strip()
     clipped = text[:limit].rsplit(" ", 1)[0].strip(" ,;:-–—")
     return clipped or text[:limit].strip(" ,;:-–—")
+
+
+def _limit_english_intro_display(text: str, limit: int) -> str:
+    text = normalize_whitespace(text)
+    weak_tail_pattern = (
+        r"\b(a|an|the|to|of|for|with|without|in|on|at|by|from|into|onto|inside|outside|around|under|over|between|among|or|just|before|after|while|that|which|who|whose|could|would|must|can|will|might|prove|reveal|hide|expose|change|care)$"
+    )
+    if re.search(weak_tail_pattern, text.rstrip(".!?").casefold()):
+        return ""
+    if len(text) <= limit:
+        return text.strip()
+    clipped = text[:limit].rsplit(" ", 1)[0].strip(" ,;:-–—")
+    lower = clipped.casefold()
+    weak_tail = re.search(weak_tail_pattern, lower)
+    if weak_tail:
+        best_clause = ""
+        for marker in (", but ", ", and ", " that ", " which ", " who ", " whose ", " while ", " before ", " after ", " just "):
+            idx = clipped.lower().rfind(marker)
+            if idx >= 48:
+                best_clause = clipped[:idx].strip(" ,;:-–—")
+                break
+        if best_clause:
+            return best_clause
+        clipped = re.sub(r"\s+" + weak_tail_pattern, "", clipped, flags=re.IGNORECASE).strip(" ,;:-–—")
+        if not clipped or len(clipped) < 48:
+            return ""
+        if re.search(r"\b(puts?|places?|forces?|leaves?|sends?|throws?|turns?)\s+[^.!?]{0,80}$", clipped, re.IGNORECASE):
+            return ""
+    return clipped or text[:limit].strip(" ,;:-–—")
+
+
+def _english_intro_has_incomplete_shape(text: str) -> bool:
+    lower = normalize_whitespace(text).strip().rstrip(".!?").casefold()
+    if not lower:
+        return True
+    if re.search(
+        r"\b(a|an|the|to|of|for|with|without|in|on|at|by|from|into|onto|inside|outside|around|under|over|between|among|or|just|before|after|while|that|which|who|whose|could|would|must|can|will|might|prove|reveal|hide|expose|change|care)$",
+        lower,
+    ):
+        return True
+    incomplete_patterns = (
+        r"\b(sends?|puts?|places?|forces?|leaves?|throws?)\s+[^.!?]{24,}$",
+        r"\bdecide\s+whether\s+to\s+[^.!?]{8,}\s+or\s+let\s+the\s+[^.!?]{3,}$",
+        r"\bcould\s+prove\s+a\s+[a-z][a-z'’_-]{2,}$",
+        r"\b(?:among|between)\s+[^.!?]+,\s+a\s+[a-z][a-z'’_-]{2,}(?:\s+[a-z][a-z'’_-]{2,}){0,3}$",
+    )
+    return any(re.search(pattern, lower) for pattern in incomplete_patterns)
+
+
+def _contains_internal_display_intro_terms(text: str) -> bool:
+    lowered = text.casefold()
+    if "; pressure:" in lowered:
+        return True
+    if "relationship shift" in lowered or re.search(r"\b(leverage|confrontation)\b", lowered):
+        return True
+    return bool(
+        re.search(
+            r"\b(high drama|cozy mystery|family social|comedy|fantasy sci[- ]?fi)\s+scene\s+with\b",
+            lowered,
+        )
+    )
 
 
 def _limit_cjk_display(text: str, limit: int) -> str:

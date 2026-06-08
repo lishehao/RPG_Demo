@@ -5,8 +5,10 @@ import re
 from rpg_backend.narrative.contracts import (
     DEFAULT_TEMPLATE_LANGUAGE,
     Difficulty,
+    StoryGuideCompressedContext,
     StoryGuideInlineLedger,
     StoryGuideLoopState,
+    StoryGuideMemoryEntry,
     StoryGuideNodeName,
     StoryGuideSettingDeltas,
     StoryGuideSlot,
@@ -51,11 +53,11 @@ UNSAFE_RE = re.compile(
     re.I,
 )
 PARTICIPANT_RE = re.compile(
-    r"\b(parent|parents|teen|volunteer|customer|attendant|cofounder|investor|rival|assistant|manager|committee|witness|publicist|producer|dancer|sponsor|singer|audience|fans|bride|groom|family|lawyer|host|guest|chef|judge)\b|角色|家人|父母|志愿者|顾客|店员|合伙人|投资人|对手|见证人|制作人|公关|舞者|赞助|歌手|观众|新娘|新郎|家庭|律师|主持人|客人|评委",
+    r"\b(parent|parents|teen|volunteer|customer|attendant|cofounder|investor|rival|assistant|manager|committee|witness|publicist|producer|dancer|sponsor|singer|audience|fans|bride|groom|family|lawyer|host|guest|chef|judge|courier|detective|police|vendor|reporter)\b|角色|家人|父母|志愿者|顾客|店员|合伙人|投资人|对手|见证人|制作人|公关|舞者|赞助|歌手|观众|新娘|新郎|家庭|律师|主持人|客人|评委|快递员|侦探|警察|摊主|记者",
     re.I,
 )
 PRESSURE_RE = re.compile(
-    r"\b(secret|vote|deadline|decision|rumou?r|recording|letter|photo|ring|wedding ring|contract|merger|inheritance|mystery|clue|artifact|oxygen|show|livestream|public|pressure|conflict|disappearance|scandal|betrayal|goes wrong)\b|争议|决定|秘密|投票|期限|录音|照片|戒指|婚戒|合约|并购|继承|谜团|线索|神器|氧气|表演|直播|公开|压力|冲突|失踪|丑闻|背叛",
+    r"\b(secret|vote|deadline|decision|accusation|argument|arguing|rumou?r|recording|letter|envelope|photo|ring|wedding ring|contract|merger|inheritance|mystery|clue|artifact|oxygen|show|livestream|public|pressure|conflict|disappearance|scandal|betrayal|goes wrong)\b|争议|争吵|指控|决定|秘密|投票|期限|录音|信封|照片|戒指|婚戒|合约|并购|继承|谜团|线索|神器|氧气|表演|直播|公开|压力|冲突|失踪|丑闻|背叛",
     re.I,
 )
 TONE_RE = re.compile(
@@ -67,12 +69,16 @@ BOUNDARY_RE = re.compile(
     re.I,
 )
 HOOK_RE = re.compile(
-    r"\b(at |during |before |after |when |inside |on stage|gala|meeting|laundromat|library|bake sale|boardroom|colony|talent show|table|dinner|opening|first scene|backstage|control room)\b|第一幕|开场|当|在|期间|晚宴|会议|洗衣店|图书馆|义卖|董事会|殖民地|才艺秀|桌上|后台|控制室",
+    r"\b(at |during |before |after |when |inside |on stage|gala|meeting|laundromat|library|street|market|alley|bake sale|boardroom|colony|talent show|table|dinner|opening|first scene|backstage|control room)\b|第一幕|开场|当|在|期间|晚宴|会议|洗衣店|图书馆|街道|市场|小巷|义卖|董事会|殖民地|才艺秀|桌上|后台|控制室",
     re.I,
 )
 TINY_GREETING_RE = re.compile(r"^(hi|hello|hey|yo|ok|okay|你好|嗨|哈喽|哈罗)[.!。！?？]*$", re.I)
 AMBIGUOUS_WHO_RE = re.compile(r"^(who\?|who|谁|谁？)$", re.I)
 SELF_ROLE_RE = re.compile(r"^(me|myself|i do|i am|i'm in|i'll play|我|我来|我自己|我扮演)$", re.I)
+DELEGATE_CHOICE_RE = re.compile(
+    r"\b(you can decide|decide for me|you choose|your choice|surprise me|pick for me)\b|你来决定|你选|帮我定|随你",
+    re.I,
+)
 
 STORY_BUTLER_VOICE_SKILLS: dict[str, dict[str, object]] = {
     "opening_scene_prompt": {
@@ -196,6 +202,8 @@ def story_butler_voice_policy(
         "node": turn.node,
         "conversation_status": turn.status,
         "grounding_terms": _extract_grounding_terms(" ".join([current_seed, message])),
+        "compressed_context": turn.state.context.model_dump(mode="json"),
+        "readiness_score": turn.state.context.readiness_score,
         "previous_assistant_reply": _short_evidence(previous_assistant_reply),
         "variation_instruction": (
             "Do not repeat the previous assistant reply or sentence shape. "
@@ -214,7 +222,7 @@ def advance_story_guide_loop(
     settings = infer_story_guide_settings(text, language)
     if not text:
         state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot"})
-        return _response(state, "ask_missing_slot", _next_question(state.nextMissing, language), False, False, settings, language)
+        return _response(state, "ask_missing_slot", _next_question(state.nextMissing, language), False, False, settings, language, user_message=text)
 
     if UNSAFE_RE.search(text):
         state = previous.model_copy(
@@ -229,7 +237,7 @@ def advance_story_guide_loop(
             if language == "zh"
             else "I can’t build this beta around drug use or addiction. We can redirect it into public pressure, misunderstood evidence, or a contested decision in the room."
         )
-        return _response(state, "redirect_out_of_spec", reply, False, True, settings, language, include_ledger=False)
+        return _response(state, "redirect_out_of_spec", reply, False, True, settings, language, include_ledger=False, user_message=text)
 
     if settings.privacyIntent and _is_privacy_only(text):
         ready = can_shape_story_brief(previous)
@@ -244,15 +252,15 @@ def advance_story_guide_loop(
             if language == "zh"
             else "I will not silently change publishing from chat. This story still uses the explicit “Who can play this” row above the composer; switch that row to Public if you want everyone to play it."
         )
-        return _response(state, state.lastNode, reply, False, False, settings, language)
+        return _response(state, state.lastNode, reply, False, False, settings, language, user_message=text)
 
     if _is_tiny_non_story_input(text) and not previous.acceptedTurns:
         state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot", "nextMissing": "pressure"})
-        return _response(state, "ask_missing_slot", _tiny_seed_reply(language), False, False, settings, language)
+        return _response(state, "ask_missing_slot", _tiny_seed_reply(language), False, False, settings, language, user_message=text)
 
     if _is_ambiguous_who_question(text):
         state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot"})
-        return _response(state, "ask_missing_slot", _who_clarification_reply(language), False, False, settings, language)
+        return _response(state, "ask_missing_slot", _who_clarification_reply(language), False, False, settings, language, user_message=text)
 
     if _detects_hard_conflict(text):
         state = previous.model_copy(update={"status": "clarify_conflict", "lastNode": "clarify_conflict"})
@@ -261,12 +269,15 @@ def advance_story_guide_loop(
             if language == "zh"
             else "I’m seeing a conflict: the note forbids a kind of action while also making it drive the scene. Should we convert that pressure into a public choice or misunderstood evidence instead?"
         )
-        return _response(state, "clarify_conflict", reply, False, False, settings, language)
+        return _response(state, "clarify_conflict", reply, False, False, settings, language, user_message=text)
 
     self_role_answer = _is_self_role_answer(text) and previous.nextMissing == "player_role" and bool(previous.acceptedTurns)
+    delegate_answer = _is_delegate_choice(text) and bool(previous.acceptedTurns)
     extracted = _extract_slots(text)
     if self_role_answer:
         extracted["player_role"] = "player as themselves" if language == "en" else "玩家自己"
+    if delegate_answer and previous.nextMissing:
+        extracted[previous.nextMissing] = _delegated_slot_evidence(previous.nextMissing, language)
     updated = _merge_slots(previous, extracted, language)
     if _detects_unsupported_small_cast_direction(text):
         slots = dict(updated.slots)
@@ -286,7 +297,7 @@ def advance_story_guide_loop(
             if language == "zh"
             else "I’m reading this as two people, low conflict, and an object-only thread. This beta needs a third active pressure or public consequence before I shape a Story Brief. Add one watcher, faction, or decision that must be handled in the room."
         )
-        return _response(state, "ask_missing_slot", reply, True, False, settings, language)
+        return _response(state, "ask_missing_slot", reply, True, False, settings, language, user_message=text)
 
     next_missing = _find_next_missing(updated)
     ready = can_shape_story_brief(updated.model_copy(update={"nextMissing": next_missing}))
@@ -306,6 +317,7 @@ def advance_story_guide_loop(
         False,
         settings,
         language,
+        user_message=text,
     )
 
 
@@ -372,7 +384,19 @@ def _response(
     language: TemplateLanguage,
     *,
     include_ledger: bool = True,
+    user_message: str = "",
 ) -> StoryGuideTurnResponse:
+    state = state.model_copy(
+        update={
+            "context": _compress_story_context(
+                state,
+                user_message=user_message,
+                assistant_reply=reply,
+                settings=settings,
+                language=language,
+            )
+        }
+    )
     return StoryGuideTurnResponse(
         state=state,
         node=node,
@@ -385,6 +409,133 @@ def _response(
         ledger=build_story_guide_ledger(state, language) if include_ledger else None,
         source="deterministic_fallback",
     )
+
+
+def _compress_story_context(
+    state: StoryGuideLoopState,
+    *,
+    user_message: str,
+    assistant_reply: str,
+    settings: StoryGuideSettingDeltas,
+    language: TemplateLanguage,
+) -> StoryGuideCompressedContext:
+    previous = state.context
+    player_role = _slot_evidence(state, "player_role") or previous.player_role
+    cast = _compact_list(_split_context_terms(_slot_evidence(state, "active_cast")) or previous.cast_or_factions, limit=8)
+    pressure = _slot_evidence(state, "pressure") or previous.pressure
+    constraints = _compact_list(_split_context_terms(_slot_evidence(state, "boundaries")) or previous.constraints, limit=8)
+    tone = _slot_evidence(state, "tone") or (settings.tensionProfile or "") or previous.tone
+    scene_summary = _slot_evidence(state, "first_scene_hook") or previous.scene_summary
+    if not scene_summary and state.acceptedTurns:
+        scene_summary = _short_evidence(state.acceptedTurns[0])
+
+    changed = list(previous.rejected_or_changed_facts)
+    _append_superseded(changed, "player_role", previous.player_role, player_role)
+    _append_superseded(changed, "pressure", previous.pressure, pressure)
+    _append_superseded(changed, "tone", previous.tone, tone)
+    _append_superseded(changed, "scene_summary", previous.scene_summary, scene_summary)
+
+    open_questions = [] if state.status == "ready_to_brief" else [_next_question(state.nextMissing, language)]
+    planner_skill = _planner_skill_for_state(state, user_message)
+    planner_job = str(STORY_BUTLER_VOICE_SKILLS.get(planner_skill, {}).get("job", "choose the next useful Story Butler question"))
+    recent_turns = [
+        *previous.recent_turns,
+        *([StoryGuideMemoryEntry(role="user", text=_short_evidence(user_message))] if user_message else []),
+        StoryGuideMemoryEntry(role="assistant", text=_short_evidence(assistant_reply)),
+    ][-10:]
+    confirmed_facts = _compact_list(
+        [
+            *_fact("scene", scene_summary),
+            *_fact("player", player_role),
+            *_fact("cast", ", ".join(cast)),
+            *_fact("pressure", pressure),
+            *_fact("constraints", ", ".join(constraints)),
+            *_fact("tone", tone),
+        ],
+        limit=12,
+    )
+    readiness_score = round(sum(1 for slot in SLOT_ORDER if state.slots[slot].filled) / len(SLOT_ORDER), 2)
+    if can_shape_story_brief(state):
+        readiness_score = 1.0
+    return StoryGuideCompressedContext(
+        scene_summary=_short_evidence(scene_summary),
+        player_role=_short_evidence(player_role),
+        cast_or_factions=cast,
+        pressure=_short_evidence(pressure),
+        constraints=constraints,
+        tone=_short_evidence(tone),
+        open_questions=open_questions,
+        confirmed_facts=confirmed_facts,
+        rejected_or_changed_facts=_compact_list(changed, limit=8),
+        last_question=_short_evidence(open_questions[0] if open_questions else assistant_reply),
+        readiness_score=readiness_score,
+        planner_skill=planner_skill,
+        planner_job=_short_evidence(planner_job),
+        recent_turns=recent_turns,
+        compression_source="deterministic_fallback",
+    )
+
+
+def _slot_evidence(state: StoryGuideLoopState, slot: StoryGuideSlotId) -> str:
+    item = state.slots.get(slot)
+    return item.evidence.strip() if item and item.filled else ""
+
+
+def _split_context_terms(value: str) -> list[str]:
+    return [
+        item.strip(" ,;:-–—")
+        for item in re.split(r"\s*/\s*|,\s*|;\s*", value)
+        if item.strip(" ,;:-–—")
+    ]
+
+
+def _compact_list(values: list[str], *, limit: int) -> list[str]:
+    compacted: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        cleaned = _short_evidence(value).strip()
+        key = cleaned.casefold()
+        if not cleaned or key in seen:
+            continue
+        seen.add(key)
+        compacted.append(cleaned)
+        if len(compacted) >= limit:
+            break
+    return compacted
+
+
+def _append_superseded(changed: list[str], label: str, previous: str, current: str) -> None:
+    if not previous or not current or previous.casefold() == current.casefold():
+        return
+    changed.append(f"superseded {label}: {previous}")
+
+
+def _fact(label: str, value: str) -> list[str]:
+    cleaned = _short_evidence(value)
+    return [f"{label}: {cleaned}"] if cleaned else []
+
+
+def _planner_skill_for_state(state: StoryGuideLoopState, message: str) -> str:
+    if state.status in {"redirect", "clarify_conflict"} or state.lastNode in {"redirect_out_of_spec", "clarify_conflict"}:
+        return "boundary_redirect"
+    if state.status == "ready_to_brief" or state.lastNode == "ready_to_shape":
+        return "brief_readiness"
+    if _is_tiny_non_story_input(message):
+        return "opening_scene_prompt"
+    if _is_ambiguous_who_question(message):
+        return "cast_focus"
+    slot = state.nextMissing
+    if slot == "player_role":
+        return "role_focus"
+    if slot == "active_cast":
+        return "cast_focus"
+    if slot == "pressure":
+        return "pressure_focus"
+    if slot == "tone":
+        return "tone_focus"
+    if slot == "boundaries":
+        return "boundary_redirect"
+    return "opening_scene_prompt"
 
 
 def _sync_labels(state: StoryGuideLoopState, language: TemplateLanguage) -> StoryGuideLoopState:
@@ -408,7 +559,11 @@ def _merge_slots(
 
 def _extract_slots(text: str) -> dict[StoryGuideSlotId, str]:
     slots: dict[StoryGuideSlotId, str] = {}
-    if re.search(r"\b(i am|i'm|my role|i play|as the|as a|player is|protagonist is)\b|我(是|扮演)|玩家|主角", text, re.I):
+    if re.search(
+        r"\b(i am|i'm|my role|i play|as the|as a|player is|protagonist is|make me|switch me to|change me to|make the player|player should be|i should be)\b|我(是|扮演)|玩家|主角|把我改成|让我当",
+        text,
+        re.I,
+    ):
         slots["player_role"] = _short_evidence(text)
     participants = _find_terms(PARTICIPANT_RE, text)
     if len(participants) >= 2 or re.search(r"\b(with|between|against|and|versus|vs\.?)\b|和|与|对上|之间", text, re.I):
@@ -447,28 +602,7 @@ def _find_next_missing(state: StoryGuideLoopState) -> StoryGuideSlotId | None:
 
 
 def _select_story_butler_voice_skill(turn: StoryGuideTurnResponse, message: str) -> str:
-    if turn.blocked or turn.node in {"redirect_out_of_spec", "clarify_conflict"}:
-        return "boundary_redirect"
-    if turn.status == "ready_to_brief" or turn.node == "ready_to_shape":
-        return "brief_readiness"
-    if _is_tiny_non_story_input(message):
-        return "opening_scene_prompt"
-    if _is_ambiguous_who_question(message):
-        return "cast_focus"
-    slot = turn.state.nextMissing
-    if slot == "player_role":
-        return "role_focus"
-    if slot == "active_cast":
-        return "cast_focus"
-    if slot == "pressure":
-        return "pressure_focus"
-    if slot == "tone":
-        return "tone_focus"
-    if slot == "boundaries":
-        return "boundary_redirect"
-    if slot == "first_scene_hook":
-        return "opening_scene_prompt"
-    return "opening_scene_prompt"
+    return turn.state.context.planner_skill or _planner_skill_for_state(turn.state, message)
 
 
 def _extract_grounding_terms(text: str) -> list[str]:
@@ -642,6 +776,32 @@ def _is_ambiguous_who_question(text: str) -> bool:
 
 def _is_self_role_answer(text: str) -> bool:
     return bool(SELF_ROLE_RE.match(text.strip()))
+
+
+def _is_delegate_choice(text: str) -> bool:
+    return bool(DELEGATE_CHOICE_RE.search(text.strip()))
+
+
+def _delegated_slot_evidence(slot: StoryGuideSlotId, language: TemplateLanguage) -> str:
+    if language == "zh":
+        mapping: dict[StoryGuideSlotId, str] = {
+            "player_role": "Story Butler 选择最贴近压力的人作为玩家视角",
+            "active_cast": "Story Butler 选择两个能推动压力的人或阵营",
+            "pressure": "Story Butler 选择第一道公开压力",
+            "tone": "高戏剧韩漫节奏",
+            "boundaries": "保持社交压力，不扩大成露骨伤害",
+            "first_scene_hook": "Story Butler 选择最适合进入的第一幕场面",
+        }
+    else:
+        mapping = {
+            "player_role": "Story Butler chooses the player lens closest to the pressure",
+            "active_cast": "Story Butler chooses two pressure holders who can push back",
+            "pressure": "Story Butler chooses the first public pressure",
+            "tone": "Korean webtoon high drama",
+            "boundaries": "Keep pressure social and avoid graphic escalation",
+            "first_scene_hook": "Story Butler chooses the strongest first playable scene",
+        }
+    return mapping[slot]
 
 
 def _detect_privacy_intent(text: str) -> TemplateVisibility | None:

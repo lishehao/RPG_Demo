@@ -1,11 +1,8 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
-  NarrativeDifficulty,
   NarrativeSessionSummary,
   NarrativeTemplateSummary,
-  NarrativeTemplateLanguage,
-  NarrativeTensionProfile,
 } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
 import { useAuth } from "../../app/auth-context"
@@ -26,27 +23,10 @@ import {
   getTemplateDisplayTitle,
 } from "../../shared/lib/localized-story-metadata"
 import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
-import { makeGuestHandle } from "../create/create-options"
 
 type Tab = "plaza" | "my-templates"
 
-type LocalizedText = {
-  zh: string
-  en: string
-}
-
-type CuratedPlazaStory = {
-  id: string
-  title: LocalizedText
-  pressure: LocalizedText
-  promise: LocalizedText
-  seed: LocalizedText
-  theme: string
-  tensionProfile: NarrativeTensionProfile
-}
-
 type HomeStoryObjectKind =
-  | "starter_premise"
   | "published_story"
   | "in_progress_run"
   | "completed_memory"
@@ -55,7 +35,7 @@ type HomeTileSpan = "feature-wide" | "feature-tall" | "feature-horizontal" | "di
 type HomeTileArchetype =
   | "full_bleed_cinematic"
   | "framed_editorial"
-type HomeTileAccentTone = "starter" | "play" | "resume" | "memory" | "draft"
+type HomeTileAccentTone = "play" | "resume" | "memory" | "draft"
 type HomeTileDeckMode = "premise" | "status" | "ending" | "brief"
 
 type HomeTileCopy = {
@@ -105,8 +85,6 @@ const HOME_MOSAIC_RHYTHM: readonly HomeTileSpan[] = [
   "dispatch",
   "notice-wide",
 ]
-const CURATED_DIRECT_TURN_BUDGET = 12
-const CURATED_DIRECT_DIFFICULTY: NarrativeDifficulty = "story"
 
 export function homeTileSpanForItem(
   item: HomeMosaicBase,
@@ -133,7 +111,7 @@ export function homeTileSpanForItem(
     span = "feature-horizontal"
   } else if (longText && span === "dispatch") {
     span = "notice-wide"
-  } else if ((item.kind === "starter_premise" || item.kind === "published_story") && span === "feature-tall") {
+  } else if (item.kind === "published_story" && span === "feature-tall") {
     span = "feature-horizontal"
   }
 
@@ -183,14 +161,6 @@ export function getHomeTileCopy(
   t: ReturnType<typeof useT>,
   state?: { isStarting?: boolean },
 ): HomeTileCopy {
-  if (kind === "starter_premise") {
-    return {
-      typeLabel: t("home.premise_label"),
-      primaryAction: state?.isStarting ? t("home.card_starting") : t("home.card_action"),
-      accentTone: "play",
-      deckMode: "premise",
-    }
-  }
   if (kind === "published_story") {
     return {
       typeLabel: t("home.published_label"),
@@ -223,30 +193,10 @@ export function getHomeTileCopy(
   }
 }
 
-function starterPremiseView(
-  story: CuratedPlazaStory,
-  cover: string,
-  lang: keyof LocalizedText,
-  t: ReturnType<typeof useT>,
-  isStarting = false,
-): HomeStoryObjectView {
-  return {
-    id: story.id,
-    kind: "starter_premise",
-    title: story.title[lang],
-    cover,
-    deck: story.pressure[lang],
-    copy: getHomeTileCopy("starter_premise", t, { isStarting }),
-    metadata: [story.promise[lang]],
-    themeKey: story.theme,
-    hasStrongCover: true,
-  }
-}
-
 function publishedStoryView(
   template: NarrativeTemplateSummary,
   cover: string,
-  lang: keyof LocalizedText,
+  lang: "zh" | "en",
   t: ReturnType<typeof useT>,
   isStarting = false,
 ): HomeStoryObjectView {
@@ -261,93 +211,6 @@ function publishedStoryView(
     hasStrongCover: Boolean(cover),
   }
 }
-
-const CURATED_PLAZA_STORIES: CuratedPlazaStory[] = [
-  {
-    id: "awards-disappearance",
-    title: {
-      zh: "颁奖夜失踪",
-      en: "Awards Night Disappearance",
-    },
-    pressure: {
-      zh: "直播前，主唱消失，伴舞说自己看见了真相。",
-      en: "Before the livestream, a singer vanishes and a backup dancer saw too much.",
-    },
-    promise: {
-      zh: "高压后台 · 公众危机 · 证词被争夺",
-      en: "Backstage pressure · public fallout · contested witness",
-    },
-    seed: {
-      zh: "颁奖直播开始前十分钟，焦虑的公关、制作人、伴舞和赞助代表发现当红主唱消失。伴舞亲眼看见主唱离开控制室，观众和粉丝正在外面失控，玩家要在直播倒计时里决定要保护谁、公开什么、隐瞒什么。",
-      en: "Ten minutes before an awards livestream, an anxious publicist, a producer, a backup dancer, and a sponsor representative discover that a famous singer has disappeared. The backup dancer saw the singer leave the control room, fans are panicking outside, and the player must decide who to protect, what to reveal, and what to hide before the show goes live.",
-    },
-    theme: "entertainment_scandal",
-    tensionProfile: "high_drama",
-  },
-  {
-    id: "board-gala-recording",
-    title: {
-      zh: "董事会录音",
-      en: "The Board Gala Recording",
-    },
-    pressure: {
-      zh: "并购投票前，前任带着一段能毁掉全场的录音出现。",
-      en: "Before a merger vote, an ex arrives with a recording that can ruin the room.",
-    },
-    promise: {
-      zh: "权力酒会 · 旧关系 · 公开投票",
-      en: "Power gala · old relationship · public vote",
-    },
-    seed: {
-      zh: "董事会晚宴上，联合创始人、投资人、法务主管和玩家的前任围绕一场并购投票互相施压。前任带来一段录音，证明投票前有人做了秘密交易。玩家必须在酒会结束前决定录音交给谁，是否保住公司，还是让某个人当场失势。",
-      en: "At a board gala, a cofounder, an investor, a legal chief, and the player's ex are pressuring each other over a merger vote. The ex arrives with a recording proving someone made a secret deal before the vote. The player must decide who gets the recording, whether the company survives, and who falls in public before the gala ends.",
-    },
-    theme: "office_power",
-    tensionProfile: "high_drama",
-  },
-  {
-    id: "wedding-account-note",
-    title: {
-      zh: "婚礼旧账",
-      en: "The Wedding Account",
-    },
-    pressure: {
-      zh: "婚礼当天，伴郎递来一张写着新娘旧账户的纸条。",
-      en: "On the wedding day, the best man passes a note with the bride's old account.",
-    },
-    promise: {
-      zh: "婚礼现场 · 私密旧账 · 家族目光",
-      en: "Wedding aisle · private account · family watching",
-    },
-    seed: {
-      zh: "婚礼开场前，新郎、新娘、伴郎、伴娘和双方母亲都在休息室等候。伴郎递给玩家一张纸条，上面是新娘多年前的旧账户和一笔无法解释的转账。宾客已经入座，玩家必须决定是私下查清、当众质问，还是让婚礼继续。",
-      en: "Minutes before the wedding procession, the groom, bride, best man, maid of honor, and both mothers are waiting near the aisle. The best man hands the player a note with the bride's old account and an unexplained transfer from years ago. The guests are seated, and the player must decide whether to investigate quietly, confront someone publicly, or let the wedding continue.",
-    },
-    theme: "wedding",
-    tensionProfile: "high_drama",
-  },
-  {
-    id: "campus-scholarship-card",
-    title: {
-      zh: "奖学金夜卡片",
-      en: "Scholarship Night Card",
-    },
-    pressure: {
-      zh: "图书馆闭馆前，三名学生争夺一张会改变奖学金归属的卡片。",
-      en: "Before the library closes, three students fight over a card that can change a scholarship.",
-    },
-    promise: {
-      zh: "校园夜色 · 旧导师 · 发光证据",
-      en: "Campus night · former mentor · glowing evidence",
-    },
-    seed: {
-      zh: "深夜图书馆闭馆前，三名学生、一位前导师和档案管理员围绕一张发光的借阅卡发生争执。这张卡能证明奖学金申请被人调换过，也能毁掉其中一个人的未来。玩家必须决定相信谁，保住谁，或者把证据交出去。",
-      en: "At a city library just before closing, three students, a former mentor, and the archivist argue over a glowing library card. The card can prove that a scholarship application was switched, but it can also ruin one person's future. The player must decide who to believe, who to protect, and whether to hand over the evidence.",
-    },
-    theme: "campus_romance",
-    tensionProfile: "high_drama",
-  },
-]
 
 export function HomePage({
   onOpenCreate,
@@ -368,56 +231,9 @@ export function HomePage({
   const [error, setError] = useState<string | null>(null)
   const [templateStartError, setTemplateStartError] = useState<string | null>(null)
   const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null)
-  const [startingCuratedStoryId, setStartingCuratedStoryId] = useState<string | null>(null)
   const startingTemplateRef = useRef<string | null>(null)
-  const guestHandleRef = useRef<string | null>(null)
   const showTemplateTabs = !auth.isAnonymous
   const activeTemplateTab: Tab = showTemplateTabs ? tab : "plaza"
-
-  const ensurePlayableAuthorSession = async (): Promise<boolean> => {
-    if (!auth.loading && !auth.isAnonymous) return true
-    if (!guestHandleRef.current) {
-      guestHandleRef.current = makeGuestHandle()
-    }
-    await auth.login(guestHandleRef.current)
-    return true
-  }
-
-  const handleStartCuratedStory = async (story: CuratedPlazaStory) => {
-    const lockId = `curated:${story.id}`
-    if (startingTemplateRef.current) return
-    startingTemplateRef.current = lockId
-    setStartingCuratedStoryId(story.id)
-    setTemplateStartError(null)
-    try {
-      const authorReady = await ensurePlayableAuthorSession()
-      if (!authorReady) return
-      const storyLanguage = lang as NarrativeTemplateLanguage
-      const seed = story.seed[lang]
-      const briefResponse = await api.createNarrativeStoryBrief({
-        seed,
-        language: storyLanguage,
-        desired_tension_profile: story.tensionProfile,
-      })
-      if (!briefResponse.can_generate) {
-        throw new Error(t("home.error_start_story"))
-      }
-      const response = await api.createNarrativeTemplate({
-        seed,
-        visibility: "private",
-        turn_budget: CURATED_DIRECT_TURN_BUDGET,
-        difficulty: CURATED_DIRECT_DIFFICULTY,
-        language: storyLanguage,
-        story_brief: briefResponse.brief,
-      })
-      onOpenPlay(response.session.session_id)
-    } catch (err) {
-      setTemplateStartError(friendlyError(err, t("home.error_start_story")))
-    } finally {
-      startingTemplateRef.current = null
-      setStartingCuratedStoryId(null)
-    }
-  }
 
   const handleStartPublishedTemplate = async (templateId: string) => {
     if (startingTemplateRef.current) return
@@ -589,15 +405,12 @@ export function HomePage({
             >
               {activeTemplateTab === "plaza" ? (
                 <HomeEditorialMosaic
-                  stories={CURATED_PLAZA_STORIES}
                   templates={publicTemplates}
                   error={error}
                   compact={compactHome}
                   lang={lang}
-                  onStartCurated={handleStartCuratedStory}
                   onStartTemplate={handleStartPublishedTemplate}
                   startingTemplateId={startingTemplateId}
-                  startingCuratedStoryId={startingCuratedStoryId}
                 />
               ) : (
                 <TemplateGrid
@@ -964,42 +777,48 @@ function TemplateGrid({
 }
 
 function HomeEditorialMosaic({
-  stories,
   templates,
   error,
   compact,
   lang,
-  onStartCurated,
   onStartTemplate,
   startingTemplateId,
-  startingCuratedStoryId,
 }: {
-  stories: CuratedPlazaStory[]
   templates: NarrativeTemplateSummary[] | null
   error: string | null
   compact: boolean
-  lang: keyof LocalizedText
-  onStartCurated: (story: CuratedPlazaStory) => void
+  lang: "zh" | "en"
   onStartTemplate: (templateId: string) => void
   startingTemplateId: string | null
-  startingCuratedStoryId: string | null
 }) {
   const t = useT()
+  if (error) {
+    return <div style={hpStyles.errorBox}>{error}</div>
+  }
+  if (!templates) {
+    return <LoadingShim variant="inline" />
+  }
+  if (templates.length === 0) {
+    return (
+      <motion.div
+        style={hpStyles.emptyCard}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={itemTransition}
+      >
+        <div
+          style={{
+            ...hpStyles.emptyHero,
+            backgroundImage: `linear-gradient(180deg, rgba(20,16,12,0.05) 0%, rgba(20,16,12,0.55) 75%, var(--bg-elev) 100%), url(${getEmptyPlazaImage()})`,
+          }}
+        />
+        <div style={hpStyles.emptyBody}>{t("home.empty_plaza")}</div>
+      </motion.div>
+    )
+  }
   const assignedCovers = templates ? assignTemplateCovers(templates) : {}
-  const items = assignHomeMosaicSpans([
-    ...stories.map((story) => ({
-      ...starterPremiseView(
-        story,
-        getCoverByStoryId(`curated-${story.id}`, story.theme),
-        lang,
-        t,
-        startingCuratedStoryId === story.id,
-      ),
-      id: story.id,
-      kind: "starter_premise" as const,
-      story,
-    })),
-    ...((templates ?? []).map((template) => ({
+  const items = assignHomeMosaicSpans(
+    templates.map((template) => ({
       ...publishedStoryView(
         template,
         assignedCovers[template.template_id],
@@ -1010,93 +829,28 @@ function HomeEditorialMosaic({
       id: template.template_id,
       kind: "published_story" as const,
       template,
-    }))),
-  ])
-
-  return (
-    <>
-      <div
-        style={{ ...hpStyles.editorialMosaic, ...(compact ? hpStyles.editorialMosaicCompact : null) }}
-        data-home-editorial-mosaic="true"
-      >
-        {items.map((item, idx) => item.kind === "starter_premise" ? (
-          <CuratedStoryTile
-            key={item.id}
-            story={item.story}
-            view={item}
-            span={item.span}
-            archetype={item.archetype}
-            compact={compact}
-            index={idx}
-            isStarting={startingCuratedStoryId === item.story.id}
-            onClick={() => onStartCurated(item.story)}
-          />
-        ) : (
-          <TemplateCard
-            key={item.id}
-            template={item.template}
-            view={item}
-            span={item.span}
-            archetype={item.archetype}
-            compact={compact}
-            index={idx}
-            isStarting={startingTemplateId === item.template.template_id}
-            onClick={() => onStartTemplate(item.template.template_id)}
-          />
-        ))}
-      </div>
-      {!templates ? <LoadingShim variant="inline" /> : null}
-      {error ? <div style={hpStyles.errorBox}>{error}</div> : null}
-    </>
+    })),
   )
-}
 
-function CuratedStoryTile({
-  story,
-  view,
-  span,
-  archetype,
-  compact,
-  index,
-  isStarting,
-  onClick,
-}: {
-  story: CuratedPlazaStory
-  view: HomeStoryObjectView
-  span: HomeTileSpan
-  archetype: HomeTileArchetype
-  compact: boolean
-  index: number
-  isStarting: boolean
-  onClick: () => void
-}) {
-  const style = {
-    ...hpStyles.editorialTile,
-    ...(view.kind === "starter_premise" ? hpStyles.editorialTileStarter : hpStyles.editorialTilePublished),
-    ...homeTileSpanStyle(span, compact),
-  }
   return (
-    <motion.button
-      key={story.id}
-      data-story-card-kind="preset-story"
-      data-home-tile-span={span}
-      data-home-tile-archetype={archetype}
-      aria-label={`${view.title} · ${view.deck} · ${view.copy.primaryAction}`}
-      style={style}
-      type="button"
-      onClick={onClick}
-      disabled={isStarting}
-      aria-busy={isStarting}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, ...itemTransition }}
-      whileHover={{ y: -2 }}
-      whileTap={tapPress}
+    <div
+      style={{ ...hpStyles.editorialMosaic, ...(compact ? hpStyles.editorialMosaicCompact : null) }}
+      data-home-editorial-mosaic="true"
     >
-      <StarterTileComposition archetype={archetype} cover={view.cover} span={span} compact={compact}>
-        <HomeTileTextBody view={view} span={span} compact={compact} />
-      </StarterTileComposition>
-    </motion.button>
+      {items.map((item, idx) => (
+        <TemplateCard
+          key={item.id}
+          template={item.template}
+          view={item}
+          span={item.span}
+          archetype={item.archetype}
+          compact={compact}
+          index={idx}
+          isStarting={startingTemplateId === item.template.template_id}
+          onClick={() => onStartTemplate(item.template.template_id)}
+        />
+      ))}
+    </div>
   )
 }
 
@@ -1153,34 +907,6 @@ function TemplateCard({
   )
 }
 
-function StarterTileComposition({
-  archetype,
-  cover,
-  span,
-  compact,
-  children,
-}: {
-  archetype: HomeTileArchetype
-  cover: string
-  span: HomeTileSpan
-  compact: boolean
-  children: ReactNode
-}) {
-  if (archetype === "full_bleed_cinematic") {
-    return (
-      <FullBleedTileImage cover={cover} tone="starter">
-        {children}
-      </FullBleedTileImage>
-    )
-  }
-  return (
-    <span style={framedTileLayoutStyle(span, compact)} data-home-framed-editorial="true">
-      <TileMediaWell cover={cover} variant={tileMediaVariantForSpan(span, compact)} />
-      <span style={framedTextPanelStyle(span, compact)}>{children}</span>
-    </span>
-  )
-}
-
 function PublishedTileComposition({
   archetype,
   span,
@@ -1196,7 +922,7 @@ function PublishedTileComposition({
 
   if (archetype === "full_bleed_cinematic") {
     return (
-      <FullBleedTileImage cover={view.cover} tone="published">
+      <FullBleedTileImage cover={view.cover}>
         {standardBody}
       </FullBleedTileImage>
     )
@@ -1225,7 +951,7 @@ function HomeTileTextBody({
       <span
         style={{
           ...hpStyles.editorialTileDeck,
-          ...lineClampStyle(tightTile ? 2 : compact ? 2 : span === "feature-horizontal" ? 2 : 3),
+          ...(compact ? hpStyles.editorialTileDeckCompact : null),
         }}
       >
         {view.deck}
@@ -1236,17 +962,13 @@ function HomeTileTextBody({
 
 function FullBleedTileImage({
   cover,
-  tone,
   children,
 }: {
   cover: string
-  tone: "starter" | "published"
   children: ReactNode
 }) {
   const overlay =
-    tone === "starter"
-      ? "linear-gradient(180deg, rgba(12,12,16,0.02) 0%, rgba(12,12,16,0.28) 45%, rgba(12,12,16,0.86) 100%)"
-      : "linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.32) 48%, rgba(12,12,16,0.88) 100%)"
+    "linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.32) 48%, rgba(12,12,16,0.88) 100%)"
   return (
     <span style={hpStyles.fullBleedLayout} data-home-full-bleed="true">
       <span
@@ -1778,9 +1500,6 @@ const hpStyles: Record<string, CSSProperties> = {
     boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.055)",
     transition: "opacity 180ms, transform 180ms, filter 180ms",
   },
-  editorialTileStarter: {
-    borderTopColor: "rgba(224,122,95,0.62)",
-  },
   editorialTilePublished: {
     borderTopColor: "rgba(212,168,83,0.58)",
   },
@@ -1827,6 +1546,10 @@ const hpStyles: Record<string, CSSProperties> = {
     lineHeight: 1.45,
     textShadow: "0 1px 12px rgba(0,0,0,0.56)",
     minHeight: 0,
+  },
+  editorialTileDeckCompact: {
+    fontSize: 12.8,
+    lineHeight: 1.42,
   },
   tileLowInfoBody: {
     display: "flex",
