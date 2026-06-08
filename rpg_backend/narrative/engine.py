@@ -180,6 +180,72 @@ _OPENING_SYSTEM_PROMPT = """\
 """
 
 
+_OPENING_COMPACT_SYSTEM_PROMPT = """\
+You are the Tiny Stories live opening writer. Build a playable first scene fast.
+
+Return strict JSON only. No markdown, no comments, no prose outside JSON.
+
+Use the requested language from user_payload.language_directive for all player-facing values.
+If user_payload.story_brief is present, honor its premise_summary, tension_profile, story_kernel,
+preserved_constraints, primary_active_entities, and intervention_card_label. Preserve boundaries
+such as "no gore" as constraints, not as cast members.
+
+Keep the response compact. Do not create dense political graphs, long backstories, or extra role
+cards. Optional arrays should stay empty or contain one item when the Brief does not require more.
+The runtime can deepen relationships during later turns.
+
+Required JSON shape:
+{
+  "title": "short story title, 2-6 words in English or concise zh",
+  "advisor_persona": "one outside-scene contact, 25-45 words; include who they are, where they are, tone, and phone/chat access",
+  "cast": [
+    {
+      "character_id": "lowercase_underscore_id",
+      "display_name": "short name or role",
+      "role": "story role",
+      "relation_to_protagonist": "one short phrase",
+      "hidden_objective": "12 words or fewer, or null",
+      "leverage_over_player": "12 words or fewer, or null",
+      "leverages_over_other_npcs": [
+        {"target_npc_id": "another cast id", "leverage": "one concrete pressure item"}
+      ]
+    }
+  ],
+  "player_goals": [
+    {"goal": "one playable goal", "stakes": "what failure costs"}
+  ],
+  "failure_conditions": [
+    {"label": "short trigger", "description": "one concrete unsafe or losing move"}
+  ],
+  "player_role_options": [
+    {
+      "role_id": "role-01",
+      "label": "short player role",
+      "public_persona": "40 words or fewer",
+      "hidden_objective": "one short sentence",
+      "leverages_over_npcs": [
+        {"npc_id": "cast id", "leverage": "one concrete card"}
+      ],
+      "starting_assets": ["one concrete item"]
+    }
+  ],
+  "opening_passage": "90-130 English words or 140-220 zh characters; second person; immediate scene; 2 NPC reactions; one clear decision window; do not preselect the player role",
+  "options": [
+    {"label": "action label", "hint": "short cost or angle", "handle": "2-6 word memory handle"}
+  ]
+}
+
+Hard limits:
+- cast: 2-3 entries unless the Brief requires 4.
+- leverages_over_other_npcs: 0-1 entry per cast member.
+- player_goals: 0-1 entry.
+- failure_conditions: 0-1 entry.
+- player_role_options: 0-1 entry.
+- options: exactly 3.
+- Every non-opening string must be under 16 words. Prefer concrete nouns from the seed over invention.
+"""
+
+
 _TURN_SYSTEM_PROMPT = """\
 你是一名擅长写关系剧的剧作家。玩家正在玩一个互动故事，你负责续写下一段。
 
@@ -847,36 +913,23 @@ def _generate_opening_once(
     if story_brief is not None:
         user_payload["story_brief"] = story_brief.model_dump(mode="json")
         user_payload["story_brief_generation_rules"] = (
-            "Honor the reviewed story_brief: keep the selected tension_profile, "
-            "use story_kernel as the arc shape, include primary_active_entities "
-            "inside the runtime cast when they are characters/factions, treat "
-            "secondary_background_entities as background pressure, and use "
-            "intervention_card_label as the player-facing card terminology "
-            "instead of defaulting every genre to blackmail. For comedy and "
-            "cozy_mystery, keep the lower-stakes tension contract: use "
-            "misunderstanding, embarrassment, clues, social pressure, props, "
-            "callbacks, or gentle reveals. Do not convert a comedy/cozy brief "
-            "into betrayal, revenge, hacking, security-footage leverage, "
-            "life-or-death danger, or blackmail unless those stakes are "
-            "explicitly preserved in the reviewed brief. For comedy/cozy option "
-            "labels and hints, prefer verbs like ask, compare, invite, reveal, "
-            "notice, soften, callback, or repair; avoid accuse, confront, fight, "
-            "scapegoat, take-the-fall, heist, permanent-position, and criminal "
-            "framing unless the user explicitly asked for those words. For "
-            "fantasy_sci_fi, preserve strange/nonhuman entities literally where "
-            "possible and use world-rule, artifact, magical/technical, or faction "
-            "pressure; do not recast the opening as modern blackmail, security "
-            "footage, hacking, scapegoat, or takes-the-fall leverage by default."
+            "Honor the reviewed story_brief. Use primary_active_entities as the "
+            "runtime cast when they are characters or factions; keep secondary "
+            "entities as background pressure. Preserve boundaries and negated "
+            "constraints as constraints, never as cast. Match tension_profile: "
+            "comedy/cozy stay lower-stakes unless explicit, fantasy/sci-fi uses "
+            "world-rule or faction pressure, and other genres use the Brief's "
+            "own concrete stakes instead of generic blackmail."
         )
     if brief_consistency_feedback:
         user_payload["story_brief_consistency_feedback"] = brief_consistency_feedback
     if retry_feedback:
         user_payload["retry_feedback"] = retry_feedback
     response = gateway.invoke_json(
-        system_prompt=_OPENING_SYSTEM_PROMPT,
+        system_prompt=_OPENING_COMPACT_SYSTEM_PROMPT,
         user_payload=user_payload,
         operation_name="narrative.opening",
-        max_output_tokens=2500,
+        max_output_tokens=1800,
     )
     payload = _coerce_dict(response.payload)
     title = _require_str(payload, "title", limit=120)
