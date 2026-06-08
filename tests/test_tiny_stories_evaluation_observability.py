@@ -115,3 +115,32 @@ def test_evaluation_docs_name_reviewer_only_boundary() -> None:
     assert "narrative_llm_call_events" in docs
     assert "normal player UI" in docs
     assert "do not call the score a validated academic metric" in docs
+
+
+def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
+    packet = (ROOT / "docs/tiny-stories-engineering-evidence-packet.md").read_text()
+    summary = json.loads(
+        (ROOT / "artifacts/portfolio/tiny-stories-engineering-evidence-summary.json").read_text()
+    )
+
+    assert "```mermaid" in packet
+    assert "Productized LLM / applied AI systems engineering, not HCI research." in packet
+    assert "4382874 fix: keep opening live for eval gate" in packet
+    assert "snapshot/story-brief-opening-live-reliability-2026-06-08" in packet
+    assert "| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |" in packet
+    assert "Step Judge" in packet
+    assert "Contract Judge" in packet
+    assert "deterministic trajectory trend" in packet
+    assert "not a full live trajectory judge" in packet
+    assert "not neural embeddings or a vector database" in packet
+    assert "not the main acceptance" in packet
+
+    live_gate = summary["live_gate"]
+    assert live_gate["status"] == "pass"
+    assert live_gate["failure_count"] == 0
+    operations = {row["operation"]: row for row in live_gate["required_operations"]}
+    assert operations["narrative.opening"]["source"] == "live"
+    assert operations["narrative.opening"]["fallback"] is None
+    assert operations["narrative.opening"]["total_tokens"] == 3462
+    assert any("full live trajectory judge" in item for item in summary["guardrails"])
+    assert any("neural embeddings" in item for item in summary["guardrails"])

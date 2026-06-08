@@ -1,0 +1,302 @@
+# Tiny Stories Engineering Evidence Packet
+
+This packet frames Tiny Stories as a productized LLM and applied AI systems
+project for applications, portfolio pages, and recommender prep. It should not
+be used to claim HCI research, SOTA story generation, or broad consumer
+robustness. The strongest evidence is the engineered loop: typed contracts,
+live LLM calls, persisted telemetry, deterministic judges, reviewer-only
+observability, and repeatable validation gates.
+
+Framing: Productized LLM / applied AI systems engineering, not HCI research.
+
+Latest evidence anchor:
+
+- Commit: `4382874 fix: keep opening live for eval gate`
+- Snapshot: `snapshot/story-brief-opening-live-reliability-2026-06-08`
+- Live acceptance summary:
+  `/tmp/tiny-stories-opening-live-reliability-2026-06-08/live-acceptance-summary-2.json`
+- Reviewer screenshot:
+  `/tmp/tiny-stories-opening-live-reliability-2026-06-08/reviewer-play-evaluation-inapp.png`
+- Normal player screenshot:
+  `/tmp/tiny-stories-opening-live-reliability-2026-06-08/normal-play-clean-inapp.png`
+
+No secret, model, key, or raw provider configuration is included here.
+
+## System Overview
+
+```mermaid
+flowchart LR
+  User["Player / Reviewer"] --> Home["Home / Story Entries"]
+  Home --> Create["Create: Story Butler Agent"]
+  Create --> Guide["Live guide turn<br/>intent + compressed context"]
+  Guide --> Brief["Story Brief<br/>structured playable contract"]
+  Brief --> Opening["Template + live opening<br/>45s bounded path"]
+  Opening --> Play["Play session<br/>narrative timeline + moves"]
+  Play --> Turn["Live play turn"]
+  Turn --> Judges["Step Judge + Contract Judge<br/>deterministic checks"]
+  Turn --> Telemetry["LLM telemetry store<br/>latency + usage + source"]
+  Judges --> Reviewer["Reviewer-only EvaluationDrawer"]
+  Telemetry --> Reviewer
+  Play --> Normal["Normal player UI<br/>story + actions only"]
+
+  subgraph Persistence["SQLite persistence"]
+    Templates["narrative_templates"]
+    Sessions["narrative_sessions/messages"]
+    Events["narrative_llm_call_events"]
+    Trace["narrative_agent_events"]
+  end
+
+  Brief --> Templates
+  Opening --> Templates
+  Play --> Sessions
+  Turn --> Sessions
+  Telemetry --> Events
+  Judges --> Trace
+```
+
+Core runtime boundaries:
+
+- Frontend product shell: `frontend2/src/pages/create/`,
+  `frontend2/src/pages/play/`, and shared API/contracts under
+  `frontend2/src/api/`.
+- Backend orchestration: `rpg_backend/narrative/service.py`.
+- LLM gateway and transport: `rpg_backend/narrative/gateway.py` and
+  `rpg_backend/responses_transport.py`.
+- Opening and turn generation primitives: `rpg_backend/narrative/engine.py`.
+- Story Brief/entity hygiene: `rpg_backend/narrative/brief.py`.
+- Judge and reviewer evidence contracts: `rpg_backend/narrative/judges.py`,
+  `rpg_backend/narrative/contracts.py`, and
+  `frontend2/src/pages/play/components/play-flow-panels.tsx`.
+- Live evaluation harness:
+  `tools/rpg_eval/tiny_stories_reliability_harness.py`.
+
+## Live Evaluation Gate
+
+The current acceptance gate is live-backed. It is not satisfied by `/health`
+alone and does not accept deterministic fallback for required product text
+paths.
+
+Live run exercised:
+
+1. `/health` configured status for `text_llm`, `create_story_butler`,
+   `story_brief`, `opening`, and `play_turns`;
+2. Story Butler guide turn;
+3. Story Brief shaping;
+4. template/opening generation;
+5. Play story fetch with reviewer trace enabled;
+6. one Play turn;
+7. reviewer-only telemetry query.
+
+Run result:
+
+- Status: pass
+- Template/session: `tmpl_e6a132445fe8` / `sess_61d85a921fda`
+- Failure count: 0
+- Story Butler latency: 6216ms
+- Story Brief latency: 2487ms
+- template/opening latency: 13108ms
+- Play turn latency: 9649ms
+- telemetry endpoint latency: 3ms
+
+Required live telemetry table:
+
+| Stage | Operation | Source | Status | Latency | Input | Cached input | Output | Total | Fallback |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Story Butler | `create.story_butler_turn` | `live` | `success` | 1568ms | 2697 | 384 | 32 | 2729 | none |
+| Story Brief | `narrative.story_brief` | `live` | `success` | 2479ms | 1408 | 1280 | 156 | 1564 | none |
+| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |
+| Play turn | `narrative.advance_turn` | `live` | `success` | 7701ms | 6464 | 4864 | 420 | 6884 | none |
+
+The gate rejects these rows for the required operations:
+
+- `fallback_used`
+- `no_gateway_fallback`
+- non-live source labels
+- any non-empty fallback reason
+- missing telemetry
+
+Fixture/protocol checks are still useful, but they are not the main acceptance
+evidence for a delivered preview.
+
+## Evaluation Architecture
+
+Tiny Stories uses layered product reliability checks rather than a single
+untrusted model output.
+
+Step Judge:
+
+- Stored in `narrative_agent_events` as `step_judge`.
+- Runs after a submitted Play turn.
+- Checks whether the resulting beat preserves player agency, follows the
+  submitted move, produces visible consequence, respects the active scene, and
+  keeps playable next actions available.
+
+Contract Judge:
+
+- Stored in `narrative_agent_events` as `contract_judge`.
+- Checks runtime shape and safety: narrator role, option count, known NPC ids,
+  hidden-info leakage, leverage ownership, inventory sanity, and contract
+  drift.
+
+Trajectory packaging:
+
+- The reviewer drawer packages persisted per-turn Step/Contract results into a
+  deterministic trajectory trend: pass/warn/fail per turn, counts, and compact
+  rationale.
+- This is not a full live trajectory judge and should not be described as one.
+- The richer mock-user chain under `tools/rpg_eval/` remains separate from the
+  product drawer.
+
+Reviewer-only observability:
+
+- Reviewer view exposes `Evaluation evidence`, criterion rows, trajectory
+  trend, and sanitized telemetry.
+- Normal Play view exposes the story, current player move, consequences,
+  choices, and scene support only.
+- Normal players do not see provider/model/API/schema/token/debug/trace/raw
+  judge internals.
+
+## Gold Set And Failure Taxonomy
+
+Gold set file:
+`tools/rpg_eval/gold_sets/tiny_stories_reliability.json`.
+
+Scenario categories:
+
+- arbitrary Story Butler input and smalltalk;
+- meta/help input;
+- unsafe prompt redirect;
+- laundromat not-fit gate;
+- supported high-drama awards prompt;
+- multi-turn correction with superseded facts;
+- Play turn consequence.
+
+Failure taxonomy:
+
+- `environment`
+- `provider`
+- `schema`
+- `unsafe_redirect`
+- `not_fit_gate`
+- `story_guide_intent`
+- `brief_contract`
+- `entity_hygiene`
+- `opening_recovery`
+- `step_judge`
+- `trajectory_judge`
+- `telemetry_missing`
+- `normal_ui_leak`
+- `artifact`
+
+The taxonomy is product-facing. It is meant to classify actionable release
+failures, not to assert a universal benchmark.
+
+## Trace Case Study
+
+Case: `Rigged Trophy Gala`, live-created in the latest passing gate.
+
+1. Brief
+   - Input premise: awards gala, publicist, singer, sponsor, rigged trophy
+     reveal, no gore.
+   - Story Brief source: `live_hybrid_v1`, runtime source `live`.
+   - Story Brief could generate and preserved the safety boundary as a
+     constraint, not as a cast member.
+
+2. Opening
+   - `narrative.opening`: `live/success`, 13100ms, 2630 input tokens,
+     832 output tokens, no fallback reason.
+   - Opening created `Rigged Trophy Gala` with Elena Vance and Arthur Sterling
+     as scene actors.
+   - The opening reached Play without deterministic fallback.
+
+3. Play turn
+   - User move: "Pull Arthur aside and demand he tell you everything he knows."
+   - `narrative.advance_turn`: `live/success`, 7701ms, no fallback reason.
+   - The next beat visibly followed the move: Arthur disclosed that committee
+     payments were tied to his name and pressured the player to fix it.
+
+4. Judge/evidence
+   - Step Judge: pass, score 100/100 in reviewer drawer.
+   - Contract Judge: pass.
+   - Trajectory packaging: one judged turn, trend pass.
+   - Reviewer telemetry displayed opening and turn rows with latency and token
+     usage.
+
+5. Normal UI cleanliness
+   - Normal Play screenshot showed story, move, consequence, action choices,
+     scene support, and character portraits.
+   - It did not show EvaluationDrawer, Telemetry, tokens, provider/model/API,
+     schema/debug text, raw JSON, COT, `agent_plan`, `step_judge`, or
+     `contract_judge`.
+
+## Known Limitations
+
+- The trajectory drawer is deterministic packaging of turn-level judge results,
+  not a calibrated live trajectory judge.
+- Step/Contract scores are product evidence UI, not validated academic metrics.
+- Gold scenarios are a focused reliability protocol, not a broad benchmark.
+- Live provider latency remains variable. The latest opening passed in 13.1s,
+  but future provider variance still needs monitoring.
+- Reviewer evidence is intentionally gated; normal players do not see detailed
+  telemetry.
+- Avatar matching uses a deterministic tag-vector semantic scorer and manifest,
+  not neural embeddings or a vector database.
+- The system is a portfolio-grade applied AI runtime, not proof of general
+  story-generation robustness or deployed consumer adoption.
+
+## Overclaim Guardrails
+
+Safe:
+
+- "Productized LLM story-game runtime with typed contracts, live generation
+  gates, persisted telemetry, deterministic judges, and reviewer-only
+  observability."
+- "Built an acceptance harness that fails required product paths when live LLM
+  calls fall back or telemetry is missing."
+- "Implemented deterministic Step/Contract checks and trajectory packaging for
+  reviewer evidence."
+- "Designed a clean player/reviewer split: normal users get story UX, reviewers
+  get sanitized reliability evidence."
+
+Avoid:
+
+- "Published research contribution."
+- "State-of-the-art narrative generation."
+- "Validated universal story benchmark."
+- "Full live trajectory judge" for the deterministic trajectory drawer.
+- "Neural embeddings" or "vector database" for the current avatar ranking.
+- "Consumer-scale adoption" unless external usage data exists.
+
+## Application-Ready Excerpts
+
+Resume bullets:
+
+- Built Tiny Stories, an applied AI story-game runtime that turns rough prompts
+  into playable sessions using typed Story Brief contracts, live LLM generation,
+  persisted sessions, and reviewer-only observability.
+- Implemented a live acceptance harness that verifies Story Butler, Story Brief,
+  opening, and Play-turn calls with source labels, latency, token usage, cache
+  tokens, and fallback rejection.
+- Added deterministic Step/Contract judges and trajectory packaging so each
+  Play turn can be reviewed for agency, consequence alignment, entity coherence,
+  option quality, and contract drift.
+
+SOP sentence:
+
+> Tiny Stories is the project where I learned to treat LLM product behavior as
+> an engineering system: typed contracts, live-gated execution, telemetry,
+> failure taxonomy, reviewer evidence, and player-facing UX boundaries all had
+> to work together before I could call a demo reliable.
+
+Project page headline:
+
+> Tiny Stories: a live LLM story-game runtime with typed contracts, evaluator
+> traces, and reviewer-only observability.
+
+Recommender prep angle:
+
+- Emphasize system-building: backend orchestration, frontend product surfaces,
+  typed contracts, SQLite persistence, live LLM transport, telemetry, judges,
+  and validation discipline.
+- Avoid framing it as HCI research. The stronger story is applied AI systems
+  engineering and product reliability under live model uncertainty.
