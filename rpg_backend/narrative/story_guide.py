@@ -70,6 +70,9 @@ HOOK_RE = re.compile(
     r"\b(at |during |before |after |when |inside |on stage|gala|meeting|laundromat|library|bake sale|boardroom|colony|talent show|table|dinner|opening|first scene|backstage|control room)\b|第一幕|开场|当|在|期间|晚宴|会议|洗衣店|图书馆|义卖|董事会|殖民地|才艺秀|桌上|后台|控制室",
     re.I,
 )
+TINY_GREETING_RE = re.compile(r"^(hi|hello|hey|yo|ok|okay|你好|嗨|哈喽|哈罗)[.!。！?？]*$", re.I)
+AMBIGUOUS_WHO_RE = re.compile(r"^(who\?|who|谁|谁？)$", re.I)
+SELF_ROLE_RE = re.compile(r"^(me|myself|i do|i am|i'm in|i'll play|我|我来|我自己|我扮演)$", re.I)
 
 
 def create_initial_story_guide_state(language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE) -> StoryGuideLoopState:
@@ -153,6 +156,14 @@ def advance_story_guide_loop(
         )
         return _response(state, state.lastNode, reply, False, False, settings, language)
 
+    if _is_tiny_non_story_input(text) and not previous.acceptedTurns:
+        state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot", "nextMissing": "pressure"})
+        return _response(state, "ask_missing_slot", _tiny_seed_reply(language), False, False, settings, language)
+
+    if _is_ambiguous_who_question(text):
+        state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot"})
+        return _response(state, "ask_missing_slot", _who_clarification_reply(language), False, False, settings, language)
+
     if _detects_hard_conflict(text):
         state = previous.model_copy(update={"status": "clarify_conflict", "lastNode": "clarify_conflict"})
         reply = (
@@ -162,7 +173,10 @@ def advance_story_guide_loop(
         )
         return _response(state, "clarify_conflict", reply, False, False, settings, language)
 
+    self_role_answer = _is_self_role_answer(text) and previous.nextMissing == "player_role" and bool(previous.acceptedTurns)
     extracted = _extract_slots(text)
+    if self_role_answer:
+        extracted["player_role"] = "player as themselves" if language == "en" else "玩家自己"
     updated = _merge_slots(previous, extracted, language)
     if _detects_unsupported_small_cast_direction(text):
         slots = dict(updated.slots)
@@ -197,7 +211,7 @@ def advance_story_guide_loop(
     return _response(
         state,
         state.lastNode,
-        _ready_reply(language) if ready else _missing_reply(state.nextMissing, language),
+        _ready_reply(language) if ready else _self_role_reply(state.nextMissing, language) if self_role_answer else _missing_reply(state.nextMissing, language, state),
         True,
         False,
         settings,
@@ -364,9 +378,73 @@ def _next_question(slot: StoryGuideSlotId | None, language: TemplateLanguage) ->
     return mapping.get(slot or "pressure", mapping["pressure"])
 
 
-def _missing_reply(slot: StoryGuideSlotId | None, language: TemplateLanguage) -> str:
-    question = _next_question(slot, language)
-    return f"方向在成形。{question}" if language == "zh" else f"The shape is forming. {question}"
+def _missing_reply(slot: StoryGuideSlotId | None, language: TemplateLanguage, state: StoryGuideLoopState | None = None) -> str:
+    if not slot:
+        return _ready_reply(language)
+    context = _guide_state_context(state)
+    if language == "zh":
+        mapping = {
+            "player_role": "已经有开端了。玩家在第一幕里是谁？",
+            "active_cast": "把房间补齐。谁必须在场？两个名字、身份或阵营就够。",
+            "pressure": "先给我第一道压力：指控、失踪、决定，还是被曝光的秘密？",
+            "tone": "这版要偏高戏剧、喜剧、悬疑、科幻奇幻，还是关系压力？",
+            "boundaries": "这版需要避开什么？给我一条边界就够。",
+            "first_scene_hook": "第一幕从哪里开？给我一个地点、时刻或即将发生的动作。",
+        }
+    else:
+        if slot == "player_role" and "gala" in context:
+            return "A gala with the floor about to crack. Who is closest to the trouble when it starts?"
+        if slot == "player_role" and ("livestream" in context or "stage" in context or "awards" in context):
+            return "That has a stage and public pressure. Who is closest to the trouble when it starts?"
+        mapping = {
+            "player_role": "Good, we have the trouble. Who are you when it starts?",
+            "active_cast": "Who must be in the room? Two names, roles, or factions are enough.",
+            "pressure": "What public pressure hits first: an accusation, disappearance, decision, or exposed secret?",
+            "tone": "Should this cut as high drama, comedy, mystery, speculative pressure, or social rupture?",
+            "boundaries": "What should this version avoid? One boundary is enough.",
+            "first_scene_hook": "Where does the first scene open before the room turns?",
+        }
+    return mapping[slot]
+
+
+def _guide_state_context(state: StoryGuideLoopState | None) -> str:
+    if state is None:
+        return ""
+    return " ".join(
+        slot.evidence.casefold()
+        for slot in state.slots.values()
+        if slot.evidence
+    )
+
+
+def _tiny_seed_reply(language: TemplateLanguage) -> str:
+    return (
+        "你已经到写作桌前了。给我一个开场画面：麻烦第一次出现时，我们在哪里？"
+        if language == "zh"
+        else "You are at the writing desk. Give me one scene to open on: where are we when trouble first appears?"
+    )
+
+
+def _who_clarification_reply(language: TemplateLanguage) -> str:
+    return (
+        "如果你是在问阵容，给我两个必须在场的人或阵营。第一幕里谁不能缺席？"
+        if language == "zh"
+        else "If you mean cast, give me two people or factions who must be present. Who cannot be missing from the first scene?"
+    )
+
+
+def _self_role_reply(slot: StoryGuideSlotId | None, language: TemplateLanguage) -> str:
+    if language == "zh":
+        if slot == "active_cast":
+            return "记下：玩家就是你。第一幕里谁还必须在场？"
+        if slot == "pressure":
+            return "记下：玩家就是你。这个房间里第一道压力是什么？"
+        return f"记下：玩家就是你。{_next_question(slot, language)}"
+    if slot == "active_cast":
+        return "Noted: you are the player in the scene. Who else must be in the room?"
+    if slot == "pressure":
+        return "Noted: you are the player in the scene. What pressure hits you first in that room?"
+    return f"Noted: you are the player in the scene. {_next_question(slot, language)}"
 
 
 def _ready_reply(language: TemplateLanguage) -> str:
@@ -393,6 +471,18 @@ def _detects_unsupported_small_cast_direction(text: str) -> bool:
     no_pressure = bool(re.search(r"\bno public pressure\b|\bno conflict\b|\bno mystery\b|没有公开压力|没有冲突|没有悬疑", lower, re.I))
     object_only = bool(re.search(r"\bwedding ring\b|\bring on a table\b|婚戒|戒指", lower, re.I))
     return has_two_person and no_pressure and object_only
+
+
+def _is_tiny_non_story_input(text: str) -> bool:
+    return bool(TINY_GREETING_RE.match(text.strip()))
+
+
+def _is_ambiguous_who_question(text: str) -> bool:
+    return bool(AMBIGUOUS_WHO_RE.match(text.strip()))
+
+
+def _is_self_role_answer(text: str) -> bool:
+    return bool(SELF_ROLE_RE.match(text.strip()))
 
 
 def _detect_privacy_intent(text: str) -> TemplateVisibility | None:

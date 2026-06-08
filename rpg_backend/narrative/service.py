@@ -135,12 +135,26 @@ _STORY_GUIDE_SYSTEM_PROMPT = """
 You are Tiny Stories' Story Butler for a Korean-webtoon style interactive story creator.
 Return strict JSON only.
 
-Write one concise, cinematic assistant reply for the player. Use the supplied deterministic slot state as the contract:
-- Ask only the next focused question when status is needs_field.
+Write one concise assistant reply for the player. You are a sharp, warm Korean webtoon story editor/butler, not a fantasy narrator.
+Use the supplied deterministic slot state as the contract:
+- Use only details the user supplied or the current draft already contains.
+- Anchor to one concrete word from the user's input or current draft when possible.
+- If the input is tiny or unclear, ask for a grounded scene spark; do not invent genre, mythology, cast, setting, or protagonist.
+- Ask exactly one focused next question when status is needs_field.
 - Acknowledge corrections naturally when status is ready_to_brief.
 - Do not mention provider, model, API, JSON, schema, backend, or deterministic fallback.
 - Do not override safety/unsupported decisions from the deterministic contract.
-- Keep the reply under 70 words in English or 120 Chinese characters.
+- Keep the reply under 45 words in English or 90 Chinese characters where practical.
+- Never use these player-facing phrases or patterns: "The shape is forming", "A figure emerges from the mist", wandering swordsman, hidden heir, village outcast, destiny, prophecy, realm, generic fantasy expansion.
+- Do not ask multiple questions. One reply, one job, one question.
+
+Examples:
+- User: "hi" -> {"reply":"You are at the writing desk. Give me one scene to open on: where are we when trouble first appears?"}
+- User: "Gala goes wrong" -> {"reply":"A gala with the floor about to crack. Who is closest to the trouble when it starts?"}
+- User answers role with "Me" -> {"reply":"Noted: you are the player in the scene. What pressure hits you first in that room?"}
+- User: "who" -> {"reply":"If you mean cast, give me two people or factions who must be present. Who cannot be missing from the first scene?"}
+- Clear high drama with a backup dancer, missing singer, and public panic -> {"reply":"That has a stage, witness, and pressure. Should the player be the backup dancer, the manager, or someone else inside the crisis?"}
+- Unsafe/out-of-scope -> {"reply":"I cannot build that scene as requested. Keep the pressure social or investigative: who is trying to stop harm before it escalates?"}
 
 JSON shape:
 {"reply":"player-facing assistant row"}
@@ -301,8 +315,13 @@ class NarrativeService:
         deterministic = advance_story_guide_loop(request.state, request.message, request.language)
         # Safety and privacy redirects are already product decisions; do not
         # spend live provider calls on text we deliberately refuse or do not
-        # want to silently mutate.
-        if deterministic.blocked or deterministic.acceptedText is False:
+        # want to silently mutate. Vague chat such as "hi" or "who" can still
+        # use the live voice layer while keeping acceptedText=false.
+        if deterministic.blocked or (
+            deterministic.acceptedText is False
+            and deterministic.settings is not None
+            and deterministic.settings.privacyIntent is not None
+        ):
             self._record_llm_fallback_event(
                 operation="create.story_butler_turn",
                 user_id=owner_user_id,
@@ -2803,9 +2822,37 @@ def _contains_player_debug_terms(value: str) -> bool:
     )
 
 
+_STORY_BUTLER_BANNED_VISIBLE_PHRASES = (
+    "the shape is forming",
+    "a figure emerges from the mist",
+    "wandering swordsman",
+    "hidden heir",
+    "village outcast",
+    "destiny",
+    "prophecy",
+    "the realm",
+    "hero's journey",
+    "choose your fate",
+    "i have detected",
+)
+
+
+def _contains_story_butler_banned_phrase(value: str) -> bool:
+    lowered = value.casefold()
+    return any(phrase in lowered for phrase in _STORY_BUTLER_BANNED_VISIBLE_PHRASES)
+
+
+def _asks_multiple_questions(value: str) -> bool:
+    return value.count("?") + value.count("？") > 1
+
+
 def _safe_live_reply(raw: object, fallback: str) -> str:
     reply = _safe_short_text(_unwrap_story_guide_reply(raw), fallback, max_len=420)
     if _contains_player_debug_terms(reply):
+        return fallback
+    if _contains_story_butler_banned_phrase(reply):
+        return fallback
+    if _asks_multiple_questions(reply):
         return fallback
     if _looks_like_protocol_wrapper(reply):
         return fallback

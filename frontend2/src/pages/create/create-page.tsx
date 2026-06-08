@@ -654,12 +654,12 @@ export function CreatePage({
                 />
                 <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
                   <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                  <span style={cpStyles.guideMessageText}>{briefPlanningCopy}</span>
+                  <span style={cpStyles.guideMessageText} aria-live="polite">{briefPlanningCopy}</span>
                   <span style={cpStyles.guideScanStages} aria-hidden>
-                    <span>Cast</span>
-                    <span>Pressure</span>
-                    <span>Promise</span>
-                    <span>Opening</span>
+                    <span>Lining up cast</span>
+                    <span>Locking pressure</span>
+                    <span>Checking boundaries</span>
+                    <span>Writing Brief</span>
                   </span>
                   <span style={cpStyles.guideScanRail} aria-hidden>
                     <motion.span
@@ -675,6 +675,8 @@ export function CreatePage({
               <div
                 data-guide-node="story_butler_turn"
                 data-guide-state="analyzing"
+                data-guide-process="story_guide.live"
+                data-guide-stage="slot_focus"
                 style={{
                   ...cpStyles.guideMessage,
                   ...cpStyles.guideMessageGuide,
@@ -692,12 +694,12 @@ export function CreatePage({
                 />
                 <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
                   <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                  <span style={cpStyles.guideMessageText}>{guideThinkingCopy}</span>
+                  <span style={cpStyles.guideMessageText} aria-live="polite">{guideThinkingCopy}</span>
                   <span style={cpStyles.guideScanStages} aria-hidden>
-                    <span>Cast</span>
-                    <span>Pressure</span>
-                    <span>Rules</span>
-                    <span>Opening</span>
+                    <span>Reading seed</span>
+                    <span>Finding pressure</span>
+                    <span>Checking boundaries</span>
+                    <span>Choosing next question</span>
                   </span>
                   <span style={cpStyles.guideScanRail} aria-hidden>
                     <motion.span

@@ -118,6 +118,9 @@ const UNSAFE_PATTERNS = [
   /可卡因/,
   /冰毒/,
 ]
+const TINY_GREETING_PATTERN = /^(hi|hello|hey|yo|ok|okay|你好|嗨|哈喽|哈罗)[.!。！?？]*$/i
+const AMBIGUOUS_WHO_PATTERN = /^(who\?|who|谁|谁？)$/i
+const SELF_ROLE_PATTERN = /^(me|myself|i do|i am|i'm in|i'll play|我|我来|我自己|我扮演)$/i
 
 const PARTICIPANT_TERMS = [
   "parent",
@@ -398,7 +401,6 @@ export function advanceStoryGuideLoop(
   lang: Lang = "en",
 ): StoryGuideLoopDecision {
   const text = rawText.trim()
-  const labels = SLOT_LABELS[lang]
   const settings = inferStoryGuideSettings(text, lang)
   if (!text) {
     const state = {
@@ -456,6 +458,45 @@ export function advanceStoryGuideLoop(
         lang === "zh"
           ? "发布范围我不会从聊天里偷偷改。你现在还是按上面的「谁能玩」设置来保存；要公开，点那一行改成「广场公开」。"
           : "I will not silently change publishing from chat. This story still uses the explicit “Who can play this” row above the composer; switch that row to Public if you want everyone to play it.",
+      acceptedText: false,
+      blocked: false,
+      canShapeBrief: canShapeStoryBrief(state),
+      settings,
+      ledger: buildStoryGuideLedger(state, lang),
+    }
+  }
+
+  if (isTinyNonStoryInput(text) && previousState.acceptedTurns.length === 0) {
+    const state = {
+      ...syncLabels(previousState, lang),
+      status: "needs_field" as const,
+      lastNode: "ask_missing_slot" as const,
+      nextMissing: "pressure" as const,
+    }
+    return {
+      state,
+      node: "ask_missing_slot",
+      status: "needs_field",
+      reply: tinySeedReply(lang),
+      acceptedText: false,
+      blocked: false,
+      canShapeBrief: canShapeStoryBrief(state),
+      settings,
+      ledger: buildStoryGuideLedger(state, lang),
+    }
+  }
+
+  if (isAmbiguousWhoQuestion(text)) {
+    const state = {
+      ...syncLabels(previousState, lang),
+      status: "needs_field" as const,
+      lastNode: "ask_missing_slot" as const,
+    }
+    return {
+      state,
+      node: "ask_missing_slot",
+      status: "needs_field",
+      reply: whoClarificationReply(lang),
       acceptedText: false,
       blocked: false,
       canShapeBrief: canShapeStoryBrief(state),
@@ -526,7 +567,12 @@ export function advanceStoryGuideLoop(
     }
   }
 
-  const updated = mergeSlots(previousState, extractSlots(text, lang), lang)
+  const selfRoleAnswer = isSelfRoleAnswer(text) && previousState.nextMissing === "player_role" && previousState.acceptedTurns.length > 0
+  const extracted = extractSlots(text, lang)
+  if (selfRoleAnswer) {
+    extracted.player_role = lang === "zh" ? "玩家自己" : "player as themselves"
+  }
+  const updated = mergeSlots(previousState, extracted, lang)
   const nextMissing = findNextMissing(updated)
   const ready = canShapeStoryBrief({ ...updated, nextMissing })
   const state: StoryGuideLoopState = {
@@ -541,7 +587,7 @@ export function advanceStoryGuideLoop(
     state,
     node: state.lastNode,
     status: state.status,
-    reply: ready ? readyReply(lang) : missingReply(state.nextMissing, lang, labels),
+    reply: ready ? readyReply(lang) : selfRoleAnswer ? selfRoleReply(state.nextMissing, lang) : missingReply(state.nextMissing, lang, state),
     acceptedText: true,
     blocked: false,
     canShapeBrief: ready,
@@ -652,10 +698,10 @@ function shortEvidence(text: string): string {
 
 function findNextMissing(state: StoryGuideLoopState): StoryGuideSlotId | null {
   const priority: StoryGuideSlotId[] = [
+    "player_role",
     "active_cast",
     "pressure",
     "first_scene_hook",
-    "player_role",
     "tone",
     "boundaries",
   ]
@@ -690,18 +736,82 @@ function nextQuestionFor(slot: StoryGuideSlotId | null, lang: Lang): string {
 function missingReply(
   slot: StoryGuideSlotId | null,
   lang: Lang,
-  labels: Record<StoryGuideSlotId, string>,
+  state?: StoryGuideLoopState,
 ): string {
   if (!slot) return readyReply(lang)
+  const context = guideStateContext(state)
+  const zh: Record<StoryGuideSlotId, string> = {
+    player_role: "已经有开端了。玩家在第一幕里是谁？",
+    active_cast: "把房间补齐。谁必须在场？两个名字、身份或阵营就够。",
+    pressure: "先给我第一道压力：指控、失踪、决定，还是被曝光的秘密？",
+    tone: "这版要偏高戏剧、喜剧、悬疑、科幻奇幻，还是关系压力？",
+    boundaries: "这版需要避开什么？给我一条边界就够。",
+    first_scene_hook: "第一幕从哪里开？给我一个地点、时刻或即将发生的动作。",
+  }
+  const en: Record<StoryGuideSlotId, string> = {
+    player_role: "Good, we have the trouble. Who are you when it starts?",
+    active_cast: "Who must be in the room? Two names, roles, or factions are enough.",
+    pressure: "What public pressure hits first: an accusation, disappearance, decision, or exposed secret?",
+    tone: "Should this cut as high drama, comedy, mystery, speculative pressure, or social rupture?",
+    boundaries: "What should this version avoid? One boundary is enough.",
+    first_scene_hook: "Where does the first scene open before the room turns?",
+  }
+  if (lang === "en" && slot === "player_role" && context.includes("gala")) {
+    return "A gala with the floor about to crack. Who is closest to the trouble when it starts?"
+  }
+  if (lang === "en" && slot === "player_role" && (context.includes("livestream") || context.includes("stage") || context.includes("awards"))) {
+    return "That has a stage and public pressure. Who is closest to the trouble when it starts?"
+  }
+  return (lang === "zh" ? zh : en)[slot]
+}
+
+function guideStateContext(state?: StoryGuideLoopState): string {
+  if (!state) return ""
+  return Object.values(state.slots)
+    .map((slot) => slot.evidence.toLowerCase())
+    .filter(Boolean)
+    .join(" ")
+}
+
+function tinySeedReply(lang: Lang): string {
   return lang === "zh"
-    ? `我已记录这条。现在还缺「${labels[slot]}」：${nextQuestionFor(slot, lang)}`
-    : `I’ve recorded that. The main missing piece is ${labels[slot]}: ${nextQuestionFor(slot, lang)}`
+    ? "你已经到写作桌前了。给我一个开场画面：麻烦第一次出现时，我们在哪里？"
+    : "You are at the writing desk. Give me one scene to open on: where are we when trouble first appears?"
+}
+
+function whoClarificationReply(lang: Lang): string {
+  return lang === "zh"
+    ? "如果你是在问阵容，给我两个必须在场的人或阵营。第一幕里谁不能缺席？"
+    : "If you mean cast, give me two people or factions who must be present. Who cannot be missing from the first scene?"
+}
+
+function selfRoleReply(slot: StoryGuideSlotId | null, lang: Lang): string {
+  if (lang === "zh") {
+    if (slot === "active_cast") return "记下：玩家就是你。第一幕里谁还必须在场？"
+    if (slot === "pressure") return "记下：玩家就是你。这个房间里第一道压力是什么？"
+    return `记下：玩家就是你。${nextQuestionFor(slot, lang)}`
+  }
+  if (slot === "active_cast") return "Noted: you are the player in the scene. Who else must be in the room?"
+  if (slot === "pressure") return "Noted: you are the player in the scene. What pressure hits you first in that room?"
+  return `Noted: you are the player in the scene. ${nextQuestionFor(slot, lang)}`
 }
 
 function readyReply(lang: Lang): string {
   return lang === "zh"
     ? "方向已经够清楚了。我可以把它整理成最终 Story Brief；你也可以继续补一句规则或纠正。"
     : "The direction is clear enough. I can shape the final Story Brief now, or you can add one more rule or correction."
+}
+
+function isTinyNonStoryInput(text: string): boolean {
+  return TINY_GREETING_PATTERN.test(text.trim())
+}
+
+function isAmbiguousWhoQuestion(text: string): boolean {
+  return AMBIGUOUS_WHO_PATTERN.test(text.trim())
+}
+
+function isSelfRoleAnswer(text: string): boolean {
+  return SELF_ROLE_PATTERN.test(text.trim())
 }
 
 function detectsHardConflict(text: string): boolean {

@@ -8,6 +8,7 @@ from rpg_backend.narrative.contracts import StoryBriefAdvisorRequest, StoryGuide
 from rpg_backend.narrative.gateway import NarrativeLLMGateway, get_narrative_gateway
 from rpg_backend.narrative.repository import NarrativeRepository
 from rpg_backend.narrative.service import NarrativeService
+from rpg_backend.narrative.story_guide import advance_story_guide_loop
 from rpg_backend.responses_transport import ResponsesJSONTransport, build_chat_completions_client, usage_to_dict
 
 ROOT_FILES = (
@@ -245,6 +246,78 @@ def test_story_butler_turn_recovers_malformed_reply_wrapper(tmp_path) -> None:
     assert response.ledger is not None
 
 
+def test_story_butler_fallback_handles_tiny_greeting_without_stock_fantasy(tmp_path) -> None:
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=None,
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message="hi", language="en"),
+        owner_user_id="user_fallback",
+    )
+
+    assert response.acceptedText is False
+    assert response.source == "no_gateway_fallback"
+    assert "writing desk" in response.reply
+    for banned in (
+        "The shape is forming",
+        "figure emerges",
+        "wandering swordsman",
+        "hidden heir",
+        "village outcast",
+        "destiny",
+        "prophecy",
+        "realm",
+    ):
+        assert banned.lower() not in response.reply.lower()
+
+
+def test_story_butler_discards_stock_live_reply_before_player_ui(tmp_path) -> None:
+    transport = _transport(
+        {
+            "reply": (
+                "The shape is forming. A figure emerges from the mist. "
+                "Are you a wandering swordsman? Are you a hidden heir?"
+            )
+        },
+        usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message="Gala goes wrong.", language="en"),
+        owner_user_id="user_live",
+    )
+
+    assert "The shape is forming" not in response.reply
+    assert "figure emerges" not in response.reply
+    assert "wandering swordsman" not in response.reply
+    assert "hidden heir" not in response.reply
+    assert "gala" in response.reply.lower()
+    assert "Who is closest" in response.reply
+
+
+def test_story_guide_handles_me_and_who_as_contextual_short_inputs() -> None:
+    first = advance_story_guide_loop(None, "Gala goes wrong.", "en")
+    role_answer = advance_story_guide_loop(first.state, "Me", "en")
+    who_question = advance_story_guide_loop(first.state, "who", "en")
+
+    assert role_answer.acceptedText is True
+    assert role_answer.state.slots["player_role"].filled is True
+    assert role_answer.state.slots["player_role"].evidence == "player as themselves"
+    assert role_answer.reply.startswith("Noted: you are the player")
+    assert "Who is the player" not in role_answer.reply
+
+    assert who_question.acceptedText is False
+    assert "If you mean cast" in who_question.reply
+    assert "wandering swordsman" not in who_question.reply
+    assert "hidden heir" not in who_question.reply
+
+
 def test_story_butler_turn_falls_back_without_gateway_and_records_no_gateway_event(tmp_path) -> None:
     service = NarrativeService(
         repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
@@ -310,6 +383,12 @@ def test_create_page_calls_backend_story_guide_turn_and_shows_thinking_row() -> 
 
     assert "createNarrativeStoryGuideTurn" in create_page
     assert 'data-guide-node="story_butler_turn"' in create_page
+    assert 'data-guide-process="story_guide.live"' in create_page
+    assert 'data-guide-stage="slot_focus"' in create_page
+    assert "Reading seed" in create_page
+    assert "Finding pressure" in create_page
+    assert "Checking boundaries" in create_page
+    assert "Choosing next question" in create_page
     assert "guideBusy" in create_page
     assert "normalizeGuideReplyText(response.reply)" in create_page
     assert '"reply"\\s*:' in create_page
