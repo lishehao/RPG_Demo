@@ -903,6 +903,7 @@ export type NarrativeStoryGuideTurnRequest = {
   message: string
   language?: NarrativeTemplateLanguage
   current_seed?: string
+  previous_assistant_reply?: string
   state?: NarrativeStoryGuideLoopState | null
 }
 

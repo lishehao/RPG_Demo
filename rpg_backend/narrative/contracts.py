@@ -690,6 +690,7 @@ class StoryGuideTurnRequest(BaseModel):
     message: str = Field(min_length=1, max_length=1000)
     language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
     current_seed: str = Field(default="", max_length=4000)
+    previous_assistant_reply: str = Field(default="", max_length=600)
     state: StoryGuideLoopState | None = None
 
     @field_validator("message")

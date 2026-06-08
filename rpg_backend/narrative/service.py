@@ -81,7 +81,7 @@ from rpg_backend.narrative.gateway import (
 )
 from rpg_backend.narrative.judges import judge_contract, judge_step
 from rpg_backend.narrative.repository import NarrativeNotFoundError, NarrativeRepository
-from rpg_backend.narrative.story_guide import advance_story_guide_loop
+from rpg_backend.narrative.story_guide import advance_story_guide_loop, story_butler_voice_policy
 
 
 PRIVATE_REPLAY_TITLE = "Shared private story"
@@ -135,26 +135,19 @@ _STORY_GUIDE_SYSTEM_PROMPT = """
 You are Tiny Stories' Story Butler for a Korean-webtoon style interactive story creator.
 Return strict JSON only.
 
-Write one concise assistant reply for the player. You are a sharp, warm Korean webtoon story editor/butler, not a fantasy narrator.
-Use the supplied deterministic slot state as the contract:
+Write one concise assistant reply for the player. You are a sharp, warm Korean webtoon story editor/butler.
+Use the supplied deterministic slot state and selected voice_skill as the contract:
 - Use only details the user supplied or the current draft already contains.
-- Anchor to one concrete word from the user's input or current draft when possible.
-- If the input is tiny or unclear, ask for a grounded scene spark; do not invent genre, mythology, cast, setting, or protagonist.
+- Follow voice_skill.job and voice_skill.response_shape. Use voice_skill.examples as illustrative shapes, not exact text to copy.
+- Anchor to current scene nouns from voice_skill.grounding_terms or the user's input when possible.
+- If the input is tiny or unclear, use the opening_scene_prompt skill and ask for a grounded scene spark; do not invent genre, cast, setting, or protagonist.
 - Ask exactly one focused next question when status is needs_field.
 - Acknowledge corrections naturally when status is ready_to_brief.
+- If voice_skill.previous_assistant_reply is present, vary the wording and avoid repeating its sentence shape.
 - Do not mention provider, model, API, JSON, schema, backend, or deterministic fallback.
 - Do not override safety/unsupported decisions from the deterministic contract.
 - Keep the reply under 45 words in English or 90 Chinese characters where practical.
-- Never use these player-facing phrases or patterns: "The shape is forming", "A figure emerges from the mist", wandering swordsman, hidden heir, village outcast, destiny, prophecy, realm, generic fantasy expansion.
 - Do not ask multiple questions. One reply, one job, one question.
-
-Examples:
-- User: "hi" -> {"reply":"You are at the writing desk. Give me one scene to open on: where are we when trouble first appears?"}
-- User: "Gala goes wrong" -> {"reply":"A gala with the floor about to crack. Who is closest to the trouble when it starts?"}
-- User answers role with "Me" -> {"reply":"Noted: you are the player in the scene. What pressure hits you first in that room?"}
-- User: "who" -> {"reply":"If you mean cast, give me two people or factions who must be present. Who cannot be missing from the first scene?"}
-- Clear high drama with a backup dancer, missing singer, and public panic -> {"reply":"That has a stage, witness, and pressure. Should the player be the backup dancer, the manager, or someone else inside the crisis?"}
-- Unsafe/out-of-scope -> {"reply":"I cannot build that scene as requested. Keep the pressure social or investigative: who is trying to stop harm before it escalates?"}
 
 JSON shape:
 {"reply":"player-facing assistant row"}
@@ -341,12 +334,20 @@ class NarrativeService:
         started_at = time.monotonic()
         trace_start = self._trace_start()
         try:
+            voice_policy = story_butler_voice_policy(
+                deterministic,
+                message=request.message,
+                current_seed=request.current_seed,
+                previous_assistant_reply=request.previous_assistant_reply,
+            )
             result = self.gateway.invoke_json(
                 system_prompt=_STORY_GUIDE_SYSTEM_PROMPT,
                 user_payload={
                     "message": request.message,
                     "language": request.language,
                     "current_seed": request.current_seed,
+                    "previous_assistant_reply": request.previous_assistant_reply,
+                    "voice_skill": voice_policy,
                     "deterministic_contract": deterministic.model_dump(mode="json"),
                 },
                 operation_name="create.story_butler_turn",
@@ -359,7 +360,12 @@ class NarrativeService:
                 operation_latency_ms=operation_latency_ms,
                 user_id=owner_user_id,
             )
-            live_reply = _safe_live_reply(result.payload.get("reply"), deterministic.reply)
+            live_reply = _safe_live_reply(
+                result.payload.get("reply"),
+                deterministic.reply,
+                previous_assistant_reply=request.previous_assistant_reply,
+                voice_skill=voice_policy,
+            )
             source: LLMCallSourceLabel = "live_repaired" if _trace_had_repair(self._gateway_trace_since(trace_start)) else "live"
             return deterministic.model_copy(update={"reply": live_reply, "source": source})
         except Exception as exc:  # noqa: BLE001
@@ -2822,41 +2828,62 @@ def _contains_player_debug_terms(value: str) -> bool:
     )
 
 
-_STORY_BUTLER_BANNED_VISIBLE_PHRASES = (
-    "the shape is forming",
-    "a figure emerges from the mist",
-    "wandering swordsman",
-    "hidden heir",
-    "village outcast",
-    "destiny",
-    "prophecy",
-    "the realm",
-    "hero's journey",
-    "choose your fate",
-    "i have detected",
-)
-
-
-def _contains_story_butler_banned_phrase(value: str) -> bool:
-    lowered = value.casefold()
-    return any(phrase in lowered for phrase in _STORY_BUTLER_BANNED_VISIBLE_PHRASES)
-
-
 def _asks_multiple_questions(value: str) -> bool:
     return value.count("?") + value.count("？") > 1
 
 
-def _safe_live_reply(raw: object, fallback: str) -> str:
+def _is_exact_repeat(value: str, previous: str) -> bool:
+    if not previous.strip():
+        return False
+    return normalize_whitespace(value).casefold() == normalize_whitespace(previous).casefold()
+
+
+def _repeat_safe_fallback(fallback: str, previous: str) -> str:
+    if not _is_exact_repeat(fallback, previous):
+        return fallback
+    return "Same thread. What one new detail should I lock next?"
+
+
+def _safe_live_reply(
+    raw: object,
+    fallback: str,
+    *,
+    previous_assistant_reply: str = "",
+    voice_skill: dict[str, object] | None = None,
+) -> str:
+    safe_fallback = _repeat_safe_fallback(fallback, previous_assistant_reply)
     reply = _safe_short_text(_unwrap_story_guide_reply(raw), fallback, max_len=420)
     if _contains_player_debug_terms(reply):
-        return fallback
-    if _contains_story_butler_banned_phrase(reply):
-        return fallback
+        return safe_fallback
     if _asks_multiple_questions(reply):
-        return fallback
+        return safe_fallback
+    if _is_exact_repeat(reply, previous_assistant_reply):
+        return safe_fallback
+    if not _reply_matches_voice_skill(reply, voice_skill):
+        return safe_fallback
     if _looks_like_protocol_wrapper(reply):
-        return fallback
+        return safe_fallback
     return reply
+
+
+def _reply_matches_voice_skill(reply: str, voice_skill: dict[str, object] | None) -> bool:
+    if not isinstance(voice_skill, dict):
+        return True
+    skill_id = str(voice_skill.get("id") or "")
+    lowered = reply.casefold()
+    semantic_markers = {
+        "opening_scene_prompt": ("scene", "where", "trouble", "open", "start", "first", "writing desk", "camera"),
+        "role_focus": ("who", "you", "player", "closest", "role"),
+        "cast_focus": ("who", "else", "people", "group", "faction", "cast", "room", "present"),
+        "pressure_focus": ("pressure", "stake", "wrong", "decision", "secret", "object", "handled", "happen"),
+        "tone_focus": ("drama", "comedy", "mystery", "tone", "feel", "cut", "social"),
+        "boundary_redirect": ("cannot", "can't", "redirect", "instead", "safer", "avoid", "boundary", "pressure"),
+        "brief_readiness": ("brief", "enough", "shape", "ready", "lock", "story"),
+    }
+    markers = semantic_markers.get(skill_id)
+    if not markers:
+        return True
+    return any(marker in lowered for marker in markers)
 
 
 def _unwrap_story_guide_reply(raw: object, *, depth: int = 0) -> object:

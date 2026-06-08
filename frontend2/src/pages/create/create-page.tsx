@@ -422,6 +422,8 @@ export function CreatePage({
     if (guideBusy || briefBusy || busy) return
     const previousState = guideLoopState
     const previousSeed = seed
+    const previousAssistantReply =
+      [...chatMessages].reverse().find((message) => message.speaker === "guide")?.text ?? ""
     const time = Date.now()
     setDraftTurn("")
     setError(null)
@@ -475,6 +477,7 @@ export function CreatePage({
         message: trimmed,
         language: storyLanguage,
         current_seed: previousSeed,
+        previous_assistant_reply: previousAssistantReply,
         state: previousState,
       })
       applyGuideResponse(response)

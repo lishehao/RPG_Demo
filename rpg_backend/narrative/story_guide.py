@@ -74,6 +74,69 @@ TINY_GREETING_RE = re.compile(r"^(hi|hello|hey|yo|ok|okay|你好|嗨|哈喽|哈�
 AMBIGUOUS_WHO_RE = re.compile(r"^(who\?|who|谁|谁？)$", re.I)
 SELF_ROLE_RE = re.compile(r"^(me|myself|i do|i am|i'm in|i'll play|我|我来|我自己|我扮演)$", re.I)
 
+STORY_BUTLER_VOICE_SKILLS: dict[str, dict[str, object]] = {
+    "opening_scene_prompt": {
+        "job": "ask for one concrete opening scene spark when the seed is empty, tiny, or missing a first-shot anchor",
+        "response_shape": "micro-hook from the desk, then one question about where trouble first appears",
+        "tone_anchors": ["quiet writing desk", "opening scene", "first trouble"],
+        "example_moves": [
+            "You are at the writing desk. Give me one scene to open on: where are we when trouble first appears?",
+            "Start with the camera. Where are we when the first problem enters the room?",
+        ],
+    },
+    "role_focus": {
+        "job": "identify the player's role or point of view in the first playable scene",
+        "response_shape": "echo the seed's concrete setting or pressure, then ask who the player is closest to",
+        "tone_anchors": ["player lens", "first room", "closest to trouble"],
+        "example_moves": [
+            "A gala with the floor about to crack. Who is closest to the trouble when it starts?",
+            "That has a public spark. Who are you when the room first turns?",
+        ],
+    },
+    "cast_focus": {
+        "job": "collect two or three people, groups, or factions that must be present",
+        "response_shape": "acknowledge the player lens if known, then ask for who else must be in the room",
+        "tone_anchors": ["cast in the room", "pressure holder", "witness or opposition"],
+        "example_moves": [
+            "Got it: you are in the scene. Who else must be in the room when trouble starts?",
+            "If you mean cast, give me two people or factions who cannot be missing from the first scene.",
+        ],
+    },
+    "pressure_focus": {
+        "job": "find the first pressure, decision, contested object, or public consequence",
+        "response_shape": "name the live setting, then ask what pressure hits first",
+        "tone_anchors": ["public pressure", "decision", "thing that goes wrong"],
+        "example_moves": [
+            "The room is set. What pressure hits first: an accusation, disappearance, decision, or exposed secret?",
+            "Whoever is there needs a live problem. What goes wrong before anyone can leave?",
+        ],
+    },
+    "tone_focus": {
+        "job": "select the story feel only after scene, role, cast, and pressure are clear enough",
+        "response_shape": "summarize the playable ingredients, then ask for one tonal direction",
+        "tone_anchors": ["high drama", "mystery", "social rupture", "comedy edge"],
+        "example_moves": [
+            "The crisis has a room and pressure. Should it cut as high drama, mystery, comedy, or social rupture?",
+        ],
+    },
+    "boundary_redirect": {
+        "job": "redirect unsafe or contradictory input into a playable social, investigative, or public-pressure alternative",
+        "response_shape": "calm refusal or clarification, then one safer question",
+        "tone_anchors": ["safe pressure", "public choice", "misread evidence"],
+        "example_moves": [
+            "I cannot build that scene as requested. Keep the pressure social or investigative: who is trying to stop harm before it escalates?",
+        ],
+    },
+    "brief_readiness": {
+        "job": "confirm enough story material exists and invite either Story Brief shaping or one last correction",
+        "response_shape": "short confidence line grounded in scene nouns, then one optional correction question",
+        "tone_anchors": ["playable promise", "ready to shape", "last correction"],
+        "example_moves": [
+            "That has a stage, witness, and pressure. Want me to shape the Story Brief now, or add one boundary first?",
+        ],
+    },
+}
+
 
 def create_initial_story_guide_state(language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE) -> StoryGuideLoopState:
     labels = SLOT_LABELS[language]
@@ -112,6 +175,33 @@ def build_story_guide_ledger(
         stillNeed=" · ".join(missing[:3]) if missing else ("已足够整理 Brief" if language == "zh" else "enough to shape the Brief"),
         nextQuestion=_next_question(state.nextMissing, language),
     )
+
+
+def story_butler_voice_policy(
+    turn: StoryGuideTurnResponse,
+    *,
+    message: str,
+    current_seed: str = "",
+    previous_assistant_reply: str = "",
+) -> dict[str, object]:
+    skill_id = _select_story_butler_voice_skill(turn, message)
+    policy = STORY_BUTLER_VOICE_SKILLS[skill_id]
+    return {
+        "id": skill_id,
+        "job": policy["job"],
+        "response_shape": policy["response_shape"],
+        "tone_anchors": policy["tone_anchors"],
+        "example_moves": policy["example_moves"],
+        "focus_slot": turn.state.nextMissing,
+        "node": turn.node,
+        "conversation_status": turn.status,
+        "grounding_terms": _extract_grounding_terms(" ".join([current_seed, message])),
+        "previous_assistant_reply": _short_evidence(previous_assistant_reply),
+        "variation_instruction": (
+            "Do not repeat the previous assistant reply or sentence shape. "
+            "Use the selected skill's job and current scene nouns to phrase a fresh, concise one-question response."
+        ),
+    }
 
 
 def advance_story_guide_loop(
@@ -354,6 +444,75 @@ def _find_next_missing(state: StoryGuideLoopState) -> StoryGuideSlotId | None:
         if not state.slots[slot].filled:
             return slot
     return None
+
+
+def _select_story_butler_voice_skill(turn: StoryGuideTurnResponse, message: str) -> str:
+    if turn.blocked or turn.node in {"redirect_out_of_spec", "clarify_conflict"}:
+        return "boundary_redirect"
+    if turn.status == "ready_to_brief" or turn.node == "ready_to_shape":
+        return "brief_readiness"
+    if _is_tiny_non_story_input(message):
+        return "opening_scene_prompt"
+    if _is_ambiguous_who_question(message):
+        return "cast_focus"
+    slot = turn.state.nextMissing
+    if slot == "player_role":
+        return "role_focus"
+    if slot == "active_cast":
+        return "cast_focus"
+    if slot == "pressure":
+        return "pressure_focus"
+    if slot == "tone":
+        return "tone_focus"
+    if slot == "boundaries":
+        return "boundary_redirect"
+    if slot == "first_scene_hook":
+        return "opening_scene_prompt"
+    return "opening_scene_prompt"
+
+
+def _extract_grounding_terms(text: str) -> list[str]:
+    normalized = re.sub(r"[^\w\s\u3400-\u9fff-]", " ", text.casefold())
+    words = [word.strip("-_") for word in normalized.split()]
+    stopwords = {
+        "the",
+        "and",
+        "with",
+        "that",
+        "this",
+        "where",
+        "what",
+        "who",
+        "when",
+        "before",
+        "after",
+        "into",
+        "from",
+        "story",
+        "scene",
+        "goes",
+        "wrong",
+        "there",
+        "their",
+        "your",
+        "you",
+        "are",
+        "will",
+        "must",
+        "need",
+        "needs",
+        "first",
+        "room",
+    }
+    terms: list[str] = []
+    for word in words:
+        if len(word) < 3 or word in stopwords:
+            continue
+        if word not in terms:
+            terms.append(word)
+        if len(terms) >= 8:
+            break
+    return terms
 
 
 def _next_question(slot: StoryGuideSlotId | None, language: TemplateLanguage) -> str:

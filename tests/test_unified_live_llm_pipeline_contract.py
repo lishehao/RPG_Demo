@@ -8,7 +8,7 @@ from rpg_backend.narrative.contracts import StoryBriefAdvisorRequest, StoryGuide
 from rpg_backend.narrative.gateway import NarrativeLLMGateway, get_narrative_gateway
 from rpg_backend.narrative.repository import NarrativeRepository
 from rpg_backend.narrative.service import NarrativeService
-from rpg_backend.narrative.story_guide import advance_story_guide_loop
+from rpg_backend.narrative.story_guide import advance_story_guide_loop, story_butler_voice_policy
 from rpg_backend.responses_transport import ResponsesJSONTransport, build_chat_completions_client, usage_to_dict
 
 ROOT_FILES = (
@@ -227,7 +227,7 @@ def test_story_butler_turn_accepts_natural_text_plaintext_fallback(tmp_path) -> 
 
 def test_story_butler_turn_recovers_malformed_reply_wrapper(tmp_path) -> None:
     transport = _transport(
-        {"reply": '{"reply":"The publicist is in the room. What pressure hits first?",}'},
+        {"reply": '{"reply":"The gala is unstable. Who are you when the trouble starts?",}'},
         usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
     )
     service = NarrativeService(
@@ -241,12 +241,12 @@ def test_story_butler_turn_recovers_malformed_reply_wrapper(tmp_path) -> None:
     )
 
     assert response.source == "live"
-    assert response.reply == "The publicist is in the room. What pressure hits first?"
+    assert response.reply == "The gala is unstable. Who are you when the trouble starts?"
     assert '{"reply"' not in response.reply
     assert response.ledger is not None
 
 
-def test_story_butler_fallback_handles_tiny_greeting_without_stock_fantasy(tmp_path) -> None:
+def test_story_butler_fallback_handles_tiny_greeting_with_opening_scene_skill(tmp_path) -> None:
     service = NarrativeService(
         repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
         gateway=None,
@@ -260,27 +260,15 @@ def test_story_butler_fallback_handles_tiny_greeting_without_stock_fantasy(tmp_p
     assert response.acceptedText is False
     assert response.source == "no_gateway_fallback"
     assert "writing desk" in response.reply
-    for banned in (
-        "The shape is forming",
-        "figure emerges",
-        "wandering swordsman",
-        "hidden heir",
-        "village outcast",
-        "destiny",
-        "prophecy",
-        "realm",
-    ):
-        assert banned.lower() not in response.reply.lower()
+    policy = story_butler_voice_policy(response, message="hi")
+    assert policy["id"] == "opening_scene_prompt"
+    assert policy["focus_slot"] == "pressure"
+    assert "opening scene spark" in str(policy["job"])
 
 
-def test_story_butler_discards_stock_live_reply_before_player_ui(tmp_path) -> None:
+def test_story_butler_sends_voice_skill_policy_to_live_gateway(tmp_path) -> None:
     transport = _transport(
-        {
-            "reply": (
-                "The shape is forming. A figure emerges from the mist. "
-                "Are you a wandering swordsman? Are you a hidden heir?"
-            )
-        },
+        {"reply": "The gala is already unstable. Who is closest to the trouble when it starts?"},
         usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
     )
     service = NarrativeService(
@@ -292,13 +280,78 @@ def test_story_butler_discards_stock_live_reply_before_player_ui(tmp_path) -> No
         StoryGuideTurnRequest(message="Gala goes wrong.", language="en"),
         owner_user_id="user_live",
     )
+    request_payload = json.loads(transport.client.responses.calls[-1]["input"])
+    voice_skill = request_payload["voice_skill"]
 
-    assert "The shape is forming" not in response.reply
-    assert "figure emerges" not in response.reply
-    assert "wandering swordsman" not in response.reply
-    assert "hidden heir" not in response.reply
+    assert response.source == "live"
+    assert response.reply.startswith("The gala is already unstable")
+    assert voice_skill["id"] == "role_focus"
+    assert voice_skill["focus_slot"] == "player_role"
+    assert "gala" in voice_skill["grounding_terms"]
+    assert "variation_instruction" in voice_skill
+
+
+def test_story_butler_repairs_live_reply_that_misses_selected_skill(tmp_path) -> None:
+    transport = _transport(
+        {"reply": "What contested object, secret, decision, or public pressure must be handled now?"},
+        usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message="hi", language="en"),
+        owner_user_id="user_live",
+    )
+    request_payload = json.loads(transport.client.responses.calls[-1]["input"])
+
+    assert request_payload["voice_skill"]["id"] == "opening_scene_prompt"
+    assert response.source == "live"
+    assert "where are we" in response.reply.lower()
+    assert "pressure must be handled" not in response.reply.lower()
+
+
+def test_story_butler_rejects_multi_question_or_repeated_live_rows(tmp_path) -> None:
+    repeated = "A gala with the floor about to crack. Who is closest to the trouble when it starts?"
+    transport = _transport(
+        {"reply": repeated},
+        usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    repeated_response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(
+            message="Gala goes wrong.",
+            language="en",
+            previous_assistant_reply=repeated,
+        ),
+        owner_user_id="user_live",
+    )
+
+    assert repeated_response.reply != repeated
+    assert repeated_response.reply.count("?") <= 1
+
+    transport = _transport(
+        {"reply": "A gala sparks quickly. Who are you? Who can push back?"},
+        usage={"input_tokens": 30, "output_tokens": 18, "total_tokens": 48},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message="Gala goes wrong.", language="en"),
+        owner_user_id="user_live_2",
+    )
+
+    assert response.reply.count("?") <= 1
     assert "gala" in response.reply.lower()
-    assert "Who is closest" in response.reply
 
 
 def test_story_guide_handles_me_and_who_as_contextual_short_inputs() -> None:
@@ -314,8 +367,9 @@ def test_story_guide_handles_me_and_who_as_contextual_short_inputs() -> None:
 
     assert who_question.acceptedText is False
     assert "If you mean cast" in who_question.reply
-    assert "wandering swordsman" not in who_question.reply
-    assert "hidden heir" not in who_question.reply
+    policy = story_butler_voice_policy(who_question, message="who")
+    assert policy["id"] == "cast_focus"
+    assert "two people" in str(policy["example_moves"])
 
 
 def test_story_butler_turn_falls_back_without_gateway_and_records_no_gateway_event(tmp_path) -> None:
