@@ -96,9 +96,10 @@ export function CreatePage({
   const [guideBusy, setGuideBusy] = useState(false)
   const [correctionCount, setCorrectionCount] = useState(0)
   const [visibility, setVisibility] = useState<NarrativeTemplateVisibility>("private")
+  const [privacySetupVisible, setPrivacySetupVisible] = useState(true)
+  const [privacyPromptVisible, setPrivacyPromptVisible] = useState(false)
   const [turnBudget, setTurnBudget] = useState<number>(12)
   const [difficulty, setDifficulty] = useState<NarrativeDifficulty>("story")
-  const [settingsOpen, setSettingsOpen] = useState(false)
   // Default the story language to whatever the UI is in. The user can
   // override — the field is independent of UI language once chosen
   // (you can browse in English but write a Chinese story, etc.).
@@ -118,6 +119,7 @@ export function CreatePage({
   const briefMessageRef = useRef<HTMLDivElement | null>(null)
   const transcriptEndRef = useRef<HTMLDivElement | null>(null)
   const guestHandleRef = useRef<string | null>(null)
+  const autoBriefKeyRef = useRef<string | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
   // guarantee that — React batches state updates, so two clicks within
@@ -163,7 +165,6 @@ export function CreatePage({
     ],
     [chatMessages, t],
   )
-  const settingsSummary = t(selectedVisibility.labelKey)
   const submitModKey = useMemo(() => {
     if (typeof navigator === "undefined") return "Ctrl"
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
@@ -185,7 +186,6 @@ export function CreatePage({
     BUSY_STAGE_COUNT - 1,
     Math.max(0, Math.floor(busyElapsedSeconds / 3)),
   )
-  const briefComposerLabel = briefBusy ? t("create.brief_cta_busy") : t("create.brief_cta_idle")
   const briefPlanningCopy =
     briefBusyElapsedSeconds >= 10
       ? t("create.guide_planning_slow")
@@ -216,6 +216,17 @@ export function CreatePage({
       setError(friendlyError(err, t("create.error_guest_failed")))
       return false
     }
+  }
+
+  const handleVisibilityChoice = (nextVisibility: NarrativeTemplateVisibility) => {
+    setVisibility(nextVisibility)
+    setPrivacySetupVisible(false)
+    setPrivacyPromptVisible(false)
+  }
+
+  const hidePrivacySetup = () => {
+    setPrivacySetupVisible(false)
+    setPrivacyPromptVisible(false)
   }
 
   useEffect(() => {
@@ -381,6 +392,21 @@ export function CreatePage({
     }
   }
 
+  useEffect(() => {
+    if (!guideReadyToBrief || !hasSeed || activeBriefResponse || guideBusy || briefBusy || busy) return
+    if (autoBriefKeyRef.current === currentBriefKey) return
+    autoBriefKeyRef.current = currentBriefKey
+    void handlePlanStory()
+  }, [
+    activeBriefResponse,
+    briefBusy,
+    busy,
+    currentBriefKey,
+    guideBusy,
+    guideReadyToBrief,
+    hasSeed,
+  ])
+
   const handleApplyRevisionAction = (seedAppend: string) => {
     const decision = advanceStoryGuideLoop(guideLoopState, seedAppend, uiLang)
     applyStoryGuideSettings(decision.settings)
@@ -426,6 +452,7 @@ export function CreatePage({
       [...chatMessages].reverse().find((message) => message.speaker === "guide")?.text ?? ""
     const time = Date.now()
     setDraftTurn("")
+    setPrivacySetupVisible(false)
     setError(null)
     setBriefResponse(null)
     setBriefResponseKey(null)
@@ -450,6 +477,7 @@ export function CreatePage({
           }
         : undefined
       applyStoryGuideSettings(normalizedSettings)
+      if (normalizedSettings?.privacyIntent) setPrivacyPromptVisible(true)
       const hadSeed = Boolean(previousSeed.trim())
       if (response.acceptedText) {
         const nextSeed = `${previousSeed.trim()}${hadSeed ? "\n\n" : ""}${trimmed}`
@@ -510,6 +538,8 @@ export function CreatePage({
     setBriefResponseKey(null)
     setBriefError(null)
     setError(null)
+    setPrivacySetupVisible(false)
+    setPrivacyPromptVisible(false)
     setChatMessages([
       {
         id: `user-handoff-${time}`,
@@ -526,16 +556,6 @@ export function CreatePage({
       },
     ])
   }, [uiLang])
-
-  const handlePrimaryAction = async () => {
-    if (activeBrief) {
-      if (!canGenerateFromBrief) return
-      await handleCreate()
-      return
-    }
-    if (!guideReadyToBrief) return
-    await handlePlanStory()
-  }
 
   return (
     <div
@@ -636,6 +656,53 @@ export function CreatePage({
                 </div>
               )
             })}
+            {(privacySetupVisible || privacyPromptVisible) && !activeBriefResponse ? (
+              <div
+                data-create-privacy-settings="true"
+                data-create-privacy-mode={privacyPromptVisible ? "confirmation" : "setup"}
+                style={{
+                  ...cpStyles.privacySetupCard,
+                  ...(compactLayout ? cpStyles.privacySetupCardCompact : null),
+                }}
+              >
+                <div style={cpStyles.privacySetupHeader}>
+                  <span style={cpStyles.privacySetupTitle}>{t("create.privacy_setup_title")}</span>
+                  <button
+                    type="button"
+                    style={cpStyles.privacySetupDismiss}
+                    onClick={hidePrivacySetup}
+                  >
+                    {t("create.privacy_setup_keep", { value: t(selectedVisibility.labelKey) })}
+                  </button>
+                </div>
+                <p style={cpStyles.privacySetupCopy}>
+                  {privacyPromptVisible
+                    ? t("create.privacy_setup_prompt_desc")
+                    : t("create.privacy_setup_desc", { value: t(selectedVisibility.labelKey) })}
+                </p>
+                <div style={cpStyles.privacySetupChoices} aria-label={t("create.field_visibility")}>
+                  {VISIBILITY_OPTION_IDS.map((id) => {
+                    const meta = VISIBILITY_KEY_MAP[id]
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        style={{
+                          ...cpStyles.privacySetupChoice,
+                          ...(visibility === id ? cpStyles.privacySetupChoiceActive : null),
+                        }}
+                        onClick={() => handleVisibilityChoice(id)}
+                        disabled={busy || briefBusy || guideBusy}
+                        title={t(meta.descKey)}
+                        aria-pressed={visibility === id}
+                      >
+                        {t(meta.labelKey)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
             {briefBusy ? (
               <div
                 data-guide-node="shape_story_brief"
@@ -698,19 +765,6 @@ export function CreatePage({
                 <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
                   <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
                   <span style={cpStyles.guideMessageText} aria-live="polite">{guideThinkingCopy}</span>
-                  <span style={cpStyles.guideScanStages} aria-hidden>
-                    <span>Reading seed</span>
-                    <span>Finding pressure</span>
-                    <span>Checking boundaries</span>
-                    <span>Choosing next question</span>
-                  </span>
-                  <span style={cpStyles.guideScanRail} aria-hidden>
-                    <motion.span
-                      style={cpStyles.guideScanPulse}
-                      animate={{ x: ["-120%", "260%"] }}
-                      transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  </span>
                 </div>
               </div>
             ) : null}
@@ -846,7 +900,6 @@ export function CreatePage({
                     void appendGuideTurn(draftTurn)
                     return
                   }
-                  void handlePrimaryAction()
                   return
                 }
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -868,16 +921,6 @@ export function CreatePage({
                 >
                   {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
                 </button>
-                {hasSeed && !activeBrief && guideReadyToBrief ? (
-                  <button
-                    type="button"
-                    style={cpStyles.composerBriefAction}
-                    disabled={busy || briefBusy || guideBusy}
-                    onClick={() => void handlePlanStory()}
-                  >
-                    {briefComposerLabel}
-                  </button>
-                ) : null}
               </div>
             </div>
           </div>
@@ -895,63 +938,6 @@ export function CreatePage({
 
           {error ? <div style={cpStyles.error}>{error}</div> : null}
           {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
-
-          <details
-            style={{
-              ...cpStyles.settingsDetails,
-              ...(!showSeedExamples ? cpStyles.settingsDetailsFocused : null),
-            }}
-            open={settingsOpen}
-            onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
-          >
-            <summary style={cpStyles.settingsSummary}>
-              <span style={cpStyles.settingsSummaryMain}>
-                <span style={cpStyles.settingsSummaryLabel}>{t("create.field_visibility")}</span>
-                <span style={cpStyles.settingsSummaryValue}>{settingsSummary}</span>
-              </span>
-              <span style={cpStyles.settingsToggleHint}>
-                {settingsOpen ? t("create.settings_done") : t("create.settings_edit")}
-              </span>
-            </summary>
-            <div
-              style={{
-                ...cpStyles.settingsStrip,
-                ...(compactLayout ? cpStyles.settingsStripCompact : null),
-              }}
-              aria-label={t("create.field_visibility")}
-              data-create-privacy-settings="true"
-            >
-              <div
-                style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
-                }}
-              >
-                <span style={cpStyles.settingLabel}>{t("create.field_visibility")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {VISIBILITY_OPTION_IDS.map((id) => {
-                    const meta = VISIBILITY_KEY_MAP[id]
-                    return (
-                      <button
-                        key={id}
-                        style={{
-                          ...cpStyles.segmentBtn,
-                          ...(visibility === id ? cpStyles.segmentBtnActive : null),
-                        }}
-                        onClick={() => setVisibility(id)}
-                        disabled={busy}
-                        type="button"
-                        title={t(meta.descKey)}
-                        aria-pressed={visibility === id}
-                      >
-                        <span style={cpStyles.segmentMain}>{t(meta.labelKey)}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          </details>
 
           <AnimatePresence>
             {busy ? (

@@ -56,12 +56,16 @@ export type StoryGuideCompressedContext = {
   open_questions: string[]
   confirmed_facts: string[]
   rejected_or_changed_facts: string[]
+  non_story_user_intents: string[]
+  last_user_intent: string
+  last_question_answered: string
+  latest_input_updates_story_facts: boolean
   last_question: string
   readiness_score: number
   planner_skill: string
   planner_job: string
   recent_turns: StoryGuideMemoryEntry[]
-  compression_source: "live" | "live_repaired" | "deterministic_fallback" | "no_gateway_fallback"
+  compression_source: "live" | "live_repaired" | "policy_control" | "deterministic_fallback" | "no_gateway_fallback"
 }
 
 export type StoryGuideLoopState = {
@@ -145,6 +149,10 @@ const UNSAFE_PATTERNS = [
 const TINY_GREETING_PATTERN = /^(hi|hello|hey|yo|ok|okay|你好|嗨|哈喽|哈罗)[.!。！?？]*$/i
 const AMBIGUOUS_WHO_PATTERN = /^(who\?|who|谁|谁？)$/i
 const SELF_ROLE_PATTERN = /^(me|myself|i do|i am|i'm in|i'll play|我|我来|我自己|我扮演)$/i
+const META_ASSISTANT_PATTERN = /\b(who are you|what are you|who r u|what do you do|are you (a )?(bot|assistant)|story butler)\b|你是谁|你是做什么的|Story Butler 是什么/i
+const INTERACTION_HELP_PATTERN = /\b(what do i type|what should i type|how does this work|how do i use this|what should i do here|help me|help)\b|这里怎么用|我该输入什么|怎么开始|怎么玩|帮我/i
+const CORRECTION_PATTERN = /\b(actually|instead|change|switch|make it|revise|correction|not that|更改|改成|其实|不是|换成|调整)\b/i
+const DELEGATE_CHOICE_PATTERN = /\b(you can decide|decide for me|you choose|your choice|surprise me|pick for me)\b|你来决定|你选|帮我定|随你/i
 
 const PARTICIPANT_TERMS = [
   "parent",
@@ -406,6 +414,10 @@ function createInitialStoryGuideContext(): StoryGuideCompressedContext {
     open_questions: [],
     confirmed_facts: [],
     rejected_or_changed_facts: [],
+    non_story_user_intents: [],
+    last_user_intent: "",
+    last_question_answered: "",
+    latest_input_updates_story_facts: false,
     last_question: "",
     readiness_score: 0,
     planner_skill: "",
@@ -454,6 +466,7 @@ export function advanceStoryGuideLoop(
 ): StoryGuideLoopDecision {
   const text = rawText.trim()
   const settings = inferStoryGuideSettings(text, lang)
+  const intent = classifyStoryGuideInput(previousState, text, lang)
   if (!text) {
     const state = {
       ...syncLabels(previousState, lang),
@@ -508,8 +521,8 @@ export function advanceStoryGuideLoop(
       status: state.status,
       reply:
         lang === "zh"
-          ? "发布范围我不会从聊天里偷偷改。你现在还是按上面的「谁能玩」设置来保存；要公开，点那一行改成「广场公开」。"
-          : "I will not silently change publishing from chat. This story still uses the explicit “Who can play this” row above the composer; switch that row to Public if you want everyone to play it.",
+          ? "发布范围我不会从聊天里偷偷改。请在可见性确认框里选「广场公开」，或保持当前设置。"
+          : "I will not silently change publishing from chat. Use the privacy checkpoint to choose Public, or keep the current setting.",
       acceptedText: false,
       blocked: false,
       canShapeBrief: canShapeStoryBrief(state),
@@ -518,18 +531,18 @@ export function advanceStoryGuideLoop(
     }
   }
 
-  if (isTinyNonStoryInput(text) && previousState.acceptedTurns.length === 0) {
+  if (["greeting_smalltalk", "meta_assistant", "interaction_help", "unclear_noise"].includes(intent)) {
     const state = {
       ...syncLabels(previousState, lang),
       status: "needs_field" as const,
       lastNode: "ask_missing_slot" as const,
-      nextMissing: "pressure" as const,
+      nextMissing: previousState.nextMissing ?? "pressure" as const,
     }
     return {
       state,
       node: "ask_missing_slot",
       status: "needs_field",
-      reply: tinySeedReply(lang),
+      reply: nonStoryIntentReply(intent, lang),
       acceptedText: false,
       blocked: false,
       canShapeBrief: canShapeStoryBrief(state),
@@ -538,7 +551,7 @@ export function advanceStoryGuideLoop(
     }
   }
 
-  if (isAmbiguousWhoQuestion(text)) {
+  if (intent === "ambiguous_who") {
     const state = {
       ...syncLabels(previousState, lang),
       status: "needs_field" as const,
@@ -619,10 +632,16 @@ export function advanceStoryGuideLoop(
     }
   }
 
-  const selfRoleAnswer = isSelfRoleAnswer(text) && previousState.nextMissing === "player_role" && previousState.acceptedTurns.length > 0
+  const selfRoleAnswer = isSelfRoleAnswer(text) && previousState.nextMissing === "player_role" && hasStoryContext(previousState)
   const extracted = extractSlots(text, lang)
   if (selfRoleAnswer) {
     extracted.player_role = lang === "zh" ? "玩家自己" : "player as themselves"
+  }
+  if (intent === "delegation" && previousState.nextMissing) {
+    extracted[previousState.nextMissing] = delegatedSlotEvidence(previousState.nextMissing, lang)
+  }
+  if (intent === "direct_answer" && previousState.nextMissing && !extracted[previousState.nextMissing]) {
+    extracted[previousState.nextMissing] = shortEvidence(text)
   }
   const updated = mergeSlots(previousState, extracted, lang)
   const nextMissing = findNextMissing(updated)
@@ -701,6 +720,88 @@ function mergeSlots(
     lastNode: "update_slots",
     slots: nextSlots,
   }
+}
+
+function classifyStoryGuideInput(previousState: StoryGuideLoopState, text: string, lang: Lang): string {
+  if (!text.trim()) return "unclear_noise"
+  if (UNSAFE_PATTERNS.some((pattern) => pattern.test(text))) return "unsafe_out_of_policy"
+  if (isTinyNonStoryInput(text)) return "greeting_smalltalk"
+  if (META_ASSISTANT_PATTERN.test(text)) return "meta_assistant"
+  if (INTERACTION_HELP_PATTERN.test(text)) return "interaction_help"
+  if (isAmbiguousWhoQuestion(text)) return "ambiguous_who"
+  if (DELEGATE_CHOICE_PATTERN.test(text)) return "delegation"
+  if (CORRECTION_PATTERN.test(text) && hasStoryContext(previousState)) return "correction_update"
+  if (isSelfRoleAnswer(text) && previousState.nextMissing === "player_role" && hasStoryContext(previousState)) return "direct_answer"
+  if (isDirectAnswerToLastQuestion(previousState, text)) return "direct_answer"
+  if (looksLikeNoise(text)) return "unclear_noise"
+  if (Object.keys(extractSlots(text, lang)).length > 0 || text.split(/\s+/).length >= 4) return "story_seed"
+  return "unclear_noise"
+}
+
+function nonStoryIntentReply(intent: string, lang: Lang): string {
+  if (lang === "zh") {
+    if (intent === "greeting_smalltalk") {
+      return "你好，我是 Story Butler，会把粗略想法整理成可玩的第一幕。先给我一个开场点：麻烦第一次出现时在哪里？"
+    }
+    if (intent === "meta_assistant") {
+      return "我是 Story Butler：帮你把一个粗略点子变成可玩的场景。给我第一个麻烦点：故事从哪里开场？"
+    }
+    if (intent === "interaction_help") {
+      return "你可以输入一个场景、一个角色，或第一件出错的事；我会一次问一个问题。第一幕要从什么麻烦开始？"
+    }
+    return "这句还不能当成故事材料。给我一个可用的开场火花：我们在哪里，刚刚出了什么事？"
+  }
+  if (intent === "greeting_smalltalk") {
+    return "Hi. I’m Story Butler, here to turn a rough idea into a playable first scene. Where are we when trouble first appears?"
+  }
+  if (intent === "meta_assistant") {
+    return "I’m Story Butler: I help turn a rough idea into a playable scene. Give me the first trouble spot: where does the story open?"
+  }
+  if (intent === "interaction_help") {
+    return "Type a rough scene, a role, or what goes wrong; I’ll ask one question at a time. What trouble should the first scene open on?"
+  }
+  return "I can’t turn that into story material yet. Give me one usable scene spark: where are we, and what just went wrong?"
+}
+
+function hasStoryContext(state: StoryGuideLoopState): boolean {
+  return state.acceptedTurns.length > 0 || Object.values(state.slots).some((slot) => slot.filled)
+}
+
+function looksLikeNoise(text: string): boolean {
+  const normalized = text.replace(/[^\p{L}\p{N}]/gu, "")
+  if (!normalized) return true
+  if (normalized.length <= 2 && !/[\u3400-\u9fff]/.test(normalized)) return true
+  return /^(.)\1{2,}$/i.test(normalized)
+}
+
+function isDirectAnswerToLastQuestion(previousState: StoryGuideLoopState, text: string): boolean {
+  if (!hasStoryContext(previousState) || !previousState.nextMissing) return false
+  if (text.length > 140) return false
+  if (META_ASSISTANT_PATTERN.test(text) || INTERACTION_HELP_PATTERN.test(text)) return false
+  return !looksLikeNoise(text)
+}
+
+function delegatedSlotEvidence(slot: StoryGuideSlotId, lang: Lang): string {
+  if (lang === "zh") {
+    const mapping: Record<StoryGuideSlotId, string> = {
+      player_role: "Story Butler 选择最贴近压力的人作为玩家视角",
+      active_cast: "Story Butler 选择两个能推动压力的人或阵营",
+      pressure: "Story Butler 选择第一道公开压力",
+      tone: "高戏剧韩漫节奏",
+      boundaries: "保持社交压力，不扩大成露骨伤害",
+      first_scene_hook: "Story Butler 选择最适合进入的第一幕场面",
+    }
+    return mapping[slot]
+  }
+  const mapping: Record<StoryGuideSlotId, string> = {
+    player_role: "Story Butler chooses the player lens closest to the pressure",
+    active_cast: "Story Butler chooses two pressure holders who can push back",
+    pressure: "Story Butler chooses the first public pressure",
+    tone: "Korean webtoon high drama",
+    boundaries: "Keep pressure social and avoid graphic escalation",
+    first_scene_hook: "Story Butler chooses the strongest first playable scene",
+  }
+  return mapping[slot]
 }
 
 function extractSlots(text: string, lang: Lang): Partial<Record<StoryGuideSlotId, string>> {

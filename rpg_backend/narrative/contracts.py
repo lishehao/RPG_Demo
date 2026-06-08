@@ -178,6 +178,7 @@ LLMCallStatus = Literal[
 LLMCallSourceLabel = Literal[
     "live",
     "live_repaired",
+    "policy_control",
     "deterministic_fallback",
     "no_gateway_fallback",
 ]
@@ -672,6 +673,10 @@ class StoryGuideCompressedContext(BaseModel):
     open_questions: list[str] = Field(default_factory=list, max_length=6)
     confirmed_facts: list[str] = Field(default_factory=list, max_length=12)
     rejected_or_changed_facts: list[str] = Field(default_factory=list, max_length=8)
+    non_story_user_intents: list[str] = Field(default_factory=list, max_length=8)
+    last_user_intent: str = Field(default="", max_length=80)
+    last_question_answered: str = Field(default="", max_length=220)
+    latest_input_updates_story_facts: bool = False
     last_question: str = Field(default="", max_length=220)
     readiness_score: float = Field(default=0.0, ge=0.0, le=1.0)
     planner_skill: str = Field(default="", max_length=80)

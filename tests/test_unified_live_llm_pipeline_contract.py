@@ -56,6 +56,7 @@ def test_unified_text_gateway_uses_generic_responses_config_for_narrative_path()
         responses_base_url="https://api.deepseek.com",
         responses_api_key="redacted-test-key",
         responses_model="deepseek-test",
+        responses_play_model="deepseek-test",
     )
     gateway = get_narrative_gateway(settings)
 
@@ -189,6 +190,28 @@ def test_story_butler_turn_uses_live_gateway_and_persists_safe_telemetry(tmp_pat
     assert response.state.context.recent_turns
 
 
+def test_story_butler_privacy_control_is_not_recorded_as_gateway_fallback(tmp_path) -> None:
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=None,
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message="make it public", language="en"),
+        owner_user_id="user_privacy",
+    )
+    events = service._repo.list_recent_llm_call_events_for_user("user_privacy")  # noqa: SLF001
+
+    assert response.source == "policy_control"
+    assert response.acceptedText is False
+    assert response.settings is not None
+    assert response.settings.privacyIntent == "public"
+    assert events[0].operation == "create.story_butler_turn"
+    assert events[0].source_label == "policy_control"
+    assert events[0].status == "success"
+    assert events[0].fallback_reason is None
+
+
 def test_live_context_sanitizer_preserves_deterministic_correction_history() -> None:
     fallback = StoryGuideCompressedContext(
         player_role="Actually make me a reporter instead",
@@ -284,7 +307,7 @@ def test_story_butler_fallback_handles_tiny_greeting_with_opening_scene_skill(tm
 
     assert response.acceptedText is False
     assert response.source == "no_gateway_fallback"
-    assert "writing desk" in response.reply
+    assert "Story Butler" in response.reply
     policy = story_butler_voice_policy(response, message="hi")
     assert policy["id"] == "opening_scene_prompt"
     assert policy["focus_slot"] == "pressure"
@@ -414,6 +437,62 @@ def test_story_guide_context_tracks_superseded_facts_and_delegated_choices() -> 
     assert "Who is the player" not in delegated.reply
 
 
+def test_story_guide_routes_meta_and_help_without_story_fact_pollution() -> None:
+    initial = advance_story_guide_loop(None, "hi", "en")
+    meta = advance_story_guide_loop(initial.state, "who are you", "en")
+    help_turn = advance_story_guide_loop(meta.state, "what do I type here", "en")
+    story = advance_story_guide_loop(help_turn.state, "A crowded street before a parade turns tense.", "en")
+
+    assert initial.acceptedText is False
+    assert initial.state.acceptedTurns == []
+    assert initial.state.context.last_user_intent == "greeting_smalltalk"
+    assert initial.state.context.latest_input_updates_story_facts is False
+    assert "hi" not in initial.state.context.scene_summary.lower()
+
+    assert meta.acceptedText is False
+    assert "Story Butler" in meta.reply
+    assert meta.state.acceptedTurns == []
+    assert meta.state.context.last_user_intent == "meta_assistant"
+    assert meta.state.context.latest_input_updates_story_facts is False
+    assert "who are you" not in meta.state.context.scene_summary.lower()
+    assert any("meta_assistant" in item for item in meta.state.context.non_story_user_intents)
+
+    assert help_turn.acceptedText is False
+    assert "one question at a time" in help_turn.reply
+    assert help_turn.state.context.last_user_intent == "interaction_help"
+    assert help_turn.state.context.latest_input_updates_story_facts is False
+
+    assert story.acceptedText is True
+    assert story.state.acceptedTurns == ["A crowded street before a parade turns tense."]
+    assert "crowded street" in story.state.context.scene_summary.lower()
+    assert story.state.context.last_user_intent == "story_seed"
+    assert story.state.context.latest_input_updates_story_facts is True
+
+
+def test_story_guide_noise_and_direct_answer_intents_do_not_loop() -> None:
+    noise = advance_story_guide_loop(None, "???", "en")
+    seed = advance_story_guide_loop(None, "Gala goes wrong before the livestream.", "en")
+    role = advance_story_guide_loop(seed.state, "publicist", "en")
+    delegated = advance_story_guide_loop(seed.state, "you can decide for me", "en")
+
+    assert noise.acceptedText is False
+    assert "story material" in noise.reply
+    assert noise.state.acceptedTurns == []
+    assert noise.state.context.last_user_intent == "unclear_noise"
+    assert noise.canShapeBrief is False
+
+    assert role.acceptedText is True
+    assert role.state.slots["player_role"].filled is True
+    assert role.state.slots["player_role"].evidence == "publicist"
+    assert role.state.context.last_question_answered
+    assert "Who is the player" not in role.reply
+
+    assert delegated.acceptedText is True
+    assert delegated.state.slots["player_role"].filled is True
+    assert "Story Butler chooses" in delegated.state.slots["player_role"].evidence
+    assert "Who is the player" not in delegated.reply
+
+
 def test_story_guide_context_is_typed_in_frontend_contracts() -> None:
     contracts = open("frontend2/src/api/contracts.ts").read()
     loop_source = open("frontend2/src/shared/lib/story-guide-loop.ts").read()
@@ -423,6 +502,10 @@ def test_story_guide_context_is_typed_in_frontend_contracts() -> None:
         "player_role",
         "cast_or_factions",
         "rejected_or_changed_facts",
+        "non_story_user_intents",
+        "last_user_intent",
+        "last_question_answered",
+        "latest_input_updates_story_facts",
         "readiness_score",
         "recent_turns",
     ):
@@ -497,10 +580,15 @@ def test_create_page_calls_backend_story_guide_turn_and_shows_thinking_row() -> 
     assert 'data-guide-node="story_butler_turn"' in create_page
     assert 'data-guide-process="story_guide.live"' in create_page
     assert 'data-guide-stage="slot_focus"' in create_page
-    assert "Reading seed" in create_page
-    assert "Finding pressure" in create_page
-    assert "Checking boundaries" in create_page
-    assert "Choosing next question" in create_page
+    guide_busy_start = create_page.index('{guideBusy ? (')
+    guide_busy_end = create_page.index('{activeBriefResponse ? (', guide_busy_start)
+    guide_busy_segment = create_page[guide_busy_start:guide_busy_end]
+    assert "Reading seed" not in guide_busy_segment
+    assert "Finding pressure" not in guide_busy_segment
+    assert "Checking boundaries" not in guide_busy_segment
+    assert "Choosing next question" not in guide_busy_segment
+    assert "guideScanStages" not in guide_busy_segment
+    assert "guideScanRail" not in guide_busy_segment
     assert "guideBusy" in create_page
     assert "normalizeGuideReplyText(response.reply)" in create_page
     assert '"reply"\\s*:' in create_page

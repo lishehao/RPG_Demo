@@ -21,8 +21,8 @@
 
 1. Home `Write a new story` opens `#/create` without a login/name gate.
 2. The page is a Korean webtoon Agent Chat, not a SaaS form.
-3. The assistant asks for missing Story Brief slots, redirects unsafe/out-of-spec prompts, and only exposes `Shape final Story Brief` when enough fields are present.
-4. The Story Brief appears as an assistant production slate inside the transcript.
+3. The assistant asks for missing Story Brief slots and redirects unsafe/out-of-spec prompts while keeping pre-Brief chat natural.
+4. When enough fields are present, the Story Brief is shaped automatically and appears as an assistant production slate inside the transcript.
 5. `Generate and enter story` lives with the Brief slate.
 6. Generate creates a template/session and routes to Play.
 
@@ -48,7 +48,8 @@ Visibility is the only explicit fixed setting in the default Create flow.
 
 - Default: Just me.
 - User chat like `make it public` must not silently publish.
-- The assistant should point to the explicit `Who can play this` row/control.
+- The initial privacy checkpoint is compact and collapses before ordinary chat continues.
+- A later chat privacy intent can reopen a compact confirmation, but visibility changes only after an explicit click.
 
 ## Backend Payload
 

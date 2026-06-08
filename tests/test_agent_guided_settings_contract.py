@@ -42,6 +42,7 @@ def test_privacy_chat_intent_is_guidance_not_silent_publish() -> None:
     assert "make it public" in settings_source
     assert "public pressure" in settings_source
     assert "I will not silently change publishing from chat" in loop_source
+    assert "privacy checkpoint" in loop_source
 
     apply_start = create_source.index("const applyStoryGuideSettings")
     apply_end = create_source.index("const ensureAuthorSession", apply_start)
@@ -51,22 +52,29 @@ def test_privacy_chat_intent_is_guidance_not_silent_publish() -> None:
     assert "setStoryLanguage" in apply_segment
     assert "setDesiredTensionProfile" in apply_segment
     assert "setVisibility" not in apply_segment
+    assert "setPrivacyPromptVisible(true)" in create_source
 
 
-def test_create_settings_panel_only_exposes_visibility_control() -> None:
+def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None:
     source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
 
-    details_start = source.index("<details")
-    details_end = source.index("</details>", details_start)
-    details_segment = source[details_start:details_end]
+    assert "<details" not in source
+    assert "settingsDetails" not in source
+    assert 'data-create-privacy-settings="true"' in source
+    assert 'data-create-privacy-mode={privacyPromptVisible ? "confirmation" : "setup"}' in source
+    assert "privacySetupVisible" in source
+    assert "setPrivacySetupVisible(false)" in source
+    assert "VISIBILITY_OPTION_IDS.map" in source
+    assert "handleVisibilityChoice(id)" in source
 
-    assert 'data-create-privacy-settings="true"' in details_segment
-    assert 't("create.field_visibility")' in details_segment
-    assert "VISIBILITY_OPTION_IDS.map" in details_segment
-    assert "BUDGET_OPTIONS.map" not in details_segment
-    assert "DIFFICULTY_OPTIONS.map" not in details_segment
-    assert "STORY_LANGUAGE_OPTIONS[uiLang].map" not in details_segment
-    assert "TENSION_PROFILE_OPTIONS.map" not in details_segment
+    checkpoint_start = source.index('data-create-privacy-settings="true"')
+    checkpoint_end = source.index('{briefBusy ? (', checkpoint_start)
+    checkpoint_segment = source[checkpoint_start:checkpoint_end]
+    assert 't("create.field_visibility")' in checkpoint_segment
+    assert "BUDGET_OPTIONS.map" not in checkpoint_segment
+    assert "DIFFICULTY_OPTIONS.map" not in checkpoint_segment
+    assert "STORY_LANGUAGE_OPTIONS[uiLang].map" not in checkpoint_segment
+    assert "TENSION_PROFILE_OPTIONS.map" not in checkpoint_segment
 
 
 def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() -> None:

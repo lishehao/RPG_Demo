@@ -58,8 +58,9 @@ def test_korean_agent_chat_slot_loop_blocks_small_cast_object_only_before_brief(
     ready_assignment = source.index("const ready = canShapeStoryBrief")
     assert unsupported_guard < ready_assignment
 
-    shape_button_guard = create_source.index("hasSeed && !activeBrief && guideReadyToBrief")
-    assert "guideReadyToBrief" in create_source[shape_button_guard : shape_button_guard + 180]
+    auto_brief_guard = create_source.index("if (!guideReadyToBrief || !hasSeed")
+    story_brief_call = create_source.index("void handlePlanStory()", auto_brief_guard)
+    assert auto_brief_guard < story_brief_call
 
 
 def test_create_page_uses_slot_loop_before_story_brief_generation() -> None:
@@ -75,9 +76,13 @@ def test_create_page_uses_slot_loop_before_story_brief_generation() -> None:
     story_brief_call = source.index("createNarrativeStoryBrief")
     assert readiness_guard < story_brief_call
 
-    shape_button_guard = source.index("hasSeed && !activeBrief && guideReadyToBrief")
-    shape_button_label = source.index("{briefComposerLabel}", shape_button_guard)
-    assert shape_button_guard < shape_button_label
+    auto_brief_guard = source.index("if (!guideReadyToBrief || !hasSeed")
+    auto_brief_call = source.index("void handlePlanStory()", auto_brief_guard)
+    story_brief_call = source.index("createNarrativeStoryBrief")
+    assert story_brief_call < auto_brief_guard < auto_brief_call
+    assert "autoBriefKeyRef.current === currentBriefKey" in source
+    assert "hasSeed && !activeBrief && guideReadyToBrief" not in source
+    assert "{briefComposerLabel}" not in source
 
 
 def test_create_page_keeps_long_generate_handoff_visible_before_navigation() -> None:

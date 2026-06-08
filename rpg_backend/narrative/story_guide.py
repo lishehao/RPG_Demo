@@ -79,6 +79,18 @@ DELEGATE_CHOICE_RE = re.compile(
     r"\b(you can decide|decide for me|you choose|your choice|surprise me|pick for me)\b|你来决定|你选|帮我定|随你",
     re.I,
 )
+META_ASSISTANT_RE = re.compile(
+    r"\b(who are you|what are you|who r u|what do you do|are you (a )?(bot|assistant)|story butler)\b|你是谁|你是做什么的|Story Butler 是什么",
+    re.I,
+)
+INTERACTION_HELP_RE = re.compile(
+    r"\b(what do i type|what should i type|how does this work|how do i use this|what should i do here|help me|help)\b|这里怎么用|我该输入什么|怎么开始|怎么玩|帮我",
+    re.I,
+)
+CORRECTION_RE = re.compile(
+    r"\b(actually|instead|change|switch|make it|revise|correction|not that|更改|改成|其实|不是|换成|调整)\b",
+    re.I,
+)
 
 STORY_BUTLER_VOICE_SKILLS: dict[str, dict[str, object]] = {
     "opening_scene_prompt": {
@@ -139,6 +151,30 @@ STORY_BUTLER_VOICE_SKILLS: dict[str, dict[str, object]] = {
         "tone_anchors": ["playable promise", "ready to shape", "last correction"],
         "example_moves": [
             "That has a stage, witness, and pressure. Want me to shape the Story Brief now, or add one boundary first?",
+        ],
+    },
+    "meta_assistant": {
+        "job": "answer a question about Story Butler or the product, then bridge back to one story-starting question without treating the question as story material",
+        "response_shape": "one natural identity/help line, then one question about the first trouble spot",
+        "tone_anchors": ["Story Butler", "playable scene", "first trouble"],
+        "example_moves": [
+            "I’m Story Butler: I help turn a rough idea into a playable scene. Give me the first trouble spot: where does the story open?",
+        ],
+    },
+    "interaction_help": {
+        "job": "explain how to use the composer briefly, then ask for one concrete seed",
+        "response_shape": "one practical usage line, then one question about scene, role, or pressure",
+        "tone_anchors": ["rough scene", "one question at a time", "Story Brief"],
+        "example_moves": [
+            "Type a rough scene, a role, or what goes wrong. I’ll ask one question at a time; what trouble should the first scene open on?",
+        ],
+    },
+    "clarify_input": {
+        "job": "handle arbitrary or noisy input without turning it into story facts",
+        "response_shape": "briefly say the note is too thin, then ask for one usable opening scene detail",
+        "tone_anchors": ["scene spark", "where", "trouble"],
+        "example_moves": [
+            "I can’t turn that into story material yet. Give me one usable scene spark: where are we, and what just went wrong?",
         ],
     },
 }
@@ -220,9 +256,10 @@ def advance_story_guide_loop(
     text = raw_text.strip()
     previous = _sync_labels(previous_state or create_initial_story_guide_state(language), language)
     settings = infer_story_guide_settings(text, language)
+    intent = classify_story_guide_input(previous, text)
     if not text:
         state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot"})
-        return _response(state, "ask_missing_slot", _next_question(state.nextMissing, language), False, False, settings, language, user_message=text)
+        return _response(state, "ask_missing_slot", _next_question(state.nextMissing, language), False, False, settings, language, user_message=text, input_intent="unclear_noise", updates_story_facts=False)
 
     if UNSAFE_RE.search(text):
         state = previous.model_copy(
@@ -248,19 +285,20 @@ def advance_story_guide_loop(
             }
         )
         reply = (
-            "发布范围我不会从聊天里偷偷改。你现在还是按上面的「谁能玩」设置来保存；要公开，点那一行改成「广场公开」。"
+            "发布范围我不会从聊天里偷偷改。请在可见性确认框里选「广场公开」，或保持当前设置。"
             if language == "zh"
-            else "I will not silently change publishing from chat. This story still uses the explicit “Who can play this” row above the composer; switch that row to Public if you want everyone to play it."
+            else "I will not silently change publishing from chat. Use the privacy checkpoint to choose Public, or keep the current setting."
         )
         return _response(state, state.lastNode, reply, False, False, settings, language, user_message=text)
 
-    if _is_tiny_non_story_input(text) and not previous.acceptedTurns:
-        state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot", "nextMissing": "pressure"})
-        return _response(state, "ask_missing_slot", _tiny_seed_reply(language), False, False, settings, language, user_message=text)
+    if intent in {"greeting_smalltalk", "meta_assistant", "interaction_help", "unclear_noise"}:
+        state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot", "nextMissing": previous.nextMissing or "pressure"})
+        reply = _non_story_intent_reply(intent, language)
+        return _response(state, "ask_missing_slot", reply, False, False, settings, language, user_message=text, input_intent=intent, updates_story_facts=False)
 
-    if _is_ambiguous_who_question(text):
+    if intent == "ambiguous_who":
         state = previous.model_copy(update={"status": "needs_field", "lastNode": "ask_missing_slot"})
-        return _response(state, "ask_missing_slot", _who_clarification_reply(language), False, False, settings, language, user_message=text)
+        return _response(state, "ask_missing_slot", _who_clarification_reply(language), False, False, settings, language, user_message=text, input_intent=intent, updates_story_facts=False)
 
     if _detects_hard_conflict(text):
         state = previous.model_copy(update={"status": "clarify_conflict", "lastNode": "clarify_conflict"})
@@ -271,13 +309,15 @@ def advance_story_guide_loop(
         )
         return _response(state, "clarify_conflict", reply, False, False, settings, language, user_message=text)
 
-    self_role_answer = _is_self_role_answer(text) and previous.nextMissing == "player_role" and bool(previous.acceptedTurns)
-    delegate_answer = _is_delegate_choice(text) and bool(previous.acceptedTurns)
+    self_role_answer = _is_self_role_answer(text) and previous.nextMissing == "player_role" and _has_story_context(previous)
+    delegate_answer = intent == "delegation" and _has_story_context(previous)
     extracted = _extract_slots(text)
     if self_role_answer:
         extracted["player_role"] = "player as themselves" if language == "en" else "玩家自己"
     if delegate_answer and previous.nextMissing:
         extracted[previous.nextMissing] = _delegated_slot_evidence(previous.nextMissing, language)
+    if intent == "direct_answer" and previous.nextMissing and previous.nextMissing not in extracted:
+        extracted[previous.nextMissing] = _short_evidence(text)
     updated = _merge_slots(previous, extracted, language)
     if _detects_unsupported_small_cast_direction(text):
         slots = dict(updated.slots)
@@ -297,7 +337,7 @@ def advance_story_guide_loop(
             if language == "zh"
             else "I’m reading this as two people, low conflict, and an object-only thread. This beta needs a third active pressure or public consequence before I shape a Story Brief. Add one watcher, faction, or decision that must be handled in the room."
         )
-        return _response(state, "ask_missing_slot", reply, True, False, settings, language, user_message=text)
+        return _response(state, "ask_missing_slot", reply, True, False, settings, language, user_message=text, input_intent=intent, updates_story_facts=True)
 
     next_missing = _find_next_missing(updated)
     ready = can_shape_story_brief(updated.model_copy(update={"nextMissing": next_missing}))
@@ -318,6 +358,8 @@ def advance_story_guide_loop(
         settings,
         language,
         user_message=text,
+        input_intent=intent,
+        updates_story_facts=True,
     )
 
 
@@ -385,6 +427,8 @@ def _response(
     *,
     include_ledger: bool = True,
     user_message: str = "",
+    input_intent: str = "",
+    updates_story_facts: bool = True,
 ) -> StoryGuideTurnResponse:
     state = state.model_copy(
         update={
@@ -394,6 +438,8 @@ def _response(
                 assistant_reply=reply,
                 settings=settings,
                 language=language,
+                input_intent=input_intent,
+                updates_story_facts=updates_story_facts,
             )
         }
     )
@@ -418,6 +464,8 @@ def _compress_story_context(
     assistant_reply: str,
     settings: StoryGuideSettingDeltas,
     language: TemplateLanguage,
+    input_intent: str,
+    updates_story_facts: bool,
 ) -> StoryGuideCompressedContext:
     previous = state.context
     player_role = _slot_evidence(state, "player_role") or previous.player_role
@@ -457,6 +505,12 @@ def _compress_story_context(
     readiness_score = round(sum(1 for slot in SLOT_ORDER if state.slots[slot].filled) / len(SLOT_ORDER), 2)
     if can_shape_story_brief(state):
         readiness_score = 1.0
+    non_story_user_intents = list(previous.non_story_user_intents)
+    if input_intent in {"greeting_smalltalk", "meta_assistant", "interaction_help", "ambiguous_who", "unclear_noise"}:
+        non_story_user_intents.append(f"{input_intent}: {_short_evidence(user_message)}")
+    last_question_answered = ""
+    if updates_story_facts and input_intent in {"direct_answer", "delegation", "correction_update", "story_seed"}:
+        last_question_answered = previous.last_question or _next_question(state.nextMissing, language)
     return StoryGuideCompressedContext(
         scene_summary=_short_evidence(scene_summary),
         player_role=_short_evidence(player_role),
@@ -467,6 +521,10 @@ def _compress_story_context(
         open_questions=open_questions,
         confirmed_facts=confirmed_facts,
         rejected_or_changed_facts=_compact_list(changed, limit=8),
+        non_story_user_intents=_compact_list(non_story_user_intents, limit=8),
+        last_user_intent=input_intent,
+        last_question_answered=_short_evidence(last_question_answered),
+        latest_input_updates_story_facts=updates_story_facts,
         last_question=_short_evidence(open_questions[0] if open_questions else assistant_reply),
         readiness_score=readiness_score,
         planner_skill=planner_skill,
@@ -520,8 +578,14 @@ def _planner_skill_for_state(state: StoryGuideLoopState, message: str) -> str:
         return "boundary_redirect"
     if state.status == "ready_to_brief" or state.lastNode == "ready_to_shape":
         return "brief_readiness"
+    if META_ASSISTANT_RE.search(message):
+        return "meta_assistant"
+    if INTERACTION_HELP_RE.search(message):
+        return "interaction_help"
     if _is_tiny_non_story_input(message):
         return "opening_scene_prompt"
+    if _looks_like_noise(message):
+        return "clarify_input"
     if _is_ambiguous_who_question(message):
         return "cast_focus"
     slot = state.nextMissing
@@ -555,6 +619,80 @@ def _merge_slots(
         if evidence:
             slots[slot] = slots[slot].model_copy(update={"filled": True, "evidence": evidence[:220]})
     return synced.model_copy(update={"status": "collecting", "lastNode": "update_slots", "slots": slots})
+
+
+def classify_story_guide_input(previous: StoryGuideLoopState, text: str) -> str:
+    cleaned = text.strip()
+    if not cleaned:
+        return "unclear_noise"
+    if UNSAFE_RE.search(cleaned):
+        return "unsafe_out_of_policy"
+    if _is_tiny_non_story_input(cleaned):
+        return "greeting_smalltalk"
+    if META_ASSISTANT_RE.search(cleaned):
+        return "meta_assistant"
+    if INTERACTION_HELP_RE.search(cleaned):
+        return "interaction_help"
+    if _is_ambiguous_who_question(cleaned):
+        return "ambiguous_who"
+    if _is_delegate_choice(cleaned):
+        return "delegation"
+    if CORRECTION_RE.search(cleaned) and _has_story_context(previous):
+        return "correction_update"
+    if _is_self_role_answer(cleaned) and previous.nextMissing == "player_role" and _has_story_context(previous):
+        return "direct_answer"
+    if _is_direct_answer_to_last_question(previous, cleaned):
+        return "direct_answer"
+    if _looks_like_noise(cleaned):
+        return "unclear_noise"
+    if _extract_slots(cleaned) or len(cleaned.split()) >= 4:
+        return "story_seed"
+    return "unclear_noise"
+
+
+def _non_story_intent_reply(intent: str, language: TemplateLanguage) -> str:
+    if language == "zh":
+        if intent == "greeting_smalltalk":
+            return "你好，我是 Story Butler，会把粗略想法整理成可玩的第一幕。先给我一个开场点：麻烦第一次出现时在哪里？"
+        if intent == "meta_assistant":
+            return "我是 Story Butler：帮你把一个粗略点子变成可玩的场景。给我第一个麻烦点：故事从哪里开场？"
+        if intent == "interaction_help":
+            return "你可以输入一个场景、一个角色，或第一件出错的事；我会一次问一个问题。第一幕要从什么麻烦开始？"
+        return "这句还不能当成故事材料。给我一个可用的开场火花：我们在哪里，刚刚出了什么事？"
+    if intent == "greeting_smalltalk":
+        return "Hi. I’m Story Butler, here to turn a rough idea into a playable first scene. Where are we when trouble first appears?"
+    if intent == "meta_assistant":
+        return "I’m Story Butler: I help turn a rough idea into a playable scene. Give me the first trouble spot: where does the story open?"
+    if intent == "interaction_help":
+        return "Type a rough scene, a role, or what goes wrong; I’ll ask one question at a time. What trouble should the first scene open on?"
+    return "I can’t turn that into story material yet. Give me one usable scene spark: where are we, and what just went wrong?"
+
+
+def _has_story_context(state: StoryGuideLoopState) -> bool:
+    return bool(state.acceptedTurns or any(slot.filled for slot in state.slots.values()))
+
+
+def _looks_like_noise(text: str) -> bool:
+    normalized = re.sub(r"[\W_]+", "", text, flags=re.UNICODE)
+    if not normalized:
+        return True
+    if len(normalized) <= 2 and not re.search(r"[\u3400-\u9fff]", normalized):
+        return True
+    if re.fullmatch(r"(.)\1{2,}", normalized, re.I):
+        return True
+    return False
+
+
+def _is_direct_answer_to_last_question(previous: StoryGuideLoopState, text: str) -> bool:
+    if not _has_story_context(previous) or not previous.nextMissing:
+        return False
+    if len(text) > 140:
+        return False
+    if META_ASSISTANT_RE.search(text) or INTERACTION_HELP_RE.search(text):
+        return False
+    if _looks_like_noise(text):
+        return False
+    return previous.status in {"needs_field", "collecting", "empty"} or bool(previous.context.last_question)
 
 
 def _extract_slots(text: str) -> dict[StoryGuideSlotId, str]:

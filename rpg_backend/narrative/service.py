@@ -139,6 +139,7 @@ Return strict JSON only.
 Write one concise assistant reply for the player. You are a sharp, warm Korean webtoon story editor/butler.
 Use the supplied compressed_context, deterministic slot state, and selected voice_skill as the contract:
 - Use only details the user supplied or the current draft already contains.
+- Treat compressed_context.last_user_intent as intent routing. If it is meta_assistant, interaction_help, greeting_smalltalk, or unclear_noise, answer that intent first and do not treat the user's wording as story material.
 - Treat compressed_context.confirmed_facts as the current truth and compressed_context.rejected_or_changed_facts as superseded.
 - Follow voice_skill.job and voice_skill.response_shape. Use voice_skill.examples as illustrative shapes, not exact text to copy.
 - Anchor to current scene nouns from voice_skill.grounding_terms or the user's input when possible.
@@ -174,9 +175,13 @@ JSON shape:
   "open_questions": ["current useful missing questions"],
   "confirmed_facts": ["compact facts that are still true"],
   "rejected_or_changed_facts": ["superseded facts only"],
+  "non_story_user_intents": ["smalltalk, meta, help, or noise that should not become story facts"],
+  "last_user_intent": "one of greeting_smalltalk, meta_assistant, interaction_help, story_seed, correction_update, direct_answer, delegation, unsafe_out_of_policy, ambiguous_who, unclear_noise",
+  "last_question_answered": "question answered by the latest story-material input, or empty",
+  "latest_input_updates_story_facts": false,
   "last_question": "the next question the Butler should ask",
   "readiness_score": 0.0,
-  "planner_skill": "one of opening_scene_prompt, role_focus, cast_focus, pressure_focus, tone_focus, boundary_redirect, brief_readiness",
+  "planner_skill": "one of opening_scene_prompt, role_focus, cast_focus, pressure_focus, tone_focus, boundary_redirect, brief_readiness, meta_assistant, interaction_help, clarify_input",
   "planner_job": "the next internal job in one phrase"
 }
 """
@@ -323,6 +328,24 @@ class NarrativeService:
             session_id=session_id,
         )
 
+    def _record_llm_policy_event(
+        self,
+        *,
+        operation: str,
+        user_id: str | None,
+        template_id: str | None = None,
+        session_id: str | None = None,
+    ) -> None:
+        self._repo.append_llm_call_event(
+            operation=operation,
+            status="success",
+            source_label="policy_control",
+            operation_latency_ms=0,
+            user_id=user_id,
+            template_id=template_id,
+            session_id=session_id,
+        )
+
     def _compress_story_guide_context_live(
         self,
         deterministic: StoryGuideTurnResponse,
@@ -398,13 +421,11 @@ class NarrativeService:
             and deterministic.settings is not None
             and deterministic.settings.privacyIntent is not None
         ):
-            self._record_llm_fallback_event(
+            self._record_llm_policy_event(
                 operation="create.story_butler_turn",
                 user_id=owner_user_id,
-                source_label="deterministic_fallback",
-                fallback_reason="pre_provider_redirect_or_non_story_control",
             )
-            return deterministic
+            return deterministic.model_copy(update={"source": "policy_control"})
         if self._gateway is None:
             self._record_llm_fallback_event(
                 operation="create.story_butler_turn",
@@ -2914,13 +2935,25 @@ def _safe_story_guide_context(
         "player_role",
         "pressure",
         "tone",
+        "last_user_intent",
+        "last_question_answered",
         "last_question",
         "planner_skill",
         "planner_job",
     )
+    non_story_intent = fallback.last_user_intent in {
+        "greeting_smalltalk",
+        "meta_assistant",
+        "interaction_help",
+        "ambiguous_who",
+        "unclear_noise",
+    }
+    preserve_story_facts = non_story_intent and fallback.latest_input_updates_story_facts is False
+    story_text_fields = {"scene_summary", "player_role", "pressure", "tone"}
     updates: dict[str, object] = {}
     for field in text_fields:
-        value = _safe_context_text(payload.get(field), getattr(fallback, field), max_len=260)
+        raw_value = getattr(fallback, field) if preserve_story_facts and field in story_text_fields else payload.get(field)
+        value = _safe_context_text(raw_value, getattr(fallback, field), max_len=260)
         if value:
             updates[field] = value
     for field, limit in (
@@ -2928,8 +2961,10 @@ def _safe_story_guide_context(
         ("constraints", 8),
         ("open_questions", 6),
         ("confirmed_facts", 12),
+        ("non_story_user_intents", 8),
     ):
-        value = _safe_context_list(payload.get(field), getattr(fallback, field), limit=limit)
+        raw_value = getattr(fallback, field) if preserve_story_facts and field in {"cast_or_factions", "constraints", "confirmed_facts"} else payload.get(field)
+        value = _safe_context_list(raw_value, getattr(fallback, field), limit=limit)
         updates[field] = value
     raw_changed = payload.get("rejected_or_changed_facts")
     live_changed = raw_changed if isinstance(raw_changed, list) else []
@@ -2941,6 +2976,9 @@ def _safe_story_guide_context(
     readiness = payload.get("readiness_score")
     if isinstance(readiness, int | float):
         updates["readiness_score"] = max(0.0, min(1.0, float(readiness)))
+    latest_updates = payload.get("latest_input_updates_story_facts")
+    if isinstance(latest_updates, bool):
+        updates["latest_input_updates_story_facts"] = latest_updates
     updates["compression_source"] = source
     try:
         return fallback.model_copy(update=updates)
@@ -3043,6 +3081,9 @@ def _reply_matches_voice_skill(reply: str, voice_skill: dict[str, object] | None
         "tone_focus": ("drama", "comedy", "mystery", "tone", "feel", "cut", "social"),
         "boundary_redirect": ("cannot", "can't", "redirect", "instead", "safer", "avoid", "boundary", "pressure"),
         "brief_readiness": ("brief", "enough", "shape", "ready", "lock", "story"),
+        "meta_assistant": ("story butler", "i help", "playable", "scene", "rough idea", "open"),
+        "interaction_help": ("type", "rough", "scene", "role", "what goes wrong", "one question", "first scene"),
+        "clarify_input": ("can't turn", "cannot turn", "story material", "scene spark", "where", "what just went wrong"),
     }
     markers = semantic_markers.get(skill_id)
     if not markers:

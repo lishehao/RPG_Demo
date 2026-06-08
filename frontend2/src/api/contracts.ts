@@ -832,6 +832,7 @@ export type NarrativeStoryBriefAdvisorResponse = {
 export type NarrativeLLMCallSourceLabel =
   | "live"
   | "live_repaired"
+  | "policy_control"
   | "deterministic_fallback"
   | "no_gateway_fallback"
 
@@ -888,6 +889,10 @@ export type NarrativeStoryGuideCompressedContext = {
   open_questions: string[]
   confirmed_facts: string[]
   rejected_or_changed_facts: string[]
+  non_story_user_intents: string[]
+  last_user_intent: string
+  last_question_answered: string
+  latest_input_updates_story_facts: boolean
   last_question: string
   readiness_score: number
   planner_skill: string
