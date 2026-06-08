@@ -7,6 +7,7 @@ import type {
   NarrativeAgentPlan,
   NarrativeContractJudgeResult,
   NarrativeEnding,
+  NarrativeLLMCallEvent,
   NarrativeNPCPulse,
   NarrativePlayedLeverageCard,
   NarrativeStepJudgeResult,
@@ -445,6 +446,7 @@ export function RuntimeInspector({
   liveInventory,
   agentPlan,
   agentEvents,
+  llmEvents,
   agentTraceAccessGranted,
 }: {
   story: NarrativeStoryHistoryResponse
@@ -454,39 +456,21 @@ export function RuntimeInspector({
   liveInventory: string[]
   agentPlan: NarrativeAgentPlan | null
   agentEvents: NarrativeAgentEvent[]
+  llmEvents: NarrativeLLMCallEvent[]
   agentTraceAccessGranted: boolean
 }) {
   const { lang } = useLanguage()
   const t = useT()
-  const upcomingTurn = Math.min(story.session.turn_budget - 1, story.session.turn_count + 1)
-  const stageKey = stageForLocal(upcomingTurn, story.session.turn_budget)
-  const stageLabelKey = `stage_bar.${stageKey === "pre_finale_open" ? "pre_finale" : stageKey}` as Parameters<typeof t>[0]
-  const stage = t(stageLabelKey, stageDisplayName(stageKey))
   const playerTurns = story.messages.filter((m) => m.role === "player").length
   const endingLabel = ending
     ? displayEndingLabel(ending.label, lang)
     : story.session.ending_label
       ? displayEndingLabel(story.session.ending_label, lang)
       : t("play.runtime_pending")
-  const language = story.template.language === "zh" ? t("play.runtime_language_zh") : t("play.runtime_language_en")
   const inventoryState =
     liveInventory.length === 1
       ? t("play.status_item_one")
       : t("play.status_item_many", { count: liveInventory.length })
-
-  const summaryRows = [
-    { label: t("play.runtime_current_stage"), value: stage },
-    { label: t("play.runtime_turns_played"), value: `${playerTurns} / ${story.session.turn_budget}` },
-    { label: t("play.runtime_live_options"), value: String(lastNarrator?.options.length ?? 0) },
-    { label: t("play.runtime_inventory_state"), value: inventoryState },
-    { label: t("play.runtime_ending_compiler"), value: endingLabel },
-  ]
-  const detailRows = [
-    { label: t("play.runtime_seed"), value: story.template.title },
-    { label: t("play.runtime_language"), value: language },
-    { label: t("play.runtime_player_role"), value: story.session.player_role?.label ?? t("play.runtime_auto_selected") },
-    { label: t("play.runtime_turns_left"), value: String(turnsRemaining) },
-  ]
   const latestStepJudge = latestJudgeFromEvents<NarrativeStepJudgeResult>(
     agentEvents,
     "step_judge",
@@ -497,48 +481,30 @@ export function RuntimeInspector({
     "contract_judge",
     "contract_judge.v1",
   )
-  const agentTraceRows = agentPlan
+  const criteria = evaluationCriteria({
+    agentPlan,
+    latestStepJudge,
+    latestContractJudge,
+    lastNarrator,
+  })
+  const trajectory = trajectoryEvidence(agentEvents)
+  const latestStatus = worstStatus([
+    latestStepJudge?.status ?? "missing",
+    latestContractJudge?.status ?? "missing",
+  ])
+  const score = evaluationScore(criteria)
+  const reasonCategory = evaluationReasonCategory(latestStepJudge, latestContractJudge, llmEvents)
+  const latestEvidence = evaluationObservedEvidence(latestStepJudge, latestContractJudge, lastNarrator)
+  const telemetryRows = llmEvents.slice(-8).reverse()
+  const traceRows = agentPlan
     ? [
-        {
-          label: t("play.agent_trace_step"),
-          value: `ord ${agentPlan.narrator_ord} · ${agentPlan.turn_index}/${agentPlan.turn_budget}`,
-        },
-        {
-          label: t("play.agent_trace_source"),
-          value: `${agentPlan.schema_version} · ${agentPlan.source}`,
-        },
-        {
-          label: t("play.agent_trace_director"),
-          value: `${agentPlan.director.stage_phase} · ${agentPlan.director.expected_pressure}`,
-        },
-        {
-          label: t("play.agent_trace_intent"),
-          value: agentIntentSummary(agentPlan, t("play.agent_trace_no_intent")),
-        },
-        {
-          label: t("play.agent_trace_twist"),
-          value: agentTwistSummary(agentPlan, t("play.agent_trace_none")),
-        },
-        {
-          label: t("play.agent_trace_memory"),
-          value: agentMemorySummary(agentPlan),
-        },
-        {
-          label: t("play.agent_trace_action"),
-          value: agentActionSummary(agentPlan, t("play.agent_trace_none")),
-        },
-        {
-          label: t("play.agent_trace_step_judge"),
-          value: agentJudgeSummary(latestStepJudge, t("play.agent_trace_pending")),
-        },
-        {
-          label: t("play.agent_trace_contract_judge"),
-          value: agentJudgeSummary(latestContractJudge, t("play.agent_trace_pending")),
-        },
-        {
-          label: t("play.agent_trace_impact"),
-          value: agentImpactSummary(lastNarrator, t("play.agent_trace_pending")),
-        },
+        { label: "Turn", value: `ord ${agentPlan.narrator_ord} · ${agentPlan.turn_index}/${agentPlan.turn_budget}` },
+        { label: "Stage", value: `${agentPlan.director.stage_phase} · ${agentPlan.director.expected_pressure}` },
+        { label: "Intent", value: agentIntentSummary(agentPlan, "none") },
+        { label: "Twist", value: agentTwistSummary(agentPlan, "none") },
+        { label: "Memory", value: agentMemorySummary(agentPlan) },
+        { label: "Move", value: agentActionSummary(agentPlan, "none") },
+        { label: "Impact", value: agentImpactSummary(lastNarrator, "pending") },
       ]
     : []
 
@@ -548,64 +514,138 @@ export function RuntimeInspector({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={itemTransition}
-      aria-label={t("play.runtime_inspector_label")}
+      aria-label="Evaluation evidence"
+      data-play-primitive="EvaluationDrawer"
+      data-reviewer-evidence="true"
     >
       <div style={ppStyles.runtimeInspectorHeader}>
-        <span style={ppStyles.runtimeInspectorKicker}>{t("play.runtime_inspector_kicker")}</span>
-        <strong>{t("play.runtime_inspector_title")}</strong>
+        <span style={ppStyles.runtimeInspectorKicker}>Reviewer only</span>
+        <strong>Evaluation evidence</strong>
       </div>
-      <div style={ppStyles.runtimeInspectorGrid}>
-        {summaryRows.map((row) => (
-          <div style={ppStyles.runtimeInspectorRow} key={row.label}>
-            <span style={ppStyles.runtimeInspectorRowLabel}>{row.label}</span>
-            <strong style={ppStyles.runtimeInspectorRowValue}>{row.value}</strong>
-          </div>
-        ))}
+      <div style={ppStyles.evaluationHero}>
+        <div style={ppStyles.evaluationVerdictBlock}>
+          <span style={ppStyles.evaluationLabel}>Latest step</span>
+          <strong style={ppStyles.evaluationVerdict} data-evaluation-verdict={latestStatus}>
+            {latestStatus}
+          </strong>
+        </div>
+        <div style={ppStyles.evaluationScoreBlock}>
+          <span style={ppStyles.evaluationLabel}>Score</span>
+          <strong style={ppStyles.evaluationScore}>{score}/100</strong>
+        </div>
       </div>
-      <details style={ppStyles.runtimeInspectorDetails}>
-        <summary style={ppStyles.runtimeInspectorDetailsSummary}>
-          {t("play.runtime_inspector_summary")}
-        </summary>
-        <div style={ppStyles.runtimeInspectorDetailGrid}>
-          {detailRows.map((row) => (
-            <div style={ppStyles.runtimeInspectorDetailRow} key={row.label}>
-              <span style={ppStyles.runtimeInspectorRowLabel}>{row.label}</span>
-              <strong style={ppStyles.runtimeInspectorRowValue}>{row.value}</strong>
+      <div style={ppStyles.evaluationReasonRow}>
+        <span style={ppStyles.runtimeInspectorRowLabel}>Reason category</span>
+        <strong style={ppStyles.agentTraceValue}>{reasonCategory}</strong>
+      </div>
+      <div style={ppStyles.evaluationEvidenceQuote}>{latestEvidence}</div>
+
+      <section style={ppStyles.evaluationSection}>
+        <span style={ppStyles.evaluationSectionTitle}>Score points</span>
+        <div style={ppStyles.evaluationCriteriaGrid}>
+          {criteria.map((row) => (
+            <div
+              key={row.criterion}
+              style={ppStyles.evaluationCriterionRow}
+              data-evaluation-criterion={row.criterion}
+              data-evaluation-status={row.status}
+            >
+              <div style={ppStyles.evaluationCriterionTopline}>
+                <strong>{row.criterion}</strong>
+                <span style={ppStyles.evaluationStatus}>{row.status}</span>
+              </div>
+              <span style={ppStyles.evaluationCriterionEvidence}>{row.evidence}</span>
+              <span style={ppStyles.evaluationCriterionRationale}>{row.rationale}</span>
             </div>
           ))}
         </div>
-      </details>
-      <details style={ppStyles.agentTraceDetails} open={agentPlan ? true : undefined}>
-        <summary
-          style={{
-            ...ppStyles.runtimeInspectorDetailsSummary,
-            ...(agentPlan ? ppStyles.agentTraceDetailsSummaryReady : null),
-          }}
-        >
-          <span>{t("play.agent_trace_summary")}</span>
-          {agentPlan ? (
-            <span style={ppStyles.agentTraceSummaryCue}>
-              {t("play.agent_trace_available_cue")}
+      </section>
+
+      <section style={ppStyles.evaluationSection}>
+        <span style={ppStyles.evaluationSectionTitle}>Trajectory</span>
+        <div style={ppStyles.trajectoryTrack} data-evaluation-trajectory="true">
+          {trajectory.turns.length ? trajectory.turns.map((turn) => (
+            <span
+              key={turn.ord}
+              title={turn.label}
+              style={{
+                ...ppStyles.trajectoryDot,
+                ...(turn.status === "pass"
+                  ? ppStyles.trajectoryDotPass
+                  : turn.status === "warn"
+                    ? ppStyles.trajectoryDotWarn
+                    : turn.status === "fail"
+                      ? ppStyles.trajectoryDotFail
+                      : ppStyles.trajectoryDotMissing),
+              }}
+              data-trajectory-status={turn.status}
+            >
+              {turn.turn}
             </span>
-          ) : null}
-        </summary>
-        {agentPlan ? (
+          )) : (
+            <span style={ppStyles.agentTraceEmpty}>
+              {agentTraceAccessGranted ? "No judged turns yet." : "Reviewer access not granted."}
+            </span>
+          )}
+        </div>
+        <div style={ppStyles.evaluationReasonRow}>
+          <span style={ppStyles.runtimeInspectorRowLabel}>Trajectory trend</span>
+          <strong style={ppStyles.agentTraceValue}>{trajectory.summary}</strong>
+        </div>
+      </section>
+
+      <section style={ppStyles.evaluationSection}>
+        <span style={ppStyles.evaluationSectionTitle}>Telemetry</span>
+        {telemetryRows.length ? (
+          <div style={ppStyles.telemetryList}>
+            {telemetryRows.map((event) => (
+              <div
+                key={event.event_id}
+                style={ppStyles.telemetryRow}
+                data-telemetry-operation={event.operation}
+              >
+                <strong style={ppStyles.telemetryOperation}>{shortOperation(event.operation)}</strong>
+                <span style={ppStyles.telemetryMeta}>
+                  {event.source_label} · {event.status} · {event.latency_ms ?? event.operation_latency_ms ?? "?"}ms
+                </span>
+                <span style={ppStyles.telemetryTokens}>
+                  in {tokenValue(event.input_tokens)} · cache {tokenValue(event.cached_input_tokens)} · out {tokenValue(event.output_tokens)} · total {tokenValue(event.total_tokens)}
+                </span>
+                {event.retry_count || event.repair_count || event.fallback_reason ? (
+                  <span style={ppStyles.telemetryMeta}>
+                    retry {event.retry_count} · repair {event.repair_count}
+                    {event.fallback_reason ? ` · ${event.fallback_reason}` : ""}
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <span style={ppStyles.agentTraceEmpty}>
+            {agentTraceAccessGranted ? "No LLM call events for this session yet." : "Reviewer access not granted."}
+          </span>
+        )}
+      </section>
+
+      {traceRows.length ? (
+        <details style={ppStyles.agentTraceDetails}>
+          <summary style={ppStyles.runtimeInspectorDetailsSummary}>
+            Agent trace summary
+          </summary>
           <div style={ppStyles.agentTraceGrid}>
-            {agentTraceRows.map((row) => (
+            {traceRows.map((row) => (
               <div style={ppStyles.agentTraceRow} key={row.label}>
                 <span style={ppStyles.runtimeInspectorRowLabel}>{row.label}</span>
                 <strong style={ppStyles.agentTraceValue} title={row.value}>{row.value}</strong>
               </div>
             ))}
           </div>
-        ) : (
-          <div style={ppStyles.agentTraceEmpty}>
-            {agentTraceAccessGranted
-              ? t("play.agent_trace_empty")
-              : t("play.agent_trace_unauthorized")}
-          </div>
-        )}
-      </details>
+        </details>
+      ) : null}
+
+      <div style={ppStyles.evaluationFooter}>
+        Session {story.session.turn_count}/{story.session.turn_budget} · {inventoryState} · ending {endingLabel} · {turnsRemaining} left
+      </div>
     </motion.section>
   )
 }
@@ -635,6 +675,220 @@ function latestJudgeFromEvents<T extends NarrativeStepJudgeResult | NarrativeCon
   }).at(-1)
   const payload: NarrativeAgentEventPayload | undefined = latest?.payload
   return payload?.schema_version === schemaVersion ? payload as T : null
+}
+
+type EvaluationStatus = "pass" | "warn" | "fail" | "missing"
+
+type EvaluationCriterion = {
+  criterion: string
+  status: EvaluationStatus
+  evidence: string
+  rationale: string
+}
+
+type TrajectoryTurnEvidence = {
+  ord: number
+  turn: number
+  status: EvaluationStatus
+  label: string
+}
+
+function evaluationCriteria({
+  agentPlan,
+  latestStepJudge,
+  latestContractJudge,
+  lastNarrator,
+}: {
+  agentPlan: NarrativeAgentPlan | null
+  latestStepJudge: NarrativeStepJudgeResult | null
+  latestContractJudge: NarrativeContractJudgeResult | null
+  lastNarrator: NarrativeStoryMessage | null
+}): EvaluationCriterion[] {
+  const stepStatus = latestStepJudge?.status ?? "missing"
+  const contractStatus = latestContractJudge?.status ?? "missing"
+  const stepCodes = new Set(latestStepJudge?.violations.map((v) => v.code) ?? [])
+  const contractCodes = new Set(latestContractJudge?.violations.map((v) => v.code) ?? [])
+  const hasImpact = Boolean(
+    (lastNarrator?.npc_pulse ?? []).some((pulse) => pulse.shift !== "steady") ||
+      (lastNarrator?.inventory_delta?.added.length ?? 0) > 0 ||
+      (lastNarrator?.inventory_delta?.removed.length ?? 0) > 0,
+  )
+  const optionsPlayable =
+    contractCodes.has("options_count_invalid") || contractCodes.has("option_label_missing")
+      ? "fail"
+      : lastNarrator && lastNarrator.options.length > 0
+        ? "pass"
+        : "missing"
+  const entityStatus = [...contractCodes].some((code) => code.startsWith("unknown_"))
+    ? "fail"
+    : contractStatus === "missing"
+      ? "missing"
+      : "pass"
+  const unsafeStatus = contractCodes.has("hidden_info_leak") ? "fail" : contractStatus === "missing" ? "missing" : "pass"
+  const consequenceStatus =
+    stepCodes.has("played_leverage_no_observable_impact") ||
+    stepCodes.has("twist_turn_no_consequence") ||
+    stepCodes.has("expected_pressure_not_observed") ||
+    contractCodes.has("stage_contract_no_consequence")
+      ? "warn"
+      : hasImpact
+        ? "pass"
+        : stepStatus
+  return [
+    {
+      criterion: "player agency preserved",
+      status: lastNarrator?.options.length ? "pass" : "missing",
+      evidence: lastNarrator?.options.length ? `${lastNarrator.options.length} next moves visible` : "no current option evidence",
+      rationale: "The turn leaves the player with playable next actions.",
+    },
+    {
+      criterion: "consequence follows move",
+      status: consequenceStatus,
+      evidence: agentImpactSummary(lastNarrator, "no pulse or inventory delta observed"),
+      rationale: latestStepJudge?.summary ?? "Step Judge has not been archived yet.",
+    },
+    {
+      criterion: "Brief contract honored",
+      status: contractStatus,
+      evidence: firstViolationEvidence(latestContractJudge) || "contract check clear",
+      rationale: latestContractJudge?.summary ?? "Contract Judge has not been archived yet.",
+    },
+    {
+      criterion: "entities remain coherent",
+      status: entityStatus,
+      evidence: [...contractCodes].filter((code) => code.startsWith("unknown_")).join(", ") || "no unknown ids",
+      rationale: "Runtime ids and visible references stay inside the persisted cast/session contract.",
+    },
+    {
+      criterion: "tone/profile respected",
+      status: stepCodes.has("expected_pressure_not_observed") ? "warn" : stepStatus,
+      evidence: agentPlan ? `${agentPlan.director.stage_phase} · ${agentPlan.director.expected_pressure}` : "no AgentPlan evidence",
+      rationale: "The turn is compared against the director pressure and phase expectation.",
+    },
+    {
+      criterion: "options are playable",
+      status: optionsPlayable,
+      evidence: `${lastNarrator?.options.length ?? 0} option(s)`,
+      rationale: "The current narrator beat must expose usable next moves.",
+    },
+    {
+      criterion: "unsafe/out-of-spec drift avoided",
+      status: unsafeStatus,
+      evidence: contractCodes.has("hidden_info_leak") ? "hidden_info_leak" : "no hidden-info or out-of-contract leak",
+      rationale: "Reviewer evidence checks for hidden-info leakage and invalid runtime shape.",
+    },
+    {
+      criterion: "trajectory advances",
+      status: agentPlan ? "pass" : "missing",
+      evidence: agentPlan ? `turn ${agentPlan.turn_index}/${agentPlan.turn_budget}` : "no turn plan yet",
+      rationale: "The run has a concrete turn index, stage, and remaining budget.",
+    },
+  ]
+}
+
+function trajectoryEvidence(events: NarrativeAgentEvent[]): { turns: TrajectoryTurnEvidence[]; summary: string } {
+  const byOrd = new Map<number, { step?: EvaluationStatus; contract?: EvaluationStatus }>()
+  for (const event of events) {
+    const bucket = byOrd.get(event.ord) ?? {}
+    if (event.event_type === "step_judge" && event.payload.schema_version === "step_judge.v1") {
+      bucket.step = event.payload.status
+    }
+    if (event.event_type === "contract_judge" && event.payload.schema_version === "contract_judge.v1") {
+      bucket.contract = event.payload.status
+    }
+    byOrd.set(event.ord, bucket)
+  }
+  const turns = [...byOrd.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([ord, row], index) => {
+      const status = worstStatus([row.step ?? "missing", row.contract ?? "missing"])
+      return {
+        ord,
+        turn: index + 1,
+        status,
+        label: `turn ${index + 1}: step ${row.step ?? "missing"} · contract ${row.contract ?? "missing"}`,
+      }
+    })
+  const counts = turns.reduce<Record<EvaluationStatus, number>>((acc, turn) => {
+    acc[turn.status] += 1
+    return acc
+  }, { pass: 0, warn: 0, fail: 0, missing: 0 })
+  const overall = worstStatus(turns.map((turn) => turn.status))
+  return {
+    turns,
+    summary: turns.length
+      ? `${overall} · ${turns.length} judged turn(s) · pass ${counts.pass} / warn ${counts.warn} / fail ${counts.fail}`
+      : "missing · no judged turns yet",
+  }
+}
+
+function worstStatus(statuses: EvaluationStatus[]): EvaluationStatus {
+  if (statuses.includes("fail")) return "fail"
+  if (statuses.includes("warn")) return "warn"
+  if (statuses.includes("missing")) return "missing"
+  return "pass"
+}
+
+function evaluationScore(rows: EvaluationCriterion[]): number {
+  if (!rows.length) return 0
+  const score = rows.reduce((sum, row) => {
+    if (row.status === "pass") return sum + 100
+    if (row.status === "warn") return sum + 68
+    if (row.status === "fail") return sum + 35
+    return sum + 0
+  }, 0) / rows.length
+  return Math.round(score)
+}
+
+function evaluationReasonCategory(
+  step: NarrativeStepJudgeResult | null,
+  contract: NarrativeContractJudgeResult | null,
+  llmEvents: NarrativeLLMCallEvent[],
+): string {
+  const firstCode = step?.violations[0]?.code ?? contract?.violations[0]?.code
+  if (firstCode) return taxonomyForCode(firstCode)
+  const recovery = [...llmEvents].reverse().find((event) =>
+    event.fallback_reason || event.status === "repaired" || event.status === "fallback_used",
+  )
+  if (recovery) return recovery.status === "repaired" ? "invalid_output_recovered" : "latency_recovery"
+  if (step || contract) return "clear"
+  return "pending"
+}
+
+function taxonomyForCode(code: string): string {
+  if (code.includes("unknown") || code.includes("npc")) return "entity_mismatch"
+  if (code.includes("option")) return "option_unplayable"
+  if (code.includes("pressure") || code.includes("stage")) return "brief_drift"
+  if (code.includes("leverage") || code.includes("consequence") || code.includes("inventory")) return "weak_consequence"
+  if (code.includes("hidden") || code.includes("leak")) return "safety_redirect"
+  return "runtime_invariant"
+}
+
+function evaluationObservedEvidence(
+  step: NarrativeStepJudgeResult | null,
+  contract: NarrativeContractJudgeResult | null,
+  lastNarrator: NarrativeStoryMessage | null,
+): string {
+  const violationEvidence = firstViolationEvidence(step) || firstViolationEvidence(contract)
+  if (violationEvidence) return violationEvidence
+  const impact = agentImpactSummary(lastNarrator, "")
+  if (impact) return impact
+  return "Awaiting the next judged narrator turn."
+}
+
+function firstViolationEvidence(result: NarrativeStepJudgeResult | NarrativeContractJudgeResult | null): string {
+  if (!result || result.violations.length === 0) return ""
+  const violation = result.violations[0]
+  const evidence = violation.evidence[0] ? ` · ${violation.evidence[0]}` : ""
+  return `${violation.code}${evidence}`
+}
+
+function shortOperation(operation: string): string {
+  return operation.replace(/^create\./, "").replace(/^narrative\./, "")
+}
+
+function tokenValue(value: number | null | undefined): string {
+  return value == null ? "unknown" : String(value)
 }
 
 function agentIntentSummary(plan: NarrativeAgentPlan, emptyLabel: string): string {

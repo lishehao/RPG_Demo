@@ -7,6 +7,7 @@ import type {
   NarrativeContractJudgeResult,
   NarrativeAdvisorMessage,
   NarrativeEnding,
+  NarrativeLLMCallEvent,
   NarrativeNPCPulse,
   NarrativePlayerLeverageOverNPC,
   NarrativeStepJudgeResult,
@@ -107,6 +108,21 @@ function playSegmentSceneCorpus(
   ].join(" ")
 }
 
+function mergeAgentEvents(
+  existing: NarrativeAgentEvent[],
+  incoming: NarrativeAgentEvent[],
+): NarrativeAgentEvent[] {
+  const byKey = new Map<string, NarrativeAgentEvent>()
+  for (const event of [...existing, ...incoming]) {
+    byKey.set(`${event.event_index}:${event.ord}:${event.event_type}`, event)
+  }
+  return [...byKey.values()].sort((a, b) => {
+    if (a.event_index !== b.event_index) return a.event_index - b.event_index
+    if (a.ord !== b.ord) return a.ord - b.ord
+    return a.event_type.localeCompare(b.event_type)
+  })
+}
+
 export function PlayPage({
   sessionId,
   reviewerMode = false,
@@ -123,6 +139,7 @@ export function PlayPage({
   const [ending, setEnding] = useState<NarrativeEnding | null>(null)
   const [latestAgentPlan, setLatestAgentPlan] = useState<NarrativeAgentPlan | null>(null)
   const [latestAgentEvents, setLatestAgentEvents] = useState<NarrativeAgentEvent[]>([])
+  const [llmEvents, setLlmEvents] = useState<NarrativeLLMCallEvent[]>([])
   // Per-session bookmarks — beats the user marked as "I want to
   // remember this." Merged into ending highlights at finalize so
   // the user's call has authority alongside the LLM's picks.
@@ -147,6 +164,19 @@ export function PlayPage({
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
   const canRequestAgentTrace = reviewerMode && auth.canViewAgentTrace
 
+  const refreshReviewerEvidence = useCallback(async () => {
+    if (!canRequestAgentTrace) {
+      setLlmEvents([])
+      return
+    }
+    try {
+      const response = await api.getNarrativeLLMEvents(sessionId)
+      setLlmEvents(response.items)
+    } catch {
+      setLlmEvents([])
+    }
+  }, [api, canRequestAgentTrace, sessionId])
+
   // Initial load: story + (if already completed) the ending.
   useEffect(() => {
     let cancelled = false
@@ -159,6 +189,7 @@ export function PlayPage({
         const agentEvents = canRequestAgentTrace ? response.agent_events ?? [] : []
         setLatestAgentEvents(agentEvents)
         setLatestAgentPlan(canRequestAgentTrace ? latestAgentPlanFromEvents(agentEvents) : null)
+        void refreshReviewerEvidence()
         // If session already finished, fetch the ending so we can render
         // the closing screen on direct-link visits.
         if (response.session.ending_label) {
@@ -177,7 +208,7 @@ export function PlayPage({
     return () => {
       cancelled = true
     }
-  }, [api, canRequestAgentTrace, sessionId])
+  }, [api, canRequestAgentTrace, refreshReviewerEvidence, sessionId])
 
   // Auto-scroll to the current decision point whenever content arrives.
   // The page uses native document scroll for a less pane-like reading
@@ -251,7 +282,10 @@ export function PlayPage({
           canRequestAgentTrace ? { agentTrace: true } : undefined,
         )
         setLatestAgentPlan(canRequestAgentTrace ? response.agent_plan ?? null : null)
-        setLatestAgentEvents(canRequestAgentTrace ? response.agent_events ?? [] : [])
+        setLatestAgentEvents((prev) =>
+          canRequestAgentTrace ? mergeAgentEvents(prev, response.agent_events ?? []) : [],
+        )
+        void refreshReviewerEvidence()
         setStory((prev) => {
           if (!prev) return prev
           // Mark the prior narrator's chosen_option_index in the local copy
@@ -291,7 +325,7 @@ export function PlayPage({
         setBusy(false)
       }
     },
-    [api, busy, canRequestAgentTrace, sessionId],
+    [api, busy, canRequestAgentTrace, refreshReviewerEvidence, sessionId],
   )
 
   const openAdvisor = useCallback(() => {
@@ -423,19 +457,6 @@ export function PlayPage({
 
         <PlaySurfaceGrid compact={compactPlayChrome}>
           <StoryTimeline innerRef={scrollerRef}>
-          {reviewerMode ? (
-            <RuntimeInspector
-              story={story}
-              ending={ending}
-              lastNarrator={lastNarrator}
-              turnsRemaining={turnsRemaining}
-              liveInventory={liveInventory}
-              agentPlan={latestAgentPlan}
-              agentEvents={latestAgentEvents}
-              agentTraceAccessGranted={canRequestAgentTrace}
-            />
-          ) : null}
-
           {/* Gauntlet-mode goals stay as a single reminder line instead of
               another nested panel in the story column. */}
           {isGauntlet && story.template.player_goals && story.template.player_goals.length > 0 ? (
@@ -682,14 +703,29 @@ export function PlayPage({
           ) : null}
           </StoryTimeline>
 
-          {!isComplete ? (
-            <SceneSupportRail
-              story={story}
-              lastNarrator={lastNarrator}
-              turnsRemaining={turnsRemaining}
-              compact={compactPlayChrome}
-            />
-          ) : null}
+          <aside style={ppStyles.playRightRail}>
+            {reviewerMode ? (
+              <RuntimeInspector
+                story={story}
+                ending={ending}
+                lastNarrator={lastNarrator}
+                turnsRemaining={turnsRemaining}
+                liveInventory={liveInventory}
+                agentPlan={latestAgentPlan}
+                agentEvents={latestAgentEvents}
+                llmEvents={llmEvents}
+                agentTraceAccessGranted={canRequestAgentTrace}
+              />
+            ) : null}
+            {!isComplete ? (
+              <SceneSupportRail
+                story={story}
+                lastNarrator={lastNarrator}
+                turnsRemaining={turnsRemaining}
+                compact={compactPlayChrome}
+              />
+            ) : null}
+          </aside>
         </PlaySurfaceGrid>
       </PlayShell>
 

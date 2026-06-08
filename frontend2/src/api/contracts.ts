@@ -836,6 +836,41 @@ export type NarrativeLLMCallSourceLabel =
   | "deterministic_fallback"
   | "no_gateway_fallback"
 
+export type NarrativeLLMCallStatus =
+  | "success"
+  | "timeout"
+  | "rate_limited"
+  | "invalid_response"
+  | "provider_unavailable"
+  | "fallback_used"
+  | "repaired"
+  | "failed"
+
+export type NarrativeLLMCallEvent = {
+  event_id: number
+  operation: string
+  status: NarrativeLLMCallStatus
+  source_label: NarrativeLLMCallSourceLabel
+  latency_ms?: number | null
+  operation_latency_ms?: number | null
+  input_tokens?: number | null
+  cached_input_tokens?: number | null
+  output_tokens?: number | null
+  total_tokens?: number | null
+  retry_count: number
+  repair_count: number
+  fallback_reason?: string | null
+  response_id?: string | null
+  user_id?: string | null
+  template_id?: string | null
+  session_id?: string | null
+  created_at: string
+}
+
+export type NarrativeLLMCallEventListResponse = {
+  items: NarrativeLLMCallEvent[]
+}
+
 export type NarrativeStoryGuideConversationState =
   | "empty"
   | "collecting"

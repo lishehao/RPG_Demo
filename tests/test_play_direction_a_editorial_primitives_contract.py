@@ -74,3 +74,32 @@ def test_direction_a_uses_local_primitives_not_other_ui_kit_paths() -> None:
     assert "@heroui" not in primitives
     assert "@mantine" not in primitives
     assert "borderRadius: 999" not in primitives
+
+
+def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    route_map = (ROOT / "frontend2/src/api/route-map.ts").read_text()
+    client = (ROOT / "frontend2/src/api/client.ts").read_text()
+
+    assert "canRequestAgentTrace" in play_page
+    assert "api.getNarrativeLLMEvents(sessionId)" in play_page
+    assert "llmEvents={llmEvents}" in play_page
+    assert 'data-play-primitive="EvaluationDrawer"' in panels
+    assert 'data-reviewer-evidence="true"' in panels
+    assert "evaluationCriteria" in panels
+    assert "trajectoryEvidence" in panels
+    assert "NarrativeLLMCallEvent" in panels
+    assert "getNarrativeLLMEvents" in client
+    assert "/narrative/sessions/:session_id/llm-events" in route_map
+
+
+def test_normal_play_keeps_evaluation_terms_outside_default_surface() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+
+    assert "reviewerMode ? (" in play_page
+    assert "<RuntimeInspector" in play_page
+    assert "Evaluation evidence" in panels
+    assert "data-reviewer-evidence" in panels
+    assert "token" not in (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text().casefold()

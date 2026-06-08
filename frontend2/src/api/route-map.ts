@@ -38,6 +38,10 @@ export const BACKEND_ROUTE_MAP = {
     method: "GET",
     path: "/narrative/sessions/:session_id/story",
   },
+  getNarrativeLLMEvents: {
+    method: "GET",
+    path: "/narrative/sessions/:session_id/llm-events",
+  },
   advanceNarrativeTurn: {
     method: "POST",
     path: "/narrative/sessions/:session_id/story/turns",

@@ -387,6 +387,15 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       })
     },
 
+    getNarrativeLLMEvents(sessionId: string) {
+      return requestJson<import("./contracts").NarrativeLLMCallEventListResponse>(
+        "getNarrativeLLMEvents",
+        {
+          params: { session_id: sessionId },
+        },
+      )
+    },
+
     advanceNarrativeTurn(
       sessionId: string,
       request: NarrativeAdvanceTurnRequest,

@@ -19,6 +19,7 @@ import type {
   NarrativeCreateTemplateResponse,
   NarrativeEnding,
   NarrativeEndingDistributionResponse,
+  NarrativeLLMCallEventListResponse,
   NarrativePublicReplayResponse,
   NarrativeSessionListResponse,
   NarrativeStartSessionResponse,
@@ -86,6 +87,7 @@ export type FrontendApiClient = {
     sessionId: string,
     options?: NarrativeAgentTraceOptions,
   ): Promise<NarrativeStoryHistoryResponse>
+  getNarrativeLLMEvents(sessionId: string): Promise<NarrativeLLMCallEventListResponse>
   advanceNarrativeTurn(
     sessionId: string,
     request: NarrativeAdvanceTurnRequest,

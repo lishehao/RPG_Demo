@@ -421,6 +421,98 @@ def test_story_endpoint_returns_agent_trace_for_authorized_reviewer(tmp_path, mo
     assert "agent_plan" not in replay_response.json()
 
 
+def test_llm_event_endpoint_requires_reviewer_access(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    client = TestClient(main_module.app)
+    login = ensure_authenticated_client(client, display_name="Telemetry Owner")
+    user_id = login.json()["user"]["user_id"]
+    session_id = f"sess_llm_trace_blocked_{uuid4().hex[:8]}"
+    _create_template_and_session(
+        repo,
+        template_id=f"tmpl_llm_trace_blocked_{uuid4().hex[:8]}",
+        session_id=session_id,
+        player_user_id=user_id,
+    )
+    repo.append_llm_call_event(
+        operation="narrative.advance_turn",
+        status="success",
+        source_label="live",
+        latency_ms=123,
+        input_tokens=20,
+        cached_input_tokens=5,
+        output_tokens=10,
+        total_tokens=30,
+        user_id=user_id,
+        session_id=session_id,
+    )
+    service = NarrativeService(repository=repo, gateway=_TurnOnlyResponder())
+    original_service = main_module.narrative_service
+    main_module.narrative_service = service
+
+    try:
+        response = client.get(f"/narrative/sessions/{session_id}/llm-events")
+    finally:
+        main_module.narrative_service = original_service
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "agent_trace_forbidden"
+
+
+def test_llm_event_endpoint_returns_sanitized_rows_for_reviewer(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("APP_AGENT_TRACE_REVIEWER_USERNAMES", "portfolio_reviewer")
+    main_module.get_settings.cache_clear()
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    client = TestClient(main_module.app)
+    login = client.post("/auth/login", json={"username": "portfolio_reviewer"})
+    assert login.status_code == 200
+    user_id = login.json()["user"]["user_id"]
+    session_id = f"sess_llm_trace_allowed_{uuid4().hex[:8]}"
+    _create_template_and_session(
+        repo,
+        template_id=f"tmpl_llm_trace_allowed_{uuid4().hex[:8]}",
+        session_id=session_id,
+        player_user_id=user_id,
+    )
+    repo.append_llm_call_event(
+        operation="narrative.advance_turn",
+        status="success",
+        source_label="live",
+        latency_ms=123,
+        operation_latency_ms=150,
+        input_tokens=20,
+        cached_input_tokens=5,
+        output_tokens=10,
+        total_tokens=30,
+        retry_count=1,
+        repair_count=0,
+        response_id="safe-response-id",
+        user_id=user_id,
+        session_id=session_id,
+    )
+    service = NarrativeService(repository=repo, gateway=_TurnOnlyResponder())
+    original_service = main_module.narrative_service
+    main_module.narrative_service = service
+
+    try:
+        response = client.get(f"/narrative/sessions/{session_id}/llm-events")
+    finally:
+        main_module.narrative_service = original_service
+        main_module.get_settings.cache_clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["items"][0]["operation"] == "narrative.advance_turn"
+    assert body["items"][0]["source_label"] == "live"
+    assert body["items"][0]["latency_ms"] == 123
+    assert body["items"][0]["input_tokens"] == 20
+    assert body["items"][0]["cached_input_tokens"] == 5
+    assert body["items"][0]["output_tokens"] == 10
+    assert body["items"][0]["total_tokens"] == 30
+    serialized = response.text
+    assert "api_key" not in serialized
+    assert "Authorization" not in serialized
+
+
 def test_advance_endpoint_rejects_unauthorized_agent_trace_before_runtime(monkeypatch) -> None:
     class RuntimeShouldNotRun:
         validate_called = False
