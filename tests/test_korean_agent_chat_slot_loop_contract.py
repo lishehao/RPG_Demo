@@ -65,6 +65,7 @@ def test_korean_agent_chat_slot_loop_blocks_small_cast_object_only_before_brief(
 
 def test_create_page_uses_slot_loop_before_story_brief_generation() -> None:
     source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/create/create-styles.ts").read_text()
 
     assert "advanceStoryGuideLoop" in source
     assert "canShapeStoryBrief" in source
@@ -83,6 +84,9 @@ def test_create_page_uses_slot_loop_before_story_brief_generation() -> None:
     assert "autoBriefKeyRef.current === currentBriefKey" in source
     assert "hasSeed && !activeBrief && guideReadyToBrief" not in source
     assert "{briefComposerLabel}" not in source
+    assert 'rows={1}' in source
+    assert "minHeight: 48" in styles
+    assert 'resize: "none"' in styles
 
 
 def test_create_page_keeps_long_generate_handoff_visible_before_navigation() -> None:

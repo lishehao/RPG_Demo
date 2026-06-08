@@ -57,15 +57,27 @@ def test_privacy_chat_intent_is_guidance_not_silent_publish() -> None:
 
 def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None:
     source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert "<details" not in source
     assert "settingsDetails" not in source
+    assert "privacyRecordedVisibility" in source
+    assert "privacyIntroComplete" in source
+    assert "appendPrivacyRecordedTurn" in source
     assert 'data-create-privacy-settings="true"' in source
     assert 'data-create-privacy-mode={privacyPromptVisible ? "confirmation" : "setup"}' in source
     assert "privacySetupVisible" in source
     assert "setPrivacySetupVisible(false)" in source
     assert "VISIBILITY_OPTION_IDS.map" in source
     assert "handleVisibilityChoice(id)" in source
+    assert "handleVisibilityChoice(visibility)" in source
+    assert 't("create.privacy_intro_question")' in source
+    assert 't("create.privacy_recorded_user"' in source
+    assert 't("create.privacy_recorded_reply"' in source
+    assert 'rows={1}' in source
+
+    assert '"create.privacy_intro_question": "Before we write, choose who can play this story."' in strings
+    assert '"create.privacy_recorded_reply": "I’ve recorded {value}.' in strings
 
     checkpoint_start = source.index('data-create-privacy-settings="true"')
     checkpoint_end = source.index('{briefBusy ? (', checkpoint_start)
@@ -75,6 +87,12 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert "DIFFICULTY_OPTIONS.map" not in checkpoint_segment
     assert "STORY_LANGUAGE_OPTIONS[uiLang].map" not in checkpoint_segment
     assert "TENSION_PROFILE_OPTIONS.map" not in checkpoint_segment
+
+    composer_start = source.index("{privacyIntroComplete ? (")
+    composer_end = source.index("{error ? <div style={cpStyles.error}>", composer_start)
+    composer_segment = source[composer_start:composer_end]
+    assert "...cpStyles.textareaWrap" in composer_segment
+    assert "appendGuideTurn(draftTurn)" in composer_segment
 
 
 def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() -> None:

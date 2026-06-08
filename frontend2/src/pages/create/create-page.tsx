@@ -98,6 +98,8 @@ export function CreatePage({
   const [visibility, setVisibility] = useState<NarrativeTemplateVisibility>("private")
   const [privacySetupVisible, setPrivacySetupVisible] = useState(true)
   const [privacyPromptVisible, setPrivacyPromptVisible] = useState(false)
+  const [privacyRecordedVisibility, setPrivacyRecordedVisibility] =
+    useState<NarrativeTemplateVisibility | null>(null)
   const [turnBudget, setTurnBudget] = useState<number>(12)
   const [difficulty, setDifficulty] = useState<NarrativeDifficulty>("story")
   // Default the story language to whatever the UI is in. The user can
@@ -135,7 +137,8 @@ export function CreatePage({
   const activeBrief = activeBriefResponse?.brief ?? null
   const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
   const guideReadyToBrief = guideLoopState.status === "ready_to_brief" && canShapeStoryBrief(guideLoopState)
-  const showSeedExamples = !hasSeed && !busy && !briefBusy && !guideBusy
+  const privacyIntroComplete = Boolean(privacyRecordedVisibility)
+  const showSeedExamples = privacyIntroComplete && !hasSeed && !busy && !briefBusy && !guideBusy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
   const selectedDifficulty = DIFFICULTY_OPTIONS.find((o) => o.id === difficulty) ?? DIFFICULTY_OPTIONS[0]
   const selectedLanguage =
@@ -150,20 +153,20 @@ export function CreatePage({
     tone: t(selectedTension.labelKey),
   }
   const guideMessages = useMemo<GuideMessage[]>(
-    () => [
-      {
-        id: "guide-open",
-        speaker: "guide",
-        text: t("create.guide_greeting"),
-      },
-      {
-        id: "guide-open-2",
-        speaker: "guide",
-        text: t("create.guide_greeting_2"),
-      },
-      ...chatMessages,
-    ],
-    [chatMessages, t],
+    () => {
+      if (!privacyIntroComplete) {
+        return [
+          {
+            id: "guide-privacy-open",
+            speaker: "guide",
+            text: t("create.privacy_intro_question"),
+          },
+          ...chatMessages,
+        ]
+      }
+      return chatMessages
+    },
+    [chatMessages, privacyIntroComplete, t],
   )
   const submitModKey = useMemo(() => {
     if (typeof navigator === "undefined") return "Ctrl"
@@ -218,15 +221,54 @@ export function CreatePage({
     }
   }
 
+  const appendPrivacyRecordedTurn = (
+    nextVisibility: NarrativeTemplateVisibility,
+    mode: "initial" | "confirmation",
+  ) => {
+    const label = t(VISIBILITY_KEY_MAP[nextVisibility].labelKey)
+    const time = Date.now()
+    setChatMessages((current) => {
+      const nextMessages = [...current]
+      if (mode === "initial") {
+        nextMessages.push({
+          id: `user-privacy-${time}`,
+          speaker: "user",
+          text: t("create.privacy_recorded_user", { value: label }),
+        })
+      }
+      nextMessages.push({
+        id: `guide-privacy-recorded-${time}`,
+        speaker: "guide",
+        text: t("create.privacy_recorded_reply", { value: label }),
+        node: "parse_message",
+        state: "collecting",
+      })
+      if (mode === "initial") {
+        nextMessages.push({
+          id: `guide-privacy-greeting-${time}`,
+          speaker: "guide",
+          text: t("create.guide_greeting"),
+          node: "ask_missing_slot",
+          state: "collecting",
+        })
+      }
+      return nextMessages
+    })
+  }
+
   const handleVisibilityChoice = (nextVisibility: NarrativeTemplateVisibility) => {
+    const mode: "initial" | "confirmation" =
+      privacyPromptVisible || privacyRecordedVisibility ? "confirmation" : "initial"
     setVisibility(nextVisibility)
+    setPrivacyRecordedVisibility(nextVisibility)
     setPrivacySetupVisible(false)
     setPrivacyPromptVisible(false)
+    appendPrivacyRecordedTurn(nextVisibility, mode)
+    window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
   }
 
   const hidePrivacySetup = () => {
-    setPrivacySetupVisible(false)
-    setPrivacyPromptVisible(false)
+    handleVisibilityChoice(visibility)
   }
 
   useEffect(() => {
@@ -540,6 +582,7 @@ export function CreatePage({
     setError(null)
     setPrivacySetupVisible(false)
     setPrivacyPromptVisible(false)
+    setPrivacyRecordedVisibility("private")
     setChatMessages([
       {
         id: `user-handoff-${time}`,
@@ -593,8 +636,8 @@ export function CreatePage({
           >
             {guideMessages.map((message) => {
               const isUser = message.speaker === "user"
-              const isIntro = message.id === "guide-open"
-              const isIntroFollow = message.id === "guide-open-2"
+              const isIntro = message.id === "guide-privacy-open" || message.id === "guide-privacy-greeting"
+              const isIntroFollow = false
               return (
                 <div
                   key={message.id}
@@ -874,67 +917,72 @@ export function CreatePage({
             ) : null}
           </AnimatePresence>
 
-          <div
-            style={{
-              ...cpStyles.textareaWrap,
-              ...(compactLayout ? cpStyles.textareaWrapCompact : null),
-              ...(activeBrief ? cpStyles.textareaWrapAfterBrief : null),
-            }}
-          >
-            <textarea
-              ref={seedTextareaRef}
-              style={{
-                ...cpStyles.textarea,
-                ...(compactLayout ? cpStyles.textareaCompact : {}),
-              }}
-              placeholder={compactLayout ? t("create.guide_input_placeholder_short") : t("create.guide_input_placeholder")}
-              value={draftTurn}
-              onChange={(e) => {
-                setDraftTurn(e.target.value)
-                setError(null)
-              }}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                  e.preventDefault()
-                  if (draftTurn.trim()) {
-                    void appendGuideTurn(draftTurn)
-                    return
-                  }
-                  return
-                }
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault()
-                  void appendGuideTurn(draftTurn)
-                }
-              }}
-              spellCheck={false}
-              disabled={busy || briefBusy || guideBusy}
-            />
-            <div style={{ ...cpStyles.composerBar, ...(compactLayout ? cpStyles.composerBarCompact : null) }}>
-              <span style={cpStyles.composerHint}>{t("create.guide_input_hint")}</span>
-              <div style={{ ...cpStyles.composerCommands, ...(compactLayout ? cpStyles.composerCommandsCompact : null) }}>
-                <button
-                  type="button"
-                  style={cpStyles.composerAction}
-                  disabled={!draftTurn.trim() || busy || briefBusy || guideBusy}
-                  onClick={() => void appendGuideTurn(draftTurn)}
-                >
-                  {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
-                </button>
+          {privacyIntroComplete ? (
+            <>
+              <div
+                style={{
+                  ...cpStyles.textareaWrap,
+                  ...(compactLayout ? cpStyles.textareaWrapCompact : null),
+                  ...(activeBrief ? cpStyles.textareaWrapAfterBrief : null),
+                }}
+              >
+                <textarea
+                  ref={seedTextareaRef}
+                  rows={1}
+                  style={{
+                    ...cpStyles.textarea,
+                    ...(compactLayout ? cpStyles.textareaCompact : {}),
+                  }}
+                  placeholder={compactLayout ? t("create.guide_input_placeholder_short") : t("create.guide_input_placeholder")}
+                  value={draftTurn}
+                  onChange={(e) => {
+                    setDraftTurn(e.target.value)
+                    setError(null)
+                  }}
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      e.preventDefault()
+                      if (draftTurn.trim()) {
+                        void appendGuideTurn(draftTurn)
+                        return
+                      }
+                      return
+                    }
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      void appendGuideTurn(draftTurn)
+                    }
+                  }}
+                  spellCheck={false}
+                  disabled={busy || briefBusy || guideBusy}
+                />
+                <div style={{ ...cpStyles.composerBar, ...(compactLayout ? cpStyles.composerBarCompact : null) }}>
+                  <span style={cpStyles.composerHint}>{t("create.guide_input_hint")}</span>
+                  <div style={{ ...cpStyles.composerCommands, ...(compactLayout ? cpStyles.composerCommandsCompact : null) }}>
+                    <button
+                      type="button"
+                      style={cpStyles.composerAction}
+                      disabled={!draftTurn.trim() || busy || briefBusy || guideBusy}
+                      onClick={() => void appendGuideTurn(draftTurn)}
+                    >
+                      {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div style={cpStyles.editorMeta}>
-            <span style={cpStyles.count}>{t("create.char_count", { n: seed.length })}</span>
-            {correctionCount > 0 ? (
-              <span style={cpStyles.count}>{t("create.guide_revision_count", { n: correctionCount })}</span>
-            ) : null}
-            {hasSeed && !activeBrief && !compactLayout ? (
-              <span style={cpStyles.shortcutHint}>
-                {t("create.submit_shortcut", { mod: submitModKey })}
-              </span>
-            ) : null}
-          </div>
+              <div style={cpStyles.editorMeta}>
+                <span style={cpStyles.count}>{t("create.char_count", { n: seed.length })}</span>
+                {correctionCount > 0 ? (
+                  <span style={cpStyles.count}>{t("create.guide_revision_count", { n: correctionCount })}</span>
+                ) : null}
+                {hasSeed && !activeBrief && !compactLayout ? (
+                  <span style={cpStyles.shortcutHint}>
+                    {t("create.submit_shortcut", { mod: submitModKey })}
+                  </span>
+                ) : null}
+              </div>
+            </>
+          ) : null}
 
           {error ? <div style={cpStyles.error}>{error}</div> : null}
           {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
