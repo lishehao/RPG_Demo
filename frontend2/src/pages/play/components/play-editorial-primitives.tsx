@@ -7,7 +7,6 @@ import type {
 import {
   getAvatarForCastMember,
   getDefaultAvatar,
-  getPortraitForCharacter,
 } from "../../../shared/lib/webtoon-assets"
 import { Truncated } from "../../../shared/ui/truncated"
 
@@ -248,7 +247,7 @@ function sceneActors(story: NarrativeStoryHistoryResponse, pulses: NarrativeNPCP
       id: member.character_id,
       name: member.display_name,
       role: member.role || member.relation_to_protagonist || "Scene actor",
-      avatarUrl: getAvatarForCastMember(story.template.template_id, member),
+      avatarUrl: getAvatarForCastMember(story.template.template_id, member, story.template),
     }))
 }
 
@@ -271,23 +270,17 @@ function playerPortraitForStory(story: NarrativeStoryHistoryResponse): string {
           }),
       )
     : null
-  if (matchedCast) return getAvatarForCastMember(story.template.template_id, matchedCast)
-  return getPortraitForCharacter(
+  if (matchedCast) return getAvatarForCastMember(story.template.template_id, matchedCast, story.template)
+  return getAvatarForCastMember(
     story.template.template_id,
-    playerRole?.role_id || "player",
-    inferPortraitGender(roleText),
+    {
+      character_id: playerRole?.role_id || "player",
+      display_name: roleText || "Player",
+      role: roleText || "Player",
+      relation_to_protagonist: playerRole?.public_persona || "",
+    },
+    story.template,
   )
-}
-
-function inferPortraitGender(text: string): "female" | "male" | null {
-  const lower = text.toLowerCase()
-  if (/\b(wife|bride|mother|daughter|sister|actress|singer|publicist|girl|woman|female)\b|新娘|妻子|母亲|女儿|姐姐|妹妹|女人|女生/.test(lower)) {
-    return "female"
-  }
-  if (/\b(husband|groom|father|son|brother|actor|producer|manager|boy|man|male)\b|新郎|丈夫|父亲|儿子|哥哥|弟弟|男人|男生/.test(lower)) {
-    return "male"
-  }
-  return null
 }
 
 function handlePortraitError(event: SyntheticEvent<HTMLImageElement>) {

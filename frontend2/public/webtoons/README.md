@@ -49,6 +49,21 @@ Implemented in `frontend2/src/shared/lib/webtoon-assets.ts`.
 
 This is a display-level no-overlap guarantee for fallback/internal covers. It is not a claim that every database story has a globally unique cover forever.
 
+## Avatar Resolver Rules
+
+Implemented in `frontend2/src/shared/lib/webtoon-assets.ts`.
+
+Cast portraits use a lightweight hybrid retrieval/ranking resolver:
+
+1. R&D maintains a local avatar metadata manifest for each accepted portrait: gender presentation, age band or maturity cues, role archetypes, domain/theme fit, formality, and avoid-tags.
+2. Runtime builds a compact query from the template title/seed/theme plus the cast member id, display name, role, and relationship text.
+3. The resolver filters impossible matches first, for example non-portrait/object plates, bridal/period/royal portraits in backstage-awards stories, or student portraits for sponsor/executive roles.
+4. It then ranks candidates with a deterministic local tag-vector scorer. This is the current no-network semantic retrieval layer; the `rankAvatarCandidates` seam can be upgraded to embeddings later without changing Play/World callers.
+5. Stable hash tie-breaking preserves identity across renders and sessions.
+6. Low-confidence roles fall back to neutral/professional portraits or default UI avatars rather than random broad-pool mismatch.
+
+This is not an image-generation system and does not make per-render LLM/provider calls. Art owns expanding/QAing the avatar pool; R&D owns matching logic and tests.
+
 ## Adding Assets
 
 When Art adds images:
@@ -56,5 +71,5 @@ When Art adds images:
 1. Put files under the appropriate subfolder.
 2. Update or add an asset manifest when the folder has one.
 3. R&D wires paths into `webtoon-assets.ts`.
-4. Update `tests/test_generated_cover_contract.py` for new keys/pools/order.
+4. Update `tests/test_generated_cover_contract.py` for new cover keys/pools/order or `tests/test_webtoon_avatar_semantic_resolver.py` for avatar metadata/ranking rules.
 5. Run `npm --prefix frontend2 run check`, `npm --prefix frontend2 run build`, and relevant cover tests.

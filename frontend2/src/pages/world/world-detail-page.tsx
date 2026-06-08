@@ -400,7 +400,7 @@ function StoryBriefingRail({
             return (
               <div key={c.character_id} style={tdStyles.castRow}>
                 <img
-                  src={getAvatarForCastMember(template.template_id, c)}
+                  src={getAvatarForCastMember(template.template_id, c, template)}
                   alt={c.display_name}
                   style={tdStyles.castAvatar}
                   loading="lazy"

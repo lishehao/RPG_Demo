@@ -47,12 +47,12 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assets = (ROOT / "frontend2/src/shared/lib/webtoon-assets.ts").read_text()
 
     assert "getAvatarForCastMember" in primitives
-    assert "getPortraitForCharacter" in primitives
     assert "getDefaultAvatar" in primitives
     assert 'data-play-player-portrait="true"' in primitives
     assert 'data-play-cast-portrait="true"' in primitives
     assert "<img" in primitives
     assert "avatarUrl: getAvatarForCastMember" in primitives
+    assert "getAvatarForCastMember(story.template.template_id, member, story.template)" in primitives
     assert "playerPortraitForStory" in primitives
     assert "handlePortraitError" in primitives
     assert "initialsFor" not in primitives

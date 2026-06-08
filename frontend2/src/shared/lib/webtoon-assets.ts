@@ -62,6 +62,169 @@ const AVATAR_MALE = [
   "royal-01",
 ] as const
 
+type AvatarGenderPresentation = "female" | "male"
+type AvatarMetadata = {
+  slug: string
+  gender: AvatarGenderPresentation
+  tags: readonly string[]
+  avoidTags?: readonly string[]
+}
+
+// Local semantic manifest for cast portraits. This is deliberately tag-vector
+// shaped rather than role->file hardcoding: future Art/R&D can replace or
+// augment the score with embeddings while keeping the same query/filter seam.
+const AVATAR_METADATA: readonly AvatarMetadata[] = [
+  { slug: "bride-01", gender: "female", tags: ["wedding", "bride", "formal", "young", "family", "relationship"] },
+  { slug: "elder-01", gender: "female", tags: ["elder", "family", "inheritance", "period", "traditional", "matriarch", "formal"] },
+  { slug: "elder-02", gender: "male", tags: ["elder", "family", "inheritance", "executive", "sponsor", "formal", "mature"] },
+  { slug: "female-01", gender: "female", tags: ["professional", "executive", "sponsor", "formal", "office", "elite"] },
+  { slug: "female-02", gender: "female", tags: ["entertainment", "celebrity", "performer", "gala", "drama", "stage"] },
+  { slug: "female-03", gender: "female", tags: ["professional", "assistant", "lawyer", "office", "formal", "glasses"] },
+  { slug: "female-04", gender: "female", tags: ["student", "campus", "casual", "young", "friend"] },
+  { slug: "female-05", gender: "female", tags: ["entertainment", "celebrity", "performer", "singer", "gala", "stage"] },
+  { slug: "female-06", gender: "female", tags: ["student", "campus", "young", "quiet", "witness"] },
+  { slug: "female-07", gender: "female", tags: ["professional", "publicist", "manager", "office", "formal", "glasses"] },
+  { slug: "female-08", gender: "female", tags: ["entertainment", "performer", "dancer", "backstage", "edgy", "young"] },
+  { slug: "female-09", gender: "female", tags: ["professional", "publicist", "manager", "backstage", "formal", "mature"] },
+  { slug: "female-10", gender: "female", tags: ["entertainment", "dancer", "performer", "backstage", "witness", "young"] },
+  { slug: "idol-01", gender: "male", tags: ["entertainment", "idol", "singer", "performer", "celebrity", "stage", "young"] },
+  { slug: "lawyer-01", gender: "male", tags: ["professional", "lawyer", "executive", "office", "formal", "representative"] },
+  { slug: "male-01", gender: "male", tags: ["professional", "executive", "office", "formal", "sharp"] },
+  { slug: "male-02", gender: "male", tags: ["entertainment", "performer", "celebrity", "backstage", "edgy"] },
+  { slug: "male-03", gender: "male", tags: ["professional", "executive", "lawyer", "office", "formal", "manager"] },
+  { slug: "male-04", gender: "male", tags: ["professional", "producer", "manager", "backstage", "entertainment", "formal"] },
+  { slug: "male-05", gender: "male", tags: ["entertainment", "celebrity", "performer", "gala", "edgy"] },
+  { slug: "male-06", gender: "male", tags: ["student", "campus", "young", "casual"] },
+  { slug: "male-07", gender: "male", tags: ["elder", "family", "executive", "sponsor", "mature", "formal"] },
+  { slug: "male-08", gender: "male", tags: ["artifact", "letter", "object"], avoidTags: ["character", "portrait"] },
+  { slug: "male-09", gender: "male", tags: ["royal", "period", "heir", "family", "formal"] },
+  { slug: "male-10", gender: "male", tags: ["elder", "executive", "sponsor", "professional", "mature", "formal"] },
+  { slug: "period-01", gender: "female", tags: ["period", "royal", "family", "traditional", "formal"] },
+  { slug: "royal-01", gender: "male", tags: ["royal", "period", "heir", "formal", "family"] },
+  { slug: "student-01", gender: "female", tags: ["student", "campus", "young", "witness"] },
+  { slug: "student-02", gender: "male", tags: ["student", "campus", "young", "witness"] },
+] as const
+
+type AvatarQuery = {
+  key: string
+  gender: AvatarGenderPresentation | null
+  weights: Record<string, number>
+  avoidTags: readonly string[]
+  roleRuleHits: number
+}
+
+type AvatarQueryRule = {
+  keywords: readonly string[]
+  tags: readonly string[]
+  avoidTags?: readonly string[]
+  gender?: AvatarGenderPresentation
+  weight?: number
+}
+
+const AVATAR_ROLE_RULES: readonly AvatarQueryRule[] = [
+  {
+    keywords: ["backup dancer", "dancer", "choreographer", "伴舞", "舞者"],
+    tags: ["dancer", "performer", "entertainment", "backstage", "young"],
+    avoidTags: ["elder", "executive", "sponsor", "wedding", "bride", "royal", "period", "student"],
+    weight: 6,
+  },
+  {
+    keywords: ["singer", "idol", "performer", "celebrity", "actor", "actress", "歌手", "偶像", "演员", "明星"],
+    tags: ["entertainment", "performer", "celebrity", "stage"],
+    avoidTags: ["elder", "executive", "wedding", "bride", "student"],
+    weight: 5,
+  },
+  {
+    keywords: ["publicist", "press agent", "pr manager", "public relations", "manager", "agent", "经纪人", "公关"],
+    tags: ["publicist", "professional", "manager", "entertainment", "backstage", "formal"],
+    avoidTags: ["student", "wedding", "bride", "royal", "period"],
+    weight: 6,
+  },
+  {
+    keywords: ["producer", "director", "showrunner", "制作人", "导演"],
+    tags: ["producer", "professional", "manager", "entertainment", "backstage", "formal"],
+    avoidTags: ["student", "wedding", "bride", "royal", "period"],
+    weight: 6,
+  },
+  {
+    keywords: ["sponsor representative", "sponsor", "representative", "chairwoman", "chairman", "资方", "赞助", "代表"],
+    tags: ["sponsor", "executive", "professional", "formal", "mature"],
+    avoidTags: ["student", "dancer", "performer", "wedding", "bride", "royal", "period"],
+    weight: 6,
+  },
+  {
+    keywords: ["lawyer", "attorney", "legal", "contract counsel", "律师", "法务"],
+    tags: ["lawyer", "professional", "office", "formal"],
+    avoidTags: ["student", "wedding", "bride", "performer"],
+    weight: 6,
+  },
+  {
+    keywords: ["ceo", "founder", "board member", "investor", "executive", "secretary", "assistant", "总裁", "创始人", "董事", "投资人", "秘书", "助理"],
+    tags: ["executive", "professional", "office", "formal"],
+    avoidTags: ["student", "wedding", "bride", "royal", "period"],
+    weight: 5,
+  },
+  {
+    keywords: ["student", "classmate", "campus", "mentor", "professor", "teacher", "学生", "同学", "导师", "教授", "老师"],
+    tags: ["student", "campus", "young"],
+    avoidTags: ["executive", "sponsor", "wedding", "bride", "royal"],
+    weight: 5,
+  },
+  {
+    keywords: ["bride", "groom", "wedding", "fiance", "fiancee", "新娘", "新郎", "婚礼", "未婚"],
+    tags: ["wedding", "formal", "relationship", "family"],
+    weight: 6,
+  },
+  {
+    keywords: ["elder", "grandfather", "grandmother", "patriarch", "matriarch", "inheritance", "will", "estate", "长辈", "祖父", "祖母", "家主", "继承", "遗嘱"],
+    tags: ["elder", "family", "inheritance", "mature", "formal"],
+    avoidTags: ["student", "dancer", "performer"],
+    weight: 6,
+  },
+]
+
+const AVATAR_CONTEXT_RULES: readonly AvatarQueryRule[] = [
+  {
+    keywords: ["backstage", "awards", "livestream", "stage", "singer", "idol", "producer", "fans", "control room", "后台", "直播", "舞台", "颁奖"],
+    tags: ["entertainment", "backstage", "stage"],
+    avoidTags: ["royal", "period", "wedding", "bride"],
+    weight: 2,
+  },
+  {
+    keywords: ["office", "boardroom", "merger", "contract", "company", "investor", "办公室", "董事会", "合同", "公司"],
+    tags: ["professional", "office", "executive"],
+    avoidTags: ["wedding", "bride", "royal", "period"],
+    weight: 2,
+  },
+  {
+    keywords: ["campus", "student", "auditorium", "archive", "library", "school", "校园", "学生", "礼堂", "档案", "图书馆"],
+    tags: ["campus", "student"],
+    avoidTags: ["executive", "sponsor", "wedding", "bride"],
+    weight: 2,
+  },
+  {
+    keywords: ["wedding", "banquet", "bride", "groom", "aisle", "婚礼", "婚宴", "新娘", "新郎"],
+    tags: ["wedding", "formal", "family"],
+    weight: 2,
+  },
+  {
+    keywords: ["family", "inheritance", "will reading", "mansion", "estate", "家族", "继承", "遗嘱", "豪门"],
+    tags: ["family", "inheritance", "formal"],
+    weight: 2,
+  },
+]
+
+const NEUTRAL_PROFESSIONAL_AVATARS = [
+  "female-07",
+  "female-03",
+  "female-01",
+  "male-03",
+  "lawyer-01",
+  "male-10",
+] as const
+
+const SEMANTIC_AVATAR_MIN_SCORE = 10
+
 // Dedicated advisor portrait pool — visually distinct from the cast pool so
 // the player's outsider-friend never collides with an NPC face.
 const ADVISOR_AVATARS = [
@@ -283,8 +446,13 @@ export function getPortraitForCharacter(
   gender?: "female" | "male" | null,
 ): string {
   const key = `${storyId}|${characterId}`
-  const pool = gender === "male" ? AVATAR_MALE : AVATAR_FEMALE
-  return `/webtoons/avatars/${pick(pool, key)}.jpg`
+  const pool = AVATAR_METADATA.filter((meta) => (
+    (!gender || meta.gender === gender)
+    && !meta.tags.includes("object")
+    && !meta.tags.includes("letter")
+  ))
+  const picked = pick(pool.length > 0 ? pool : AVATAR_METADATA, key)
+  return `/webtoons/avatars/${picked.slug}.jpg`
 }
 
 export function getDefaultAvatar(gender?: "female" | "male"): string {
@@ -388,6 +556,7 @@ type LooseTemplate = {
   summary_i18n?: LooseLocalizedText | null
   cover_image_url?: string | null
   cast: LooseCast[]
+  player_role_options?: Array<{ label?: string | null; public_persona?: string | null }> | null
 }
 
 type GeneratedCoverKey =
@@ -676,23 +845,162 @@ const FEMALE_ROLE_HINTS = [
   "公主", "皇后", "继母", "学姐", "学妹", "女主", "少奶奶", "新娘", "未婚妻",
   "经纪人", "助理", "闺蜜", "情人",
   "wife", "mother", "daughter", "sister", "bride", "fiancee", "girlfriend",
-  "queen", "princess", "assistant", "manager",
+  "queen", "princess", "assistant", "manager", "actress", "chairwoman", "woman",
+  "female", "girl",
 ]
 const MALE_ROLE_HINTS = [
   "夫", "丈夫", "父", "爸", "儿子", "弟", "哥", "少爷", "总裁", "霸总",
   "皇帝", "王", "继父", "学长", "男主", "新郎", "未婚夫",
   "husband", "father", "son", "brother", "groom", "fiance", "boyfriend",
-  "king", "prince", "ceo", "founder", "cofounder",
+  "king", "prince", "ceo", "founder", "cofounder", "actor", "chairman", "man",
+  "male", "boy",
 ]
 
-function inferGender(role: string, relation: string): "female" | "male" {
-  const corpus = `${role} ${relation}`
-  const female = FEMALE_ROLE_HINTS.some((kw) => corpus.includes(kw))
-  const male = MALE_ROLE_HINTS.some((kw) => corpus.includes(kw))
+function inferGender(...parts: Array<string | null | undefined>): AvatarGenderPresentation | null {
+  const corpus = parts.filter(Boolean).join(" ").toLowerCase()
+  const female = FEMALE_ROLE_HINTS.some((kw) => corpusHasKeyword(corpus, kw))
+  const male = MALE_ROLE_HINTS.some((kw) => corpusHasKeyword(corpus, kw))
   if (female && !male) return "female"
   if (male && !female) return "male"
-  // Tie / no signal — split by character_id hash for a stable spread.
-  return stableHash(`${role}|${relation}`) % 2 === 0 ? "female" : "male"
+  return null
+}
+
+function avatarCorpusFromContext(context: LooseTemplate | string | null | undefined): string {
+  if (!context) return ""
+  if (typeof context === "string") return context
+  const metadata = [
+    context.title_i18n?.zh,
+    context.title_i18n?.en,
+    context.summary_i18n?.zh,
+    context.summary_i18n?.en,
+  ].filter(Boolean).join(" ")
+  const playerRoles = (context.player_role_options ?? [])
+    .map((role) => `${role.label ?? ""} ${role.public_persona ?? ""}`)
+    .join(" ")
+  return [
+    context.seed,
+    context.title ?? "",
+    metadata,
+    playerRoles,
+    context.cast.map((c) => `${c.display_name} ${c.role} ${c.relation_to_protagonist}`).join(" "),
+  ].join(" ").toLowerCase()
+}
+
+function addWeightedTag(weights: Record<string, number>, tag: string, weight: number): void {
+  weights[tag] = (weights[tag] ?? 0) + weight
+}
+
+function addWeightedTags(weights: Record<string, number>, tags: readonly string[], weight: number): void {
+  for (const tag of tags) addWeightedTag(weights, tag, weight)
+}
+
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function corpusHasKeyword(corpus: string, keyword: string): boolean {
+  const normalized = keyword.toLowerCase().trim()
+  if (!normalized) return false
+  if (/^[a-z0-9][a-z0-9\s-]*[a-z0-9]$|^[a-z0-9]$/i.test(normalized)) {
+    const spaced = escapeRegExp(normalized).replace(/\s+/g, "\\s+")
+    return new RegExp(`\\b${spaced}\\b`, "i").test(corpus)
+  }
+  return corpus.includes(normalized)
+}
+
+function applyAvatarRules(
+  query: AvatarQuery,
+  corpus: string,
+  rules: readonly AvatarQueryRule[],
+  defaultWeight: number,
+): number {
+  let hits = 0
+  for (const rule of rules) {
+    if (!rule.keywords.some((keyword) => corpusHasKeyword(corpus, keyword))) continue
+    hits += 1
+    addWeightedTags(query.weights, rule.tags, rule.weight ?? defaultWeight)
+    // The first tag is the rule's identity tag (publicist, dancer, sponsor,
+    // etc.). Boost it so a rich contextual match cannot swamp the actual role.
+    if (rule.tags[0]) addWeightedTag(query.weights, rule.tags[0], rule.weight ?? defaultWeight)
+    if (rule.avoidTags) {
+      query.avoidTags = [...new Set([...query.avoidTags, ...rule.avoidTags])]
+    }
+    if (rule.gender && !query.gender) {
+      query.gender = rule.gender
+    }
+  }
+  return hits
+}
+
+function buildAvatarQuery(
+  templateId: string,
+  member: LooseCast,
+  context?: LooseTemplate | string | null,
+): AvatarQuery {
+  const memberCorpus = [
+    member.character_id,
+    member.display_name,
+    member.role,
+    member.relation_to_protagonist,
+  ].join(" ").toLowerCase()
+  const contextCorpus = avatarCorpusFromContext(context)
+  const query: AvatarQuery = {
+    key: `${templateId}|${member.character_id}`,
+    gender: inferGender(member.character_id, member.display_name, member.role, member.relation_to_protagonist),
+    weights: {},
+    avoidTags: [],
+    roleRuleHits: 0,
+  }
+
+  applyAvatarRules(query, contextCorpus, AVATAR_CONTEXT_RULES, 2)
+  query.roleRuleHits = applyAvatarRules(query, memberCorpus, AVATAR_ROLE_RULES, 5)
+
+  if (query.gender) addWeightedTag(query.weights, query.gender, 2)
+  addWeightedTag(query.weights, "character", 4)
+  addWeightedTag(query.weights, "portrait", 4)
+  return query
+}
+
+function avatarIsAllowed(meta: AvatarMetadata, query: AvatarQuery): boolean {
+  const tags = new Set([...meta.tags, ...(meta.avoidTags ?? [])])
+  if (tags.has("object") || tags.has("letter")) return false
+  if (query.avoidTags.some((tag) => tags.has(tag))) return false
+  return true
+}
+
+function avatarSemanticScore(meta: AvatarMetadata, query: AvatarQuery): number {
+  let score = 0
+  if (query.gender) {
+    score += meta.gender === query.gender ? 4 : -5
+  }
+  for (const [tag, weight] of Object.entries(query.weights)) {
+    if (tag === meta.gender || meta.tags.includes(tag)) score += weight
+  }
+  return score
+}
+
+function stableAvatarTieValue(queryKey: string, slug: string): number {
+  return stableHash(`avatar-semantic-tie|${queryKey}|${slug}`)
+}
+
+function rankAvatarCandidates(query: AvatarQuery): Array<{ meta: AvatarMetadata; score: number }> {
+  return AVATAR_METADATA
+    .filter((meta) => avatarIsAllowed(meta, query))
+    .map((meta) => ({ meta, score: avatarSemanticScore(meta, query) }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return stableAvatarTieValue(query.key, a.meta.slug) - stableAvatarTieValue(query.key, b.meta.slug)
+    })
+}
+
+function neutralAvatarForQuery(query: AvatarQuery): string {
+  const neutral = NEUTRAL_PROFESSIONAL_AVATARS
+    .map((slug) => AVATAR_METADATA.find((meta) => meta.slug === slug))
+    .filter((meta): meta is AvatarMetadata => Boolean(meta))
+    .filter((meta) => !query.gender || meta.gender === query.gender)
+  const pool = neutral.length > 0 ? neutral : AVATAR_METADATA.filter((meta) => avatarIsAllowed(meta, query))
+  const picked = pick(pool, `neutral-avatar|${query.key}`)
+  return picked ? `/webtoons/avatars/${picked.slug}.jpg` : getDefaultAvatar(query.gender ?? undefined)
 }
 
 function resolveGeneratedCoverUrl(value: string | null | undefined): string | null {
@@ -755,11 +1063,14 @@ export function assignTemplateCovers<T extends LooseTemplate>(templates: readonl
 export function getAvatarForCastMember(
   templateId: string,
   member: LooseCast,
+  context?: LooseTemplate | string | null,
 ): string {
-  const gender = inferGender(member.role, member.relation_to_protagonist)
-  const pool = gender === "male" ? AVATAR_MALE : AVATAR_FEMALE
-  const key = `${templateId}|${member.character_id}`
-  return `/webtoons/avatars/${pick(pool, key)}.jpg`
+  const query = buildAvatarQuery(templateId, member, context)
+  const [winner] = rankAvatarCandidates(query)
+  if (!winner || query.roleRuleHits === 0 || winner.score < SEMANTIC_AVATAR_MIN_SCORE) {
+    return neutralAvatarForQuery(query)
+  }
+  return `/webtoons/avatars/${winner.meta.slug}.jpg`
 }
 
 /** Avatar for the advisor FAB / sidechat header. Pulls from a dedicated
