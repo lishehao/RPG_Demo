@@ -62,48 +62,389 @@ const AVATAR_MALE = [
   "royal-01",
 ] as const
 
-type AvatarGenderPresentation = "female" | "male"
-type AvatarMetadata = {
+type AvatarGenderPresentation = "female" | "male" | "neutral"
+type AvatarAnnotation = {
   slug: string
-  gender: AvatarGenderPresentation
+  path: string
+  genderPresentation: AvatarGenderPresentation
+  roleTags: readonly string[]
+  domainTags: readonly string[]
+  toneTags: readonly string[]
+  formalityTags: readonly string[]
+  avoidTags: readonly string[]
+  notes: string
+}
+type AvatarMetadata = AvatarAnnotation & {
+  gender: Exclude<AvatarGenderPresentation, "neutral">
   tags: readonly string[]
-  avoidTags?: readonly string[]
 }
 
 // Local semantic manifest for cast portraits. This is deliberately tag-vector
 // shaped rather than role->file hardcoding: future Art/R&D can replace or
 // augment the score with embeddings while keeping the same query/filter seam.
-const AVATAR_METADATA: readonly AvatarMetadata[] = [
-  { slug: "bride-01", gender: "female", tags: ["wedding", "bride", "formal", "young", "family", "relationship"] },
-  { slug: "elder-01", gender: "female", tags: ["elder", "family", "inheritance", "period", "traditional", "matriarch", "formal"] },
-  { slug: "elder-02", gender: "male", tags: ["elder", "family", "inheritance", "executive", "sponsor", "formal", "mature"] },
-  { slug: "female-01", gender: "female", tags: ["professional", "executive", "sponsor", "formal", "office", "elite"] },
-  { slug: "female-02", gender: "female", tags: ["entertainment", "celebrity", "performer", "gala", "drama", "stage"] },
-  { slug: "female-03", gender: "female", tags: ["professional", "assistant", "lawyer", "office", "formal", "glasses"] },
-  { slug: "female-04", gender: "female", tags: ["student", "campus", "casual", "young", "friend"] },
-  { slug: "female-05", gender: "female", tags: ["entertainment", "celebrity", "performer", "singer", "gala", "stage"] },
-  { slug: "female-06", gender: "female", tags: ["student", "campus", "young", "quiet", "witness"] },
-  { slug: "female-07", gender: "female", tags: ["professional", "publicist", "manager", "office", "formal", "glasses"] },
-  { slug: "female-08", gender: "female", tags: ["entertainment", "performer", "dancer", "backstage", "edgy", "young"] },
-  { slug: "female-09", gender: "female", tags: ["professional", "publicist", "manager", "backstage", "formal", "mature"] },
-  { slug: "female-10", gender: "female", tags: ["entertainment", "dancer", "performer", "backstage", "witness", "young"] },
-  { slug: "idol-01", gender: "male", tags: ["entertainment", "idol", "singer", "performer", "celebrity", "stage", "young"] },
-  { slug: "lawyer-01", gender: "male", tags: ["professional", "lawyer", "executive", "office", "formal", "representative"] },
-  { slug: "male-01", gender: "male", tags: ["professional", "executive", "office", "formal", "sharp"] },
-  { slug: "male-02", gender: "male", tags: ["entertainment", "performer", "celebrity", "backstage", "edgy"] },
-  { slug: "male-03", gender: "male", tags: ["professional", "executive", "lawyer", "office", "formal", "manager"] },
-  { slug: "male-04", gender: "male", tags: ["professional", "producer", "manager", "backstage", "entertainment", "formal"] },
-  { slug: "male-05", gender: "male", tags: ["entertainment", "celebrity", "performer", "gala", "edgy"] },
-  { slug: "male-06", gender: "male", tags: ["student", "campus", "young", "casual"] },
-  { slug: "male-07", gender: "male", tags: ["elder", "family", "executive", "sponsor", "mature", "formal"] },
-  { slug: "male-08", gender: "male", tags: ["artifact", "letter", "object"], avoidTags: ["character", "portrait"] },
-  { slug: "male-09", gender: "male", tags: ["royal", "period", "heir", "family", "formal"] },
-  { slug: "male-10", gender: "male", tags: ["elder", "executive", "sponsor", "professional", "mature", "formal"] },
-  { slug: "period-01", gender: "female", tags: ["period", "royal", "family", "traditional", "formal"] },
-  { slug: "royal-01", gender: "male", tags: ["royal", "period", "heir", "formal", "family"] },
-  { slug: "student-01", gender: "female", tags: ["student", "campus", "young", "witness"] },
-  { slug: "student-02", gender: "male", tags: ["student", "campus", "young", "witness"] },
+export const AVATAR_ANNOTATIONS: readonly AvatarAnnotation[] = [
+  {
+    slug: "bride-01",
+    path: "/webtoons/avatars/bride-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["bride", "partner", "family"],
+    domainTags: ["wedding", "relationship"],
+    toneTags: ["poised", "romantic", "dramatic"],
+    formalityTags: ["formal"],
+    avoidTags: ["backstage", "campus", "office", "sponsor", "elder"],
+    notes: "Use for bride or wedding-centered roles; avoid generic backstage/office casts.",
+  },
+  {
+    slug: "elder-01",
+    path: "/webtoons/avatars/elder-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["elder", "matriarch", "grandmother"],
+    domainTags: ["family", "inheritance", "period"],
+    toneTags: ["reserved", "traditional", "power"],
+    formalityTags: ["formal", "traditional"],
+    avoidTags: ["dancer", "student", "backstage-performer"],
+    notes: "Older female authority for family/inheritance or period social pressure.",
+  },
+  {
+    slug: "elder-02",
+    path: "/webtoons/avatars/elder-02.jpg",
+    genderPresentation: "male",
+    roleTags: ["elder", "patriarch", "sponsor", "executive"],
+    domainTags: ["family", "inheritance", "office"],
+    toneTags: ["authority", "controlled", "mature"],
+    formalityTags: ["formal"],
+    avoidTags: ["dancer", "student", "young-performer"],
+    notes: "Older male authority; works for sponsor, patriarch, board elder.",
+  },
+  {
+    slug: "female-01",
+    path: "/webtoons/avatars/female-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["executive", "sponsor", "board-member", "investor"],
+    domainTags: ["office", "gala", "professional"],
+    toneTags: ["elite", "cool", "controlled"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "bride", "dancer"],
+    notes: "Female executive or sponsor pressure-holder.",
+  },
+  {
+    slug: "female-02",
+    path: "/webtoons/avatars/female-02.jpg",
+    genderPresentation: "female",
+    roleTags: ["celebrity", "performer", "actor"],
+    domainTags: ["entertainment", "gala", "stage"],
+    toneTags: ["dramatic", "glamour", "sharp"],
+    formalityTags: ["formal", "stagewear"],
+    avoidTags: ["student", "elder", "office-only"],
+    notes: "High-drama celebrity/performer for entertainment stories.",
+  },
+  {
+    slug: "female-03",
+    path: "/webtoons/avatars/female-03.jpg",
+    genderPresentation: "female",
+    roleTags: ["assistant", "lawyer", "analyst", "secretary"],
+    domainTags: ["office", "professional"],
+    toneTags: ["precise", "quiet", "competent"],
+    formalityTags: ["formal", "glasses"],
+    avoidTags: ["dancer", "bride", "idol"],
+    notes: "Professional support/legal role; also neutral low-confidence fallback.",
+  },
+  {
+    slug: "female-04",
+    path: "/webtoons/avatars/female-04.jpg",
+    genderPresentation: "female",
+    roleTags: ["student", "friend", "classmate"],
+    domainTags: ["campus", "casual"],
+    toneTags: ["warm", "youthful", "approachable"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "elder", "formal-boardroom"],
+    notes: "Campus/social role; avoid executive or sponsor pressure-holders.",
+  },
+  {
+    slug: "female-05",
+    path: "/webtoons/avatars/female-05.jpg",
+    genderPresentation: "female",
+    roleTags: ["singer", "celebrity", "performer", "idol"],
+    domainTags: ["entertainment", "gala", "stage"],
+    toneTags: ["glamour", "spotlight", "dramatic"],
+    formalityTags: ["stagewear", "formal"],
+    avoidTags: ["office-only", "student", "elder"],
+    notes: "Female singer/celebrity; good for missing star or gala performer.",
+  },
+  {
+    slug: "female-06",
+    path: "/webtoons/avatars/female-06.jpg",
+    genderPresentation: "female",
+    roleTags: ["student", "witness", "junior"],
+    domainTags: ["campus", "quiet-drama"],
+    toneTags: ["reserved", "uncertain", "soft"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "bride"],
+    notes: "Quiet student/witness; avoid high-authority roles.",
+  },
+  {
+    slug: "female-07",
+    path: "/webtoons/avatars/female-07.jpg",
+    genderPresentation: "female",
+    roleTags: ["publicist", "manager", "assistant", "professional"],
+    domainTags: ["office", "professional"],
+    toneTags: ["focused", "controlled", "competent"],
+    formalityTags: ["formal", "glasses"],
+    avoidTags: ["dancer", "bride", "student"],
+    notes: "Publicist/manager in professional settings; neutral female fallback.",
+  },
+  {
+    slug: "female-08",
+    path: "/webtoons/avatars/female-08.jpg",
+    genderPresentation: "female",
+    roleTags: ["dancer", "performer", "backup-dancer", "witness"],
+    domainTags: ["entertainment", "backstage", "stage"],
+    toneTags: ["edgy", "tense", "youthful"],
+    formalityTags: ["stagewear"],
+    avoidTags: ["sponsor", "executive", "elder", "campus-only"],
+    notes: "Backstage performer or dancer; good for awards livestream witness.",
+  },
+  {
+    slug: "female-09",
+    path: "/webtoons/avatars/female-09.jpg",
+    genderPresentation: "female",
+    roleTags: ["publicist", "manager", "agent"],
+    domainTags: ["entertainment", "backstage", "professional"],
+    toneTags: ["composed", "mature", "pressure"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "bride", "young-dancer"],
+    notes: "Entertainment publicist/manager under pressure; current awards player fit.",
+  },
+  {
+    slug: "female-10",
+    path: "/webtoons/avatars/female-10.jpg",
+    genderPresentation: "female",
+    roleTags: ["dancer", "performer", "witness", "junior"],
+    domainTags: ["entertainment", "backstage", "stage"],
+    toneTags: ["uncertain", "youthful", "soft"],
+    formalityTags: ["casual-stage"],
+    avoidTags: ["sponsor", "executive", "elder"],
+    notes: "Young backstage witness or backup dancer.",
+  },
+  {
+    slug: "idol-01",
+    path: "/webtoons/avatars/idol-01.jpg",
+    genderPresentation: "male",
+    roleTags: ["idol", "singer", "performer", "celebrity"],
+    domainTags: ["entertainment", "stage", "gala"],
+    toneTags: ["cool", "spotlight", "youthful"],
+    formalityTags: ["stagewear", "formal"],
+    avoidTags: ["elder", "sponsor", "office-only"],
+    notes: "Male singer/idol/celebrity.",
+  },
+  {
+    slug: "lawyer-01",
+    path: "/webtoons/avatars/lawyer-01.jpg",
+    genderPresentation: "male",
+    roleTags: ["lawyer", "representative", "executive", "counsel"],
+    domainTags: ["office", "legal", "professional"],
+    toneTags: ["cold", "precise", "controlled"],
+    formalityTags: ["formal"],
+    avoidTags: ["dancer", "student", "bride"],
+    notes: "Legal representative or boardroom pressure role; neutral male fallback.",
+  },
+  {
+    slug: "male-01",
+    path: "/webtoons/avatars/male-01.jpg",
+    genderPresentation: "male",
+    roleTags: ["executive", "manager", "antagonist"],
+    domainTags: ["office", "professional"],
+    toneTags: ["sharp", "cold", "intense"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "bride", "soft-romance"],
+    notes: "Sharp male executive or antagonist.",
+  },
+  {
+    slug: "male-02",
+    path: "/webtoons/avatars/male-02.jpg",
+    genderPresentation: "male",
+    roleTags: ["performer", "celebrity", "idol", "witness"],
+    domainTags: ["entertainment", "backstage", "night"],
+    toneTags: ["dark", "edgy", "secretive"],
+    formalityTags: ["stagewear"],
+    avoidTags: ["sponsor", "elder", "wedding"],
+    notes: "Dark entertainment performer or suspicious witness.",
+  },
+  {
+    slug: "male-03",
+    path: "/webtoons/avatars/male-03.jpg",
+    genderPresentation: "male",
+    roleTags: ["executive", "lawyer", "manager", "founder"],
+    domainTags: ["office", "professional", "legal"],
+    toneTags: ["controlled", "formal", "competent"],
+    formalityTags: ["formal", "glasses"],
+    avoidTags: ["student", "dancer", "bride"],
+    notes: "Male executive/legal/manager; neutral professional fallback.",
+  },
+  {
+    slug: "male-04",
+    path: "/webtoons/avatars/male-04.jpg",
+    genderPresentation: "male",
+    roleTags: ["producer", "manager", "director", "showrunner"],
+    domainTags: ["entertainment", "backstage", "professional"],
+    toneTags: ["pressured", "human", "conflicted"],
+    formalityTags: ["semi-formal"],
+    avoidTags: ["student", "bride", "elder"],
+    notes: "Entertainment producer or backstage manager.",
+  },
+  {
+    slug: "male-05",
+    path: "/webtoons/avatars/male-05.jpg",
+    genderPresentation: "male",
+    roleTags: ["celebrity", "performer", "troublemaker"],
+    domainTags: ["entertainment", "gala", "night"],
+    toneTags: ["flashy", "edgy", "volatile"],
+    formalityTags: ["stagewear"],
+    avoidTags: ["elder", "sponsor", "campus"],
+    notes: "Flashy celebrity/performer, not a sober executive.",
+  },
+  {
+    slug: "male-06",
+    path: "/webtoons/avatars/male-06.jpg",
+    genderPresentation: "male",
+    roleTags: ["student", "classmate", "junior"],
+    domainTags: ["campus", "casual"],
+    toneTags: ["youthful", "quiet", "uncertain"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "elder"],
+    notes: "Campus student/junior; avoid boardroom roles.",
+  },
+  {
+    slug: "male-07",
+    path: "/webtoons/avatars/male-07.jpg",
+    genderPresentation: "male",
+    roleTags: ["elder", "sponsor", "executive", "patriarch"],
+    domainTags: ["family", "office", "inheritance"],
+    toneTags: ["calm", "authority", "mature"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "dancer", "young-performer"],
+    notes: "Mature sponsor, patriarch, or senior executive.",
+  },
+  {
+    slug: "male-08",
+    path: "/webtoons/avatars/male-08.jpg",
+    genderPresentation: "neutral",
+    roleTags: ["artifact", "document"],
+    domainTags: ["evidence", "contract", "letter"],
+    toneTags: ["symbolic", "object"],
+    formalityTags: ["not-character"],
+    avoidTags: ["character", "portrait", "cast-face"],
+    notes: "Object/letter plate, not a usable character portrait. Kept annotated so tests fail if it is accidentally used for cast faces.",
+  },
+  {
+    slug: "male-09",
+    path: "/webtoons/avatars/male-09.jpg",
+    genderPresentation: "male",
+    roleTags: ["heir", "royal", "period-lead"],
+    domainTags: ["period", "royal", "family"],
+    toneTags: ["brooding", "aristocratic", "dramatic"],
+    formalityTags: ["formal", "traditional"],
+    avoidTags: ["backstage", "office-only", "campus"],
+    notes: "Period/royal heir; avoid modern awards/office unless role states it.",
+  },
+  {
+    slug: "male-10",
+    path: "/webtoons/avatars/male-10.jpg",
+    genderPresentation: "male",
+    roleTags: ["sponsor", "executive", "elder", "investor"],
+    domainTags: ["office", "professional", "family"],
+    toneTags: ["mature", "authority", "pressure"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "dancer", "bride"],
+    notes: "Senior sponsor/executive; current awards sponsor fit.",
+  },
+  {
+    slug: "period-01",
+    path: "/webtoons/avatars/period-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["noblewoman", "period-lead", "family"],
+    domainTags: ["period", "royal", "family"],
+    toneTags: ["traditional", "restrained", "dramatic"],
+    formalityTags: ["traditional", "formal"],
+    avoidTags: ["backstage", "office-only", "campus", "sponsor-modern"],
+    notes: "Period/family drama portrait; avoid modern awards livestream casts.",
+  },
+  {
+    slug: "royal-01",
+    path: "/webtoons/avatars/royal-01.jpg",
+    genderPresentation: "male",
+    roleTags: ["royal", "heir", "period-lead"],
+    domainTags: ["period", "royal", "family"],
+    toneTags: ["aristocratic", "distant", "formal"],
+    formalityTags: ["traditional", "formal"],
+    avoidTags: ["backstage", "office-only", "campus"],
+    notes: "Royal/period male lead; bad fit for modern backstage/office unless explicitly period.",
+  },
+  {
+    slug: "student-01",
+    path: "/webtoons/avatars/student-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["student", "classmate", "witness"],
+    domainTags: ["campus", "school"],
+    toneTags: ["quiet", "youthful", "uncertain"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "elder", "bride"],
+    notes: "Female campus student or young witness.",
+  },
+  {
+    slug: "student-02",
+    path: "/webtoons/avatars/student-02.jpg",
+    genderPresentation: "male",
+    roleTags: ["student", "classmate", "witness"],
+    domainTags: ["campus", "school"],
+    toneTags: ["quiet", "youthful", "night"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "elder", "bride"],
+    notes: "Male campus student or young witness.",
+  },
 ] as const
+
+export const AVATAR_FALLBACK_ANNOTATIONS: readonly AvatarAnnotation[] = [
+  {
+    slug: "default-avatar-female",
+    path: "/webtoons/ui/default-avatar-female.jpg",
+    genderPresentation: "female",
+    roleTags: ["fallback", "generic"],
+    domainTags: ["neutral"],
+    toneTags: ["safe", "generic"],
+    formalityTags: ["neutral"],
+    avoidTags: [],
+    notes: "Image-error or explicit low-confidence female fallback; not a primary semantic match.",
+  },
+  {
+    slug: "default-avatar-male",
+    path: "/webtoons/ui/default-avatar-male.jpg",
+    genderPresentation: "male",
+    roleTags: ["fallback", "generic"],
+    domainTags: ["neutral"],
+    toneTags: ["safe", "generic"],
+    formalityTags: ["neutral"],
+    avoidTags: [],
+    notes: "Image-error or explicit low-confidence male fallback; not a primary semantic match.",
+  },
+] as const
+
+function annotationTags(annotation: AvatarAnnotation): string[] {
+  return [
+    ...annotation.roleTags,
+    ...annotation.domainTags,
+    ...annotation.toneTags,
+    ...annotation.formalityTags,
+  ]
+}
+
+const AVATAR_METADATA: readonly AvatarMetadata[] = AVATAR_ANNOTATIONS
+  .filter((annotation) => annotation.genderPresentation !== "neutral")
+  .map((annotation) => ({
+    ...annotation,
+    gender: annotation.genderPresentation as Exclude<AvatarGenderPresentation, "neutral">,
+    tags: annotationTags(annotation),
+  }))
 
 type AvatarQuery = {
   key: string
@@ -962,7 +1303,7 @@ function buildAvatarQuery(
 }
 
 function avatarIsAllowed(meta: AvatarMetadata, query: AvatarQuery): boolean {
-  const tags = new Set([...meta.tags, ...(meta.avoidTags ?? [])])
+  const tags = new Set(meta.tags)
   if (tags.has("object") || tags.has("letter")) return false
   if (query.avoidTags.some((tag) => tags.has(tag))) return false
   return true
@@ -1000,7 +1341,8 @@ function neutralAvatarForQuery(query: AvatarQuery): string {
     .filter((meta) => !query.gender || meta.gender === query.gender)
   const pool = neutral.length > 0 ? neutral : AVATAR_METADATA.filter((meta) => avatarIsAllowed(meta, query))
   const picked = pick(pool, `neutral-avatar|${query.key}`)
-  return picked ? `/webtoons/avatars/${picked.slug}.jpg` : getDefaultAvatar(query.gender ?? undefined)
+  const fallbackGender = query.gender === "male" || query.gender === "female" ? query.gender : undefined
+  return picked ? `/webtoons/avatars/${picked.slug}.jpg` : getDefaultAvatar(fallbackGender)
 }
 
 function resolveGeneratedCoverUrl(value: string | null | undefined): string | null {
