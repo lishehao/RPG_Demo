@@ -47,12 +47,18 @@ import { ppStyles } from "./play-styles"
 import { useCompactLayout } from "./hooks/use-compact-layout"
 import type { ActionCommitmentSummary, LeverageCardView, PlayAdvanceAction } from "./play-types"
 import {
+  MoodPlate,
+  PlayShell,
+  PlaySurfaceGrid,
+  SceneSupportRail,
+  StoryTimeline,
+} from "./components/play-editorial-primitives"
+import {
   ActionArea,
   AdvisorFab,
   AdvisorSidechat,
   EndingScreen,
   Header,
-  RunContextPanel,
   RuntimeInspector,
   StoryBeat,
   buildAdvisorSuggestions,
@@ -334,6 +340,13 @@ export function PlayPage({
   }
 
   const cover = getCoverForTemplate(story.template)
+  const latestMoodSceneUrl = lastNarrator
+    ? getSceneByPhase(
+        playSegmentPhaseForMessage(lastNarrator, story.session.turn_budget),
+        `${story.template.template_id}|mood|${lastNarrator.ord}`,
+        playSegmentSceneCorpus(story, lastNarrator),
+      )
+    : undefined
   const advisorAvatar = getAdvisorAvatar(
     story.template.template_id,
     story.template.advisor_persona,
@@ -398,18 +411,19 @@ export function PlayPage({
         coverUrl={cover}
       />
 
-      <main style={ppStyles.main}>
-        <div className="play-story-column" style={ppStyles.storyColumn} ref={scrollerRef}>
-          <RunContextPanel
-            story={story}
-            turnsCompleted={turnsCompleted}
-            turnBudget={turnBudget}
-            turnsRemaining={turnsRemaining}
-            liveInventory={liveInventory}
-            leverageCards={leverageCards}
-            isComplete={isComplete}
-          />
+      <PlayShell compact={compactPlayChrome}>
+        <MoodPlate
+          story={story}
+          coverUrl={cover}
+          sceneUrl={latestMoodSceneUrl}
+          turnsCompleted={turnsCompleted}
+          turnBudget={turnBudget}
+          turnsRemaining={turnsRemaining}
+          compact={compactPlayChrome}
+        />
 
+        <PlaySurfaceGrid compact={compactPlayChrome}>
+          <StoryTimeline innerRef={scrollerRef}>
           {reviewerMode ? (
             <RuntimeInspector
               story={story}
@@ -663,12 +677,22 @@ export function PlayPage({
                   diary: (diaryOverride ?? diary).trim() || undefined,
                 })
               }}
-            />
+              />
           ) : !isComplete && busy ? (
             <LoadingShim variant="inline" label={t("play.busy_shim")} />
           ) : null}
-        </div>
-      </main>
+          </StoryTimeline>
+
+          {!isComplete ? (
+            <SceneSupportRail
+              story={story}
+              lastNarrator={lastNarrator}
+              turnsRemaining={turnsRemaining}
+              compact={compactPlayChrome}
+            />
+          ) : null}
+        </PlaySurfaceGrid>
+      </PlayShell>
 
       {/* Floating advisor button + sidechat */}
       <AnimatePresence>

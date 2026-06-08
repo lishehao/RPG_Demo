@@ -8,6 +8,8 @@
   - Route/container orchestration: load story, advance turns, merge turn responses, fetch ending, wire advisor and share callbacks.
 - `components/play-flow-panels.tsx`
   - View/helper module for run context, reviewer runtime inspector, stage header, ending payoff, story beats, action area, resolving rows, advisor FAB/drawer, and local display helpers.
+- `components/play-editorial-primitives.tsx`
+  - Direction A Play primitive kit: `PlayShell`, `MoodPlate`, `StoryTimeline`, and `SceneSupportRail`. These primitives define the story-world mental model and should stay source-owned/local unless a future UI-kit migration is explicitly scoped.
 - `play-styles.ts`
   - Play page inline style map.
 - `play-types.ts`
@@ -23,6 +25,7 @@
 - Reviewer trace/evidence appears only in reviewer mode.
 - Ending payoff stays result-first and visible.
 - Mobile 390px must have no horizontal overflow and action/retry controls must remain reachable.
+- Play is a story-world scene surface: Narrator/World, scene characters, and You. Story Butler is not the primary Play speaker; advisor behavior stays optional and secondary.
 
 ## Future Split Notes
 
