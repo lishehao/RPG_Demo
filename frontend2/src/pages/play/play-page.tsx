@@ -438,7 +438,6 @@ export function PlayPage({
       <Header
         onBackHome={onBackHome}
         title={story.template.title}
-        cast={story.template.cast.map((c) => c.display_name)}
         turnCount={story.session.turn_count}
         turnBudget={story.session.turn_budget}
         coverUrl={cover}
@@ -473,6 +472,39 @@ export function PlayPage({
                 </div>
               ))}
             </div>
+          ) : null}
+
+          {isComplete && ending ? (
+            <EndingScreen
+              ending={ending}
+              sessionId={sessionId}
+              templateId={story.template.template_id}
+              messages={story.messages}
+              bookmarkedOrds={bookmarkedOrds}
+              shareCopied={shareCopied}
+              onShare={() => {
+                const url = `${window.location.origin}/#/replay/${sessionId}`
+                navigator.clipboard.writeText(url).then(
+                  () => {
+                    setShareCopied(true)
+                    setTimeout(() => setShareCopied(false), 2200)
+                  },
+                  () => {
+                    // Fallback: show URL in an alert if clipboard fails
+                    window.prompt(t("play.share_prompt"), url)
+                  },
+                )
+              }}
+              onPlayAgain={() => {
+                // Land on the template detail page where the user can
+                // pick a different role and start a fresh session. We
+                // deliberately don't auto-pick a different role for
+                // them — letting them browse the role cards is part
+                // of the replay loop.
+                window.location.hash = `#/template/${story.template.template_id}`
+              }}
+              onBackHome={onBackHome}
+            />
           ) : null}
 
           {story.messages.map((m, idx) => {
@@ -608,40 +640,6 @@ export function PlayPage({
             </motion.div>
           ) : null}
 
-          {/* Ending screen — only when the session has finished */}
-          {isComplete && ending ? (
-            <EndingScreen
-              ending={ending}
-              sessionId={sessionId}
-              templateId={story.template.template_id}
-              messages={story.messages}
-              bookmarkedOrds={bookmarkedOrds}
-              shareCopied={shareCopied}
-              onShare={() => {
-                const url = `${window.location.origin}/#/replay/${sessionId}`
-                navigator.clipboard.writeText(url).then(
-                  () => {
-                    setShareCopied(true)
-                    setTimeout(() => setShareCopied(false), 2200)
-                  },
-                  () => {
-                    // Fallback: show URL in an alert if clipboard fails
-                    window.prompt(t("play.share_prompt"), url)
-                  },
-                )
-              }}
-              onPlayAgain={() => {
-                // Land on the template detail page where the user can
-                // pick a different role and start a fresh session. We
-                // deliberately don't auto-pick a different role for
-                // them — letting them browse the role cards is part
-                // of the replay loop.
-                window.location.hash = `#/template/${story.template.template_id}`
-              }}
-              onBackHome={onBackHome}
-            />
-          ) : null}
-
           {/* Action area pinned at the bottom of the story column.
               Hidden when the session is complete. */}
           {actionAreaVisible && lastNarrator ? (
@@ -721,7 +719,6 @@ export function PlayPage({
               <SceneSupportRail
                 story={story}
                 lastNarrator={lastNarrator}
-                turnsRemaining={turnsRemaining}
                 compact={compactPlayChrome}
               />
             ) : null}

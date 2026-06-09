@@ -103,3 +103,23 @@ def test_normal_play_keeps_evaluation_terms_outside_default_surface() -> None:
     assert "Evaluation evidence" in panels
     assert "data-reviewer-evidence" in panels
     assert "token" not in (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text().casefold()
+
+
+def test_finish_mode_normal_play_reduces_top_metadata_density() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+
+    mood_plate = primitives[primitives.index("export function MoodPlate") : primitives.index("export function SceneSupportRail")]
+    scene_rail = primitives[primitives.index("export function SceneSupportRail") : primitives.index("function PrimitiveSection")]
+    story_beat = panels[panels.index("export function StoryBeat") : panels.index("export function computeLiveInventory")]
+
+    assert "cast={story.template.cast.map" not in play_page
+    assert "const castLine" not in mood_plate
+    assert "story.template.seed" not in mood_plate
+    assert "First shot is live" in mood_plate
+    assert '<PrimitiveSection title="Progress">' not in scene_rail
+    assert ".slice(0, 3)" in primitives[primitives.index("function sceneActors") : primitives.index("function playerPortraitForStory")]
+    assert "return items.slice(0, 3)" in panels
+    assert "impactPulses.slice(0, 3).map" in story_beat
+    assert "pulseImpactReason" not in story_beat

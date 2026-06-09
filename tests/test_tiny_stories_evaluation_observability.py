@@ -12,6 +12,13 @@ from tools.rpg_eval.tiny_stories_reliability_harness import (
     _live_operation_failures,
     run_protocol_contract,
 )
+from tools.rpg_eval.tiny_stories_golden_path_harness import (
+    GOLDEN_PATH_REQUIRED_OPERATIONS,
+    GOLDEN_PATH_TURN_BUDGET,
+    QUALITY_CRITERIA,
+    _quality_summary,
+    _telemetry_failures,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -92,6 +99,119 @@ def test_live_operation_validation_rejects_fallback_rows() -> None:
     assert failures
     assert failures[0]["stage"] == "narrative.opening"
     assert failures[0]["category"] == "provider"
+
+
+def test_golden_path_contract_requires_12_live_turns_and_core_ops() -> None:
+    assert GOLDEN_PATH_TURN_BUDGET == 12
+    assert GOLDEN_PATH_REQUIRED_OPERATIONS == {
+        "create.story_butler_turn",
+        "narrative.story_brief",
+        "narrative.opening",
+        "narrative.advance_turn",
+    }
+    assert {
+        "consequence_clarity",
+        "choice_diversity",
+        "escalation",
+        "character_intent",
+        "brief_payoff",
+        "playable_options",
+    }.issubset(set(QUALITY_CRITERIA))
+
+
+def test_golden_path_telemetry_rejects_missing_or_fallback_turn_rows() -> None:
+    rows = [
+        {
+            "operation": "create.story_butler_turn",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+        },
+        {
+            "operation": "narrative.story_brief",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+        },
+        {
+            "operation": "narrative.opening",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+            "session_id": "sess_gold",
+        },
+    ]
+    rows.extend(
+        {
+            "operation": "narrative.advance_turn",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+            "session_id": "sess_gold",
+        }
+        for _ in range(11)
+    )
+    rows.append(
+        {
+            "operation": "narrative.advance_turn",
+            "status": "fallback_used",
+            "source_label": "deterministic_fallback",
+            "fallback_reason": "turn_value_error",
+            "session_id": "sess_gold",
+        }
+    )
+
+    failures = _telemetry_failures(events=rows, session_id="sess_gold", turn_budget=12)
+
+    assert failures
+    assert any(failure["stage"] == "narrative.advance_turn" for failure in failures)
+    assert any("fallback" in failure["message"] for failure in failures)
+
+
+def test_golden_path_quality_summary_is_bounded_not_research_metric() -> None:
+    turns = [
+        {
+            "turn_number": index,
+            "chosen_option_label": f"Choice {index % 5}",
+            "next_option_count": 3 if index < 12 else 0,
+            "is_complete": index == 12,
+        }
+        for index in range(1, 13)
+    ]
+    agent_events = []
+    phases = ["hook", "pressure", "reversal", "climax", "pre_finale", "finale"]
+    for index in range(1, 13):
+        phase = phases[min(len(phases) - 1, index // 2)]
+        agent_events.extend([
+            {
+                "event_type": "agent_plan",
+                "payload": {
+                    "director": {
+                        "stage_phase": phase,
+                        "active_npc_ids": ["singer"] if index > 1 else [],
+                    }
+                },
+            },
+            {
+                "event_type": "step_judge",
+                "payload": {"status": "pass"},
+            },
+            {
+                "event_type": "contract_judge",
+                "payload": {"status": "pass"},
+            },
+        ])
+    summary = _quality_summary(
+        turn_summaries=turns,
+        agent_events=agent_events,
+        story={"messages": [{"role": "narrator", "content": "The gala trophy livestream cornered the publicist and singer."}]},
+        ending={"label": "自由", "subtitle": "I held the record.", "passage": "The sponsor faced the awards room."},
+        seed="At an awards gala, a publicist, a singer, and a sponsor discover the live trophy reveal is rigged.",
+    )
+
+    assert summary["schema_version"] == "tiny_stories_golden_path_quality.v1"
+    assert summary["status"] in {"pass", "warn"}
+    assert "not a calibrated fun metric" in summary["rationale"]
 
 
 def test_opening_generation_uses_compact_live_prompt_for_eval_gate() -> None:

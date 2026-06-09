@@ -1002,6 +1002,11 @@ export function Header({
 
   const showProgress = typeof turnCount === "number" && typeof turnBudget === "number"
   const pct = showProgress ? Math.min(100, (turnCount! / turnBudget!) * 100) : 0
+  const headerMeta = showProgress
+    ? t("play.header_turn_count", { current: turnCount!, total: turnBudget! })
+    : cast && cast.length
+      ? cast.slice(0, 3).join(" · ")
+      : ""
 
   return (
     <header style={headerStyle}>
@@ -1027,21 +1032,16 @@ export function Header({
           >
             {title}
           </Truncated>
-          {!compactHeader && cast && cast.length ? (
+          {!compactHeader && headerMeta ? (
             <div
               style={
                 showCoverHeader
                   ? { ...ppStyles.headerCast, color: "rgba(255,255,255,0.78)" }
                   : ppStyles.headerCast
               }
-              title={cast.join(" · ")}
+              title={headerMeta}
             >
-              {cast.join(" · ")}
-              {showProgress ? (
-                <span style={ppStyles.headerTurns}>
-                  {t("play.header_turn_count", { current: turnCount!, total: turnBudget! })}
-                </span>
-              ) : null}
+              {headerMeta}
             </div>
           ) : null}
         </div>
@@ -1498,7 +1498,7 @@ export function StoryBeat({
     const showDetailedOutcome =
       outcomeItems.length > 0 && (isLatestNarrator || hasBroken || intensity === "peak")
     const showDetailedImpactEvidence =
-      impactPulses.length > 0 && (shouldOpenImpactEvidence || (isLatestNarrator && intensity === "peak"))
+      impactPulses.length > 0 && isLatestNarrator && (shouldOpenImpactEvidence || intensity === "peak")
     const inlineImpactPulses = [...impactPulses]
       .sort((a, b) => outcomePriority(b.shift) - outcomePriority(a.shift))
       .slice(0, 3)
@@ -1654,7 +1654,7 @@ export function StoryBeat({
               </span>
             </div>
             <div style={ppStyles.pulseImpactGrid}>
-              {impactPulses.map((p, idx) => {
+              {impactPulses.slice(0, 3).map((p, idx) => {
                 const name = (castNameById && castNameById[p.npc_id]) || p.npc_id
                 const shiftStyle =
                   ppStyles[
@@ -1688,9 +1688,6 @@ export function StoryBeat({
                     <span style={ppStyles.pulseImpactBody}>
                       <strong style={ppStyles.pulseImpactName}>{name}</strong>
                       <span style={ppStyles.pulseImpactShift}>{pulseImpactLabel(p.shift, t)}</span>
-                      {p.reason ? (
-                        <span style={ppStyles.pulseImpactReason}>{p.reason}</span>
-                      ) : null}
                     </span>
                   </motion.div>
                 )
@@ -2128,7 +2125,7 @@ function buildOutcomeReceiptItems({
     })
   }
 
-  return items.slice(0, 4)
+  return items.slice(0, 3)
 }
 
 function IntentReadReceipt({ read }: { read: IntentReadReceiptView }) {

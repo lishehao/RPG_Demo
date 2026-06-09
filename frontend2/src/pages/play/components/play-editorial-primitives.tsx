@@ -86,10 +86,13 @@ export function MoodPlate({
   compact: boolean
 }) {
   const imageUrl = sceneUrl || coverUrl
-  const castLine = story.template.cast.map((member) => member.display_name).slice(0, 4).join(" · ")
-  const roleLine = story.session.player_role?.label || story.session.player_role?.public_persona || "You"
-  const progress = `${turnsCompleted}/${turnBudget}`
-  const stage = turnsRemaining <= 2 ? "Final pressure" : turnsCompleted <= 0 ? "Opening beat" : "Scene in motion"
+  const progress = `Turn ${turnsCompleted} of ${turnBudget}`
+  const stage = turnsRemaining <= 2 ? "Coda" : turnsCompleted <= 0 ? "Opening" : "In motion"
+  const context = turnsCompleted <= 0
+    ? "First shot is live. Choose the pressure you step into."
+    : turnsRemaining <= 2
+      ? "The room is close to its final break."
+      : "The latest beat is ready for your next move."
 
   return (
     <section
@@ -108,16 +111,13 @@ export function MoodPlate({
       />
       <div style={primitiveStyles.moodPlateRule} aria-hidden />
       <div style={primitiveStyles.moodPlateCopy}>
-        <span style={primitiveStyles.eyebrow}>Tiny Stories · Play</span>
         <h1 style={{ ...primitiveStyles.moodTitle, ...(compact ? primitiveStyles.moodTitleCompact : null) }}>
           {story.template.title}
         </h1>
         <div style={primitiveStyles.moodDeck}>
-          <Truncated lines={2}>{story.template.seed}</Truncated>
+          <Truncated lines={1}>{context}</Truncated>
         </div>
         <div style={primitiveStyles.moodMetaRow}>
-          <span>{roleLine}</span>
-          {castLine ? <span>{castLine}</span> : null}
           <span>{stage}</span>
           <span>{progress}</span>
         </div>
@@ -129,12 +129,10 @@ export function MoodPlate({
 export function SceneSupportRail({
   story,
   lastNarrator,
-  turnsRemaining,
   compact,
 }: {
   story: NarrativeStoryHistoryResponse
   lastNarrator: NarrativeStoryMessage | null
-  turnsRemaining: number
   compact: boolean
 }) {
   const playerRole = story.session.player_role
@@ -196,11 +194,6 @@ export function SceneSupportRail({
           ))}
         </div>
       </PrimitiveSection>
-      <PrimitiveSection title="Progress">
-        <span style={primitiveStyles.progressLine}>
-          {story.session.turn_count} played · {turnsRemaining} left
-        </span>
-      </PrimitiveSection>
     </aside>
   )
 }
@@ -242,7 +235,7 @@ function sceneActors(story: NarrativeStoryHistoryResponse, pulses: NarrativeNPCP
       seen.add(member.character_id)
       return true
     })
-    .slice(0, 4)
+    .slice(0, 3)
     .map((member) => ({
       id: member.character_id,
       name: member.display_name,
