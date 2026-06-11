@@ -123,6 +123,13 @@ function mergeAgentEvents(
   })
 }
 
+function shouldUseLocalAdvanceFailureHarness(): boolean {
+  if (!import.meta.env.DEV || typeof window === "undefined") return false
+  const [, hashSearch = ""] = window.location.hash.split("?")
+  if (!hashSearch) return false
+  return new URLSearchParams(hashSearch).get("playTurnFailure") === "once"
+}
+
 export function PlayPage({
   sessionId,
   reviewerMode = false,
@@ -153,6 +160,7 @@ export function PlayPage({
   // / re-pick what they just submitted.
   const lastFailedActionRef = useRef<PlayAdvanceAction | null>(null)
   const advanceInFlightRef = useRef(false)
+  const localAdvanceFailureHarnessRef = useRef(shouldUseLocalAdvanceFailureHarness())
   const [freeInput, setFreeInput] = useState("")
   const [showFreeInput, setShowFreeInput] = useState(false)
   const [diary, setDiary] = useState("")
@@ -161,6 +169,7 @@ export function PlayPage({
   const advisorReturnFocusRef = useRef<HTMLElement | null>(null)
   const [actionCommitmentActive, setActionCommitmentActive] = useState(false)
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
+  const [showActionJump, setShowActionJump] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
   const canRequestAgentTrace = reviewerMode && auth.canViewAgentTrace
@@ -269,15 +278,26 @@ export function PlayPage({
   }, [story, story?.messages.length, story?.session.ending_label, story?.session.session_id])
 
   const handleAdvance = useCallback(
-    async (action: PlayAdvanceAction) => {
+    async (
+      action: PlayAdvanceAction,
+      options?: { keepRecoveryVisible?: boolean },
+    ) => {
       if (advanceInFlightRef.current || busy) return
       advanceInFlightRef.current = true
       setBusy(true)
-      setError(null)
+      if (!options?.keepRecoveryVisible) {
+        setError(null)
+      }
       setActionCommitmentActive(false)
       setActionCommitmentSummary(null)
-      lastFailedActionRef.current = null
+      if (!options?.keepRecoveryVisible) {
+        lastFailedActionRef.current = null
+      }
       try {
+        if (localAdvanceFailureHarnessRef.current) {
+          localAdvanceFailureHarnessRef.current = false
+          throw new Error(t("play.error_advance"))
+        }
         const response = await api.advanceNarrativeTurn(
           sessionId,
           action,
@@ -316,6 +336,8 @@ export function PlayPage({
         if (response.ending) {
           setEnding(response.ending)
         }
+        setError(null)
+        lastFailedActionRef.current = null
         setFreeInput("")
         setShowFreeInput(false)
         setDiary("")
@@ -328,8 +350,19 @@ export function PlayPage({
         setBusy(false)
       }
     },
-    [api, busy, canRequestAgentTrace, refreshReviewerEvidence, sessionId],
+    [api, busy, canRequestAgentTrace, refreshReviewerEvidence, sessionId, t],
   )
+
+  const scrollToPlayActionArea = useCallback(() => {
+    if (typeof document === "undefined") return
+    const actionArea = document.querySelector<HTMLElement>("[data-play-action-area='true']")
+    if (!actionArea) return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    actionArea.scrollIntoView({
+      block: "center",
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    })
+  }, [])
 
   const openAdvisor = useCallback(() => {
     if (typeof document !== "undefined") {
@@ -355,6 +388,60 @@ export function PlayPage({
       restoreFocus()
     }, 90)
   }, [])
+
+  useEffect(() => {
+    if (!story || !compactPlayChrome || busy || advisorOpen || ending) {
+      setShowActionJump(false)
+      return
+    }
+    const currentLastNarrator = [...story.messages].reverse().find((m) => m.role === "narrator") ?? null
+    const currentActionAreaVisible =
+      currentLastNarrator !== null &&
+      currentLastNarrator.chosen_option_index == null &&
+      !story.session.ending_label
+    if (!currentActionAreaVisible) {
+      setShowActionJump(false)
+      return
+    }
+
+    let frame = 0
+    const update = () => {
+      const actionArea = document.querySelector<HTMLElement>("[data-play-action-area='true']")
+      if (!actionArea) {
+        setShowActionJump(false)
+        return
+      }
+      const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
+      const rect = actionArea.getBoundingClientRect()
+      const lowerComfortEdge = window.innerHeight - 132
+      const isAwayFromAction =
+        rect.top < headerHeight + 10 ||
+        rect.top > lowerComfortEdge ||
+        rect.bottom > window.innerHeight + 48
+      setShowActionJump(isAwayFromAction)
+    }
+
+    const requestUpdate = () => {
+      window.cancelAnimationFrame(frame)
+      frame = window.requestAnimationFrame(update)
+    }
+    requestUpdate()
+    const lateTimer = window.setTimeout(update, 260)
+    window.addEventListener("scroll", requestUpdate, { passive: true })
+    window.addEventListener("resize", requestUpdate)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(lateTimer)
+      window.removeEventListener("scroll", requestUpdate)
+      window.removeEventListener("resize", requestUpdate)
+    }
+  }, [
+    advisorOpen,
+    busy,
+    compactPlayChrome,
+    ending,
+    story,
+  ])
 
   const lastNarrator = story
     ? [...story.messages].reverse().find((m) => m.role === "narrator") ?? null
@@ -622,7 +709,7 @@ export function PlayPage({
                     onClick={() => {
                       const a = lastFailedActionRef.current
                       if (!a) return
-                      void handleAdvance(a)
+                      void handleAdvance(a, { keepRecoveryVisible: true })
                     }}
                   >
                     {t("play.recovery_retry_same")}
@@ -769,6 +856,26 @@ export function PlayPage({
               )
             }}
           />
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showActionJump ? (
+          <motion.button
+            key="play-action-jump"
+            type="button"
+            data-play-action-jump="true"
+            style={ppStyles.actionJumpButton}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={transitions.snap}
+            onClick={scrollToPlayActionArea}
+            aria-label={t("play.action_jump_title")}
+            title={t("play.action_jump_title")}
+          >
+            <span style={ppStyles.actionJumpKicker}>{t("play.action_jump_kicker")}</span>
+            <strong style={ppStyles.actionJumpText}>{t("play.action_jump_label")}</strong>
+          </motion.button>
         ) : null}
       </AnimatePresence>
     </div>

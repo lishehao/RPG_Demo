@@ -138,4 +138,36 @@ def test_play_turn_submission_has_parent_level_duplicate_guard() -> None:
     assert "advanceInFlightRef.current = false" in handle_advance
     assert "disabled={busy}" in retry_block
     assert "errorInlineRetryDisabled" in retry_block
+    assert "keepRecoveryVisible" in retry_block
+    assert "lastFailedActionRef.current = null" in handle_advance
     assert "errorInlineRetryDisabled" in styles
+
+
+def test_play_retry_failure_harness_is_dev_only_and_reuses_retry_guard() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+
+    harness = play_page[play_page.index("function shouldUseLocalAdvanceFailureHarness") : play_page.index("export function PlayPage")]
+    handle_advance = play_page[play_page.index("const handleAdvance") : play_page.index("const openAdvisor")]
+
+    assert "import.meta.env.DEV" in harness
+    assert 'get("playTurnFailure") === "once"' in harness
+    assert "localAdvanceFailureHarnessRef" in play_page
+    assert "throw new Error(t(\"play.error_advance\"))" in handle_advance
+    assert "lastFailedActionRef.current = action" in handle_advance
+    assert "if (advanceInFlightRef.current || busy) return" in handle_advance
+
+
+def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert "const [showActionJump, setShowActionJump] = useState(false)" in play_page
+    assert "!story || !compactPlayChrome || busy || advisorOpen || ending" in play_page
+    assert "currentActionAreaVisible" in play_page
+    assert 'data-play-action-jump="true"' in play_page
+    assert "scrollToPlayActionArea" in play_page
+    assert "[data-play-action-area='true']" in play_page
+    assert "actionJumpButton" in styles
+    assert 'position: "fixed"' in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
+    assert '"play.action_jump_label": "Continue your next move"' in strings
