@@ -3015,6 +3015,22 @@ export function ActionArea({
     diaryDraft.length > 130 ? `${diaryDraft.slice(0, 127)}...` : diaryDraft
   const selectedOptionBody = selectedOptionParsed?.body ?? ""
   const selectedOptionHint = selectedOption?.hint ?? ""
+  const actionState =
+    showPickedReflection
+      ? "pending"
+      : armedCard
+        ? "leverage-ready"
+        : selectedOptionIndex !== null
+          ? "option-selected"
+          : freeComposerOpen && freeActionReady
+            ? "free-ready"
+            : freeComposerOpen
+              ? "free-open"
+              : "idle"
+  const actionStatusLabel =
+    showPickedReflection
+      ? `${t("play.resolve_title")}: ${resolvingMoveText || t("play.resolve_custom_move")}`
+      : `${turnGuide.title}. ${turnGuide.detail}`
   const actionCommitmentSummary = useMemo<ActionCommitmentSummary | null>(() => {
     const motive = diaryDraft || undefined
     if (armedCardId && armedCardTargetName) {
@@ -3383,11 +3399,15 @@ export function ActionArea({
   return (
     <motion.div
       data-play-action-area="true"
+      data-play-action-state={actionState}
       style={ppStyles.actionArea}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08, ...itemTransition }}
     >
+      <span style={ppStyles.srOnly} aria-live="polite" aria-atomic="true">
+        {actionStatusLabel}
+      </span>
       {showTurnGuide ? (
         <div
           style={{

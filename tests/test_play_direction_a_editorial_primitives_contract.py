@@ -163,7 +163,8 @@ def test_play_retry_fixture_route_is_local_only_and_reuses_player_safe_banner() 
     recovery = (ROOT / "frontend2/src/pages/play/components/play-retry-recovery.tsx").read_text()
 
     assert "allowsLocalQaRoute" in routes
-    assert 'segments[0] === "qa" && segments[1] === "play-retry" && allowsLocalQaRoute()' in routes
+    assert 'segments[0] === "qa" && allowsLocalQaRoute()' in routes
+    assert 'segments[1] === "play-retry"' in routes
     assert 'host === "localhost" || host === "127.0.0.1" || host === "::1"' in routes
     assert 'case "playRetryFixture"' in app
     assert "PlayRetryFailureFixture" in app
@@ -173,6 +174,28 @@ def test_play_retry_fixture_route_is_local_only_and_reuses_player_safe_banner() 
     assert "without advancing the story" in recovery
     for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
         assert forbidden not in recovery.casefold()
+
+
+def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> None:
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    fixture = (ROOT / "frontend2/src/pages/play/components/play-action-state-fixture.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+
+    assert 'segments[1] === "play-action"' in routes
+    assert 'case "playActionFixture"' in app
+    assert "PlayActionStateFixture" in app
+    assert 'data-play-action-fixture="true"' in fixture
+    assert "<ActionArea" in fixture
+    assert "setBusy(true)" in fixture
+    assert "setTurn((value) => value + 1)" in fixture
+    assert "data-play-action-state={actionState}" in panels
+    assert 'aria-live="polite"' in panels
+    assert 'aria-atomic="true"' in panels
+    assert "srOnly" in styles
+    for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
+        assert forbidden not in fixture.casefold()
 
 
 def test_play_retry_banner_separates_signal_label_from_body_for_accessibility() -> None:
