@@ -128,17 +128,17 @@ def test_finish_mode_normal_play_reduces_top_metadata_density() -> None:
 def test_play_turn_submission_has_parent_level_duplicate_guard() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    recovery = (ROOT / "frontend2/src/pages/play/components/play-retry-recovery.tsx").read_text()
 
     handle_advance = play_page[play_page.index("const handleAdvance") : play_page.index("const openAdvisor")]
-    retry_block = play_page[play_page.index("lastFailedActionRef.current ? (") : play_page.index("</button>", play_page.index("lastFailedActionRef.current ? ("))]
 
     assert "const advanceInFlightRef = useRef(false)" in play_page
     assert "if (advanceInFlightRef.current || busy) return" in handle_advance
     assert "advanceInFlightRef.current = true" in handle_advance
     assert "advanceInFlightRef.current = false" in handle_advance
-    assert "disabled={busy}" in retry_block
-    assert "errorInlineRetryDisabled" in retry_block
-    assert "keepRecoveryVisible" in retry_block
+    assert "disabled={busy}" in recovery
+    assert "errorInlineRetryDisabled" in recovery
+    assert "keepRecoveryVisible" in play_page
     assert "lastFailedActionRef.current = null" in handle_advance
     assert "errorInlineRetryDisabled" in styles
 
@@ -155,6 +155,39 @@ def test_play_retry_failure_harness_is_dev_only_and_reuses_retry_guard() -> None
     assert "throw new Error(t(\"play.error_advance\"))" in handle_advance
     assert "lastFailedActionRef.current = action" in handle_advance
     assert "if (advanceInFlightRef.current || busy) return" in handle_advance
+
+
+def test_play_retry_fixture_route_is_local_only_and_reuses_player_safe_banner() -> None:
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    recovery = (ROOT / "frontend2/src/pages/play/components/play-retry-recovery.tsx").read_text()
+
+    assert "allowsLocalQaRoute" in routes
+    assert 'segments[0] === "qa" && segments[1] === "play-retry" && allowsLocalQaRoute()' in routes
+    assert 'host === "localhost" || host === "127.0.0.1" || host === "::1"' in routes
+    assert 'case "playRetryFixture"' in app
+    assert "PlayRetryFailureFixture" in app
+    assert 'data-play-retry-fixture="true"' in recovery
+    assert 'data-play-retry-recovery="true"' in recovery
+    assert "PlayRetryRecoveryBanner" in recovery
+    assert "without advancing the story" in recovery
+    for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
+        assert forbidden not in recovery.casefold()
+
+
+def test_play_retry_banner_separates_signal_label_from_body_for_accessibility() -> None:
+    recovery = (ROOT / "frontend2/src/pages/play/components/play-retry-recovery.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+
+    assert 'aria-live="assertive"' in recovery
+    assert 'aria-atomic="true"' in recovery
+    assert "const alertSummary" in recovery
+    assert "aria-label={alertSummary}" in recovery
+    assert "aria-label={`${signalLabel}: ${error}`}" in recovery
+    assert "{signalLabel}:" in recovery
+    assert '{" "}' in recovery
+    assert "errorInlineSignalBody" in recovery
+    assert "errorInlineSignalBody" in styles
 
 
 def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() -> None:

@@ -6,6 +6,7 @@ import { type AppRoute, useAppRoute } from "./routes"
 import { HomePage } from "../pages/home/home-page"
 import { CreatePage } from "../pages/create/create-page"
 import { PlayPage } from "../pages/play/play-page"
+import { PlayRetryFailureFixture } from "../pages/play/components/play-retry-recovery"
 import { AboutPage } from "../pages/about/about-page"
 import { LoginPage } from "../pages/auth/login-page"
 import { ReplayPage } from "../pages/replay/replay-page"
@@ -68,6 +69,8 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId })}
         />
       )
+    case "playRetryFixture":
+      return <PlayRetryFailureFixture onBackHome={() => navigate({ name: "home" })} />
     case "template":
       return (
         <TemplateDetailPage
@@ -125,6 +128,7 @@ function routeKey(route: AppRoute): string {
     case "home": return "home"
     case "login": return "login"
     case "create": return "create"
+    case "playRetryFixture": return "playRetryFixture"
     case "about": return "about"
     case "portfolio": return "portfolio"
     case "reviewer": return "reviewer"

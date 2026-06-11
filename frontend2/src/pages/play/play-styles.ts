@@ -2733,6 +2733,7 @@ export const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(255,226,214,0.66)",
     fontSize: 11.5,
     lineHeight: 1.35,
+    display: "inline",
   },
   errorInlineSignalLabel: {
     marginRight: 6,
@@ -2740,6 +2741,9 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 720,
     letterSpacing: 0,
     textTransform: "none" as const,
+  },
+  errorInlineSignalBody: {
+    color: "rgba(255,226,214,0.68)",
   },
   errorInlineChips: {
     display: "flex",
@@ -2777,7 +2781,7 @@ export const ppStyles: Record<string, CSSProperties> = {
   },
   errorInlineRetryDisabled: {
     color: "rgba(255,226,178,0.48)",
-    borderBottomColor: "rgba(245,200,120,0.14)",
+    borderBottom: "1px solid rgba(245,200,120,0.14)",
     cursor: "default",
     opacity: 0.62,
   },

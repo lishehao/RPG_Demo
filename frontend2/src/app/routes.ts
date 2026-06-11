@@ -4,6 +4,7 @@ export type AppRoute =
   | { name: "home" }
   | { name: "login"; next?: string }
   | { name: "create" }
+  | { name: "playRetryFixture" }
   | { name: "template"; templateId: string }
   | { name: "play"; sessionId: string; reviewer?: boolean }
   | { name: "replay"; sessionId: string }
@@ -26,8 +27,15 @@ const ROUTE_DEPTH: Record<AppRoute["name"], number> = {
   replay: 1,
   portfolio: 1,
   reviewer: 1,
+  playRetryFixture: 1,
   template: 1,
   play: 2,
+}
+
+function allowsLocalQaRoute(): boolean {
+  if (import.meta.env.DEV) return true
+  const host = window.location.hostname
+  return host === "localhost" || host === "127.0.0.1" || host === "::1"
 }
 
 function depthOf(route: AppRoute): number {
@@ -48,6 +56,9 @@ function parseRoute(hash: string): AppRoute {
   }
   if (segments[0] === "create") {
     return { name: "create" }
+  }
+  if (segments[0] === "qa" && segments[1] === "play-retry" && allowsLocalQaRoute()) {
+    return { name: "playRetryFixture" }
   }
   if (segments[0] === "template" && segments[1]) {
     return { name: "template", templateId: segments[1] }
@@ -83,6 +94,8 @@ export function buildHash(route: AppRoute): string {
     }
     case "create":
       return "#/create"
+    case "playRetryFixture":
+      return "#/qa/play-retry"
     case "template":
       return `#/template/${route.templateId}`
     case "play":

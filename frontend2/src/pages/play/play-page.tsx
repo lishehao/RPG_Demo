@@ -68,6 +68,7 @@ import {
   latestAgentPlanFromEvents,
   parseOptionLabel,
 } from "./components/play-flow-panels"
+import { PlayRetryRecoveryBanner } from "./components/play-retry-recovery"
 
 function leverageCardId(roleId: string | undefined, lev: NarrativePlayerLeverageOverNPC, index: number): string {
   return `lev:${roleId || "role"}:${lev.npc_id}:${index}`
@@ -662,60 +663,17 @@ export function PlayPage({
 
           <AnimatePresence>
             {error ? (
-              <motion.div
-                key="play-error"
-                style={{
-                  ...ppStyles.errorInline,
-                  ...(compactPlayChrome ? ppStyles.errorInlineCompact : null),
-                }}
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={transitions.snap}
-                role="alert"
-              >
-                <div style={ppStyles.errorInlineCopy}>
-                  <span style={ppStyles.errorInlineKicker}>
-                    {failedActionRecovery?.kicker ?? t("play.recovery_generic_kicker")}
-                  </span>
-                  <strong style={ppStyles.errorInlineTitle}>
-                    {failedActionRecovery?.title ?? t("play.recovery_generic_title")}
-                  </strong>
-                  <span style={ppStyles.errorInlineText}>
-                    {failedActionRecovery?.detail ?? t("play.recovery_generic_detail")}
-                  </span>
-                  <span style={ppStyles.errorInlineSignal}>
-                    <span style={ppStyles.errorInlineSignalLabel}>{t("play.recovery_signal_label")}</span>
-                    {error}
-                  </span>
-                  {failedActionRecovery?.chips.length ? (
-                    <span style={ppStyles.errorInlineChips}>
-                      {failedActionRecovery.chips.map((chip) => (
-                        <span key={chip} style={ppStyles.errorInlineChip} title={chip}>{chip}</span>
-                      ))}
-                    </span>
-                  ) : null}
-                </div>
-                {lastFailedActionRef.current ? (
-                  <button
-                    type="button"
-                    style={{
-                      ...ppStyles.errorInlineRetry,
-                      ...(busy ? ppStyles.errorInlineRetryDisabled : null),
-                    }}
-                    aria-label={t("play.recovery_retry_same_title")}
-                    title={t("play.recovery_retry_same_title")}
-                    disabled={busy}
-                    onClick={() => {
-                      const a = lastFailedActionRef.current
-                      if (!a) return
-                      void handleAdvance(a, { keepRecoveryVisible: true })
-                    }}
-                  >
-                    {t("play.recovery_retry_same")}
-                  </button>
-                ) : null}
-              </motion.div>
+              <PlayRetryRecoveryBanner
+                recovery={failedActionRecovery}
+                error={error}
+                busy={busy}
+                compact={compactPlayChrome}
+                onRetry={lastFailedActionRef.current ? () => {
+                  const a = lastFailedActionRef.current
+                  if (!a) return
+                  void handleAdvance(a, { keepRecoveryVisible: true })
+                } : undefined}
+              />
             ) : null}
           </AnimatePresence>
 
