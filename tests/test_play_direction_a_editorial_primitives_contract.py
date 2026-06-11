@@ -123,3 +123,19 @@ def test_finish_mode_normal_play_reduces_top_metadata_density() -> None:
     assert "return items.slice(0, 3)" in panels
     assert "impactPulses.slice(0, 3).map" in story_beat
     assert "pulseImpactReason" not in story_beat
+
+
+def test_play_turn_submission_has_parent_level_duplicate_guard() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+
+    handle_advance = play_page[play_page.index("const handleAdvance") : play_page.index("const openAdvisor")]
+    retry_block = play_page[play_page.index("lastFailedActionRef.current ? (") : play_page.index("</button>", play_page.index("lastFailedActionRef.current ? ("))]
+
+    assert "const advanceInFlightRef = useRef(false)" in play_page
+    assert "if (advanceInFlightRef.current || busy) return" in handle_advance
+    assert "advanceInFlightRef.current = true" in handle_advance
+    assert "advanceInFlightRef.current = false" in handle_advance
+    assert "disabled={busy}" in retry_block
+    assert "errorInlineRetryDisabled" in retry_block
+    assert "errorInlineRetryDisabled" in styles

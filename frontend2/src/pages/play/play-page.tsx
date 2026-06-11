@@ -152,6 +152,7 @@ export function PlayPage({
   // can offer a one-tap retry instead of forcing the user to re-type
   // / re-pick what they just submitted.
   const lastFailedActionRef = useRef<PlayAdvanceAction | null>(null)
+  const advanceInFlightRef = useRef(false)
   const [freeInput, setFreeInput] = useState("")
   const [showFreeInput, setShowFreeInput] = useState(false)
   const [diary, setDiary] = useState("")
@@ -269,7 +270,8 @@ export function PlayPage({
 
   const handleAdvance = useCallback(
     async (action: PlayAdvanceAction) => {
-      if (busy) return
+      if (advanceInFlightRef.current || busy) return
+      advanceInFlightRef.current = true
       setBusy(true)
       setError(null)
       setActionCommitmentActive(false)
@@ -322,6 +324,7 @@ export function PlayPage({
         setError(friendlyError(err, t("play.error_advance")))
         lastFailedActionRef.current = action
       } finally {
+        advanceInFlightRef.current = false
         setBusy(false)
       }
     },
@@ -609,9 +612,13 @@ export function PlayPage({
                 {lastFailedActionRef.current ? (
                   <button
                     type="button"
-                    style={ppStyles.errorInlineRetry}
+                    style={{
+                      ...ppStyles.errorInlineRetry,
+                      ...(busy ? ppStyles.errorInlineRetryDisabled : null),
+                    }}
                     aria-label={t("play.recovery_retry_same_title")}
                     title={t("play.recovery_retry_same_title")}
+                    disabled={busy}
                     onClick={() => {
                       const a = lastFailedActionRef.current
                       if (!a) return

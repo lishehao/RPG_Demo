@@ -2775,6 +2775,12 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "inherit",
     fontWeight: 800,
   },
+  errorInlineRetryDisabled: {
+    color: "rgba(255,226,178,0.48)",
+    borderBottomColor: "rgba(245,200,120,0.14)",
+    cursor: "default",
+    opacity: 0.62,
+  },
 
   approachingFinaleBanner: {
     marginTop: 12,
