@@ -215,15 +215,48 @@ def test_play_retry_banner_separates_signal_label_from_body_for_accessibility() 
 
 def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    action_jump = (ROOT / "frontend2/src/pages/play/components/play-action-jump.tsx").read_text()
+    action_jump_utils = (ROOT / "frontend2/src/pages/play/components/play-action-jump-utils.ts").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert "const [showActionJump, setShowActionJump] = useState(false)" in play_page
     assert "!story || !compactPlayChrome || busy || advisorOpen || ending" in play_page
     assert "currentActionAreaVisible" in play_page
-    assert 'data-play-action-jump="true"' in play_page
-    assert "scrollToPlayActionArea" in play_page
-    assert "[data-play-action-area='true']" in play_page
+    assert "isPlayActionAreaAwayFromViewport(actionArea)" in play_page
+    assert "<PlayActionJumpButton />" in play_page
+    assert 'data-play-action-jump="true"' in action_jump
+    assert "onPointerDown={onClick}" in action_jump
+    assert "scrollToPlayActionArea" in action_jump_utils
+    assert "[data-play-action-area='true']" in action_jump_utils
     assert "actionJumpButton" in styles
     assert 'position: "fixed"' in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
     assert '"play.action_jump_label": "Continue your next move"' in strings
+
+
+def test_play_long_history_fixture_exercises_action_jump_with_real_action_area() -> None:
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    action_state = (ROOT / "frontend2/src/pages/play/components/play-action-state-fixture.tsx").read_text()
+    fixture = (ROOT / "frontend2/src/pages/play/components/play-long-history-fixture.tsx").read_text()
+    action_jump = (ROOT / "frontend2/src/pages/play/components/play-action-jump.tsx").read_text()
+    action_jump_utils = (ROOT / "frontend2/src/pages/play/components/play-action-jump-utils.ts").read_text()
+
+    assert 'segments[1] === "play-action"' in routes
+    assert 'params.get("scenario") === "long-history"' in routes
+    assert '"#/qa/play-action?scenario=long-history"' in routes
+    assert 'case "playActionFixture"' in app
+    assert "scenario={route.scenario}" in app
+    assert 'case "playLongHistoryFixture"' not in app
+    assert 'segments[1] === "play-long-history"' not in routes
+    assert 'scenario === "long-history"' in action_state
+    assert "PlayLongHistoryFixture" in action_state
+    assert 'data-play-long-history-fixture="true"' in fixture
+    assert "<ActionArea" in fixture
+    assert "<PlayActionJumpButton" in fixture
+    assert "scrollToPlayActionArea()" in fixture
+    assert "isPlayActionAreaAwayFromViewport(actionArea)" in fixture
+    assert 'data-play-action-jump="true"' in action_jump
+    assert "window.scrollTo" in action_jump_utils
+    for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
+        assert forbidden not in fixture.casefold()

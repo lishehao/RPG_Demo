@@ -4,7 +4,7 @@ export type AppRoute =
   | { name: "home" }
   | { name: "login"; next?: string }
   | { name: "create" }
-  | { name: "playActionFixture" }
+  | { name: "playActionFixture"; scenario?: "long-history" }
   | { name: "playRetryFixture" }
   | { name: "template"; templateId: string }
   | { name: "play"; sessionId: string; reviewer?: boolean }
@@ -60,7 +60,12 @@ function parseRoute(hash: string): AppRoute {
     return { name: "create" }
   }
   if (segments[0] === "qa" && allowsLocalQaRoute()) {
-    if (segments[1] === "play-action") return { name: "playActionFixture" }
+    if (segments[1] === "play-action") {
+      return {
+        name: "playActionFixture",
+        scenario: params.get("scenario") === "long-history" ? "long-history" : undefined,
+      }
+    }
     if (segments[1] === "play-retry") return { name: "playRetryFixture" }
   }
   if (segments[0] === "template" && segments[1]) {
@@ -98,6 +103,7 @@ export function buildHash(route: AppRoute): string {
     case "create":
       return "#/create"
     case "playActionFixture":
+      if (route.scenario === "long-history") return "#/qa/play-action?scenario=long-history"
       return "#/qa/play-action"
     case "playRetryFixture":
       return "#/qa/play-retry"

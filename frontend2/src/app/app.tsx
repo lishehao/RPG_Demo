@@ -71,7 +71,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
         />
       )
     case "playActionFixture":
-      return <PlayActionStateFixture onBackHome={() => navigate({ name: "home" })} />
+      return <PlayActionStateFixture scenario={route.scenario} onBackHome={() => navigate({ name: "home" })} />
     case "playRetryFixture":
       return <PlayRetryFailureFixture onBackHome={() => navigate({ name: "home" })} />
     case "template":
@@ -131,7 +131,7 @@ function routeKey(route: AppRoute): string {
     case "home": return "home"
     case "login": return "login"
     case "create": return "create"
-    case "playActionFixture": return "playActionFixture"
+    case "playActionFixture": return route.scenario ? `playActionFixture:${route.scenario}` : "playActionFixture"
     case "playRetryFixture": return "playRetryFixture"
     case "about": return "about"
     case "portfolio": return "portfolio"

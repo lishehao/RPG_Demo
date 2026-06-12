@@ -4,6 +4,7 @@ import { useT } from "../../../shared/lib/i18n"
 import { ppStyles } from "../play-styles"
 import type { ActionCommitmentSummary } from "../play-types"
 import { ActionArea } from "./play-flow-panels"
+import { PlayLongHistoryFixture } from "./play-long-history-fixture"
 
 const FIRST_OPTIONS: NarrativeStoryOption[] = [
   {
@@ -40,7 +41,21 @@ function shortActionLabel(action: string): string {
   return action.replace(/^\[[^\]]+\]\s*/, "").trim()
 }
 
-export function PlayActionStateFixture({ onBackHome }: { onBackHome: () => void }) {
+export function PlayActionStateFixture({
+  onBackHome,
+  scenario,
+}: {
+  onBackHome: () => void
+  scenario?: "long-history"
+}) {
+  if (scenario === "long-history") {
+    return <PlayLongHistoryFixture onBackHome={onBackHome} />
+  }
+
+  return <PlayActionStateFixtureBase onBackHome={onBackHome} />
+}
+
+function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) {
   const t = useT()
   const [turn, setTurn] = useState(0)
   const [busy, setBusy] = useState(false)

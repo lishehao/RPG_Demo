@@ -68,6 +68,8 @@ import {
   latestAgentPlanFromEvents,
   parseOptionLabel,
 } from "./components/play-flow-panels"
+import { PlayActionJumpButton } from "./components/play-action-jump"
+import { isPlayActionAreaAwayFromViewport } from "./components/play-action-jump-utils"
 import { PlayRetryRecoveryBanner } from "./components/play-retry-recovery"
 
 function leverageCardId(roleId: string | undefined, lev: NarrativePlayerLeverageOverNPC, index: number): string {
@@ -354,17 +356,6 @@ export function PlayPage({
     [api, busy, canRequestAgentTrace, refreshReviewerEvidence, sessionId, t],
   )
 
-  const scrollToPlayActionArea = useCallback(() => {
-    if (typeof document === "undefined") return
-    const actionArea = document.querySelector<HTMLElement>("[data-play-action-area='true']")
-    if (!actionArea) return
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    actionArea.scrollIntoView({
-      block: "center",
-      behavior: prefersReducedMotion ? "auto" : "smooth",
-    })
-  }, [])
-
   const openAdvisor = useCallback(() => {
     if (typeof document !== "undefined") {
       const active = document.activeElement
@@ -412,14 +403,7 @@ export function PlayPage({
         setShowActionJump(false)
         return
       }
-      const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
-      const rect = actionArea.getBoundingClientRect()
-      const lowerComfortEdge = window.innerHeight - 132
-      const isAwayFromAction =
-        rect.top < headerHeight + 10 ||
-        rect.top > lowerComfortEdge ||
-        rect.bottom > window.innerHeight + 48
-      setShowActionJump(isAwayFromAction)
+      setShowActionJump(isPlayActionAreaAwayFromViewport(actionArea))
     }
 
     const requestUpdate = () => {
@@ -818,22 +802,7 @@ export function PlayPage({
       </AnimatePresence>
       <AnimatePresence>
         {showActionJump ? (
-          <motion.button
-            key="play-action-jump"
-            type="button"
-            data-play-action-jump="true"
-            style={ppStyles.actionJumpButton}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={transitions.snap}
-            onClick={scrollToPlayActionArea}
-            aria-label={t("play.action_jump_title")}
-            title={t("play.action_jump_title")}
-          >
-            <span style={ppStyles.actionJumpKicker}>{t("play.action_jump_kicker")}</span>
-            <strong style={ppStyles.actionJumpText}>{t("play.action_jump_label")}</strong>
-          </motion.button>
+          <PlayActionJumpButton />
         ) : null}
       </AnimatePresence>
     </div>
