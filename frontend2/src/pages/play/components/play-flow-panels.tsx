@@ -2846,6 +2846,8 @@ export function ActionArea({
   const actionControlsDisabled = busy || actionSubmissionInFlight
   const inlineActionDisabledStyle = actionControlsDisabled ? ppStyles.inlineActionDisabled : null
   const showPickedReflection = actionSubmissionInFlight
+  const isOptionCommitPending =
+    showPickedReflection && pickedIndex !== null && selectedOptionIndex === pickedIndex
   const pickedOption = pickedIndex !== null ? options[pickedIndex] : null
   const pickedOptionParsed = pickedOption ? parseOptionLabel(pickedOption.label) : null
   const selectedOption = selectedOptionIndex !== null ? options[selectedOptionIndex] : null
@@ -3319,29 +3321,65 @@ export function ActionArea({
     ) : null
   }
   const renderSelectedOptionConfirm = () =>
-    selectedOption && selectedOptionParsed && selectedOptionIndex !== null && pickedIndex === null && !actionControlsDisabled ? (
+    selectedOption && selectedOptionParsed && selectedOptionIndex !== null && (pickedIndex === null || isOptionCommitPending) ? (
       <div
         ref={setCommitFocusNode}
         style={{
           ...ppStyles.optionConfirmPanel,
           ...(isWritingOptionDiary ? ppStyles.optionConfirmPanelWriting : null),
         }}
+        data-play-decision-tray="true"
+        aria-label={t("play.selected_move_aria")}
       >
-        {isWritingOptionDiary ? null : (
+        <div
+          style={{
+            ...ppStyles.optionDecisionTray,
+            ...(compactActionChrome ? ppStyles.optionDecisionTrayCompact : null),
+          }}
+        >
+          <div style={ppStyles.optionDecisionHeader}>
+            <span style={ppStyles.optionDecisionKicker}>{t("play.selected_move_kicker")}</span>
+            <span style={ppStyles.optionDecisionIndex}>
+              {t("play.selected_move_number", { index: selectedOptionIndex + 1 })}
+            </span>
+          </div>
           <div
             style={{
-              ...ppStyles.optionConfirmActions,
-              ...(compactActionChrome ? ppStyles.optionConfirmActionsCompact : null),
+              ...ppStyles.optionSelectedMoveCard,
+              ...(compactActionChrome ? ppStyles.optionSelectedMoveCardCompact : null),
             }}
+            data-play-selected-move="true"
           >
-            <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.inlineCommitPrimaryActions }}>
+            {selectedOptionParsed.tag ? (
+              <span
+                style={{
+                  ...ppStyles.optionSelectedTag,
+                  ...optionTagStyle(selectedOptionParsed.tag),
+                }}
+              >
+                {selectedOptionParsed.tag}
+              </span>
+            ) : null}
+            <strong style={ppStyles.optionSelectedTitle}>{selectedOptionBody}</strong>
+            {selectedOptionHint ? (
+              <span style={ppStyles.optionSelectedHint}>{selectedOptionHint}</span>
+            ) : null}
+          </div>
+          {isWritingOptionDiary ? null : (
+            <div
+              style={{
+                ...ppStyles.optionCommitRail,
+                ...(compactActionChrome ? ppStyles.optionCommitRailCompact : null),
+              }}
+            >
               <button
                 style={{
-                  ...ppStyles.actionPrimaryLine,
-                  ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
-                  ...(actionControlsDisabled ? ppStyles.actionPrimaryLineDisabled : null),
+                  ...ppStyles.optionPrimaryCommitButton,
+                  ...(compactActionChrome ? ppStyles.optionPrimaryCommitButtonCompact : null),
+                  ...(actionControlsDisabled ? ppStyles.optionPrimaryCommitButtonDisabled : null),
                 }}
                 type="button"
+                data-play-primary-commit="true"
                 aria-keyshortcuts="Enter"
                 title={t("play.shortcut_enter_submit")}
                 onClick={() => {
@@ -3351,47 +3389,52 @@ export function ActionArea({
                 }}
                 disabled={actionControlsDisabled}
               >
-                {t("play.option_confirm_cta")}
+                {isOptionCommitPending ? t("play.action_busy") : t("play.selected_move_commit_cta")}
               </button>
-              {renderDiaryAttachPreview("option")}
+              {isOptionCommitPending ? null : (
+                <div
+                  style={{
+                    ...ppStyles.optionSupportZone,
+                    ...(compactActionChrome ? ppStyles.optionSupportZoneCompact : null),
+                  }}
+                  data-play-support-actions="true"
+                >
+                  <span style={ppStyles.optionSupportLabel}>{t("play.selected_move_support_label")}</span>
+                  <div style={ppStyles.optionSupportButtons}>
+                    {renderDiaryAttachPreview("option")}
+                    <button
+                      type="button"
+                      style={{
+                        ...ppStyles.advisorInlineAction,
+                        ...inlineActionDisabledStyle,
+                      }}
+                      onClick={onOpenAdvisor}
+                      disabled={actionControlsDisabled}
+                      aria-haspopup="dialog"
+                      aria-label={t("play.ask_friend_open_title")}
+                      title={t("play.ask_friend_open_title")}
+                    >
+                      {t("play.ask_friend_inline")}
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        ...ppStyles.optionQuietChangeButton,
+                        ...inlineActionDisabledStyle,
+                      }}
+                      onClick={() => setSelectedOptionIndex(null)}
+                      disabled={actionControlsDisabled}
+                      aria-keyshortcuts="Escape"
+                      title={t("play.shortcut_escape_cancel")}
+                    >
+                      {t("play.option_change_cta")}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            <div
-              style={{
-                ...ppStyles.commitSecondaryActions,
-                ...ppStyles.inlineCommitSecondaryActions,
-                ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
-              }}
-            >
-              <button
-                type="button"
-                style={{
-                  ...ppStyles.advisorInlineAction,
-                  ...inlineActionDisabledStyle,
-                }}
-                onClick={onOpenAdvisor}
-                disabled={actionControlsDisabled}
-                aria-haspopup="dialog"
-                aria-label={t("play.ask_friend_open_title")}
-                title={t("play.ask_friend_open_title")}
-              >
-                {t("play.ask_friend_inline")}
-              </button>
-              <button
-                type="button"
-                style={{
-                  ...ppStyles.commitTextButton,
-                  ...inlineActionDisabledStyle,
-                }}
-                onClick={() => setSelectedOptionIndex(null)}
-                disabled={actionControlsDisabled}
-                aria-keyshortcuts="Escape"
-                title={t("play.shortcut_escape_cancel")}
-              >
-                {t("play.option_change_cta")}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
         {renderDiaryEditor("option")}
       </div>
     ) : null
@@ -3742,7 +3785,7 @@ export function ActionArea({
                         ) : null}
                       </div>
                     </button>
-                    {isSelected && pickedIndex === null ? renderSelectedOptionConfirm() : null}
+                    {isSelected && (pickedIndex === null || (isPicked && showPickedReflection)) ? renderSelectedOptionConfirm() : null}
                   </div>
                 )
               })

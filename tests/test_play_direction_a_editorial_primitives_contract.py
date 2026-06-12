@@ -198,6 +198,25 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
         assert forbidden not in fixture.casefold()
 
 
+def test_play_selected_action_uses_decision_tray_with_separated_commit_and_support() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert 'data-play-decision-tray="true"' in panels
+    assert 'data-play-selected-move="true"' in panels
+    assert 'data-play-primary-commit="true"' in panels
+    assert 'data-play-support-actions="true"' in panels
+    assert "optionDecisionTray" in styles
+    assert "optionSelectedMoveCard" in styles
+    assert "optionPrimaryCommitButton" in styles
+    assert "optionSupportZone" in styles
+    assert "optionQuietChangeButton" in styles
+    assert '"play.selected_move_kicker": "Selected move"' in strings
+    assert '"play.selected_move_commit_cta": "Take this action"' in strings
+    assert '"play.selected_move_support_label": "Support"' in strings
+
+
 def test_play_retry_banner_separates_signal_label_from_body_for_accessibility() -> None:
     recovery = (ROOT / "frontend2/src/pages/play/components/play-retry-recovery.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
