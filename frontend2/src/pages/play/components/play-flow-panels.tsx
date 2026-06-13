@@ -2427,6 +2427,7 @@ function ResolvingTurnPanel({
   target?: string
 }) {
   const t = useT()
+  const reducedMotion = useReducedMotion()
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const privateIntentCopy = privateIntent?.trim()
   const moveMeta = moveTag?.trim()
@@ -2455,6 +2456,7 @@ function ResolvingTurnPanel({
     <motion.div
       key="turn-resolving"
       style={ppStyles.resolvingPanel}
+      data-play-pending-reaction-panel="true"
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
@@ -2464,38 +2466,46 @@ function ResolvingTurnPanel({
       aria-atomic="true"
       aria-label={resolvingAriaLabel}
     >
-      <div style={ppStyles.resolvingLine}>
-        <span style={ppStyles.resolvingTitle}>{t("play.resolve_title")}</span>
-        {moveMeta ? <span style={ppStyles.resolvingReceiptMeta}>{moveMeta}</span> : null}
-        <strong style={ppStyles.resolvingMoveText} title={moveCopy}>
-          {moveCopy}
-        </strong>
-        <span style={ppStyles.resolvingInlineStatus}>
-          <span style={ppStyles.resolvingStatus}>{resolveStatus}</span>
-          <span style={ppStyles.resolvingProgressText}>{progressCopy}</span>
-          <span style={ppStyles.resolvingDots} aria-hidden>
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                style={ppStyles.resolvingDot}
-                animate={{ opacity: [0.24, 1, 0.24] }}
-                transition={{
-                  duration: 1.1,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: i * 0.14,
-                }}
-              />
-            ))}
+      <div style={ppStyles.moveReceiptPanel} data-play-move-receipt="true">
+        <span style={ppStyles.resolvingTitle}>{t("play.move_receipt_title")}</span>
+        <span style={ppStyles.moveReceiptBody}>
+          {moveMeta ? <span style={ppStyles.resolvingReceiptMeta}>{moveMeta}</span> : null}
+          <strong style={ppStyles.resolvingMoveText} title={moveCopy}>
+            {moveCopy}
+          </strong>
+        </span>
+        {privateIntentCopy ? (
+          <span style={ppStyles.resolvingPrivateLine}>
+            <span style={ppStyles.resolvingPrivateLabel}>{t("play.move_packet_private_label")}</span>
+            <span style={ppStyles.resolvingPrivateCopy} title={privateIntentCopy}>{privateIntentCopy}</span>
           </span>
+        ) : null}
+      </div>
+      <div style={ppStyles.roomReactingPanel} data-play-room-reacting="true">
+        <span style={ppStyles.roomReactingRail} aria-hidden />
+        <span style={ppStyles.roomReactingCopy}>
+          <span style={ppStyles.resolvingStatus}>{resolveStatus}</span>
+          <strong style={ppStyles.roomReactingTitle}>{t("play.room_reacting_title")}</strong>
+          <span style={ppStyles.resolvingProgressText}>{progressCopy}</span>
+        </span>
+        <span style={ppStyles.resolvingDots} aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              style={ppStyles.resolvingDot}
+              animate={reducedMotion ? undefined : { opacity: [0.24, 1, 0.24] }}
+              transition={reducedMotion
+                ? undefined
+                : {
+                    duration: 1.1,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: i * 0.14,
+                  }}
+            />
+          ))}
         </span>
       </div>
-      {privateIntentCopy ? (
-        <span style={ppStyles.resolvingPrivateLine}>
-          <span style={ppStyles.resolvingPrivateLabel}>{t("play.move_packet_private_label")}</span>
-          <span style={ppStyles.resolvingPrivateCopy} title={privateIntentCopy}>{privateIntentCopy}</span>
-        </span>
-      ) : null}
     </motion.div>
   )
 }
@@ -2990,7 +3000,7 @@ export function ActionArea({
     showLeverageCards && playableLeverageCards.length > 0 && !armedCard && !hasSinglePlayableLeverage
   const showFreeActionSurface = !armedCard && selectedOptionIndex === null && !showPickedReflection
   const showFreeComposer = showFreeActionSurface && freeComposerOpen
-  const showStandardOptions = !armedCard && !showFreeComposer
+  const showStandardOptions = !armedCard && !showFreeComposer && !showPickedReflection
   const showLeverageRail = (leverageCards.length > 0 || roleHasNoLeverage) && !commitmentSurfaceOpen
   const showFreeActionToggle =
     showFreeActionSurface &&
@@ -3359,12 +3369,13 @@ export function ActionArea({
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
         transition={reducedMotion ? { duration: 0.01 } : { duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
       >
-        <div
-          style={{
-            ...ppStyles.optionCardConfirmRail,
-            ...(compactActionChrome ? ppStyles.optionCardConfirmRailCompact : null),
-          }}
-        >
+        {isWritingOptionDiary ? null : (
+          <div
+            style={{
+              ...ppStyles.optionCardConfirmRail,
+              ...(compactActionChrome ? ppStyles.optionCardConfirmRailCompact : null),
+            }}
+          >
             <div
               style={{
                 ...ppStyles.optionCardPrimaryRow,
@@ -3452,7 +3463,8 @@ export function ActionArea({
                 <span style={ppStyles.diaryAttachText} title={diaryDraft}>{diaryPreview}</span>
               </div>
             )}
-        </div>
+          </div>
+        )}
         {renderDiaryEditor("option")}
       </motion.div>
     ) : null

@@ -206,8 +206,8 @@ export function SceneSupportRail({
       <PrimitiveSection title={t("play.advisor_card_title")}>
         <div
           style={{
-            ...primitiveStyles.advisorCard,
-            ...(compact ? primitiveStyles.advisorCardCompact : null),
+            ...primitiveStyles.advisorRow,
+            ...(compact ? primitiveStyles.advisorRowCompact : null),
           }}
           data-play-advisor-card="true"
         >
@@ -221,21 +221,26 @@ export function SceneSupportRail({
             />
           </span>
           <span style={primitiveStyles.advisorText}>
-            <strong style={primitiveStyles.advisorName}>{advisorName}</strong>
+            <span style={primitiveStyles.advisorHeaderRow}>
+              <strong style={primitiveStyles.advisorName}>{advisorName}</strong>
+              <button
+                type="button"
+                style={{
+                  ...primitiveStyles.advisorAskButton,
+                  ...(compact ? primitiveStyles.advisorAskButtonCompact : null),
+                }}
+                data-play-advisor-ask="true"
+                title={t("play.advisor_card_ask_title", { name: advisorName })}
+                aria-label={`${t("play.advisor_card_ask_title", { name: advisorName })}: ${advisorPersona}`}
+                onClick={onAskAdvisor}
+              >
+                {t("play.advisor_card_ask")}
+              </button>
+            </span>
             <span style={primitiveStyles.advisorRole}>{t("play.advisor_card_role")}</span>
             <span style={primitiveStyles.advisorBackground}>
               <Truncated lines={2}>{t("play.advisor_card_background")}</Truncated>
             </span>
-            <button
-              type="button"
-              style={primitiveStyles.advisorAskButton}
-              data-play-advisor-ask="true"
-              title={t("play.advisor_card_ask_title", { name: advisorName })}
-              aria-label={`${t("play.advisor_card_ask_title", { name: advisorName })}: ${advisorPersona}`}
-              onClick={onAskAdvisor}
-            >
-              {t("play.advisor_card_ask")}
-            </button>
           </span>
         </div>
       </PrimitiveSection>
@@ -555,75 +560,82 @@ const primitiveStyles: Record<string, CSSProperties> = {
     fontSize: 11.5,
     lineHeight: 1.25,
   },
-  advisorCard: {
+  advisorRow: {
     display: "grid",
-    gridTemplateColumns: "54px minmax(0, 1fr)",
-    gap: 10,
-    alignItems: "start",
-    padding: "8px 8px 9px",
-    borderTop: "1px solid rgba(229,190,124,0.18)",
-    borderRight: "1px solid rgba(229,190,124,0.09)",
-    borderBottom: "1px solid rgba(229,190,124,0.13)",
-    borderLeft: "1px solid rgba(213,154,62,0.30)",
-    borderRadius: 5,
-    background: "linear-gradient(145deg, rgba(28,27,24,0.88), rgba(8,9,10,0.92))",
-    boxShadow: "0 12px 24px rgba(0,0,0,0.20), inset 0 1px 0 rgba(250,238,210,0.08)",
+    gridTemplateColumns: "44px minmax(0, 1fr)",
+    gap: 9,
+    alignItems: "center",
+    padding: "2px 0",
+    borderLeft: "1px solid rgba(213,154,62,0.22)",
   },
-  advisorCardCompact: {
-    gridTemplateColumns: "48px minmax(0, 1fr)",
+  advisorRowCompact: {
+    gridTemplateColumns: "44px minmax(0, 1fr)",
+    alignItems: "start",
   },
   advisorFrame: {
-    width: 54,
+    width: 44,
     aspectRatio: "4 / 5",
     display: "block",
     overflow: "hidden",
-    border: "1px solid rgba(229,190,124,0.46)",
-    borderTop: "2px solid rgba(230,170,76,0.76)",
-    background: "linear-gradient(135deg, rgba(213,154,62,0.18), rgba(18,19,19,0.54))",
-    boxShadow: "0 10px 18px rgba(0,0,0,0.28)",
+    border: "1px solid rgba(245,200,120,0.40)",
+    borderTop: "2px solid rgba(230,170,76,0.74)",
+    background: "linear-gradient(135deg, rgba(245,200,120,0.14), rgba(18,19,19,0.48))",
+    boxShadow: "0 8px 16px rgba(0,0,0,0.24)",
   },
   advisorText: {
     minWidth: 0,
     display: "flex",
     flexDirection: "column",
-    gap: 3,
+    gap: 2,
+  },
+  advisorHeaderRow: {
+    minWidth: 0,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) max-content",
+    alignItems: "center",
+    gap: 8,
   },
   advisorName: {
-    color: "rgba(255,246,232,0.96)",
-    fontFamily: "var(--font-narrative)",
-    fontSize: 15.5,
-    lineHeight: 1.12,
-    fontWeight: 560,
+    minWidth: 0,
+    color: "rgba(255,246,232,0.94)",
+    fontSize: 13,
+    lineHeight: 1.2,
+    fontWeight: 680,
   },
   advisorRole: {
-    color: "rgba(230,170,76,0.84)",
+    color: "rgba(230,170,76,0.78)",
     fontSize: 11.5,
-    lineHeight: 1.2,
+    lineHeight: 1.22,
     fontWeight: 760,
   },
   advisorBackground: {
-    color: "rgba(244,239,230,0.62)",
-    fontSize: 11.4,
-    lineHeight: 1.32,
+    color: "rgba(244,239,230,0.52)",
+    fontSize: 11.2,
+    lineHeight: 1.25,
   },
   advisorAskButton: {
+    justifySelf: "end",
+    alignSelf: "center",
     width: "fit-content",
-    marginTop: 4,
+    minWidth: 38,
+    maxWidth: 64,
     minHeight: 28,
-    padding: "5px 10px",
-    borderTop: "1px solid rgba(250,226,180,0.28)",
-    borderRight: "1px solid rgba(214,157,62,0.24)",
-    borderBottom: "1px solid rgba(162,106,37,0.28)",
-    borderLeft: "1px solid rgba(214,157,62,0.30)",
+    padding: "4px 9px",
+    border: "1px solid rgba(229,190,124,0.22)",
     borderRadius: 4,
-    background: "linear-gradient(180deg, rgba(70,52,30,0.84), rgba(22,22,20,0.92))",
-    color: "rgba(246,239,222,0.94)",
-    boxShadow: "0 8px 18px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,238,198,0.10)",
+    background: "rgba(18,19,19,0.48)",
+    color: "rgba(246,221,176,0.86)",
+    boxShadow: "inset 0 1px 0 rgba(255,238,198,0.06)",
     fontFamily: "inherit",
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: 820,
     lineHeight: 1.2,
+    whiteSpace: "nowrap" as const,
     cursor: "pointer",
+  },
+  advisorAskButtonCompact: {
+    minHeight: 26,
+    padding: "3px 8px",
   },
   progressLine: {
     color: "rgba(244,239,230,0.72)",

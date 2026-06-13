@@ -58,6 +58,15 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "onAskAdvisor={openAdvisor}" in play_page
     assert "play.advisor_card_name" in primitives
     assert "play.advisor_card_background" in primitives
+    assert "advisorRow" in primitives
+    assert "advisorRowCompact" in primitives
+    assert "advisorCard:" not in primitives
+    assert "advisorHeaderRow" in primitives
+    assert 'gridTemplateColumns: "44px minmax(0, 1fr)"' in primitives
+    assert 'gridTemplateColumns: "minmax(0, 1fr) max-content"' in primitives
+    assert 'width: "fit-content"' in primitives
+    assert "maxWidth: 64" in primitives
+    assert "advisorAskButtonCompact" in primitives
     assert "<img" in primitives
     assert "avatarUrl: getAvatarForCastMember" in primitives
     assert "getAvatarForCastMember(story.template.template_id, member, story.template)" in primitives
@@ -223,9 +232,14 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-collapse-zone="true"' in panels
     assert 'data-play-inner-motive-primary="true"' in panels
     assert 'data-play-inner-motive-panel={context === "option" ? "true" : undefined}' in panels
+    assert "isWritingOptionDiary ? null : (" in selected_confirm
     assert 'data-play-selected-move={isSelected ? "true" : undefined}' in panels
     assert 'data-play-primary-commit="true"' in panels
     assert 'data-play-support-actions="true"' in panels
+    assert 'data-play-move-receipt="true"' in panels
+    assert 'data-play-room-reacting="true"' in panels
+    assert 'data-play-pending-reaction-panel="true"' in panels
+    assert "const showStandardOptions = !armedCard && !showFreeComposer && !showPickedReflection" in panels
     assert ".filter(({ i }) => focusedOptionIndex" not in panels
     assert "handleActionAreaPointerDownCapture" in panels
     assert "target.closest(" in panels
@@ -238,6 +252,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "optionPrimaryCommitButton" in styles
     assert "optionMotiveCommitButton" in styles
     assert "diarySubmitButton" in styles
+    assert "moveReceiptPanel" in styles
+    assert "roomReactingPanel" in styles
     assert "reducedMotionTransition" in styles
     assert "export const actionPalette" in styles
     assert "selectedBorderLeft: \"rgba(213,154,62,0.72)\"" in styles
@@ -259,6 +275,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.inner_motive_cta": "Use inner motive"' in strings
     assert '"play.inner_motive_submit_cta": "Take action with motive"' in strings
     assert '"play.advisor_card_name": "Dana Vale"' in strings
+    assert '"play.move_receipt_title": "Your move"' in strings
+    assert '"play.room_reacting_title": "The room is reacting"' in strings
     assert '"play.option_expand_cta": "View move"' in strings
     assert '"play.option_expanded_detail_label": "Consequence"' in strings
 
