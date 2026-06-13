@@ -215,6 +215,41 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
         assert forbidden not in fixture.casefold()
 
 
+def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> None:
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    fixture = (ROOT / "frontend2/src/pages/play/components/play-gameplay-loop-fixture.tsx").read_text()
+    prd = (ROOT / "docs/play-gameplay-loop-prd.md").read_text()
+
+    assert 'segments[1] === "play-gameplay-loop"' in routes
+    assert '"#/qa/play-gameplay-loop"' in routes
+    assert 'case "playGameplayLoopFixture"' in app
+    assert "PlayGameplayLoopFixture" in app
+    assert 'data-gameplay-loop-fixture="true"' in fixture
+    assert 'data-gameplay-objective="true"' in fixture
+    assert "data-gameplay-pressure-track={track.id}" in fixture
+    assert 'data-gameplay-person-action="true"' in fixture
+    assert 'data-gameplay-clue-card={unlockedClue ? "green-room-badge" : "locked"}' in fixture
+    assert 'data-gameplay-forecast-chip={hook === "forecast" ? "true" : undefined}' in fixture
+    assert 'data-gameplay-delta={hook === "delta" ? "true" : undefined}' in fixture
+    assert 'data-gameplay-unlocked-action={unlockedClue ? "true" : undefined}' in fixture
+    assert 'data-play-move-receipt="true"' in fixture
+    assert 'data-play-room-reacting="true"' in fixture
+    assert "setPhase(\"pending\")" in fixture
+    assert "setPhase(\"resolved\")" in fixture
+    assert "setUnlockedClue(true)" in fixture
+    assert "unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS" in fixture
+    assert "fetch(" not in fixture
+    assert "episodeGoal" in prd
+    assert "pressure" in prd
+    assert "people" in prd
+    assert "clues" in prd
+    assert "typed game-state envelope" in prd
+    assert "Fixture first" in prd or "fixture first" in prd
+    for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
+        assert forbidden not in fixture.casefold()
+
+
 def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
