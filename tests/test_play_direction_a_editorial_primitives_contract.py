@@ -226,8 +226,14 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "optionExpandedDetail" in styles
     assert "optionPrimaryCommitButton" in styles
     assert "reducedMotionTransition" in styles
-    assert "rgba(20,117,130,0.96)" in styles
-    assert "rgba(75,238,246,0.78)" in styles
+    assert "export const actionPalette" in styles
+    assert "selectedBorderLeft: \"rgba(213,154,62,0.72)\"" in styles
+    assert "primaryBackground: \"linear-gradient(180deg, rgba(176,126,48,0.92), rgba(108,76,33,0.96))\"" in styles
+    assert "ivoryText: \"rgba(246,239,222,0.96)\"" in styles
+    assert "actionPalette.primaryPendingGlow" in panels
+    assert "rgba(20,117,130,0.96)" not in styles
+    assert "rgba(75,238,246,0.78)" not in styles
+    assert "rgba(146,33,43,0.96)" not in styles
     assert "whileHover" in panels
     assert "whileTap" in panels
     assert "ask_friend_inline" not in selected_confirm

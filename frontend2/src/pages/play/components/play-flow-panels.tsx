@@ -38,7 +38,7 @@ import {
   getEndingIllustration,
   getTierSplash,
 } from "../../../shared/lib/webtoon-assets"
-import { ppStyles } from "../play-styles"
+import { actionPalette, ppStyles } from "../play-styles"
 import type { ActionCommitmentSummary, LeverageCardView, PlayAdvanceAction } from "../play-types"
 import { useCompactLayout } from "../hooks/use-compact-layout"
 
@@ -3400,8 +3400,8 @@ export function ActionArea({
                   isOptionCommitPending && !reducedMotion
                     ? {
                         boxShadow: [
-                          "0 14px 30px rgba(20,184,200,0.14), inset 0 1px 0 rgba(214,255,255,0.20)",
-                          "0 16px 38px rgba(20,184,200,0.26), inset 0 1px 0 rgba(214,255,255,0.28)",
+                          actionPalette.primaryPendingGlow,
+                          actionPalette.primaryPendingGlowStrong,
                         ],
                       }
                     : undefined
