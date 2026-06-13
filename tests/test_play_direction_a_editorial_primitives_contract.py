@@ -211,17 +211,28 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-card-detail="true"' in panels
     assert 'data-play-action-card-confirm="true"' in panels
     assert 'data-play-action-card-confirm-panel="true"' in panels
+    assert 'data-play-action-option-card="true"' in panels
+    assert 'data-play-action-collapse-zone="true"' in panels
     assert 'data-play-selected-move={isSelected ? "true" : undefined}' in panels
     assert 'data-play-primary-commit="true"' in panels
     assert 'data-play-support-actions="true"' in panels
     assert ".filter(({ i }) => focusedOptionIndex" not in panels
+    assert "handleActionAreaPointerDownCapture" in panels
+    assert "target.closest(" in panels
+    assert 'setSelectedOptionIndex(i)' in panels
+    assert 'setSelectedOptionIndex(null)' in panels
     assert "optionCardConfirmPanel" in styles
     assert "optionCardConfirmRail" in styles
     assert "optionExpandedDetail" in styles
     assert "optionPrimaryCommitButton" in styles
-    assert "optionQuietChangeButton" in styles
+    assert "reducedMotionTransition" in styles
+    assert "rgba(20,117,130,0.96)" in styles
+    assert "rgba(75,238,246,0.78)" in styles
+    assert "whileHover" in panels
+    assert "whileTap" in panels
     assert "ask_friend_inline" not in selected_confirm
     assert "onOpenAdvisor" not in selected_confirm
+    assert "option_change_cta" not in selected_confirm
     assert '"play.selected_move_kicker": "Selected move"' in strings
     assert '"play.selected_move_commit_cta": "Take this action"' in strings
     assert '"play.option_expand_cta": "View move"' in strings

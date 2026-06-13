@@ -2605,6 +2605,7 @@ export function ActionArea({
   }, [])
   const compactLeverage = useCompactLayout()
   const compactActionChrome = useCompactLayout("(max-width: 680px)")
+  const reducedMotion = useReducedMotion()
   const playableLeverageCards = useMemo(
     () => leverageCards.filter((card) => !card.used),
     [leverageCards],
@@ -2689,6 +2690,30 @@ export function ActionArea({
     setArmedCardId(null)
     setShowFreeInput(false)
     setSelectedOptionIndex(i)
+  }
+  const handleActionAreaPointerDownCapture = (event: PointerEvent<HTMLDivElement>) => {
+    if (selectedOptionIndex === null || busy || actionSubmitLockedRef.current || pickedIndex !== null) return
+    const target = event.target as HTMLElement | null
+    if (!target) return
+    if (
+      target.closest(
+        [
+          "[data-play-action-option-card='true']",
+          "[data-play-action-card-confirm-panel='true']",
+          "[data-play-collapse-exempt='true']",
+          "button",
+          "textarea",
+          "input",
+          "[role='dialog']",
+        ].join(","),
+      )
+    ) {
+      return
+    }
+    setSelectedOptionIndex(null)
+    if (showDiary && diaryContext === "option") {
+      setShowDiary(false)
+    }
   }
 
   const handleOptionCommit = (i: number, diaryOverride?: string) => {
@@ -3320,14 +3345,20 @@ export function ActionArea({
   }
   const renderSelectedOptionConfirm = () =>
     selectedOption && selectedOptionParsed && selectedOptionIndex !== null && (pickedIndex === null || isOptionCommitPending) ? (
-      <div
+      <motion.div
+        key={`option-confirm-${selectedOptionIndex}`}
         ref={setCommitFocusNode}
         style={{
           ...ppStyles.optionCardConfirmPanel,
           ...(isWritingOptionDiary ? ppStyles.optionCardConfirmPanelWriting : null),
+          ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
         }}
         data-play-action-card-confirm-panel="true"
         aria-label={t("play.selected_move_aria")}
+        initial={reducedMotion ? false : { opacity: 0, y: -6 }}
+        animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+        transition={reducedMotion ? { duration: 0.01 } : { duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
       >
         {isWritingOptionDiary ? null : (
           <div
@@ -3345,11 +3376,12 @@ export function ActionArea({
               <span style={ppStyles.optionCardConfirmMeta}>
                 {t("play.selected_move_number", { index: selectedOptionIndex + 1 })}
               </span>
-              <button
+              <motion.button
                 style={{
                   ...ppStyles.optionPrimaryCommitButton,
                   ...(compactActionChrome ? ppStyles.optionPrimaryCommitButtonCompact : null),
                   ...(actionControlsDisabled ? ppStyles.optionPrimaryCommitButtonDisabled : null),
+                  ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
                 }}
                 type="button"
                 data-play-action-card-confirm="true"
@@ -3362,9 +3394,22 @@ export function ActionArea({
                   }
                 }}
                 disabled={actionControlsDisabled}
+                whileHover={actionControlsDisabled || reducedMotion ? undefined : { y: -1, filter: "brightness(1.07)" }}
+                whileTap={actionControlsDisabled || reducedMotion ? undefined : { scale: 0.985, filter: "brightness(1.14)" }}
+                animate={
+                  isOptionCommitPending && !reducedMotion
+                    ? {
+                        boxShadow: [
+                          "0 14px 30px rgba(20,184,200,0.14), inset 0 1px 0 rgba(214,255,255,0.20)",
+                          "0 16px 38px rgba(20,184,200,0.26), inset 0 1px 0 rgba(214,255,255,0.28)",
+                        ],
+                      }
+                    : undefined
+                }
+                transition={isOptionCommitPending && !reducedMotion ? { duration: 0.9, repeat: Infinity, repeatType: "mirror" } : undefined}
               >
                 {isOptionCommitPending ? t("play.action_busy") : t("play.selected_move_commit_cta")}
-              </button>
+              </motion.button>
             </div>
             {isOptionCommitPending ? null : (
               <div
@@ -3375,34 +3420,26 @@ export function ActionArea({
                 data-play-support-actions="true"
               >
                 {renderDiaryAttachPreview("option")}
-                <button
-                  type="button"
-                  style={{
-                    ...ppStyles.optionQuietChangeButton,
-                    ...inlineActionDisabledStyle,
-                  }}
-                  onClick={() => setSelectedOptionIndex(null)}
-                  disabled={actionControlsDisabled}
-                  aria-keyshortcuts="Escape"
-                  title={t("play.shortcut_escape_cancel")}
-                >
-                  {t("play.option_change_cta")}
-                </button>
               </div>
             )}
           </div>
         )}
         {renderDiaryEditor("option")}
-      </div>
+      </motion.div>
     ) : null
 
   const renderSelectedOptionDetail = (hint: string) => (
-    <span
+    <motion.span
       style={{
         ...ppStyles.optionExpandedDetail,
         ...(compactActionChrome ? ppStyles.optionExpandedDetailCompact : null),
+        ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
       }}
       data-play-action-card-detail="true"
+      initial={reducedMotion ? false : { opacity: 0, y: -4 }}
+      animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
+      transition={reducedMotion ? { duration: 0.01 } : { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
     >
       <span style={ppStyles.optionExpandedDetailLabel}>
         {t("play.option_expanded_detail_label")}
@@ -3410,14 +3447,16 @@ export function ActionArea({
       <span style={ppStyles.optionExpandedDetailText}>
         {hint || t("play.preview_action_risk_default")}
       </span>
-    </span>
+    </motion.span>
   )
 
   return (
     <motion.div
       data-play-action-area="true"
       data-play-action-state={actionState}
+      data-play-action-collapse-zone="true"
       style={ppStyles.actionArea}
+      onPointerDownCapture={handleActionAreaPointerDownCapture}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08, ...itemTransition }}
@@ -3692,7 +3731,7 @@ export function ActionArea({
                   selectedOptionIndex !== null && !isSelected && pickedIndex === null
                 return (
                   <div key={i} style={ppStyles.optionChoiceShell}>
-                    <button
+                    <motion.button
                       style={{
                         ...ppStyles.optionBtn,
                         ...(compactActionChrome ? ppStyles.optionBtnCompact : null),
@@ -3702,12 +3741,14 @@ export function ActionArea({
                         ...(isSelected && pickedIndex === null ? ppStyles.optionBtnExpanded : null),
                         ...(isChoiceDimmed ? ppStyles.optionBtnDeemphasized : null),
                         ...(isPicked ? ppStyles.optionBtnPicked : null),
+                        ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
                         opacity: isUnpicked ? 0.28 : actionControlsDisabled && !isPicked ? 0.5 : isChoiceDimmed ? 0.54 : 1,
                         pointerEvents: actionControlsDisabled ? "none" : "auto",
                       }}
                       onClick={() => handleOptionSelect(i)}
                       disabled={actionControlsDisabled}
                       type="button"
+                      data-play-action-option-card="true"
                       data-play-selected-move={isSelected ? "true" : undefined}
                       data-play-action-card-expanded={isSelected ? "true" : undefined}
                       aria-pressed={isSelected}
@@ -3718,6 +3759,17 @@ export function ActionArea({
                           ? t("play.option_shortcut_title", { key: optionShortcutKey })
                           : undefined
                       }
+                      layout={reducedMotion ? false : "position"}
+                      whileHover={
+                        actionControlsDisabled || reducedMotion
+                          ? undefined
+                          : {
+                              y: isSelected ? -1 : -2,
+                              filter: "brightness(1.05)",
+                            }
+                      }
+                      whileTap={actionControlsDisabled || reducedMotion ? undefined : { scale: 0.994 }}
+                      transition={reducedMotion ? { duration: 0.01 } : { type: "spring", stiffness: 300, damping: 28 }}
                     >
                       <div
                         style={{
@@ -3770,8 +3822,10 @@ export function ActionArea({
                         </span>
                         {isSelected ? renderSelectedOptionDetail(opt.hint ?? "") : null}
                       </div>
-                    </button>
-                    {isSelected && (pickedIndex === null || (isPicked && showPickedReflection)) ? renderSelectedOptionConfirm() : null}
+                    </motion.button>
+                    <AnimatePresence initial={false}>
+                      {isSelected && (pickedIndex === null || (isPicked && showPickedReflection)) ? renderSelectedOptionConfirm() : null}
+                    </AnimatePresence>
                   </div>
                 )
               })
