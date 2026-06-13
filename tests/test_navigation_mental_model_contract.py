@@ -44,7 +44,6 @@ def test_shared_header_supports_explicit_back_for_secondary_pages() -> None:
     assert 't("action.back_home")' in header
     assert ".topbar-back" in theme
     assert ".topbar--with-back .brand strong" in theme
-    assert ".topbar--with-back .topbar-create-link" in theme
     assert "showBackButton" in about
     assert "showBackButton" in portfolio
     assert "showBackButton" in reviewer
@@ -54,6 +53,28 @@ def test_shared_header_supports_explicit_back_for_secondary_pages() -> None:
     assert 't("action.back_home")' in login
     assert '"action.back_home": "← Story Desk"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
     assert '"action.back_home": "← 故事入口"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+
+def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
+    header = (ROOT / "frontend2/src/shared/ui/header.tsx").read_text()
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert 't("header.write_story")' not in header
+    assert "topbar-create-link" not in header
+    assert ".topbar-create-link" not in theme
+    assert 't("home.cta_create")' in home
+    assert "onClick={onOpenCreate}" in home
+
+    assert 't("header.login")' in header
+    assert 't("header.account")' in header
+    assert "topbar-login-link" in header
+    assert "topbar-account__label" in header
+    assert "topbar-lang" in header
+    assert "topbar-account" in header
+    assert '"header.account": "Account"' in strings
+    assert '"header.account": "账号"' in strings
 
 
 def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:

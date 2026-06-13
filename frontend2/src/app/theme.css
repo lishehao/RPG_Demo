@@ -250,13 +250,12 @@ kbd {
   transition: color 0.16s, border-color 0.16s;
 }
 .topbar-link:hover { color: var(--text); border-bottom-color: var(--line-strong); }
-.topbar-create-link {
-  color: rgba(245, 200, 120, 0.84);
-  font-weight: 700;
-}
-.topbar-create-link:hover {
-  color: var(--accent);
-  border-bottom-color: rgba(245, 200, 120, 0.42);
+.topbar-login-link {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  white-space: nowrap;
 }
 .topbar-lang {
   display: inline-flex; align-items: center;
@@ -281,12 +280,15 @@ kbd {
 .topbar-lang__short { display: inline; }
 .topbar-account {
   position: relative;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
 }
 .topbar-account__pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
+  gap: 6px;
+  width: auto;
   height: 24px;
   padding: 0 0 6px;
   border: none;
@@ -295,6 +297,14 @@ kbd {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
+  transition: color 0.16s, border-color 0.16s;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+.topbar-account__pill:hover,
+.topbar-account__pill[aria-expanded="true"] {
+  color: var(--text);
+  border-bottom-color: var(--line-strong);
 }
 .topbar-account__avatar {
   display: inline-flex;
@@ -308,6 +318,11 @@ kbd {
   font-size: 12.5px;
   font-weight: 700;
   flex: 0 0 auto;
+}
+.topbar-account__label {
+  color: currentColor;
+  font-weight: 650;
+  white-space: nowrap;
 }
 .topbar-account__name { display: none; }
 .topbar-account__hint {
@@ -327,9 +342,20 @@ kbd {
   border-radius: 0;
   box-shadow: none;
 }
+.topbar-account__menu-title {
+  padding: 8px 12px 10px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 720;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .topbar-account__menu-item {
   width: 100%;
-  padding: 9px 0;
+  padding: 9px 12px;
   text-align: left;
   border-radius: 0;
   color: var(--text-muted);
@@ -1214,12 +1240,9 @@ kbd {
     gap: 12px;
   }
   .topbar-link { display: none; }
-  .topbar-create-link,
   .topbar-login-link {
     display: inline-flex;
-  }
-  .topbar--with-back .topbar-create-link {
-    display: none;
+    padding-left: 10px;
   }
   .topbar-lang {
     flex-shrink: 0;
@@ -1250,10 +1273,15 @@ kbd {
   .topbar-lang__short {
     display: inline;
   }
+  .topbar-account {
+    flex: 0 0 auto;
+    padding-left: 10px;
+  }
   .topbar-account__pill {
-    max-width: 24px;
+    max-width: none;
     padding: 0 0 4px;
     border-bottom-color: transparent;
+    gap: 5px;
   }
   .topbar-account__name {
     display: none;
@@ -1261,6 +1289,9 @@ kbd {
   .topbar-account__avatar {
     font-size: 12px;
     color: rgba(245, 200, 120, 0.78);
+  }
+  .topbar-account__label {
+    font-size: 12.5px;
   }
   .home-hero { padding: 64px 0 48px; }
   .play-actions__row { grid-template-columns: 1fr; }
@@ -1369,4 +1400,11 @@ kbd {
   .topbar-lang { gap: 6px; }
   .topbar-lang__pill { font-size: 12px; }
   .topbar-actions > .btn { font-size: 12.5px; }
+  .topbar-login-link,
+  .topbar-account {
+    padding-left: 8px;
+  }
+  .topbar-account__label {
+    font-size: 12px;
+  }
 }

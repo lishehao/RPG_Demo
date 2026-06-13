@@ -49,6 +49,7 @@ export const STRINGS_ZH = {
   // Header / global navigation
   "header.write_story": "写一个故事",
   "header.login": "登录",
+  "header.account": "账号",
   "header.logout": "退出登录",
   "header.signout": "退出",
   "header.my_worlds": "我的故事",
@@ -840,6 +841,7 @@ type StringKey = keyof typeof STRINGS_ZH
 export const STRINGS_EN: Record<StringKey, string> = {
   "header.write_story": "Write a story",
   "header.login": "Sign in",
+  "header.account": "Account",
   "header.logout": "Sign out",
   "header.signout": "Sign out",
   "header.my_worlds": "My stories",
