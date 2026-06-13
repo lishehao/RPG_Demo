@@ -8,6 +8,7 @@ import {
   getAvatarForCastMember,
   getDefaultAvatar,
 } from "../../../shared/lib/webtoon-assets"
+import { useT } from "../../../shared/lib/i18n"
 import { Truncated } from "../../../shared/ui/truncated"
 
 type PlayShellProps = {
@@ -130,16 +131,24 @@ export function SceneSupportRail({
   story,
   lastNarrator,
   compact,
+  advisorAvatarUrl,
+  advisorPersona,
+  onAskAdvisor,
 }: {
   story: NarrativeStoryHistoryResponse
   lastNarrator: NarrativeStoryMessage | null
   compact: boolean
+  advisorAvatarUrl: string
+  advisorPersona: string
+  onAskAdvisor: () => void
 }) {
+  const t = useT()
   const playerRole = story.session.player_role
   const role = playerRole?.label || playerRole?.public_persona || "You"
   const playerPortraitUrl = playerPortraitForStory(story)
   const pressure = scenePressureText(story, lastNarrator)
   const actors = sceneActors(story, lastNarrator?.npc_pulse ?? [])
+  const advisorName = advisorDisplayName(advisorPersona, t("play.advisor_card_name"))
   return (
     <aside
       data-play-primitive="SceneSupportRail"
@@ -194,6 +203,42 @@ export function SceneSupportRail({
           ))}
         </div>
       </PrimitiveSection>
+      <PrimitiveSection title={t("play.advisor_card_title")}>
+        <div
+          style={{
+            ...primitiveStyles.advisorCard,
+            ...(compact ? primitiveStyles.advisorCardCompact : null),
+          }}
+          data-play-advisor-card="true"
+        >
+          <span style={primitiveStyles.advisorFrame}>
+            <img
+              data-play-advisor-portrait="true"
+              src={advisorAvatarUrl}
+              alt=""
+              style={primitiveStyles.portraitImage}
+              onError={handlePortraitError}
+            />
+          </span>
+          <span style={primitiveStyles.advisorText}>
+            <strong style={primitiveStyles.advisorName}>{advisorName}</strong>
+            <span style={primitiveStyles.advisorRole}>{t("play.advisor_card_role")}</span>
+            <span style={primitiveStyles.advisorBackground}>
+              <Truncated lines={2}>{t("play.advisor_card_background")}</Truncated>
+            </span>
+            <button
+              type="button"
+              style={primitiveStyles.advisorAskButton}
+              data-play-advisor-ask="true"
+              title={t("play.advisor_card_ask_title", { name: advisorName })}
+              aria-label={`${t("play.advisor_card_ask_title", { name: advisorName })}: ${advisorPersona}`}
+              onClick={onAskAdvisor}
+            >
+              {t("play.advisor_card_ask")}
+            </button>
+          </span>
+        </div>
+      </PrimitiveSection>
     </aside>
   )
 }
@@ -205,6 +250,17 @@ function PrimitiveSection({ title, children }: { title: string; children: ReactN
       {children}
     </section>
   )
+}
+
+function advisorDisplayName(persona: string, fallback: string): string {
+  const firstClause = persona
+    .split(/[,.。；;:：—-]/)[0]
+    .replace(/\s+/g, " ")
+    .trim()
+  if (firstClause.length >= 2 && firstClause.length <= 32) {
+    return firstClause
+  }
+  return fallback
 }
 
 function scenePressureText(
@@ -498,6 +554,76 @@ const primitiveStyles: Record<string, CSSProperties> = {
     color: "rgba(244,239,230,0.56)",
     fontSize: 11.5,
     lineHeight: 1.25,
+  },
+  advisorCard: {
+    display: "grid",
+    gridTemplateColumns: "54px minmax(0, 1fr)",
+    gap: 10,
+    alignItems: "start",
+    padding: "8px 8px 9px",
+    borderTop: "1px solid rgba(229,190,124,0.18)",
+    borderRight: "1px solid rgba(229,190,124,0.09)",
+    borderBottom: "1px solid rgba(229,190,124,0.13)",
+    borderLeft: "1px solid rgba(213,154,62,0.30)",
+    borderRadius: 5,
+    background: "linear-gradient(145deg, rgba(28,27,24,0.88), rgba(8,9,10,0.92))",
+    boxShadow: "0 12px 24px rgba(0,0,0,0.20), inset 0 1px 0 rgba(250,238,210,0.08)",
+  },
+  advisorCardCompact: {
+    gridTemplateColumns: "48px minmax(0, 1fr)",
+  },
+  advisorFrame: {
+    width: 54,
+    aspectRatio: "4 / 5",
+    display: "block",
+    overflow: "hidden",
+    border: "1px solid rgba(229,190,124,0.46)",
+    borderTop: "2px solid rgba(230,170,76,0.76)",
+    background: "linear-gradient(135deg, rgba(213,154,62,0.18), rgba(18,19,19,0.54))",
+    boxShadow: "0 10px 18px rgba(0,0,0,0.28)",
+  },
+  advisorText: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 3,
+  },
+  advisorName: {
+    color: "rgba(255,246,232,0.96)",
+    fontFamily: "var(--font-narrative)",
+    fontSize: 15.5,
+    lineHeight: 1.12,
+    fontWeight: 560,
+  },
+  advisorRole: {
+    color: "rgba(230,170,76,0.84)",
+    fontSize: 11.5,
+    lineHeight: 1.2,
+    fontWeight: 760,
+  },
+  advisorBackground: {
+    color: "rgba(244,239,230,0.62)",
+    fontSize: 11.4,
+    lineHeight: 1.32,
+  },
+  advisorAskButton: {
+    width: "fit-content",
+    marginTop: 4,
+    minHeight: 28,
+    padding: "5px 10px",
+    borderTop: "1px solid rgba(250,226,180,0.28)",
+    borderRight: "1px solid rgba(214,157,62,0.24)",
+    borderBottom: "1px solid rgba(162,106,37,0.28)",
+    borderLeft: "1px solid rgba(214,157,62,0.30)",
+    borderRadius: 4,
+    background: "linear-gradient(180deg, rgba(70,52,30,0.84), rgba(22,22,20,0.92))",
+    color: "rgba(246,239,222,0.94)",
+    boxShadow: "0 8px 18px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,238,198,0.10)",
+    fontFamily: "inherit",
+    fontSize: 12,
+    fontWeight: 820,
+    lineHeight: 1.2,
+    cursor: "pointer",
   },
   progressLine: {
     color: "rgba(244,239,230,0.72)",

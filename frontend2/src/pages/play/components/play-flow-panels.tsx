@@ -2549,7 +2549,6 @@ export function ActionArea({
   busy,
   onCommitmentActiveChange,
   onCommitmentSummaryChange,
-  onOpenAdvisor,
   onPickOption,
   onPlayLeverage,
   onSubmitFree,
@@ -2573,7 +2572,6 @@ export function ActionArea({
   busy: boolean
   onCommitmentActiveChange: (active: boolean) => void
   onCommitmentSummaryChange: (summary: ActionCommitmentSummary | null) => void
-  onOpenAdvisor: () => void
   onPickOption: (idx: number, diaryOverride?: string) => void
   onPlayLeverage: (card: LeverageCardView, diaryOverride?: string) => void
   onSubmitFree: (diaryOverride?: string) => void
@@ -2998,11 +2996,6 @@ export function ActionArea({
     showFreeActionSurface &&
     !showFreeInput &&
     options.length > 0
-  const showIdleAdvisorLine =
-    !commitmentSurfaceOpen &&
-    !showPickedReflection &&
-    !actionControlsDisabled &&
-    options.length > 0
   const freeActionToggleText = freeInput.trim()
     ? t("play.action_resume_free")
     : t("play.action_open_free")
@@ -3245,7 +3238,10 @@ export function ActionArea({
       (context === "free" && !freeInput.trim())
 
     return showDiary && diaryContext === context ? (
-      <div style={ppStyles.diaryBox}>
+      <div
+        style={ppStyles.diaryBox}
+        data-play-inner-motive-panel={context === "option" ? "true" : undefined}
+      >
         <div style={ppStyles.diaryHeader}>
           <span style={ppStyles.diaryKicker}>{t("play.diary_inner_label")}</span>
           <span style={ppStyles.diaryMeta}>{t("play.private_intent_hint")}</span>
@@ -3286,10 +3282,11 @@ export function ActionArea({
         <div style={ppStyles.diaryActions}>
           <button
             style={{
-              ...ppStyles.actionPrimaryLine,
-              ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
-              ...ppStyles.inlineCommitPrimaryActions,
+              ...(context === "option" ? ppStyles.diarySubmitButton : ppStyles.actionPrimaryLine),
+              ...(compactActionChrome && context !== "option" ? ppStyles.actionPrimaryLineCompact : null),
+              ...(context !== "option" ? ppStyles.inlineCommitPrimaryActions : null),
               ...(diarySubmitDisabled ? ppStyles.actionPrimaryLineDisabled : null),
+              ...(diarySubmitDisabled && context === "option" ? ppStyles.diarySubmitButtonDisabled : null),
             }}
             onClick={() => {
               const currentDiary = diary.trim()
@@ -3308,7 +3305,9 @@ export function ActionArea({
           >
             {context === "leverage"
               ? t("play.leverage_confirm_cta")
-              : t("play.action_submit")}
+              : context === "option"
+                ? t("play.inner_motive_submit_cta")
+                : t("play.action_submit")}
           </button>
           <button
             onClick={() => setShowDiary(false)}
@@ -3360,13 +3359,12 @@ export function ActionArea({
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
         transition={reducedMotion ? { duration: 0.01 } : { duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
       >
-        {isWritingOptionDiary ? null : (
-          <div
-            style={{
-              ...ppStyles.optionCardConfirmRail,
-              ...(compactActionChrome ? ppStyles.optionCardConfirmRailCompact : null),
-            }}
-          >
+        <div
+          style={{
+            ...ppStyles.optionCardConfirmRail,
+            ...(compactActionChrome ? ppStyles.optionCardConfirmRailCompact : null),
+          }}
+        >
             <div
               style={{
                 ...ppStyles.optionCardPrimaryRow,
@@ -3376,42 +3374,73 @@ export function ActionArea({
               <span style={ppStyles.optionCardConfirmMeta}>
                 {t("play.selected_move_number", { index: selectedOptionIndex + 1 })}
               </span>
-              <motion.button
+              <div
                 style={{
-                  ...ppStyles.optionPrimaryCommitButton,
-                  ...(compactActionChrome ? ppStyles.optionPrimaryCommitButtonCompact : null),
-                  ...(actionControlsDisabled ? ppStyles.optionPrimaryCommitButtonDisabled : null),
-                  ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
+                  ...ppStyles.optionCardPrimaryActionGrid,
+                  ...(compactActionChrome ? ppStyles.optionCardPrimaryActionGridCompact : null),
                 }}
-                type="button"
-                data-play-action-card-confirm="true"
-                data-play-primary-commit="true"
-                aria-keyshortcuts="Enter"
-                title={t("play.shortcut_enter_submit")}
-                onClick={() => {
-                  if (selectedOptionIndex !== null) {
-                    handleOptionCommit(selectedOptionIndex)
-                  }
-                }}
-                disabled={actionControlsDisabled}
-                whileHover={actionControlsDisabled || reducedMotion ? undefined : { y: -1, filter: "brightness(1.07)" }}
-                whileTap={actionControlsDisabled || reducedMotion ? undefined : { scale: 0.985, filter: "brightness(1.14)" }}
-                animate={
-                  isOptionCommitPending && !reducedMotion
-                    ? {
-                        boxShadow: [
-                          actionPalette.primaryPendingGlow,
-                          actionPalette.primaryPendingGlowStrong,
-                        ],
-                      }
-                    : undefined
-                }
-                transition={isOptionCommitPending && !reducedMotion ? { duration: 0.9, repeat: Infinity, repeatType: "mirror" } : undefined}
               >
-                {isOptionCommitPending ? t("play.action_busy") : t("play.selected_move_commit_cta")}
-              </motion.button>
+                <motion.button
+                  style={{
+                    ...ppStyles.optionPrimaryCommitButton,
+                    ...(compactActionChrome ? ppStyles.optionPrimaryCommitButtonCompact : null),
+                    ...(actionControlsDisabled ? ppStyles.optionPrimaryCommitButtonDisabled : null),
+                    ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
+                  }}
+                  type="button"
+                  data-play-action-card-confirm="true"
+                  data-play-primary-commit="true"
+                  aria-keyshortcuts="Enter"
+                  title={t("play.shortcut_enter_submit")}
+                  onClick={() => {
+                    if (selectedOptionIndex !== null) {
+                      handleOptionCommit(selectedOptionIndex)
+                    }
+                  }}
+                  disabled={actionControlsDisabled}
+                  whileHover={actionControlsDisabled || reducedMotion ? undefined : { y: -1, filter: "brightness(1.07)" }}
+                  whileTap={actionControlsDisabled || reducedMotion ? undefined : { scale: 0.985, filter: "brightness(1.14)" }}
+                  animate={
+                    isOptionCommitPending && !reducedMotion
+                      ? {
+                          boxShadow: [
+                            actionPalette.primaryPendingGlow,
+                            actionPalette.primaryPendingGlowStrong,
+                          ],
+                        }
+                      : undefined
+                  }
+                  transition={isOptionCommitPending && !reducedMotion ? { duration: 0.9, repeat: Infinity, repeatType: "mirror" } : undefined}
+                >
+                  {isOptionCommitPending ? t("play.action_busy") : t("play.selected_move_commit_cta")}
+                </motion.button>
+                <motion.button
+                  style={{
+                    ...ppStyles.optionMotiveCommitButton,
+                    ...(showDiary ? ppStyles.optionMotiveCommitButtonActive : null),
+                    ...(compactActionChrome ? ppStyles.optionPrimaryCommitButtonCompact : null),
+                    ...(actionControlsDisabled ? ppStyles.optionMotiveCommitButtonDisabled : null),
+                    ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
+                  }}
+                  type="button"
+                  data-play-inner-motive-primary="true"
+                  aria-expanded={showDiary && diaryContext === "option"}
+                  title={diaryDraft ? t("play.diary_attach_edit_title", { motive: diaryDraft }) : t("play.diary_attach_add_title")}
+                  onClick={() => setShowDiary(true)}
+                  disabled={actionControlsDisabled}
+                  whileHover={actionControlsDisabled || reducedMotion ? undefined : { y: -1, filter: "brightness(1.06)" }}
+                  whileTap={actionControlsDisabled || reducedMotion ? undefined : { scale: 0.985, filter: "brightness(1.12)" }}
+                >
+                  <span style={ppStyles.optionMotiveButtonLabel}>
+                    {diaryDraft ? t("play.inner_motive_edit_cta") : t("play.inner_motive_cta")}
+                  </span>
+                  <span style={ppStyles.optionMotiveButtonHint}>
+                    {diaryDraft ? t("play.inner_motive_attached_hint") : t("play.inner_motive_button_hint")}
+                  </span>
+                </motion.button>
+              </div>
             </div>
-            {isOptionCommitPending ? null : (
+            {isOptionCommitPending || !diaryDraft ? null : (
               <div
                 style={{
                   ...ppStyles.optionCardSecondaryRow,
@@ -3419,11 +3448,11 @@ export function ActionArea({
                 }}
                 data-play-support-actions="true"
               >
-                {renderDiaryAttachPreview("option")}
+                <span style={ppStyles.diaryAttachTag}>{t("play.diary_attached_label")}</span>
+                <span style={ppStyles.diaryAttachText} title={diaryDraft}>{diaryPreview}</span>
               </div>
             )}
-          </div>
-        )}
+        </div>
         {renderDiaryEditor("option")}
       </motion.div>
     ) : null
@@ -3674,20 +3703,6 @@ export function ActionArea({
                   <button
                     type="button"
                     style={{
-                      ...ppStyles.advisorInlineAction,
-                      ...inlineActionDisabledStyle,
-                    }}
-                    onClick={onOpenAdvisor}
-                    disabled={actionControlsDisabled}
-                    aria-haspopup="dialog"
-                    aria-label={t("play.ask_friend_open_title")}
-                    title={t("play.ask_friend_open_title")}
-                  >
-                    {t("play.ask_friend_inline")}
-                  </button>
-                  <button
-                    type="button"
-                    style={{
                       ...ppStyles.commitTextButton,
                       ...inlineActionDisabledStyle,
                     }}
@@ -3923,20 +3938,6 @@ export function ActionArea({
                       ...(compactActionChrome ? ppStyles.commitSecondaryActionsCompact : null),
                     }}
                   >
-                    <button
-                      type="button"
-                      style={{
-                        ...ppStyles.advisorInlineAction,
-                        ...inlineActionDisabledStyle,
-                      }}
-                      onClick={onOpenAdvisor}
-                      disabled={actionControlsDisabled}
-                      aria-haspopup="dialog"
-                      aria-label={t("play.ask_friend_open_title")}
-                      title={t("play.ask_friend_open_title")}
-                    >
-                      {t("play.ask_friend_inline")}
-                    </button>
                     {options.length > 0 ? (
                       <button
                         style={{
@@ -3966,7 +3967,7 @@ export function ActionArea({
         ) : null
       ) : null}
 
-      {showFreeActionToggle || showIdleAdvisorLine ? (
+      {showFreeActionToggle ? (
         <div style={ppStyles.alternateActionRow}>
           {showFreeActionToggle ? (
             <button
@@ -3986,23 +3987,6 @@ export function ActionArea({
             >
               <span style={ppStyles.alternateActionLabel}>{freeActionToggleText}</span>
               <span style={ppStyles.alternateActionHint}>{freeActionToggleHint}</span>
-            </button>
-          ) : null}
-          {showIdleAdvisorLine ? (
-            <button
-              type="button"
-              style={{
-                ...ppStyles.alternateActionButton,
-                ...inlineActionDisabledStyle,
-              }}
-              onClick={onOpenAdvisor}
-              disabled={actionControlsDisabled}
-              aria-haspopup="dialog"
-              aria-label={t("play.ask_friend_open_title")}
-              title={t("play.ask_friend_open_title")}
-            >
-              <span style={ppStyles.alternateActionLabel}>{t("play.ask_friend_inline")}</span>
-              <span style={ppStyles.alternateActionHint}>{t("play.ask_friend_inline_hint")}</span>
             </button>
           ) : null}
         </div>

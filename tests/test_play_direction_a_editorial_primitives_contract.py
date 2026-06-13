@@ -45,11 +45,19 @@ def test_play_primitives_keep_story_world_mental_model() -> None:
 def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
     assets = (ROOT / "frontend2/src/shared/lib/webtoon-assets.ts").read_text()
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
 
     assert "getAvatarForCastMember" in primitives
     assert "getDefaultAvatar" in primitives
     assert 'data-play-player-portrait="true"' in primitives
     assert 'data-play-cast-portrait="true"' in primitives
+    assert 'data-play-advisor-card="true"' in primitives
+    assert 'data-play-advisor-ask="true"' in primitives
+    assert 'data-play-advisor-portrait="true"' in primitives
+    assert "advisorAvatarUrl={advisorAvatar}" in play_page
+    assert "onAskAdvisor={openAdvisor}" in play_page
+    assert "play.advisor_card_name" in primitives
+    assert "play.advisor_card_background" in primitives
     assert "<img" in primitives
     assert "avatarUrl: getAvatarForCastMember" in primitives
     assert "getAvatarForCastMember(story.template.template_id, member, story.template)" in primitives
@@ -213,6 +221,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-card-confirm-panel="true"' in panels
     assert 'data-play-action-option-card="true"' in panels
     assert 'data-play-action-collapse-zone="true"' in panels
+    assert 'data-play-inner-motive-primary="true"' in panels
+    assert 'data-play-inner-motive-panel={context === "option" ? "true" : undefined}' in panels
     assert 'data-play-selected-move={isSelected ? "true" : undefined}' in panels
     assert 'data-play-primary-commit="true"' in panels
     assert 'data-play-support-actions="true"' in panels
@@ -223,8 +233,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'setSelectedOptionIndex(null)' in panels
     assert "optionCardConfirmPanel" in styles
     assert "optionCardConfirmRail" in styles
+    assert "optionCardPrimaryActionGrid" in styles
     assert "optionExpandedDetail" in styles
     assert "optionPrimaryCommitButton" in styles
+    assert "optionMotiveCommitButton" in styles
+    assert "diarySubmitButton" in styles
     assert "reducedMotionTransition" in styles
     assert "export const actionPalette" in styles
     assert "selectedBorderLeft: \"rgba(213,154,62,0.72)\"" in styles
@@ -236,11 +249,16 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "rgba(146,33,43,0.96)" not in styles
     assert "whileHover" in panels
     assert "whileTap" in panels
+    assert "ask_friend_inline" not in panels
+    assert "onOpenAdvisor" not in panels
     assert "ask_friend_inline" not in selected_confirm
     assert "onOpenAdvisor" not in selected_confirm
     assert "option_change_cta" not in selected_confirm
     assert '"play.selected_move_kicker": "Selected move"' in strings
     assert '"play.selected_move_commit_cta": "Take this action"' in strings
+    assert '"play.inner_motive_cta": "Use inner motive"' in strings
+    assert '"play.inner_motive_submit_cta": "Take action with motive"' in strings
+    assert '"play.advisor_card_name": "Dana Vale"' in strings
     assert '"play.option_expand_cta": "View move"' in strings
     assert '"play.option_expanded_detail_label": "Consequence"' in strings
 

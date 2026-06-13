@@ -705,7 +705,6 @@ export function PlayPage({
               busy={busy}
               onCommitmentActiveChange={setActionCommitmentActive}
               onCommitmentSummaryChange={setActionCommitmentSummary}
-              onOpenAdvisor={openAdvisor}
               onPickOption={(i, diaryOverride) =>
                 void handleAdvance({
                   chosen_option_index: i,
@@ -756,6 +755,9 @@ export function PlayPage({
                 story={story}
                 lastNarrator={lastNarrator}
                 compact={compactPlayChrome}
+                advisorAvatarUrl={advisorAvatar}
+                advisorPersona={story.template.advisor_persona}
+                onAskAdvisor={openAdvisor}
               />
             ) : null}
           </aside>

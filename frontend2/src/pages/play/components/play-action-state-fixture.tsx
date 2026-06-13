@@ -146,7 +146,6 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
           busy={busy}
           onCommitmentActiveChange={() => {}}
           onCommitmentSummaryChange={setCommitmentSummary}
-          onOpenAdvisor={() => setStatus("Advisor stays closed in this rehearsal. Choose or write a move.")}
           onPickOption={(idx) => submitMove(options[idx]?.label ?? "selected move")}
           onPlayLeverage={() => {}}
           onSubmitFree={() => submitMove(freeInput.trim() || "custom move")}

@@ -153,7 +153,6 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
           busy={busy}
           onCommitmentActiveChange={() => {}}
           onCommitmentSummaryChange={() => {}}
-          onOpenAdvisor={() => setStatus("Advisor stays closed in this rehearsal. Pick the current move.")}
           onPickOption={(idx) => submitMove(options[idx]?.handle ?? "move")}
           onPlayLeverage={() => {}}
           onSubmitFree={() => submitMove(freeInput.trim() || "custom move")}
