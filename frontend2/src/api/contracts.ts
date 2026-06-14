@@ -612,6 +612,7 @@ export type NarrativeGameplayChipTone = "gain" | "cost" | "unlock" | "shift"
 export type NarrativeGameplayChip = {
   label: string
   tone: NarrativeGameplayChipTone
+  detail?: string | null
 }
 
 export type NarrativeGameplayPressureTrack = {

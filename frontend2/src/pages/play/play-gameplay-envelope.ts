@@ -12,6 +12,7 @@ export type GameplayChipTone = "gain" | "cost" | "unlock" | "shift"
 export type GameplayActionForecast = {
   label: string
   tone: GameplayChipTone
+  detail?: string
 }
 
 export type GameplayPressureTrack = {
@@ -75,6 +76,10 @@ function normalizeChipRows(
       .map((chip) => ({
         label: compactLabel(chip.label, 64),
         tone: normalizeTone(chip.tone),
+        detail:
+          typeof chip.detail === "string" && chip.detail.trim()
+            ? compactLabel(chip.detail, 140)
+            : undefined,
       }))
       .filter((chip) => chip.label.length > 0)
       .slice(0, 3)

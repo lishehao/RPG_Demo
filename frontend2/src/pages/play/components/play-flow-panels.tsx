@@ -1,4 +1,4 @@
-import { type CSSProperties, type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, type CSSProperties, type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react"
 import type {
   NarrativeAdvisorMessage,
@@ -3472,7 +3472,10 @@ export function ActionArea({
       </motion.div>
     ) : null
 
-  const renderSelectedOptionDetail = (hint: string) => (
+  const renderSelectedOptionDetail = (
+    hint: string,
+    forecastDetails: GameplayActionForecast[],
+  ) => (
     <motion.span
       style={{
         ...ppStyles.optionExpandedDetail,
@@ -3491,6 +3494,20 @@ export function ActionArea({
       <span style={ppStyles.optionExpandedDetailText}>
         {hint || t("play.preview_action_risk_default")}
       </span>
+      {forecastDetails.map((chip) => (
+        <Fragment key={`${chip.label}-${chip.detail}`}>
+          <span style={ppStyles.optionExpandedDetailLabel}>
+            {t("play.gameplay_forecast_detail_label")}
+          </span>
+          <span
+            style={ppStyles.optionExpandedDetailText}
+            data-gameplay-forecast-detail="normal-play"
+            title={chip.detail}
+          >
+            {chip.detail}
+          </span>
+        </Fragment>
+      ))}
     </motion.span>
   )
 
@@ -3756,6 +3773,8 @@ export function ActionArea({
                 const isSelected = selectedOptionIndex === i
                 const isPicked = pickedIndex === i
                 const isUnpicked = pickedIndex !== null && pickedIndex !== i
+                const optionForecasts = actionForecasts?.[i] ?? []
+                const forecastDetails = optionForecasts.filter((chip) => chip.detail)
                 const optionShortcutKey = i < 9 ? String(i + 1) : null
                 const isChoiceDimmed =
                   selectedOptionIndex !== null && !isSelected && pickedIndex === null
@@ -3842,7 +3861,7 @@ export function ActionArea({
                             {opt.hint}
                           </span>
                         ) : null}
-                        {actionForecasts?.[i]?.length ? (
+                        {optionForecasts.length ? (
                           <span
                             style={{
                               ...ppStyles.gameplayForecastChipRow,
@@ -3851,9 +3870,11 @@ export function ActionArea({
                             data-gameplay-action-forecast="true"
                             aria-label={t("play.gameplay_forecast_label")}
                           >
-                            {actionForecasts[i].map((chip) => (
+                            {optionForecasts.map((chip) => (
                               <span
                                 key={`${i}-${chip.label}`}
+                                title={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
+                                aria-label={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
                                 style={{
                                   ...ppStyles.gameplayForecastChip,
                                   ...(chip.tone === "gain"
@@ -3879,7 +3900,7 @@ export function ActionArea({
                         >
                           {isSelected ? t("play.selected_move_kicker") : t("play.option_expand_cta")}
                         </span>
-                        {isSelected ? renderSelectedOptionDetail(opt.hint ?? "") : null}
+                        {isSelected ? renderSelectedOptionDetail(opt.hint ?? "", forecastDetails) : null}
                       </div>
                     </motion.button>
                     <AnimatePresence initial={false}>

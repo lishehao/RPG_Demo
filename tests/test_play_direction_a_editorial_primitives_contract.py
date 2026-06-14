@@ -271,6 +271,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "<GameplayImpactSummary envelope={gameplayEnvelope} />" in play_page
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
+    assert 'data-gameplay-forecast-detail="normal-play"' in panels
+    assert '"play.gameplay_forecast_detail_label": "Why now"' in strings
     assert 'data-gameplay-envelope="true"' in play_page
     assert "data-gameplay-envelope-source={envelope.source}" in play_page
     assert 'source: "backend" | "live_enriched" | "ui-derived"' in envelope
@@ -278,9 +280,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'source: "backend"' in envelope
     assert 'source: raw.source' in envelope
     assert "export type NarrativeGameplayEnvelope" in contracts
+    assert "detail?: string | null" in contracts
     assert 'source: "backend" | "live_enriched"' in contracts
     assert "gameplay_envelope?: NarrativeGameplayEnvelope | null" in contracts
     assert "class GameplayEnvelope" in backend_contracts
+    assert "detail: str | None = Field(default=None, max_length=140)" in backend_contracts
     assert 'GameplayEnvelopeSource = Literal["backend", "live_enriched"]' in backend_contracts
     assert "class TurnGameplayMetadata" in backend_contracts
     assert "gameplay_metadata: TurnGameplayMetadata | None = Field(default=None, exclude=True)" in backend_contracts
@@ -293,6 +297,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "_prepend_gameplay_chip(" in backend_service
     assert "action_forecasts[context.option_index]" in backend_service
     assert "action_forecasts=[row[:3] for row in action_forecasts]" in backend_service
+    assert 'detail=context.reason' in backend_service
     assert "gameplay_metadata_json" in backend_repository
     assert "TurnGameplayMetadata.model_validate" in backend_repository
     assert 'data-gameplay-objective="normal-play"' in play_page

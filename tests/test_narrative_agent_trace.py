@@ -385,16 +385,13 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
         for row in response.gameplay_envelope.action_forecasts
         for chip in row
     )
-    assert any(
-        chip.label == "Evan is focused on the copied memo."
-        for chip in response.gameplay_envelope.action_forecasts[0]
-    )
-    assert response.gameplay_envelope.action_forecasts[0][0].label == (
+    assert response.gameplay_envelope.action_forecasts[0][0].label == "Why now"
+    assert response.gameplay_envelope.action_forecasts[0][0].detail == (
         "Evan is focused on the copied memo."
     )
     assert len(response.gameplay_envelope.action_forecasts[0]) == 3
     assert all(
-        chip.label != "This should be rejected."
+        chip.label != "This should be rejected." and chip.detail != "This should be rejected."
         for row in response.gameplay_envelope.action_forecasts
         for chip in row
     )
@@ -437,11 +434,8 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     assert history.gameplay_envelope is not None
     assert history.gameplay_envelope.source == "live_enriched"
     assert history.gameplay_envelope.tracks
-    assert any(
-        chip.label == "Evan is focused on the copied memo."
-        for chip in history.gameplay_envelope.action_forecasts[0]
-    )
-    assert history.gameplay_envelope.action_forecasts[0][0].label == (
+    assert history.gameplay_envelope.action_forecasts[0][0].label == "Why now"
+    assert history.gameplay_envelope.action_forecasts[0][0].detail == (
         "Evan is focused on the copied memo."
     )
     assert any(

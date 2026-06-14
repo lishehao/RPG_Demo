@@ -169,6 +169,7 @@ class GameplayChip(BaseModel):
 
     label: str = Field(min_length=1, max_length=80)
     tone: GameplayChipTone = "shift"
+    detail: str | None = Field(default=None, max_length=140)
 
 
 class GameplayPressureTrack(BaseModel):

@@ -257,12 +257,14 @@ def _prepend_gameplay_chip(
     label: str,
     tone: GameplayChipTone,
     *,
+    detail: str | None = None,
     max_length: int = 64,
 ) -> bool:
     compact = _gameplay_label(label, max_length=max_length)
     if not compact or any(chip.label == compact for chip in chips):
         return False
-    chips.insert(0, GameplayChip(label=compact, tone=tone))
+    compact_detail = _gameplay_label(detail or "", max_length=140) if detail else None
+    chips.insert(0, GameplayChip(label=compact, tone=tone, detail=compact_detail))
     return True
 
 
@@ -479,9 +481,10 @@ def _build_gameplay_envelope(
             if 0 <= context.option_index < len(action_forecasts):
                 live_enriched = _prepend_gameplay_chip(
                     action_forecasts[context.option_index],
-                    context.reason,
+                    "Why now",
                     "shift",
-                    max_length=60,
+                    detail=context.reason,
+                    max_length=24,
                 ) or live_enriched
 
     if not impact and current_inventory:
