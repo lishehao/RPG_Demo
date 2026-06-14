@@ -160,6 +160,42 @@ class InventoryDelta(BaseModel):
     reason: str = Field(default="", max_length=120)
 
 
+GameplayChipTone = Literal["gain", "cost", "unlock", "shift"]
+
+
+class GameplayChip(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = Field(min_length=1, max_length=80)
+    tone: GameplayChipTone = "shift"
+
+
+class GameplayPressureTrack(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=40)
+    label: str = Field(min_length=1, max_length=40)
+    value: str = Field(min_length=1, max_length=80)
+    tone: GameplayChipTone = "shift"
+
+
+class GameplayEnvelope(BaseModel):
+    """Optional typed play-state summary attached to turn responses.
+
+    This is intentionally small and tolerant: older clients can ignore it,
+    and newer clients still derive their own view if it is absent.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    source: Literal["backend"] = "backend"
+    objective: str | None = Field(default=None, max_length=140)
+    tracks: list[GameplayPressureTrack] = Field(default_factory=list, max_length=6)
+    action_forecasts: list[list[GameplayChip]] = Field(default_factory=list, max_length=6)
+    impact: list[GameplayChip] = Field(default_factory=list, max_length=6)
+    opportunities: list[GameplayChip] = Field(default_factory=list, max_length=6)
+
+
 AgentPlanSource = Literal["deterministic_v1"]
 AgentEventType = Literal["agent_plan", "step_judge", "contract_judge"]
 JudgeSource = Literal["deterministic_v1"]
@@ -1014,6 +1050,7 @@ class StoryHistoryResponse(BaseModel):
     session: NarrativeSessionSummary
     messages: list[StoryMessage]
     agent_events: list[NarrativeAgentEvent] = Field(default_factory=list)
+    gameplay_envelope: GameplayEnvelope | None = None
 
 
 class AdvanceTurnRequest(BaseModel):
@@ -1036,6 +1073,7 @@ class AdvanceTurnResponse(BaseModel):
     narrator_message: StoryMessage
     agent_plan: AgentPlan | None = None
     agent_events: list[NarrativeAgentEvent] = Field(default_factory=list)
+    gameplay_envelope: GameplayEnvelope | None = None
     # Surfaced when this turn was the last of the budget — the engine has
     # already generated and persisted the ending. Frontend uses this to
     # render the ending screen without a follow-up GET.

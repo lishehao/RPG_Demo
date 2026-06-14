@@ -23,6 +23,10 @@ from rpg_backend.narrative.contracts import (
     EndingDistributionEntry,
     EndingDistributionResponse,
     LocalizedText,
+    GameplayChip,
+    GameplayChipTone,
+    GameplayEnvelope,
+    GameplayPressureTrack,
     LLMCallSourceLabel,
     LLMCallStatus,
     LLMCallEventListResponse,
@@ -220,6 +224,205 @@ def _generate_template_id() -> str:
 
 def _generate_session_id() -> str:
     return f"sess_{secrets.token_hex(6)}"
+
+
+_NEGATIVE_NPC_SHIFTS = {"colder", "wary", "broken"}
+_POSITIVE_NPC_SHIFTS = {"warmer"}
+
+
+def _gameplay_label(value: str | None, *, max_length: int = 64) -> str:
+    compact = normalize_whitespace(value or "")
+    if len(compact) <= max_length:
+        return compact
+    return f"{compact[: max(0, max_length - 1)].strip()}…"
+
+
+def _add_gameplay_chip(
+    chips: list[GameplayChip],
+    label: str,
+    tone: GameplayChipTone,
+    *,
+    max_length: int = 64,
+) -> None:
+    compact = _gameplay_label(label, max_length=max_length)
+    if not compact or any(chip.label == compact for chip in chips):
+        return
+    chips.append(GameplayChip(label=compact, tone=tone))
+
+
+def _gameplay_forecast_for_option(option: StoryOption) -> list[GameplayChip]:
+    haystack = normalize_whitespace(
+        f"{option.label} {option.hint} {option.handle}"
+    ).casefold()
+    chips: list[GameplayChip] = []
+    if re.search(
+        r"\b(wait|watch|stall|delay|countdown|time|minute|clock|search|check|look|scan|follow|trail|quiet)\b",
+        haystack,
+    ):
+        _add_gameplay_chip(chips, "Time -1", "cost")
+    if re.search(
+        r"\b(confront|challenge|accuse|expose|reveal|public|announce|pressure|push|force|demand|call out|interrupt)\b",
+        haystack,
+    ):
+        _add_gameplay_chip(chips, "Pressure +1", "cost")
+    if re.search(
+        r"\b(trust|calm|cover|protect|help|ally|promise|reassure|soften|support)\b",
+        haystack,
+    ):
+        _add_gameplay_chip(chips, "Trust +1", "gain")
+    if re.search(
+        r"\b(clue|evidence|proof|recording|footage|badge|phone|message|lead|find|discover|document|receipt)\b",
+        haystack,
+    ):
+        _add_gameplay_chip(chips, "Evidence lead", "unlock")
+    if re.search(
+        r"\b(leverage|trump|blackmail|secret|threat|trade|bargain|deal)\b",
+        haystack,
+    ):
+        _add_gameplay_chip(chips, "Leverage", "unlock")
+    if re.search(
+        r"\b(risk|danger|escalate|reckless|storm|break|shatter|corner|trap)\b",
+        haystack,
+    ):
+        _add_gameplay_chip(chips, "Risk +1", "cost")
+    if not chips:
+        _add_gameplay_chip(chips, "Room read", "shift")
+    return chips[:3]
+
+
+def _gameplay_objective(
+    template: NarrativeTemplate,
+    active_role: PlayerRole | None,
+) -> str | None:
+    if template.player_goals:
+        return _gameplay_label(template.player_goals[0].goal, max_length=120)
+    if active_role is not None:
+        return _gameplay_label(active_role.hidden_objective, max_length=120)
+    return _gameplay_label(template.seed or template.title, max_length=120)
+
+
+def _gameplay_pressure_track(pulses: list[NPCPulse]) -> GameplayPressureTrack:
+    negative_count = sum(1 for pulse in pulses if pulse.shift in _NEGATIVE_NPC_SHIFTS)
+    positive_count = sum(1 for pulse in pulses if pulse.shift in _POSITIVE_NPC_SHIFTS)
+    if negative_count:
+        return GameplayPressureTrack(id="pressure", label="Pressure", value="rising", tone="cost")
+    if positive_count:
+        return GameplayPressureTrack(id="pressure", label="Pressure", value="opening", tone="gain")
+    return GameplayPressureTrack(id="pressure", label="Pressure", value="held", tone="shift")
+
+
+def _gameplay_people_track(
+    pulses: list[NPCPulse],
+    cast_name_by_id: dict[str, str],
+) -> GameplayPressureTrack:
+    names = [
+        cast_name_by_id[pulse.npc_id]
+        for pulse in pulses
+        if pulse.npc_id in cast_name_by_id
+    ]
+    if names:
+        return GameplayPressureTrack(
+            id="people",
+            label="People",
+            value=_gameplay_label(" / ".join(names[:2]), max_length=34),
+            tone="shift",
+        )
+    return GameplayPressureTrack(id="people", label="People", value="watching", tone="shift")
+
+
+def _build_gameplay_envelope(
+    *,
+    template: NarrativeTemplate,
+    session: NarrativeSession,
+    history: list[StoryMessage],
+    active_role: PlayerRole | None,
+    current_inventory: list[str],
+) -> GameplayEnvelope:
+    last_narrator = next((m for m in reversed(history) if m.role == "narrator"), None)
+    previous_player = None
+    if last_narrator is not None:
+        narrator_index = next(
+            (
+                index
+                for index, message in enumerate(history)
+                if message.role == "narrator" and message.ord == last_narrator.ord
+            ),
+            -1,
+        )
+        if narrator_index > 0 and history[narrator_index - 1].role == "player":
+            previous_player = history[narrator_index - 1]
+
+    cast_name_by_id = {member.character_id: member.display_name for member in template.cast}
+    pulses = last_narrator.npc_pulse if last_narrator is not None else []
+    playable_leverage_count = len(active_role.leverages_over_npcs) if active_role is not None else 0
+    evidence_value = (
+        f"{len(current_inventory)} held"
+        if current_inventory
+        else f"{playable_leverage_count} card{'s' if playable_leverage_count != 1 else ''}"
+        if playable_leverage_count
+        else "none"
+    )
+    turns_remaining = max(0, session.turn_budget - session.turn_count)
+
+    tracks = [
+        GameplayPressureTrack(
+            id="time",
+            label="Time",
+            value=f"{turns_remaining}/{max(1, session.turn_budget)}",
+            tone="cost" if turns_remaining <= 2 and session.turn_count > 0 else "shift",
+        ),
+        _gameplay_pressure_track(pulses),
+        _gameplay_people_track(pulses, cast_name_by_id),
+        GameplayPressureTrack(
+            id="evidence",
+            label="Evidence",
+            value=evidence_value,
+            tone="unlock" if current_inventory or playable_leverage_count else "shift",
+        ),
+    ]
+
+    impact: list[GameplayChip] = []
+    opportunities: list[GameplayChip] = []
+    if last_narrator is not None:
+        for pulse in last_narrator.npc_pulse:
+            tone: GameplayChipTone = (
+                "gain"
+                if pulse.shift in _POSITIVE_NPC_SHIFTS
+                else "cost"
+                if pulse.shift in _NEGATIVE_NPC_SHIFTS
+                else "shift"
+            )
+            _add_gameplay_chip(
+                impact,
+                f"{cast_name_by_id.get(pulse.npc_id, 'Someone')}: {pulse.shift}",
+                tone,
+            )
+        for item in (
+            last_narrator.inventory_delta.added if last_narrator.inventory_delta else []
+        ):
+            _add_gameplay_chip(impact, f"Evidence: {item}", "unlock", max_length=44)
+            _add_gameplay_chip(opportunities, f"Clue: {item}", "unlock", max_length=44)
+        for item in (
+            last_narrator.inventory_delta.removed if last_narrator.inventory_delta else []
+        ):
+            _add_gameplay_chip(impact, f"Spent: {item}", "cost", max_length=44)
+    if previous_player is not None and previous_player.played_leverage is not None:
+        _add_gameplay_chip(impact, "Leverage played", "unlock")
+    if not impact and current_inventory:
+        _add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)
+    if not impact and last_narrator is not None and last_narrator.options:
+        _add_gameplay_chip(impact, "Next moves shifted", "shift")
+
+    return GameplayEnvelope(
+        objective=_gameplay_objective(template, active_role),
+        tracks=tracks,
+        action_forecasts=[
+            _gameplay_forecast_for_option(option)
+            for option in (last_narrator.options if last_narrator is not None else [])
+        ],
+        impact=impact[:6],
+        opportunities=opportunities[:6],
+    )
 
 
 class NarrativeService:
@@ -878,12 +1081,22 @@ class NarrativeService:
         agent_events = (
             self._repo.list_agent_events(session_id) if include_agent_trace else []
         )
+        active_role = _resolve_player_role(template, session.selected_player_role_id)
+        starting_assets = active_role.starting_assets if active_role else []
+        current_inventory = compute_current_inventory(starting_assets, messages)
         # turn_count derived from message stream (narrator/player pairs)
         return StoryHistoryResponse(
             template=_summarize_template(template, viewer_user_id=player_user_id),
             session=_summarize_session(session, template),
             messages=messages,
             agent_events=agent_events,
+            gameplay_envelope=_build_gameplay_envelope(
+                template=template,
+                session=session,
+                history=messages,
+                active_role=active_role,
+                current_inventory=current_inventory,
+            ),
         )
 
     def list_llm_call_events(
@@ -1138,11 +1351,25 @@ class NarrativeService:
                 operation_latency_ms=turn_operation_latency_ms,
             )
 
+        history_after_turn = history + [player_message, turn.narrator_message]
+        session_after_turn = session.model_copy(update={"turn_count": upcoming_turn_index})
+        current_inventory_after_turn = compute_current_inventory(
+            starting_assets,
+            history_after_turn,
+        )
+
         return AdvanceTurnResponse(
             player_message=player_message,
             narrator_message=turn.narrator_message,
             agent_plan=turn.agent_plan if include_agent_trace else None,
             agent_events=turn_agent_events if include_agent_trace else [],
+            gameplay_envelope=_build_gameplay_envelope(
+                template=template,
+                session=session_after_turn,
+                history=history_after_turn,
+                active_role=active_role,
+                current_inventory=current_inventory_after_turn,
+            ),
             ending=ending_payload,
             is_complete=ending_payload is not None,
         )

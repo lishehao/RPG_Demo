@@ -1,4 +1,5 @@
 import type {
+  NarrativeGameplayEnvelope,
   NarrativeNPCPulse,
   NarrativeStoryHistoryResponse,
   NarrativeStoryMessage,
@@ -14,7 +15,7 @@ export type GameplayActionForecast = {
 }
 
 export type GameplayPressureTrack = {
-  id: "time" | "pressure" | "people" | "evidence"
+  id: string
   label: string
   value: string
   tone: GameplayChipTone
@@ -26,6 +27,7 @@ export type GameplayImpactDelta = {
 }
 
 export type GameplayEnvelope = {
+  source: "backend" | "ui-derived"
   objective: string
   objectiveSource: "goal" | "role" | "story"
   tracks: GameplayPressureTrack[]
@@ -35,6 +37,7 @@ export type GameplayEnvelope = {
 
 const NEGATIVE_SHIFTS = new Set(["colder", "wary", "broken"])
 const POSITIVE_SHIFTS = new Set(["warmer"])
+const CHIP_TONES = new Set<GameplayChipTone>(["gain", "cost", "unlock", "shift"])
 
 function textOf(...parts: Array<string | null | undefined>): string {
   return parts.filter(Boolean).join(" ").toLowerCase()
@@ -53,6 +56,86 @@ function addUniqueChip(
 ): void {
   if (chips.some((chip) => chip.label === label)) return
   chips.push({ label, tone })
+}
+
+function normalizeTone(value: unknown): GameplayChipTone {
+  return typeof value === "string" && CHIP_TONES.has(value as GameplayChipTone)
+    ? (value as GameplayChipTone)
+    : "shift"
+}
+
+function normalizeChipRows(
+  rows: NarrativeGameplayEnvelope["action_forecasts"],
+  baseRows: GameplayActionForecast[][],
+): GameplayActionForecast[][] {
+  const rowCount = Math.max(baseRows.length, rows?.length ?? 0)
+  return Array.from({ length: rowCount }, (_, index) => {
+    const sourceRow = rows?.[index] ?? []
+    const normalized = sourceRow
+      .map((chip) => ({
+        label: compactLabel(chip.label, 64),
+        tone: normalizeTone(chip.tone),
+      }))
+      .filter((chip) => chip.label.length > 0)
+      .slice(0, 3)
+    return normalized.length > 0 ? normalized : baseRows[index] ?? []
+  })
+}
+
+function normalizeChipList(
+  chips: NarrativeGameplayEnvelope["impact"],
+  max = 6,
+): GameplayImpactDelta[] {
+  const normalized: GameplayImpactDelta[] = []
+  for (const chip of chips ?? []) {
+    const label = compactLabel(chip.label, 64)
+    if (!label || normalized.some((item) => item.label === label)) continue
+    normalized.push({ label, tone: normalizeTone(chip.tone) })
+    if (normalized.length >= max) break
+  }
+  return normalized
+}
+
+function normalizeTrackList(
+  tracks: NarrativeGameplayEnvelope["tracks"],
+): GameplayPressureTrack[] {
+  return (tracks ?? [])
+    .map((track) => ({
+      id: compactLabel(track.id, 40),
+      label: compactLabel(track.label, 40),
+      value: compactLabel(track.value, 80),
+      tone: normalizeTone(track.tone),
+    }))
+    .filter((track) => track.id.length > 0 && track.label.length > 0 && track.value.length > 0)
+    .slice(0, 6)
+}
+
+function normalizeBackendEnvelope(
+  raw: NarrativeGameplayEnvelope | null | undefined,
+  base: GameplayEnvelope,
+): GameplayEnvelope | null {
+  if (!raw || raw.source !== "backend") return null
+  const tracks = normalizeTrackList(raw.tracks)
+  const impact = normalizeChipList(raw.impact)
+  const opportunities = normalizeChipList(raw.opportunities)
+  const mergedImpact = normalizeChipList([...impact, ...opportunities], 6)
+  const hasBackendShape =
+    Boolean(raw.objective && raw.objective.trim()) ||
+    tracks.length > 0 ||
+    impact.length > 0 ||
+    opportunities.length > 0 ||
+    (raw.action_forecasts ?? []).some((row) => row.length > 0)
+
+  if (!hasBackendShape) return null
+
+  return {
+    ...base,
+    source: "backend",
+    objective: raw.objective ? compactLabel(raw.objective, 92) : base.objective,
+    tracks: tracks.length > 0 ? tracks : base.tracks,
+    actionForecasts: normalizeChipRows(raw.action_forecasts, base.actionForecasts),
+    impact: mergedImpact.length > 0 ? mergedImpact.slice(0, 3) : base.impact,
+  }
 }
 
 export function deriveActionForecastChips(option: NarrativeStoryOption): GameplayActionForecast[] {
@@ -176,6 +259,7 @@ export function buildGameplayEnvelope({
   liveInventory,
   leverageCards,
   castNameById,
+  backendEnvelope,
 }: {
   story: NarrativeStoryHistoryResponse
   lastNarrator: NarrativeStoryMessage | null
@@ -186,6 +270,7 @@ export function buildGameplayEnvelope({
   liveInventory: string[]
   leverageCards: LeverageCardView[]
   castNameById: Record<string, string>
+  backendEnvelope?: NarrativeGameplayEnvelope | null
 }): GameplayEnvelope {
   const objective = objectiveForStory(story)
   const pulses = lastNarrator?.npc_pulse ?? []
@@ -198,7 +283,8 @@ export function buildGameplayEnvelope({
         : "none"
   const actionForecasts = (lastNarrator?.options ?? []).map(deriveActionForecastChips)
 
-  return {
+  const baseEnvelope: GameplayEnvelope = {
+    source: "ui-derived",
     ...objective,
     tracks: [
       {
@@ -219,4 +305,6 @@ export function buildGameplayEnvelope({
     actionForecasts,
     impact: buildImpactDeltas(lastNarrator, previousPlayerMessage, liveInventory, castNameById),
   }
+
+  return normalizeBackendEnvelope(backendEnvelope, baseEnvelope) ?? baseEnvelope
 }

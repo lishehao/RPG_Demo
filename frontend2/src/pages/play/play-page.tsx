@@ -151,7 +151,7 @@ function GameplayStatePanel({ envelope }: { envelope: GameplayEnvelope }) {
     <section
       style={ppStyles.gameplayEnvelopePanel}
       data-gameplay-envelope="true"
-      data-gameplay-envelope-source="ui-derived"
+      data-gameplay-envelope-source={envelope.source}
       aria-label={t("play.gameplay_state_label")}
     >
       <div style={ppStyles.gameplayObjectiveRow} data-gameplay-objective="normal-play">
@@ -394,6 +394,7 @@ export function PlayPage({
           return {
             ...prev,
             messages: [...updated, response.player_message, response.narrator_message],
+            gameplay_envelope: response.gameplay_envelope ?? null,
             session: {
               ...prev.session,
               turn_count: prev.session.turn_count + 1,
@@ -576,6 +577,7 @@ export function PlayPage({
     liveInventory,
     leverageCards,
     castNameById,
+    backendEnvelope: story.gameplay_envelope ?? null,
   })
   const advisorSuggestions = buildAdvisorSuggestions({
     story,

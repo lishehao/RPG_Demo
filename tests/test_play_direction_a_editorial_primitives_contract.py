@@ -250,22 +250,36 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
         assert forbidden not in fixture.casefold()
 
 
-def test_normal_play_uses_derived_gameplay_envelope_without_backend_contract_claims() -> None:
+def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     envelope = (ROOT / "frontend2/src/pages/play/play-gameplay-envelope.ts").read_text()
+    contracts = (ROOT / "frontend2/src/api/contracts.ts").read_text()
+    backend_contracts = (ROOT / "rpg_backend/narrative/contracts.py").read_text()
+    backend_service = (ROOT / "rpg_backend/narrative/service.py").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert "buildGameplayEnvelope" in envelope
     assert "deriveActionForecastChips" in envelope
+    assert "normalizeBackendEnvelope" in envelope
     assert "buildGameplayEnvelope({" in play_page
+    assert "backendEnvelope: story.gameplay_envelope ?? null" in play_page
+    assert "gameplay_envelope: response.gameplay_envelope ?? null" in play_page
     assert "<GameplayStatePanel envelope={gameplayEnvelope} />" in play_page
     assert "<GameplayImpactSummary envelope={gameplayEnvelope} />" in play_page
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
     assert 'data-gameplay-envelope="true"' in play_page
-    assert 'data-gameplay-envelope-source="ui-derived"' in play_page
+    assert "data-gameplay-envelope-source={envelope.source}" in play_page
+    assert 'source: "backend" | "ui-derived"' in envelope
+    assert 'source: "ui-derived"' in envelope
+    assert 'source: "backend"' in envelope
+    assert "export type NarrativeGameplayEnvelope" in contracts
+    assert "gameplay_envelope?: NarrativeGameplayEnvelope | null" in contracts
+    assert "class GameplayEnvelope" in backend_contracts
+    assert "gameplay_envelope: GameplayEnvelope | None = None" in backend_contracts
+    assert "_build_gameplay_envelope" in backend_service
     assert 'data-gameplay-objective="normal-play"' in play_page
     assert "data-gameplay-pressure-track={track.id}" in play_page
     assert 'data-gameplay-action-forecast="true"' in panels

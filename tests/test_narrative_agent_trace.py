@@ -250,6 +250,16 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
 
     assert response.agent_plan is None
     assert response.agent_events == []
+    assert response.gameplay_envelope is not None
+    assert response.gameplay_envelope.source == "backend"
+    assert response.gameplay_envelope.objective == "Keep the vote alive"
+    assert response.gameplay_envelope.action_forecasts
+    assert any(
+        chip.label == "Time -1"
+        for row in response.gameplay_envelope.action_forecasts
+        for chip in row
+    )
+    assert any(chip.label == "Evan: wary" for chip in response.gameplay_envelope.impact)
     assert gateway.calls[0]["user_payload"]["npc_agenda_this_turn"][0]["npc_id"] == "evan"
     assert [event.event_type for event in events] == [
         "agent_plan",
@@ -261,6 +271,9 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     assert events[1].payload.status == "pass"
     assert events[2].payload.status == "pass"
     assert history.agent_events == []
+    assert history.gameplay_envelope is not None
+    assert history.gameplay_envelope.source == "backend"
+    assert history.gameplay_envelope.tracks
     assert len(debug_history.agent_events) == 3
     assert debug_history.agent_events[0].payload == events[0].payload
 
@@ -326,6 +339,8 @@ def test_turn_endpoint_with_missing_gateway_returns_deterministic_beta_turn(tmp_
     assert body["player_message"]["content"] == "Let the witness speak"
     assert body["narrator_message"]["role"] == "narrator"
     assert body["narrator_message"]["options"]
+    assert body["gameplay_envelope"]["source"] == "backend"
+    assert body["gameplay_envelope"]["tracks"]
     assert "AI service" not in body["narrator_message"]["content"]
 
 

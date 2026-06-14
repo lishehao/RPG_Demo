@@ -607,6 +607,29 @@ export type NarrativeInventoryDelta = {
   reason: string
 }
 
+export type NarrativeGameplayChipTone = "gain" | "cost" | "unlock" | "shift"
+
+export type NarrativeGameplayChip = {
+  label: string
+  tone: NarrativeGameplayChipTone
+}
+
+export type NarrativeGameplayPressureTrack = {
+  id: string
+  label: string
+  value: string
+  tone: NarrativeGameplayChipTone
+}
+
+export type NarrativeGameplayEnvelope = {
+  source: "backend"
+  objective?: string | null
+  tracks?: NarrativeGameplayPressureTrack[]
+  action_forecasts?: NarrativeGameplayChip[][]
+  impact?: NarrativeGameplayChip[]
+  opportunities?: NarrativeGameplayChip[]
+}
+
 export type NarrativeAgentPlanSource = "deterministic_v1"
 export type NarrativeAgentEventType = "agent_plan" | "step_judge" | "contract_judge"
 export type NarrativeJudgeSource = "deterministic_v1"
@@ -1136,6 +1159,7 @@ export type NarrativeStoryHistoryResponse = {
   session: NarrativeSessionSummary
   messages: NarrativeStoryMessage[]
   agent_events?: NarrativeAgentEvent[]
+  gameplay_envelope?: NarrativeGameplayEnvelope | null
 }
 
 export type NarrativeAdvanceTurnRequest = {
@@ -1150,6 +1174,7 @@ export type NarrativeAdvanceTurnResponse = {
   narrator_message: NarrativeStoryMessage
   agent_plan?: NarrativeAgentPlan | null
   agent_events?: NarrativeAgentEvent[]
+  gameplay_envelope?: NarrativeGameplayEnvelope | null
   ending: NarrativeEnding | null
   is_complete: boolean
 }
