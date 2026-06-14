@@ -71,6 +71,11 @@ import {
 import { PlayActionJumpButton } from "./components/play-action-jump"
 import { isPlayActionAreaAwayFromViewport } from "./components/play-action-jump-utils"
 import { PlayRetryRecoveryBanner } from "./components/play-retry-recovery"
+import {
+  buildGameplayEnvelope,
+  type GameplayChipTone,
+  type GameplayEnvelope,
+} from "./play-gameplay-envelope"
 
 function leverageCardId(roleId: string | undefined, lev: NarrativePlayerLeverageOverNPC, index: number): string {
   return `lev:${roleId || "role"}:${lev.npc_id}:${index}`
@@ -131,6 +136,67 @@ function shouldUseLocalAdvanceFailureHarness(): boolean {
   const [, hashSearch = ""] = window.location.hash.split("?")
   if (!hashSearch) return false
   return new URLSearchParams(hashSearch).get("playTurnFailure") === "once"
+}
+
+function gameplayToneStyle(tone: GameplayChipTone): CSSProperties | null {
+  if (tone === "gain") return ppStyles.gameplayToneGain
+  if (tone === "cost") return ppStyles.gameplayToneCost
+  if (tone === "unlock") return ppStyles.gameplayToneUnlock
+  return null
+}
+
+function GameplayStatePanel({ envelope }: { envelope: GameplayEnvelope }) {
+  const t = useT()
+  return (
+    <section
+      style={ppStyles.gameplayEnvelopePanel}
+      data-gameplay-envelope="true"
+      data-gameplay-envelope-source="ui-derived"
+      aria-label={t("play.gameplay_state_label")}
+    >
+      <div style={ppStyles.gameplayObjectiveRow} data-gameplay-objective="normal-play">
+        <span style={ppStyles.gameplayObjectiveKicker}>{t("play.gameplay_objective_label")}</span>
+        <strong style={ppStyles.gameplayObjectiveText}>{envelope.objective}</strong>
+      </div>
+      <div style={ppStyles.gameplayTrackGrid} aria-label={t("play.gameplay_tracks_label")}>
+        {envelope.tracks.map((track) => (
+          <span
+            key={track.id}
+            style={{ ...ppStyles.gameplayTrack, ...(gameplayToneStyle(track.tone) ?? {}) }}
+            data-gameplay-pressure-track={track.id}
+          >
+            <span style={ppStyles.gameplayTrackLabel}>{track.label}</span>
+            <span style={ppStyles.gameplayTrackValue}>{track.value}</span>
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
+  const t = useT()
+  if (envelope.impact.length === 0) return null
+  return (
+    <section
+      style={ppStyles.gameplayImpactPanel}
+      data-gameplay-impact-summary="true"
+      aria-label={t("play.gameplay_impact_label")}
+    >
+      <span style={ppStyles.gameplayImpactKicker}>{t("play.gameplay_impact_label")}</span>
+      <div style={ppStyles.gameplayImpactList}>
+        {envelope.impact.map((delta, index) => (
+          <span
+            key={`${delta.label}-${index}`}
+            style={{ ...ppStyles.gameplayDeltaChip, ...(gameplayToneStyle(delta.tone) ?? {}) }}
+            data-gameplay-delta="normal-play"
+          >
+            {delta.label}
+          </span>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 export function PlayPage({
@@ -493,6 +559,24 @@ export function PlayPage({
       }
     },
   )
+  const previousPlayerForLastNarrator = (() => {
+    if (!lastNarrator) return null
+    const idx = story.messages.findIndex((m) => m.role === "narrator" && m.ord === lastNarrator.ord)
+    if (idx <= 0) return null
+    const previous = story.messages[idx - 1]
+    return previous?.role === "player" ? previous : null
+  })()
+  const gameplayEnvelope = buildGameplayEnvelope({
+    story,
+    lastNarrator,
+    previousPlayerMessage: previousPlayerForLastNarrator,
+    turnsCompleted,
+    turnsRemaining,
+    turnBudget,
+    liveInventory,
+    leverageCards,
+    castNameById,
+  })
   const advisorSuggestions = buildAdvisorSuggestions({
     story,
     lastNarrator,
@@ -547,6 +631,10 @@ export function PlayPage({
                 </div>
               ))}
             </div>
+          ) : null}
+
+          {!isComplete ? (
+            <GameplayStatePanel envelope={gameplayEnvelope} />
           ) : null}
 
           {isComplete && ending ? (
@@ -645,6 +733,10 @@ export function PlayPage({
             )
           })}
 
+          {!isComplete && !busy ? (
+            <GameplayImpactSummary envelope={gameplayEnvelope} />
+          ) : null}
+
           <AnimatePresence>
             {error ? (
               <PlayRetryRecoveryBanner
@@ -687,6 +779,7 @@ export function PlayPage({
               // state, so remount doesn't drop user typing.
               key={`actions-${lastNarrator.ord}`}
               options={lastNarrator.options}
+              actionForecasts={gameplayEnvelope.actionForecasts}
               leverageCards={leverageCards}
               roleHasNoLeverage={Boolean(story.session.player_role) && leverageCards.length === 0}
               latestNpcPulses={lastNarrator.npc_pulse ?? []}

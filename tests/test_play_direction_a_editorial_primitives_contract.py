@@ -250,6 +250,38 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
         assert forbidden not in fixture.casefold()
 
 
+def test_normal_play_uses_derived_gameplay_envelope_without_backend_contract_claims() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    envelope = (ROOT / "frontend2/src/pages/play/play-gameplay-envelope.ts").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert "buildGameplayEnvelope" in envelope
+    assert "deriveActionForecastChips" in envelope
+    assert "buildGameplayEnvelope({" in play_page
+    assert "<GameplayStatePanel envelope={gameplayEnvelope} />" in play_page
+    assert "<GameplayImpactSummary envelope={gameplayEnvelope} />" in play_page
+    assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
+    assert "actionForecasts?: GameplayActionForecast[][]" in panels
+    assert 'data-gameplay-envelope="true"' in play_page
+    assert 'data-gameplay-envelope-source="ui-derived"' in play_page
+    assert 'data-gameplay-objective="normal-play"' in play_page
+    assert "data-gameplay-pressure-track={track.id}" in play_page
+    assert 'data-gameplay-action-forecast="true"' in panels
+    assert 'data-gameplay-forecast-chip="normal-play"' in panels
+    assert 'data-gameplay-impact-summary="true"' in play_page
+    assert 'data-gameplay-delta="normal-play"' in play_page
+    assert "gameplayEnvelopePanel" in styles
+    assert "gameplayForecastChip" in styles
+    assert "gameplayImpactPanel" in styles
+    assert '"play.gameplay_objective_label": "Goal"' in strings
+    assert '"play.gameplay_impact_label": "Observed changes"' in strings
+    assert "fetch(" not in envelope
+    for forbidden in ("provider", "model", "schema", "token", "fallback", "debug"):
+        assert forbidden not in envelope.casefold()
+
+
 def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()

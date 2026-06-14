@@ -39,6 +39,7 @@ import {
   getTierSplash,
 } from "../../../shared/lib/webtoon-assets"
 import { actionPalette, ppStyles } from "../play-styles"
+import type { GameplayActionForecast } from "../play-gameplay-envelope"
 import type { ActionCommitmentSummary, LeverageCardView, PlayAdvanceAction } from "../play-types"
 import { useCompactLayout } from "../hooks/use-compact-layout"
 
@@ -2541,6 +2542,7 @@ function findActionTarget(
 
 export function ActionArea({
   options,
+  actionForecasts,
   leverageCards,
   roleHasNoLeverage,
   latestNpcPulses,
@@ -2564,6 +2566,7 @@ export function ActionArea({
   onSubmitFree,
 }: {
   options: NarrativeStoryMessage["options"]
+  actionForecasts?: GameplayActionForecast[][]
   leverageCards: LeverageCardView[]
   roleHasNoLeverage: boolean
   latestNpcPulses: NarrativeNPCPulse[]
@@ -3837,6 +3840,35 @@ export function ActionArea({
                             title={opt.hint}
                           >
                             {opt.hint}
+                          </span>
+                        ) : null}
+                        {actionForecasts?.[i]?.length ? (
+                          <span
+                            style={{
+                              ...ppStyles.gameplayForecastChipRow,
+                              ...(compactActionChrome ? ppStyles.gameplayForecastChipRowCompact : null),
+                            }}
+                            data-gameplay-action-forecast="true"
+                            aria-label={t("play.gameplay_forecast_label")}
+                          >
+                            {actionForecasts[i].map((chip) => (
+                              <span
+                                key={`${i}-${chip.label}`}
+                                style={{
+                                  ...ppStyles.gameplayForecastChip,
+                                  ...(chip.tone === "gain"
+                                    ? ppStyles.gameplayToneGain
+                                    : chip.tone === "cost"
+                                      ? ppStyles.gameplayToneCost
+                                      : chip.tone === "unlock"
+                                        ? ppStyles.gameplayToneUnlock
+                                        : {}),
+                                }}
+                                data-gameplay-forecast-chip="normal-play"
+                              >
+                                {chip.label}
+                              </span>
+                            ))}
                           </span>
                         ) : null}
                         <span
