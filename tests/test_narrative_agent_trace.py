@@ -219,11 +219,122 @@ class _TurnOnlyResponder:
                         "reason": "You kept the memo public.",
                     }
                 ],
+                "gameplay_metadata": {
+                    "state_deltas": [
+                        {
+                            "label": "Sponsor leverage surfaced",
+                            "tone": "unlock",
+                            "target": "opportunity",
+                            "confidence": "high",
+                        },
+                        {
+                            "label": "Ghost reacts",
+                            "tone": "cost",
+                            "target": "npc",
+                            "npc_id": "ghost",
+                        },
+                    ],
+                    "clue_unlocks": [
+                        {
+                            "title": "Audit copy route",
+                            "summary": "Evan's copy had to come from inside.",
+                            "state": "usable",
+                            "supports_option_index": 0,
+                        },
+                        {
+                            "title": "Impossible index",
+                            "supports_option_index": 99,
+                        },
+                    ],
+                    "opportunity_unlocks": [
+                        {
+                            "title": "Private witness window",
+                            "summary": "Evan can be isolated before the vote.",
+                            "supports_option_index": 1,
+                        }
+                    ],
+                    "next_action_context": [
+                        {
+                            "option_index": 0,
+                            "reason": "Evan is focused on the copied memo.",
+                        },
+                        {
+                            "option_index": 99,
+                            "reason": "This should be rejected.",
+                        },
+                    ],
+                    "motive_effect": {
+                        "acknowledged": True,
+                        "label": "Motive sharpened the public stance",
+                    },
+                },
             },
             response_id="fake-turn",
             usage={},
             input_characters=len(str(user_payload)),
         )
+
+
+class _MissingGameplayMetadataResponder(_TurnOnlyResponder):
+    def invoke_json(
+        self,
+        *,
+        system_prompt: str,
+        user_payload: dict[str, Any],
+        operation_name: str,
+        max_output_tokens: int | None = None,
+    ) -> ResponsesJSONResponse:
+        response = super().invoke_json(
+            system_prompt=system_prompt,
+            user_payload=user_payload,
+            operation_name=operation_name,
+            max_output_tokens=max_output_tokens,
+        )
+        response.payload.pop("gameplay_metadata", None)
+        return response
+
+
+class _InvalidGameplayMetadataResponder(_TurnOnlyResponder):
+    def invoke_json(
+        self,
+        *,
+        system_prompt: str,
+        user_payload: dict[str, Any],
+        operation_name: str,
+        max_output_tokens: int | None = None,
+    ) -> ResponsesJSONResponse:
+        response = super().invoke_json(
+            system_prompt=system_prompt,
+            user_payload=user_payload,
+            operation_name=operation_name,
+            max_output_tokens=max_output_tokens,
+        )
+        response.payload["gameplay_metadata"] = {
+            "state_deltas": [
+                {
+                    "label": "Invalid ghost pressure",
+                    "tone": "cost",
+                    "target": "npc",
+                    "npc_id": "ghost",
+                },
+                {
+                    "label": "Invalid target",
+                    "tone": "gain",
+                    "target": "not_a_track",
+                },
+            ],
+            "clue_unlocks": [
+                {"title": "Bad clue index", "supports_option_index": 99}
+            ],
+            "opportunity_unlocks": [
+                {"title": "Bad opportunity state", "state": "spent"}
+            ],
+            "next_action_context": [
+                {"option_index": 99, "reason": "This should be rejected."}
+            ],
+            "motive_effect": {"acknowledged": False, "label": "ignored"},
+        }
+        return response
 
 
 def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_path) -> None:
@@ -251,7 +362,7 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     assert response.agent_plan is None
     assert response.agent_events == []
     assert response.gameplay_envelope is not None
-    assert response.gameplay_envelope.source == "backend"
+    assert response.gameplay_envelope.source == "live_enriched"
     assert response.gameplay_envelope.objective == "Keep the vote alive"
     assert response.gameplay_envelope.action_forecasts
     assert any(
@@ -260,6 +371,30 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
         for chip in row
     )
     assert any(chip.label == "Evan: wary" for chip in response.gameplay_envelope.impact)
+    assert any(
+        chip.label == "Sponsor leverage surfaced"
+        for chip in response.gameplay_envelope.impact
+    )
+    assert any(
+        chip.label == "Motive sharpened the public stance"
+        for chip in response.gameplay_envelope.impact
+    )
+    assert any(
+        chip.label == "Clue: Audit copy route"
+        for chip in response.gameplay_envelope.opportunities
+    )
+    assert any(
+        chip.label == "Opportunity: Private witness window"
+        for chip in response.gameplay_envelope.opportunities
+    )
+    assert all(
+        chip.label != "Ghost reacts"
+        for chip in response.gameplay_envelope.impact
+    )
+    assert all(
+        chip.label != "Clue: Impossible index"
+        for chip in response.gameplay_envelope.opportunities
+    )
     assert gateway.calls[0]["user_payload"]["npc_agenda_this_turn"][0]["npc_id"] == "evan"
     assert [event.event_type for event in events] == [
         "agent_plan",
@@ -276,6 +411,48 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     assert history.gameplay_envelope.tracks
     assert len(debug_history.agent_events) == 3
     assert debug_history.agent_events[0].payload == events[0].payload
+
+
+def test_advance_keeps_backend_envelope_when_live_metadata_is_missing(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(repo)
+    repo.touch_session("sess_agent_trace", increment_turns=1)
+    service = NarrativeService(repository=repo, gateway=_MissingGameplayMetadataResponder())
+
+    response = service.advance(
+        "sess_agent_trace",
+        AdvanceTurnRequest(free_input="I keep the memo visible."),
+        player_user_id="local-dev",
+    )
+
+    assert response.gameplay_envelope is not None
+    assert response.gameplay_envelope.source == "backend"
+    assert any(chip.label == "Evan: wary" for chip in response.gameplay_envelope.impact)
+
+
+def test_advance_drops_invalid_live_metadata_without_failing_turn(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(repo)
+    repo.touch_session("sess_agent_trace", increment_turns=1)
+    service = NarrativeService(repository=repo, gateway=_InvalidGameplayMetadataResponder())
+
+    response = service.advance(
+        "sess_agent_trace",
+        AdvanceTurnRequest(free_input="I keep the memo visible."),
+        player_user_id="local-dev",
+    )
+
+    assert response.narrator_message.content
+    assert response.gameplay_envelope is not None
+    assert response.gameplay_envelope.source == "backend"
+    assert all(
+        chip.label != "Invalid ghost pressure"
+        for chip in response.gameplay_envelope.impact
+    )
+    assert all(
+        chip.label != "Clue: Bad clue index"
+        for chip in response.gameplay_envelope.opportunities
+    )
 
 
 def test_advance_with_missing_gateway_uses_deterministic_beta_turn(tmp_path) -> None:

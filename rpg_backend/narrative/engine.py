@@ -11,6 +11,8 @@ from rpg_backend.narrative.contracts import (
     CastMember,
     DirectorDecision,
     FailureCondition,
+    GameplayChip,
+    GameplayChipTone,
     Highlight,
     InventoryDelta,
     MemorySnapshot,
@@ -25,6 +27,8 @@ from rpg_backend.narrative.contracts import (
     StoryOption,
     STORY_OPTION_LABEL_MAX_LENGTH,
     TemplateLanguage,
+    TurnGameplayMetadata,
+    TurnGameplayNextActionContext,
 )
 from rpg_backend.narrative.gateway import NarrativeGatewayError, NarrativeLLMGateway
 
@@ -275,6 +279,23 @@ _TURN_SYSTEM_PROMPT = """\
     "reason": "为什么这一回合发生了交接，一句 60 字内的描述"
   }
   // ⚠️ inventory_delta 是**可选**字段——大多数回合不会有交接，**省略整个 inventory_delta 字段**。只在剧情**真的发生物件/情报交接**时输出。
+  ,
+  "gameplay_metadata": {
+    "state_deltas": [
+      {"label": "玩家可见的状态变化，如 'Lena trust +1' 或 'Pressure rises'", "tone": "gain | cost | unlock | shift", "target": "pressure | time | npc | evidence | opportunity | motive", "npc_id": "可选，必须是 cast 中角色 id", "confidence": "low | medium | high"}
+    ],
+    "clue_unlocks": [
+      {"title": "新线索名", "summary": "一句说明", "state": "discovered | usable", "supports_option_index": 0}
+    ],
+    "opportunity_unlocks": [
+      {"title": "新机会名", "summary": "一句说明", "supports_option_index": 1}
+    ],
+    "next_action_context": [
+      {"option_index": 0, "reason": "为什么这个下一步现在成立"}
+    ],
+    "motive_effect": {"acknowledged": true, "label": "内心动机如何影响行动"}
+  }
+  // ⚠️ gameplay_metadata 也是**可选**字段。只有当本回合叙述中确实出现了可玩家感知的状态变化、线索、机会或动机影响时才输出；不确定就省略。不要让它牺牲 passage/options 的质量。
 }
 
 写作要求：
@@ -713,6 +734,7 @@ class OpeningResult:
 class TurnResult:
     narrator_message: StoryMessage
     agent_plan: AgentPlan
+    gameplay_metadata: TurnGameplayMetadata | None = None
 
 
 @dataclass(frozen=True)
@@ -1229,6 +1251,11 @@ def advance_turn(
     options = _parse_options(payload.get("options") or payload.get("next_options"), language=language)
     npc_pulse = _parse_npc_pulse(payload.get("npc_pulse"), valid_ids)
     inventory_delta = _parse_inventory_delta(payload.get("inventory_delta"))
+    gameplay_metadata = _parse_gameplay_metadata(
+        payload.get("gameplay_metadata"),
+        valid_npc_ids=valid_ids,
+        option_count=len(options),
+    )
     if not passage:
         print(
             "[narrative.retry] operation=advance_turn attempt=1 error=empty_passage_field",
@@ -1245,6 +1272,11 @@ def advance_turn(
         options = _parse_options(payload.get("options") or payload.get("next_options"), language=language)
         npc_pulse = _parse_npc_pulse(payload.get("npc_pulse"), valid_ids)
         inventory_delta = _parse_inventory_delta(payload.get("inventory_delta"))
+        gameplay_metadata = _parse_gameplay_metadata(
+            payload.get("gameplay_metadata"),
+            valid_npc_ids=valid_ids,
+            option_count=len(options),
+        )
         if passage:
             print(
                 "[narrative.retry] operation=advance_turn recovered_on_attempt=2",
@@ -1263,6 +1295,7 @@ def advance_turn(
             inventory_delta=inventory_delta,
         ),
         agent_plan=agent_plan,
+        gameplay_metadata=gameplay_metadata,
     )
 
 
@@ -2451,6 +2484,207 @@ def _parse_inventory_delta(raw: Any) -> InventoryDelta | None:
         return None
     reason = str(raw.get("reason") or "").strip()[:120]
     return InventoryDelta(added=added, removed=removed, reason=reason)
+
+
+_GAMEPLAY_METADATA_TONES = {"gain", "cost", "unlock", "shift"}
+_GAMEPLAY_METADATA_TARGETS = {
+    "pressure",
+    "time",
+    "npc",
+    "evidence",
+    "opportunity",
+    "motive",
+}
+_GAMEPLAY_METADATA_CONFIDENCE = {"low", "medium", "high"}
+_GAMEPLAY_METADATA_CLUE_STATES = {"discovered", "usable"}
+
+
+def _normalize_gameplay_metadata_tone(value: Any) -> GameplayChipTone:
+    text = str(value or "").strip().casefold()
+    if text in _GAMEPLAY_METADATA_TONES:
+        return text  # type: ignore[return-value]
+    return "shift"
+
+
+def _normalize_gameplay_metadata_text(value: Any, *, max_length: int) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) <= max_length:
+        return text
+    return f"{text[: max(0, max_length - 1)].strip()}…"
+
+
+def _parse_gameplay_metadata_option_index(value: Any, *, option_count: int) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        index = int(value)
+    except (TypeError, ValueError):
+        return None
+    if 0 <= index < option_count:
+        return index
+    return None
+
+
+def _parse_gameplay_metadata_chip(
+    item: Any,
+    *,
+    valid_npc_ids: set[str],
+    max_length: int = 64,
+) -> GameplayChip | None:
+    if not isinstance(item, dict):
+        return None
+    label = _normalize_gameplay_metadata_text(item.get("label"), max_length=max_length)
+    if not label:
+        return None
+
+    npc_id = _normalize_gameplay_metadata_text(item.get("npc_id"), max_length=64)
+    if npc_id and npc_id not in valid_npc_ids:
+        return None
+
+    target = _normalize_gameplay_metadata_text(item.get("target"), max_length=32).casefold()
+    if target and target not in _GAMEPLAY_METADATA_TARGETS:
+        return None
+
+    confidence = _normalize_gameplay_metadata_text(
+        item.get("confidence"),
+        max_length=16,
+    ).casefold()
+    if confidence and confidence not in _GAMEPLAY_METADATA_CONFIDENCE:
+        return None
+
+    return GameplayChip(
+        label=label,
+        tone=_normalize_gameplay_metadata_tone(item.get("tone")),
+    )
+
+
+def _parse_gameplay_metadata_unlock_chip(
+    item: Any,
+    *,
+    option_count: int,
+    prefix: str,
+) -> GameplayChip | None:
+    if not isinstance(item, dict):
+        return None
+    title = _normalize_gameplay_metadata_text(
+        item.get("title") or item.get("label"),
+        max_length=48,
+    )
+    if not title:
+        return None
+
+    raw_index = item.get("supports_option_index")
+    if raw_index is not None and _parse_gameplay_metadata_option_index(
+        raw_index,
+        option_count=option_count,
+    ) is None:
+        return None
+
+    state = _normalize_gameplay_metadata_text(item.get("state"), max_length=24).casefold()
+    if state and state not in _GAMEPLAY_METADATA_CLUE_STATES:
+        return None
+
+    return GameplayChip(label=f"{prefix}: {title}"[:80], tone="unlock")
+
+
+def _parse_gameplay_metadata_next_action_context(
+    item: Any,
+    *,
+    option_count: int,
+) -> TurnGameplayNextActionContext | None:
+    if not isinstance(item, dict):
+        return None
+    index = _parse_gameplay_metadata_option_index(
+        item.get("option_index"),
+        option_count=option_count,
+    )
+    reason = _normalize_gameplay_metadata_text(item.get("reason"), max_length=100)
+    if index is None or not reason:
+        return None
+    return TurnGameplayNextActionContext(option_index=index, reason=reason)
+
+
+def _parse_gameplay_metadata_motive_effect(item: Any) -> GameplayChip | None:
+    if not isinstance(item, dict) or not item.get("acknowledged"):
+        return None
+    label = _normalize_gameplay_metadata_text(
+        item.get("label") or "Motive acknowledged",
+        max_length=64,
+    )
+    if not label:
+        return None
+    return GameplayChip(label=label, tone="shift")
+
+
+def _parse_gameplay_metadata(
+    raw: Any,
+    *,
+    valid_npc_ids: set[str],
+    option_count: int,
+) -> TurnGameplayMetadata | None:
+    """Tolerant parser for optional live turn gameplay metadata.
+
+    Missing or malformed metadata is deliberately non-fatal. Accepted items
+    are clipped, id/index checked, and converted into player-safe chips.
+    """
+    if not isinstance(raw, dict):
+        return None
+
+    state_deltas: list[GameplayChip] = []
+    for item in (raw.get("state_deltas") if isinstance(raw.get("state_deltas"), list) else [])[:5]:
+        chip = _parse_gameplay_metadata_chip(item, valid_npc_ids=valid_npc_ids)
+        if chip is not None and all(existing.label != chip.label for existing in state_deltas):
+            state_deltas.append(chip)
+
+    clue_unlocks: list[GameplayChip] = []
+    for item in (raw.get("clue_unlocks") if isinstance(raw.get("clue_unlocks"), list) else [])[:3]:
+        chip = _parse_gameplay_metadata_unlock_chip(
+            item,
+            option_count=option_count,
+            prefix="Clue",
+        )
+        if chip is not None and all(existing.label != chip.label for existing in clue_unlocks):
+            clue_unlocks.append(chip)
+
+    opportunity_unlocks: list[GameplayChip] = []
+    for item in (
+        raw.get("opportunity_unlocks")
+        if isinstance(raw.get("opportunity_unlocks"), list)
+        else []
+    )[:3]:
+        chip = _parse_gameplay_metadata_unlock_chip(
+            item,
+            option_count=option_count,
+            prefix="Opportunity",
+        )
+        if chip is not None and all(existing.label != chip.label for existing in opportunity_unlocks):
+            opportunity_unlocks.append(chip)
+
+    next_action_context: list[TurnGameplayNextActionContext] = []
+    for item in (
+        raw.get("next_action_context")
+        if isinstance(raw.get("next_action_context"), list)
+        else []
+    )[:3]:
+        context = _parse_gameplay_metadata_next_action_context(
+            item,
+            option_count=option_count,
+        )
+        if context is not None:
+            next_action_context.append(context)
+
+    motive_effect = _parse_gameplay_metadata_motive_effect(raw.get("motive_effect"))
+
+    metadata = TurnGameplayMetadata(
+        state_deltas=state_deltas,
+        clue_unlocks=clue_unlocks,
+        opportunity_unlocks=opportunity_unlocks,
+        next_action_context=next_action_context,
+        motive_effect=motive_effect,
+    )
+    if not metadata.has_player_visible_items and not metadata.next_action_context:
+        return None
+    return metadata
 
 
 def _parse_player_role_options(

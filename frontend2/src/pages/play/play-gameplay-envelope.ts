@@ -27,7 +27,7 @@ export type GameplayImpactDelta = {
 }
 
 export type GameplayEnvelope = {
-  source: "backend" | "ui-derived"
+  source: "backend" | "live_enriched" | "ui-derived"
   objective: string
   objectiveSource: "goal" | "role" | "story"
   tracks: GameplayPressureTrack[]
@@ -114,7 +114,7 @@ function normalizeBackendEnvelope(
   raw: NarrativeGameplayEnvelope | null | undefined,
   base: GameplayEnvelope,
 ): GameplayEnvelope | null {
-  if (!raw || raw.source !== "backend") return null
+  if (!raw || (raw.source !== "backend" && raw.source !== "live_enriched")) return null
   const tracks = normalizeTrackList(raw.tracks)
   const impact = normalizeChipList(raw.impact)
   const opportunities = normalizeChipList(raw.opportunities)
@@ -130,7 +130,7 @@ function normalizeBackendEnvelope(
 
   return {
     ...base,
-    source: "backend",
+    source: raw.source,
     objective: raw.objective ? compactLabel(raw.objective, 92) : base.objective,
     tracks: tracks.length > 0 ? tracks : base.tracks,
     actionForecasts: normalizeChipRows(raw.action_forecasts, base.actionForecasts),

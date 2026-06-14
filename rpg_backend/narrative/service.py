@@ -56,6 +56,7 @@ from rpg_backend.narrative.contracts import (
     StoryMessage,
     StoryOption,
     TemplateListResponse,
+    TurnGameplayMetadata,
     UpdateTemplateVisibilityRequest,
 )
 from rpg_backend.narrative.brief import (
@@ -243,11 +244,12 @@ def _add_gameplay_chip(
     tone: GameplayChipTone,
     *,
     max_length: int = 64,
-) -> None:
+) -> bool:
     compact = _gameplay_label(label, max_length=max_length)
     if not compact or any(chip.label == compact for chip in chips):
-        return
+        return False
     chips.append(GameplayChip(label=compact, tone=tone))
+    return True
 
 
 def _gameplay_forecast_for_option(option: StoryOption) -> list[GameplayChip]:
@@ -337,6 +339,7 @@ def _build_gameplay_envelope(
     history: list[StoryMessage],
     active_role: PlayerRole | None,
     current_inventory: list[str],
+    live_metadata: TurnGameplayMetadata | None = None,
 ) -> GameplayEnvelope:
     last_narrator = next((m for m in reversed(history) if m.role == "narrator"), None)
     previous_player = None
@@ -408,12 +411,55 @@ def _build_gameplay_envelope(
             _add_gameplay_chip(impact, f"Spent: {item}", "cost", max_length=44)
     if previous_player is not None and previous_player.played_leverage is not None:
         _add_gameplay_chip(impact, "Leverage played", "unlock")
+
+    live_enriched = False
+    if live_metadata is not None:
+        for chip in live_metadata.state_deltas:
+            live_enriched = _add_gameplay_chip(
+                impact,
+                chip.label,
+                chip.tone,
+            ) or live_enriched
+        if live_metadata.motive_effect is not None:
+            live_enriched = _add_gameplay_chip(
+                impact,
+                live_metadata.motive_effect.label,
+                live_metadata.motive_effect.tone,
+            ) or live_enriched
+        for chip in live_metadata.clue_unlocks:
+            live_enriched = _add_gameplay_chip(
+                impact,
+                chip.label,
+                chip.tone,
+                max_length=44,
+            ) or live_enriched
+            live_enriched = _add_gameplay_chip(
+                opportunities,
+                chip.label,
+                chip.tone,
+                max_length=44,
+            ) or live_enriched
+        for chip in live_metadata.opportunity_unlocks:
+            live_enriched = _add_gameplay_chip(
+                impact,
+                chip.label,
+                chip.tone,
+                max_length=44,
+            ) or live_enriched
+            live_enriched = _add_gameplay_chip(
+                opportunities,
+                chip.label,
+                chip.tone,
+                max_length=44,
+            ) or live_enriched
+
     if not impact and current_inventory:
         _add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)
     if not impact and last_narrator is not None and last_narrator.options:
         _add_gameplay_chip(impact, "Next moves shifted", "shift")
 
     return GameplayEnvelope(
+        source="live_enriched" if live_enriched else "backend",
         objective=_gameplay_objective(template, active_role),
         tracks=tracks,
         action_forecasts=[
@@ -1369,6 +1415,7 @@ class NarrativeService:
                 history=history_after_turn,
                 active_role=active_role,
                 current_inventory=current_inventory_after_turn,
+                live_metadata=turn.gameplay_metadata,
             ),
             ending=ending_payload,
             is_complete=ending_payload is not None,

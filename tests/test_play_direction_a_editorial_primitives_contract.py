@@ -272,14 +272,19 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
     assert 'data-gameplay-envelope="true"' in play_page
     assert "data-gameplay-envelope-source={envelope.source}" in play_page
-    assert 'source: "backend" | "ui-derived"' in envelope
+    assert 'source: "backend" | "live_enriched" | "ui-derived"' in envelope
     assert 'source: "ui-derived"' in envelope
     assert 'source: "backend"' in envelope
+    assert 'source: raw.source' in envelope
     assert "export type NarrativeGameplayEnvelope" in contracts
+    assert 'source: "backend" | "live_enriched"' in contracts
     assert "gameplay_envelope?: NarrativeGameplayEnvelope | null" in contracts
     assert "class GameplayEnvelope" in backend_contracts
+    assert 'GameplayEnvelopeSource = Literal["backend", "live_enriched"]' in backend_contracts
+    assert "class TurnGameplayMetadata" in backend_contracts
     assert "gameplay_envelope: GameplayEnvelope | None = None" in backend_contracts
     assert "_build_gameplay_envelope" in backend_service
+    assert "live_metadata: TurnGameplayMetadata | None = None" in backend_service
     assert 'data-gameplay-objective="normal-play"' in play_page
     assert "data-gameplay-pressure-track={track.id}" in play_page
     assert 'data-gameplay-action-forecast="true"' in panels

@@ -622,7 +622,7 @@ export type NarrativeGameplayPressureTrack = {
 }
 
 export type NarrativeGameplayEnvelope = {
-  source: "backend"
+  source: "backend" | "live_enriched"
   objective?: string | null
   tracks?: NarrativeGameplayPressureTrack[]
   action_forecasts?: NarrativeGameplayChip[][]

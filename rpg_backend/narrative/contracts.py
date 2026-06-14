@@ -161,6 +161,7 @@ class InventoryDelta(BaseModel):
 
 
 GameplayChipTone = Literal["gain", "cost", "unlock", "shift"]
+GameplayEnvelopeSource = Literal["backend", "live_enriched"]
 
 
 class GameplayChip(BaseModel):
@@ -188,12 +189,46 @@ class GameplayEnvelope(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    source: Literal["backend"] = "backend"
+    source: GameplayEnvelopeSource = "backend"
     objective: str | None = Field(default=None, max_length=140)
     tracks: list[GameplayPressureTrack] = Field(default_factory=list, max_length=6)
     action_forecasts: list[list[GameplayChip]] = Field(default_factory=list, max_length=6)
     impact: list[GameplayChip] = Field(default_factory=list, max_length=6)
     opportunities: list[GameplayChip] = Field(default_factory=list, max_length=6)
+
+
+class TurnGameplayNextActionContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    option_index: int = Field(ge=0, le=10)
+    reason: str = Field(min_length=1, max_length=100)
+
+
+class TurnGameplayMetadata(BaseModel):
+    """Accepted optional gameplay metadata from a live turn.
+
+    The engine parser constructs this after validating ids, option indices,
+    lengths, and enum-like values. It is never rendered raw to players.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    state_deltas: list[GameplayChip] = Field(default_factory=list, max_length=5)
+    clue_unlocks: list[GameplayChip] = Field(default_factory=list, max_length=3)
+    opportunity_unlocks: list[GameplayChip] = Field(default_factory=list, max_length=3)
+    next_action_context: list[TurnGameplayNextActionContext] = Field(
+        default_factory=list, max_length=3,
+    )
+    motive_effect: GameplayChip | None = None
+
+    @property
+    def has_player_visible_items(self) -> bool:
+        return bool(
+            self.state_deltas
+            or self.clue_unlocks
+            or self.opportunity_unlocks
+            or self.motive_effect is not None
+        )
 
 
 AgentPlanSource = Literal["deterministic_v1"]
