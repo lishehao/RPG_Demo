@@ -297,6 +297,7 @@ _TURN_SYSTEM_PROMPT = """\
   }
   // ⚠️ gameplay_metadata 也是**可选**字段，但当本回合清楚改变了人物态度、压力/时间、证据线索、机会窗口，或承认了玩家的 inner motive 时，优先输出一个很小的 metadata block。
   // 只写 1-3 个玩家可见条目即可，不要穷举；label/title 要像 UI chip，短、自然、无内部术语。
+  // next_action_context 只解释某个下一步为什么现在成立或更有针对性；给最关键的 1-2 个 option reason 即可。
   // npc_id 必须来自 cast；supports_option_index / option_index 是 0-based，必须指向本次输出 options 的有效下标。
   // 没有真实玩家可见变化时，直接省略 gameplay_metadata；不要输出空数组占位对象。它不能牺牲 passage/options 的质量。
 }

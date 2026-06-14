@@ -1,0 +1,93 @@
+{
+  "project": "RPG Demo / Tiny Stories - Gameplay Metadata Quality Pass 3H",
+  "session_id": "sess_3h_quality_awards",
+  "frontend_url": "http://127.0.0.1:5350/#/play/sess_3h_quality_awards",
+  "health": {
+    "text_llm": "configured",
+    "create_story_butler": "configured",
+    "story_brief": "configured",
+    "opening": "configured",
+    "play_turns": "configured"
+  },
+  "bounded_live_validation": {
+    "live_turns_attempted": 3,
+    "live_turns_succeeded": 3,
+    "accepted_metadata_turns": 1,
+    "omitted_metadata_turns": 2,
+    "fallback_reasons": []
+  },
+  "accepted_metadata_sample": {
+    "state_deltas": [
+      "Marcus suspicion shifts onto Ari",
+      "Arthur feels cornered by both sides"
+    ],
+    "clue_unlocks": [
+      "Clue: Badge log implicates Ari"
+    ],
+    "next_action_context": [
+      "Marcus just used your own badge access against you-countering now could shift blame back.",
+      "The log is the only objective record; reading it aloud might reveal another person's entry."
+    ]
+  },
+  "browser_evidence": {
+    "gameplay_loop_fixture": {
+      "viewport_width": 390,
+      "overflow": false,
+      "deltas_visible": [
+        "Public pressure +1",
+        "Green-room badge discovered",
+        "Arthur must answer"
+      ],
+      "unlocked_action_count": 2
+    },
+    "normal_play_reload": {
+      "viewport_width": 390,
+      "source": "live_enriched",
+      "reason_chips_visible": true,
+      "forecast_chip_samples": [
+        "Marcus just used your own badge access against you-counteri...",
+        "The log is the only objective record; reading it aloud migh...",
+        "Pressure +1",
+        "Evidence lead"
+      ],
+      "console_warn_error_count": 0,
+      "overflow": false
+    }
+  },
+  "telemetry_summary": [
+    {
+      "operation": "narrative.advance_turn",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 11717,
+      "input_tokens": 6863,
+      "cached_input_tokens": 1024,
+      "output_tokens": 538,
+      "total_tokens": 7401,
+      "fallback_reason": ""
+    },
+    {
+      "operation": "narrative.advance_turn",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 10860,
+      "input_tokens": 7167,
+      "cached_input_tokens": 1152,
+      "output_tokens": 598,
+      "total_tokens": 7765,
+      "fallback_reason": ""
+    },
+    {
+      "operation": "narrative.advance_turn",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 13592,
+      "input_tokens": 7384,
+      "cached_input_tokens": 5760,
+      "output_tokens": 897,
+      "total_tokens": 8281,
+      "fallback_reason": ""
+    }
+  ],
+  "quality_verdict": "Accepted live metadata now produces specific person-state, clue, and next-action reason chips. The bounded sample still omitted optional metadata on 2 of 3 turns, so acceptance remains stochastic, but fallback stayed clean and useful."
+}

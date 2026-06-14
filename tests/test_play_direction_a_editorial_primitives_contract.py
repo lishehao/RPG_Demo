@@ -289,6 +289,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "live_metadata: TurnGameplayMetadata | None = None" in backend_service
     assert "metadata_to_merge = live_metadata" in backend_service
     assert "metadata_to_merge = last_narrator.gameplay_metadata" in backend_service
+    assert "for context in metadata_to_merge.next_action_context" in backend_service
+    assert "_prepend_gameplay_chip(" in backend_service
+    assert "action_forecasts[context.option_index]" in backend_service
+    assert "action_forecasts=[row[:3] for row in action_forecasts]" in backend_service
     assert "gameplay_metadata_json" in backend_repository
     assert "TurnGameplayMetadata.model_validate" in backend_repository
     assert 'data-gameplay-objective="normal-play"' in play_page

@@ -196,6 +196,7 @@ def test_turn_prompt_keeps_gameplay_metadata_optional_and_compact() -> None:
     assert "gameplay_metadata 也是**可选**字段" in prompt
     assert "优先输出一个很小的 metadata block" in prompt
     assert "只写 1-3 个玩家可见条目即可" in prompt
+    assert "next_action_context 只解释某个下一步为什么现在成立或更有针对性" in prompt
     assert "npc_id 必须来自 cast" in prompt
     assert "0-based" in prompt
     assert "不要输出空数组占位对象" in prompt
@@ -221,7 +222,7 @@ class _TurnOnlyResponder:
             payload={
                 "passage": "Evan taps the draft memo and asks why the board never saw it.",
                 "options": [
-                    {"label": "[Probe] Ask Evan who copied it", "hint": "Test the source", "handle": "probe"},
+                    {"label": "[Probe] Search evidence under pressure", "hint": "Risk the clock for proof", "handle": "probe"},
                     {"label": "[Counter] Show the audit seal", "hint": "Spend pressure", "handle": "seal"},
                     {"label": "[Watch] Let Mira answer first", "hint": "Delay", "handle": "watch"},
                 ],
@@ -384,6 +385,19 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
         for row in response.gameplay_envelope.action_forecasts
         for chip in row
     )
+    assert any(
+        chip.label == "Evan is focused on the copied memo."
+        for chip in response.gameplay_envelope.action_forecasts[0]
+    )
+    assert response.gameplay_envelope.action_forecasts[0][0].label == (
+        "Evan is focused on the copied memo."
+    )
+    assert len(response.gameplay_envelope.action_forecasts[0]) == 3
+    assert all(
+        chip.label != "This should be rejected."
+        for row in response.gameplay_envelope.action_forecasts
+        for chip in row
+    )
     assert any(chip.label == "Evan: wary" for chip in response.gameplay_envelope.impact)
     assert any(
         chip.label == "Sponsor leverage surfaced"
@@ -423,6 +437,13 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     assert history.gameplay_envelope is not None
     assert history.gameplay_envelope.source == "live_enriched"
     assert history.gameplay_envelope.tracks
+    assert any(
+        chip.label == "Evan is focused on the copied memo."
+        for chip in history.gameplay_envelope.action_forecasts[0]
+    )
+    assert history.gameplay_envelope.action_forecasts[0][0].label == (
+        "Evan is focused on the copied memo."
+    )
     assert any(
         chip.label == "Sponsor leverage surfaced"
         for chip in history.gameplay_envelope.impact

@@ -252,6 +252,20 @@ def _add_gameplay_chip(
     return True
 
 
+def _prepend_gameplay_chip(
+    chips: list[GameplayChip],
+    label: str,
+    tone: GameplayChipTone,
+    *,
+    max_length: int = 64,
+) -> bool:
+    compact = _gameplay_label(label, max_length=max_length)
+    if not compact or any(chip.label == compact for chip in chips):
+        return False
+    chips.insert(0, GameplayChip(label=compact, tone=tone))
+    return True
+
+
 def _gameplay_forecast_for_option(option: StoryOption) -> list[GameplayChip]:
     haystack = normalize_whitespace(
         f"{option.label} {option.hint} {option.handle}"
@@ -416,6 +430,11 @@ def _build_gameplay_envelope(
     if metadata_to_merge is None and last_narrator is not None:
         metadata_to_merge = last_narrator.gameplay_metadata
 
+    action_forecasts = [
+        _gameplay_forecast_for_option(option)
+        for option in (last_narrator.options if last_narrator is not None else [])
+    ]
+
     live_enriched = False
     if metadata_to_merge is not None:
         for chip in metadata_to_merge.state_deltas:
@@ -456,6 +475,14 @@ def _build_gameplay_envelope(
                 chip.tone,
                 max_length=44,
             ) or live_enriched
+        for context in metadata_to_merge.next_action_context:
+            if 0 <= context.option_index < len(action_forecasts):
+                live_enriched = _prepend_gameplay_chip(
+                    action_forecasts[context.option_index],
+                    context.reason,
+                    "shift",
+                    max_length=60,
+                ) or live_enriched
 
     if not impact and current_inventory:
         _add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)
@@ -466,10 +493,7 @@ def _build_gameplay_envelope(
         source="live_enriched" if live_enriched else "backend",
         objective=_gameplay_objective(template, active_role),
         tracks=tracks,
-        action_forecasts=[
-            _gameplay_forecast_for_option(option)
-            for option in (last_narrator.options if last_narrator is not None else [])
-        ],
+        action_forecasts=[row[:3] for row in action_forecasts],
         impact=impact[:6],
         opportunities=opportunities[:6],
     )
