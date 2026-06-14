@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     story_library_db_path: str = "artifacts/story_library.sqlite3"
     runtime_state_db_path: str = "artifacts/runtime_state.sqlite3"
     default_actor_id: str = "local-dev"
+    agent_trace_reviewer_user_ids: str = ""
+    agent_trace_reviewer_usernames: str = "portfolio_reviewer"
     auth_session_ttl_seconds: int = Field(default=60 * 60 * 24 * 30, ge=300)
     auth_session_cookie_name: str = "rpg_demo_session"
     auth_session_cookie_secure: bool = False
@@ -184,11 +186,19 @@ class Settings(BaseSettings):
         return self._clean_optional(self.responses_api_key) or self._clean_optional(self.gateway_api_key)
 
     def responses_api_key_pool(self) -> tuple[str, ...]:
-        parsed = self._parse_api_key_pool(self.responses_api_keys)
-        if parsed:
-            return parsed
+        keys: list[str] = []
+        seen: set[str] = set()
+        for candidate in self._parse_api_key_pool(self.responses_api_keys):
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            keys.append(candidate)
+        if keys:
+            return tuple(keys)
         resolved = self.resolved_responses_api_key()
-        return (resolved,) if resolved else ()
+        if resolved:
+            keys.append(resolved)
+        return tuple(keys)
 
     def resolved_responses_model(self) -> str:
         return self._clean_optional(self.responses_model) or self._clean_optional(self.gateway_model)
@@ -209,11 +219,15 @@ class Settings(BaseSettings):
         )
 
     def author_responses_api_key_pool(self) -> tuple[str, ...]:
-        parsed = self._parse_api_key_pool(self.responses_author_api_keys)
-        if parsed:
-            return parsed
         keys: list[str] = []
         seen: set[str] = set()
+        for candidate in self._parse_api_key_pool(self.responses_author_api_keys):
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            keys.append(candidate)
+        if keys:
+            return tuple(keys)
         author_key = self.resolved_author_responses_api_key()
         if author_key:
             keys.append(author_key)
@@ -269,11 +283,15 @@ class Settings(BaseSettings):
         return tuple(hosts)
 
     def play_responses_api_key_pool(self) -> tuple[str, ...]:
-        parsed = self._parse_api_key_pool(self.responses_play_api_keys)
-        if parsed:
-            return parsed
         keys: list[str] = []
         seen: set[str] = set()
+        for candidate in self._parse_api_key_pool(self.responses_play_api_keys):
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            keys.append(candidate)
+        if keys:
+            return tuple(keys)
         play_key = self.resolved_play_responses_api_key()
         if play_key:
             keys.append(play_key)

@@ -1,109 +1,80 @@
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
   NarrativeDifficulty,
+  NarrativeStoryBriefAdvisorResponse,
   NarrativeTemplateLanguage,
   NarrativeTemplateVisibility,
 } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
 import { useAuth } from "../../app/auth-context"
 import { friendlyError } from "../../shared/lib/friendly-error"
-import { useLanguage, useT, type Lang, type StringKey } from "../../shared/lib/i18n"
-import { itemTransition, transitions } from "../../shared/lib/motion-presets"
-import { PAGE_BG } from "../../shared/lib/webtoon-assets"
+import { useLanguage, useT, type StringKey } from "../../shared/lib/i18n"
+import { itemTransition } from "../../shared/lib/motion-presets"
+import {
+  advanceStoryGuideLoop,
+  buildStoryGuideLedger,
+  canShapeStoryBrief,
+  createInitialStoryGuideState,
+  markStoryGuideAnalyzing,
+  markStoryGuideBriefResult,
+  type StoryGuideConversationState,
+  type StoryGuideLoopState,
+  type StoryGuideNodeName,
+  type StoryGuideSettingDeltas,
+} from "../../shared/lib/story-guide-loop"
+import { takeCreateDraftHandoff } from "../../shared/lib/create-draft-handoff"
 
-const SEED_EXAMPLE_KEYS: StringKey[] = [
-  "create.example_seed_1",
-  "create.example_seed_2",
-  "create.example_seed_3",
-  "create.example_seed_4",
-]
+import { BUSY_STAGE_COUNT, BusyStages, BusyTip, StoryBriefCard } from "./components/create-flow-panels"
+import { BUDGET_OPTIONS, DIFFICULTY_OPTIONS, LONG_GENERATE_HANDOFF_MIN_MS, LONG_GENERATE_HANDOFF_THRESHOLD_MS, SEED_EXAMPLE_KEYS, STORY_BUTLER_AVATAR, STORY_LANGUAGE_OPTIONS, TENSION_PROFILE_OPTIONS, VISIBILITY_KEY_MAP, VISIBILITY_OPTION_IDS, briefKey, makeGuestHandle } from "./create-options"
+import { cpStyles } from "./create-styles"
+import type { GuideMessage, StoryShapeRead, TensionProfileChoice } from "./create-types"
+import { useCompactLayout } from "./hooks/use-compact-layout"
 
-const VISIBILITY_OPTION_IDS: NarrativeTemplateVisibility[] = ["private", "unlisted", "public"]
-
-type BudgetOptionMeta = {
-  budget: number
-  labelKey: StringKey
-  timeKey: StringKey
-  descKey: StringKey
+type GuideTurnLike = {
+  state: StoryGuideLoopState
+  node: StoryGuideNodeName
+  status: StoryGuideConversationState
+  reply: string
+  acceptedText: boolean
+  blocked: boolean
+  canShapeBrief: boolean
+  settings?: {
+    turnBudget?: StoryGuideSettingDeltas["turnBudget"] | null
+    difficulty?: StoryGuideSettingDeltas["difficulty"] | null
+    language?: StoryGuideSettingDeltas["language"] | null
+    tensionProfile?: StoryGuideSettingDeltas["tensionProfile"] | null
+    privacyIntent?: StoryGuideSettingDeltas["privacyIntent"] | null
+  } | null
+  ledger?: GuideMessage["ledger"] | null
 }
 
-const BUDGET_OPTIONS: BudgetOptionMeta[] = [
-  {
-    budget: 8,
-    labelKey: "create.budget_short_label",
-    timeKey: "create.budget_short_time",
-    descKey: "create.budget_short_desc",
-  },
-  {
-    budget: 12,
-    labelKey: "create.budget_medium_label",
-    timeKey: "create.budget_medium_time",
-    descKey: "create.budget_medium_desc",
-  },
-  {
-    budget: 20,
-    labelKey: "create.budget_long_label",
-    timeKey: "create.budget_long_time",
-    descKey: "create.budget_long_desc",
-  },
-]
-
-type DifficultyOptionMeta = {
-  id: NarrativeDifficulty
-  labelKey: StringKey
-  taglineKey: StringKey
-  descKey: StringKey
-}
-
-const DIFFICULTY_OPTIONS: DifficultyOptionMeta[] = [
-  {
-    id: "story",
-    labelKey: "create.difficulty_story_label",
-    taglineKey: "create.difficulty_story_tagline",
-    descKey: "create.difficulty_story_desc",
-  },
-  {
-    id: "gauntlet",
-    labelKey: "create.difficulty_gauntlet_label",
-    taglineKey: "create.difficulty_gauntlet_tagline",
-    descKey: "create.difficulty_gauntlet_desc",
-  },
-]
-
-// Story-language options — controls the locale of generated narration
-// and NPC dialogue. Immutable per template once created.
-const STORY_LANGUAGE_OPTIONS: Record<Lang, Array<{
-  id: NarrativeTemplateLanguage
-  label: string
-  desc: string
-}>> = {
-  zh: [
-    { id: "zh", label: "中文", desc: "NPC 对白和叙述都用简体中文" },
-    { id: "en", label: "英文", desc: "Narration and NPC dialogue in English" },
-  ],
-  en: [
-    { id: "zh", label: "Chinese", desc: "Narration and NPC dialogue in Simplified Chinese" },
-    { id: "en", label: "English", desc: "Narration and NPC dialogue in English" },
-  ],
-}
-
-const VISIBILITY_KEY_MAP: Record<
-  NarrativeTemplateVisibility,
-  { labelKey: StringKey; descKey: StringKey }
-> = {
-  private: {
-    labelKey: "create.visibility_private_label",
-    descKey: "create.visibility_private_desc",
-  },
-  unlisted: {
-    labelKey: "create.visibility_unlisted_label",
-    descKey: "create.visibility_unlisted_desc",
-  },
-  public: {
-    labelKey: "create.visibility_public_label",
-    descKey: "create.visibility_public_desc",
-  },
+function normalizeGuideReplyText(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return raw
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    if (parsed && typeof parsed === "object" && "reply" in parsed) {
+      const reply = (parsed as { reply?: unknown }).reply
+      if (typeof reply === "string" && reply.trim()) {
+        return normalizeGuideReplyText(reply)
+      }
+    }
+  } catch {
+    const match = trimmed.match(/"reply"\s*:\s*("(?:(?:\\.)|[^"\\])*")/s)
+    if (match?.[1]) {
+      try {
+        const reply = JSON.parse(match[1]) as unknown
+        if (typeof reply === "string" && reply.trim()) return reply.trim()
+      } catch {
+        return match[1].replace(/^"|"$/g, "").trim()
+      }
+    }
+  }
+  if (/^\s*\{/.test(trimmed) || /"reply"\s*:/.test(trimmed)) {
+    return ""
+  }
+  return trimmed
 }
 
 export function CreatePage({
@@ -119,18 +90,38 @@ export function CreatePage({
   const t = useT()
   const compactLayout = useCompactLayout()
   const [seed, setSeed] = useState("")
+  const [draftTurn, setDraftTurn] = useState("")
+  const [guideLoopState, setGuideLoopState] = useState(() => createInitialStoryGuideState(uiLang))
+  const [chatMessages, setChatMessages] = useState<GuideMessage[]>([])
+  const [guideBusy, setGuideBusy] = useState(false)
+  const [correctionCount, setCorrectionCount] = useState(0)
   const [visibility, setVisibility] = useState<NarrativeTemplateVisibility>("private")
+  const [privacySetupVisible, setPrivacySetupVisible] = useState(true)
+  const [privacyPromptVisible, setPrivacyPromptVisible] = useState(false)
+  const [privacyRecordedVisibility, setPrivacyRecordedVisibility] =
+    useState<NarrativeTemplateVisibility | null>(null)
   const [turnBudget, setTurnBudget] = useState<number>(12)
   const [difficulty, setDifficulty] = useState<NarrativeDifficulty>("story")
-  const [settingsOpen, setSettingsOpen] = useState(false)
   // Default the story language to whatever the UI is in. The user can
   // override — the field is independent of UI language once chosen
   // (you can browse in English but write a Chinese story, etc.).
   const [storyLanguage, setStoryLanguage] = useState<NarrativeTemplateLanguage>(uiLang)
+  const [desiredTensionProfile, setDesiredTensionProfile] = useState<TensionProfileChoice>("auto")
   const [busy, setBusy] = useState(false)
+  const [briefBusy, setBriefBusy] = useState(false)
+  const [openingHandoffLabelKey, setOpeningHandoffLabelKey] = useState<StringKey | null>(null)
   const [busyElapsedSeconds, setBusyElapsedSeconds] = useState(0)
+  const [briefBusyElapsedSeconds, setBriefBusyElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [briefError, setBriefError] = useState<string | null>(null)
+  const [briefResponse, setBriefResponse] = useState<NarrativeStoryBriefAdvisorResponse | null>(null)
+  const [briefResponseKey, setBriefResponseKey] = useState<string | null>(null)
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
+  const briefMessageRef = useRef<HTMLDivElement | null>(null)
+  const transcriptEndRef = useRef<HTMLDivElement | null>(null)
+  const guestHandleRef = useRef<string | null>(null)
+  const autoBriefKeyRef = useRef<string | null>(null)
   // Synchronous lock to prevent duplicate creates if the user manages to
   // double-click before React flushes setBusy(true). useState alone doesn't
   // guarantee that — React batches state updates, so two clicks within
@@ -140,53 +131,199 @@ export function CreatePage({
   const seedExamples = useMemo(() => SEED_EXAMPLE_KEYS.map((k) => t(k)), [t])
   const visibleSeedExamples = compactLayout ? seedExamples.slice(0, 3) : seedExamples
   const hasSeed = Boolean(seed.trim())
-  const showCreateAction = true
-  const showBackAction = hasSeed || busy
-  const showSeedExamples = !hasSeed && !busy
+  const currentBriefKey = briefKey(seed, storyLanguage, desiredTensionProfile)
+  const activeBriefResponse =
+    briefResponse && briefResponseKey === currentBriefKey ? briefResponse : null
+  const activeBrief = activeBriefResponse?.brief ?? null
+  const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
+  const guideReadyToBrief = guideLoopState.status === "ready_to_brief" && canShapeStoryBrief(guideLoopState)
+  const privacyIntroComplete = Boolean(privacyRecordedVisibility)
+  const showSeedExamples = privacyIntroComplete && !hasSeed && !busy && !briefBusy && !guideBusy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
   const selectedDifficulty = DIFFICULTY_OPTIONS.find((o) => o.id === difficulty) ?? DIFFICULTY_OPTIONS[0]
   const selectedLanguage =
     STORY_LANGUAGE_OPTIONS[uiLang].find((o) => o.id === storyLanguage) ?? STORY_LANGUAGE_OPTIONS[uiLang][0]
   const selectedVisibility = VISIBILITY_KEY_MAP[visibility]
-  const settingsSummary = [
-    t(selectedBudget.labelKey),
-    t(selectedDifficulty.labelKey),
-    selectedLanguage.label,
-    t(selectedVisibility.labelKey),
-  ].join(" · ")
+  const selectedTension =
+    TENSION_PROFILE_OPTIONS.find((o) => o.id === desiredTensionProfile) ?? TENSION_PROFILE_OPTIONS[0]
+  const storyShapeRead: StoryShapeRead = {
+    runLength: `${t(selectedBudget.labelKey)} · ${t(selectedBudget.timeKey)}`,
+    pressureMode: t(selectedDifficulty.labelKey),
+    storyLanguage: selectedLanguage.label,
+    tone: t(selectedTension.labelKey),
+  }
+  const guideMessages = useMemo<GuideMessage[]>(
+    () => {
+      if (!privacyIntroComplete) {
+        return [
+          {
+            id: "guide-privacy-open",
+            speaker: "guide",
+            text: t("create.privacy_intro_question"),
+          },
+          ...chatMessages,
+        ]
+      }
+      return chatMessages
+    },
+    [chatMessages, privacyIntroComplete, t],
+  )
   const submitModKey = useMemo(() => {
     if (typeof navigator === "undefined") return "Ctrl"
     return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
   }, [])
-  const busyLabel =
-    busyElapsedSeconds > 0
+  const busyLabel = openingHandoffLabelKey
+    ? t(openingHandoffLabelKey)
+    : busyElapsedSeconds >= 45
+      ? t("create.building_recovering_elapsed", { seconds: busyElapsedSeconds })
+      : busyElapsedSeconds >= 30
+      ? t("create.building_long_elapsed", { seconds: busyElapsedSeconds })
+      : busyElapsedSeconds >= 15
+      ? t("create.building_honoring_elapsed", { seconds: busyElapsedSeconds })
+      : busyElapsedSeconds >= 8
+      ? t("create.building_slow_elapsed", { seconds: busyElapsedSeconds })
+      : busyElapsedSeconds > 0
       ? t("create.building_elapsed", { seconds: busyElapsedSeconds })
       : t("create.building_label")
   const busyStageIndex = Math.min(
-    BUSY_STAGE_KEYS.length - 1,
+    BUSY_STAGE_COUNT - 1,
     Math.max(0, Math.floor(busyElapsedSeconds / 3)),
   )
+  const briefPlanningCopy =
+    briefBusyElapsedSeconds >= 10
+      ? t("create.guide_planning_slow")
+      : t("create.guide_planning_now")
+  const guideThinkingCopy = t("create.guide_thinking")
 
-  // Author flow requires a real account.
-  useEffect(() => {
-    if (auth.loading) return
-    if (auth.isAnonymous) {
-      window.location.hash = "#/login?next=create"
+  const applyStoryGuideSettings = (settings?: StoryGuideSettingDeltas) => {
+    if (!settings) return
+    if (settings.turnBudget) setTurnBudget(settings.turnBudget)
+    if (settings.difficulty) setDifficulty(settings.difficulty)
+    if (settings.language) setStoryLanguage(settings.language)
+    if (settings.tensionProfile) setDesiredTensionProfile(settings.tensionProfile)
+  }
+
+  const ensureAuthorSession = async (): Promise<boolean> => {
+    if (!auth.isAnonymous) return true
+    if (auth.loading) {
+      setError(t("create.error_guest_loading"))
+      return false
     }
-  }, [auth.loading, auth.isAnonymous])
+    if (!guestHandleRef.current) {
+      guestHandleRef.current = makeGuestHandle()
+    }
+    try {
+      await auth.login(guestHandleRef.current)
+      return true
+    } catch (err) {
+      setError(friendlyError(err, t("create.error_guest_failed")))
+      return false
+    }
+  }
+
+  const appendPrivacyRecordedTurn = (
+    nextVisibility: NarrativeTemplateVisibility,
+    mode: "initial" | "confirmation",
+  ) => {
+    const label = t(VISIBILITY_KEY_MAP[nextVisibility].labelKey)
+    const time = Date.now()
+    setChatMessages((current) => {
+      const nextMessages = [...current]
+      if (mode === "initial") {
+        nextMessages.push({
+          id: `user-privacy-${time}`,
+          speaker: "user",
+          text: t("create.privacy_recorded_user", { value: label }),
+        })
+      }
+      nextMessages.push({
+        id: `guide-privacy-recorded-${time}`,
+        speaker: "guide",
+        text: t("create.privacy_recorded_reply", { value: label }),
+        node: "parse_message",
+        state: "collecting",
+      })
+      if (mode === "initial") {
+        nextMessages.push({
+          id: `guide-privacy-greeting-${time}`,
+          speaker: "guide",
+          text: t("create.guide_greeting"),
+          node: "ask_missing_slot",
+          state: "collecting",
+        })
+      }
+      return nextMessages
+    })
+  }
+
+  const handleVisibilityChoice = (nextVisibility: NarrativeTemplateVisibility) => {
+    const mode: "initial" | "confirmation" =
+      privacyPromptVisible || privacyRecordedVisibility ? "confirmation" : "initial"
+    setVisibility(nextVisibility)
+    setPrivacyRecordedVisibility(nextVisibility)
+    setPrivacySetupVisible(false)
+    setPrivacyPromptVisible(false)
+    appendPrivacyRecordedTurn(nextVisibility, mode)
+    window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
+  }
+
+  const hidePrivacySetup = () => {
+    handleVisibilityChoice(visibility)
+  }
 
   useEffect(() => {
     if (!busy) {
       setBusyElapsedSeconds(0)
+      setOpeningHandoffLabelKey(null)
       return
     }
     setBusyElapsedSeconds(0)
+    setOpeningHandoffLabelKey(null)
     const startedAt = Date.now()
     const id = window.setInterval(() => {
       setBusyElapsedSeconds(Math.max(1, Math.floor((Date.now() - startedAt) / 1000)))
     }, 1000)
     return () => window.clearInterval(id)
   }, [busy])
+
+  useEffect(() => {
+    if (!briefBusy) {
+      setBriefBusyElapsedSeconds(0)
+      return
+    }
+    setBriefBusyElapsedSeconds(0)
+    const startedAt = Date.now()
+    const id = window.setInterval(() => {
+      setBriefBusyElapsedSeconds(Math.max(1, Math.floor((Date.now() - startedAt) / 1000)))
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [briefBusy])
+
+  useEffect(() => {
+    if (!activeBriefResponse) return
+    const id = window.setTimeout(() => {
+      const transcript = transcriptScrollRef.current
+      if (transcript) {
+        transcript.scrollTo({ top: transcript.scrollHeight, behavior: "auto" })
+        return
+      }
+      briefMessageRef.current?.scrollIntoView({ block: "end", behavior: "smooth" })
+    }, 40)
+    return () => window.clearTimeout(id)
+  }, [activeBriefResponse])
+
+  useEffect(() => {
+    if (chatMessages.length === 0 && !briefBusy) return
+    const id = window.setTimeout(() => {
+      const transcript = transcriptScrollRef.current
+      if (transcript) {
+        transcript.scrollTo({ top: transcript.scrollHeight, behavior: "auto" })
+        return
+      }
+      transcriptEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" })
+    }, 40)
+    return () => window.clearTimeout(id)
+  }, [chatMessages.length, briefBusy])
 
   const handleCreate = async () => {
     const trimmed = seed.trim()
@@ -197,15 +334,35 @@ export function CreatePage({
     if (inflightRef.current) return
     inflightRef.current = true
     setBusy(true)
+    setOpeningHandoffLabelKey(null)
     setError(null)
     try {
+      const startedAt = Date.now()
+      const authorReady = await ensureAuthorSession()
+      if (!authorReady) {
+        setBusy(false)
+        inflightRef.current = false
+        return
+      }
       const response = await api.createNarrativeTemplate({
         seed: trimmed,
         visibility,
         turn_budget: turnBudget,
         difficulty,
         language: storyLanguage,
+        story_brief: activeBriefResponse?.can_generate ? activeBriefResponse.brief : null,
       })
+      const openingElapsedMs = Date.now() - startedAt
+      const handoffLabelKey: StringKey | null =
+        response.opening_recovery === "tightened_from_brief"
+          ? "create.building_handoff_recovered"
+          : openingElapsedMs >= LONG_GENERATE_HANDOFF_THRESHOLD_MS
+          ? "create.building_handoff_ready_long"
+          : null
+      if (handoffLabelKey) {
+        setOpeningHandoffLabelKey(handoffLabelKey)
+        await new Promise((resolve) => window.setTimeout(resolve, LONG_GENERATE_HANDOFF_MIN_MS))
+      }
       onSessionStarted(response.session.session_id)
     } catch (err) {
       setError(friendlyError(err, t("create.error_create_failed")))
@@ -217,23 +374,253 @@ export function CreatePage({
     // re-render race.
   }
 
+  const handlePlanStory = async () => {
+    const trimmed = seed.trim()
+    if (!trimmed) {
+      setError(t("create.error_seed_required"))
+      return
+    }
+    if (briefBusy || busy) return
+    if (!guideReadyToBrief) {
+      const ledger = buildStoryGuideLedger(guideLoopState, uiLang)
+      setGuideLoopState((current) => ({
+        ...current,
+        status: "needs_field",
+        lastNode: "ask_missing_slot",
+      }))
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: `guide-missing-${Date.now()}-${current.length}`,
+          speaker: "guide",
+          text: ledger.nextQuestion,
+          node: "ask_missing_slot",
+          state: "needs_field",
+          ledger,
+        },
+      ])
+      focusComposer()
+      return
+    }
+    setBriefBusy(true)
+    setBriefError(null)
+    setError(null)
+    setGuideLoopState((current) => markStoryGuideAnalyzing(current, uiLang))
+    try {
+      const authorReady = await ensureAuthorSession()
+      if (!authorReady) return
+      const response = await api.createNarrativeStoryBrief({
+        seed: trimmed,
+        language: storyLanguage,
+        desired_tension_profile:
+          desiredTensionProfile === "auto" ? null : desiredTensionProfile,
+      })
+      setBriefResponse(response)
+      setBriefResponseKey(briefKey(trimmed, storyLanguage, desiredTensionProfile))
+      setGuideLoopState((current) => markStoryGuideBriefResult(current, response.can_generate, uiLang))
+    } catch (err) {
+      setBriefError(friendlyError(err, t("create.brief_error_failed")))
+      setGuideLoopState((current) =>
+        canShapeStoryBrief(current)
+          ? {
+              ...current,
+              status: "ready_to_brief",
+              lastNode: "ready_to_shape",
+            }
+          : current,
+      )
+    } finally {
+      setBriefBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!guideReadyToBrief || !hasSeed || activeBriefResponse || guideBusy || briefBusy || busy) return
+    if (autoBriefKeyRef.current === currentBriefKey) return
+    autoBriefKeyRef.current = currentBriefKey
+    void handlePlanStory()
+  }, [
+    activeBriefResponse,
+    briefBusy,
+    busy,
+    currentBriefKey,
+    guideBusy,
+    guideReadyToBrief,
+    hasSeed,
+  ])
+
+  const handleApplyRevisionAction = (seedAppend: string) => {
+    const decision = advanceStoryGuideLoop(guideLoopState, seedAppend, uiLang)
+    applyStoryGuideSettings(decision.settings)
+    setSeed((current) => {
+      const trimmed = current.trim()
+      if (trimmed.toLowerCase().includes(seedAppend.toLowerCase())) return current
+      return `${trimmed}${trimmed ? "\n\n" : ""}${seedAppend}`
+    })
+    setGuideLoopState(decision.state)
+    setCorrectionCount((current) => current + 1)
+    setChatMessages((current) => [
+      ...current,
+      {
+        id: `user-revision-action-${Date.now()}`,
+        speaker: "user",
+        text: seedAppend,
+      },
+      {
+        id: `guide-revision-action-${Date.now()}`,
+        speaker: "guide",
+        text: decision.reply,
+        node: decision.node,
+        state: decision.status,
+        ledger: decision.ledger,
+      },
+    ])
+    setBriefResponse(null)
+    setBriefResponseKey(null)
+    setBriefError(null)
+    window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
+  }
+
+  const appendGuideTurn = async (rawText: string) => {
+    const trimmed = rawText.trim()
+    if (!trimmed) {
+      setError(t("create.error_seed_required"))
+      return
+    }
+    if (guideBusy || briefBusy || busy) return
+    const previousState = guideLoopState
+    const previousSeed = seed
+    const previousAssistantReply =
+      [...chatMessages].reverse().find((message) => message.speaker === "guide")?.text ?? ""
+    const time = Date.now()
+    setDraftTurn("")
+    setPrivacySetupVisible(false)
+    setError(null)
+    setBriefResponse(null)
+    setBriefResponseKey(null)
+    setBriefError(null)
+    setGuideBusy(true)
+    setChatMessages((current) => [
+      ...current,
+      {
+        id: `user-${time}-${current.length}`,
+        speaker: "user",
+        text: trimmed,
+      },
+    ])
+    const applyGuideResponse = (response: GuideTurnLike) => {
+      const normalizedSettings: StoryGuideSettingDeltas | undefined = response.settings
+        ? {
+            turnBudget: response.settings.turnBudget ?? undefined,
+            difficulty: response.settings.difficulty ?? undefined,
+            language: response.settings.language ?? undefined,
+            tensionProfile: response.settings.tensionProfile ?? undefined,
+            privacyIntent: response.settings.privacyIntent ?? undefined,
+          }
+        : undefined
+      applyStoryGuideSettings(normalizedSettings)
+      if (normalizedSettings?.privacyIntent) setPrivacyPromptVisible(true)
+      const hadSeed = Boolean(previousSeed.trim())
+      if (response.acceptedText) {
+        const nextSeed = `${previousSeed.trim()}${hadSeed ? "\n\n" : ""}${trimmed}`
+        setSeed(nextSeed)
+        if (hadSeed) setCorrectionCount((current) => current + 1)
+      }
+      setGuideLoopState(response.state)
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: `guide-${time}-${current.length}`,
+          speaker: "guide",
+          text: normalizeGuideReplyText(response.reply) || t("create.guide_fallback_reply"),
+          node: response.node,
+          state: response.status,
+          ledger: response.ledger ?? undefined,
+        },
+      ])
+      if (!response.acceptedText) focusComposer()
+    }
+    try {
+      const authorReady = await ensureAuthorSession()
+      if (!authorReady) return
+      const response = await api.createNarrativeStoryGuideTurn({
+        message: trimmed,
+        language: storyLanguage,
+        current_seed: previousSeed,
+        previous_assistant_reply: previousAssistantReply,
+        state: previousState,
+      })
+      applyGuideResponse(response)
+    } catch (_err) {
+      const decision = advanceStoryGuideLoop(previousState, trimmed, uiLang)
+      applyGuideResponse(decision)
+    } finally {
+      setGuideBusy(false)
+    }
+  }
+
+  const focusComposer = () => {
+    window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
+  }
+
+  useEffect(() => {
+    const handoff = takeCreateDraftHandoff()
+    if (!handoff) return
+    const trimmed = handoff.seed.trim()
+    if (!trimmed) return
+    const decision = advanceStoryGuideLoop(createInitialStoryGuideState(uiLang), trimmed, uiLang)
+    const time = Date.now()
+    applyStoryGuideSettings(decision.settings)
+    if (handoff.language) setStoryLanguage(handoff.language)
+    if (handoff.tensionProfile) setDesiredTensionProfile(handoff.tensionProfile)
+    setSeed(trimmed)
+    setDraftTurn("")
+    setGuideLoopState(decision.state)
+    setBriefResponse(null)
+    setBriefResponseKey(null)
+    setBriefError(null)
+    setError(null)
+    setPrivacySetupVisible(false)
+    setPrivacyPromptVisible(false)
+    setPrivacyRecordedVisibility("private")
+    setChatMessages([
+      {
+        id: `user-handoff-${time}`,
+        speaker: "user",
+        text: trimmed,
+      },
+      {
+        id: `guide-handoff-${time}`,
+        speaker: "guide",
+        text: decision.reply,
+        node: decision.node,
+        state: decision.status,
+        ledger: decision.ledger,
+      },
+    ])
+  }, [uiLang])
+
   return (
-    <div style={cpStyles.page}>
-      <header style={cpStyles.header}>
-        <button style={cpStyles.brandLink} onClick={onBackHome}>
-          <span
-            style={{
-              color: "var(--accent)",
-              fontSize: 22,
-              lineHeight: 1,
-              transform: "translateY(-2px)",
-              display: "inline-block",
-            }}
-          >
-            ·
-          </span>
-          <span style={cpStyles.brandName}>Tiny Stories</span>
-        </button>
+    <div
+      style={{ ...cpStyles.page, ...(compactLayout ? cpStyles.pageCompact : null) }}
+      data-guide-loop-state={guideLoopState.status}
+      data-guide-loop-node={guideLoopState.lastNode}
+    >
+      <header style={{ ...cpStyles.header, ...(compactLayout ? cpStyles.headerCompact : null) }}>
+        <div style={cpStyles.headerNav}>
+          <button style={{ ...cpStyles.topBackButton, ...(compactLayout ? cpStyles.topBackButtonCompact : null) }} onClick={onBackHome} type="button">
+            {t("create.cta_back")}
+          </button>
+          <button style={{ ...cpStyles.brandLink, ...(compactLayout ? cpStyles.brandLinkCompact : null) }} onClick={onBackHome} type="button">
+            <span style={{ ...cpStyles.brandMark, ...(compactLayout ? cpStyles.brandMarkCompact : null) }} aria-hidden>✦</span>
+            <span style={{ ...cpStyles.brandName, ...(compactLayout ? cpStyles.brandNameCompact : null) }}>Tiny Stories</span>
+          </button>
+        </div>
+        <div style={{ ...cpStyles.headerTools, ...(compactLayout ? cpStyles.headerToolsCompact : null) }} aria-hidden>
+          <span style={cpStyles.headerTool}>☼</span>
+          <span style={cpStyles.headerTool}>?</span>
+          <span style={cpStyles.headerTool}>☰</span>
+        </div>
       </header>
 
       <main style={{ ...cpStyles.main, ...(compactLayout ? cpStyles.mainCompact : null) }}>
@@ -243,80 +630,245 @@ export function CreatePage({
           animate={{ opacity: 1, y: 0 }}
           transition={itemTransition}
         >
-          <span className="ts-tag" style={cpStyles.kicker}>{t("create.tag_new")}</span>
-          <h1 style={{ ...cpStyles.title, ...(compactLayout ? cpStyles.titleCompact : null) }}>
-            {t("create.heading_l1")}
-            <br />
-            {t("create.heading_l2")}
-          </h1>
-          <p style={{ ...cpStyles.sub, ...(compactLayout ? cpStyles.subCompact : null) }}>
-            {t("create.subhead")}
-          </p>
-
-          <div style={cpStyles.textareaWrap}>
-            <textarea
-              ref={seedTextareaRef}
-              style={{
-                ...cpStyles.textarea,
-                ...(compactLayout ? cpStyles.textareaCompact : {}),
-              }}
-              placeholder={compactLayout ? t("create.placeholder_short") : t("create.placeholder")}
-              value={seed}
-              onChange={(e) => setSeed(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                  e.preventDefault()
-                  void handleCreate()
-                }
-              }}
-              spellCheck={false}
-              disabled={busy}
-            />
-          </div>
-          <div style={cpStyles.editorMeta}>
-            <span style={cpStyles.count}>{t("create.char_count", { n: seed.length })}</span>
-            {showCreateAction && !compactLayout ? (
-              <span style={cpStyles.shortcutHint}>
-                {t("create.submit_shortcut", { mod: submitModKey })}
-              </span>
-            ) : null}
-          </div>
-
-          {error ? <div style={cpStyles.error}>{error}</div> : null}
-
           <div
-            style={{
-              ...cpStyles.actions,
-              ...(compactLayout ? cpStyles.actionsCompact : null),
-            }}
+            ref={transcriptScrollRef}
+            style={{ ...cpStyles.guideTranscript, ...(compactLayout ? cpStyles.guideTranscriptCompact : null) }}
           >
-            <AnimatePresence initial={false}>
-              {showCreateAction ? (
-                <motion.button
-                  key="create-submit"
+            {guideMessages.map((message) => {
+              const isUser = message.speaker === "user"
+              const isIntro = message.id === "guide-privacy-open" || message.id === "guide-privacy-greeting"
+              const isIntroFollow = false
+              return (
+                <div
+                  key={message.id}
+                  data-guide-node={message.node ?? "static_opening"}
+                  data-guide-state={message.state ?? (isUser ? "collecting" : "empty")}
                   style={{
-                    ...cpStyles.primaryAction,
-                    opacity: !hasSeed || busy ? 0.5 : 1,
-                    pointerEvents: !hasSeed || busy ? "none" : "auto",
-                    ...(compactLayout ? cpStyles.primaryCtaCompact : null),
+                    ...cpStyles.guideMessage,
+                    ...(isUser ? cpStyles.guideMessageUser : cpStyles.guideMessageGuide),
+                    ...(isIntro ? cpStyles.guideMessageIntro : null),
+                    ...(isIntroFollow ? cpStyles.guideMessageIntroFollow : null),
+                    ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                    ...(compactLayout && isUser ? cpStyles.guideMessageUserCompact : null),
+                    ...(compactLayout && isIntroFollow ? cpStyles.guideMessageIntroFollowCompact : null),
                   }}
-                  disabled={!hasSeed || busy}
-                  onClick={() => void handleCreate()}
-                  type="button"
-                  initial={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
-                  animate={{ opacity: !hasSeed || busy ? 0.5 : 1, y: 0, height: "auto", marginTop: 0 }}
-                  exit={{ opacity: 0, y: -4, height: 0, marginTop: 0 }}
-                  transition={itemTransition}
                 >
-                  {busy ? t("create.cta_busy") : hasSeed ? t("create.cta_idle") : t("create.cta_empty")}
-                </motion.button>
-              ) : null}
-            </AnimatePresence>
-            {!compactLayout && showBackAction ? (
-              <button style={cpStyles.backAction} onClick={onBackHome} disabled={busy} type="button">
-                {t("create.cta_back")}
-              </button>
+                  {!isUser && !isIntroFollow ? (
+                    <img
+                      src={STORY_BUTLER_AVATAR}
+                      alt=""
+                      style={{
+                        ...cpStyles.guideAvatar,
+                        ...(isIntro ? cpStyles.guideAvatarIntro : null),
+                        ...(compactLayout ? cpStyles.guideAvatarCompact : null),
+                      }}
+                    />
+                  ) : !isUser ? (
+                    <span
+                      aria-hidden
+                      style={{ ...cpStyles.guideAvatarSpacer, ...(compactLayout ? cpStyles.guideAvatarSpacerCompact : null) }}
+                    />
+                  ) : null}
+                  <div
+                    style={{
+                      ...cpStyles.guideMessageContent,
+                      ...(isUser ? cpStyles.guideMessageContentUser : null),
+                      ...(isIntroFollow ? cpStyles.guideMessageContentIntroFollow : null),
+                      ...(message.state === "redirect" ? cpStyles.guideMessageContentRedirect : null),
+                      ...(message.state === "needs_field" ? cpStyles.guideMessageContentNeedsField : null),
+                      ...(message.state === "ready_to_brief" ? cpStyles.guideMessageContentReady : null),
+                    }}
+                  >
+                    {!isIntroFollow ? (
+                      <span style={cpStyles.guideSpeaker}>
+                        {isUser ? t("create.guide_user_label") : t("create.guide_agent_label")}
+                      </span>
+                    ) : null}
+                    <span
+                      style={{
+                        ...cpStyles.guideMessageText,
+                        ...(isIntro ? cpStyles.guideMessageIntroText : null),
+                        ...(isIntro && compactLayout ? cpStyles.guideMessageIntroTextCompact : null),
+                        ...(isIntroFollow ? cpStyles.guideMessageIntroFollowText : null),
+                        ...(isUser ? cpStyles.guideMessageUserText : null),
+                      }}
+                    >
+                      {message.text}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+            {(privacySetupVisible || privacyPromptVisible) && !activeBriefResponse ? (
+              <div
+                data-create-privacy-settings="true"
+                data-create-privacy-mode={privacyPromptVisible ? "confirmation" : "setup"}
+                style={{
+                  ...cpStyles.privacySetupCard,
+                  ...(compactLayout ? cpStyles.privacySetupCardCompact : null),
+                }}
+              >
+                <div style={cpStyles.privacySetupHeader}>
+                  <span style={cpStyles.privacySetupTitle}>{t("create.privacy_setup_title")}</span>
+                  <button
+                    type="button"
+                    style={cpStyles.privacySetupDismiss}
+                    onClick={hidePrivacySetup}
+                  >
+                    {t("create.privacy_setup_keep", { value: t(selectedVisibility.labelKey) })}
+                  </button>
+                </div>
+                <p style={cpStyles.privacySetupCopy}>
+                  {privacyPromptVisible
+                    ? t("create.privacy_setup_prompt_desc")
+                    : t("create.privacy_setup_desc", { value: t(selectedVisibility.labelKey) })}
+                </p>
+                <div style={cpStyles.privacySetupChoices} aria-label={t("create.field_visibility")}>
+                  {VISIBILITY_OPTION_IDS.map((id) => {
+                    const meta = VISIBILITY_KEY_MAP[id]
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        style={{
+                          ...cpStyles.privacySetupChoice,
+                          ...(visibility === id ? cpStyles.privacySetupChoiceActive : null),
+                        }}
+                        onClick={() => handleVisibilityChoice(id)}
+                        disabled={busy || briefBusy || guideBusy}
+                        title={t(meta.descKey)}
+                        aria-pressed={visibility === id}
+                      >
+                        {t(meta.labelKey)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             ) : null}
+            {briefBusy ? (
+              <div
+                data-guide-node="shape_story_brief"
+                data-guide-state="analyzing"
+                style={{
+                  ...cpStyles.guideMessage,
+                  ...cpStyles.guideMessageGuide,
+                  ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                }}
+              >
+                <img
+                  src={STORY_BUTLER_AVATAR}
+                  alt=""
+                  style={{
+                    ...cpStyles.guideAvatar,
+                    ...cpStyles.guideAvatarAnalyzing,
+                    ...(compactLayout ? cpStyles.guideAvatarCompact : null),
+                  }}
+                />
+                <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
+                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                  <span style={cpStyles.guideMessageText} aria-live="polite">{briefPlanningCopy}</span>
+                  <span style={cpStyles.guideScanStages} aria-hidden>
+                    <span>Lining up cast</span>
+                    <span>Locking pressure</span>
+                    <span>Checking boundaries</span>
+                    <span>Writing Brief</span>
+                  </span>
+                  <span style={cpStyles.guideScanRail} aria-hidden>
+                    <motion.span
+                      style={cpStyles.guideScanPulse}
+                      animate={{ x: ["-120%", "260%"] }}
+                      transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                  </span>
+                </div>
+              </div>
+            ) : null}
+            {guideBusy ? (
+              <div
+                data-guide-node="story_butler_turn"
+                data-guide-state="analyzing"
+                data-guide-process="story_guide.live"
+                data-guide-stage="slot_focus"
+                style={{
+                  ...cpStyles.guideMessage,
+                  ...cpStyles.guideMessageGuide,
+                  ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                }}
+              >
+                <img
+                  src={STORY_BUTLER_AVATAR}
+                  alt=""
+                  style={{
+                    ...cpStyles.guideAvatar,
+                    ...cpStyles.guideAvatarAnalyzing,
+                    ...(compactLayout ? cpStyles.guideAvatarCompact : null),
+                  }}
+                />
+                <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
+                  <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                  <span style={cpStyles.guideMessageText} aria-live="polite">{guideThinkingCopy}</span>
+                </div>
+              </div>
+            ) : null}
+            {activeBriefResponse ? (
+              <>
+                <div
+                  ref={briefMessageRef}
+                  data-guide-node={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
+                  data-guide-state={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
+                  style={{
+                    ...cpStyles.guideMessage,
+                    ...cpStyles.guideMessageGuide,
+                    ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                  }}
+                >
+                  <img
+                    src={STORY_BUTLER_AVATAR}
+                    alt=""
+                    style={{ ...cpStyles.guideAvatar, ...(compactLayout ? cpStyles.guideAvatarCompact : null) }}
+                  />
+                  <div style={{ ...cpStyles.guideMessageContent, ...cpStyles.guideMessageBody }}>
+                    <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                    <StoryBriefCard
+                      brief={activeBriefResponse.brief}
+                      canGenerate={activeBriefResponse.can_generate}
+                      nextStep={activeBriefResponse.next_step}
+                      compact={compactLayout}
+                      busy={busy}
+                      shapeRead={storyShapeRead}
+                      onGenerate={() => void handleCreate()}
+                      onKeepCorrecting={focusComposer}
+                      onApplyRevisionAction={handleApplyRevisionAction}
+                    />
+                  </div>
+                </div>
+                <div
+                  data-guide-node={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
+                  data-guide-state={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
+                  style={{
+                    ...cpStyles.guideMessage,
+                    ...cpStyles.guideMessageGuide,
+                    ...(compactLayout ? cpStyles.guideMessageCompact : null),
+                  }}
+                >
+                  <img
+                    src={STORY_BUTLER_AVATAR}
+                    alt=""
+                    style={{ ...cpStyles.guideAvatarSmall, ...(compactLayout ? cpStyles.guideAvatarSmallCompact : null) }}
+                  />
+                  <div style={cpStyles.guideMessageContent}>
+                    <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
+                    <span style={cpStyles.guideMessageText}>
+                    {activeBriefResponse.can_generate
+                      ? t("create.guide_brief_ready")
+                      : t("create.guide_brief_not_fit")}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : null}
+            <div ref={transcriptEndRef} aria-hidden />
           </div>
 
           <AnimatePresence initial={false}>
@@ -328,7 +880,7 @@ export function CreatePage({
                   ...(compactLayout ? cpStyles.examplesBlockCompact : null),
                 }}
                 initial={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 24 }}
+                animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 14 }}
                 exit={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
                 transition={itemTransition}
               >
@@ -345,15 +897,14 @@ export function CreatePage({
                       style={cpStyles.exampleLine}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
-                        setSeed(example)
+                        setDraftTurn(example)
                         window.requestAnimationFrame(() => {
                           const node = seedTextareaRef.current
                           if (!node) return
                           node.focus({ preventScroll: true })
-                          node.setSelectionRange(example.length, example.length)
                         })
                       }}
-                      disabled={busy}
+                      disabled={busy || briefBusy || guideBusy}
                       type="button"
                     >
                       <span style={cpStyles.exampleLineIndex}>{index + 1}.</span>
@@ -366,145 +917,75 @@ export function CreatePage({
             ) : null}
           </AnimatePresence>
 
-          <details
-            style={{
-              ...cpStyles.settingsDetails,
-              ...(!showSeedExamples ? cpStyles.settingsDetailsFocused : null),
-            }}
-            open={settingsOpen}
-            onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
-          >
-            <summary style={cpStyles.settingsSummary}>
-              <span style={cpStyles.settingsSummaryMain}>
-                <span style={cpStyles.settingsSummaryLabel}>{t("create.settings_label")}</span>
-                <span style={cpStyles.settingsSummaryValue}>{settingsSummary}</span>
-              </span>
-              <span style={cpStyles.settingsToggleHint}>
-                {settingsOpen ? t("create.settings_done") : t("create.settings_edit")}
-              </span>
-            </summary>
-            <div
-              style={{
-                ...cpStyles.settingsStrip,
-                ...(compactLayout ? cpStyles.settingsStripCompact : null),
-              }}
-              aria-label={t("create.settings_label")}
-            >
+          {privacyIntroComplete ? (
+            <>
               <div
                 style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
+                  ...cpStyles.textareaWrap,
+                  ...(compactLayout ? cpStyles.textareaWrapCompact : null),
+                  ...(activeBrief ? cpStyles.textareaWrapAfterBrief : null),
                 }}
               >
-                <span style={cpStyles.settingLabel}>{t("create.field_budget")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {BUDGET_OPTIONS.map((o) => (
+                <textarea
+                  ref={seedTextareaRef}
+                  rows={1}
+                  style={{
+                    ...cpStyles.textarea,
+                    ...(compactLayout ? cpStyles.textareaCompact : {}),
+                  }}
+                  placeholder={compactLayout ? t("create.guide_input_placeholder_short") : t("create.guide_input_placeholder")}
+                  value={draftTurn}
+                  onChange={(e) => {
+                    setDraftTurn(e.target.value)
+                    setError(null)
+                  }}
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      e.preventDefault()
+                      if (draftTurn.trim()) {
+                        void appendGuideTurn(draftTurn)
+                        return
+                      }
+                      return
+                    }
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      void appendGuideTurn(draftTurn)
+                    }
+                  }}
+                  spellCheck={false}
+                  disabled={busy || briefBusy || guideBusy}
+                />
+                <div style={{ ...cpStyles.composerBar, ...(compactLayout ? cpStyles.composerBarCompact : null) }}>
+                  <span style={cpStyles.composerHint}>{t("create.guide_input_hint")}</span>
+                  <div style={{ ...cpStyles.composerCommands, ...(compactLayout ? cpStyles.composerCommandsCompact : null) }}>
                     <button
-                      key={o.budget}
-                      style={{
-                        ...cpStyles.segmentBtn,
-                        ...(turnBudget === o.budget ? cpStyles.segmentBtnActive : null),
-                      }}
-                      onClick={() => setTurnBudget(o.budget)}
-                      disabled={busy}
                       type="button"
-                      title={t(o.descKey)}
-                      aria-pressed={turnBudget === o.budget}
+                      style={cpStyles.composerAction}
+                      disabled={!draftTurn.trim() || busy || briefBusy || guideBusy}
+                      onClick={() => void appendGuideTurn(draftTurn)}
                     >
-                      <span style={cpStyles.segmentMain}>{t(o.labelKey)}</span>
-                      <span style={cpStyles.segmentMeta}>{t(o.timeKey)}</span>
+                      {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
                     </button>
-                  ))}
+                  </div>
                 </div>
               </div>
+              <div style={cpStyles.editorMeta}>
+                <span style={cpStyles.count}>{t("create.char_count", { n: seed.length })}</span>
+                {correctionCount > 0 ? (
+                  <span style={cpStyles.count}>{t("create.guide_revision_count", { n: correctionCount })}</span>
+                ) : null}
+                {hasSeed && !activeBrief && !compactLayout ? (
+                  <span style={cpStyles.shortcutHint}>
+                    {t("create.submit_shortcut", { mod: submitModKey })}
+                  </span>
+                ) : null}
+              </div>
+            </>
+          ) : null}
 
-              <div
-                style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
-                }}
-              >
-                <span style={cpStyles.settingLabel}>{t("create.field_difficulty")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {DIFFICULTY_OPTIONS.map((o) => (
-                    <button
-                      key={o.id}
-                      style={{
-                        ...cpStyles.segmentBtn,
-                        ...(difficulty === o.id ? cpStyles.segmentBtnActive : null),
-                        ...(o.id === "gauntlet" && difficulty === o.id ? cpStyles.segmentBtnWarn : null),
-                      }}
-                      onClick={() => setDifficulty(o.id)}
-                      disabled={busy}
-                      type="button"
-                      title={t(o.descKey)}
-                      aria-pressed={difficulty === o.id}
-                    >
-                      <span style={cpStyles.segmentMain}>{t(o.labelKey)}</span>
-                      <span style={cpStyles.segmentMeta}>{t(o.taglineKey)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
-                }}
-              >
-                <span style={cpStyles.settingLabel}>{t("create.field_story_lang")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {STORY_LANGUAGE_OPTIONS[uiLang].map((o) => (
-                    <button
-                      key={o.id}
-                      style={{
-                        ...cpStyles.segmentBtn,
-                        ...(storyLanguage === o.id ? cpStyles.segmentBtnActive : null),
-                      }}
-                      onClick={() => setStoryLanguage(o.id)}
-                      disabled={busy}
-                      type="button"
-                      title={o.desc}
-                      aria-pressed={storyLanguage === o.id}
-                    >
-                      <span style={cpStyles.segmentMain}>{o.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...cpStyles.settingGroup,
-                  ...(compactLayout ? cpStyles.settingGroupCompact : null),
-                }}
-              >
-                <span style={cpStyles.settingLabel}>{t("create.field_visibility")}</span>
-                <div style={cpStyles.segmentRow}>
-                  {VISIBILITY_OPTION_IDS.map((id) => {
-                    const meta = VISIBILITY_KEY_MAP[id]
-                    return (
-                      <button
-                        key={id}
-                        style={{
-                          ...cpStyles.segmentBtn,
-                          ...(visibility === id ? cpStyles.segmentBtnActive : null),
-                        }}
-                        onClick={() => setVisibility(id)}
-                        disabled={busy}
-                        type="button"
-                        title={t(meta.descKey)}
-                        aria-pressed={visibility === id}
-                      >
-                        <span style={cpStyles.segmentMain}>{t(meta.labelKey)}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          </details>
+          {error ? <div style={cpStyles.error}>{error}</div> : null}
+          {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
 
           <AnimatePresence>
             {busy ? (
@@ -529,630 +1010,4 @@ export function CreatePage({
       </main>
     </div>
   )
-}
-
-function useCompactLayout(query = "(max-width: 720px)") {
-  const [compact, setCompact] = useState(false)
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const media = window.matchMedia(query)
-    const update = () => setCompact(media.matches)
-    update()
-    media.addEventListener("change", update)
-    return () => media.removeEventListener("change", update)
-  }, [query])
-  return compact
-}
-
-// Rotating creative tips while user waits 5-10s for opening to generate.
-// Reads as "the AI is doing real work, here's what" instead of static
-// "loading..." which feels frozen at second 6.
-const BUSY_TIP_KEYS: StringKey[] = [
-  "create.busy_tip_1",
-  "create.busy_tip_2",
-  "create.busy_tip_3",
-  "create.busy_tip_4",
-  "create.busy_tip_5",
-]
-
-const BUSY_STAGE_KEYS: StringKey[] = [
-  "create.busy_stage_cast",
-  "create.busy_stage_leverage",
-  "create.busy_stage_opening",
-  "create.busy_stage_ready",
-]
-
-function BusyStages({ activeIndex, compact }: { activeIndex: number; compact: boolean }) {
-  const t = useT()
-  return (
-    <div
-      style={{
-        ...busyStageStyles.rail,
-        ...(compact ? busyStageStyles.railCompact : null),
-      }}
-      aria-label={t("create.busy_stage_aria")}
-    >
-      {BUSY_STAGE_KEYS.map((key, index) => {
-        const complete = index < activeIndex
-        const active = index === activeIndex
-        return (
-          <span
-            key={key}
-            style={{
-              ...busyStageStyles.stage,
-              ...(compact ? busyStageStyles.stageCompact : null),
-              ...(complete ? busyStageStyles.stageComplete : null),
-              ...(active ? busyStageStyles.stageActive : null),
-            }}
-          >
-            <span style={busyStageStyles.stageMark} aria-hidden>
-              {complete ? "✓" : index + 1}
-            </span>
-            <span style={busyStageStyles.stageText}>{t(key)}</span>
-          </span>
-        )
-      })}
-    </div>
-  )
-}
-
-function BusyTip() {
-  const t = useT()
-  const [idx, setIdx] = useState(0)
-  useEffect(() => {
-    const id = setInterval(() => setIdx((v) => (v + 1) % BUSY_TIP_KEYS.length), 2200)
-    return () => clearInterval(id)
-  }, [])
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={idx}
-        style={busyTipStyles.tip}
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={transitions.base}
-      >
-        {t(BUSY_TIP_KEYS[idx])}
-      </motion.div>
-    </AnimatePresence>
-  )
-}
-
-const busyTipStyles: Record<string, CSSProperties> = {
-  tip: {
-    fontSize: 13,
-    color: "rgba(245,210,140,0.92)",
-    lineHeight: 1.55,
-    fontStyle: "italic" as const,
-    textAlign: "left" as const,
-    fontFamily: "var(--font-narrative)",
-  },
-}
-
-const busyStageStyles: Record<string, CSSProperties> = {
-  rail: {
-    width: "100%",
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: 0,
-    borderTop: "1px solid rgba(255,255,255,0.12)",
-    borderBottom: "1px solid rgba(255,255,255,0.09)",
-  },
-  railCompact: {
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  },
-  stage: {
-    minWidth: 0,
-    display: "flex",
-    alignItems: "baseline",
-    gap: 6,
-    padding: "8px 10px 8px 0",
-    color: "rgba(255,255,255,0.42)",
-    borderTop: "1px solid transparent",
-    transform: "translateY(-1px)",
-  },
-  stageCompact: {
-    padding: "7px 8px 7px 0",
-  },
-  stageActive: {
-    color: "rgba(255,226,178,0.96)",
-    borderTop: "1px solid rgba(245,200,120,0.76)",
-  },
-  stageComplete: {
-    color: "rgba(255,255,255,0.68)",
-  },
-  stageMark: {
-    flex: "0 0 auto",
-    width: 13,
-    fontSize: 10,
-    lineHeight: 1,
-    fontWeight: 820,
-    color: "rgba(245,200,120,0.72)",
-    fontFamily: "var(--font-ui)",
-  },
-  stageText: {
-    minWidth: 0,
-    fontSize: 11,
-    lineHeight: 1.25,
-    fontWeight: 720,
-    whiteSpace: "nowrap" as const,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
-}
-
-const cpStyles: Record<string, CSSProperties> = {
-  page: {
-    minHeight: "100%",
-    background: `linear-gradient(180deg, rgba(20,16,12,0.55) 0%, rgba(20,16,12,0.92) 60%, var(--bg) 100%), url(${PAGE_BG.create})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center top",
-    backgroundAttachment: "fixed",
-  },
-  header: {
-    padding: "18px 40px",
-    borderBottom: "1px solid rgba(255,255,255,0.1)",
-    color: "white",
-  },
-  brandLink: { display: "inline-flex", alignItems: "center", gap: 8 },
-  brandName: { fontFamily: "var(--font-narrative)", fontSize: 17 },
-
-  main: { padding: "72px 40px 80px", display: "flex", justifyContent: "center" },
-  mainCompact: {
-    padding: "48px 40px 72px",
-  },
-  inner: { width: "100%", maxWidth: 720 },
-  innerCompact: {
-    maxWidth: 520,
-  },
-
-  title: {
-    fontFamily: "var(--font-narrative)",
-    fontSize: 40,
-    lineHeight: 1.15,
-    letterSpacing: 0,
-    fontWeight: 400,
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 16,
-    marginLeft: 0,
-    color: "white",
-    textShadow: "0 2px 18px rgba(0,0,0,0.5)",
-  },
-  titleCompact: {
-    fontSize: 36,
-    lineHeight: 1.13,
-    marginBottom: 14,
-  },
-  kicker: {
-    display: "inline-block",
-    marginBottom: 28,
-    padding: 0,
-    background: "transparent",
-    border: "none",
-    borderRadius: 0,
-    letterSpacing: 0,
-    textTransform: "none",
-  },
-  sub: {
-    fontSize: 16,
-    lineHeight: 1.55,
-    color: "rgba(255,255,255,0.78)",
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 40,
-    marginLeft: 0,
-  },
-  subCompact: {
-    fontSize: 15.5,
-    lineHeight: 1.52,
-    marginBottom: 30,
-  },
-
-  textareaWrap: {
-    position: "relative",
-    marginBottom: 7,
-  },
-  editorMeta: {
-    display: "flex",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 18,
-    color: "rgba(255,255,255,0.44)",
-    fontSize: 11,
-    lineHeight: 1.25,
-    letterSpacing: 0,
-  },
-  examplesBlock: {
-    display: "grid",
-    gridTemplateColumns: "104px minmax(0, 1fr)",
-    alignItems: "start",
-    columnGap: 18,
-    rowGap: 10,
-    marginBottom: 24,
-  },
-  examplesBlockCompact: {
-    gridTemplateColumns: "1fr",
-    rowGap: 8,
-  },
-  examplesLabel: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.62)",
-    letterSpacing: 0,
-    lineHeight: 1.45,
-  },
-  examplesList: {
-    minWidth: 0,
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    columnGap: 18,
-    rowGap: 6,
-  },
-  examplesListCompact: {
-    gridTemplateColumns: "1fr",
-  },
-  exampleLine: {
-    width: "100%",
-    minWidth: 0,
-    display: "grid",
-    gridTemplateColumns: "20px minmax(0, 1fr) auto",
-    alignItems: "baseline",
-    columnGap: 7,
-    rowGap: 2,
-    padding: "5px 0 6px",
-    background: "transparent",
-    border: "none",
-    borderRadius: 0,
-    color: "rgba(255,255,255,0.76)",
-    cursor: "pointer",
-    fontFamily: "var(--font-narrative)",
-    textAlign: "left" as const,
-  },
-  exampleLineIndex: {
-    color: "rgba(245,200,120,0.68)",
-    fontFamily: "var(--font-ui)",
-    fontSize: 11,
-    lineHeight: 1.25,
-    fontWeight: 780,
-  },
-  exampleLineText: {
-    minWidth: 0,
-    color: "rgba(255,255,255,0.78)",
-    fontSize: 12.6,
-    lineHeight: 1.42,
-  },
-  exampleLineUse: {
-    color: "rgba(245,200,120,0.76)",
-    fontFamily: "var(--font-ui)",
-    fontSize: 10.5,
-    lineHeight: 1.25,
-    fontWeight: 780,
-    whiteSpace: "nowrap" as const,
-  },
-  textarea: {
-    width: "100%",
-    minHeight: 200,
-    padding: "12px 0 14px",
-    background: "transparent",
-    border: "none",
-    borderBottom: "1px solid rgba(245,200,120,0.28)",
-    borderRadius: 0,
-    fontFamily: "var(--font-narrative)",
-    fontSize: 16,
-    lineHeight: 1.65,
-    color: "var(--text)",
-    resize: "vertical",
-    outline: "none",
-    transition: "border-color 200ms",
-  },
-  textareaCompact: {
-    minHeight: 118,
-    padding: "10px 0 12px",
-    fontSize: 15,
-  },
-  count: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.44)",
-    letterSpacing: 0,
-  },
-  shortcutHint: {
-    color: "rgba(245,200,120,0.66)",
-    fontSize: 11,
-    fontWeight: 720,
-    whiteSpace: "nowrap" as const,
-  },
-
-  settingsStrip: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    rowGap: 12,
-    padding: "12px 0 2px",
-    marginBottom: 0,
-  },
-  settingsStripCompact: {
-    gridTemplateColumns: "1fr",
-    rowGap: 13,
-  },
-  settingGroup: {
-    minWidth: 0,
-    display: "grid",
-    gridTemplateColumns: "116px minmax(0, 1fr)",
-    alignItems: "baseline",
-    columnGap: 14,
-    rowGap: 8,
-  },
-  settingGroupCompact: {
-    gridTemplateColumns: "minmax(0, 1fr)",
-    rowGap: 6,
-  },
-  settingLabel: {
-    color: "rgba(255,255,255,0.54)",
-    fontSize: 11.5,
-    lineHeight: 1.1,
-    fontWeight: 680,
-    letterSpacing: 0,
-    textTransform: "none" as const,
-  },
-  segmentRow: {
-    minWidth: 0,
-    display: "flex",
-    flexWrap: "wrap" as const,
-    alignItems: "baseline",
-    columnGap: 12,
-    rowGap: 8,
-  },
-  segmentBtn: {
-    minWidth: 0,
-    padding: "0 0 5px",
-    background: "transparent",
-    border: "none",
-    borderBottom: "1px solid rgba(255,255,255,0.16)",
-    borderRadius: 0,
-    color: "rgba(255,255,255,0.72)",
-    display: "inline-flex",
-    alignItems: "baseline",
-    gap: 5,
-    fontFamily: "inherit",
-    textAlign: "left" as const,
-    cursor: "pointer",
-  },
-  segmentBtnActive: {
-    color: "white",
-    borderBottom: "1px solid rgba(245,200,120,0.72)",
-  },
-  segmentBtnWarn: {
-    borderBottom: "1px solid rgba(220,108,74,0.72)",
-  },
-  segmentMain: {
-    fontSize: 13,
-    lineHeight: 1.25,
-    fontWeight: 750,
-    whiteSpace: "nowrap" as const,
-  },
-  segmentMeta: {
-    color: "rgba(245,200,120,0.82)",
-    fontSize: 11,
-    lineHeight: 1.2,
-    fontWeight: 650,
-    whiteSpace: "nowrap" as const,
-  },
-
-  settingsDetails: {
-    marginTop: 16,
-    borderTop: "none",
-  },
-  settingsDetailsFocused: {
-    marginTop: 4,
-  },
-  settingsSummary: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    alignItems: "center",
-    gap: 16,
-    padding: "8px 0",
-    cursor: "pointer",
-    listStyle: "none",
-    color: "rgba(255,255,255,0.86)",
-  },
-  settingsSummaryMain: {
-    minWidth: 0,
-    display: "flex",
-    alignItems: "baseline",
-    gap: 10,
-    flexWrap: "wrap" as const,
-  },
-  settingsSummaryLabel: {
-    color: "rgba(255,255,255,0.52)",
-    fontSize: 11.5,
-    fontWeight: 680,
-    letterSpacing: 0,
-    textTransform: "none" as const,
-  },
-  settingsSummaryValue: {
-    minWidth: 0,
-    color: "rgba(255,245,230,0.82)",
-    fontSize: 12.5,
-    lineHeight: 1.35,
-  },
-  settingsToggleHint: {
-    color: "rgba(245,200,120,0.84)",
-    fontSize: 11,
-    fontWeight: 760,
-    letterSpacing: 0,
-    textTransform: "none" as const,
-  },
-
-  fieldLabel: {
-    fontSize: 12,
-    color: "var(--text-muted)",
-    letterSpacing: 0,
-    textTransform: "none",
-    marginBottom: 12,
-  },
-
-  visibility: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-    gap: "0 24px",
-    marginBottom: 32,
-    borderTop: "1px solid rgba(255,255,255,0.14)",
-  },
-  optionGridCompact: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: 0,
-    marginBottom: 28,
-    borderTop: "1px solid rgba(255,255,255,0.14)",
-  },
-  visBtn: {
-    textAlign: "left",
-    padding: "16px 18px",
-    background: "transparent",
-    border: "none",
-    borderBottom: "1px solid rgba(255,255,255,0.14)",
-    borderRadius: 0,
-    color: "var(--text)",
-    cursor: "pointer",
-    transition: "border-color 180ms, color 180ms",
-  },
-  visBtnActive: {
-    background: "transparent",
-    borderBottom: "1px solid rgba(245,200,120,0.72)",
-    color: "white",
-  },
-  visBtnLabel: { fontSize: 15, fontWeight: 600, marginBottom: 6 },
-  visBtnDesc: { fontSize: 12, color: "var(--text-muted)", lineHeight: 1.4 },
-  budgetTime: {
-    fontSize: 12,
-    color: "var(--accent)",
-    fontWeight: 500,
-  },
-
-  difficultyRow: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "0 24px",
-    marginBottom: 32,
-    borderTop: "1px solid rgba(255,255,255,0.14)",
-  },
-  difficultyBtn: {
-    textAlign: "left",
-    padding: "16px 18px",
-    background: "transparent",
-    border: "none",
-    borderBottom: "1px solid rgba(255,255,255,0.14)",
-    borderRadius: 0,
-    color: "rgba(255,255,255,0.86)",
-    cursor: "pointer",
-    transition: "border-color 180ms, color 180ms",
-  },
-  difficultyBtnActive: {
-    background: "transparent",
-    borderBottom: "1px solid rgba(245,200,120,0.72)",
-    color: "white",
-  },
-  difficultyBtnGauntlet: {
-    borderBottom: "1px solid #dc6b4a",
-  },
-  difficultyBtnLabel: {
-    fontSize: 15,
-    fontWeight: 600,
-    marginBottom: 6,
-  },
-  difficultyBtnTagline: {
-    fontSize: 12,
-    color: "var(--accent)",
-    fontWeight: 500,
-  },
-  difficultyBtnDesc: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.62)",
-    lineHeight: 1.45,
-  },
-
-  error: { marginBottom: 16, fontSize: 13, color: "var(--warn)" },
-  actions: {
-    display: "flex",
-    alignItems: "baseline",
-    columnGap: 18,
-    rowGap: 8,
-    flexWrap: "wrap",
-    marginBottom: 24,
-  },
-  actionsCompact: {
-    alignItems: "baseline",
-    marginBottom: 20,
-  },
-  primaryAction: {
-    width: "fit-content",
-    minHeight: 34,
-    padding: "4px 0",
-    border: "none",
-    borderBottom: "1px solid rgba(245,200,120,0.34)",
-    borderRadius: 0,
-    background: "transparent",
-    color: "rgba(255,226,178,0.96)",
-    fontSize: 14,
-    fontWeight: 880,
-    lineHeight: 1.25,
-    cursor: "pointer",
-    fontFamily: "inherit",
-  },
-  backAction: {
-    height: "auto",
-    padding: "3px 0",
-    border: "none",
-    borderRadius: 0,
-    background: "transparent",
-    color: "rgba(255,255,255,0.56)",
-    fontSize: 13,
-    fontWeight: 700,
-    lineHeight: 1.3,
-    cursor: "pointer",
-    fontFamily: "inherit",
-  },
-  primaryCtaCompact: {
-    width: "fit-content",
-    minWidth: 0,
-  },
-  busyHint: {
-    marginTop: 24,
-    fontSize: 13,
-    color: "var(--text-faint)",
-    lineHeight: 1.5,
-  },
-  busyCard: {
-    marginTop: 24,
-    padding: "12px 0 0",
-    background: "transparent",
-    border: "none",
-    borderRadius: 0,
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "flex-start",
-    gap: 8,
-    minHeight: 0,
-  },
-  busySignal: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 10,
-    color: "rgba(255,226,178,0.92)",
-    width: "100%",
-  },
-  busyLabel: {
-    fontSize: 11.5,
-    lineHeight: 1.2,
-    fontWeight: 720,
-    letterSpacing: 0,
-    textTransform: "none" as const,
-  },
-  busySignalLine: {
-    height: 1,
-    flex: "1 1 auto",
-    background: "linear-gradient(90deg, rgba(245,200,120,0.56), rgba(245,200,120,0.04))",
-    transform: "translateY(1px)",
-  },
 }

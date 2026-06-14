@@ -24,6 +24,10 @@ import {
   type NarrativePublicReplayResponse,
   type NarrativeSessionListResponse,
   type NarrativeStartSessionResponse,
+  type NarrativeStoryBriefAdvisorRequest,
+  type NarrativeStoryBriefAdvisorResponse,
+  type NarrativeStoryGuideTurnRequest,
+  type NarrativeStoryGuideTurnResponse,
   type NarrativeStoryHistoryResponse,
   type NarrativeTemplateListResponse,
   type NarrativeTemplateSummary,
@@ -38,7 +42,7 @@ import {
   type PublishedStoryListResponse,
   type UpdateStoryVisibilityRequest,
 } from "./contracts"
-import type { FrontendApiClient } from "./client"
+import type { FrontendApiClient, NarrativeAgentTraceOptions } from "./client"
 import { BACKEND_ROUTE_MAP } from "./route-map"
 
 type RouteParams = Record<string, string | number>
@@ -322,6 +326,18 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
 
     // ---------- Narrative ----------
 
+    createNarrativeStoryGuideTurn(request: NarrativeStoryGuideTurnRequest) {
+      return requestJson<NarrativeStoryGuideTurnResponse>("createNarrativeStoryGuideTurn", {
+        body: request,
+      })
+    },
+
+    createNarrativeStoryBrief(request: NarrativeStoryBriefAdvisorRequest) {
+      return requestJson<NarrativeStoryBriefAdvisorResponse>("createNarrativeStoryBrief", {
+        body: request,
+      })
+    },
+
     createNarrativeTemplate(request: NarrativeCreateTemplateRequest) {
       return requestJson<NarrativeCreateTemplateResponse>("createNarrativeTemplate", {
         body: request,
@@ -362,15 +378,34 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       })
     },
 
-    getNarrativeStory(sessionId: string) {
+    getNarrativeStory(sessionId: string, options?: NarrativeAgentTraceOptions) {
       return requestJson<NarrativeStoryHistoryResponse>("getNarrativeStory", {
         params: { session_id: sessionId },
+        query: {
+          agent_trace: options?.agentTrace ? "true" : undefined,
+        },
       })
     },
 
-    advanceNarrativeTurn(sessionId: string, request: NarrativeAdvanceTurnRequest) {
+    getNarrativeLLMEvents(sessionId: string) {
+      return requestJson<import("./contracts").NarrativeLLMCallEventListResponse>(
+        "getNarrativeLLMEvents",
+        {
+          params: { session_id: sessionId },
+        },
+      )
+    },
+
+    advanceNarrativeTurn(
+      sessionId: string,
+      request: NarrativeAdvanceTurnRequest,
+      options?: NarrativeAgentTraceOptions,
+    ) {
       return requestJson<NarrativeAdvanceTurnResponse>("advanceNarrativeTurn", {
         params: { session_id: sessionId },
+        query: {
+          agent_trace: options?.agentTrace ? "true" : undefined,
+        },
         body: request,
       })
     },

@@ -7,24 +7,35 @@ from pathlib import Path
 from typing import Any
 
 from rpg_backend.narrative.contracts import (
+    AgentEventPayload,
+    AgentEventType,
+    AgentPlan,
     AdvisorMessage,
     BranchHypothetical,
     CastMember,
+    ContractJudgeResult,
     Difficulty,
     EndingTier,
     FailureCondition,
     Highlight,
     InventoryDelta,
+    LLMCallEvent,
+    LLMCallSourceLabel,
+    LLMCallStatus,
+    LocalizedText,
+    NarrativeAgentEvent,
     NarrativeSession,
     NarrativeTemplate,
     NPCPulse,
     PlayedLeverageCard,
     PlayerGoal,
     PlayerRole,
+    StepJudgeResult,
     StoryMessage,
     StoryOption,
     TemplateLanguage,
     TemplateVisibility,
+    TurnGameplayMetadata,
 )
 
 
@@ -34,6 +45,33 @@ class NarrativeNotFoundError(LookupError):
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _dump_localized_text(value: LocalizedText | None) -> str | None:
+    if value is None:
+        return None
+    payload = value.model_dump(mode="json", exclude_none=True)
+    if not payload:
+        return None
+    return json.dumps(payload, ensure_ascii=False)
+
+
+def _load_localized_text(raw: str | None) -> LocalizedText | None:
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except Exception:  # noqa: BLE001
+        return None
+    if not isinstance(payload, dict):
+        return None
+    try:
+        value = LocalizedText.model_validate(payload)
+    except Exception:  # noqa: BLE001
+        return None
+    if not value.zh and not value.en:
+        return None
+    return value
 
 
 class NarrativeRepository:
@@ -59,10 +97,13 @@ class NarrativeRepository:
                 owner_user_id TEXT NOT NULL,
                 seed TEXT NOT NULL,
                 title TEXT NOT NULL,
+                title_i18n_json TEXT,
+                summary_i18n_json TEXT,
                 cast_json TEXT NOT NULL,
                 advisor_persona TEXT NOT NULL,
                 opening_passage TEXT NOT NULL,
                 opening_options_json TEXT NOT NULL DEFAULT '[]',
+                cover_image_url TEXT,
                 visibility TEXT NOT NULL DEFAULT 'private',
                 play_count INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL
@@ -110,6 +151,9 @@ class NarrativeRepository:
             ("player_goals_json", "ALTER TABLE narrative_templates ADD COLUMN player_goals_json TEXT NOT NULL DEFAULT '[]'"),
             ("failure_conditions_json", "ALTER TABLE narrative_templates ADD COLUMN failure_conditions_json TEXT NOT NULL DEFAULT '[]'"),
             ("player_role_options_json", "ALTER TABLE narrative_templates ADD COLUMN player_role_options_json TEXT NOT NULL DEFAULT '[]'"),
+            ("cover_image_url", "ALTER TABLE narrative_templates ADD COLUMN cover_image_url TEXT"),
+            ("title_i18n_json", "ALTER TABLE narrative_templates ADD COLUMN title_i18n_json TEXT"),
+            ("summary_i18n_json", "ALTER TABLE narrative_templates ADD COLUMN summary_i18n_json TEXT"),
             # Pre-i18n templates default to "zh"; this matches the
             # historic behavior where every template was generated in
             # Chinese.
@@ -149,6 +193,10 @@ class NarrativeRepository:
             connection.execute(
                 "ALTER TABLE narrative_story_messages ADD COLUMN played_leverage_json TEXT"
             )
+        if "gameplay_metadata_json" not in existing_msg_cols:
+            connection.execute(
+                "ALTER TABLE narrative_story_messages ADD COLUMN gameplay_metadata_json TEXT"
+            )
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS narrative_advisor_messages (
@@ -158,6 +206,46 @@ class NarrativeRepository:
                 content TEXT NOT NULL,
                 PRIMARY KEY (session_id, ord),
                 FOREIGN KEY (session_id) REFERENCES narrative_sessions(session_id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS narrative_agent_events (
+                session_id TEXT NOT NULL,
+                event_index INTEGER NOT NULL,
+                ord INTEGER NOT NULL,
+                event_type TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (session_id, event_index),
+                FOREIGN KEY (session_id) REFERENCES narrative_sessions(session_id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS narrative_llm_call_events (
+                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                operation TEXT NOT NULL,
+                status TEXT NOT NULL,
+                source_label TEXT NOT NULL,
+                latency_ms INTEGER,
+                operation_latency_ms INTEGER,
+                input_tokens INTEGER,
+                cached_input_tokens INTEGER,
+                output_tokens INTEGER,
+                total_tokens INTEGER,
+                retry_count INTEGER NOT NULL DEFAULT 0,
+                repair_count INTEGER NOT NULL DEFAULT 0,
+                fallback_reason TEXT,
+                response_id TEXT,
+                user_id TEXT,
+                template_id TEXT,
+                session_id TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (template_id) REFERENCES narrative_templates(template_id) ON DELETE SET NULL,
+                FOREIGN KEY (session_id) REFERENCES narrative_sessions(session_id) ON DELETE SET NULL
             )
             """
         )
@@ -176,6 +264,22 @@ class NarrativeRepository:
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_narrative_sessions_template "
             "ON narrative_sessions(template_id)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_narrative_agent_events_ord "
+            "ON narrative_agent_events(session_id, ord)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_narrative_agent_events_type "
+            "ON narrative_agent_events(session_id, event_type)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_narrative_llm_events_session "
+            "ON narrative_llm_call_events(session_id, created_at)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_narrative_llm_events_user "
+            "ON narrative_llm_call_events(user_id, created_at)"
         )
         connection.commit()
 
@@ -199,24 +303,29 @@ class NarrativeRepository:
         player_role_options: list[PlayerRole],
         visibility: TemplateVisibility,
         language: TemplateLanguage = "en",
+        cover_image_url: str | None = None,
+        title_i18n: LocalizedText | None = None,
+        summary_i18n: LocalizedText | None = None,
     ) -> NarrativeTemplate:
         created_at = _utc_now()
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO narrative_templates
-                (template_id, owner_user_id, seed, title, cast_json,
+                (template_id, owner_user_id, seed, title, title_i18n_json, summary_i18n_json, cast_json,
                  advisor_persona, opening_passage, opening_options_json,
                  player_goals_json, failure_conditions_json,
                  player_role_options_json,
-                 visibility, language, play_count, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                 cover_image_url, visibility, language, play_count, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
                 """,
                 (
                     template_id,
                     owner_user_id,
                     seed,
                     title,
+                    _dump_localized_text(title_i18n),
+                    _dump_localized_text(summary_i18n),
                     json.dumps([c.model_dump() for c in cast], ensure_ascii=False),
                     advisor_persona,
                     opening_passage,
@@ -224,6 +333,7 @@ class NarrativeRepository:
                     json.dumps([g.model_dump() for g in player_goals], ensure_ascii=False),
                     json.dumps([f.model_dump() for f in failure_conditions], ensure_ascii=False),
                     json.dumps([r.model_dump() for r in player_role_options], ensure_ascii=False),
+                    cover_image_url,
                     visibility,
                     language,
                     created_at,
@@ -235,10 +345,13 @@ class NarrativeRepository:
             owner_user_id=owner_user_id,
             seed=seed,
             title=title,
+            title_i18n=title_i18n,
+            summary_i18n=summary_i18n,
             cast=cast,
             advisor_persona=advisor_persona,
             opening_passage=opening_passage,
             opening_options=opening_options,
+            cover_image_url=cover_image_url,
             player_goals=player_goals,
             failure_conditions=failure_conditions,
             player_role_options=player_role_options,
@@ -539,13 +652,20 @@ class NarrativeRepository:
         leverage_json: str | None = None
         if message.played_leverage is not None:
             leverage_json = json.dumps(message.played_leverage.model_dump(), ensure_ascii=False)
+        gameplay_metadata_json: str | None = None
+        if message.gameplay_metadata is not None:
+            gameplay_metadata_json = json.dumps(
+                message.gameplay_metadata.model_dump(mode="json"),
+                ensure_ascii=False,
+            )
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO narrative_story_messages
                 (session_id, ord, role, content, options_json, chosen_option_index,
-                 npc_pulse_json, inventory_delta_json, diary, played_leverage_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 npc_pulse_json, inventory_delta_json, diary, played_leverage_json,
+                 gameplay_metadata_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     session_id,
@@ -558,6 +678,7 @@ class NarrativeRepository:
                     delta_json,
                     message.diary,
                     leverage_json,
+                    gameplay_metadata_json,
                 ),
             )
             conn.commit()
@@ -567,7 +688,8 @@ class NarrativeRepository:
             rows = conn.execute(
                 """
                 SELECT ord, role, content, options_json, chosen_option_index,
-                       npc_pulse_json, inventory_delta_json, diary, played_leverage_json
+                       npc_pulse_json, inventory_delta_json, diary, played_leverage_json,
+                       gameplay_metadata_json
                 FROM narrative_story_messages
                 WHERE session_id = ?
                 ORDER BY ord ASC
@@ -642,10 +764,226 @@ class NarrativeRepository:
             ).fetchone()
         return int(row["max_ord"]) + 1
 
+    # ------------------------------------------------------------------
+    # Agent trace events (per session)
+    # ------------------------------------------------------------------
+
+    def append_agent_event(
+        self,
+        session_id: str,
+        *,
+        ord_value: int,
+        event_type: AgentEventType,
+        payload: AgentEventPayload,
+    ) -> NarrativeAgentEvent:
+        created_at = _utc_now()
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT COALESCE(MAX(event_index), -1) AS max_idx
+                FROM narrative_agent_events
+                WHERE session_id = ?
+                """,
+                (session_id,),
+            ).fetchone()
+            event_index = int(row["max_idx"]) + 1
+            conn.execute(
+                """
+                INSERT INTO narrative_agent_events
+                (session_id, event_index, ord, event_type, payload_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    event_index,
+                    ord_value,
+                    event_type,
+                    json.dumps(payload.model_dump(mode="json"), ensure_ascii=False),
+                    created_at,
+                ),
+            )
+            conn.commit()
+        return NarrativeAgentEvent(
+            event_index=event_index,
+            ord=ord_value,
+            event_type=event_type,
+            payload=payload,
+            created_at=created_at,
+        )
+
+    def list_agent_events(self, session_id: str) -> list[NarrativeAgentEvent]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT event_index, ord, event_type, payload_json, created_at
+                FROM narrative_agent_events
+                WHERE session_id = ?
+                ORDER BY event_index ASC
+                """,
+                (session_id,),
+            ).fetchall()
+        events: list[NarrativeAgentEvent] = []
+        for row in rows:
+            event = _row_to_agent_event(row)
+            if event is not None:
+                events.append(event)
+        return events
+
+    # ------------------------------------------------------------------
+    # Sanitized LLM call telemetry
+    # ------------------------------------------------------------------
+
+    def append_llm_call_event(
+        self,
+        *,
+        operation: str,
+        status: LLMCallStatus,
+        source_label: LLMCallSourceLabel,
+        latency_ms: int | None = None,
+        operation_latency_ms: int | None = None,
+        input_tokens: int | None = None,
+        cached_input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        total_tokens: int | None = None,
+        retry_count: int = 0,
+        repair_count: int = 0,
+        fallback_reason: str | None = None,
+        response_id: str | None = None,
+        user_id: str | None = None,
+        template_id: str | None = None,
+        session_id: str | None = None,
+    ) -> LLMCallEvent:
+        created_at = _utc_now()
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO narrative_llm_call_events
+                (operation, status, source_label, latency_ms, operation_latency_ms,
+                 input_tokens, cached_input_tokens, output_tokens, total_tokens,
+                 retry_count, repair_count, fallback_reason, response_id,
+                 user_id, template_id, session_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    operation,
+                    status,
+                    source_label,
+                    latency_ms,
+                    operation_latency_ms,
+                    input_tokens,
+                    cached_input_tokens,
+                    output_tokens,
+                    total_tokens,
+                    int(retry_count),
+                    int(repair_count),
+                    fallback_reason,
+                    response_id,
+                    user_id,
+                    template_id,
+                    session_id,
+                    created_at,
+                ),
+            )
+            event_id = int(cur.lastrowid)
+            conn.commit()
+        return LLMCallEvent(
+            event_id=event_id,
+            operation=operation,
+            status=status,
+            source_label=source_label,
+            latency_ms=latency_ms,
+            operation_latency_ms=operation_latency_ms,
+            input_tokens=input_tokens,
+            cached_input_tokens=cached_input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+            retry_count=retry_count,
+            repair_count=repair_count,
+            fallback_reason=fallback_reason,
+            response_id=response_id,
+            user_id=user_id,
+            template_id=template_id,
+            session_id=session_id,
+            created_at=created_at,
+        )
+
+    def list_llm_call_events_for_session(self, session_id: str) -> list[LLMCallEvent]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT *
+                FROM narrative_llm_call_events
+                WHERE session_id = ?
+                ORDER BY event_id ASC
+                """,
+                (session_id,),
+            ).fetchall()
+        return [_row_to_llm_call_event(r) for r in rows]
+
+    def list_recent_llm_call_events_for_user(self, user_id: str, limit: int = 50) -> list[LLMCallEvent]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT *
+                FROM narrative_llm_call_events
+                WHERE user_id = ?
+                ORDER BY event_id DESC
+                LIMIT ?
+                """,
+                (user_id, int(limit)),
+            ).fetchall()
+        return [_row_to_llm_call_event(r) for r in rows]
+
 
 # --------------------------------------------------------------------------
 # Row → model conversions
 # --------------------------------------------------------------------------
+
+
+def _row_to_agent_event(row: sqlite3.Row) -> NarrativeAgentEvent | None:
+    try:
+        event_type = row["event_type"]
+        payload_raw = json.loads(row["payload_json"])
+        if event_type == "agent_plan":
+            payload = AgentPlan.model_validate(payload_raw)
+        elif event_type == "step_judge":
+            payload = StepJudgeResult.model_validate(payload_raw)
+        elif event_type == "contract_judge":
+            payload = ContractJudgeResult.model_validate(payload_raw)
+        else:
+            return None
+        return NarrativeAgentEvent(
+            event_index=int(row["event_index"]),
+            ord=int(row["ord"]),
+            event_type=event_type,
+            payload=payload,
+            created_at=row["created_at"],
+        )
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _row_to_llm_call_event(row: sqlite3.Row) -> LLMCallEvent:
+    return LLMCallEvent(
+        event_id=int(row["event_id"]),
+        operation=row["operation"],
+        status=row["status"],
+        source_label=row["source_label"],
+        latency_ms=int(row["latency_ms"]) if row["latency_ms"] is not None else None,
+        operation_latency_ms=int(row["operation_latency_ms"]) if row["operation_latency_ms"] is not None else None,
+        input_tokens=int(row["input_tokens"]) if row["input_tokens"] is not None else None,
+        cached_input_tokens=int(row["cached_input_tokens"]) if row["cached_input_tokens"] is not None else None,
+        output_tokens=int(row["output_tokens"]) if row["output_tokens"] is not None else None,
+        total_tokens=int(row["total_tokens"]) if row["total_tokens"] is not None else None,
+        retry_count=int(row["retry_count"] or 0),
+        repair_count=int(row["repair_count"] or 0),
+        fallback_reason=row["fallback_reason"],
+        response_id=row["response_id"],
+        user_id=row["user_id"],
+        template_id=row["template_id"],
+        session_id=row["session_id"],
+        created_at=row["created_at"],
+    )
 
 
 def _row_to_template(row: sqlite3.Row) -> NarrativeTemplate:
@@ -709,10 +1047,13 @@ def _row_to_template(row: sqlite3.Row) -> NarrativeTemplate:
         owner_user_id=row["owner_user_id"],
         seed=row["seed"],
         title=row["title"],
+        title_i18n=_load_localized_text(row["title_i18n_json"] if "title_i18n_json" in keys else None),
+        summary_i18n=_load_localized_text(row["summary_i18n_json"] if "summary_i18n_json" in keys else None),
         cast=cast,
         advisor_persona=row["advisor_persona"],
         opening_passage=row["opening_passage"],
         opening_options=options,
+        cover_image_url=row["cover_image_url"] if "cover_image_url" in keys else None,
         player_goals=goals,
         failure_conditions=conds,
         player_role_options=roles,
@@ -802,6 +1143,19 @@ def _row_to_story_message(row: sqlite3.Row) -> StoryMessage:
                     played_leverage = None
         except Exception:  # noqa: BLE001
             pass
+    gameplay_metadata: TurnGameplayMetadata | None = None
+    if "gameplay_metadata_json" in keys and row["gameplay_metadata_json"]:
+        try:
+            gameplay_metadata_raw = json.loads(row["gameplay_metadata_json"])
+            if isinstance(gameplay_metadata_raw, dict):
+                try:
+                    gameplay_metadata = TurnGameplayMetadata.model_validate(
+                        gameplay_metadata_raw,
+                    )
+                except Exception:  # noqa: BLE001
+                    gameplay_metadata = None
+        except Exception:  # noqa: BLE001
+            pass
     return StoryMessage(
         ord=int(row["ord"]),
         role=row["role"],
@@ -812,4 +1166,5 @@ def _row_to_story_message(row: sqlite3.Row) -> StoryMessage:
         inventory_delta=delta,
         diary=diary_val,
         played_leverage=played_leverage,
+        gameplay_metadata=gameplay_metadata,
     )

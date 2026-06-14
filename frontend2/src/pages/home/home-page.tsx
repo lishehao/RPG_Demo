@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useState } from "react"
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import type {
   NarrativeSessionSummary,
@@ -11,35 +11,245 @@ import { LoadingShim } from "../../shared/ui/loading-shim"
 import { Truncated } from "../../shared/ui/truncated"
 import {
   PAGE_BG,
-  getCoverForTemplate,
+  assignTemplateCovers,
+  getCoverByStoryId,
   getEmptyPlazaImage,
 } from "../../shared/lib/webtoon-assets"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
+import {
+  getSessionDisplayTitle,
+  getTemplateDisplaySummary,
+  getTemplateDisplayTitle,
+} from "../../shared/lib/localized-story-metadata"
 import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
 
 type Tab = "plaza" | "my-templates"
 
+type HomeStoryObjectKind =
+  | "published_story"
+  | "in_progress_run"
+  | "completed_memory"
+  | "draft_brief"
+type HomeTileSpan = "feature-wide" | "feature-tall" | "feature-horizontal" | "dispatch" | "notice-wide"
+type HomeTileArchetype =
+  | "full_bleed_cinematic"
+  | "framed_editorial"
+type HomeTileAccentTone = "play" | "resume" | "memory" | "draft"
+type HomeTileDeckMode = "premise" | "status" | "ending" | "brief"
+
+type HomeTileCopy = {
+  typeLabel: string
+  primaryAction: string
+  accentTone: HomeTileAccentTone
+  deckMode: HomeTileDeckMode
+}
+
+type HomeStoryObjectView = {
+  id: string
+  kind: HomeStoryObjectKind
+  title: string
+  cover: string
+  deck: string
+  copy: HomeTileCopy
+  metadata?: string[]
+  themeKey?: string | null
+  hasStrongCover: boolean
+}
+
+type HomeMosaicBase = {
+  id: string
+  kind: HomeStoryObjectKind
+  title: string
+  deck: string
+  themeKey?: string | null
+  hasStrongCover: boolean
+}
+
+type HomeMosaicTile<T> = T & {
+  span: HomeTileSpan
+  archetype: HomeTileArchetype
+}
+
+const HOME_MOSAIC_RHYTHM: readonly HomeTileSpan[] = [
+  "feature-wide",
+  "feature-tall",
+  "dispatch",
+  "feature-horizontal",
+  "dispatch",
+  "notice-wide",
+  "feature-wide",
+  "dispatch",
+  "feature-horizontal",
+  "feature-tall",
+  "dispatch",
+  "notice-wide",
+]
+
+export function homeTileSpanForItem(
+  item: HomeMosaicBase,
+  index: number,
+  total: number,
+  previousSpan?: HomeTileSpan,
+  previousTheme?: string | null,
+): HomeTileSpan {
+  const rhythm =
+    total <= 2
+      ? (["feature-horizontal", "feature-horizontal"] as const)
+      : total <= 6
+        ? (["feature-wide", "feature-horizontal", "notice-wide", "dispatch", "feature-horizontal", "notice-wide"] as const)
+        : HOME_MOSAIC_RHYTHM
+
+  let span: HomeTileSpan = rhythm[index % rhythm.length]
+  const longText = item.title.length > 42 || item.deck.length > 138
+
+  if (item.kind === "in_progress_run") {
+    span = "feature-horizontal"
+  } else if (item.kind === "completed_memory") {
+    span = "notice-wide"
+  } else if (!item.hasStrongCover && (span === "feature-wide" || span === "feature-tall")) {
+    span = "feature-horizontal"
+  } else if (longText && span === "dispatch") {
+    span = "notice-wide"
+  } else if (item.kind === "published_story" && span === "feature-tall") {
+    span = "feature-horizontal"
+  }
+
+  if (previousSpan === span && previousTheme && item.themeKey === previousTheme) {
+    span = span === "dispatch" ? "feature-horizontal" : "dispatch"
+  }
+
+  return span
+}
+
+function assignHomeMosaicSpans<T extends HomeMosaicBase>(items: T[]): HomeMosaicTile<T>[] {
+  let previousSpan: HomeTileSpan | undefined
+  let previousTheme: string | null | undefined
+  let previousArchetype: HomeTileArchetype | undefined
+  let fullBleedCount = 0
+  return items.map((item, index) => {
+    const span = homeTileSpanForItem(item, index, items.length, previousSpan, previousTheme)
+    const archetype = homeTileArchetypeForItem(item, span, fullBleedCount, previousArchetype)
+    previousSpan = span
+    previousTheme = item.themeKey
+    previousArchetype = archetype
+    if (archetype === "full_bleed_cinematic") fullBleedCount += 1
+    return { ...item, span, archetype }
+  })
+}
+
+export function homeTileArchetypeForItem(
+  item: HomeMosaicBase,
+  span: HomeTileSpan,
+  fullBleedCount = 0,
+  previousArchetype?: HomeTileArchetype,
+): HomeTileArchetype {
+  const canUseFullBleed =
+    span === "feature-wide" &&
+    item.hasStrongCover &&
+    fullBleedCount < 2 &&
+    previousArchetype !== "full_bleed_cinematic"
+
+  if (canUseFullBleed) {
+    return "full_bleed_cinematic"
+  }
+  return "framed_editorial"
+}
+
+export function getHomeTileCopy(
+  kind: HomeStoryObjectKind,
+  t: ReturnType<typeof useT>,
+  state?: { isStarting?: boolean },
+): HomeTileCopy {
+  if (kind === "published_story") {
+    return {
+      typeLabel: t("home.published_label"),
+      primaryAction: state?.isStarting ? t("home.card_starting") : t("home.card_action"),
+      accentTone: "play",
+      deckMode: "premise",
+    }
+  }
+  if (kind === "in_progress_run") {
+    return {
+      typeLabel: t("home.run_label"),
+      primaryAction: t("home.run_action"),
+      accentTone: "resume",
+      deckMode: "status",
+    }
+  }
+  if (kind === "completed_memory") {
+    return {
+      typeLabel: t("home.memory_label"),
+      primaryAction: t("home.memory_action"),
+      accentTone: "memory",
+      deckMode: "ending",
+    }
+  }
+  return {
+    typeLabel: t("home.draft_label"),
+    primaryAction: t("home.draft_action"),
+    accentTone: "draft",
+    deckMode: "brief",
+  }
+}
+
+function publishedStoryView(
+  template: NarrativeTemplateSummary,
+  cover: string,
+  lang: "zh" | "en",
+  t: ReturnType<typeof useT>,
+  isStarting = false,
+): HomeStoryObjectView {
+  return {
+    id: template.template_id,
+    kind: "published_story",
+    title: getTemplateDisplayTitle(template, lang),
+    cover,
+    deck: getTemplateDisplaySummary(template, lang),
+    copy: getHomeTileCopy("published_story", t, { isStarting }),
+    themeKey: template.cover_image_url ?? template.title,
+    hasStrongCover: Boolean(cover),
+  }
+}
+
 export function HomePage({
   onOpenCreate,
-  onOpenTemplate,
   onOpenPlay,
 }: {
   onOpenCreate: () => void
-  onOpenTemplate: (templateId: string) => void
   onOpenPlay: (sessionId: string) => void
 }) {
   const api = useApi()
   const auth = useAuth()
   const t = useT()
+  const { lang } = useLanguage()
   const compactHome = useCompactLayout()
   const [tab, setTab] = useState<Tab>("plaza")
   const [publicTemplates, setPublicTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
   const [myTemplates, setMyTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
   const [mySessions, setMySessions] = useState<NarrativeSessionSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [templateStartError, setTemplateStartError] = useState<string | null>(null)
+  const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null)
+  const startingTemplateRef = useRef<string | null>(null)
   const showTemplateTabs = !auth.isAnonymous
   const activeTemplateTab: Tab = showTemplateTabs ? tab : "plaza"
+
+  const handleStartPublishedTemplate = async (templateId: string) => {
+    if (startingTemplateRef.current) return
+    startingTemplateRef.current = templateId
+    setStartingTemplateId(templateId)
+    setTemplateStartError(null)
+    try {
+      const response = await api.startNarrativeSession(templateId)
+      onOpenPlay(response.session.session_id)
+    } catch (err) {
+      setTemplateStartError(friendlyError(err, t("home.error_start_story")))
+    } finally {
+      startingTemplateRef.current = null
+      setStartingTemplateId(null)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -121,13 +331,6 @@ export function HomePage({
               <br />
               {t("home.hero_title_l2")}
             </motion.h1>
-            <motion.p
-              variants={itemVariants}
-              transition={itemTransition}
-              style={{ ...hpStyles.heroSub, ...(compactHome ? hpStyles.heroSubCompact : null) }}
-            >
-              {t("home.hero_sub")}
-            </motion.p>
             <motion.div
               variants={itemVariants}
               transition={itemTransition}
@@ -142,19 +345,6 @@ export function HomePage({
               >
                 {t("home.cta_create")}
               </motion.button>
-              {!compactHome ? (
-                <motion.button
-                  style={hpStyles.heroSecondaryAction}
-                  onClick={() => {
-                    window.location.hash = "#/portfolio"
-                  }}
-                  type="button"
-                  whileHover={{ x: 2 }}
-                  whileTap={tapPress}
-                >
-                  {t("home.cta_portfolio")}
-                </motion.button>
-              ) : null}
             </motion.div>
           </div>
         </motion.section>
@@ -200,6 +390,8 @@ export function HomePage({
             </div>
           )}
 
+          {templateStartError ? <div style={hpStyles.errorBox}>{templateStartError}</div> : null}
+
           {/* Cross-fade between plaza ↔ my-templates so switching feels
               like a sibling pivot, not a layout swap. mode="wait"
               keeps the height stable during the transition. */}
@@ -212,12 +404,13 @@ export function HomePage({
               transition={transitions.snap}
             >
               {activeTemplateTab === "plaza" ? (
-                <TemplateGrid
+                <HomeEditorialMosaic
                   templates={publicTemplates}
                   error={error}
-                  emptyText={t("home.empty_plaza")}
                   compact={compactHome}
-                  onOpenTemplate={onOpenTemplate}
+                  lang={lang}
+                  onStartTemplate={handleStartPublishedTemplate}
+                  startingTemplateId={startingTemplateId}
                 />
               ) : (
                 <TemplateGrid
@@ -225,7 +418,8 @@ export function HomePage({
                   error={null}
                   emptyText={t("home.empty_my")}
                   compact={compactHome}
-                  onOpenTemplate={onOpenTemplate}
+                  onStartTemplate={handleStartPublishedTemplate}
+                  startingTemplateId={startingTemplateId}
                 />
               )}
             </motion.div>
@@ -370,12 +564,16 @@ function ContinueRunSpotlight({
   onClick: () => void
 }) {
   const t = useT()
+  const { lang } = useLanguage()
+  const displayTitle = getSessionDisplayTitle(session, lang)
   const safeBudget = Math.max(session.turn_budget, 1)
   const turnsPlayed = Math.min(Math.max(session.turn_count, 0), safeBudget)
   const progress = Math.min(1, Math.max(0, turnsPlayed / safeBudget))
   const roleLabel = session.player_role?.label ? t("home.resume_role", { role: session.player_role.label }) : null
+  const copy = getHomeTileCopy("in_progress_run", t)
   return (
     <motion.button
+      data-home-story-object-kind="in-progress-run"
       style={{ ...hpStyles.resumeButton, ...(compact ? hpStyles.resumeButtonCompact : null) }}
       onClick={onClick}
       type="button"
@@ -386,8 +584,8 @@ function ContinueRunSpotlight({
       whileTap={tapPress}
     >
       <div style={hpStyles.resumeCopy}>
-        <span style={hpStyles.resumeKicker}>{t("home.resume_kicker")}</span>
-        <Truncated lines={2} style={hpStyles.resumeTitle}>{session.template_title}</Truncated>
+        <span style={hpStyles.resumeKicker}>{copy.typeLabel}</span>
+        <Truncated lines={2} style={hpStyles.resumeTitle}>{displayTitle}</Truncated>
         <div style={hpStyles.resumeMeta}>
           {t("home.session_progress_meta", {
             current: turnsPlayed,
@@ -402,7 +600,7 @@ function ContinueRunSpotlight({
         <span style={{ ...hpStyles.resumeProgressFill, width: `${progress * 100}%` }} />
       </div>
       <span style={{ ...hpStyles.resumeCta, ...(compact ? hpStyles.resumeCtaCompact : null) }}>
-        {t("home.resume_cta")}
+        {copy.primaryAction}
       </span>
     </motion.button>
   )
@@ -424,7 +622,9 @@ function SessionCard({
 }) {
   const { lang } = useLanguage()
   const t = useT()
+  const displayTitle = getSessionDisplayTitle(session, lang)
   const completed = Boolean(session.ending_label)
+  const copy = getHomeTileCopy(completed ? "completed_memory" : "in_progress_run", t)
   const safeBudget = Math.max(session.turn_budget, 1)
   const turnsPlayed = Math.min(Math.max(session.turn_count, 0), safeBudget)
   const endingLabelDisplay = session.ending_label
@@ -447,6 +647,7 @@ function SessionCard({
         : "◇"
   return (
     <motion.button
+      data-home-story-object-kind={completed ? "completed-memory" : "in-progress-run"}
       style={{
         ...hpStyles.sessionCard,
         ...(archiveNumber != null ? hpStyles.sessionCardArchive : null),
@@ -464,7 +665,8 @@ function SessionCard({
           #{archiveNumber}
         </span>
       ) : null}
-      <Truncated style={hpStyles.sessionTitle}>{session.template_title}</Truncated>
+      <span style={hpStyles.sessionObjectLabel}>{copy.typeLabel}</span>
+      <Truncated style={hpStyles.sessionTitle}>{displayTitle}</Truncated>
       {completed ? (
         <>
           <div style={hpStyles.sessionEndingLine}>
@@ -477,7 +679,8 @@ function SessionCard({
             </Truncated>
           </div>
           <div style={hpStyles.sessionMeta}>
-            {t("home.session_completed_meta")} · {formatRelative(session.last_active_at, t)}
+            {t("home.session_completed_meta")} · {formatRelative(session.last_active_at, t)} ·{" "}
+            <span style={hpStyles.sessionAction}>{copy.primaryAction}</span>
           </div>
         </>
       ) : (
@@ -486,7 +689,8 @@ function SessionCard({
             current: turnsPlayed,
             total: session.turn_budget,
           })}{" "}
-          · {formatRelative(session.last_active_at, t)}
+          · {formatRelative(session.last_active_at, t)} ·{" "}
+          <span style={hpStyles.sessionAction}>{copy.primaryAction}</span>
         </div>
       )}
     </motion.button>
@@ -498,14 +702,96 @@ function TemplateGrid({
   error,
   emptyText,
   compact,
-  onOpenTemplate,
+  onStartTemplate,
+  startingTemplateId,
+  hideEmpty = false,
 }: {
   templates: NarrativeTemplateSummary[] | null
   error: string | null
   emptyText: string
   compact: boolean
-  onOpenTemplate: (templateId: string) => void
+  onStartTemplate: (templateId: string) => void
+  startingTemplateId: string | null
+  hideEmpty?: boolean
 }) {
+  const t = useT()
+  const { lang } = useLanguage()
+  if (error) {
+    return <div style={hpStyles.errorBox}>{error}</div>
+  }
+  if (!templates) {
+    return <LoadingShim variant="inline" />
+  }
+  if (templates.length === 0) {
+    if (hideEmpty) return null
+    return (
+      <motion.div
+        style={hpStyles.emptyCard}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={itemTransition}
+      >
+        <div
+          style={{
+            ...hpStyles.emptyHero,
+            backgroundImage: `linear-gradient(180deg, rgba(20,16,12,0.05) 0%, rgba(20,16,12,0.55) 75%, var(--bg-elev) 100%), url(${getEmptyPlazaImage()})`,
+          }}
+        />
+        <div style={hpStyles.emptyBody}>{emptyText}</div>
+      </motion.div>
+    )
+  }
+  const assignedCovers = assignTemplateCovers(templates)
+  const assignedTiles = assignHomeMosaicSpans(templates.map((template) => ({
+    ...publishedStoryView(
+      template,
+      assignedCovers[template.template_id],
+      lang,
+      t,
+      startingTemplateId === template.template_id,
+    ),
+    id: template.template_id,
+    kind: "published_story" as const,
+    template,
+  })))
+  return (
+    <div
+      style={{ ...hpStyles.editorialMosaic, ...(compact ? hpStyles.editorialMosaicCompact : null) }}
+      data-home-editorial-mosaic="true"
+    >
+      {assignedTiles.map((tile, idx) => (
+        <TemplateCard
+          key={tile.template.template_id}
+          template={tile.template}
+          view={tile}
+          span={tile.span}
+          archetype={tile.archetype}
+          index={idx}
+          compact={compact}
+          isStarting={startingTemplateId === tile.template.template_id}
+          onClick={() => onStartTemplate(tile.template.template_id)}
+        />
+      ))}
+    </div>
+  )
+}
+
+function HomeEditorialMosaic({
+  templates,
+  error,
+  compact,
+  lang,
+  onStartTemplate,
+  startingTemplateId,
+}: {
+  templates: NarrativeTemplateSummary[] | null
+  error: string | null
+  compact: boolean
+  lang: "zh" | "en"
+  onStartTemplate: (templateId: string) => void
+  startingTemplateId: string | null
+}) {
+  const t = useT()
   if (error) {
     return <div style={hpStyles.errorBox}>{error}</div>
   }
@@ -526,19 +812,42 @@ function TemplateGrid({
             backgroundImage: `linear-gradient(180deg, rgba(20,16,12,0.05) 0%, rgba(20,16,12,0.55) 75%, var(--bg-elev) 100%), url(${getEmptyPlazaImage()})`,
           }}
         />
-        <div style={hpStyles.emptyBody}>{emptyText}</div>
+        <div style={hpStyles.emptyBody}>{t("home.empty_plaza")}</div>
       </motion.div>
     )
   }
+  const assignedCovers = templates ? assignTemplateCovers(templates) : {}
+  const items = assignHomeMosaicSpans(
+    templates.map((template) => ({
+      ...publishedStoryView(
+        template,
+        assignedCovers[template.template_id],
+        lang,
+        t,
+        startingTemplateId === template.template_id,
+      ),
+      id: template.template_id,
+      kind: "published_story" as const,
+      template,
+    })),
+  )
+
   return (
-    <div style={{ ...hpStyles.grid, ...(compact ? hpStyles.gridCompact : null) }}>
-      {templates.map((t, idx) => (
+    <div
+      style={{ ...hpStyles.editorialMosaic, ...(compact ? hpStyles.editorialMosaicCompact : null) }}
+      data-home-editorial-mosaic="true"
+    >
+      {items.map((item, idx) => (
         <TemplateCard
-          key={t.template_id}
-          template={t}
-          index={idx}
+          key={item.id}
+          template={item.template}
+          view={item}
+          span={item.span}
+          archetype={item.archetype}
           compact={compact}
-          onClick={() => onOpenTemplate(t.template_id)}
+          index={idx}
+          isStarting={startingTemplateId === item.template.template_id}
+          onClick={() => onStartTemplate(item.template.template_id)}
         />
       ))}
     </div>
@@ -547,63 +856,246 @@ function TemplateGrid({
 
 function TemplateCard({
   template,
+  view,
+  span,
+  archetype,
   onClick,
   index = 0,
   compact,
+  isStarting = false,
 }: {
   template: NarrativeTemplateSummary
+  view?: HomeStoryObjectView
+  span: HomeTileSpan
+  archetype: HomeTileArchetype
   onClick: () => void
   index?: number
   compact: boolean
+  isStarting?: boolean
 }) {
   const t = useT()
-  const cover = getCoverForTemplate(template)
+  const { lang } = useLanguage()
+  const displayView = view ?? publishedStoryView(template, getCoverByStoryId(template.template_id, template.title), lang, t, isStarting)
   return (
     <motion.button
-      style={{ ...hpStyles.card, ...(compact ? hpStyles.cardCompact : null) }}
+      data-story-card-kind="published-story"
+      data-home-tile-span={span}
+      data-home-tile-archetype={archetype}
+      aria-label={`${displayView.title} · ${displayView.deck} · ${displayView.copy.primaryAction}`}
+      style={{
+        ...hpStyles.editorialTile,
+        ...hpStyles.editorialTilePublished,
+        ...homeTileSpanStyle(span, compact),
+      }}
       onClick={onClick}
       type="button"
+      disabled={isStarting}
+      aria-busy={isStarting}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, ...itemTransition }}
       whileHover={{ x: 2 }}
       whileTap={tapPress}
     >
-      <div
-        style={{
-          ...hpStyles.cardCover,
-          ...(compact ? hpStyles.cardCoverCompact : null),
-          backgroundImage: `url(${cover})`,
-        }}
+      <PublishedTileComposition
+        archetype={archetype}
+        span={span}
+        compact={compact}
+        view={displayView}
       />
-      <div style={{ ...hpStyles.cardBody, ...(compact ? hpStyles.cardBodyCompact : null) }}>
-        <div>
-          <Truncated lines={2} style={hpStyles.cardTitle}>
-            {template.title}
-          </Truncated>
-          <Truncated style={hpStyles.cardCast}>
-            {template.cast.map((c) => c.display_name).join(" · ")}
-          </Truncated>
-        </div>
-        <Truncated
-          lines={compact ? 3 : 2}
-          style={{ ...hpStyles.cardSeed, ...(compact ? hpStyles.cardSeedCompact : null) }}
-        >
-          {`"${template.seed}"`}
-        </Truncated>
-        <div style={{ ...hpStyles.cardFooter, ...(compact ? hpStyles.cardFooterCompact : null) }}>
-          <span style={hpStyles.cardBadge}>{visibilityLabel(template.visibility, t)}</span>
-          <span style={hpStyles.cardPlays}>{t("home.played_count", { count: template.play_count })}</span>
-          {template.is_owner ? (
-            <span style={hpStyles.cardOwnerBadge}>{t("home.is_owner")}</span>
-          ) : null}
-          <span style={{ ...hpStyles.cardAction, ...(compact ? hpStyles.cardActionCompact : null) }}>
-            {t("home.card_action")}
-          </span>
-        </div>
-      </div>
     </motion.button>
   )
+}
+
+function PublishedTileComposition({
+  archetype,
+  span,
+  compact,
+  view,
+}: {
+  archetype: HomeTileArchetype
+  span: HomeTileSpan
+  compact: boolean
+  view: HomeStoryObjectView
+}) {
+  const standardBody = <HomeTileTextBody view={view} span={span} compact={compact} />
+
+  if (archetype === "full_bleed_cinematic") {
+    return (
+      <FullBleedTileImage cover={view.cover}>
+        {standardBody}
+      </FullBleedTileImage>
+    )
+  }
+  return (
+    <span style={framedTileLayoutStyle(span, compact)} data-home-framed-editorial="true">
+      <TileMediaWell cover={view.cover} variant={tileMediaVariantForSpan(span, compact)} />
+      <span style={framedTextPanelStyle(span, compact)}>{standardBody}</span>
+    </span>
+  )
+}
+
+function HomeTileTextBody({
+  view,
+  span,
+  compact,
+}: {
+  view: HomeStoryObjectView
+  span: HomeTileSpan
+  compact: boolean
+}) {
+  const tightTile = span === "notice-wide" || span === "dispatch"
+  return (
+    <span data-home-tile-text-body="title-deck-only" style={hpStyles.tileLowInfoBody}>
+      <TileTitle span={span} compact={compact} lines={tightTile ? 2 : 3}>{view.title}</TileTitle>
+      <span
+        style={{
+          ...hpStyles.editorialTileDeck,
+          ...(compact ? hpStyles.editorialTileDeckCompact : null),
+        }}
+      >
+        {view.deck}
+      </span>
+    </span>
+  )
+}
+
+function FullBleedTileImage({
+  cover,
+  children,
+}: {
+  cover: string
+  children: ReactNode
+}) {
+  const overlay =
+    "linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.32) 48%, rgba(12,12,16,0.88) 100%)"
+  return (
+    <span style={hpStyles.fullBleedLayout} data-home-full-bleed="true">
+      <span
+        aria-hidden
+        style={{
+          ...hpStyles.editorialTileImage,
+          backgroundImage: `${overlay}, url(${cover})`,
+        }}
+      />
+      <span style={hpStyles.fullBleedReadingBand} data-home-reading-band="true">
+        {children}
+      </span>
+    </span>
+  )
+}
+
+function TileMediaWell({
+  cover,
+  variant,
+}: {
+  cover: string
+  variant: "framed" | "side"
+}) {
+  return (
+    <span
+      aria-hidden
+      data-home-media-well={variant}
+      style={{
+        ...hpStyles.mediaWell,
+        ...mediaWellVariantStyle(variant),
+        backgroundImage: `linear-gradient(180deg, rgba(12,12,16,0.02) 0%, rgba(12,12,16,0.18) 58%, rgba(12,12,16,0.50) 100%), url(${cover})`,
+      }}
+    />
+  )
+}
+
+function TileTitle({
+  span,
+  compact,
+  lines,
+  children,
+}: {
+  span: HomeTileSpan
+  compact: boolean
+  lines?: number
+  children: string
+}) {
+  return (
+    <span
+      style={{
+        ...hpStyles.editorialTileTitle,
+        ...homeTileTitleStyle(span, compact),
+        ...lineClampStyle(lines ?? 3),
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+function lineClampStyle(lines: number): CSSProperties {
+  if (lines <= 1) {
+    return {
+      display: "block",
+      maxWidth: "100%",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+    }
+  }
+  return {
+    display: "-webkit-box",
+    WebkitLineClamp: lines,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  }
+}
+
+function homeTileSpanStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (compact) {
+    return {
+      gridColumn: "auto",
+      gridRow: "auto",
+      minHeight: span === "feature-tall" ? 278 : span === "dispatch" ? 218 : 244,
+    }
+  }
+  if (span === "feature-wide") return { gridColumn: "span 2", gridRow: "span 2" }
+  if (span === "feature-tall") return { gridColumn: "span 1", gridRow: "span 3" }
+  if (span === "feature-horizontal") return { gridColumn: "span 2", gridRow: "span 1" }
+  if (span === "notice-wide") return { gridColumn: "span 2", gridRow: "span 1" }
+  if (span === "dispatch") return { gridColumn: "span 2", gridRow: "span 1" }
+  return { gridColumn: "span 2", gridRow: "span 1" }
+}
+
+function homeTileTitleStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (compact) return { fontSize: 24, lineHeight: 1.1 }
+  if (span === "feature-wide") return { fontSize: 30, lineHeight: 1.05 }
+  if (span === "feature-tall") return { fontSize: 25, lineHeight: 1.08 }
+  if (span === "feature-horizontal" || span === "notice-wide") return { fontSize: 22, lineHeight: 1.12 }
+  return { fontSize: 17.5, lineHeight: 1.16 }
+}
+
+function framedTileLayoutStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (compact) return hpStyles.framedTileStack
+  if (isSingleRowHomeTileSpan(span)) return hpStyles.framedTileSplit
+  return hpStyles.framedTileStack
+}
+
+function framedTextPanelStyle(span: HomeTileSpan, compact: boolean): CSSProperties {
+  if (!compact && isSingleRowHomeTileSpan(span)) {
+    return { ...hpStyles.framedTextPanel, ...hpStyles.framedTextPanelSplit }
+  }
+  return hpStyles.framedTextPanel
+}
+
+function tileMediaVariantForSpan(span: HomeTileSpan, compact: boolean): "framed" | "side" {
+  if (!compact && isSingleRowHomeTileSpan(span)) return "side"
+  return "framed"
+}
+
+function isSingleRowHomeTileSpan(span: HomeTileSpan): boolean {
+  return span === "feature-horizontal" || span === "dispatch" || span === "notice-wide"
+}
+
+function mediaWellVariantStyle(variant: "framed" | "side"): CSSProperties {
+  if (variant === "side") return hpStyles.mediaWellSide
+  return hpStyles.mediaWellFramed
 }
 
 function visibilityLabel(v: NarrativeTemplateSummary["visibility"], t: ReturnType<typeof useT>): string {
@@ -930,7 +1422,19 @@ const hpStyles: Record<string, CSSProperties> = {
     fontWeight: 500,
     color: "var(--text)",
   },
+  sessionObjectLabel: {
+    display: "block",
+    marginBottom: 6,
+    color: "rgba(245,200,120,0.82)",
+    fontSize: 10.8,
+    fontWeight: 760,
+    lineHeight: 1.12,
+  },
   sessionMeta: { fontSize: 12, color: "var(--text-faint)", marginTop: 6 },
+  sessionAction: {
+    color: "rgba(245,200,120,0.86)",
+    fontWeight: 760,
+  },
   sessionEndingLine: {
     display: "flex",
     alignItems: "baseline",
@@ -956,6 +1460,230 @@ const hpStyles: Record<string, CSSProperties> = {
     minWidth: 0,
   },
 
+  editorialMosaic: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gridAutoRows: "clamp(172px, 12vw, 190px)",
+    gridAutoFlow: "dense" as const,
+    gap: 12,
+    marginBottom: 22,
+  },
+  editorialMosaicCompact: {
+    gridTemplateColumns: "1fr",
+    gridAutoRows: "auto",
+    gap: 14,
+  },
+  editorialTile: {
+    position: "relative" as const,
+    minHeight: "100%",
+    padding: 0,
+    background: "rgba(12,12,16,0.62)",
+    borderTopWidth: 1,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopStyle: "solid",
+    borderRightStyle: "solid",
+    borderBottomStyle: "solid",
+    borderLeftStyle: "solid",
+    borderTopColor: "rgba(212,168,83,0.40)",
+    borderRightColor: "transparent",
+    borderBottomColor: "transparent",
+    borderLeftColor: "transparent",
+    borderRadius: 0,
+    color: "var(--text)",
+    cursor: "pointer",
+    overflow: "visible",
+    textAlign: "left" as const,
+    display: "block",
+    isolation: "isolate" as const,
+    boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.055)",
+    transition: "opacity 180ms, transform 180ms, filter 180ms",
+  },
+  editorialTilePublished: {
+    borderTopColor: "rgba(212,168,83,0.58)",
+  },
+  editorialTileImage: {
+    position: "absolute" as const,
+    inset: 0,
+    zIndex: 0,
+    display: "block",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  },
+  editorialTileBody: {
+    position: "relative" as const,
+    zIndex: 1,
+    minHeight: "100%",
+    maxHeight: "100%",
+    boxSizing: "border-box" as const,
+    overflow: "hidden",
+    padding: "18px 18px 16px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 7,
+  },
+  editorialTileKicker: {
+    width: "fit-content",
+    color: "rgba(245,200,120,0.82)",
+    fontSize: 10.5,
+    fontWeight: 780,
+    lineHeight: 1.12,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+  },
+  editorialTileTitle: {
+    fontFamily: "var(--font-narrative)",
+    color: "rgba(255,246,232,0.98)",
+    fontWeight: 500,
+    letterSpacing: 0,
+    textShadow: "0 2px 18px rgba(0,0,0,0.44)",
+  },
+  editorialTileDeck: {
+    color: "rgba(244,239,230,0.76)",
+    fontSize: 13.1,
+    lineHeight: 1.45,
+    textShadow: "0 1px 12px rgba(0,0,0,0.56)",
+    minHeight: 0,
+  },
+  editorialTileDeckCompact: {
+    fontSize: 12.8,
+    lineHeight: 1.42,
+  },
+  tileLowInfoBody: {
+    display: "flex",
+    minWidth: 0,
+    minHeight: 0,
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 9,
+  },
+  editorialTileAction: {
+    width: "fit-content",
+    marginTop: 2,
+    paddingBottom: 3,
+    borderBottom: "1px solid rgba(245,200,120,0.48)",
+    color: "rgba(245,200,120,0.95)",
+    fontSize: 11.6,
+    fontWeight: 800,
+    lineHeight: 1.2,
+    flexShrink: 0,
+    whiteSpace: "nowrap",
+  },
+  starterKicker: {
+    color: "rgba(245,180,132,0.86)",
+  },
+  publishedKicker: {
+    color: "rgba(245,200,120,0.86)",
+  },
+  resumeKickerTile: {
+    color: "rgba(255,226,178,0.88)",
+  },
+  memoryKicker: {
+    color: "rgba(244,239,230,0.78)",
+  },
+  starterAction: {
+    borderBottomColor: "rgba(224,122,95,0.62)",
+    color: "rgba(245,190,150,0.96)",
+  },
+  publishedAction: {
+    borderBottomColor: "rgba(245,200,120,0.52)",
+    color: "rgba(245,200,120,0.96)",
+  },
+  resumeAction: {
+    borderBottomColor: "rgba(245,200,120,0.46)",
+    color: "rgba(255,226,178,0.94)",
+  },
+  memoryAction: {
+    borderBottomColor: "rgba(244,239,230,0.28)",
+    color: "rgba(244,239,230,0.82)",
+  },
+  fullBleedLayout: {
+    position: "relative" as const,
+    display: "flex",
+    alignItems: "flex-end",
+    height: "100%",
+    minHeight: "100%",
+    overflow: "hidden",
+  },
+  fullBleedReadingBand: {
+    position: "relative" as const,
+    zIndex: 1,
+    width: "100%",
+    boxSizing: "border-box" as const,
+    padding: "20px 20px 18px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-end",
+    gap: 9,
+    background: "linear-gradient(180deg, rgba(12,12,16,0.16) 0%, rgba(12,12,16,0.82) 62%, rgba(12,12,16,0.94) 100%)",
+    borderTop: "1px solid rgba(245,200,120,0.20)",
+    boxShadow: "0 -22px 44px rgba(0,0,0,0.28)",
+  },
+  framedTileStack: {
+    height: "100%",
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateRows: "minmax(120px, 42%) minmax(0, 1fr)",
+    background: "linear-gradient(135deg, rgba(12,12,16,0.98), rgba(50,15,18,0.78))",
+  },
+  framedTileSplit: {
+    height: "100%",
+    minHeight: "100%",
+    display: "grid",
+    gridTemplateColumns: "minmax(136px, 38%) minmax(0, 1fr)",
+    background: "linear-gradient(135deg, rgba(12,12,16,0.98), rgba(48,14,18,0.78))",
+  },
+  framedTextPanel: {
+    minWidth: 0,
+    boxSizing: "border-box" as const,
+    padding: "18px 18px 17px",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "center",
+    gap: 9,
+    borderTop: "1px solid rgba(245,200,120,0.13)",
+  },
+  framedTextPanelSplit: {
+    justifyContent: "center",
+    borderTop: "none",
+    borderLeft: "1px solid rgba(245,200,120,0.13)",
+  },
+  mediaWell: {
+    display: "block",
+    minWidth: 0,
+    boxSizing: "border-box" as const,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    overflow: "hidden",
+    borderTopWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderLeftWidth: 1,
+    borderTopStyle: "solid",
+    borderRightStyle: "solid",
+    borderBottomStyle: "solid",
+    borderLeftStyle: "solid",
+    borderTopColor: "rgba(245,200,120,0.20)",
+    borderRightColor: "rgba(245,200,120,0.20)",
+    borderBottomColor: "rgba(245,200,120,0.20)",
+    borderLeftColor: "rgba(245,200,120,0.20)",
+    boxShadow: "inset 0 0 34px rgba(0,0,0,0.36)",
+  },
+  mediaWellFramed: {
+    marginTop: 12,
+    marginRight: 12,
+    marginBottom: 0,
+    marginLeft: 12,
+    minHeight: 110,
+  },
+  mediaWellSide: {
+    margin: 12,
+    minHeight: 0,
+    height: "calc(100% - 24px)",
+  },
+
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr",
@@ -963,6 +1691,82 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   gridCompact: {
     gap: 28,
+  },
+  curatedGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 14,
+    marginBottom: 24,
+  },
+  curatedGridCompact: {
+    gridTemplateColumns: "1fr",
+    gap: 16,
+  },
+  curatedStory: {
+    display: "grid",
+    gridTemplateColumns: "minmax(132px, 36%) minmax(0, 1fr)",
+    minHeight: 148,
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderTop: "1px solid rgba(245,200,120,0.34)",
+    borderRadius: 0,
+    color: "var(--text)",
+    cursor: "pointer",
+    overflow: "hidden",
+    textAlign: "left",
+  },
+  curatedStoryCompact: {
+    gridTemplateColumns: "1fr",
+  },
+  curatedCover: {
+    minHeight: 148,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    display: "block",
+  },
+  curatedBody: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    minWidth: 0,
+    padding: "18px 0 18px 16px",
+    gap: 8,
+  },
+  curatedKicker: {
+    width: "fit-content",
+    color: "rgba(245,200,120,0.72)",
+    fontSize: 10.5,
+    fontWeight: 760,
+    lineHeight: 1.15,
+    letterSpacing: 0,
+  },
+  curatedTitle: {
+    fontFamily: "var(--font-narrative)",
+    fontSize: 20,
+    lineHeight: 1.16,
+    color: "var(--text)",
+    fontWeight: 500,
+  },
+  curatedPressure: {
+    fontSize: 12.5,
+    lineHeight: 1.35,
+    color: "var(--text-muted)",
+  },
+  curatedPromise: {
+    fontSize: 11.5,
+    color: "var(--text-faint)",
+    lineHeight: 1.3,
+  },
+  curatedAction: {
+    width: "fit-content",
+    marginTop: 2,
+    paddingBottom: 4,
+    borderBottom: "1px solid rgba(245,200,120,0.4)",
+    color: "rgba(245,200,120,0.92)",
+    fontSize: 12,
+    fontWeight: 760,
+    lineHeight: 1.2,
   },
   card: {
     textAlign: "left",
@@ -1002,6 +1806,15 @@ const hpStyles: Record<string, CSSProperties> = {
     justifyContent: "center",
     gap: 14,
     background: "transparent",
+  },
+  cardKicker: {
+    display: "inline-block",
+    marginBottom: 7,
+    color: "rgba(245,200,120,0.72)",
+    fontSize: 10.5,
+    fontWeight: 760,
+    lineHeight: 1.15,
+    letterSpacing: 0,
   },
   cardBodyCompact: {
     padding: "12px 0 0",

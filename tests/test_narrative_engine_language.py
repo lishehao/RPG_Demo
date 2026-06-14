@@ -1,5 +1,5 @@
 from rpg_backend.narrative.contracts import STORY_OPTION_LABEL_MAX_LENGTH
-from rpg_backend.narrative.engine import _parse_options
+from rpg_backend.narrative.engine import _parse_branches, _parse_options
 
 
 def test_parse_options_normalizes_chinese_intent_tags_for_english_templates() -> None:
@@ -70,3 +70,32 @@ def test_parse_options_clips_very_long_labels_at_word_boundary() -> None:
         "while forcing the board chair to answer on..."
     )
     assert len(options[0].label) <= STORY_OPTION_LABEL_MAX_LENGTH
+
+
+def test_parse_branches_drops_dangling_fragments_and_adds_punctuation() -> None:
+    branches = _parse_branches(
+        [
+            {
+                "pivot_beat_ord": 2,
+                "chosen_path_summary": "You stalled",
+                "alternate_path_summary": "This path leads to...",
+                "alternate_ending_label": "和解",
+                "rationale": "This path leads to...",
+            },
+            {
+                "pivot_beat_ord": 4,
+                "chosen_path_summary": "You exposed the forged note",
+                "alternate_path_summary": "You apologized before naming the thief",
+                "alternate_ending_label": "和解",
+                "rationale": "That softer move would likely keep the room from splitting",
+            },
+        ],
+        valid_ords={2, 4},
+        actual_ending_label="夺回",
+    )
+
+    assert len(branches) == 1
+    assert branches[0].pivot_beat_ord == 4
+    assert branches[0].chosen_path_summary.endswith(".")
+    assert branches[0].alternate_path_summary.endswith(".")
+    assert branches[0].rationale.endswith(".")

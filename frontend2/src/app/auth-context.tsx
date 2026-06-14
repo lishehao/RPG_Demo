@@ -8,6 +8,7 @@ type AuthState = {
   // True when the cookie corresponds to a user we created (signed-in), false
   // when the backend is just handing us the anonymous fallback user.
   isAnonymous: boolean
+  canViewAgentTrace: boolean
   login: (username: string) => Promise<AuthUserResponse>
   logout: () => Promise<void>
   refresh: () => Promise<void>
@@ -28,6 +29,7 @@ function detectAnonymous(user: AuthUserResponse | null): boolean {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const api = useApi()
   const [user, setUser] = useState<AuthUserResponse | null>(null)
+  const [canViewAgentTrace, setCanViewAgentTrace] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
@@ -35,8 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await api.getAuthSession()
       setUser(response.user)
+      setCanViewAgentTrace(Boolean(response.can_view_agent_trace))
     } catch {
       setUser(null)
+      setCanViewAgentTrace(false)
     } finally {
       setLoading(false)
     }
@@ -50,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (username: string) => {
       const response = await api.loginAuth({ username })
       setUser(response.user)
+      setCanViewAgentTrace(Boolean(response.can_view_agent_trace))
       if (!response.user) {
         throw new Error("Login succeeded but no user payload returned")
       }
@@ -72,11 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       user,
       isAnonymous: detectAnonymous(user),
+      canViewAgentTrace,
       login,
       logout,
       refresh,
     }),
-    [loading, user, login, logout, refresh],
+    [loading, user, canViewAgentTrace, login, logout, refresh],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

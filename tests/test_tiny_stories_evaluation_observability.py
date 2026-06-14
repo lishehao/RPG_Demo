@@ -1,0 +1,266 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from tools.rpg_eval.tiny_stories_reliability_harness import (
+    REQUIRED_CASES,
+    REQUIRED_FAILURE_CATEGORIES,
+    REQUIRED_HEALTH_CONFIG,
+    REQUIRED_LIVE_OPERATIONS,
+    GOLD_SET_PATH,
+    _live_operation_failures,
+    run_protocol_contract,
+)
+from tools.rpg_eval.tiny_stories_golden_path_harness import (
+    GOLDEN_PATH_REQUIRED_OPERATIONS,
+    GOLDEN_PATH_TURN_BUDGET,
+    QUALITY_CRITERIA,
+    _quality_summary,
+    _telemetry_failures,
+)
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_tiny_stories_reliability_gold_set_covers_required_product_cases() -> None:
+    payload = json.loads(GOLD_SET_PATH.read_text())
+    case_ids = {case["case_id"] for case in payload["cases"]}
+    taxonomy = set(payload["failure_taxonomy"])
+
+    assert REQUIRED_CASES.issubset(case_ids)
+    assert REQUIRED_FAILURE_CATEGORIES.issubset(taxonomy)
+    assert len(payload["cases"]) >= 7
+    assert "high_drama_awards_supported" in case_ids
+    high_drama = next(case for case in payload["cases"] if case["case_id"] == "high_drama_awards_supported")
+    assert "there_is_no_gore" in high_drama["expected"]["forbidden_entities"]
+    assert "opening_reaches_play" in high_drama["expected"]
+
+
+def test_reliability_harness_emits_protocol_summary(tmp_path) -> None:
+    output = tmp_path / "summary.json"
+    summary = run_protocol_contract(output)
+
+    assert output.exists()
+    assert summary["schema_version"] == "tiny_stories_reliability_protocol_summary.v1"
+    assert summary["status"] == "pass"
+    assert summary["case_count"] >= 7
+    assert summary["trajectory_judge"]["schema_version"] == "trajectory_judge.v1"
+    assert summary["trajectory_judge"]["status"] in {"pass", "warn"}
+
+
+def test_live_acceptance_contract_requires_core_live_operations() -> None:
+    assert {
+        "create.story_butler_turn",
+        "narrative.story_brief",
+        "narrative.opening",
+        "narrative.advance_turn",
+    }.issubset(REQUIRED_LIVE_OPERATIONS)
+    assert {
+        "text_llm",
+        "create_story_butler",
+        "story_brief",
+        "opening",
+        "play_turns",
+    }.issubset(REQUIRED_HEALTH_CONFIG)
+
+
+def test_live_operation_validation_rejects_fallback_rows() -> None:
+    rows = [
+        {
+            "operation": "create.story_butler_turn",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+        },
+        {
+            "operation": "narrative.story_brief",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+        },
+        {
+            "operation": "narrative.opening",
+            "status": "fallback_used",
+            "source_label": "deterministic_fallback",
+            "fallback_reason": "live_invalid_response",
+        },
+        {
+            "operation": "narrative.advance_turn",
+            "status": "success",
+            "source_label": "live_repaired",
+            "fallback_reason": None,
+        },
+    ]
+
+    failures = _live_operation_failures(rows)
+
+    assert failures
+    assert failures[0]["stage"] == "narrative.opening"
+    assert failures[0]["category"] == "provider"
+
+
+def test_golden_path_contract_requires_12_live_turns_and_core_ops() -> None:
+    assert GOLDEN_PATH_TURN_BUDGET == 12
+    assert GOLDEN_PATH_REQUIRED_OPERATIONS == {
+        "create.story_butler_turn",
+        "narrative.story_brief",
+        "narrative.opening",
+        "narrative.advance_turn",
+    }
+    assert {
+        "consequence_clarity",
+        "choice_diversity",
+        "escalation",
+        "character_intent",
+        "brief_payoff",
+        "playable_options",
+    }.issubset(set(QUALITY_CRITERIA))
+
+
+def test_golden_path_telemetry_rejects_missing_or_fallback_turn_rows() -> None:
+    rows = [
+        {
+            "operation": "create.story_butler_turn",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+        },
+        {
+            "operation": "narrative.story_brief",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+        },
+        {
+            "operation": "narrative.opening",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+            "session_id": "sess_gold",
+        },
+    ]
+    rows.extend(
+        {
+            "operation": "narrative.advance_turn",
+            "status": "success",
+            "source_label": "live",
+            "fallback_reason": None,
+            "session_id": "sess_gold",
+        }
+        for _ in range(11)
+    )
+    rows.append(
+        {
+            "operation": "narrative.advance_turn",
+            "status": "fallback_used",
+            "source_label": "deterministic_fallback",
+            "fallback_reason": "turn_value_error",
+            "session_id": "sess_gold",
+        }
+    )
+
+    failures = _telemetry_failures(events=rows, session_id="sess_gold", turn_budget=12)
+
+    assert failures
+    assert any(failure["stage"] == "narrative.advance_turn" for failure in failures)
+    assert any("fallback" in failure["message"] for failure in failures)
+
+
+def test_golden_path_quality_summary_is_bounded_not_research_metric() -> None:
+    turns = [
+        {
+            "turn_number": index,
+            "chosen_option_label": f"Choice {index % 5}",
+            "next_option_count": 3 if index < 12 else 0,
+            "is_complete": index == 12,
+        }
+        for index in range(1, 13)
+    ]
+    agent_events = []
+    phases = ["hook", "pressure", "reversal", "climax", "pre_finale", "finale"]
+    for index in range(1, 13):
+        phase = phases[min(len(phases) - 1, index // 2)]
+        agent_events.extend([
+            {
+                "event_type": "agent_plan",
+                "payload": {
+                    "director": {
+                        "stage_phase": phase,
+                        "active_npc_ids": ["singer"] if index > 1 else [],
+                    }
+                },
+            },
+            {
+                "event_type": "step_judge",
+                "payload": {"status": "pass"},
+            },
+            {
+                "event_type": "contract_judge",
+                "payload": {"status": "pass"},
+            },
+        ])
+    summary = _quality_summary(
+        turn_summaries=turns,
+        agent_events=agent_events,
+        story={"messages": [{"role": "narrator", "content": "The gala trophy livestream cornered the publicist and singer."}]},
+        ending={"label": "自由", "subtitle": "I held the record.", "passage": "The sponsor faced the awards room."},
+        seed="At an awards gala, a publicist, a singer, and a sponsor discover the live trophy reveal is rigged.",
+    )
+
+    assert summary["schema_version"] == "tiny_stories_golden_path_quality.v1"
+    assert summary["status"] in {"pass", "warn"}
+    assert "not a calibrated fun metric" in summary["rationale"]
+
+
+def test_opening_generation_uses_compact_live_prompt_for_eval_gate() -> None:
+    engine = (ROOT / "rpg_backend/narrative/engine.py").read_text()
+    opening_block = engine[engine.index("def _generate_opening_once") : engine.index("_OPENING_PASSAGE_KEY_ALIASES")]
+
+    assert "_OPENING_COMPACT_SYSTEM_PROMPT" in opening_block
+    assert "max_output_tokens=1800" in opening_block
+    assert "max_output_tokens=2500" not in opening_block
+    assert "The runtime can deepen relationships during later turns." in engine
+    assert "Optional arrays should stay empty or contain one item" in engine
+
+
+def test_evaluation_docs_name_reviewer_only_boundary() -> None:
+    docs = (ROOT / "docs/tiny-stories-evaluation-observability-proof.md").read_text()
+
+    assert "Live Acceptance Protocol" in docs
+    assert "Fixture / Protocol Checks" in docs
+    assert "not the main acceptance" in docs
+    assert "reviewer-only evidence path" in docs
+    assert "narrative_llm_call_events" in docs
+    assert "normal player UI" in docs
+    assert "do not call the score a validated academic metric" in docs
+
+
+def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
+    packet = (ROOT / "docs/tiny-stories-engineering-evidence-packet.md").read_text()
+    summary = json.loads(
+        (ROOT / "artifacts/portfolio/tiny-stories-engineering-evidence-summary.json").read_text()
+    )
+
+    assert "```mermaid" in packet
+    assert "Productized LLM / applied AI systems engineering, not HCI research." in packet
+    assert "4382874 fix: keep opening live for eval gate" in packet
+    assert "snapshot/story-brief-opening-live-reliability-2026-06-08" in packet
+    assert "| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |" in packet
+    assert "Step Judge" in packet
+    assert "Contract Judge" in packet
+    assert "deterministic trajectory trend" in packet
+    assert "not a full live trajectory judge" in packet
+    assert "not neural embeddings or a vector database" in packet
+    assert "not the main acceptance" in packet
+
+    live_gate = summary["live_gate"]
+    assert live_gate["status"] == "pass"
+    assert live_gate["failure_count"] == 0
+    operations = {row["operation"]: row for row in live_gate["required_operations"]}
+    assert operations["narrative.opening"]["source"] == "live"
+    assert operations["narrative.opening"]["fallback"] is None
+    assert operations["narrative.opening"]["total_tokens"] == 3462
+    assert any("full live trajectory judge" in item for item in summary["guardrails"])
+    assert any("neural embeddings" in item for item in summary["guardrails"])

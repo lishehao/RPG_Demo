@@ -13,7 +13,9 @@ from rpg_backend.auth import (
     AuthUserResponse,
     AuthenticatedSession,
     CurrentActorResponse,
+    RequestUser,
 )
+from rpg_backend.auth.permissions import can_view_agent_trace
 from rpg_backend.author.contracts import (
     AuthorJobCreateRequest,
     AuthorJobResultResponse,
@@ -58,12 +60,17 @@ from rpg_backend.narrative.contracts import (
     CreateTemplateRequest,
     CreateTemplateResponse,
     EndingDistributionResponse,
+    LLMCallEventListResponse,
     NarrativeEnding,
     NarrativeTemplateSummary,
     PublicReplayResponse,
     SessionListResponse,
     StartSessionRequest,
     StartSessionResponse,
+    StoryBriefAdvisorRequest,
+    StoryBriefAdvisorResponse,
+    StoryGuideTurnRequest,
+    StoryGuideTurnResponse,
     StoryHistoryResponse,
     TemplateListResponse,
     UpdateTemplateVisibilityRequest,
@@ -179,6 +186,25 @@ def _clear_session_cookie(response: Response) -> None:
     )
 
 
+def _auth_session_response(session: AuthenticatedSession | None) -> AuthSessionResponse:
+    response = auth_service.build_session_response(session)
+    if session is None:
+        return response
+    return response.model_copy(
+        update={"can_view_agent_trace": can_view_agent_trace(session.user)}
+    )
+
+
+def require_agent_trace_access(user: RequestUser) -> None:
+    if can_view_agent_trace(user):
+        return
+    raise NarrativeServiceError(
+        code="agent_trace_forbidden",
+        message="Agent trace is available only to authorized reviewer/admin sessions.",
+        status_code=403,
+    )
+
+
 def get_optional_request_session(request: Request) -> AuthenticatedSession | None:
     return auth_service.resolve_session(request)
 
@@ -277,7 +303,21 @@ def handle_quota_error(_: Request, exc: QuotaExceededError) -> JSONResponse:
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    active_settings = get_settings()
+    text_llm_configured = bool(
+        active_settings.resolved_play_responses_base_url()
+        and active_settings.resolved_play_responses_api_key()
+        and active_settings.resolved_play_responses_model()
+    )
+    llm_status = "configured" if text_llm_configured else "missing"
+    return {
+        "status": "ok",
+        "text_llm": llm_status,
+        "create_story_butler": llm_status,
+        "story_brief": llm_status,
+        "opening": llm_status,
+        "play_turns": llm_status,
+    }
 
 
 @app.get("/auth/session", response_model=AuthSessionResponse)
@@ -286,11 +326,12 @@ def get_auth_session(session: AuthenticatedSession | None = Depends(get_optional
     # so the public/unlisted browse + play paths don't require sign-in. Authoring routes
     # still gate with require_session.
     if session is not None:
-        return auth_service.build_session_response(session)
+        return _auth_session_response(session)
     user = _anonymous_request_user()
     return AuthSessionResponse(
         authenticated=True,
         user=AuthUserResponse(user_id=user.user_id, display_name=user.display_name),
+        can_view_agent_trace=False,
     )
 
 
@@ -298,7 +339,7 @@ def get_auth_session(session: AuthenticatedSession | None = Depends(get_optional
 def login_auth_user(payload: AuthLoginRequest, response: Response) -> AuthSessionResponse:
     session = auth_service.login(payload)
     _apply_session_cookie(response, session)
-    return auth_service.build_session_response(session)
+    return _auth_session_response(session)
 
 
 @app.post("/auth/logout", status_code=204)
@@ -315,6 +356,7 @@ def get_current_actor(user=Depends(get_required_request_user)) -> CurrentActorRe
         user_id=user.user_id,
         display_name=user.display_name,
         is_default=user.user_id == (settings.default_actor_id or "anonymous"),
+        can_view_agent_trace=can_view_agent_trace(user),
     )
 
 
@@ -559,6 +601,43 @@ def get_play_session_diagnostics(
 # --------------------------------------------------------------------------
 
 
+@app.post("/narrative/story-briefs", response_model=StoryBriefAdvisorResponse)
+def create_narrative_story_brief(
+    payload: StoryBriefAdvisorRequest,
+    session: AuthenticatedSession = Depends(get_required_request_session),
+) -> StoryBriefAdvisorResponse:
+    """Preview runtime fit, cast focus, and tension profile before generation."""
+    _require_authoring_enabled()
+    _require_non_blank_llm_input(
+        payload.seed,
+        code="seed_required",
+        message="Seed must not be empty.",
+    )
+    return narrative_service.create_story_brief(payload, owner_user_id=session.user.user_id)
+
+
+@app.post("/narrative/story-guide/turns", response_model=StoryGuideTurnResponse)
+def create_narrative_story_guide_turn(
+    payload: StoryGuideTurnRequest,
+    request: Request,
+    session: AuthenticatedSession = Depends(get_required_request_session),
+) -> StoryGuideTurnResponse:
+    """Live-backed Story Butler guide turn for Create.
+
+    The endpoint returns player-safe guide text and structured slot metadata.
+    It uses deterministic safety/slot fallback when the live text gateway is
+    unavailable or when the message is redirected before provider use.
+    """
+    _require_authoring_enabled()
+    _require_non_blank_llm_input(
+        payload.message,
+        code="guide_message_required",
+        message="Message must not be empty.",
+    )
+    _enforce_llm_quota(request, user_id=session.user.user_id)
+    return narrative_service.create_story_guide_turn(payload, owner_user_id=session.user.user_id)
+
+
 @app.post("/narrative/templates", response_model=CreateTemplateResponse)
 def create_narrative_template(
     payload: CreateTemplateRequest,
@@ -632,9 +711,25 @@ def start_narrative_session(
 @app.get("/narrative/sessions/{session_id}/story", response_model=StoryHistoryResponse)
 def get_narrative_story(
     session_id: str,
+    agent_trace: bool = Query(default=False),
     user=Depends(get_required_request_user),
 ) -> StoryHistoryResponse:
-    return narrative_service.get_story_history(session_id, player_user_id=user.user_id)
+    if agent_trace:
+        require_agent_trace_access(user)
+    return narrative_service.get_story_history(
+        session_id,
+        player_user_id=user.user_id,
+        include_agent_trace=agent_trace,
+    )
+
+
+@app.get("/narrative/sessions/{session_id}/llm-events", response_model=LLMCallEventListResponse)
+def get_narrative_llm_events(
+    session_id: str,
+    user=Depends(get_required_request_user),
+) -> LLMCallEventListResponse:
+    require_agent_trace_access(user)
+    return narrative_service.list_llm_call_events(session_id, player_user_id=user.user_id)
 
 
 @app.post(
@@ -645,8 +740,11 @@ def advance_narrative_turn(
     session_id: str,
     payload: AdvanceTurnRequest,
     request: Request,
+    agent_trace: bool = Query(default=False),
     user=Depends(get_required_request_user),
 ) -> AdvanceTurnResponse:
+    if agent_trace:
+        require_agent_trace_access(user)
     narrative_service.validate_advance_request(
         session_id,
         payload,
@@ -657,7 +755,12 @@ def advance_narrative_turn(
         player_user_id=user.user_id,
     )
     _enforce_llm_quota(request, user_id=user.user_id, operation_cost=operation_cost)
-    return narrative_service.advance(session_id, payload, player_user_id=user.user_id)
+    return narrative_service.advance(
+        session_id,
+        payload,
+        player_user_id=user.user_id,
+        include_agent_trace=agent_trace,
+    )
 
 
 @app.post(

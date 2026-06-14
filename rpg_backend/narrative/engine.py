@@ -1,24 +1,34 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any
 
 from rpg_backend.narrative.contracts import (
+    AgentPlan,
     AdvisorMessage,
     BranchHypothetical,
     CastMember,
+    DirectorDecision,
     FailureCondition,
+    GameplayChip,
+    GameplayChipTone,
     Highlight,
     InventoryDelta,
+    MemorySnapshot,
+    NPCIntent,
     NPCPulse,
     PlayedLeverageCard,
     PlayerGoal,
     PlayerLeverageOverNPC,
     PlayerRole,
+    StoryBrief,
     StoryMessage,
     StoryOption,
     STORY_OPTION_LABEL_MAX_LENGTH,
     TemplateLanguage,
+    TurnGameplayMetadata,
+    TurnGameplayNextActionContext,
 )
 from rpg_backend.narrative.gateway import NarrativeGatewayError, NarrativeLLMGateway
 
@@ -106,6 +116,13 @@ _OPENING_SYSTEM_PROMPT = """\
 
 玩家给你一句故事种子，你的任务是为这个故事**搭建初始局面**并**写下开场**。
 
+如果 user_payload 里带有 `story_brief`，它是用户确认过的生成前规划卡：
+- 优先保留 `premise_summary`、`tension_profile`、`story_kernel` 和 `preserved_constraints`
+- cast 只让 `cast_plan.primary_active_entities` 里的 3-5 个实体成为真正可互动的主要角色
+- `cast_plan.secondary_background_entities` 可以作为背景势力、传闻、部门、旁观者或场外压力，不要把所有实体都挤进同一回合
+- `compressed_constraints` / `softened_constraints` 要被温和承接；`dropped_constraints` 不要硬塞回主线
+- comedy / cozy_mystery / family_social / fantasy_sci_fi 不要一律写成黑料勒索。按 `story_kernel` 选择误会、线索、世界规则、忠诚测试等更合适的 tension
+
 输出**严格** JSON 对象，不要 markdown，不要任何解释文字。字段如下：
 
 {
@@ -167,6 +184,72 @@ _OPENING_SYSTEM_PROMPT = """\
 """
 
 
+_OPENING_COMPACT_SYSTEM_PROMPT = """\
+You are the Tiny Stories live opening writer. Build a playable first scene fast.
+
+Return strict JSON only. No markdown, no comments, no prose outside JSON.
+
+Use the requested language from user_payload.language_directive for all player-facing values.
+If user_payload.story_brief is present, honor its premise_summary, tension_profile, story_kernel,
+preserved_constraints, primary_active_entities, and intervention_card_label. Preserve boundaries
+such as "no gore" as constraints, not as cast members.
+
+Keep the response compact. Do not create dense political graphs, long backstories, or extra role
+cards. Optional arrays should stay empty or contain one item when the Brief does not require more.
+The runtime can deepen relationships during later turns.
+
+Required JSON shape:
+{
+  "title": "short story title, 2-6 words in English or concise zh",
+  "advisor_persona": "one outside-scene contact, 25-45 words; include who they are, where they are, tone, and phone/chat access",
+  "cast": [
+    {
+      "character_id": "lowercase_underscore_id",
+      "display_name": "short name or role",
+      "role": "story role",
+      "relation_to_protagonist": "one short phrase",
+      "hidden_objective": "12 words or fewer, or null",
+      "leverage_over_player": "12 words or fewer, or null",
+      "leverages_over_other_npcs": [
+        {"target_npc_id": "another cast id", "leverage": "one concrete pressure item"}
+      ]
+    }
+  ],
+  "player_goals": [
+    {"goal": "one playable goal", "stakes": "what failure costs"}
+  ],
+  "failure_conditions": [
+    {"label": "short trigger", "description": "one concrete unsafe or losing move"}
+  ],
+  "player_role_options": [
+    {
+      "role_id": "role-01",
+      "label": "short player role",
+      "public_persona": "40 words or fewer",
+      "hidden_objective": "one short sentence",
+      "leverages_over_npcs": [
+        {"npc_id": "cast id", "leverage": "one concrete card"}
+      ],
+      "starting_assets": ["one concrete item"]
+    }
+  ],
+  "opening_passage": "90-130 English words or 140-220 zh characters; second person; immediate scene; 2 NPC reactions; one clear decision window; do not preselect the player role",
+  "options": [
+    {"label": "action label", "hint": "short cost or angle", "handle": "2-6 word memory handle"}
+  ]
+}
+
+Hard limits:
+- cast: 2-3 entries unless the Brief requires 4.
+- leverages_over_other_npcs: 0-1 entry per cast member.
+- player_goals: 0-1 entry.
+- failure_conditions: 0-1 entry.
+- player_role_options: 0-1 entry.
+- options: exactly 3.
+- Every non-opening string must be under 16 words. Prefer concrete nouns from the seed over invention.
+"""
+
+
 _TURN_SYSTEM_PROMPT = """\
 你是一名擅长写关系剧的剧作家。玩家正在玩一个互动故事，你负责续写下一段。
 
@@ -196,6 +279,27 @@ _TURN_SYSTEM_PROMPT = """\
     "reason": "为什么这一回合发生了交接，一句 60 字内的描述"
   }
   // ⚠️ inventory_delta 是**可选**字段——大多数回合不会有交接，**省略整个 inventory_delta 字段**。只在剧情**真的发生物件/情报交接**时输出。
+  ,
+  "gameplay_metadata": {
+    "state_deltas": [
+      {"label": "玩家可见的状态变化，如 'Lena trust +1' 或 'Pressure rises'", "tone": "gain | cost | unlock | shift", "target": "pressure | time | npc | evidence | opportunity | motive", "npc_id": "可选，必须是 cast 中角色 id", "confidence": "low | medium | high"}
+    ],
+    "clue_unlocks": [
+      {"title": "新线索名", "summary": "一句说明", "state": "discovered | usable", "supports_option_index": 0}
+    ],
+    "opportunity_unlocks": [
+      {"title": "新机会名", "summary": "一句说明", "supports_option_index": 1}
+    ],
+    "next_action_context": [
+      {"option_index": 0, "reason": "为什么这个下一步现在成立"}
+    ],
+    "motive_effect": {"acknowledged": true, "label": "内心动机如何影响行动"}
+  }
+  // ⚠️ gameplay_metadata 也是**可选**字段，但当本回合清楚改变了人物态度、压力/时间、证据线索、机会窗口，或承认了玩家的 inner motive 时，优先输出一个很小的 metadata block。
+  // 只写 1-3 个玩家可见条目即可，不要穷举；label/title 要像 UI chip，短、自然、无内部术语。
+  // next_action_context 只解释某个下一步为什么现在成立或更有针对性；给最关键的 1-2 个 option reason 即可。
+  // npc_id 必须来自 cast；supports_option_index / option_index 是 0-based，必须指向本次输出 options 的有效下标。
+  // 没有真实玩家可见变化时，直接省略 gameplay_metadata；不要输出空数组占位对象。它不能牺牲 passage/options 的质量。
 }
 
 写作要求：
@@ -633,6 +737,8 @@ class OpeningResult:
 @dataclass(frozen=True)
 class TurnResult:
     narrator_message: StoryMessage
+    agent_plan: AgentPlan
+    gameplay_metadata: TurnGameplayMetadata | None = None
 
 
 @dataclass(frozen=True)
@@ -730,6 +836,9 @@ def generate_opening(
     gateway: NarrativeLLMGateway,
     seed: str,
     language: TemplateLanguage = "en",
+    story_brief: StoryBrief | None = None,
+    brief_consistency_feedback: str | None = None,
+    max_attempts: int = 3,
 ) -> OpeningResult:
     """Generate world opening. Retries on JSON / shape failure or sparse
     inter-NPC leverage network (LLM is consistently conservative on
@@ -743,13 +852,21 @@ def generate_opening(
     last_error: Exception | None = None
     feedback: str | None = None
     last_result: OpeningResult | None = None
-    for attempt in range(3):
+    max_attempts = max(1, max_attempts)
+    for attempt in range(max_attempts):
         try:
-            result = _generate_opening_once(gateway, seed, retry_feedback=feedback, language=language)
+            result = _generate_opening_once(
+                gateway,
+                seed,
+                retry_feedback=feedback,
+                language=language,
+                story_brief=story_brief,
+                brief_consistency_feedback=brief_consistency_feedback,
+            )
             # Density check — count inter-NPC leverages across cast.
             edges = sum(len(c.leverages_over_other_npcs) for c in result.cast)
             required = _required_inter_leverage_edges(len(result.cast))
-            if edges < required and attempt < 2:
+            if edges < required and attempt < max_attempts - 1:
                 # Save for fallback (in case the next attempt errors out
                 # entirely — better to ship a sparse network than fail).
                 last_result = result
@@ -811,19 +928,37 @@ def _generate_opening_once(
     *,
     retry_feedback: str | None,
     language: TemplateLanguage = "en",
+    story_brief: StoryBrief | None = None,
+    brief_consistency_feedback: str | None = None,
 ) -> OpeningResult:
     user_payload: dict[str, Any] = {
         "seed": seed,
         "language": language,
         "language_directive": _language_directive(language),
     }
+    if story_brief is not None:
+        user_payload["story_brief"] = story_brief.model_dump(mode="json")
+        user_payload["story_brief_generation_rules"] = (
+            "Honor the reviewed story_brief. Use primary_active_entities as the "
+            "runtime cast when they are characters or factions; keep secondary "
+            "entities as background pressure. Preserve boundaries and negated "
+            "constraints as constraints, never as cast. Preserve the "
+            "intervention_card_label as the brief's player-facing object/action "
+            "label. Match tension_profile: comedy/cozy stay lower-stakes unless "
+            "explicit; this is a lower-stakes tension contract. Do not convert a "
+            "comedy/cozy brief into blackmail, violence, or a prestige thriller. "
+            "Fantasy/sci-fi uses world-rule or faction pressure, and other genres "
+            "use the Brief's own concrete stakes instead of generic blackmail."
+        )
+    if brief_consistency_feedback:
+        user_payload["story_brief_consistency_feedback"] = brief_consistency_feedback
     if retry_feedback:
         user_payload["retry_feedback"] = retry_feedback
     response = gateway.invoke_json(
-        system_prompt=_OPENING_SYSTEM_PROMPT,
+        system_prompt=_OPENING_COMPACT_SYSTEM_PROMPT,
         user_payload=user_payload,
         operation_name="narrative.opening",
-        max_output_tokens=2500,
+        max_output_tokens=1800,
     )
     payload = _coerce_dict(response.payload)
     title = _require_str(payload, "title", limit=120)
@@ -874,6 +1009,162 @@ def _extract_passage_for_opening(payload: dict[str, Any]) -> str:
 _PASSAGE_KEY_ALIASES = ("passage", "narration", "next_passage", "continuation", "text", "content")
 
 
+def _pressure_for_agent_plan(
+    *,
+    stage_phase: str,
+    agenda: list[dict[str, str]],
+    twist: dict[str, str] | None,
+) -> str:
+    if twist is not None:
+        return "turning_point"
+    if stage_phase in ("climax", "pre_finale", "pre_finale_open"):
+        return "high"
+    if agenda:
+        return "medium"
+    return "low"
+
+
+def _reason_for_agent_plan(
+    *,
+    stage_phase: str,
+    agenda: list[dict[str, str]],
+    twist: dict[str, str] | None,
+) -> str:
+    if twist is not None:
+        return f"{stage_phase} stage requires a visible inflection: {twist.get('kind', 'twist')}"
+    if agenda:
+        names = ", ".join(item.get("display_name") or item.get("npc_id") or "NPC" for item in agenda)
+        return f"{stage_phase} stage schedules active pressure from {names}."
+    if stage_phase == "hook":
+        return "Hook stage keeps NPCs mostly reactive while the player enters the situation."
+    return f"{stage_phase} stage proceeds without an active NPC agenda this turn."
+
+
+def _intent_from_agenda_entry(
+    entry: dict[str, str],
+    *,
+    cast_by_id: dict[str, CastMember],
+) -> NPCIntent:
+    npc_id = entry.get("npc_id", "")
+    npc = cast_by_id.get(npc_id)
+    leverage = npc.leverage_over_player if npc and entry.get("intent") == "leverage" else None
+    return NPCIntent(
+        npc_id=npc_id,
+        display_name=entry.get("display_name") or (npc.display_name if npc else npc_id),
+        intent=entry.get("intent") or "act",
+        intent_brief=entry.get("intent_brief") or "",
+        leverage=leverage,
+    )
+
+
+def _played_leverage_snapshot(
+    played_leverage: PlayedLeverageCard | None,
+) -> dict[str, str]:
+    if played_leverage is None:
+        return {}
+    return {
+        "card_id": played_leverage.card_id,
+        "npc_id": played_leverage.npc_id,
+        "action": played_leverage.action,
+        "leverage": played_leverage.leverage[:200],
+    }
+
+
+def _recent_consequences_from_plan(plan: AgentPlan) -> dict[str, Any]:
+    summary: dict[str, Any] = {}
+    if plan.memory.last_player_action:
+        summary["last_player_action"] = plan.memory.last_player_action
+    if plan.memory.npc_pulse_trend:
+        summary["npc_pulse_trend"] = plan.memory.npc_pulse_trend
+    if plan.memory.unused_leverage:
+        summary["unused_leverage"] = plan.memory.unused_leverage
+    return summary
+
+
+def build_agent_plan(
+    *,
+    cast: list[CastMember],
+    history: list[StoryMessage],
+    turn_index: int,
+    turn_budget: int,
+    difficulty: str,
+    player_role: PlayerRole | None = None,
+    current_inventory: list[str] | None = None,
+    played_leverage: PlayedLeverageCard | None = None,
+    narrator_ord: int,
+) -> AgentPlan:
+    """Build the compact deterministic trace that drives this turn.
+
+    This mirrors the payload-shaping decisions used by `advance_turn`:
+    stage selection, active NPC agenda, twist directive, and recent
+    consequence summary. It intentionally avoids full prompt/history dumps.
+    """
+    stage_phase = _stage_for(turn_index, turn_budget)
+    agenda = _pick_npc_agenda(
+        stage_phase=stage_phase,
+        turn_index=turn_index,
+        cast=cast,
+        history=history,
+        difficulty=difficulty,
+    )
+    twist = _pick_twist_directive(
+        stage_phase=stage_phase,
+        turn_index=turn_index,
+        cast=cast,
+        player_role=player_role,
+        difficulty=difficulty,
+    )
+    consequences = _summarize_recent_consequences(history, cast)
+    cast_by_id = {member.character_id: member for member in cast}
+    npc_intents = [
+        _intent_from_agenda_entry(entry, cast_by_id=cast_by_id)
+        for entry in agenda
+        if entry.get("npc_id")
+    ]
+    focus_window_npc_ids = _pick_focus_window_npc_ids(
+        cast=cast,
+        history=history,
+        active_npc_ids=[intent.npc_id for intent in npc_intents],
+    )
+    background_npc_ids = [
+        member.character_id
+        for member in cast
+        if member.character_id not in set(focus_window_npc_ids)
+    ][:5]
+    inventory = list(current_inventory or [])
+    director = DirectorDecision(
+        stage_phase=stage_phase,
+        difficulty=difficulty,
+        active_npc_ids=[intent.npc_id for intent in npc_intents],
+        focus_window_npc_ids=focus_window_npc_ids,
+        background_npc_ids=background_npc_ids,
+        twist_kind=twist.get("kind") if twist else None,
+        expected_pressure=_pressure_for_agent_plan(
+            stage_phase=stage_phase, agenda=agenda, twist=twist,
+        ),
+        reason=_reason_for_agent_plan(
+            stage_phase=stage_phase, agenda=agenda, twist=twist,
+        ),
+    )
+    memory = MemorySnapshot(
+        last_player_action=consequences.get("last_player_action") or {},
+        npc_pulse_trend=consequences.get("npc_pulse_trend") or {},
+        unused_leverage=consequences.get("unused_leverage") or [],
+        current_inventory_count=len(inventory),
+        current_inventory_preview=inventory[:4],
+        played_leverage=_played_leverage_snapshot(played_leverage),
+    )
+    return AgentPlan(
+        turn_index=turn_index,
+        turn_budget=turn_budget,
+        narrator_ord=narrator_ord,
+        director=director,
+        npc_intents=npc_intents,
+        memory=memory,
+        twist_directive=twist,
+    )
+
+
 def advance_turn(
     *,
     gateway: NarrativeLLMGateway,
@@ -894,7 +1185,18 @@ def advance_turn(
     language: TemplateLanguage = "en",
 ) -> TurnResult:
     """Advance one turn."""
-    stage_phase = _stage_for(turn_index, turn_budget)
+    agent_plan = build_agent_plan(
+        cast=cast,
+        history=history,
+        turn_index=turn_index,
+        turn_budget=turn_budget,
+        difficulty=difficulty,
+        player_role=player_role,
+        current_inventory=current_inventory,
+        played_leverage=played_leverage,
+        narrator_ord=next_ord,
+    )
+    stage_phase = agent_plan.director.stage_phase
     rendered_history = _render_history(history)
     user_payload: dict[str, Any] = {
         "seed": seed,
@@ -922,13 +1224,15 @@ def advance_turn(
 
     # Active scheduling: tell the LLM which NPC should actively push their
     # agenda this turn. Empty in story mode and during the hook phase.
-    agenda = _pick_npc_agenda(
-        stage_phase=stage_phase,
-        turn_index=turn_index,
-        cast=cast,
-        history=history,
-        difficulty=difficulty,
-    )
+    agenda = [
+        {
+            "npc_id": intent.npc_id,
+            "display_name": intent.display_name,
+            "intent": intent.intent,
+            "intent_brief": intent.intent_brief,
+        }
+        for intent in agent_plan.npc_intents
+    ]
     if agenda:
         user_payload["npc_agenda_this_turn"] = agenda
 
@@ -936,19 +1240,13 @@ def advance_turn(
     # (betrayal / inter-leverage exposed / persona crack / new arrival /
     # external event) — not just "more pressure". None outside reversal
     # or in story mode.
-    twist = _pick_twist_directive(
-        stage_phase=stage_phase,
-        turn_index=turn_index,
-        cast=cast,
-        player_role=player_role,
-        difficulty=difficulty,
-    )
+    twist = agent_plan.twist_directive
     if twist is not None:
         user_payload["twist_directive"] = twist
 
     # Action echo: structured snapshot of the player's last move + NPC
     # pulse trends + unused leverage. Empty on the opening turn.
-    consequences = _summarize_recent_consequences(history, cast)
+    consequences = _recent_consequences_from_plan(agent_plan)
     if consequences:
         user_payload["recent_consequences"] = consequences
 
@@ -960,6 +1258,11 @@ def advance_turn(
     options = _parse_options(payload.get("options") or payload.get("next_options"), language=language)
     npc_pulse = _parse_npc_pulse(payload.get("npc_pulse"), valid_ids)
     inventory_delta = _parse_inventory_delta(payload.get("inventory_delta"))
+    gameplay_metadata = _parse_gameplay_metadata(
+        payload.get("gameplay_metadata"),
+        valid_npc_ids=valid_ids,
+        option_count=len(options),
+    )
     if not passage:
         print(
             "[narrative.retry] operation=advance_turn attempt=1 error=empty_passage_field",
@@ -976,6 +1279,11 @@ def advance_turn(
         options = _parse_options(payload.get("options") or payload.get("next_options"), language=language)
         npc_pulse = _parse_npc_pulse(payload.get("npc_pulse"), valid_ids)
         inventory_delta = _parse_inventory_delta(payload.get("inventory_delta"))
+        gameplay_metadata = _parse_gameplay_metadata(
+            payload.get("gameplay_metadata"),
+            valid_npc_ids=valid_ids,
+            option_count=len(options),
+        )
         if passage:
             print(
                 "[narrative.retry] operation=advance_turn recovered_on_attempt=2",
@@ -992,7 +1300,10 @@ def advance_turn(
             chosen_option_index=None,
             npc_pulse=npc_pulse,
             inventory_delta=inventory_delta,
-        )
+            gameplay_metadata=gameplay_metadata,
+        ),
+        agent_plan=agent_plan,
+        gameplay_metadata=gameplay_metadata,
     )
 
 
@@ -1199,6 +1510,30 @@ def _pick_npc_agenda(
             agenda.append(_make_agenda_entry(pick_two, intent="reveal"))
         return agenda
     return []
+
+
+def _pick_focus_window_npc_ids(
+    *,
+    cast: list[CastMember],
+    history: list[StoryMessage],
+    active_npc_ids: list[str],
+) -> list[str]:
+    """Director focus window: keep 3-5 NPCs readable even if global cast grows."""
+    ordered: list[str] = []
+    for npc_id in active_npc_ids:
+        if npc_id and npc_id not in ordered:
+            ordered.append(npc_id)
+    recent = _recent_active_npcs(history, lookback=4)
+    for npc_id in recent:
+        if npc_id not in ordered:
+            ordered.append(npc_id)
+    for member in cast:
+        if member.character_id not in ordered:
+            ordered.append(member.character_id)
+    if len(ordered) <= 5:
+        return ordered
+    minimum = min(3, len(ordered))
+    return ordered[: max(minimum, 5)]
 
 
 # --------------------------------------------------------------------------
@@ -1775,10 +2110,10 @@ def _parse_branches(
             continue
         if ord_val < 0 or ord_val not in valid_ords or ord_val in seen_ords:
             continue
-        chosen = str(item.get("chosen_path_summary") or "").strip()[:80]
-        alt = str(item.get("alternate_path_summary") or "").strip()[:80]
+        chosen = _clean_branch_fragment(str(item.get("chosen_path_summary") or ""), limit=80)
+        alt = _clean_branch_fragment(str(item.get("alternate_path_summary") or ""), limit=80)
         label_raw = str(item.get("alternate_ending_label") or "").strip()
-        rationale = str(item.get("rationale") or "").strip()[:200]
+        rationale = _clean_branch_fragment(str(item.get("rationale") or ""), limit=200)
         if not chosen or not alt or not label_raw or not rationale:
             continue
         # Snap to closed pool; drop branch if same as actual ending.
@@ -1800,6 +2135,49 @@ def _parse_branches(
             continue
     out.sort(key=lambda b: b.pivot_beat_ord)
     return out[:4]
+
+
+_DANGLING_BRANCH_TAILS = (
+    "this path leads to",
+    "that path leads to",
+    "the path leads to",
+    "path leads to",
+    "leads to",
+    "lead to",
+    "would lead to",
+    "could lead to",
+    "points toward",
+    "because",
+    "which",
+    "where",
+    "with",
+    "and",
+    "or",
+    "to",
+    "toward",
+)
+
+
+def _clean_branch_fragment(value: str, *, limit: int) -> str:
+    """Keep post-game branch cards from displaying dangling LLM fragments."""
+    text = re.sub(r"\s+", " ", value).strip()
+    if not text:
+        return ""
+    text = _clip_text(text, limit)
+    text = text.strip(" \t\r\n-–—:;")
+    while text.endswith(("...", "…")):
+        text = text[:-3] if text.endswith("...") else text[:-1]
+        text = text.strip(" \t\r\n-–—:;")
+    lowered = text.casefold().rstrip(".!?。！？")
+    if lowered.endswith(_DANGLING_BRANCH_TAILS):
+        return ""
+    if text and text[-1] not in ".!?。！？":
+        punctuation = "。" if re.search(r"[\u4e00-\u9fff]", text) else "."
+        if len(text) >= limit:
+            text = text[: max(1, limit - 1)].rstrip(" \t\r\n-–—:;,.!?。！？") + punctuation
+        else:
+            text = f"{text}{punctuation}"
+    return text
 
 
 def _invoke_turn(
@@ -2036,7 +2414,7 @@ def _parse_cast(raw: Any) -> list[CastMember]:
     # invent new ids or point a leverage at the holder themselves.
     valid_ids = {m.character_id for m in members}
     cleaned: list[CastMember] = []
-    for member in members[:8]:
+    for member in members[:10]:
         cleaned_levs = [
             lev for lev in member.leverages_over_other_npcs
             if lev.target_npc_id in valid_ids and lev.target_npc_id != member.character_id
@@ -2114,6 +2492,207 @@ def _parse_inventory_delta(raw: Any) -> InventoryDelta | None:
         return None
     reason = str(raw.get("reason") or "").strip()[:120]
     return InventoryDelta(added=added, removed=removed, reason=reason)
+
+
+_GAMEPLAY_METADATA_TONES = {"gain", "cost", "unlock", "shift"}
+_GAMEPLAY_METADATA_TARGETS = {
+    "pressure",
+    "time",
+    "npc",
+    "evidence",
+    "opportunity",
+    "motive",
+}
+_GAMEPLAY_METADATA_CONFIDENCE = {"low", "medium", "high"}
+_GAMEPLAY_METADATA_CLUE_STATES = {"discovered", "usable"}
+
+
+def _normalize_gameplay_metadata_tone(value: Any) -> GameplayChipTone:
+    text = str(value or "").strip().casefold()
+    if text in _GAMEPLAY_METADATA_TONES:
+        return text  # type: ignore[return-value]
+    return "shift"
+
+
+def _normalize_gameplay_metadata_text(value: Any, *, max_length: int) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) <= max_length:
+        return text
+    return f"{text[: max(0, max_length - 1)].strip()}…"
+
+
+def _parse_gameplay_metadata_option_index(value: Any, *, option_count: int) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        index = int(value)
+    except (TypeError, ValueError):
+        return None
+    if 0 <= index < option_count:
+        return index
+    return None
+
+
+def _parse_gameplay_metadata_chip(
+    item: Any,
+    *,
+    valid_npc_ids: set[str],
+    max_length: int = 64,
+) -> GameplayChip | None:
+    if not isinstance(item, dict):
+        return None
+    label = _normalize_gameplay_metadata_text(item.get("label"), max_length=max_length)
+    if not label:
+        return None
+
+    npc_id = _normalize_gameplay_metadata_text(item.get("npc_id"), max_length=64)
+    if npc_id and npc_id not in valid_npc_ids:
+        return None
+
+    target = _normalize_gameplay_metadata_text(item.get("target"), max_length=32).casefold()
+    if target and target not in _GAMEPLAY_METADATA_TARGETS:
+        return None
+
+    confidence = _normalize_gameplay_metadata_text(
+        item.get("confidence"),
+        max_length=16,
+    ).casefold()
+    if confidence and confidence not in _GAMEPLAY_METADATA_CONFIDENCE:
+        return None
+
+    return GameplayChip(
+        label=label,
+        tone=_normalize_gameplay_metadata_tone(item.get("tone")),
+    )
+
+
+def _parse_gameplay_metadata_unlock_chip(
+    item: Any,
+    *,
+    option_count: int,
+    prefix: str,
+) -> GameplayChip | None:
+    if not isinstance(item, dict):
+        return None
+    title = _normalize_gameplay_metadata_text(
+        item.get("title") or item.get("label"),
+        max_length=48,
+    )
+    if not title:
+        return None
+
+    raw_index = item.get("supports_option_index")
+    if raw_index is not None and _parse_gameplay_metadata_option_index(
+        raw_index,
+        option_count=option_count,
+    ) is None:
+        return None
+
+    state = _normalize_gameplay_metadata_text(item.get("state"), max_length=24).casefold()
+    if state and state not in _GAMEPLAY_METADATA_CLUE_STATES:
+        return None
+
+    return GameplayChip(label=f"{prefix}: {title}"[:80], tone="unlock")
+
+
+def _parse_gameplay_metadata_next_action_context(
+    item: Any,
+    *,
+    option_count: int,
+) -> TurnGameplayNextActionContext | None:
+    if not isinstance(item, dict):
+        return None
+    index = _parse_gameplay_metadata_option_index(
+        item.get("option_index"),
+        option_count=option_count,
+    )
+    reason = _normalize_gameplay_metadata_text(item.get("reason"), max_length=100)
+    if index is None or not reason:
+        return None
+    return TurnGameplayNextActionContext(option_index=index, reason=reason)
+
+
+def _parse_gameplay_metadata_motive_effect(item: Any) -> GameplayChip | None:
+    if not isinstance(item, dict) or not item.get("acknowledged"):
+        return None
+    label = _normalize_gameplay_metadata_text(
+        item.get("label") or "Motive acknowledged",
+        max_length=64,
+    )
+    if not label:
+        return None
+    return GameplayChip(label=label, tone="shift")
+
+
+def _parse_gameplay_metadata(
+    raw: Any,
+    *,
+    valid_npc_ids: set[str],
+    option_count: int,
+) -> TurnGameplayMetadata | None:
+    """Tolerant parser for optional live turn gameplay metadata.
+
+    Missing or malformed metadata is deliberately non-fatal. Accepted items
+    are clipped, id/index checked, and converted into player-safe chips.
+    """
+    if not isinstance(raw, dict):
+        return None
+
+    state_deltas: list[GameplayChip] = []
+    for item in (raw.get("state_deltas") if isinstance(raw.get("state_deltas"), list) else [])[:5]:
+        chip = _parse_gameplay_metadata_chip(item, valid_npc_ids=valid_npc_ids)
+        if chip is not None and all(existing.label != chip.label for existing in state_deltas):
+            state_deltas.append(chip)
+
+    clue_unlocks: list[GameplayChip] = []
+    for item in (raw.get("clue_unlocks") if isinstance(raw.get("clue_unlocks"), list) else [])[:3]:
+        chip = _parse_gameplay_metadata_unlock_chip(
+            item,
+            option_count=option_count,
+            prefix="Clue",
+        )
+        if chip is not None and all(existing.label != chip.label for existing in clue_unlocks):
+            clue_unlocks.append(chip)
+
+    opportunity_unlocks: list[GameplayChip] = []
+    for item in (
+        raw.get("opportunity_unlocks")
+        if isinstance(raw.get("opportunity_unlocks"), list)
+        else []
+    )[:3]:
+        chip = _parse_gameplay_metadata_unlock_chip(
+            item,
+            option_count=option_count,
+            prefix="Opportunity",
+        )
+        if chip is not None and all(existing.label != chip.label for existing in opportunity_unlocks):
+            opportunity_unlocks.append(chip)
+
+    next_action_context: list[TurnGameplayNextActionContext] = []
+    for item in (
+        raw.get("next_action_context")
+        if isinstance(raw.get("next_action_context"), list)
+        else []
+    )[:3]:
+        context = _parse_gameplay_metadata_next_action_context(
+            item,
+            option_count=option_count,
+        )
+        if context is not None:
+            next_action_context.append(context)
+
+    motive_effect = _parse_gameplay_metadata_motive_effect(raw.get("motive_effect"))
+
+    metadata = TurnGameplayMetadata(
+        state_deltas=state_deltas,
+        clue_unlocks=clue_unlocks,
+        opportunity_unlocks=opportunity_unlocks,
+        next_action_context=next_action_context,
+        motive_effect=motive_effect,
+    )
+    if not metadata.has_player_visible_items and not metadata.next_action_context:
+        return None
+    return metadata
 
 
 def _parse_player_role_options(

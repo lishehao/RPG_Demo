@@ -62,6 +62,510 @@ const AVATAR_MALE = [
   "royal-01",
 ] as const
 
+type AvatarGenderPresentation = "female" | "male" | "neutral"
+type AvatarAnnotation = {
+  slug: string
+  path: string
+  genderPresentation: AvatarGenderPresentation
+  roleTags: readonly string[]
+  domainTags: readonly string[]
+  toneTags: readonly string[]
+  formalityTags: readonly string[]
+  avoidTags: readonly string[]
+  notes: string
+}
+type AvatarMetadata = AvatarAnnotation & {
+  gender: Exclude<AvatarGenderPresentation, "neutral">
+  tags: readonly string[]
+}
+
+// Local semantic manifest for cast portraits. This is deliberately tag-vector
+// shaped rather than role->file hardcoding: future Art/R&D can replace or
+// augment the score with embeddings while keeping the same query/filter seam.
+export const AVATAR_ANNOTATIONS: readonly AvatarAnnotation[] = [
+  {
+    slug: "bride-01",
+    path: "/webtoons/avatars/bride-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["bride", "partner", "family"],
+    domainTags: ["wedding", "relationship"],
+    toneTags: ["poised", "romantic", "dramatic"],
+    formalityTags: ["formal"],
+    avoidTags: ["backstage", "campus", "office", "sponsor", "elder"],
+    notes: "Use for bride or wedding-centered roles; avoid generic backstage/office casts.",
+  },
+  {
+    slug: "elder-01",
+    path: "/webtoons/avatars/elder-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["elder", "matriarch", "grandmother"],
+    domainTags: ["family", "inheritance", "period"],
+    toneTags: ["reserved", "traditional", "power"],
+    formalityTags: ["formal", "traditional"],
+    avoidTags: ["dancer", "student", "backstage-performer"],
+    notes: "Older female authority for family/inheritance or period social pressure.",
+  },
+  {
+    slug: "elder-02",
+    path: "/webtoons/avatars/elder-02.jpg",
+    genderPresentation: "male",
+    roleTags: ["elder", "patriarch", "sponsor", "executive"],
+    domainTags: ["family", "inheritance", "office"],
+    toneTags: ["authority", "controlled", "mature"],
+    formalityTags: ["formal"],
+    avoidTags: ["dancer", "student", "young-performer"],
+    notes: "Older male authority; works for sponsor, patriarch, board elder.",
+  },
+  {
+    slug: "female-01",
+    path: "/webtoons/avatars/female-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["executive", "sponsor", "board-member", "investor"],
+    domainTags: ["office", "gala", "professional"],
+    toneTags: ["elite", "cool", "controlled"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "bride", "dancer"],
+    notes: "Female executive or sponsor pressure-holder.",
+  },
+  {
+    slug: "female-02",
+    path: "/webtoons/avatars/female-02.jpg",
+    genderPresentation: "female",
+    roleTags: ["celebrity", "performer", "actor"],
+    domainTags: ["entertainment", "gala", "stage"],
+    toneTags: ["dramatic", "glamour", "sharp"],
+    formalityTags: ["formal", "stagewear"],
+    avoidTags: ["student", "elder", "office-only"],
+    notes: "High-drama celebrity/performer for entertainment stories.",
+  },
+  {
+    slug: "female-03",
+    path: "/webtoons/avatars/female-03.jpg",
+    genderPresentation: "female",
+    roleTags: ["assistant", "lawyer", "analyst", "secretary"],
+    domainTags: ["office", "professional"],
+    toneTags: ["precise", "quiet", "competent"],
+    formalityTags: ["formal", "glasses"],
+    avoidTags: ["dancer", "bride", "idol"],
+    notes: "Professional support/legal role; also neutral low-confidence fallback.",
+  },
+  {
+    slug: "female-04",
+    path: "/webtoons/avatars/female-04.jpg",
+    genderPresentation: "female",
+    roleTags: ["student", "friend", "classmate"],
+    domainTags: ["campus", "casual"],
+    toneTags: ["warm", "youthful", "approachable"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "elder", "formal-boardroom"],
+    notes: "Campus/social role; avoid executive or sponsor pressure-holders.",
+  },
+  {
+    slug: "female-05",
+    path: "/webtoons/avatars/female-05.jpg",
+    genderPresentation: "female",
+    roleTags: ["singer", "celebrity", "performer", "idol"],
+    domainTags: ["entertainment", "gala", "stage"],
+    toneTags: ["glamour", "spotlight", "dramatic"],
+    formalityTags: ["stagewear", "formal"],
+    avoidTags: ["office-only", "student", "elder"],
+    notes: "Female singer/celebrity; good for missing star or gala performer.",
+  },
+  {
+    slug: "female-06",
+    path: "/webtoons/avatars/female-06.jpg",
+    genderPresentation: "female",
+    roleTags: ["student", "witness", "junior"],
+    domainTags: ["campus", "quiet-drama"],
+    toneTags: ["reserved", "uncertain", "soft"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "bride"],
+    notes: "Quiet student/witness; avoid high-authority roles.",
+  },
+  {
+    slug: "female-07",
+    path: "/webtoons/avatars/female-07.jpg",
+    genderPresentation: "female",
+    roleTags: ["publicist", "manager", "assistant", "professional"],
+    domainTags: ["office", "professional"],
+    toneTags: ["focused", "controlled", "competent"],
+    formalityTags: ["formal", "glasses"],
+    avoidTags: ["dancer", "bride", "student"],
+    notes: "Publicist/manager in professional settings; neutral female fallback.",
+  },
+  {
+    slug: "female-08",
+    path: "/webtoons/avatars/female-08.jpg",
+    genderPresentation: "female",
+    roleTags: ["dancer", "performer", "backup-dancer", "witness"],
+    domainTags: ["entertainment", "backstage", "stage"],
+    toneTags: ["edgy", "tense", "youthful"],
+    formalityTags: ["stagewear"],
+    avoidTags: ["sponsor", "executive", "elder", "campus-only"],
+    notes: "Backstage performer or dancer; good for awards livestream witness.",
+  },
+  {
+    slug: "female-09",
+    path: "/webtoons/avatars/female-09.jpg",
+    genderPresentation: "female",
+    roleTags: ["publicist", "manager", "agent"],
+    domainTags: ["entertainment", "backstage", "professional"],
+    toneTags: ["composed", "mature", "pressure"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "bride", "young-dancer"],
+    notes: "Entertainment publicist/manager under pressure; current awards player fit.",
+  },
+  {
+    slug: "female-10",
+    path: "/webtoons/avatars/female-10.jpg",
+    genderPresentation: "female",
+    roleTags: ["dancer", "performer", "witness", "junior"],
+    domainTags: ["entertainment", "backstage", "stage"],
+    toneTags: ["uncertain", "youthful", "soft"],
+    formalityTags: ["casual-stage"],
+    avoidTags: ["sponsor", "executive", "elder"],
+    notes: "Young backstage witness or backup dancer.",
+  },
+  {
+    slug: "idol-01",
+    path: "/webtoons/avatars/idol-01.jpg",
+    genderPresentation: "male",
+    roleTags: ["idol", "singer", "performer", "celebrity"],
+    domainTags: ["entertainment", "stage", "gala"],
+    toneTags: ["cool", "spotlight", "youthful"],
+    formalityTags: ["stagewear", "formal"],
+    avoidTags: ["elder", "sponsor", "office-only"],
+    notes: "Male singer/idol/celebrity.",
+  },
+  {
+    slug: "lawyer-01",
+    path: "/webtoons/avatars/lawyer-01.jpg",
+    genderPresentation: "male",
+    roleTags: ["lawyer", "representative", "executive", "counsel"],
+    domainTags: ["office", "legal", "professional"],
+    toneTags: ["cold", "precise", "controlled"],
+    formalityTags: ["formal"],
+    avoidTags: ["dancer", "student", "bride"],
+    notes: "Legal representative or boardroom pressure role; neutral male fallback.",
+  },
+  {
+    slug: "male-01",
+    path: "/webtoons/avatars/male-01.jpg",
+    genderPresentation: "male",
+    roleTags: ["executive", "manager", "antagonist"],
+    domainTags: ["office", "professional"],
+    toneTags: ["sharp", "cold", "intense"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "bride", "soft-romance"],
+    notes: "Sharp male executive or antagonist.",
+  },
+  {
+    slug: "male-02",
+    path: "/webtoons/avatars/male-02.jpg",
+    genderPresentation: "male",
+    roleTags: ["performer", "celebrity", "idol", "witness"],
+    domainTags: ["entertainment", "backstage", "night"],
+    toneTags: ["dark", "edgy", "secretive"],
+    formalityTags: ["stagewear"],
+    avoidTags: ["sponsor", "elder", "wedding"],
+    notes: "Dark entertainment performer or suspicious witness.",
+  },
+  {
+    slug: "male-03",
+    path: "/webtoons/avatars/male-03.jpg",
+    genderPresentation: "male",
+    roleTags: ["executive", "lawyer", "manager", "founder"],
+    domainTags: ["office", "professional", "legal"],
+    toneTags: ["controlled", "formal", "competent"],
+    formalityTags: ["formal", "glasses"],
+    avoidTags: ["student", "dancer", "bride"],
+    notes: "Male executive/legal/manager; neutral professional fallback.",
+  },
+  {
+    slug: "male-04",
+    path: "/webtoons/avatars/male-04.jpg",
+    genderPresentation: "male",
+    roleTags: ["producer", "manager", "director", "showrunner"],
+    domainTags: ["entertainment", "backstage", "professional"],
+    toneTags: ["pressured", "human", "conflicted"],
+    formalityTags: ["semi-formal"],
+    avoidTags: ["student", "bride", "elder"],
+    notes: "Entertainment producer or backstage manager.",
+  },
+  {
+    slug: "male-05",
+    path: "/webtoons/avatars/male-05.jpg",
+    genderPresentation: "male",
+    roleTags: ["celebrity", "performer", "troublemaker"],
+    domainTags: ["entertainment", "gala", "night"],
+    toneTags: ["flashy", "edgy", "volatile"],
+    formalityTags: ["stagewear"],
+    avoidTags: ["elder", "sponsor", "campus"],
+    notes: "Flashy celebrity/performer, not a sober executive.",
+  },
+  {
+    slug: "male-06",
+    path: "/webtoons/avatars/male-06.jpg",
+    genderPresentation: "male",
+    roleTags: ["student", "classmate", "junior"],
+    domainTags: ["campus", "casual"],
+    toneTags: ["youthful", "quiet", "uncertain"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "elder"],
+    notes: "Campus student/junior; avoid boardroom roles.",
+  },
+  {
+    slug: "male-07",
+    path: "/webtoons/avatars/male-07.jpg",
+    genderPresentation: "male",
+    roleTags: ["elder", "sponsor", "executive", "patriarch"],
+    domainTags: ["family", "office", "inheritance"],
+    toneTags: ["calm", "authority", "mature"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "dancer", "young-performer"],
+    notes: "Mature sponsor, patriarch, or senior executive.",
+  },
+  {
+    slug: "male-08",
+    path: "/webtoons/avatars/male-08.jpg",
+    genderPresentation: "neutral",
+    roleTags: ["artifact", "document"],
+    domainTags: ["evidence", "contract", "letter"],
+    toneTags: ["symbolic", "object"],
+    formalityTags: ["not-character"],
+    avoidTags: ["character", "portrait", "cast-face"],
+    notes: "Object/letter plate, not a usable character portrait. Kept annotated so tests fail if it is accidentally used for cast faces.",
+  },
+  {
+    slug: "male-09",
+    path: "/webtoons/avatars/male-09.jpg",
+    genderPresentation: "male",
+    roleTags: ["heir", "royal", "period-lead"],
+    domainTags: ["period", "royal", "family"],
+    toneTags: ["brooding", "aristocratic", "dramatic"],
+    formalityTags: ["formal", "traditional"],
+    avoidTags: ["backstage", "office-only", "campus"],
+    notes: "Period/royal heir; avoid modern awards/office unless role states it.",
+  },
+  {
+    slug: "male-10",
+    path: "/webtoons/avatars/male-10.jpg",
+    genderPresentation: "male",
+    roleTags: ["sponsor", "executive", "elder", "investor"],
+    domainTags: ["office", "professional", "family"],
+    toneTags: ["mature", "authority", "pressure"],
+    formalityTags: ["formal"],
+    avoidTags: ["student", "dancer", "bride"],
+    notes: "Senior sponsor/executive; current awards sponsor fit.",
+  },
+  {
+    slug: "period-01",
+    path: "/webtoons/avatars/period-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["noblewoman", "period-lead", "family"],
+    domainTags: ["period", "royal", "family"],
+    toneTags: ["traditional", "restrained", "dramatic"],
+    formalityTags: ["traditional", "formal"],
+    avoidTags: ["backstage", "office-only", "campus", "sponsor-modern"],
+    notes: "Period/family drama portrait; avoid modern awards livestream casts.",
+  },
+  {
+    slug: "royal-01",
+    path: "/webtoons/avatars/royal-01.jpg",
+    genderPresentation: "male",
+    roleTags: ["royal", "heir", "period-lead"],
+    domainTags: ["period", "royal", "family"],
+    toneTags: ["aristocratic", "distant", "formal"],
+    formalityTags: ["traditional", "formal"],
+    avoidTags: ["backstage", "office-only", "campus"],
+    notes: "Royal/period male lead; bad fit for modern backstage/office unless explicitly period.",
+  },
+  {
+    slug: "student-01",
+    path: "/webtoons/avatars/student-01.jpg",
+    genderPresentation: "female",
+    roleTags: ["student", "classmate", "witness"],
+    domainTags: ["campus", "school"],
+    toneTags: ["quiet", "youthful", "uncertain"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "elder", "bride"],
+    notes: "Female campus student or young witness.",
+  },
+  {
+    slug: "student-02",
+    path: "/webtoons/avatars/student-02.jpg",
+    genderPresentation: "male",
+    roleTags: ["student", "classmate", "witness"],
+    domainTags: ["campus", "school"],
+    toneTags: ["quiet", "youthful", "night"],
+    formalityTags: ["casual"],
+    avoidTags: ["sponsor", "executive", "elder", "bride"],
+    notes: "Male campus student or young witness.",
+  },
+] as const
+
+export const AVATAR_FALLBACK_ANNOTATIONS: readonly AvatarAnnotation[] = [
+  {
+    slug: "default-avatar-female",
+    path: "/webtoons/ui/default-avatar-female.jpg",
+    genderPresentation: "female",
+    roleTags: ["fallback", "generic"],
+    domainTags: ["neutral"],
+    toneTags: ["safe", "generic"],
+    formalityTags: ["neutral"],
+    avoidTags: [],
+    notes: "Image-error or explicit low-confidence female fallback; not a primary semantic match.",
+  },
+  {
+    slug: "default-avatar-male",
+    path: "/webtoons/ui/default-avatar-male.jpg",
+    genderPresentation: "male",
+    roleTags: ["fallback", "generic"],
+    domainTags: ["neutral"],
+    toneTags: ["safe", "generic"],
+    formalityTags: ["neutral"],
+    avoidTags: [],
+    notes: "Image-error or explicit low-confidence male fallback; not a primary semantic match.",
+  },
+] as const
+
+function annotationTags(annotation: AvatarAnnotation): string[] {
+  return [
+    ...annotation.roleTags,
+    ...annotation.domainTags,
+    ...annotation.toneTags,
+    ...annotation.formalityTags,
+  ]
+}
+
+const AVATAR_METADATA: readonly AvatarMetadata[] = AVATAR_ANNOTATIONS
+  .filter((annotation) => annotation.genderPresentation !== "neutral")
+  .map((annotation) => ({
+    ...annotation,
+    gender: annotation.genderPresentation as Exclude<AvatarGenderPresentation, "neutral">,
+    tags: annotationTags(annotation),
+  }))
+
+type AvatarQuery = {
+  key: string
+  gender: AvatarGenderPresentation | null
+  weights: Record<string, number>
+  avoidTags: readonly string[]
+  roleRuleHits: number
+}
+
+type AvatarQueryRule = {
+  keywords: readonly string[]
+  tags: readonly string[]
+  avoidTags?: readonly string[]
+  gender?: AvatarGenderPresentation
+  weight?: number
+}
+
+const AVATAR_ROLE_RULES: readonly AvatarQueryRule[] = [
+  {
+    keywords: ["backup dancer", "dancer", "choreographer", "伴舞", "舞者"],
+    tags: ["dancer", "performer", "entertainment", "backstage", "young"],
+    avoidTags: ["elder", "executive", "sponsor", "wedding", "bride", "royal", "period", "student"],
+    weight: 6,
+  },
+  {
+    keywords: ["singer", "idol", "performer", "celebrity", "actor", "actress", "歌手", "偶像", "演员", "明星"],
+    tags: ["entertainment", "performer", "celebrity", "stage"],
+    avoidTags: ["elder", "executive", "wedding", "bride", "student"],
+    weight: 5,
+  },
+  {
+    keywords: ["publicist", "press agent", "pr manager", "public relations", "manager", "agent", "经纪人", "公关"],
+    tags: ["publicist", "professional", "manager", "entertainment", "backstage", "formal"],
+    avoidTags: ["student", "wedding", "bride", "royal", "period"],
+    weight: 6,
+  },
+  {
+    keywords: ["producer", "director", "showrunner", "制作人", "导演"],
+    tags: ["producer", "professional", "manager", "entertainment", "backstage", "formal"],
+    avoidTags: ["student", "wedding", "bride", "royal", "period"],
+    weight: 6,
+  },
+  {
+    keywords: ["sponsor representative", "sponsor", "representative", "chairwoman", "chairman", "资方", "赞助", "代表"],
+    tags: ["sponsor", "executive", "professional", "formal", "mature"],
+    avoidTags: ["student", "dancer", "performer", "wedding", "bride", "royal", "period"],
+    weight: 6,
+  },
+  {
+    keywords: ["lawyer", "attorney", "legal", "contract counsel", "律师", "法务"],
+    tags: ["lawyer", "professional", "office", "formal"],
+    avoidTags: ["student", "wedding", "bride", "performer"],
+    weight: 6,
+  },
+  {
+    keywords: ["ceo", "founder", "board member", "investor", "executive", "secretary", "assistant", "总裁", "创始人", "董事", "投资人", "秘书", "助理"],
+    tags: ["executive", "professional", "office", "formal"],
+    avoidTags: ["student", "wedding", "bride", "royal", "period"],
+    weight: 5,
+  },
+  {
+    keywords: ["student", "classmate", "campus", "mentor", "professor", "teacher", "学生", "同学", "导师", "教授", "老师"],
+    tags: ["student", "campus", "young"],
+    avoidTags: ["executive", "sponsor", "wedding", "bride", "royal"],
+    weight: 5,
+  },
+  {
+    keywords: ["bride", "groom", "wedding", "fiance", "fiancee", "新娘", "新郎", "婚礼", "未婚"],
+    tags: ["wedding", "formal", "relationship", "family"],
+    weight: 6,
+  },
+  {
+    keywords: ["elder", "grandfather", "grandmother", "patriarch", "matriarch", "inheritance", "will", "estate", "长辈", "祖父", "祖母", "家主", "继承", "遗嘱"],
+    tags: ["elder", "family", "inheritance", "mature", "formal"],
+    avoidTags: ["student", "dancer", "performer"],
+    weight: 6,
+  },
+]
+
+const AVATAR_CONTEXT_RULES: readonly AvatarQueryRule[] = [
+  {
+    keywords: ["backstage", "awards", "livestream", "stage", "singer", "idol", "producer", "fans", "control room", "后台", "直播", "舞台", "颁奖"],
+    tags: ["entertainment", "backstage", "stage"],
+    avoidTags: ["royal", "period", "wedding", "bride"],
+    weight: 2,
+  },
+  {
+    keywords: ["office", "boardroom", "merger", "contract", "company", "investor", "办公室", "董事会", "合同", "公司"],
+    tags: ["professional", "office", "executive"],
+    avoidTags: ["wedding", "bride", "royal", "period"],
+    weight: 2,
+  },
+  {
+    keywords: ["campus", "student", "auditorium", "archive", "library", "school", "校园", "学生", "礼堂", "档案", "图书馆"],
+    tags: ["campus", "student"],
+    avoidTags: ["executive", "sponsor", "wedding", "bride"],
+    weight: 2,
+  },
+  {
+    keywords: ["wedding", "banquet", "bride", "groom", "aisle", "婚礼", "婚宴", "新娘", "新郎"],
+    tags: ["wedding", "formal", "family"],
+    weight: 2,
+  },
+  {
+    keywords: ["family", "inheritance", "will reading", "mansion", "estate", "家族", "继承", "遗嘱", "豪门"],
+    tags: ["family", "inheritance", "formal"],
+    weight: 2,
+  },
+]
+
+const NEUTRAL_PROFESSIONAL_AVATARS = [
+  "female-07",
+  "female-03",
+  "female-01",
+  "male-03",
+  "lawyer-01",
+  "male-10",
+] as const
+
+const SEMANTIC_AVATAR_MIN_SCORE = 10
+
 // Dedicated advisor portrait pool — visually distinct from the cast pool so
 // the player's outsider-friend never collides with an NPC face.
 const ADVISOR_AVATARS = [
@@ -83,6 +587,12 @@ const ADVISOR_AVATARS = [
 
 const SEGMENT_PHASES = ["opening", "pressure", "reversal", "reveal", "terminal"] as const
 type SegmentPhase = (typeof SEGMENT_PHASES)[number]
+type SegmentTheme =
+  | "backstage-entertainment"
+  | "office-boardroom"
+  | "campus"
+  | "wedding"
+  | "family-inheritance"
 
 const SEGMENT_PHASE_POOLS: Record<SegmentPhase, readonly string[]> = {
   opening: [
@@ -117,6 +627,84 @@ const SEGMENT_PHASE_POOLS: Record<SegmentPhase, readonly string[]> = {
     "terminal_empty_boardroom",
   ],
 }
+
+const SEGMENT_THEME_POOLS: Record<SegmentPhase, Partial<Record<SegmentTheme, readonly string[]>>> = {
+  opening: {
+    "backstage-entertainment": [
+      "opening_backstage_control_room_clear_v2",
+      "opening_backstage_control_room",
+      "opening_backstage_vanity",
+    ],
+    "office-boardroom": ["opening_office_night_merger_clear_v2", "opening_office_night_merger"],
+    campus: ["opening_campus_auditorium_night_clear_v2", "opening_campus_auditorium_night", "opening_campus_rain_gate"],
+    wedding: ["opening_wedding_banquet_hall_clear_v2", "opening_wedding_banquet_hall"],
+    "family-inheritance": ["opening_family_will_reading_clear_v2", "opening_family_will_reading"],
+  },
+  pressure: {
+    "backstage-entertainment": [
+      "pressure_backstage_press_crush_clear_v2",
+      "pressure_backstage_press_crush",
+      "pressure_press_hallway",
+    ],
+    "office-boardroom": ["pressure_office_contract_table_clear_v2", "pressure_office_contract_table", "pressure_boardroom_vote"],
+    campus: ["pressure_campus_archive_lock_clear_v2", "pressure_campus_archive_lock"],
+    wedding: ["pressure_wedding_family_table_clear_v2", "pressure_wedding_family_table"],
+    "family-inheritance": [
+      "pressure_family_banquet_standoff_clear_v2",
+      "pressure_family_banquet_standoff",
+      "pressure_family_banquet",
+    ],
+  },
+  reversal: {
+    "office-boardroom": ["reversal_office_elevator_secret_clear_v2", "reversal_office_elevator_secret", "reversal_elevator_standoff"],
+    wedding: ["reversal_wedding_dropped_note_clear_v2", "reversal_wedding_dropped_note", "reversal_wedding_aisle"],
+  },
+  reveal: {
+    "backstage-entertainment": ["reveal_backstage_empty_spotlight_clear_v2", "reveal_backstage_empty_spotlight"],
+    campus: ["reveal_campus_phone_reflection_clear_v2", "reveal_campus_phone_reflection", "reveal_phone_reflection"],
+  },
+  terminal: {
+    "family-inheritance": ["terminal_family_empty_mansion_clear_v2", "terminal_family_empty_mansion"],
+  },
+}
+
+const SEGMENT_THEME_RULES: Array<{ theme: SegmentTheme; keywords: readonly string[] }> = [
+  {
+    theme: "backstage-entertainment",
+    keywords: [
+      "backstage", "control room", "awards", "livestream", "singer", "idol", "stage", "spotlight",
+      "producer", "sponsor", "fans", "press", "celebrity", "show", "后台", "直播", "歌手", "粉丝", "舞台",
+    ],
+  },
+  {
+    theme: "office-boardroom",
+    keywords: [
+      "office", "boardroom", "merger", "contract", "executive", "investor", "company",
+      "conference", "elevator", "deadline", "董事会", "并购", "合同", "公司", "会议",
+    ],
+  },
+  {
+    theme: "campus",
+    keywords: [
+      "campus", "student", "auditorium", "archive", "library", "college", "school",
+      "scholarship", "confession", "校园", "学生", "礼堂", "档案", "图书馆",
+    ],
+  },
+  {
+    theme: "wedding",
+    keywords: [
+      "wedding", "banquet", "bride", "groom", "aisle", "family table", "dropped note",
+      "marriage", "婚礼", "婚宴", "新娘", "新郎", "请帖",
+    ],
+  },
+  {
+    theme: "family-inheritance",
+    keywords: [
+      "family", "inheritance", "will reading", "sealed will", "mansion", "banquet", "estate",
+      "heir", "家族", "继承", "遗嘱", "豪门", "宴会",
+    ],
+  },
+]
 
 const ENDING_VARIANTS = [
   "burned_alone",
@@ -162,7 +750,11 @@ function shellVariantSlugs(shell: Shell): string[] {
 }
 
 function segmentSlugs(): string[] {
-  return SEGMENT_PHASES.flatMap((phase) => [...SEGMENT_PHASE_POOLS[phase]])
+  const slugs = SEGMENT_PHASES.flatMap((phase) => [
+    ...SEGMENT_PHASE_POOLS[phase],
+    ...Object.values(SEGMENT_THEME_POOLS[phase]).flatMap((pool) => [...(pool ?? [])]),
+  ])
+  return [...new Set(slugs)]
 }
 
 // ───────── covers ─────────
@@ -195,8 +787,13 @@ export function getPortraitForCharacter(
   gender?: "female" | "male" | null,
 ): string {
   const key = `${storyId}|${characterId}`
-  const pool = gender === "male" ? AVATAR_MALE : AVATAR_FEMALE
-  return `/webtoons/avatars/${pick(pool, key)}.jpg`
+  const pool = AVATAR_METADATA.filter((meta) => (
+    (!gender || meta.gender === gender)
+    && !meta.tags.includes("object")
+    && !meta.tags.includes("letter")
+  ))
+  const picked = pick(pool.length > 0 ? pool : AVATAR_METADATA, key)
+  return `/webtoons/avatars/${picked.slug}.jpg`
 }
 
 export function getDefaultAvatar(gender?: "female" | "male"): string {
@@ -208,9 +805,24 @@ export function getDefaultAvatar(gender?: "female" | "male"): string {
 // ───────── scenes / segments ─────────
 
 /** Background art for the play stage, picked by the current beat phase. */
-export function getSceneByPhase(phase: string | null | undefined, key = "default"): string {
+export function getSceneByPhase(phase: string | null | undefined, key = "default", corpus = ""): string {
   const slug = (SEGMENT_PHASES.find((p) => p === phase) ?? "opening") as SegmentPhase
+  const theme = inferSegmentTheme(corpus)
+  const themedPool = theme ? SEGMENT_THEME_POOLS[slug][theme] : undefined
+  if (themedPool && themedPool.length > 0) {
+    return `/webtoons/segments/${themedPool[0]}.jpg`
+  }
   return `/webtoons/segments/${pick(SEGMENT_PHASE_POOLS[slug], `segment|${slug}|${key}`)}.jpg`
+}
+
+function inferSegmentTheme(corpus: string): SegmentTheme | null {
+  const normalized = corpus.toLowerCase()
+  for (const rule of SEGMENT_THEME_RULES) {
+    if (rule.keywords.some((kw) => normalized.includes(kw.toLowerCase()))) {
+      return rule.theme
+    }
+  }
+  return null
 }
 
 // ───────── endings ─────────
@@ -226,7 +838,7 @@ export function getEndingArtwork(endingId: string | null | undefined): string {
 export const PAGE_BG = {
   splash: "/webtoons/ui/splash.jpg",
   home: "/webtoons/ui/library_bg.jpg",
-  create: "/webtoons/ui/create_bg.jpg",
+  create: "/webtoons/ui/generated/create-agent-room-bg-v1.png",
   generating: "/webtoons/ui/loading_bg.jpg",
   login: "/webtoons/ui/auth_bg.jpg",
 } as const
@@ -276,12 +888,179 @@ export const ASSET_CATALOG = {
 // gender (used to pick a female vs. male portrait pool).
 
 type LooseCast = { character_id: string; display_name: string; role: string; relation_to_protagonist: string }
+type LooseLocalizedText = { zh?: string | null; en?: string | null }
 type LooseTemplate = {
   template_id: string
   seed: string
   title?: string
+  title_i18n?: LooseLocalizedText | null
+  summary_i18n?: LooseLocalizedText | null
+  cover_image_url?: string | null
   cast: LooseCast[]
+  player_role_options?: Array<{ label?: string | null; public_persona?: string | null }> | null
 }
+
+type GeneratedCoverKey =
+  | "generated_entertainment_backstage_disappearance"
+  | "generated_entertainment_backstage_disappearance_v2"
+  | "generated_entertainment_press_hallway_v1"
+  | "generated_office_boardroom_betrayal"
+  | "generated_office_boardroom_betrayal_v2"
+  | "generated_office_contract_deadline_v1"
+  | "generated_campus_rain_secret"
+  | "generated_campus_rain_secret_v2"
+  | "generated_campus_auditorium_confession_v1"
+  | "generated_sci_fi_mars_colony_stage"
+  | "generated_fantasy_artifact_auction"
+  | "generated_wedding_aisle_betrayal"
+  | "generated_wedding_aisle_betrayal_v2"
+  | "generated_wedding_banquet_reveal_v1"
+  | "generated_family_banquet_inheritance"
+  | "generated_family_banquet_inheritance_v2"
+  | "generated_family_will_reading_v1"
+  | "generated_rooftop_gala_confrontation"
+  | "generated_hospital_secret_deadline"
+  | "generated_urban_alley_witness"
+
+const GENERATED_COVER_THEME_SHELLS: Record<GeneratedCoverKey, Shell> = {
+  generated_entertainment_backstage_disappearance: "entertainment_scandal",
+  generated_entertainment_backstage_disappearance_v2: "entertainment_scandal",
+  generated_entertainment_press_hallway_v1: "entertainment_scandal",
+  generated_office_boardroom_betrayal: "office_power",
+  generated_office_boardroom_betrayal_v2: "office_power",
+  generated_office_contract_deadline_v1: "office_power",
+  generated_campus_rain_secret: "campus_romance",
+  generated_campus_rain_secret_v2: "campus_romance",
+  generated_campus_auditorium_confession_v1: "campus_romance",
+  generated_sci_fi_mars_colony_stage: "urban_supernatural",
+  generated_fantasy_artifact_auction: "palace_drama",
+  generated_wedding_aisle_betrayal: "wedding",
+  generated_wedding_aisle_betrayal_v2: "wedding",
+  generated_wedding_banquet_reveal_v1: "wedding",
+  generated_family_banquet_inheritance: "wealth_families",
+  generated_family_banquet_inheritance_v2: "wealth_families",
+  generated_family_will_reading_v1: "wealth_families",
+  generated_rooftop_gala_confrontation: "wealth_families",
+  generated_hospital_secret_deadline: "courtroom",
+  generated_urban_alley_witness: "urban_supernatural",
+}
+
+const GENERATED_COVER_FALLBACKS: Record<GeneratedCoverKey, string> = {
+  generated_entertainment_backstage_disappearance:
+    "/webtoons/covers/generated/cover-entertainment-backstage-disappearance-v1.jpg",
+  generated_entertainment_backstage_disappearance_v2:
+    "/webtoons/covers/generated/cover-entertainment-backstage-disappearance-v2.jpg",
+  generated_entertainment_press_hallway_v1:
+    "/webtoons/covers/generated/cover-entertainment-press-hallway-v1.jpg",
+  generated_office_boardroom_betrayal:
+    "/webtoons/covers/generated/cover-office-boardroom-betrayal-v1.jpg",
+  generated_office_boardroom_betrayal_v2:
+    "/webtoons/covers/generated/cover-office-boardroom-betrayal-v2.jpg",
+  generated_office_contract_deadline_v1:
+    "/webtoons/covers/generated/cover-office-contract-deadline-v1.jpg",
+  generated_campus_rain_secret:
+    "/webtoons/covers/generated/cover-campus-rain-secret-v1.jpg",
+  generated_campus_rain_secret_v2:
+    "/webtoons/covers/generated/cover-campus-rain-secret-v2.jpg",
+  generated_campus_auditorium_confession_v1:
+    "/webtoons/covers/generated/cover-campus-auditorium-confession-v1.jpg",
+  generated_sci_fi_mars_colony_stage:
+    "/webtoons/covers/generated/cover-sci-fi-mars-colony-stage-v1.jpg",
+  generated_fantasy_artifact_auction:
+    "/webtoons/covers/generated/cover-fantasy-artifact-auction-v1.jpg",
+  generated_wedding_aisle_betrayal:
+    "/webtoons/covers/generated/cover-wedding-aisle-betrayal-v1.jpg",
+  generated_wedding_aisle_betrayal_v2:
+    "/webtoons/covers/generated/cover-wedding-aisle-betrayal-v2.jpg",
+  generated_wedding_banquet_reveal_v1:
+    "/webtoons/covers/generated/cover-wedding-banquet-reveal-v1.jpg",
+  generated_family_banquet_inheritance:
+    "/webtoons/covers/generated/cover-family-banquet-inheritance-v1.jpg",
+  generated_family_banquet_inheritance_v2:
+    "/webtoons/covers/generated/cover-family-banquet-inheritance-v2.jpg",
+  generated_family_will_reading_v1:
+    "/webtoons/covers/generated/cover-family-will-reading-v1.jpg",
+  generated_rooftop_gala_confrontation:
+    "/webtoons/covers/generated/cover-rooftop-gala-confrontation-v1.jpg",
+  generated_hospital_secret_deadline:
+    "/webtoons/covers/generated/cover-hospital-secret-deadline-v1.jpg",
+  generated_urban_alley_witness:
+    "/webtoons/covers/generated/cover-urban-alley-witness-v1.jpg",
+}
+
+const GENERATED_COVER_FALLBACK_POOLS: Partial<Record<GeneratedCoverKey, readonly GeneratedCoverKey[]>> = {
+  generated_entertainment_backstage_disappearance: [
+    "generated_entertainment_backstage_disappearance",
+    "generated_entertainment_backstage_disappearance_v2",
+    "generated_entertainment_press_hallway_v1",
+  ],
+  generated_office_boardroom_betrayal: [
+    "generated_office_boardroom_betrayal",
+    "generated_office_boardroom_betrayal_v2",
+    "generated_office_contract_deadline_v1",
+  ],
+  generated_campus_rain_secret: [
+    "generated_campus_rain_secret",
+    "generated_campus_rain_secret_v2",
+    "generated_campus_auditorium_confession_v1",
+  ],
+  generated_wedding_aisle_betrayal: [
+    "generated_wedding_aisle_betrayal",
+    "generated_wedding_aisle_betrayal_v2",
+    "generated_wedding_banquet_reveal_v1",
+  ],
+  generated_family_banquet_inheritance: [
+    "generated_family_banquet_inheritance",
+    "generated_family_banquet_inheritance_v2",
+    "generated_family_will_reading_v1",
+  ],
+}
+
+const GENERATED_COVER_RULES: Array<{ key: GeneratedCoverKey; keywords: readonly string[] }> = [
+  {
+    key: "generated_sci_fi_mars_colony_stage",
+    keywords: ["mars", "colony", "oxygen", "space", "sci-fi", "science fiction", "talent show", "火星", "殖民", "氧气"],
+  },
+  {
+    key: "generated_fantasy_artifact_auction",
+    keywords: ["artifact", "auction", "relic", "jade", "spellbook", "star-map", "法器", "遗物", "拍卖", "玉"],
+  },
+  {
+    key: "generated_hospital_secret_deadline",
+    keywords: ["hospital", "hospital deadline", "hospital ward", "doctor", "medical", "emergency", "injury", "医院", "病房", "医生", "急诊", "伤情"],
+  },
+  {
+    key: "generated_wedding_aisle_betrayal",
+    keywords: ["wedding", "aisle", "bride", "groom", "chapel", "marriage", "婚礼", "婚纱", "新娘", "新郎"],
+  },
+  {
+    key: "generated_entertainment_backstage_disappearance",
+    keywords: [
+      "backstage", "idol", "singer", "livestream", "awards", "disappearance", "fans",
+      "celebrity", "red carpet", "missing singer", "后台", "偶像", "歌手", "直播", "颁奖", "粉丝",
+    ],
+  },
+  {
+    key: "generated_office_boardroom_betrayal",
+    keywords: ["boardroom", "investor", "merger", "contract", "office", "cofounder", "company", "audit", "董事会", "投资人", "并购", "合同", "公司"],
+  },
+  {
+    key: "generated_campus_rain_secret",
+    keywords: ["campus", "rain", "student", "archive", "library", "secret", "college", "school", "校园", "雨", "学生", "档案", "图书馆", "秘密"],
+  },
+  {
+    key: "generated_family_banquet_inheritance",
+    keywords: ["family", "banquet", "inheritance", "will", "estate", "heir", "wealth", "家族", "宴会", "继承", "遗嘱", "豪门"],
+  },
+  {
+    key: "generated_rooftop_gala_confrontation",
+    keywords: ["rooftop", "gala", "confrontation", "champagne", "wealthy", "party", "天台", "酒会", "对峙", "晚宴"],
+  },
+  {
+    key: "generated_urban_alley_witness",
+    keywords: ["alley", "witness", "neon", "street", "envelope", "pursuer", "urban", "巷", "目击", "霓虹", "街", "信封"],
+  },
+]
 
 const SHELL_KEYWORDS: Record<Shell, readonly string[]> = {
   wealth_families: [
@@ -357,46 +1136,283 @@ function inferShell(template: LooseTemplate): Shell {
   return bestShell
 }
 
+function templateCoverCorpus(template: LooseTemplate): string {
+  const metadata = [
+    template.title_i18n?.zh,
+    template.title_i18n?.en,
+    template.summary_i18n?.zh,
+    template.summary_i18n?.en,
+  ].filter(Boolean).join(" ")
+  const corpus = [
+    template.seed,
+    template.title ?? "",
+    metadata,
+    template.cast
+      .map((c) => `${c.display_name} ${c.role} ${c.relation_to_protagonist}`)
+      .join(" "),
+  ].join(" ").toLowerCase()
+  return corpus
+}
+
+function inferGeneratedCoverKey(template: LooseTemplate): GeneratedCoverKey | null {
+  const corpus = templateCoverCorpus(template)
+  for (const rule of GENERATED_COVER_RULES) {
+    if (rule.keywords.some((kw) => corpus.includes(kw.toLowerCase()))) {
+      return rule.key
+    }
+  }
+  return null
+}
+
+function fallbackCoverCandidates(template: LooseTemplate): string[] {
+  const key = inferGeneratedCoverKey(template)
+  const shell = key ? GENERATED_COVER_THEME_SHELLS[key] : inferShell(template)
+  const generated = key
+    ? [...(GENERATED_COVER_FALLBACK_POOLS[key] ?? [key])].map((generatedKey) => (
+        GENERATED_COVER_FALLBACKS[generatedKey]
+      ))
+    : []
+  const shellVariants = shellVariantSlugs(shell).map((slug) => `/webtoons/shells/${slug}.jpg`)
+  const preferredShell = `/webtoons/shells/${shellVariantSlug(shell, template.template_id)}.jpg`
+  const orderedShellVariants = [
+    preferredShell,
+    ...shellVariants.filter((candidate) => candidate !== preferredShell),
+  ]
+  return [...generated, ...orderedShellVariants]
+}
+
 const FEMALE_ROLE_HINTS = [
   "妻", "妻子", "夫人", "母", "妈", "女儿", "妹", "姐", "姑娘", "小姐", "千金",
   "公主", "皇后", "继母", "学姐", "学妹", "女主", "少奶奶", "新娘", "未婚妻",
   "经纪人", "助理", "闺蜜", "情人",
   "wife", "mother", "daughter", "sister", "bride", "fiancee", "girlfriend",
-  "queen", "princess", "assistant", "manager",
+  "queen", "princess", "assistant", "manager", "actress", "chairwoman", "woman",
+  "female", "girl",
 ]
 const MALE_ROLE_HINTS = [
   "夫", "丈夫", "父", "爸", "儿子", "弟", "哥", "少爷", "总裁", "霸总",
   "皇帝", "王", "继父", "学长", "男主", "新郎", "未婚夫",
   "husband", "father", "son", "brother", "groom", "fiance", "boyfriend",
-  "king", "prince", "ceo", "founder", "cofounder",
+  "king", "prince", "ceo", "founder", "cofounder", "actor", "chairman", "man",
+  "male", "boy",
 ]
 
-function inferGender(role: string, relation: string): "female" | "male" {
-  const corpus = `${role} ${relation}`
-  const female = FEMALE_ROLE_HINTS.some((kw) => corpus.includes(kw))
-  const male = MALE_ROLE_HINTS.some((kw) => corpus.includes(kw))
+function inferGender(...parts: Array<string | null | undefined>): AvatarGenderPresentation | null {
+  const corpus = parts.filter(Boolean).join(" ").toLowerCase()
+  const female = FEMALE_ROLE_HINTS.some((kw) => corpusHasKeyword(corpus, kw))
+  const male = MALE_ROLE_HINTS.some((kw) => corpusHasKeyword(corpus, kw))
   if (female && !male) return "female"
   if (male && !female) return "male"
-  // Tie / no signal — split by character_id hash for a stable spread.
-  return stableHash(`${role}|${relation}`) % 2 === 0 ? "female" : "male"
+  return null
+}
+
+function avatarCorpusFromContext(context: LooseTemplate | string | null | undefined): string {
+  if (!context) return ""
+  if (typeof context === "string") return context
+  const metadata = [
+    context.title_i18n?.zh,
+    context.title_i18n?.en,
+    context.summary_i18n?.zh,
+    context.summary_i18n?.en,
+  ].filter(Boolean).join(" ")
+  const playerRoles = (context.player_role_options ?? [])
+    .map((role) => `${role.label ?? ""} ${role.public_persona ?? ""}`)
+    .join(" ")
+  return [
+    context.seed,
+    context.title ?? "",
+    metadata,
+    playerRoles,
+    context.cast.map((c) => `${c.display_name} ${c.role} ${c.relation_to_protagonist}`).join(" "),
+  ].join(" ").toLowerCase()
+}
+
+function addWeightedTag(weights: Record<string, number>, tag: string, weight: number): void {
+  weights[tag] = (weights[tag] ?? 0) + weight
+}
+
+function addWeightedTags(weights: Record<string, number>, tags: readonly string[], weight: number): void {
+  for (const tag of tags) addWeightedTag(weights, tag, weight)
+}
+
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function corpusHasKeyword(corpus: string, keyword: string): boolean {
+  const normalized = keyword.toLowerCase().trim()
+  if (!normalized) return false
+  if (/^[a-z0-9][a-z0-9\s-]*[a-z0-9]$|^[a-z0-9]$/i.test(normalized)) {
+    const spaced = escapeRegExp(normalized).replace(/\s+/g, "\\s+")
+    return new RegExp(`\\b${spaced}\\b`, "i").test(corpus)
+  }
+  return corpus.includes(normalized)
+}
+
+function applyAvatarRules(
+  query: AvatarQuery,
+  corpus: string,
+  rules: readonly AvatarQueryRule[],
+  defaultWeight: number,
+): number {
+  let hits = 0
+  for (const rule of rules) {
+    if (!rule.keywords.some((keyword) => corpusHasKeyword(corpus, keyword))) continue
+    hits += 1
+    addWeightedTags(query.weights, rule.tags, rule.weight ?? defaultWeight)
+    // The first tag is the rule's identity tag (publicist, dancer, sponsor,
+    // etc.). Boost it so a rich contextual match cannot swamp the actual role.
+    if (rule.tags[0]) addWeightedTag(query.weights, rule.tags[0], rule.weight ?? defaultWeight)
+    if (rule.avoidTags) {
+      query.avoidTags = [...new Set([...query.avoidTags, ...rule.avoidTags])]
+    }
+    if (rule.gender && !query.gender) {
+      query.gender = rule.gender
+    }
+  }
+  return hits
+}
+
+function buildAvatarQuery(
+  templateId: string,
+  member: LooseCast,
+  context?: LooseTemplate | string | null,
+): AvatarQuery {
+  const memberCorpus = [
+    member.character_id,
+    member.display_name,
+    member.role,
+    member.relation_to_protagonist,
+  ].join(" ").toLowerCase()
+  const contextCorpus = avatarCorpusFromContext(context)
+  const query: AvatarQuery = {
+    key: `${templateId}|${member.character_id}`,
+    gender: inferGender(member.character_id, member.display_name, member.role, member.relation_to_protagonist),
+    weights: {},
+    avoidTags: [],
+    roleRuleHits: 0,
+  }
+
+  applyAvatarRules(query, contextCorpus, AVATAR_CONTEXT_RULES, 2)
+  query.roleRuleHits = applyAvatarRules(query, memberCorpus, AVATAR_ROLE_RULES, 5)
+
+  if (query.gender) addWeightedTag(query.weights, query.gender, 2)
+  addWeightedTag(query.weights, "character", 4)
+  addWeightedTag(query.weights, "portrait", 4)
+  return query
+}
+
+function avatarIsAllowed(meta: AvatarMetadata, query: AvatarQuery): boolean {
+  const tags = new Set(meta.tags)
+  if (tags.has("object") || tags.has("letter")) return false
+  if (query.avoidTags.some((tag) => tags.has(tag))) return false
+  return true
+}
+
+function avatarSemanticScore(meta: AvatarMetadata, query: AvatarQuery): number {
+  let score = 0
+  if (query.gender) {
+    score += meta.gender === query.gender ? 4 : -5
+  }
+  for (const [tag, weight] of Object.entries(query.weights)) {
+    if (tag === meta.gender || meta.tags.includes(tag)) score += weight
+  }
+  return score
+}
+
+function stableAvatarTieValue(queryKey: string, slug: string): number {
+  return stableHash(`avatar-semantic-tie|${queryKey}|${slug}`)
+}
+
+function rankAvatarCandidates(query: AvatarQuery): Array<{ meta: AvatarMetadata; score: number }> {
+  return AVATAR_METADATA
+    .filter((meta) => avatarIsAllowed(meta, query))
+    .map((meta) => ({ meta, score: avatarSemanticScore(meta, query) }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return stableAvatarTieValue(query.key, a.meta.slug) - stableAvatarTieValue(query.key, b.meta.slug)
+    })
+}
+
+function neutralAvatarForQuery(query: AvatarQuery): string {
+  const neutral = NEUTRAL_PROFESSIONAL_AVATARS
+    .map((slug) => AVATAR_METADATA.find((meta) => meta.slug === slug))
+    .filter((meta): meta is AvatarMetadata => Boolean(meta))
+    .filter((meta) => !query.gender || meta.gender === query.gender)
+  const pool = neutral.length > 0 ? neutral : AVATAR_METADATA.filter((meta) => avatarIsAllowed(meta, query))
+  const picked = pick(pool, `neutral-avatar|${query.key}`)
+  const fallbackGender = query.gender === "male" || query.gender === "female" ? query.gender : undefined
+  return picked ? `/webtoons/avatars/${picked.slug}.jpg` : getDefaultAvatar(fallbackGender)
+}
+
+function resolveGeneratedCoverUrl(value: string | null | undefined): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  if (/[\n\r"'()\\]/.test(trimmed)) return null
+  if (
+    trimmed.startsWith("/webtoons/")
+    || trimmed.startsWith("/generated/")
+    || trimmed.startsWith("/uploads/")
+    || trimmed.startsWith("https://")
+  ) {
+    return trimmed
+  }
+  return null
 }
 
 /** Cover for a template card / hero. Uses variant -01/-02 deterministically
  *  per template so two templates of the same shell get different visuals. */
 export function getCoverForTemplate(template: LooseTemplate): string {
+  const generatedCover = resolveGeneratedCoverUrl(template.cover_image_url)
+  if (generatedCover) return generatedCover
+  const [preferred] = fallbackCoverCandidates(template)
+  if (preferred) return preferred
   const shell = inferShell(template)
   return `/webtoons/shells/${shellVariantSlug(shell, template.template_id)}.jpg`
+}
+
+export function assignTemplateCovers<T extends LooseTemplate>(templates: readonly T[]): Record<string, string> {
+  const assigned: Record<string, string> = {}
+  const usedFallbackCovers = new Set<string>()
+  for (const [index, template] of templates.entries()) {
+    const generatedCover = resolveGeneratedCoverUrl(template.cover_image_url)
+    if (generatedCover) {
+      assigned[template.template_id] = generatedCover
+      usedFallbackCovers.add(generatedCover)
+      continue
+    }
+    const candidates = fallbackCoverCandidates(template)
+    const preferred = candidates[0] ?? getCoverForTemplate(template)
+    let selected = preferred
+    if (usedFallbackCovers.has(selected)) {
+      for (const candidate of candidates) {
+        if (!usedFallbackCovers.has(candidate)) {
+          selected = candidate
+          break
+        }
+      }
+    }
+    if (usedFallbackCovers.has(selected) && candidates.length > 0) {
+      selected = candidates[stableHash(`cover-list|${template.template_id}|${index}`) % candidates.length]
+    }
+    assigned[template.template_id] = selected
+    usedFallbackCovers.add(selected)
+  }
+  return assigned
 }
 
 /** Stable per-character avatar within a template. */
 export function getAvatarForCastMember(
   templateId: string,
   member: LooseCast,
+  context?: LooseTemplate | string | null,
 ): string {
-  const gender = inferGender(member.role, member.relation_to_protagonist)
-  const pool = gender === "male" ? AVATAR_MALE : AVATAR_FEMALE
-  const key = `${templateId}|${member.character_id}`
-  return `/webtoons/avatars/${pick(pool, key)}.jpg`
+  const query = buildAvatarQuery(templateId, member, context)
+  const [winner] = rankAvatarCandidates(query)
+  if (!winner || query.roleRuleHits === 0 || winner.score < SEMANTIC_AVATAR_MIN_SCORE) {
+    return neutralAvatarForQuery(query)
+  }
+  return `/webtoons/avatars/${winner.meta.slug}.jpg`
 }
 
 /** Avatar for the advisor FAB / sidechat header. Pulls from a dedicated

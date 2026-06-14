@@ -3,7 +3,6 @@ import { motion } from "motion/react"
 import { useApi } from "../../app/api-context"
 import { useAuth } from "../../app/auth-context"
 import { Header } from "../../shared/ui/header"
-import { friendlyError } from "../../shared/lib/friendly-error"
 import { useLanguage } from "../../shared/lib/i18n"
 import {
   REVIEWER_DEMO_ACTIONS,
@@ -37,16 +36,22 @@ export function ReviewerPage({
       if (auth.isAnonymous) {
         await auth.login("portfolio_reviewer")
       }
+      const briefResponse = await api.createNarrativeStoryBrief({
+        seed: REVIEWER_DEMO_SEED,
+        language: "en",
+        desired_tension_profile: "high_drama",
+      })
       const response = await api.createNarrativeTemplate({
         seed: REVIEWER_DEMO_SEED,
         visibility: "unlisted",
         turn_budget: 12,
         difficulty: "story",
         language: "en",
+        story_brief: briefResponse.brief,
       })
       onSessionStarted(response.session.session_id)
-    } catch (err) {
-      setError(friendlyError(err, "Could not launch the reviewer demo."))
+    } catch {
+      setError("Could not launch the reviewer demo from the curated brief. Please retry.")
       inflightRef.current = false
       setBusy(false)
     }
@@ -54,7 +59,7 @@ export function ReviewerPage({
 
   return (
     <div className="reviewer-page">
-      <Header onHome={onBackHome} onCreate={onOpenCreate} />
+      <Header onHome={onBackHome} onCreate={onOpenCreate} showBackButton />
       <main className="reviewer-main">
         <motion.section
           className="reviewer-hero"

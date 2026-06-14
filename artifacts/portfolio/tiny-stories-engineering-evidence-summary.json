@@ -1,0 +1,94 @@
+{
+  "schema_version": "tiny_stories_engineering_evidence_summary.v1",
+  "project": "Tiny Stories",
+  "framing": "Productized LLM / applied AI systems engineering, not HCI research.",
+  "latest_evidence_anchor": {
+    "commit": "4382874 fix: keep opening live for eval gate",
+    "snapshot": "snapshot/story-brief-opening-live-reliability-2026-06-08",
+    "live_summary_path": "/tmp/tiny-stories-opening-live-reliability-2026-06-08/live-acceptance-summary-2.json",
+    "reviewer_screenshot_path": "/tmp/tiny-stories-opening-live-reliability-2026-06-08/reviewer-play-evaluation-inapp.png",
+    "normal_player_screenshot_path": "/tmp/tiny-stories-opening-live-reliability-2026-06-08/normal-play-clean-inapp.png"
+  },
+  "live_gate": {
+    "status": "pass",
+    "template_id": "tmpl_e6a132445fe8",
+    "session_id": "sess_61d85a921fda",
+    "failure_count": 0,
+    "required_operations": [
+      {
+        "stage": "Story Butler",
+        "operation": "create.story_butler_turn",
+        "source": "live",
+        "status": "success",
+        "latency_ms": 1568,
+        "input_tokens": 2697,
+        "cached_input_tokens": 384,
+        "output_tokens": 32,
+        "total_tokens": 2729,
+        "fallback": null
+      },
+      {
+        "stage": "Story Brief",
+        "operation": "narrative.story_brief",
+        "source": "live",
+        "status": "success",
+        "latency_ms": 2479,
+        "input_tokens": 1408,
+        "cached_input_tokens": 1280,
+        "output_tokens": 156,
+        "total_tokens": 1564,
+        "fallback": null
+      },
+      {
+        "stage": "Opening",
+        "operation": "narrative.opening",
+        "source": "live",
+        "status": "success",
+        "latency_ms": 13100,
+        "input_tokens": 2630,
+        "cached_input_tokens": 0,
+        "output_tokens": 832,
+        "total_tokens": 3462,
+        "fallback": null
+      },
+      {
+        "stage": "Play turn",
+        "operation": "narrative.advance_turn",
+        "source": "live",
+        "status": "success",
+        "latency_ms": 7701,
+        "input_tokens": 6464,
+        "cached_input_tokens": 4864,
+        "output_tokens": 420,
+        "total_tokens": 6884,
+        "fallback": null
+      }
+    ]
+  },
+  "evaluator_evidence": {
+    "step_judge": "Deterministic per-turn judge persisted in narrative_agent_events.",
+    "contract_judge": "Deterministic runtime shape and contract-safety judge persisted in narrative_agent_events.",
+    "trajectory_packaging": "Deterministic packaging of Step/Contract statuses across turns; not a full live trajectory judge.",
+    "reviewer_drawer": "Reviewer-only EvaluationDrawer shows criteria, trajectory trend, and sanitized telemetry."
+  },
+  "gold_set_categories": [
+    "arbitrary Story Butler input and smalltalk",
+    "meta/help input",
+    "unsafe prompt redirect",
+    "laundromat not-fit gate",
+    "supported high-drama awards prompt",
+    "multi-turn correction with superseded facts",
+    "Play turn consequence"
+  ],
+  "safe_application_snippets": {
+    "resume_bullet": "Built Tiny Stories, an applied AI story-game runtime that turns rough prompts into playable sessions using typed Story Brief contracts, live LLM generation, persisted sessions, and reviewer-only observability.",
+    "sop_sentence": "Tiny Stories is the project where I learned to treat LLM product behavior as an engineering system: typed contracts, live-gated execution, telemetry, failure taxonomy, reviewer evidence, and player-facing UX boundaries all had to work together before I could call a demo reliable.",
+    "headline": "Tiny Stories: a live LLM story-game runtime with typed contracts, evaluator traces, and reviewer-only observability."
+  },
+  "guardrails": [
+    "Do not call deterministic trajectory packaging a full live trajectory judge.",
+    "Do not call tag-vector avatar ranking neural embeddings or a vector database.",
+    "Do not claim research contribution, SOTA, general story robustness, or consumer-scale adoption.",
+    "Clearly distinguish live acceptance from fixture/protocol checks."
+  ]
+}

@@ -10,6 +10,10 @@ import {
   getCoverForTemplate,
   getEndingIllustration,
 } from "../../shared/lib/webtoon-assets"
+import {
+  getReplayDisplaySummary,
+  getReplayDisplayTitle,
+} from "../../shared/lib/localized-story-metadata"
 
 /**
  * Public, auth-free replay of a completed (or in-progress) session.
@@ -97,18 +101,24 @@ export function ReplayPage({
   }
 
   // Build a synthetic template-like object so we can reuse the cover helper.
+  const displayTitle = getReplayDisplayTitle(replay, lang)
+  const displaySummary = getReplayDisplaySummary(replay, lang)
   const templateLike = {
     template_id: sessionId, // stable hash on session_id for the cover pick
-    seed: replay.template_seed,
-    title: replay.template_title,
+    seed: displaySummary,
+    title: displayTitle,
+    cover_image_url: replay.cover_image_url,
     cast: replay.cast,
   }
   // For completed replays, use the ending-specific illustration as the
   // hero — that's the visual identity of *this particular* playthrough.
   // Incomplete replays fall back to the shell cover.
-  const cover = replay.completed && replay.ending
+  const storyCover = getCoverForTemplate(templateLike)
+  const cover = replay.cover_image_url
+    ? storyCover
+    : replay.completed && replay.ending
     ? getEndingIllustration(replay.ending.label)
-    : getCoverForTemplate(templateLike)
+    : storyCover
   const advisorAvatar = getAdvisorAvatar(sessionId, replay.advisor_persona)
   const endingSubtitleText = replay.ending
     ? lang === "en" ? `"${replay.ending.subtitle}"` : `「${replay.ending.subtitle}」`
@@ -130,8 +140,8 @@ export function ReplayPage({
             {t("replay.crumb_back_home")}
           </button>
           <div style={rpStyles.replayBadge}>{t("replay.badge")}</div>
-          <h1 style={rpStyles.title}>{replay.template_title}</h1>
-          <p style={rpStyles.heroSeed}>"{replay.template_seed}"</p>
+          <h1 style={rpStyles.title}>{displayTitle}</h1>
+          {displaySummary ? <p style={rpStyles.heroSeed}>"{displaySummary}"</p> : null}
           <div style={rpStyles.heroMetaLine}>
             {castLine ? <span>{castLine}</span> : null}
             {castLine ? <span style={rpStyles.heroMetaDot}>·</span> : null}

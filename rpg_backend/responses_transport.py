@@ -199,9 +199,22 @@ def usage_to_dict(usage: Any) -> dict[str, Any]:
             except Exception:  # noqa: BLE001
                 continue
     normalized: dict[str, Any] = {}
+    direct_cached_input_tokens = raw.get("cached_input_tokens")
+    if isinstance(direct_cached_input_tokens, (int, float)) and not isinstance(direct_cached_input_tokens, bool):
+        normalized["cached_input_tokens"] = int(direct_cached_input_tokens)
     input_details = raw.get("input_tokens_details")
     if isinstance(input_details, dict) and isinstance(input_details.get("cached_tokens"), (int, float)):
         normalized["cached_input_tokens"] = int(input_details["cached_tokens"])
+    prompt_details = raw.get("prompt_tokens_details")
+    if isinstance(prompt_details, dict):
+        if isinstance(prompt_details.get("cached_tokens"), (int, float)) and not isinstance(
+            prompt_details.get("cached_tokens"), bool
+        ):
+            normalized["cached_input_tokens"] = int(prompt_details["cached_tokens"])
+        if isinstance(prompt_details.get("cache_creation_input_tokens"), (int, float)) and not isinstance(
+            prompt_details.get("cache_creation_input_tokens"), bool
+        ):
+            normalized["cache_creation_input_tokens"] = int(prompt_details["cache_creation_input_tokens"])
     prompt_cache_hit_tokens = raw.get("prompt_cache_hit_tokens")
     if isinstance(prompt_cache_hit_tokens, (int, float)) and not isinstance(prompt_cache_hit_tokens, bool):
         normalized["cached_input_tokens"] = int(prompt_cache_hit_tokens)
@@ -414,14 +427,14 @@ class _RawResponsesResource:
             return _base_url_matches_host_set(self._base_url, self._chat_json_stream_hosts)
         return _supports_stream_chat_json(self._base_url)
 
-    def _next_api_key(self) -> str:
+    def _next_api_key(self, *, retry_offset: int = 0) -> str:
         if not self._api_key_pool:
             return self._api_key
-        if len(self._api_key_pool) == 1:
-            return self._api_key_pool[0]
-        with self._api_key_lock:
-            index = self._api_key_index
-            self._api_key_index = (self._api_key_index + 1) % len(self._api_key_pool)
+        # Keep the explicit primary key sticky. The env may retain stale
+        # historical keys in *_API_KEYS pools; round-robin rotation would make
+        # the second product call fail even when the current single key is
+        # valid.
+        index = min(max(0, retry_offset), len(self._api_key_pool) - 1)
         return self._api_key_pool[index]
 
     def _build_client(self) -> httpx.Client:
@@ -573,8 +586,9 @@ class _RawResponsesResource:
         use_stream_chat = self._should_use_stream_chat(endpoint_url)
         pending_retry_attempted = False
         empty_content_retry_attempted = False
+        retry_key_offset = 0
         while True:
-            active_api_key = self._next_api_key()
+            active_api_key = self._next_api_key(retry_offset=retry_key_offset)
             headers = {
                 "Authorization": f"Bearer {active_api_key}",
                 "Content-Type": "application/json",
@@ -637,6 +651,7 @@ class _RawResponsesResource:
                     message=message,
                 ):
                     pending_retry_attempted = True
+                    retry_key_offset += 1
                     time.sleep(_PENDING_OVERLOAD_RETRY_DELAY_SECONDS)
                     continue
                 if (not empty_content_retry_attempted) and _is_empty_content_error(
@@ -644,6 +659,7 @@ class _RawResponsesResource:
                     message=message,
                 ):
                     empty_content_retry_attempted = True
+                    retry_key_offset += 1
                     time.sleep(_EMPTY_CONTENT_RETRY_DELAY_SECONDS)
                     continue
                 raise
@@ -707,7 +723,7 @@ class RawResponsesClient:
         chat_json_stream_mode: Literal["auto", "force", "off"] = "auto",
         chat_json_stream_hosts: tuple[str, ...] | None = None,
     ) -> None:
-        self.responses = _RawResponsesResource(
+        completions = _RawResponsesResource(
             base_url=base_url,
             api_key=api_key,
             api_keys=api_keys,
@@ -717,9 +733,14 @@ class RawResponsesClient:
             chat_json_stream_mode=chat_json_stream_mode,
             chat_json_stream_hosts=chat_json_stream_hosts,
         )
+        # Tiny Stories' DeepSeek path is Chat Completions-native. Keep the
+        # legacy `.responses` alias for old callers, but new product transport
+        # code calls `.chat.completions.create(...)`.
+        self.chat = SimpleNamespace(completions=completions)
+        self.responses = completions
 
 
-def build_openai_client(
+def build_chat_completions_client(
     *,
     base_url: str,
     api_key: str,
@@ -749,6 +770,33 @@ def build_openai_client(
         api_key=api_key,
         api_keys=api_keys,
         default_headers=default_headers,
+        requests_per_minute=requests_per_minute,
+        rate_limit_scope=rate_limit_scope,
+        chat_json_stream_mode=chat_json_stream_mode,
+        chat_json_stream_hosts=chat_json_stream_hosts,
+    )
+
+
+def build_openai_client(
+    *,
+    base_url: str,
+    api_key: str,
+    api_keys: tuple[str, ...] | None = None,
+    use_session_cache: bool,
+    session_cache_header: str,
+    session_cache_value: str,
+    requests_per_minute: int | None = None,
+    rate_limit_scope: str | None = None,
+    chat_json_stream_mode: Literal["auto", "force", "off"] = "auto",
+    chat_json_stream_hosts: tuple[str, ...] | None = None,
+) -> RawResponsesClient:
+    return build_chat_completions_client(
+        base_url=base_url,
+        api_key=api_key,
+        api_keys=api_keys,
+        use_session_cache=use_session_cache,
+        session_cache_header=session_cache_header,
+        session_cache_value=session_cache_value,
         requests_per_minute=requests_per_minute,
         rate_limit_scope=rate_limit_scope,
         chat_json_stream_mode=chat_json_stream_mode,
@@ -786,9 +834,22 @@ class ResponsesJSONTransport:
     )
 
     def _is_xcode_mode(self) -> bool:
-        responses_resource = getattr(self.client, "responses", None)
+        chat_resource = getattr(getattr(self.client, "chat", None), "completions", None)
+        responses_resource = chat_resource or getattr(self.client, "responses", None)
         base_url = getattr(responses_resource, "_base_url", "")
         return _is_xcode_base_url(str(base_url))
+
+    def _create_chat_completion(self, request_kwargs: dict[str, Any]) -> Any:
+        completions = getattr(getattr(self.client, "chat", None), "completions", None)
+        if completions is not None:
+            return completions.create(**request_kwargs)
+        # Compatibility for old tests or future providers that still hand in a
+        # response-shaped client. Tiny Stories production gateway passes a
+        # chat-completions client.
+        responses_resource = getattr(self.client, "responses", None)
+        if responses_resource is not None:
+            return responses_resource.create(**request_kwargs)
+        raise RuntimeError("text LLM client does not expose chat completions")
 
     @staticmethod
     def _resolved_schema_payload(
@@ -881,33 +942,83 @@ class ResponsesJSONTransport:
             request_kwargs["previous_response_id"] = previous_response_id
         operation = operation_name or "unknown"
         attempt_index = sum(1 for entry in self.call_trace if entry.get("operation") == operation) + 1
-        try:
-            response = self.client.responses.create(**request_kwargs)
-        except Exception as exc:  # noqa: BLE001
-            status_code = _provider_error_status_code(exc)
+        started_at = time.monotonic()
+
+        def _latency_ms() -> int:
+            return max(0, int(round((time.monotonic() - started_at) * 1000)))
+
+        def _append_trace(
+            *,
+            status: str,
+            response_id: str | None,
+            usage: dict[str, Any] | None,
+            response_received: bool,
+            failure_code: str | None,
+            failure_message_bucket: str | None,
+            failure_status_code: int | None = None,
+            repair_count: int = 0,
+        ) -> None:
             self.call_trace.append(
                 {
                     "operation": operation,
-                    "response_id": None,
+                    "response_id": response_id,
                     "used_previous_response_id": bool(previous_response_id),
                     "session_cache_enabled": bool(self.use_session_cache),
                     "max_output_tokens": max_output_tokens,
                     "input_characters": input_characters,
                     "response_format_type": resolved_response_format,
+                    "transport": "chat_completions",
                     "json_object_prompt_only": bool(self.json_object_prompt_only),
                     "json_content_type_hint": bool(self.json_content_type_hint),
-                    "usage": {},
+                    "usage": usage or {},
                     "attempt_index": attempt_index,
-                    "response_received": False,
-                    "failure_code": self.provider_failed_code,
-                    "failure_message_bucket": _failure_message_bucket(str(exc)),
-                    "failure_status_code": status_code,
+                    "response_received": response_received,
+                    "failure_code": failure_code,
+                    "failure_message_bucket": failure_message_bucket,
+                    "failure_status_code": failure_status_code,
+                    "status": status,
+                    "latency_ms": _latency_ms(),
+                    "repair_count": repair_count,
+                    "retry_count": max(0, attempt_index - 1),
                 }
+            )
+
+        try:
+            response = self._create_chat_completion(request_kwargs)
+        except Exception as exc:  # noqa: BLE001
+            status_code = _provider_error_status_code(exc)
+            bucket = _failure_message_bucket(str(exc))
+            status = (
+                "timeout"
+                if bucket == "timeout"
+                else "rate_limited"
+                if bucket == "rate_limit"
+                else "provider_unavailable"
+                if bucket in {"dns", "connection", "auth", "service"}
+                else "failed"
+            )
+            _append_trace(
+                status=status,
+                response_id=None,
+                usage={},
+                response_received=False,
+                failure_code=self.provider_failed_code,
+                failure_message_bucket=bucket,
+                failure_status_code=status_code,
             )
             raise self.error_factory(self.provider_failed_code, str(exc), status_code) from exc
         try:
             content = response.output_text
         except Exception as exc:  # noqa: BLE001
+            _append_trace(
+                status="invalid_response",
+                response_id=getattr(response, "id", None),
+                usage=usage_to_dict(getattr(response, "usage", None)),
+                response_received=True,
+                failure_code=self.invalid_response_code,
+                failure_message_bucket="missing_content",
+                failure_status_code=502,
+            )
             raise self.error_factory(
                 self.invalid_response_code,
                 "provider response did not include message content",
@@ -916,6 +1027,15 @@ class ResponsesJSONTransport:
         text = str(content or "").strip()
         original_text = text
         if not text:
+            _append_trace(
+                status="invalid_response",
+                response_id=getattr(response, "id", None),
+                usage=usage_to_dict(getattr(response, "usage", None)),
+                response_received=True,
+                failure_code=self.invalid_json_code,
+                failure_message_bucket="empty_content",
+                failure_status_code=502,
+            )
             raise self.error_factory(
                 self.invalid_json_code,
                 "provider returned empty content",
@@ -928,36 +1048,45 @@ class ResponsesJSONTransport:
         end = text.rfind("}")
         if start >= 0 and end > start:
             text = text[start : end + 1]
-        payload, _, parse_error = _try_parse_json(text)
+        payload, was_repaired, parse_error = _try_parse_json(text)
         if payload is None:
             if plaintext_fallback_key and original_text:
                 payload = {plaintext_fallback_key: original_text}
             else:
+                _append_trace(
+                    status="invalid_response",
+                    response_id=getattr(response, "id", None),
+                    usage=usage_to_dict(getattr(response, "usage", None)),
+                    response_received=True,
+                    failure_code=self.invalid_json_code,
+                    failure_message_bucket="invalid_json",
+                    failure_status_code=502,
+                )
                 raise self.error_factory(self.invalid_json_code, parse_error or "invalid JSON", 502)
         if not isinstance(payload, dict):
+            _append_trace(
+                status="invalid_response",
+                response_id=getattr(response, "id", None),
+                usage=usage_to_dict(getattr(response, "usage", None)),
+                response_received=True,
+                failure_code=self.invalid_json_code,
+                failure_message_bucket="non_object_json",
+                failure_status_code=502,
+            )
             raise self.error_factory(
                 self.invalid_json_code,
                 "provider returned a non-object JSON payload",
                 502,
             )
         usage = usage_to_dict(getattr(response, "usage", None))
-        self.call_trace.append(
-            {
-                "operation": operation,
-                "response_id": getattr(response, "id", None),
-                "used_previous_response_id": bool(previous_response_id),
-                "session_cache_enabled": bool(self.use_session_cache),
-                "max_output_tokens": max_output_tokens,
-                "input_characters": input_characters,
-                "response_format_type": resolved_response_format,
-                "json_object_prompt_only": bool(self.json_object_prompt_only),
-                "json_content_type_hint": bool(self.json_content_type_hint),
-                "usage": usage,
-                "attempt_index": attempt_index,
-                "response_received": True,
-                "failure_code": None,
-                "failure_message_bucket": None,
-            }
+        _append_trace(
+            status="repaired" if was_repaired else "success",
+            response_id=getattr(response, "id", None),
+            usage=usage,
+            response_received=True,
+            failure_code=None,
+            failure_message_bucket=None,
+            repair_count=1 if was_repaired else 0,
         )
         return ResponsesJSONResponse(
             payload=payload,

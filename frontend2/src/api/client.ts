@@ -19,9 +19,14 @@ import type {
   NarrativeCreateTemplateResponse,
   NarrativeEnding,
   NarrativeEndingDistributionResponse,
+  NarrativeLLMCallEventListResponse,
   NarrativePublicReplayResponse,
   NarrativeSessionListResponse,
   NarrativeStartSessionResponse,
+  NarrativeStoryBriefAdvisorRequest,
+  NarrativeStoryBriefAdvisorResponse,
+  NarrativeStoryGuideTurnRequest,
+  NarrativeStoryGuideTurnResponse,
   NarrativeStoryHistoryResponse,
   NarrativeTemplateListResponse,
   NarrativeTemplateSummary,
@@ -37,6 +42,10 @@ import type {
   StoryVisibility,
   UpdateStoryVisibilityRequest,
 } from "./contracts"
+
+export type NarrativeAgentTraceOptions = {
+  agentTrace?: boolean
+}
 
 export type FrontendApiClient = {
   getAuthSession(): Promise<AuthSessionResponse>
@@ -61,6 +70,8 @@ export type FrontendApiClient = {
   submitPlayTurn(sessionId: string, request: PlayTurnRequest): Promise<PlaySessionSnapshot>
 
   // ---------- Narrative (template/session) ----------
+  createNarrativeStoryGuideTurn(request: NarrativeStoryGuideTurnRequest): Promise<NarrativeStoryGuideTurnResponse>
+  createNarrativeStoryBrief(request: NarrativeStoryBriefAdvisorRequest): Promise<NarrativeStoryBriefAdvisorResponse>
   createNarrativeTemplate(request: NarrativeCreateTemplateRequest): Promise<NarrativeCreateTemplateResponse>
   listPublicNarrativeTemplates(): Promise<NarrativeTemplateListResponse>
   getNarrativeTemplate(templateId: string): Promise<NarrativeTemplateSummary>
@@ -72,10 +83,15 @@ export type FrontendApiClient = {
     templateId: string,
     request?: import("./contracts").NarrativeStartSessionRequest,
   ): Promise<NarrativeStartSessionResponse>
-  getNarrativeStory(sessionId: string): Promise<NarrativeStoryHistoryResponse>
+  getNarrativeStory(
+    sessionId: string,
+    options?: NarrativeAgentTraceOptions,
+  ): Promise<NarrativeStoryHistoryResponse>
+  getNarrativeLLMEvents(sessionId: string): Promise<NarrativeLLMCallEventListResponse>
   advanceNarrativeTurn(
     sessionId: string,
     request: NarrativeAdvanceTurnRequest,
+    options?: NarrativeAgentTraceOptions,
   ): Promise<NarrativeAdvanceTurnResponse>
   askNarrativeAdvisor(
     sessionId: string,

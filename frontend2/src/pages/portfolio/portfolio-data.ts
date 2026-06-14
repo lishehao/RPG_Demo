@@ -9,7 +9,7 @@ export const LOCAL_DEMO_MP4_URL =
   "https://lishehao.github.io/RPG_Demo/demo-video/tiny-stories-admissions-demo-readme.mp4"
 
 export const REVIEWER_DEMO_SEED =
-  "Minutes before the awards livestream, my cofounder announces our secret merger onstage. My ex steps into the control room holding the recording that proves I buried the deal."
+  "Minutes before the awards livestream, Mira the anxious publicist, Producer Han, Rina the backup dancer witness, Eun Sol the fan-channel reporter, and Choi the sponsor director gather in the control room after singer Seo Mina disappears. Mira must decide what to reveal before sponsors and fans panic, with no violence and no blackmail."
 
 export const REVIEWER_DEMO_ACTIONS = [
   "Start from a locked English seed",

@@ -160,6 +160,246 @@ class InventoryDelta(BaseModel):
     reason: str = Field(default="", max_length=120)
 
 
+GameplayChipTone = Literal["gain", "cost", "unlock", "shift"]
+GameplayEnvelopeSource = Literal["backend", "live_enriched"]
+
+
+class GameplayChip(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = Field(min_length=1, max_length=80)
+    tone: GameplayChipTone = "shift"
+    detail: str | None = Field(default=None, max_length=140)
+
+
+class GameplayPressureTrack(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=40)
+    label: str = Field(min_length=1, max_length=40)
+    value: str = Field(min_length=1, max_length=80)
+    tone: GameplayChipTone = "shift"
+
+
+class GameplayEnvelope(BaseModel):
+    """Optional typed play-state summary attached to turn responses.
+
+    This is intentionally small and tolerant: older clients can ignore it,
+    and newer clients still derive their own view if it is absent.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    source: GameplayEnvelopeSource = "backend"
+    objective: str | None = Field(default=None, max_length=140)
+    tracks: list[GameplayPressureTrack] = Field(default_factory=list, max_length=6)
+    action_forecasts: list[list[GameplayChip]] = Field(default_factory=list, max_length=6)
+    impact: list[GameplayChip] = Field(default_factory=list, max_length=6)
+    opportunities: list[GameplayChip] = Field(default_factory=list, max_length=6)
+
+
+class TurnGameplayNextActionContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    option_index: int = Field(ge=0, le=10)
+    reason: str = Field(min_length=1, max_length=100)
+
+
+class TurnGameplayMetadata(BaseModel):
+    """Accepted optional gameplay metadata from a live turn.
+
+    The engine parser constructs this after validating ids, option indices,
+    lengths, and enum-like values. It is never rendered raw to players.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    state_deltas: list[GameplayChip] = Field(default_factory=list, max_length=5)
+    clue_unlocks: list[GameplayChip] = Field(default_factory=list, max_length=3)
+    opportunity_unlocks: list[GameplayChip] = Field(default_factory=list, max_length=3)
+    next_action_context: list[TurnGameplayNextActionContext] = Field(
+        default_factory=list, max_length=3,
+    )
+    motive_effect: GameplayChip | None = None
+
+    @property
+    def has_player_visible_items(self) -> bool:
+        return bool(
+            self.state_deltas
+            or self.clue_unlocks
+            or self.opportunity_unlocks
+            or self.motive_effect is not None
+        )
+
+
+AgentPlanSource = Literal["deterministic_v1"]
+AgentEventType = Literal["agent_plan", "step_judge", "contract_judge"]
+JudgeSource = Literal["deterministic_v1"]
+JudgeStatus = Literal["pass", "warn", "fail"]
+JudgeSeverity = Literal["info", "warn", "error"]
+LLMCallStatus = Literal[
+    "success",
+    "timeout",
+    "rate_limited",
+    "invalid_response",
+    "provider_unavailable",
+    "fallback_used",
+    "repaired",
+    "failed",
+]
+LLMCallSourceLabel = Literal[
+    "live",
+    "live_repaired",
+    "policy_control",
+    "deterministic_fallback",
+    "no_gateway_fallback",
+]
+
+
+class DirectorDecision(BaseModel):
+    """Compact pre-turn orchestration decision used for reviewer audit."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    stage_phase: str = Field(min_length=1, max_length=40)
+    difficulty: str = Field(min_length=1, max_length=40)
+    active_npc_ids: list[str] = Field(default_factory=list, max_length=5)
+    focus_window_npc_ids: list[str] = Field(default_factory=list, max_length=5)
+    background_npc_ids: list[str] = Field(default_factory=list, max_length=5)
+    twist_kind: str | None = Field(default=None, max_length=80)
+    expected_pressure: str = Field(min_length=1, max_length=80)
+    reason: str = Field(min_length=1, max_length=240)
+
+
+class NPCIntent(BaseModel):
+    """One active NPC move selected by the deterministic turn scheduler."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    npc_id: str = Field(min_length=1, max_length=64)
+    display_name: str = Field(min_length=1, max_length=80)
+    intent: str = Field(min_length=1, max_length=40)
+    intent_brief: str = Field(default="", max_length=200)
+    leverage: str | None = Field(default=None, max_length=200)
+    source: Literal["agenda"] = "agenda"
+
+
+class MemorySnapshot(BaseModel):
+    """Small audit snapshot derived from persisted history, not full history."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    last_player_action: dict[str, object] = Field(default_factory=dict)
+    npc_pulse_trend: dict[str, list[str]] = Field(default_factory=dict)
+    unused_leverage: list[dict[str, str]] = Field(default_factory=list, max_length=8)
+    current_inventory_count: int = Field(default=0, ge=0)
+    current_inventory_preview: list[str] = Field(default_factory=list, max_length=4)
+    played_leverage: dict[str, str] = Field(default_factory=dict)
+
+
+class AgentPlan(BaseModel):
+    """Versioned per-turn trace of the workflow decision before narration."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["agent_plan.v1"] = "agent_plan.v1"
+    source: AgentPlanSource = "deterministic_v1"
+    turn_index: int = Field(ge=0)
+    turn_budget: int = Field(ge=1)
+    narrator_ord: int = Field(ge=0)
+    director: DirectorDecision
+    npc_intents: list[NPCIntent] = Field(default_factory=list, max_length=5)
+    memory: MemorySnapshot
+    twist_directive: dict[str, str] | None = None
+
+
+class JudgeViolation(BaseModel):
+    """Compact deterministic audit finding for a single narrator turn."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1, max_length=80)
+    severity: JudgeSeverity
+    rationale: str = Field(min_length=1, max_length=240)
+    evidence: list[str] = Field(default_factory=list, max_length=8)
+
+
+class StepJudgeResult(BaseModel):
+    """Does the narrator turn honor the pre-turn AgentPlan intent?"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["step_judge.v1"] = "step_judge.v1"
+    source: JudgeSource = "deterministic_v1"
+    turn_index: int = Field(ge=0)
+    narrator_ord: int = Field(ge=0)
+    status: JudgeStatus
+    violations: list[JudgeViolation] = Field(default_factory=list, max_length=12)
+    summary: str = Field(min_length=1, max_length=240)
+
+
+class ContractJudgeResult(BaseModel):
+    """Runtime contract audit for schema, refs, hidden info, and state deltas."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["contract_judge.v1"] = "contract_judge.v1"
+    source: JudgeSource = "deterministic_v1"
+    turn_index: int = Field(ge=0)
+    narrator_ord: int = Field(ge=0)
+    status: JudgeStatus
+    violations: list[JudgeViolation] = Field(default_factory=list, max_length=12)
+    summary: str = Field(min_length=1, max_length=240)
+
+
+AgentEventPayload = AgentPlan | StepJudgeResult | ContractJudgeResult
+
+
+class NarrativeAgentEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_index: int = Field(ge=0)
+    ord: int = Field(ge=0)
+    event_type: AgentEventType
+    payload: AgentEventPayload
+    created_at: str
+
+
+class LLMCallEvent(BaseModel):
+    """Sanitized text-LLM usage/performance evidence.
+
+    Normal player responses do not expose this model. Reviewer/debug
+    endpoints can surface it without provider keys, raw prompts, or headers.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: int = Field(ge=0)
+    operation: str = Field(min_length=1, max_length=120)
+    status: LLMCallStatus
+    source_label: LLMCallSourceLabel
+    latency_ms: int | None = Field(default=None, ge=0)
+    operation_latency_ms: int | None = Field(default=None, ge=0)
+    input_tokens: int | None = Field(default=None, ge=0)
+    cached_input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    retry_count: int = Field(default=0, ge=0)
+    repair_count: int = Field(default=0, ge=0)
+    fallback_reason: str | None = Field(default=None, max_length=160)
+    response_id: str | None = Field(default=None, max_length=160)
+    user_id: str | None = Field(default=None, max_length=80)
+    template_id: str | None = Field(default=None, max_length=80)
+    session_id: str | None = Field(default=None, max_length=80)
+    created_at: str
+
+
+class LLMCallEventListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[LLMCallEvent]
+
+
 class StoryMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -184,6 +424,10 @@ class StoryMessage(BaseModel):
     # role resources visible in replay/debug surfaces instead of becoming
     # indistinguishable from ordinary free text.
     played_leverage: PlayedLeverageCard | None = None
+    # Validated live gameplay metadata accepted by the turn parser. Kept
+    # internal so history reload can preserve live-enriched gameplay state
+    # without serializing raw per-turn metadata in player-facing messages.
+    gameplay_metadata: TurnGameplayMetadata | None = Field(default=None, exclude=True)
 
 
 class AdvisorMessage(BaseModel):
@@ -202,6 +446,19 @@ class AdvisorMessage(BaseModel):
 TemplateVisibility = Literal["private", "unlisted", "public"]
 Difficulty = Literal["story", "gauntlet"]
 EndingTier = Literal["victory", "compromised", "collapsed"]
+TensionProfile = Literal[
+    "high_drama",
+    "cozy_mystery",
+    "comedy",
+    "fantasy_sci_fi",
+    "family_social",
+]
+StoryBriefSource = Literal["deterministic_v1", "live_hybrid_v1"]
+StoryBriefFitStatus = Literal["fit", "needs_revision", "not_fit"]
+ConstraintDispositionKind = Literal["preserved", "compressed", "dropped", "softened"]
+CastPlanEntityKind = Literal["character", "faction", "object", "setting"]
+StoryBriefConsistencyStatus = Literal["pass", "warn", "fail"]
+StoryBriefConsistencySeverity = Literal["info", "warn", "fail"]
 # Locale a template's narration / NPC dialogue is generated in. The
 # field is set at template creation and is immutable thereafter — every
 # session forking the same template inherits the same language. Adding
@@ -216,6 +473,19 @@ TemplateLanguage = Literal["zh", "en"]
 DEFAULT_TEMPLATE_LANGUAGE: TemplateLanguage = "en"
 
 
+class LocalizedText(BaseModel):
+    """Optional display metadata for non-story chrome.
+
+    Story body, cast, options, and turns remain in the template language.
+    These strings are only for list/replay display surfaces.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    zh: str | None = Field(default=None, max_length=4000)
+    en: str | None = Field(default=None, max_length=4000)
+
+
 class NarrativeTemplate(BaseModel):
     """Full template record (used internally by the service)."""
 
@@ -225,10 +495,13 @@ class NarrativeTemplate(BaseModel):
     owner_user_id: str = Field(min_length=1, max_length=80)
     seed: str = Field(min_length=1, max_length=4000)
     title: str = Field(min_length=1, max_length=120)
-    cast: list[CastMember] = Field(min_length=2, max_length=8)
+    title_i18n: LocalizedText | None = None
+    summary_i18n: LocalizedText | None = None
+    cast: list[CastMember] = Field(min_length=2, max_length=10)
     advisor_persona: str = Field(min_length=1, max_length=200)
     opening_passage: str = Field(min_length=1, max_length=4000)
     opening_options: list[StoryOption] = Field(default_factory=list)
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     # Gauntlet-mode shared scaffolding (lives on the template so all sessions
     # forking the same template fight the same fight). Always populated by
     # the opening engine; only ENFORCED when session.difficulty == "gauntlet".
@@ -254,8 +527,11 @@ class NarrativeTemplateSummary(BaseModel):
     owner_user_id: str
     seed: str
     title: str
+    title_i18n: LocalizedText | None = None
+    summary_i18n: LocalizedText | None = None
     cast: list[CastMember]
     advisor_persona: str
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     player_goals: list[PlayerGoal] = Field(default_factory=list)
     failure_conditions: list[FailureCondition] = Field(default_factory=list)
     player_role_options: list[PlayerRole] = Field(default_factory=list)
@@ -264,6 +540,291 @@ class NarrativeTemplateSummary(BaseModel):
     play_count: int
     created_at: str
     is_owner: bool = False
+
+
+# --------------------------------------------------------------------------
+# Story Brief Agent / Cast Planner / Tension Profile v2
+# --------------------------------------------------------------------------
+
+
+class ConstraintDisposition(BaseModel):
+    """How the planner will handle a user-provided premise constraint."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = Field(min_length=1, max_length=120)
+    disposition: ConstraintDispositionKind
+    rationale: str = Field(min_length=1, max_length=220)
+
+
+class StoryBriefPlanItem(BaseModel):
+    """One visible non-cast planning item on the brief card."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = Field(min_length=1, max_length=140)
+    rationale: str = Field(min_length=1, max_length=240)
+
+
+class StoryBriefRevisionAction(BaseModel):
+    """Safe one-click revision affordance for the guided brief panel."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action_id: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=80)
+    description: str = Field(min_length=1, max_length=180)
+    seed_append: str = Field(min_length=1, max_length=220)
+
+
+class CastPlanEntity(BaseModel):
+    """One planned character, entity, object, or faction in the brief."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    entity_id: str = Field(min_length=1, max_length=64)
+    display_name: str = Field(min_length=1, max_length=80)
+    kind: CastPlanEntityKind = "character"
+    role: str = Field(min_length=1, max_length=140)
+    rationale: str = Field(min_length=1, max_length=220)
+
+
+class CastPlan(BaseModel):
+    """Global cast plan: up to 10 entities, with 3-5 active at runtime."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    input_entity_count: int = Field(default=0, ge=0)
+    primary_active_entities: list[CastPlanEntity] = Field(default_factory=list, max_length=5)
+    secondary_background_entities: list[CastPlanEntity] = Field(default_factory=list, max_length=5)
+    omitted_entities: list[CastPlanEntity] = Field(default_factory=list, max_length=5)
+    active_focus_window: str = Field(min_length=1, max_length=160)
+
+
+class StoryBrief(BaseModel):
+    """Compact pre-generation plan the user reviews before spending LLM budget."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["story_brief.v1"] = "story_brief.v1"
+    source: StoryBriefSource = "deterministic_v1"
+    original_seed: str = Field(min_length=1, max_length=4000)
+    display_title: str | None = Field(default=None, min_length=1, max_length=72)
+    display_intro: str | None = Field(default=None, min_length=1, max_length=140)
+    premise_summary: str = Field(min_length=1, max_length=260)
+    genre_tone: str = Field(min_length=1, max_length=160)
+    tension_profile: TensionProfile
+    story_kernel: str = Field(min_length=1, max_length=220)
+    intervention_card_label: str = Field(min_length=1, max_length=80)
+    cast_plan: CastPlan
+    constraints: list[StoryBriefPlanItem] = Field(default_factory=list, max_length=10)
+    time_event_anchors: list[StoryBriefPlanItem] = Field(default_factory=list, max_length=10)
+    tone_constraints: list[StoryBriefPlanItem] = Field(default_factory=list, max_length=10)
+    world_setting_pressure: list[StoryBriefPlanItem] = Field(default_factory=list, max_length=10)
+    preserved_constraints: list[str] = Field(default_factory=list, max_length=8)
+    compressed_constraints: list[str] = Field(default_factory=list, max_length=8)
+    dropped_constraints: list[str] = Field(default_factory=list, max_length=8)
+    softened_constraints: list[str] = Field(default_factory=list, max_length=8)
+    constraint_dispositions: list[ConstraintDisposition] = Field(default_factory=list, max_length=16)
+    warnings: list[str] = Field(default_factory=list, max_length=8)
+    revision_suggestions: list[str] = Field(default_factory=list, max_length=8)
+    revision_actions: list[StoryBriefRevisionAction] = Field(default_factory=list, max_length=8)
+    adaptation_note: str = Field(
+        default="Beta planner draft: review the adaptation before generation; it is not a fidelity guarantee.",
+        min_length=1,
+        max_length=220,
+    )
+    runtime_fit_status: StoryBriefFitStatus = "fit"
+    runtime_fit_rationale: str = Field(min_length=1, max_length=260)
+
+
+class StoryBriefConsistencyViolation(BaseModel):
+    """Safe post-generation mismatch evidence for a confirmed brief."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1, max_length=80)
+    severity: StoryBriefConsistencySeverity
+    rationale: str = Field(min_length=1, max_length=260)
+    evidence: list[str] = Field(default_factory=list, max_length=6)
+
+
+class StoryBriefConsistencyCheck(BaseModel):
+    """Conservative brief-vs-opening checker result."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["story_brief_consistency.v1"] = "story_brief_consistency.v1"
+    status: StoryBriefConsistencyStatus
+    violations: list[StoryBriefConsistencyViolation] = Field(default_factory=list, max_length=12)
+    summary: str = Field(min_length=1, max_length=260)
+    should_retry: bool = False
+
+
+class StoryBriefAdvisorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    seed: str = Field(min_length=1, max_length=4000)
+    language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
+    desired_tension_profile: TensionProfile | None = None
+
+    @field_validator("seed")
+    @classmethod
+    def _strip_seed(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Seed must not be empty.")
+        return stripped
+
+
+class StoryBriefAdvisorResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    brief: StoryBrief
+    can_generate: bool
+    next_step: str = Field(min_length=1, max_length=220)
+    source: StoryBriefSource = "deterministic_v1"
+    runtime_source: LLMCallSourceLabel = "deterministic_fallback"
+
+
+StoryGuideConversationState = Literal[
+    "empty",
+    "collecting",
+    "needs_field",
+    "clarify_conflict",
+    "redirect",
+    "analyzing",
+    "ready_to_brief",
+    "brief_ready",
+    "brief_not_fit",
+]
+StoryGuideNodeName = Literal[
+    "parse_message",
+    "safety_gate",
+    "update_slots",
+    "ask_missing_slot",
+    "clarify_conflict",
+    "redirect_out_of_spec",
+    "ready_to_shape",
+    "shape_story_brief",
+    "brief_ready",
+    "brief_not_fit",
+]
+StoryGuideSlotId = Literal[
+    "player_role",
+    "active_cast",
+    "pressure",
+    "tone",
+    "boundaries",
+    "first_scene_hook",
+]
+StoryGuideMemoryRole = Literal["user", "assistant"]
+
+
+class StoryGuideSlot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: StoryGuideSlotId
+    filled: bool = False
+    label: str = Field(min_length=1, max_length=80)
+    evidence: str = Field(default="", max_length=220)
+
+
+class StoryGuideMemoryEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: StoryGuideMemoryRole
+    text: str = Field(min_length=1, max_length=420)
+
+
+class StoryGuideCompressedContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scene_summary: str = Field(default="", max_length=260)
+    player_role: str = Field(default="", max_length=160)
+    cast_or_factions: list[str] = Field(default_factory=list, max_length=8)
+    pressure: str = Field(default="", max_length=220)
+    constraints: list[str] = Field(default_factory=list, max_length=8)
+    tone: str = Field(default="", max_length=120)
+    open_questions: list[str] = Field(default_factory=list, max_length=6)
+    confirmed_facts: list[str] = Field(default_factory=list, max_length=12)
+    rejected_or_changed_facts: list[str] = Field(default_factory=list, max_length=8)
+    non_story_user_intents: list[str] = Field(default_factory=list, max_length=8)
+    last_user_intent: str = Field(default="", max_length=80)
+    last_question_answered: str = Field(default="", max_length=220)
+    latest_input_updates_story_facts: bool = False
+    last_question: str = Field(default="", max_length=220)
+    readiness_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    planner_skill: str = Field(default="", max_length=80)
+    planner_job: str = Field(default="", max_length=180)
+    recent_turns: list[StoryGuideMemoryEntry] = Field(default_factory=list, max_length=12)
+    compression_source: LLMCallSourceLabel = "deterministic_fallback"
+
+
+class StoryGuideLoopState(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: StoryGuideConversationState
+    lastNode: StoryGuideNodeName
+    slots: dict[StoryGuideSlotId, StoryGuideSlot]
+    acceptedTurns: list[str] = Field(default_factory=list, max_length=24)
+    blockedTurns: list[str] = Field(default_factory=list, max_length=12)
+    nextMissing: StoryGuideSlotId | None = None
+    context: StoryGuideCompressedContext = Field(default_factory=StoryGuideCompressedContext)
+
+
+class StoryGuideInlineLedger(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    knownLabel: str = Field(min_length=1, max_length=40)
+    stillNeedLabel: str = Field(min_length=1, max_length=40)
+    nextQuestionLabel: str = Field(min_length=1, max_length=40)
+    known: str = Field(min_length=1, max_length=220)
+    stillNeed: str = Field(min_length=1, max_length=220)
+    nextQuestion: str = Field(min_length=1, max_length=220)
+
+
+class StoryGuideSettingDeltas(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    turnBudget: int | None = Field(default=None, ge=4, le=40)
+    difficulty: Difficulty | None = None
+    language: TemplateLanguage | None = None
+    tensionProfile: TensionProfile | None = None
+    privacyIntent: TemplateVisibility | None = None
+
+
+class StoryGuideTurnRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(min_length=1, max_length=1000)
+    language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
+    current_seed: str = Field(default="", max_length=4000)
+    previous_assistant_reply: str = Field(default="", max_length=600)
+    state: StoryGuideLoopState | None = None
+
+    @field_validator("message")
+    @classmethod
+    def _strip_message(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Message must not be empty.")
+        return stripped
+
+
+class StoryGuideTurnResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    state: StoryGuideLoopState
+    node: StoryGuideNodeName
+    status: StoryGuideConversationState
+    reply: str = Field(min_length=1, max_length=420)
+    acceptedText: bool
+    blocked: bool
+    canShapeBrief: bool
+    settings: StoryGuideSettingDeltas | None = None
+    ledger: StoryGuideInlineLedger | None = None
+    source: LLMCallSourceLabel = "deterministic_fallback"
 
 
 # --------------------------------------------------------------------------
@@ -300,6 +861,8 @@ class NarrativeSessionSummary(BaseModel):
     template_id: str
     template_title: str
     template_seed: str
+    template_title_i18n: LocalizedText | None = None
+    template_summary_i18n: LocalizedText | None = None
     player_user_id: str
     turn_count: int
     turn_budget: int = 12
@@ -419,8 +982,11 @@ class PublicReplayResponse(BaseModel):
     template_forkable: bool = False
     template_title: str
     template_seed: str
+    template_title_i18n: LocalizedText | None = None
+    template_summary_i18n: LocalizedText | None = None
     cast: list[CastMember]
     advisor_persona: str
+    cover_image_url: str | None = Field(default=None, max_length=1000)
     player_goals: list[PlayerGoal] = Field(default_factory=list)
     player_role: PlayerRole | None = None
     turn_budget: int
@@ -448,6 +1014,11 @@ class CreateTemplateRequest(BaseModel):
     # Narration / NPC dialogue locale. Immutable after creation —
     # all sessions forking this template share the same language.
     language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
+    # Optional create-time plan returned by Story Brief Advisor. This is
+    # reviewed by the user before generation, then injected into the opening
+    # payload so planning and generation use the same facts. It is not
+    # persisted on the template in this MVP.
+    story_brief: StoryBrief | None = None
 
     @field_validator("seed")
     @classmethod
@@ -469,6 +1040,8 @@ class CreateTemplateResponse(BaseModel):
     template: NarrativeTemplateSummary
     session: NarrativeSessionSummary
     opening: StoryMessage
+    story_brief_consistency: StoryBriefConsistencyCheck | None = None
+    opening_recovery: Literal["tightened_from_brief"] | None = None
 
 
 class StartSessionRequest(BaseModel):
@@ -516,6 +1089,8 @@ class StoryHistoryResponse(BaseModel):
     template: NarrativeTemplateSummary
     session: NarrativeSessionSummary
     messages: list[StoryMessage]
+    agent_events: list[NarrativeAgentEvent] = Field(default_factory=list)
+    gameplay_envelope: GameplayEnvelope | None = None
 
 
 class AdvanceTurnRequest(BaseModel):
@@ -536,6 +1111,9 @@ class AdvanceTurnResponse(BaseModel):
 
     player_message: StoryMessage
     narrator_message: StoryMessage
+    agent_plan: AgentPlan | None = None
+    agent_events: list[NarrativeAgentEvent] = Field(default_factory=list)
+    gameplay_envelope: GameplayEnvelope | None = None
     # Surfaced when this turn was the last of the budget — the engine has
     # already generated and persisted the ending. Frontend uses this to
     # render the ending screen without a follow-up GET.

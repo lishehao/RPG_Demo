@@ -13,6 +13,7 @@ export type AuthUserResponse = {
 export type AuthSessionResponse = {
   authenticated: boolean
   user: AuthUserResponse | null
+  can_view_agent_trace?: boolean
 }
 
 export type AuthLoginRequest = {
@@ -23,6 +24,7 @@ export type CurrentActorResponse = {
   user_id: string
   display_name: string
   is_default: boolean
+  can_view_agent_trace?: boolean
 }
 
 export type StoryShellId =
@@ -605,6 +607,117 @@ export type NarrativeInventoryDelta = {
   reason: string
 }
 
+export type NarrativeGameplayChipTone = "gain" | "cost" | "unlock" | "shift"
+
+export type NarrativeGameplayChip = {
+  label: string
+  tone: NarrativeGameplayChipTone
+  detail?: string | null
+}
+
+export type NarrativeGameplayPressureTrack = {
+  id: string
+  label: string
+  value: string
+  tone: NarrativeGameplayChipTone
+}
+
+export type NarrativeGameplayEnvelope = {
+  source: "backend" | "live_enriched"
+  objective?: string | null
+  tracks?: NarrativeGameplayPressureTrack[]
+  action_forecasts?: NarrativeGameplayChip[][]
+  impact?: NarrativeGameplayChip[]
+  opportunities?: NarrativeGameplayChip[]
+}
+
+export type NarrativeAgentPlanSource = "deterministic_v1"
+export type NarrativeAgentEventType = "agent_plan" | "step_judge" | "contract_judge"
+export type NarrativeJudgeSource = "deterministic_v1"
+export type NarrativeJudgeStatus = "pass" | "warn" | "fail"
+export type NarrativeJudgeSeverity = "info" | "warn" | "error"
+
+export type NarrativeDirectorDecision = {
+  stage_phase: string
+  difficulty: string
+  active_npc_ids: string[]
+  focus_window_npc_ids?: string[]
+  background_npc_ids?: string[]
+  twist_kind?: string | null
+  expected_pressure: string
+  reason: string
+}
+
+export type NarrativeNPCIntent = {
+  npc_id: string
+  display_name: string
+  intent: string
+  intent_brief: string
+  leverage?: string | null
+  source: "agenda"
+}
+
+export type NarrativeMemorySnapshot = {
+  last_player_action: Record<string, unknown>
+  npc_pulse_trend: Record<string, string[]>
+  unused_leverage: Record<string, string>[]
+  current_inventory_count: number
+  current_inventory_preview: string[]
+  played_leverage: Record<string, string>
+}
+
+export type NarrativeAgentPlan = {
+  schema_version: "agent_plan.v1"
+  source: NarrativeAgentPlanSource
+  turn_index: number
+  turn_budget: number
+  narrator_ord: number
+  director: NarrativeDirectorDecision
+  npc_intents: NarrativeNPCIntent[]
+  memory: NarrativeMemorySnapshot
+  twist_directive?: Record<string, string> | null
+}
+
+export type NarrativeJudgeViolation = {
+  code: string
+  severity: NarrativeJudgeSeverity
+  rationale: string
+  evidence: string[]
+}
+
+export type NarrativeStepJudgeResult = {
+  schema_version: "step_judge.v1"
+  source: NarrativeJudgeSource
+  turn_index: number
+  narrator_ord: number
+  status: NarrativeJudgeStatus
+  violations: NarrativeJudgeViolation[]
+  summary: string
+}
+
+export type NarrativeContractJudgeResult = {
+  schema_version: "contract_judge.v1"
+  source: NarrativeJudgeSource
+  turn_index: number
+  narrator_ord: number
+  status: NarrativeJudgeStatus
+  violations: NarrativeJudgeViolation[]
+  summary: string
+}
+
+export type NarrativeAgentEventPayload =
+  | NarrativeAgentPlan
+  | NarrativeStepJudgeResult
+  | NarrativeContractJudgeResult
+
+export type NarrativeAgentEvent = {
+  event_index: number
+  ord: number
+  event_type: NarrativeAgentEventType
+  payload: NarrativeAgentEventPayload
+  created_at: string
+}
+
 export type NarrativeStoryMessage = {
   ord: number
   role: NarrativeStoryRole
@@ -635,13 +748,281 @@ export type NarrativeTemplateVisibility = "private" | "unlisted" | "public"
 // `TemplateLanguage` literal in `rpg_backend/narrative/contracts.py`.
 export type NarrativeTemplateLanguage = "zh" | "en"
 
+export type NarrativeTensionProfile =
+  | "high_drama"
+  | "cozy_mystery"
+  | "comedy"
+  | "fantasy_sci_fi"
+  | "family_social"
+
+export type NarrativeStoryBriefFitStatus = "fit" | "needs_revision" | "not_fit"
+export type NarrativeConstraintDispositionKind = "preserved" | "compressed" | "dropped" | "softened"
+export type NarrativeCastPlanEntityKind = "character" | "faction" | "object" | "setting"
+export type NarrativeStoryBriefConsistencyStatus = "pass" | "warn" | "fail"
+export type NarrativeStoryBriefConsistencySeverity = "info" | "warn" | "fail"
+
+export type NarrativeConstraintDisposition = {
+  label: string
+  disposition: NarrativeConstraintDispositionKind
+  rationale: string
+}
+
+export type NarrativeStoryBriefPlanItem = {
+  label: string
+  rationale: string
+}
+
+export type NarrativeStoryBriefRevisionAction = {
+  action_id: string
+  label: string
+  description: string
+  seed_append: string
+}
+
+export type NarrativeCastPlanEntity = {
+  entity_id: string
+  display_name: string
+  kind: NarrativeCastPlanEntityKind
+  role: string
+  rationale: string
+}
+
+export type NarrativeCastPlan = {
+  input_entity_count: number
+  primary_active_entities: NarrativeCastPlanEntity[]
+  secondary_background_entities: NarrativeCastPlanEntity[]
+  omitted_entities: NarrativeCastPlanEntity[]
+  active_focus_window: string
+}
+
+export type NarrativeStoryBrief = {
+  schema_version: "story_brief.v1"
+  source: "deterministic_v1" | "live_hybrid_v1"
+  original_seed: string
+  display_title?: string | null
+  display_intro?: string | null
+  premise_summary: string
+  genre_tone: string
+  tension_profile: NarrativeTensionProfile
+  story_kernel: string
+  intervention_card_label: string
+  cast_plan: NarrativeCastPlan
+  constraints: NarrativeStoryBriefPlanItem[]
+  time_event_anchors: NarrativeStoryBriefPlanItem[]
+  tone_constraints: NarrativeStoryBriefPlanItem[]
+  world_setting_pressure: NarrativeStoryBriefPlanItem[]
+  preserved_constraints: string[]
+  compressed_constraints: string[]
+  dropped_constraints: string[]
+  softened_constraints: string[]
+  constraint_dispositions: NarrativeConstraintDisposition[]
+  warnings: string[]
+  revision_suggestions: string[]
+  revision_actions: NarrativeStoryBriefRevisionAction[]
+  adaptation_note: string
+  runtime_fit_status: NarrativeStoryBriefFitStatus
+  runtime_fit_rationale: string
+}
+
+export type NarrativeStoryBriefConsistencyViolation = {
+  code: string
+  severity: NarrativeStoryBriefConsistencySeverity
+  rationale: string
+  evidence: string[]
+}
+
+export type NarrativeStoryBriefConsistencyCheck = {
+  schema_version: "story_brief_consistency.v1"
+  status: NarrativeStoryBriefConsistencyStatus
+  violations: NarrativeStoryBriefConsistencyViolation[]
+  summary: string
+  should_retry: boolean
+}
+
+export type NarrativeStoryBriefAdvisorRequest = {
+  seed: string
+  language?: NarrativeTemplateLanguage
+  desired_tension_profile?: NarrativeTensionProfile | null
+}
+
+export type NarrativeStoryBriefAdvisorResponse = {
+  brief: NarrativeStoryBrief
+  can_generate: boolean
+  next_step: string
+  source?: "deterministic_v1" | "live_hybrid_v1"
+  runtime_source?: NarrativeLLMCallSourceLabel
+}
+
+export type NarrativeLLMCallSourceLabel =
+  | "live"
+  | "live_repaired"
+  | "policy_control"
+  | "deterministic_fallback"
+  | "no_gateway_fallback"
+
+export type NarrativeLLMCallStatus =
+  | "success"
+  | "timeout"
+  | "rate_limited"
+  | "invalid_response"
+  | "provider_unavailable"
+  | "fallback_used"
+  | "repaired"
+  | "failed"
+
+export type NarrativeLLMCallEvent = {
+  event_id: number
+  operation: string
+  status: NarrativeLLMCallStatus
+  source_label: NarrativeLLMCallSourceLabel
+  latency_ms?: number | null
+  operation_latency_ms?: number | null
+  input_tokens?: number | null
+  cached_input_tokens?: number | null
+  output_tokens?: number | null
+  total_tokens?: number | null
+  retry_count: number
+  repair_count: number
+  fallback_reason?: string | null
+  response_id?: string | null
+  user_id?: string | null
+  template_id?: string | null
+  session_id?: string | null
+  created_at: string
+}
+
+export type NarrativeLLMCallEventListResponse = {
+  items: NarrativeLLMCallEvent[]
+}
+
+export type NarrativeStoryGuideConversationState =
+  | "empty"
+  | "collecting"
+  | "needs_field"
+  | "clarify_conflict"
+  | "redirect"
+  | "analyzing"
+  | "ready_to_brief"
+  | "brief_ready"
+  | "brief_not_fit"
+
+export type NarrativeStoryGuideNodeName =
+  | "parse_message"
+  | "safety_gate"
+  | "update_slots"
+  | "ask_missing_slot"
+  | "clarify_conflict"
+  | "redirect_out_of_spec"
+  | "ready_to_shape"
+  | "shape_story_brief"
+  | "brief_ready"
+  | "brief_not_fit"
+
+export type NarrativeStoryGuideSlotId =
+  | "player_role"
+  | "active_cast"
+  | "pressure"
+  | "tone"
+  | "boundaries"
+  | "first_scene_hook"
+
+export type NarrativeStoryGuideSlot = {
+  id: NarrativeStoryGuideSlotId
+  filled: boolean
+  label: string
+  evidence: string
+}
+
+export type NarrativeStoryGuideMemoryEntry = {
+  role: "user" | "assistant"
+  text: string
+}
+
+export type NarrativeStoryGuideCompressedContext = {
+  scene_summary: string
+  player_role: string
+  cast_or_factions: string[]
+  pressure: string
+  constraints: string[]
+  tone: string
+  open_questions: string[]
+  confirmed_facts: string[]
+  rejected_or_changed_facts: string[]
+  non_story_user_intents: string[]
+  last_user_intent: string
+  last_question_answered: string
+  latest_input_updates_story_facts: boolean
+  last_question: string
+  readiness_score: number
+  planner_skill: string
+  planner_job: string
+  recent_turns: NarrativeStoryGuideMemoryEntry[]
+  compression_source: NarrativeLLMCallSourceLabel
+}
+
+export type NarrativeStoryGuideLoopState = {
+  status: NarrativeStoryGuideConversationState
+  lastNode: NarrativeStoryGuideNodeName
+  slots: Record<NarrativeStoryGuideSlotId, NarrativeStoryGuideSlot>
+  acceptedTurns: string[]
+  blockedTurns: string[]
+  nextMissing: NarrativeStoryGuideSlotId | null
+  context: NarrativeStoryGuideCompressedContext
+}
+
+export type NarrativeStoryGuideInlineLedger = {
+  knownLabel: string
+  stillNeedLabel: string
+  nextQuestionLabel: string
+  known: string
+  stillNeed: string
+  nextQuestion: string
+}
+
+export type NarrativeStoryGuideSettingDeltas = {
+  turnBudget?: 8 | 12 | 20 | null
+  difficulty?: NarrativeDifficulty | null
+  language?: NarrativeTemplateLanguage | null
+  tensionProfile?: NarrativeTensionProfile | null
+  privacyIntent?: NarrativeTemplateVisibility | null
+}
+
+export type NarrativeStoryGuideTurnRequest = {
+  message: string
+  language?: NarrativeTemplateLanguage
+  current_seed?: string
+  previous_assistant_reply?: string
+  state?: NarrativeStoryGuideLoopState | null
+}
+
+export type NarrativeStoryGuideTurnResponse = {
+  state: NarrativeStoryGuideLoopState
+  node: NarrativeStoryGuideNodeName
+  status: NarrativeStoryGuideConversationState
+  reply: string
+  acceptedText: boolean
+  blocked: boolean
+  canShapeBrief: boolean
+  settings?: NarrativeStoryGuideSettingDeltas | null
+  ledger?: NarrativeStoryGuideInlineLedger | null
+  source: NarrativeLLMCallSourceLabel
+}
+
+export type NarrativeLocalizedText = {
+  zh?: string | null
+  en?: string | null
+}
+
 export type NarrativeTemplateSummary = {
   template_id: string
   owner_user_id: string
   seed: string
   title: string
+  title_i18n?: NarrativeLocalizedText | null
+  summary_i18n?: NarrativeLocalizedText | null
   cast: NarrativeCastMember[]
   advisor_persona: string
+  cover_image_url?: string | null
   player_goals?: NarrativePlayerGoal[]
   failure_conditions?: NarrativeFailureCondition[]
   player_role_options?: NarrativePlayerRole[]
@@ -657,6 +1038,8 @@ export type NarrativeSessionSummary = {
   template_id: string
   template_title: string
   template_seed: string
+  template_title_i18n?: NarrativeLocalizedText | null
+  template_summary_i18n?: NarrativeLocalizedText | null
   player_user_id: string
   turn_count: number
   turn_budget: number
@@ -714,6 +1097,9 @@ export type NarrativePublicReplayResponse = {
   template_forkable: boolean
   template_title: string
   template_seed: string
+  template_title_i18n?: NarrativeLocalizedText | null
+  template_summary_i18n?: NarrativeLocalizedText | null
+  cover_image_url?: string | null
   cast: NarrativeCastMember[]
   advisor_persona: string
   player_goals?: NarrativePlayerGoal[]
@@ -734,6 +1120,7 @@ export type NarrativeCreateTemplateRequest = {
   turn_budget?: number
   difficulty?: NarrativeDifficulty
   language?: NarrativeTemplateLanguage
+  story_brief?: NarrativeStoryBrief | null
 }
 
 export type NarrativeStartSessionRequest = {
@@ -746,6 +1133,8 @@ export type NarrativeCreateTemplateResponse = {
   template: NarrativeTemplateSummary
   session: NarrativeSessionSummary
   opening: NarrativeStoryMessage
+  story_brief_consistency?: NarrativeStoryBriefConsistencyCheck | null
+  opening_recovery?: "tightened_from_brief" | null
 }
 
 export type NarrativeStartSessionResponse = {
@@ -770,6 +1159,8 @@ export type NarrativeStoryHistoryResponse = {
   template: NarrativeTemplateSummary
   session: NarrativeSessionSummary
   messages: NarrativeStoryMessage[]
+  agent_events?: NarrativeAgentEvent[]
+  gameplay_envelope?: NarrativeGameplayEnvelope | null
 }
 
 export type NarrativeAdvanceTurnRequest = {
@@ -782,6 +1173,9 @@ export type NarrativeAdvanceTurnRequest = {
 export type NarrativeAdvanceTurnResponse = {
   player_message: NarrativeStoryMessage
   narrator_message: NarrativeStoryMessage
+  agent_plan?: NarrativeAgentPlan | null
+  agent_events?: NarrativeAgentEvent[]
+  gameplay_envelope?: NarrativeGameplayEnvelope | null
   ending: NarrativeEnding | null
   is_complete: boolean
 }

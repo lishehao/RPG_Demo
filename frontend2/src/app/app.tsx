@@ -6,6 +6,9 @@ import { type AppRoute, useAppRoute } from "./routes"
 import { HomePage } from "../pages/home/home-page"
 import { CreatePage } from "../pages/create/create-page"
 import { PlayPage } from "../pages/play/play-page"
+import { PlayActionStateFixture } from "../pages/play/components/play-action-state-fixture"
+import { PlayGameplayLoopFixture } from "../pages/play/components/play-gameplay-loop-fixture"
+import { PlayRetryFailureFixture } from "../pages/play/components/play-retry-recovery"
 import { AboutPage } from "../pages/about/about-page"
 import { LoginPage } from "../pages/auth/login-page"
 import { ReplayPage } from "../pages/replay/replay-page"
@@ -49,7 +52,6 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       return (
         <HomePage
           onOpenCreate={() => navigate({ name: "create" })}
-          onOpenTemplate={(templateId) => navigate({ name: "template", templateId })}
           onOpenPlay={(sessionId) => navigate({ name: "play", sessionId })}
         />
       )
@@ -69,6 +71,12 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId })}
         />
       )
+    case "playActionFixture":
+      return <PlayActionStateFixture scenario={route.scenario} onBackHome={() => navigate({ name: "home" })} />
+    case "playGameplayLoopFixture":
+      return <PlayGameplayLoopFixture onBackHome={() => navigate({ name: "home" })} />
+    case "playRetryFixture":
+      return <PlayRetryFailureFixture onBackHome={() => navigate({ name: "home" })} />
     case "template":
       return (
         <TemplateDetailPage
@@ -126,6 +134,9 @@ function routeKey(route: AppRoute): string {
     case "home": return "home"
     case "login": return "login"
     case "create": return "create"
+    case "playActionFixture": return route.scenario ? `playActionFixture:${route.scenario}` : "playActionFixture"
+    case "playGameplayLoopFixture": return "playGameplayLoopFixture"
+    case "playRetryFixture": return "playRetryFixture"
     case "about": return "about"
     case "portfolio": return "portfolio"
     case "reviewer": return "reviewer"

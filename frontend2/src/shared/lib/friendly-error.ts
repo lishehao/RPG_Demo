@@ -68,7 +68,7 @@ const STATUS_FALLBACKS_EN: Record<number, string> = {
 }
 
 const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
-  llm_invalid_json: "AI 一时短路了，再点一次就行。",
+  llm_invalid_json: "模型返回的故事格式坏了。可以重试，或先用 Brief 简化实体/约束再生成。",
   llm_provider_failed: "AI 服务暂时不在线，稍等再试。",
   llm_invalid_response: "AI 回了个空白，再试一次。",
   turn_invalid: "故事一时接不上你那一步——换个动作或稍等再试。",
@@ -83,12 +83,14 @@ const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
   no_narrator: "上一段叙述丢了，刷新一下试试。",
   turn_already_advanced: "这一段已经走过了，刷新一下接着玩。",
   llm_unavailable: "AI 服务还没配置，请联系站点维护人。",
-  opening_invalid: "AI 给的开场没法用——换个种子再试。",
+  opening_invalid: "模型返回的开场数据没法用。可以重试，或生成一个更简单、约束更少的开场。",
+  opening_prompt_shape_mismatch: "这个开头还不太适合当前运行时。试试 3 个以上人物、一个公开冲突、一个秘密/争夺物，再加一点时间压力。",
+  opening_brief_consistency_failed: "第一版开场没有足够贴住 Brief。Brief 还保留着；请重新搭建一个更紧的开场，或先改一条设定。",
   advisor_invalid: "顾问没说出有效的话，再问一次。",
 }
 
 const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
-  llm_invalid_json: "The AI hiccuped — just click again.",
+  llm_invalid_json: "The model returned malformed story data. Try again, or simplify the Brief before generating.",
   llm_provider_failed: "AI service is briefly offline. Try again shortly.",
   llm_invalid_response: "The AI returned a blank. Try again.",
   turn_invalid: "The story can't pick up from that move — try a different action, or wait and retry.",
@@ -103,12 +105,32 @@ const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
   no_narrator: "Lost the previous narration. Try a refresh.",
   turn_already_advanced: "This turn already moved forward. Refresh to continue.",
   llm_unavailable: "AI service isn't configured. Contact the site maintainer.",
-  opening_invalid: "The AI's opening isn't usable — try a different seed.",
+  opening_invalid: "The model returned unusable opening data. Try again, or generate a simpler opening with fewer constraints.",
+  opening_prompt_shape_mismatch: "This premise does not fit the current runtime yet. Try 3+ people, one public conflict, one secret or contested object, and time pressure.",
+  opening_brief_consistency_failed: "The first draft did not honor the Brief strongly enough. The Brief is still saved; build a tighter opening or revise the plan.",
   advisor_invalid: "The advisor didn't say anything usable. Ask again.",
 }
 
 const NETWORK_FALLBACK_ZH = "网络好像断了——检查一下连接再试。"
 const NETWORK_FALLBACK_EN = "Network seems down — check your connection and retry."
+
+const LIVE_ERROR_COPY_ZH: Record<LiveErrorKind, string> = {
+  timeout: "房间响应太久了。本回合没有消耗，你的草稿或动作还保留着。",
+  rate_limited: "线路现在很忙。你的草稿或动作还保留着，稍后再试。",
+  invalid_response: "场景返回得不完整。你的草稿或动作还在，可以重试。",
+  safety_redirect: "这个方向暂时不能进入故事。换一个更适合短剧场的冲突或压力点。",
+  provider_unavailable: "现场叙事线暂时没接上。你的草稿或动作还在，可以稍后重试。",
+  network: NETWORK_FALLBACK_ZH,
+}
+
+const LIVE_ERROR_COPY_EN: Record<LiveErrorKind, string> = {
+  timeout: "The room took too long to answer. No turn was spent; your draft or move is still held.",
+  rate_limited: "The line is busy. Your draft or move is still held; try again in a moment.",
+  invalid_response: "The scene came back incomplete. Your draft or move is still ready.",
+  safety_redirect: "That direction cannot enter play yet. Shift it toward a safer short-scene pressure point.",
+  provider_unavailable: "The live story line did not answer. Your draft or move is still here; retry in a moment.",
+  network: NETWORK_FALLBACK_EN,
+}
 
 const GENERIC_FALLBACK_ZH = "出了点问题，再试一次。"
 const GENERIC_FALLBACK_EN = "Something went wrong. Try again."
@@ -126,6 +148,64 @@ const NETWORK_PATTERNS = [
   "Load failed",
 ]
 
+type LiveErrorKind =
+  | "timeout"
+  | "rate_limited"
+  | "invalid_response"
+  | "safety_redirect"
+  | "provider_unavailable"
+  | "network"
+
+const INVALID_RESPONSE_CODES = new Set([
+  "llm_invalid_json",
+  "llm_invalid_response",
+  "play_llm_invalid_json",
+  "play_llm_invalid_response",
+  "opening_invalid",
+])
+
+const PROVIDER_UNAVAILABLE_CODES = new Set([
+  "llm_provider_failed",
+  "play_llm_provider_failed",
+  "llm_unavailable",
+  "play_llm_config_missing",
+])
+
+function classifyLiveError(err: ApiErrorLike): LiveErrorKind | null {
+  const message = err.message ?? ""
+  const lowerMessage = message.toLowerCase()
+  const status = err.statusCode
+  const code = err.errorCode ?? ""
+
+  if (
+    err.name === "TypeError" ||
+    NETWORK_PATTERNS.some((pattern) => message.includes(pattern))
+  ) {
+    return "network"
+  }
+  if (status === 504 || lowerMessage.includes("timeout") || lowerMessage.includes("timed out")) {
+    return "timeout"
+  }
+  if (
+    status === 429 ||
+    lowerMessage.includes("rate limit") ||
+    lowerMessage.includes("too many requests") ||
+    lowerMessage.includes("pending requests")
+  ) {
+    return "rate_limited"
+  }
+  if (INVALID_RESPONSE_CODES.has(code)) {
+    return "invalid_response"
+  }
+  if (status === 400 && (lowerMessage.includes("safety") || lowerMessage.includes("sensitive"))) {
+    return "safety_redirect"
+  }
+  if (PROVIDER_UNAVAILABLE_CODES.has(code) || status === 502 || status === 503) {
+    return "provider_unavailable"
+  }
+  return null
+}
+
 export function friendlyError(err: unknown, fallback?: string): string {
   const lang = readLang()
   const statusMap = lang === "en" ? STATUS_FALLBACKS_EN : STATUS_FALLBACKS_ZH
@@ -142,12 +222,12 @@ export function friendlyError(err: unknown, fallback?: string): string {
     const e = err as ApiErrorLike
     const message = e.message ?? ""
 
-    // Network detection
-    if (
-      e.name === "TypeError" ||
-      NETWORK_PATTERNS.some((p) => message.includes(p))
-    ) {
-      return networkMsg
+    // Live story/gateway errors first: keep provider/schema details out of
+    // player-facing UI while preserving retry semantics.
+    const liveKind = classifyLiveError(e)
+    if (liveKind) {
+      const liveMap = lang === "en" ? LIVE_ERROR_COPY_EN : LIVE_ERROR_COPY_ZH
+      return liveMap[liveKind]
     }
 
     // Specific API error code first (most precise)

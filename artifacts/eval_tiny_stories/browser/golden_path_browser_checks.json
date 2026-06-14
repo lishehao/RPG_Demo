@@ -1,0 +1,45 @@
+{
+  "schema_version": "tiny_stories_finish_mode_browser_evidence.v1",
+  "base_url": "http://127.0.0.1:5462",
+  "backend_url": "http://127.0.0.1:8462",
+  "session_id": "sess_21d49b0667ac",
+  "template_id": "tmpl_6d9cea0bd086",
+  "health": {
+    "service": "ok",
+    "text_llm": "configured",
+    "create_story_butler": "configured",
+    "story_brief": "configured",
+    "opening": "configured",
+    "play_turns": "configured"
+  },
+  "normal_play_desktop": {
+    "viewport": "1512x745",
+    "reviewer_evidence_count": 0,
+    "technical_leak_terms_found": [],
+    "full_cast_row_present": false,
+    "horizontal_overflow": false,
+    "notes": "Normal route shows compact title/context/stage/progress, ending payoff first, no provider/debug/judge evidence."
+  },
+  "reviewer_play_desktop": {
+    "viewport": "1512x745",
+    "reviewer_evidence_count": 1,
+    "telemetry_rows_visible": 8,
+    "trajectory_visible": true,
+    "horizontal_overflow": false,
+    "notes": "Reviewer route shows Evaluation evidence drawer with trajectory and telemetry while normal route stays clean."
+  },
+  "normal_play_mobile_smoke": {
+    "viewport": "390x844",
+    "scroll_width": 390,
+    "client_width": 390,
+    "horizontal_overflow": false,
+    "reviewer_evidence_count": 0,
+    "notes": "Mobile is not the primary target for finish mode, but route did not catastrophically overflow."
+  },
+  "console_warn_error_count": 0,
+  "unexpected_http_4xx_5xx_after_clean_marker": 0,
+  "screenshots": [
+    "artifacts/eval_tiny_stories/browser/golden-path-normal-play-1512x745.png",
+    "artifacts/eval_tiny_stories/browser/golden-path-reviewer-play-1512x745.png"
+  ]
+}
