@@ -1,0 +1,64 @@
+{
+  "project": "RPG Demo / Tiny Stories - Live Metadata Acceptance Tuning Pass 3G",
+  "session_id": "sess_3g_acceptance",
+  "validation_date": "2026-06-14",
+  "health": {
+    "text_llm": "configured",
+    "create_story_butler": "configured",
+    "story_brief": "configured",
+    "opening": "configured",
+    "play_turns": "configured"
+  },
+  "bounded_live_turns": {
+    "attempted": 3,
+    "live_success": 3,
+    "accepted_metadata_turns": 2,
+    "omitted_metadata_turns": 1,
+    "fallback_reasons": []
+  },
+  "reload_result": {
+    "source_after_latest_turn": "live_enriched",
+    "source_after_reload": "live_enriched",
+    "player_ui_leakage_terms_found": []
+  },
+  "telemetry": [
+    {
+      "operation": "narrative.advance_turn",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 7686,
+      "input_tokens": 6729,
+      "cached_input_tokens": 768,
+      "output_tokens": 423,
+      "total_tokens": 7152,
+      "fallback_reason": null
+    },
+    {
+      "operation": "narrative.advance_turn",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 10674,
+      "input_tokens": 6992,
+      "cached_input_tokens": 1024,
+      "output_tokens": 728,
+      "total_tokens": 7720,
+      "fallback_reason": null
+    },
+    {
+      "operation": "narrative.advance_turn",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 10971,
+      "input_tokens": 7158,
+      "cached_input_tokens": 5632,
+      "output_tokens": 769,
+      "total_tokens": 7927,
+      "fallback_reason": null
+    }
+  ],
+  "notes": [
+    "The tuned prompt keeps gameplay_metadata optional; the first live turn omitted metadata and correctly used backend fallback.",
+    "The next two live turns produced accepted validated metadata, persisted it, and reload preserved live_enriched source.",
+    "No secrets, model names, raw provider payloads, or player-facing technical leakage are included."
+  ]
+}

@@ -7,6 +7,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 import rpg_backend.main as main_module
+from rpg_backend.narrative import engine as narrative_engine
 from rpg_backend.narrative.contracts import (
     AgentPlan,
     AdvanceTurnRequest,
@@ -187,6 +188,18 @@ def test_repository_agent_event_round_trips(tmp_path) -> None:
     assert event.event_index == 0
     assert len(events) == 1
     assert events[0].payload == plan
+
+
+def test_turn_prompt_keeps_gameplay_metadata_optional_and_compact() -> None:
+    prompt = narrative_engine._TURN_SYSTEM_PROMPT
+
+    assert "gameplay_metadata 也是**可选**字段" in prompt
+    assert "优先输出一个很小的 metadata block" in prompt
+    assert "只写 1-3 个玩家可见条目即可" in prompt
+    assert "npc_id 必须来自 cast" in prompt
+    assert "0-based" in prompt
+    assert "不要输出空数组占位对象" in prompt
+    assert "不能牺牲 passage/options 的质量" in prompt
 
 
 class _TurnOnlyResponder:
