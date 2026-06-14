@@ -423,6 +423,10 @@ class StoryMessage(BaseModel):
     # role resources visible in replay/debug surfaces instead of becoming
     # indistinguishable from ordinary free text.
     played_leverage: PlayedLeverageCard | None = None
+    # Validated live gameplay metadata accepted by the turn parser. Kept
+    # internal so history reload can preserve live-enriched gameplay state
+    # without serializing raw per-turn metadata in player-facing messages.
+    gameplay_metadata: TurnGameplayMetadata | None = Field(default=None, exclude=True)
 
 
 class AdvisorMessage(BaseModel):

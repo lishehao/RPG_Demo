@@ -412,21 +412,25 @@ def _build_gameplay_envelope(
     if previous_player is not None and previous_player.played_leverage is not None:
         _add_gameplay_chip(impact, "Leverage played", "unlock")
 
+    metadata_to_merge = live_metadata
+    if metadata_to_merge is None and last_narrator is not None:
+        metadata_to_merge = last_narrator.gameplay_metadata
+
     live_enriched = False
-    if live_metadata is not None:
-        for chip in live_metadata.state_deltas:
+    if metadata_to_merge is not None:
+        for chip in metadata_to_merge.state_deltas:
             live_enriched = _add_gameplay_chip(
                 impact,
                 chip.label,
                 chip.tone,
             ) or live_enriched
-        if live_metadata.motive_effect is not None:
+        if metadata_to_merge.motive_effect is not None:
             live_enriched = _add_gameplay_chip(
                 impact,
-                live_metadata.motive_effect.label,
-                live_metadata.motive_effect.tone,
+                metadata_to_merge.motive_effect.label,
+                metadata_to_merge.motive_effect.tone,
             ) or live_enriched
-        for chip in live_metadata.clue_unlocks:
+        for chip in metadata_to_merge.clue_unlocks:
             live_enriched = _add_gameplay_chip(
                 impact,
                 chip.label,
@@ -439,7 +443,7 @@ def _build_gameplay_envelope(
                 chip.tone,
                 max_length=44,
             ) or live_enriched
-        for chip in live_metadata.opportunity_unlocks:
+        for chip in metadata_to_merge.opportunity_unlocks:
             live_enriched = _add_gameplay_chip(
                 impact,
                 chip.label,

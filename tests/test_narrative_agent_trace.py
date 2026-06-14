@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from typing import Any
 from uuid import uuid4
 
@@ -407,8 +408,17 @@ def test_advance_persists_agent_plan_and_gates_response_trace_by_default(tmp_pat
     assert events[2].payload.status == "pass"
     assert history.agent_events == []
     assert history.gameplay_envelope is not None
-    assert history.gameplay_envelope.source == "backend"
+    assert history.gameplay_envelope.source == "live_enriched"
     assert history.gameplay_envelope.tracks
+    assert any(
+        chip.label == "Sponsor leverage surfaced"
+        for chip in history.gameplay_envelope.impact
+    )
+    persisted_messages = repo.list_story_messages("sess_agent_trace")
+    persisted_metadata = persisted_messages[-1].gameplay_metadata
+    assert persisted_metadata is not None
+    assert persisted_metadata.state_deltas[0].label == "Sponsor leverage surfaced"
+    assert "gameplay_metadata" not in history.model_dump(mode="json")["messages"][-1]
     assert len(debug_history.agent_events) == 3
     assert debug_history.agent_events[0].payload == events[0].payload
 
@@ -453,6 +463,34 @@ def test_advance_drops_invalid_live_metadata_without_failing_turn(tmp_path) -> N
         chip.label != "Clue: Bad clue index"
         for chip in response.gameplay_envelope.opportunities
     )
+
+
+def test_history_downgrades_malformed_persisted_gameplay_metadata(tmp_path) -> None:
+    db_path = tmp_path / "runtime.sqlite3"
+    repo = NarrativeRepository(str(db_path))
+    _create_template_and_session(repo)
+
+    # Simulate a legacy or hand-edited row that cannot be trusted. Reload
+    # should ignore it and keep the backend-derived gameplay envelope.
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            """
+            UPDATE narrative_story_messages
+            SET gameplay_metadata_json = ?
+            WHERE session_id = ? AND ord = ?
+            """,
+            ("{not-valid-json", "sess_agent_trace", 0),
+        )
+        conn.commit()
+
+    messages = repo.list_story_messages("sess_agent_trace")
+    assert messages[0].gameplay_metadata is None
+
+    service = NarrativeService(repository=repo, gateway=_MissingGameplayMetadataResponder())
+    history = service.get_story_history("sess_agent_trace", player_user_id="local-dev")
+
+    assert history.gameplay_envelope is not None
+    assert history.gameplay_envelope.source == "backend"
 
 
 def test_advance_with_missing_gateway_uses_deterministic_beta_turn(tmp_path) -> None:

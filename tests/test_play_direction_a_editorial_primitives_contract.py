@@ -257,6 +257,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     contracts = (ROOT / "frontend2/src/api/contracts.ts").read_text()
     backend_contracts = (ROOT / "rpg_backend/narrative/contracts.py").read_text()
     backend_service = (ROOT / "rpg_backend/narrative/service.py").read_text()
+    backend_repository = (ROOT / "rpg_backend/narrative/repository.py").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
@@ -282,9 +283,14 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "class GameplayEnvelope" in backend_contracts
     assert 'GameplayEnvelopeSource = Literal["backend", "live_enriched"]' in backend_contracts
     assert "class TurnGameplayMetadata" in backend_contracts
+    assert "gameplay_metadata: TurnGameplayMetadata | None = Field(default=None, exclude=True)" in backend_contracts
     assert "gameplay_envelope: GameplayEnvelope | None = None" in backend_contracts
     assert "_build_gameplay_envelope" in backend_service
     assert "live_metadata: TurnGameplayMetadata | None = None" in backend_service
+    assert "metadata_to_merge = live_metadata" in backend_service
+    assert "metadata_to_merge = last_narrator.gameplay_metadata" in backend_service
+    assert "gameplay_metadata_json" in backend_repository
+    assert "TurnGameplayMetadata.model_validate" in backend_repository
     assert 'data-gameplay-objective="normal-play"' in play_page
     assert "data-gameplay-pressure-track={track.id}" in play_page
     assert 'data-gameplay-action-forecast="true"' in panels

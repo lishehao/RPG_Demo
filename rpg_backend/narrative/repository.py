@@ -35,6 +35,7 @@ from rpg_backend.narrative.contracts import (
     StoryOption,
     TemplateLanguage,
     TemplateVisibility,
+    TurnGameplayMetadata,
 )
 
 
@@ -191,6 +192,10 @@ class NarrativeRepository:
         if "played_leverage_json" not in existing_msg_cols:
             connection.execute(
                 "ALTER TABLE narrative_story_messages ADD COLUMN played_leverage_json TEXT"
+            )
+        if "gameplay_metadata_json" not in existing_msg_cols:
+            connection.execute(
+                "ALTER TABLE narrative_story_messages ADD COLUMN gameplay_metadata_json TEXT"
             )
         connection.execute(
             """
@@ -647,13 +652,20 @@ class NarrativeRepository:
         leverage_json: str | None = None
         if message.played_leverage is not None:
             leverage_json = json.dumps(message.played_leverage.model_dump(), ensure_ascii=False)
+        gameplay_metadata_json: str | None = None
+        if message.gameplay_metadata is not None:
+            gameplay_metadata_json = json.dumps(
+                message.gameplay_metadata.model_dump(mode="json"),
+                ensure_ascii=False,
+            )
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO narrative_story_messages
                 (session_id, ord, role, content, options_json, chosen_option_index,
-                 npc_pulse_json, inventory_delta_json, diary, played_leverage_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 npc_pulse_json, inventory_delta_json, diary, played_leverage_json,
+                 gameplay_metadata_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     session_id,
@@ -666,6 +678,7 @@ class NarrativeRepository:
                     delta_json,
                     message.diary,
                     leverage_json,
+                    gameplay_metadata_json,
                 ),
             )
             conn.commit()
@@ -675,7 +688,8 @@ class NarrativeRepository:
             rows = conn.execute(
                 """
                 SELECT ord, role, content, options_json, chosen_option_index,
-                       npc_pulse_json, inventory_delta_json, diary, played_leverage_json
+                       npc_pulse_json, inventory_delta_json, diary, played_leverage_json,
+                       gameplay_metadata_json
                 FROM narrative_story_messages
                 WHERE session_id = ?
                 ORDER BY ord ASC
@@ -1129,6 +1143,19 @@ def _row_to_story_message(row: sqlite3.Row) -> StoryMessage:
                     played_leverage = None
         except Exception:  # noqa: BLE001
             pass
+    gameplay_metadata: TurnGameplayMetadata | None = None
+    if "gameplay_metadata_json" in keys and row["gameplay_metadata_json"]:
+        try:
+            gameplay_metadata_raw = json.loads(row["gameplay_metadata_json"])
+            if isinstance(gameplay_metadata_raw, dict):
+                try:
+                    gameplay_metadata = TurnGameplayMetadata.model_validate(
+                        gameplay_metadata_raw,
+                    )
+                except Exception:  # noqa: BLE001
+                    gameplay_metadata = None
+        except Exception:  # noqa: BLE001
+            pass
     return StoryMessage(
         ord=int(row["ord"]),
         role=row["role"],
@@ -1139,4 +1166,5 @@ def _row_to_story_message(row: sqlite3.Row) -> StoryMessage:
         inventory_delta=delta,
         diary=diary_val,
         played_leverage=played_leverage,
+        gameplay_metadata=gameplay_metadata,
     )

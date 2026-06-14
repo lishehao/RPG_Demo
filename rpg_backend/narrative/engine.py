@@ -1293,6 +1293,7 @@ def advance_turn(
             chosen_option_index=None,
             npc_pulse=npc_pulse,
             inventory_delta=inventory_delta,
+            gameplay_metadata=gameplay_metadata,
         ),
         agent_plan=agent_plan,
         gameplay_metadata=gameplay_metadata,
