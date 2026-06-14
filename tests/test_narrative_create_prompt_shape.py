@@ -26,7 +26,7 @@ from rpg_backend.responses_transport import ResponsesJSONResponse
 from tests.auth_helpers import ensure_authenticated_client
 
 
-class _OpeningCaptureGateway:
+class _OpeningCaptureDouble:
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
 
@@ -189,7 +189,7 @@ def test_generate_opening_injects_reviewed_story_brief() -> None:
         language="en",
         desired_tension_profile="comedy",
     ).brief
-    gateway = _OpeningCaptureGateway()
+    gateway = _OpeningCaptureDouble()
 
     generate_opening(
         gateway=gateway,  # type: ignore[arg-type]

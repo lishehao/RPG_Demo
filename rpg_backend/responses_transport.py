@@ -427,14 +427,15 @@ class _RawResponsesResource:
             return _base_url_matches_host_set(self._base_url, self._chat_json_stream_hosts)
         return _supports_stream_chat_json(self._base_url)
 
-    def _next_api_key(self) -> str:
+    def _next_api_key(self, *, retry_offset: int = 0) -> str:
         if not self._api_key_pool:
             return self._api_key
         # Keep the explicit primary key sticky. The env may retain stale
         # historical keys in *_API_KEYS pools; round-robin rotation would make
         # the second product call fail even when the current single key is
         # valid.
-        return self._api_key_pool[0]
+        index = min(max(0, retry_offset), len(self._api_key_pool) - 1)
+        return self._api_key_pool[index]
 
     def _build_client(self) -> httpx.Client:
         return httpx.Client(
@@ -585,8 +586,9 @@ class _RawResponsesResource:
         use_stream_chat = self._should_use_stream_chat(endpoint_url)
         pending_retry_attempted = False
         empty_content_retry_attempted = False
+        retry_key_offset = 0
         while True:
-            active_api_key = self._next_api_key()
+            active_api_key = self._next_api_key(retry_offset=retry_key_offset)
             headers = {
                 "Authorization": f"Bearer {active_api_key}",
                 "Content-Type": "application/json",
@@ -649,6 +651,7 @@ class _RawResponsesResource:
                     message=message,
                 ):
                     pending_retry_attempted = True
+                    retry_key_offset += 1
                     time.sleep(_PENDING_OVERLOAD_RETRY_DELAY_SECONDS)
                     continue
                 if (not empty_content_retry_attempted) and _is_empty_content_error(
@@ -656,6 +659,7 @@ class _RawResponsesResource:
                     message=message,
                 ):
                     empty_content_retry_attempted = True
+                    retry_key_offset += 1
                     time.sleep(_EMPTY_CONTENT_RETRY_DELAY_SECONDS)
                     continue
                 raise

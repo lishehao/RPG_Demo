@@ -20,7 +20,7 @@ from rpg_backend.narrative.service import NarrativeService
 from rpg_backend.responses_transport import ResponsesJSONResponse
 
 
-class _HomeLibraryGateway:
+class _HomeLibraryDouble:
     model = "deepseek-test"
 
     def __init__(self) -> None:
@@ -96,7 +96,7 @@ def test_default_home_story_library_uses_pipeline_and_dedupes(tmp_path, monkeypa
         ),
     )
     repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
-    gateway = _HomeLibraryGateway()
+    gateway = _HomeLibraryDouble()
     service = NarrativeService(
         repository=repo,
         gateway=gateway,  # type: ignore[arg-type]

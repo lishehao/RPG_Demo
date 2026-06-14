@@ -942,10 +942,13 @@ def _generate_opening_once(
             "Honor the reviewed story_brief. Use primary_active_entities as the "
             "runtime cast when they are characters or factions; keep secondary "
             "entities as background pressure. Preserve boundaries and negated "
-            "constraints as constraints, never as cast. Match tension_profile: "
-            "comedy/cozy stay lower-stakes unless explicit, fantasy/sci-fi uses "
-            "world-rule or faction pressure, and other genres use the Brief's "
-            "own concrete stakes instead of generic blackmail."
+            "constraints as constraints, never as cast. Preserve the "
+            "intervention_card_label as the brief's player-facing object/action "
+            "label. Match tension_profile: comedy/cozy stay lower-stakes unless "
+            "explicit; this is a lower-stakes tension contract. Do not convert a "
+            "comedy/cozy brief into blackmail, violence, or a prestige thriller. "
+            "Fantasy/sci-fi uses world-rule or faction pressure, and other genres "
+            "use the Brief's own concrete stakes instead of generic blackmail."
         )
     if brief_consistency_feedback:
         user_payload["story_brief_consistency_feedback"] = brief_consistency_feedback

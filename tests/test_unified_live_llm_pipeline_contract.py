@@ -64,7 +64,7 @@ def test_unified_text_gateway_uses_generic_responses_config_for_narrative_path()
     assert gateway.model == "deepseek-test"
 
 
-def test_explicit_single_responses_keys_precede_stale_key_pools() -> None:
+def test_explicit_responses_key_pools_precede_single_fallback_keys() -> None:
     settings = Settings(
         responses_api_key="generic-current",
         responses_api_keys="generic-stale,generic-current",
@@ -74,16 +74,14 @@ def test_explicit_single_responses_keys_precede_stale_key_pools() -> None:
         responses_author_api_keys="author-stale,author-current",
     )
 
-    assert settings.responses_api_key_pool() == ("generic-current", "generic-stale")
-    assert settings.play_responses_api_key_pool()[:3] == (
-        "play-current",
+    assert settings.responses_api_key_pool() == ("generic-stale", "generic-current")
+    assert settings.play_responses_api_key_pool()[:2] == (
         "play-stale",
-        "generic-current",
+        "play-current",
     )
-    assert settings.author_responses_api_key_pool()[:3] == (
-        "author-current",
+    assert settings.author_responses_api_key_pool()[:2] == (
         "author-stale",
-        "generic-current",
+        "author-current",
     )
 
 
