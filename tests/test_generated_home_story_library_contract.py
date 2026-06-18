@@ -87,6 +87,78 @@ class _HomeLibraryDouble:
         )
 
 
+def test_public_template_listing_prioritizes_default_home_library(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    user_template = repo.create_template(
+        template_id="tmpl_user_popular",
+        owner_user_id="usr_owner",
+        seed="A local user test story.",
+        title="User Test Story",
+        cast=[
+            CastMember(
+                character_id="mira",
+                display_name="Mira Vale",
+                role="Cofounder",
+                relation_to_protagonist="Audit partner",
+            ),
+            CastMember(
+                character_id="evan",
+                display_name="Evan Shore",
+                role="Witness",
+                relation_to_protagonist="Holds the missing memo.",
+            )
+        ],
+        advisor_persona="A steady advisor.",
+        opening_passage="The boardroom waits.",
+        opening_options=[StoryOption(label="Ask the first question", hint="Probe", handle="ask")],
+        player_goals=[],
+        failure_conditions=[],
+        player_role_options=[],
+        visibility="public",
+        language="en",
+    )
+    home_template = repo.create_template(
+        template_id="tmpl_home_curated",
+        owner_user_id=DEFAULT_HOME_STORY_OWNER_ID,
+        seed="A curated default home story.",
+        title="Curated Home Story",
+        cast=[
+            CastMember(
+                character_id="producer",
+                display_name="Producer",
+                role="Pressure holder",
+                relation_to_protagonist="Wants the show to continue.",
+            ),
+            CastMember(
+                character_id="dancer",
+                display_name="Backup Dancer",
+                role="Witness",
+                relation_to_protagonist="Saw the singer leave.",
+            )
+        ],
+        advisor_persona="A quiet story coach.",
+        opening_passage="The countdown is already running.",
+        opening_options=[StoryOption(label="Question the producer", hint="Pressure", handle="question")],
+        player_goals=[],
+        failure_conditions=[],
+        player_role_options=[],
+        visibility="public",
+        language="en",
+    )
+    for _ in range(4):
+        repo.increment_play_count(user_template.template_id)
+
+    service = NarrativeService(repository=repo, gateway=None)
+    listing = service.list_public_templates(viewer_user_id="guest").items
+
+    assert repo.list_public_templates()[0].template_id == user_template.template_id
+    assert listing[0].template_id == home_template.template_id
+    assert {item.template_id for item in listing} == {
+        user_template.template_id,
+        home_template.template_id,
+    }
+
+
 def test_default_home_story_library_uses_pipeline_and_dedupes(tmp_path, monkeypatch) -> None:
     spec = DefaultHomeStorySpec(
         library_key="gala_test",

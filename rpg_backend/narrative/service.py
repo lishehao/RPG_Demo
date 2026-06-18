@@ -86,6 +86,7 @@ from rpg_backend.narrative.gateway import (
     NarrativeLLMGateway,
     get_narrative_gateway,
 )
+from rpg_backend.narrative.home_story_library import DEFAULT_HOME_STORY_OWNER_ID
 from rpg_backend.narrative.judges import judge_contract, judge_step
 from rpg_backend.narrative.repository import NarrativeNotFoundError, NarrativeRepository
 from rpg_backend.narrative.story_guide import advance_story_guide_loop, story_butler_voice_policy
@@ -1057,7 +1058,7 @@ class NarrativeService:
         )
 
     def list_public_templates(self, *, viewer_user_id: str) -> TemplateListResponse:
-        templates = self._repo.list_public_templates()
+        templates = _prioritize_home_library_templates(self._repo.list_public_templates())
         return TemplateListResponse(
             items=[_summarize_template(t, viewer_user_id=viewer_user_id) for t in templates]
         )
@@ -2479,6 +2480,21 @@ def _playable_opening_options(template: NarrativeTemplate) -> list[StoryOption]:
         if len(options) >= 3:
             break
     return options
+
+
+def _prioritize_home_library_templates(
+    templates: list[NarrativeTemplate],
+) -> list[NarrativeTemplate]:
+    return [
+        template
+        for _, template in sorted(
+            enumerate(templates),
+            key=lambda item: (
+                0 if item[1].owner_user_id == DEFAULT_HOME_STORY_OWNER_ID else 1,
+                item[0],
+            ),
+        )
+    ]
 
 
 def _fallback_turn_pulses(
