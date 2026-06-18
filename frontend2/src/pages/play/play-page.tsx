@@ -174,6 +174,18 @@ function relationshipShiftCopy(t: ReturnType<typeof useT>, shift: string): strin
   return t("play.impact_steady")
 }
 
+function actorFromDisplayName(
+  name: string,
+  castNameById: Record<string, string>,
+): { id: string; name: string } | null {
+  const normalizedName = name.trim().toLowerCase()
+  if (!normalizedName) return null
+  const matched = Object.entries(castNameById)
+    .find(([, displayName]) => displayName.trim().toLowerCase() === normalizedName)
+  if (!matched) return null
+  return { id: matched[0], name: matched[1] }
+}
+
 function GameplayStatePanel({
   envelope,
   focusedResourceId,
@@ -248,7 +260,17 @@ function GameplayStatePanel({
   )
 }
 
-function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
+function GameplayImpactSummary({
+  envelope,
+  castNameById,
+  focusedActorId,
+  onFocusActor,
+}: {
+  envelope: GameplayEnvelope
+  castNameById: Record<string, string>
+  focusedActorId?: string | null
+  onFocusActor?: (actor: { id: string; name: string }) => void
+}) {
   const t = useT()
   if (envelope.impact.length === 0) return null
   const primaryImpact =
@@ -284,16 +306,46 @@ function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
   ) => {
     const parsed = parseRelationshipDeltaLabel(delta.label)
     if (!parsed) return delta.label
+    const actor = actorFromDisplayName(parsed.name, castNameById)
+    const shiftCopy = relationshipShiftCopy(t, parsed.shift)
+    const relationshipContent = (
+      <>
+        <span style={ppStyles.gameplayRelationshipDeltaName}>{parsed.name}</span>
+        <span style={ppStyles.gameplayRelationshipDeltaShift}>
+          {shiftCopy}
+        </span>
+      </>
+    )
+    if (actor && onFocusActor) {
+      const isFocused = focusedActorId === actor.id
+      return (
+        <button
+          type="button"
+          style={{
+            ...(mode === "spotlight" ? ppStyles.gameplayRelationshipDeltaSpotlight : ppStyles.gameplayRelationshipDelta),
+            ...ppStyles.gameplayRelationshipDeltaButton,
+            ...(isFocused ? ppStyles.gameplayRelationshipDeltaButtonFocused : null),
+          }}
+          data-gameplay-relationship-delta="true"
+          data-gameplay-impact-actor-focus="true"
+          data-gameplay-impact-actor-id={actor.id}
+          data-gameplay-impact-actor-focused={isFocused ? "true" : undefined}
+          aria-pressed={isFocused}
+          aria-label={`${parsed.name} ${shiftCopy}. ${t("play.impact_focus_actor_title", { name: actor.name })}`}
+          title={t("play.impact_focus_actor_title", { name: actor.name })}
+          onClick={() => onFocusActor(actor)}
+        >
+          {relationshipContent}
+        </button>
+      )
+    }
     return (
       <span
         style={mode === "spotlight" ? ppStyles.gameplayRelationshipDeltaSpotlight : ppStyles.gameplayRelationshipDelta}
         data-gameplay-relationship-delta="true"
-        aria-label={`${parsed.name} ${relationshipShiftCopy(t, parsed.shift)}`}
+        aria-label={`${parsed.name} ${shiftCopy}`}
       >
-        <span style={ppStyles.gameplayRelationshipDeltaName}>{parsed.name}</span>
-        <span style={ppStyles.gameplayRelationshipDeltaShift}>
-          {relationshipShiftCopy(t, parsed.shift)}
-        </span>
+        {relationshipContent}
       </span>
     )
   }
@@ -1071,7 +1123,12 @@ export function PlayPage({
           })}
 
           {!isComplete && !busy && turnsCompleted > 0 ? (
-            <GameplayImpactSummary envelope={gameplayEnvelope} />
+            <GameplayImpactSummary
+              envelope={gameplayEnvelope}
+              castNameById={castNameById}
+              focusedActorId={focusedActorId}
+              onFocusActor={focusSceneActor}
+            />
           ) : null}
 
           <AnimatePresence>

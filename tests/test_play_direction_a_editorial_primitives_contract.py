@@ -309,7 +309,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-loop-step-done={isDone ? "true" : "false"}' in play_page
     assert 'busy\n      ? "react"' in play_page
     assert 'actionAreaVisible && turnsCompleted > 0 && gameplayEnvelope.impact.length > 0\n        ? "update"' in play_page
-    assert "<GameplayImpactSummary envelope={gameplayEnvelope} />" in play_page
+    assert "<GameplayImpactSummary" in play_page
+    assert "envelope={gameplayEnvelope}" in play_page
+    assert "castNameById={castNameById}" in play_page
+    assert "focusedActorId={focusedActorId}" in play_page
+    assert "onFocusActor={focusSceneActor}" in play_page
     assert "!isComplete && !busy && turnsCompleted > 0" in play_page
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actorFocus={actorFocus}" in play_page
@@ -388,8 +392,14 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const primaryImpact =" in play_page
     assert "function parseRelationshipDeltaLabel(" in play_page
     assert "function relationshipShiftCopy(" in play_page
+    assert "function actorFromDisplayName(" in play_page
     assert 'data-gameplay-relationship-delta="true"' in play_page
-    assert "aria-label={`${parsed.name} ${relationshipShiftCopy(t, parsed.shift)}`}" in play_page
+    assert 'data-gameplay-impact-actor-focus="true"' in play_page
+    assert "data-gameplay-impact-actor-id={actor.id}" in play_page
+    assert 'data-gameplay-impact-actor-focused={isFocused ? "true" : undefined}' in play_page
+    assert "onClick={() => onFocusActor(actor)}" in play_page
+    assert "aria-label={`${parsed.name} ${shiftCopy}. ${t(\"play.impact_focus_actor_title\", { name: actor.name })}`}" in play_page
+    assert "aria-label={`${parsed.name} ${shiftCopy}`}" in play_page
     assert 'data-gameplay-impact-group={group.id}' in play_page
     assert 'data-gameplay-impact-group="next"' in play_page
     assert 'data-gameplay-next-choice-signals="true"' in play_page
@@ -422,6 +432,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayImpactSpotlight" in styles
     assert "gameplayImpactSpotlightValue" in styles
     assert "gameplayRelationshipDelta" in styles
+    assert "gameplayRelationshipDeltaButton" in styles
+    assert "gameplayRelationshipDeltaButtonFocused" in styles
     assert "gameplayRelationshipDeltaShift" in styles
     assert "gameplayImpactGroups" in styles
     assert "outcomeReceiptHeader" in styles
@@ -455,6 +467,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
     assert '"play.feedback_key_consequence_label": "Key consequence"' in strings
     assert '"play.feedback_next_choice_label": "Next choice signals"' in strings
+    assert '"play.impact_focus_actor_title": "Focus moves involving {name}"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert 'data-play-outcome-receipt="true"' in panels
     assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
