@@ -2504,6 +2504,8 @@ def _fallback_turn_action_phrase(player_action: str) -> str:
         return "your move"
     if len(text) > 120:
         text = f"{text[:117].rstrip()}..."
+    if " — " in text[:80]:
+        return f"your move toward {text}" if not text.startswith("your ") else text
     if text[:1].isupper() and " " in text[:40]:
         text = text[:1].lower() + text[1:]
     return f"your move to {text}" if not text.startswith("your ") else text

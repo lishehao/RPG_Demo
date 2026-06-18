@@ -21,7 +21,7 @@ from rpg_backend.narrative.contracts import (
 )
 from rpg_backend.narrative.engine import build_agent_plan
 from rpg_backend.narrative.repository import NarrativeRepository
-from rpg_backend.narrative.service import NarrativeService
+from rpg_backend.narrative.service import NarrativeService, _fallback_turn_action_phrase
 from rpg_backend.responses_transport import ResponsesJSONResponse
 from tests.auth_helpers import ensure_authenticated_client
 
@@ -71,6 +71,14 @@ def _opening_options() -> list[StoryOption]:
     return [
         StoryOption(label="Let the witness speak", hint="Trade control for trust", handle="witness")
     ]
+
+
+def test_fallback_turn_action_phrase_preserves_explicit_focus_target() -> None:
+    assert _fallback_turn_action_phrase("Ask who benefits") == "your move to ask who benefits"
+    assert (
+        _fallback_turn_action_phrase("Mira Vale — Ask why she backed off")
+        == "your move toward Mira Vale — Ask why she backed off"
+    )
 
 
 def _create_template_and_session(
