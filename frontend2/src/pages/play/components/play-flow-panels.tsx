@@ -2278,10 +2278,19 @@ function OutcomeReceipt({ items, compact = false }: { items: OutcomeReceiptItem[
     ...ppStyles.outcomeReceiptValue,
     ...(compactLayout ? ppStyles.outcomeReceiptValueMobile : null),
   }
+  const outcomeReceiptA11yItems = items.map((item) => `${item.label} ${item.value}`)
+  const outcomeReceiptA11yLabel = outcomeReceiptA11yItems.length
+    ? `${compact ? t("play.outcome_inline_label") : t("play.outcome_label")}: ${outcomeReceiptA11yItems.join("; ")}`
+    : compact ? t("play.outcome_inline_label") : t("play.outcome_label")
   const content = (
     <>
-      <span style={compact ? ppStyles.outcomeReceiptInlineLabel : ppStyles.outcomeReceiptKicker}>
-        {compact ? t("play.outcome_inline_label") : t("play.outcome_kicker")}
+      <span style={compact ? ppStyles.outcomeReceiptInlineLabel : ppStyles.outcomeReceiptHeader}>
+        <span style={compact ? undefined : ppStyles.outcomeReceiptKicker}>
+          {compact ? t("play.outcome_inline_label") : t("play.outcome_kicker")}
+        </span>
+        {compact ? null : (
+          <span style={ppStyles.outcomeReceiptHint}>{t("play.outcome_next_hint")}</span>
+        )}
       </span>
       <span style={sentenceStyle}>
         {items.map((item) => (
@@ -2289,6 +2298,8 @@ function OutcomeReceipt({ items, compact = false }: { items: OutcomeReceiptItem[
             key={`${item.label}:${item.value}`}
             style={phraseStyle}
             title={`${item.label}: ${item.value}`}
+            data-play-outcome-receipt-item="true"
+            data-play-outcome-receipt-tone={item.tone ?? "neutral"}
           >
             <span style={ppStyles.outcomeReceiptItemLabel}>{item.label}:</span>
             <strong
@@ -2310,7 +2321,9 @@ function OutcomeReceipt({ items, compact = false }: { items: OutcomeReceiptItem[
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.1, ...itemTransition }}
       style={rootStyle}
-      aria-label={compact ? t("play.outcome_inline_label") : t("play.outcome_label")}
+      aria-label={outcomeReceiptA11yLabel}
+      data-play-outcome-receipt="true"
+      data-play-outcome-receipt-mode={compact ? "compact" : "summary"}
     >
       {content}
     </motion.div>

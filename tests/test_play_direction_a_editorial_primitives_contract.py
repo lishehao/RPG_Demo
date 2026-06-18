@@ -330,6 +330,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayDecisionGroupShift" in styles
     assert "gameplayImpactPanel" in styles
     assert "gameplayImpactGroups" in styles
+    assert "outcomeReceiptHeader" in styles
+    assert "outcomeReceiptHint" in styles
     assert "feedbackPendingTimeline" in styles
     assert "feedbackPendingStepActive" in styles
     assert '"play.gameplay_loop_label": "Action loop"' in strings
@@ -342,9 +344,16 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings
     assert '"play.gameplay_impact_label": "Observed changes"' in strings
+    assert '"play.outcome_next_hint": "Shapes the next choices"' in strings
     assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
+    assert 'data-play-outcome-receipt="true"' in panels
+    assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
+    assert 'data-play-outcome-receipt-item="true"' in panels
+    assert "data-play-outcome-receipt-tone={item.tone ?? \"neutral\"}" in panels
+    assert "const outcomeReceiptA11yItems" in panels
+    assert "aria-label={outcomeReceiptA11yLabel}" in panels
     assert "fetch(" not in envelope
     for forbidden in ("provider", "model", "schema", "token", "fallback", "debug"):
         assert forbidden not in envelope.casefold()

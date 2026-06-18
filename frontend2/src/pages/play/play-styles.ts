@@ -933,7 +933,7 @@ export const ppStyles: Record<string, CSSProperties> = {
     padding: 0,
     borderTop: "none",
     display: "flex",
-    alignItems: "baseline",
+    alignItems: "flex-start",
     columnGap: 12,
     rowGap: 6,
     flexWrap: "wrap" as const,
@@ -958,6 +958,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     columnGap: 0,
     rowGap: 6,
   },
+  outcomeReceiptHeader: {
+    minWidth: "min(100%, 132px)",
+    maxWidth: "min(100%, 180px)",
+    display: "grid",
+    gap: 2,
+    flex: "0 1 160px",
+  },
   outcomeReceiptKicker: {
     color: "rgba(245,210,140,0.84)",
     fontSize: 10.5,
@@ -966,6 +973,16 @@ export const ppStyles: Record<string, CSSProperties> = {
     textTransform: "none" as const,
     whiteSpace: "nowrap" as const,
     flexShrink: 0,
+  },
+  outcomeReceiptHint: {
+    minWidth: 0,
+    color: "rgba(232,218,205,0.42)",
+    fontSize: 10.8,
+    lineHeight: 1.25,
+    fontWeight: 620,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
   },
   outcomeReceiptInlineLabel: {
     color: "rgba(232,218,205,0.48)",
@@ -984,9 +1001,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     rowGap: 4,
     flexWrap: "wrap" as const,
     color: "rgba(255,245,230,0.84)",
+    flex: "1 1 280px",
+    paddingTop: 1,
   },
   outcomeReceiptSentenceCompact: {
     columnGap: 7,
+    flex: "1 1 220px",
+    paddingTop: 0,
   },
   outcomeReceiptSentenceMobile: {
     width: "100%",
