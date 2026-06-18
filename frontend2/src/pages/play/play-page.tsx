@@ -70,7 +70,7 @@ import {
   parseOptionLabel,
 } from "./components/play-flow-panels"
 import { PlayActionJumpButton } from "./components/play-action-jump"
-import { isPlayActionAreaAwayFromViewport } from "./components/play-action-jump-utils"
+import { isPlayActionAreaAwayFromViewport, scrollToPlayActionArea } from "./components/play-action-jump-utils"
 import { PlayRetryRecoveryBanner } from "./components/play-retry-recovery"
 import {
   buildGameplayEnvelope,
@@ -927,6 +927,11 @@ export function PlayPage({
     story,
   ])
 
+  const handleActionJump = useCallback(() => {
+    setShowActionJump(false)
+    scrollToPlayActionArea()
+  }, [])
+
   const lastNarrator = story
     ? [...story.messages].reverse().find((m) => m.role === "narrator") ?? null
     : null
@@ -1425,6 +1430,7 @@ export function PlayPage({
         {showActionJump ? (
           <PlayActionJumpButton
             detail={actionJumpDetail}
+            onClick={handleActionJump}
             stage={gameplayLoopStage}
           />
         ) : null}

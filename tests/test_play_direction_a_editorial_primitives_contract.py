@@ -687,6 +687,10 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "currentActionAreaVisible" in play_page
     assert "isPlayActionAreaAwayFromViewport(actionArea)" in play_page
     assert "const actionJumpDetail =" in play_page
+    assert "const handleActionJump = useCallback" in play_page
+    assert "setShowActionJump(false)" in play_page
+    assert "scrollToPlayActionArea()" in play_page
+    assert "onClick={handleActionJump}" in play_page
     assert "stage={gameplayLoopStage}" in play_page
     assert "detail={actionJumpDetail}" in play_page
     assert 'data-play-action-jump="true"' in action_jump
