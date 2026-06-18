@@ -348,6 +348,16 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-actor-focus-cue="true"' in panels
     assert 'data-play-actor-focus-id={actorFocus.id}' in panels
     assert "data-play-actor-focus-match-count={actorFocusMatchCount}" in panels
+    assert "actorFocusMatchCount === 0 && showFreeActionToggle" in panels
+    assert 'data-play-actor-focus-custom-move="true"' in panels
+    assert "const freeActionFocusContext = actorFocus && actorFocusMatchCount === 0" in panels
+    assert 'data-play-free-action-context="true"' in panels
+    assert "data-play-free-action-context-kind={freeActionFocusContext.kind}" in panels
+    assert "data-play-free-action-context-id={freeActionFocusContext.id}" in panels
+    assert "freeActionFocusContext?.placeholder ?? t(\"play.action_free_placeholder\")" in panels
+    assert "freeActionFocusContext?.toggleText ?? t(\"play.action_open_free\")" in panels
+    assert "freeActionFocusContext?.toggleHint ?? t(\"play.action_open_free_hint\")" in panels
+    assert "freeActionFocusContext?.toggleTitle ?? t(\"play.action_open_free_title\")" in panels
     assert 'data-play-action-actor-focus-match={isActorFocusMatch ? "true" : undefined}' in panels
     assert 'data-play-action-actor-focus-dimmed={isActorFocusDimmed ? "true" : undefined}' in panels
     assert 'data-gameplay-forecast-detail="normal-play"' in panels
@@ -419,6 +429,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayTrackAction" in styles
     assert "resourceFocusCue" in styles
     assert "resourceFocusCueAction" in styles
+    assert "freeActionContext" in styles
+    assert "freeActionContextName" in styles
+    assert "freeActionContextDetail" in styles
     assert "optionBtnResourceFocusMatch" in styles
     assert "gameplayNextChoiceChip" in styles
     assert "optionBtnActorFocusMatch" in styles
@@ -449,6 +462,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_label": "Character focus"' in strings
     assert '"play.actor_focus_match_detail": "{count} moves directly involve {name}"' in strings
     assert '"play.actor_focus_no_match": "No move names {name} directly; use a custom move to test them."' in strings
+    assert '"play.free_context_actor_label": "Custom move target"' in strings
+    assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
+    assert '"play.action_open_free_actor": "Write move for {name}"' in strings
+    assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
     assert '"play.action_target_label": "Target"' in strings
     assert '"play.action_target_title": "This move primarily points at {name}"' in strings
     assert '"play.resource_focus_label": "Resource focus"' in strings

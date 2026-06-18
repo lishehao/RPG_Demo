@@ -3084,6 +3084,33 @@ export function ActionArea({
   }, [actionForecasts, options, resourceFocus])
   const resourceFocusMatchCount = resourceFocusOptionMatches.filter(Boolean).length
   const resourceFocusDetail = resourceFocus ? resourceFocusDetailText(t, resourceFocus.id, resourceFocusMatchCount) : ""
+  const freeActionFocusContext = actorFocus && actorFocusMatchCount === 0
+    ? {
+        kind: "actor" as const,
+        id: actorFocus.id,
+        label: actorFocus.name,
+        detail: t("play.free_context_actor_detail", { name: actorFocus.name }),
+        placeholder: t("play.action_free_actor_placeholder", { name: actorFocus.name }),
+        toggleText: t("play.action_open_free_actor", { name: actorFocus.name }),
+        toggleHint: t("play.action_open_free_actor_hint"),
+        toggleTitle: t("play.action_open_free_actor_title", { name: actorFocus.name }),
+      }
+    : resourceFocus && resourceFocusMatchCount === 0
+      ? {
+          kind: "resource" as const,
+          id: resourceFocus.id,
+          label: resourceFocus.label,
+          detail: resourceFocusDetail,
+          placeholder: resourceFocus.id === "time"
+            ? t("play.action_free_time_placeholder")
+            : resourceFocus.id === "pressure"
+              ? t("play.action_free_pressure_placeholder")
+              : t("play.action_free_evidence_placeholder"),
+          toggleText: t("play.action_open_free_resource", { label: resourceFocus.label }),
+          toggleHint: t("play.action_open_free_resource_hint"),
+          toggleTitle: t("play.action_open_free_resource_title", { label: resourceFocus.label }),
+        }
+      : null
   const freeActionDraft = freeInput.trim()
   const freeActionReady = freeActionDraft.length > 0
   const freeActionTarget = freeActionDraft
@@ -3205,16 +3232,18 @@ export function ActionArea({
     options.length > 0
   const freeActionToggleText = freeInput.trim()
     ? t("play.action_resume_free")
-    : t("play.action_open_free")
+    : freeActionFocusContext?.toggleText ?? t("play.action_open_free")
   const freeActionDraftPreview = freeActionDraft
     ? truncateRecoveryText(freeActionDraft, 72)
     : ""
   const freeActionToggleHint = freeInput.trim()
     ? t("play.action_resume_free_hint", { draft: freeActionDraftPreview })
-    : t("play.action_open_free_hint")
+    : freeActionFocusContext?.toggleHint ?? t("play.action_open_free_hint")
   const freeActionToggleTitle = freeInput.trim()
     ? t("play.action_resume_free_title")
-    : t("play.action_open_free_title")
+    : freeActionFocusContext?.toggleTitle ?? t("play.action_open_free_title")
+  const freeTextareaPlaceholder =
+    freeActionFocusContext?.placeholder ?? t("play.action_free_placeholder")
   const openFreeActionComposer = () => {
     if (actionControlsDisabled) return
     setSelectedOptionIndex(null)
@@ -3989,6 +4018,22 @@ export function ActionArea({
               ? t("play.actor_focus_match_detail", { name: actorFocus.name, count: actorFocusMatchCount })
               : t("play.actor_focus_no_match", { name: actorFocus.name })}
           </span>
+          {actorFocusMatchCount === 0 && showFreeActionToggle ? (
+            <button
+              type="button"
+              style={{
+                ...ppStyles.resourceFocusCueAction,
+                ...inlineActionDisabledStyle,
+              }}
+              onClick={openFreeActionComposer}
+              disabled={actionControlsDisabled}
+              data-play-actor-focus-custom-move="true"
+              aria-label={freeActionToggleTitle}
+              title={freeActionToggleTitle}
+            >
+              {freeActionToggleText}
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -4329,12 +4374,32 @@ export function ActionArea({
             ref={setCommitFocusNode}
             style={ppStyles.freeInputBox}
           >
+            {freeActionFocusContext ? (
+              <div
+                style={ppStyles.freeActionContext}
+                data-play-free-action-context="true"
+                data-play-free-action-context-kind={freeActionFocusContext.kind}
+                data-play-free-action-context-id={freeActionFocusContext.id}
+              >
+                <span style={ppStyles.freeActionContextLabel}>
+                  {freeActionFocusContext.kind === "actor"
+                    ? t("play.free_context_actor_label")
+                    : t("play.free_context_resource_label")}
+                </span>
+                <strong style={ppStyles.freeActionContextName}>
+                  {freeActionFocusContext.label}
+                </strong>
+                <span style={ppStyles.freeActionContextDetail}>
+                  {freeActionFocusContext.detail}
+                </span>
+              </div>
+            ) : null}
             <textarea
               className="play-free-textarea"
               ref={freeTextareaRef}
               style={ppStyles.freeTextarea}
               value={freeInput}
-              placeholder={t("play.action_free_placeholder")}
+              placeholder={freeTextareaPlaceholder}
               aria-label={t("play.free_action_title")}
               aria-keyshortcuts={freeTextareaKeyShortcuts}
               title={freeTextareaTitle}
