@@ -29,6 +29,7 @@ from rpg_backend.narrative.service import (
     _fallback_turn_action_phrase,
     _fallback_turn_options,
     _fallback_turn_pulses,
+    _gameplay_forecast_for_option,
 )
 from rpg_backend.responses_transport import ResponsesJSONResponse
 from tests.auth_helpers import ensure_authenticated_client
@@ -93,6 +94,35 @@ def test_fallback_verb_treats_title_case_character_names_as_singular() -> None:
     assert _fallback_verb("Lena Rojas", "recalculates", "recalculate") == "recalculates"
     assert _fallback_verb("Arthur Vance", "watches", "watch") == "watches"
     assert _fallback_verb("Lena Rojas and Arthur Vance", "reacts", "react") == "react"
+
+
+def test_gameplay_forecast_turns_probe_actions_into_useful_signals() -> None:
+    chips = _gameplay_forecast_for_option(
+        StoryOption(
+            label="Ask Lena what she saw before the feed went dark",
+            hint="Probe",
+            handle="ask witness",
+        )
+    )
+
+    labels = [chip.label for chip in chips]
+    assert "Evidence lead" in labels
+    assert "Room read" not in labels
+
+
+def test_gameplay_forecast_keeps_gentle_witness_actions_playable() -> None:
+    chips = _gameplay_forecast_for_option(
+        StoryOption(
+            label="Invite the backup dancer to explain the handoff",
+            hint="Let the witness speak",
+            handle="witness",
+        )
+    )
+
+    labels = [chip.label for chip in chips]
+    assert "Evidence lead" in labels
+    assert "Trust +1" in labels
+    assert "Room read" not in labels
 
 
 def test_fallback_turn_pulses_prioritize_explicit_action_target(tmp_path) -> None:

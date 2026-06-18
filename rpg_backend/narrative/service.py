@@ -286,7 +286,12 @@ def _gameplay_forecast_for_option(option: StoryOption) -> list[GameplayChip]:
     ):
         _add_gameplay_chip(chips, "Pressure +1", "cost")
     if re.search(
-        r"\b(trust|calm|cover|protect|help|ally|promise|reassure|soften|support)\b",
+        r"\b(ask|probe|question|interview|witness|account|source|handled|last seen|saw)\b",
+        haystack,
+    ):
+        _add_gameplay_chip(chips, "Evidence lead", "unlock")
+    if re.search(
+        r"\b(trust|calm|cover|protect|help|ally|promise|reassure|soften|support|invite|speak|explain|give room)\b",
         haystack,
     ):
         _add_gameplay_chip(chips, "Trust +1", "gain")
