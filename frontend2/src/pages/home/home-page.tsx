@@ -212,6 +212,37 @@ function publishedStoryView(
   }
 }
 
+function normalizePlazaTemplateText(value: string | null | undefined): string {
+  return (value ?? "").replace(/\s+/g, " ").trim().toLowerCase()
+}
+
+export function publicTemplateDisplayKey(template: NarrativeTemplateSummary): string {
+  const title =
+    template.title_i18n?.en ||
+    template.title_i18n?.zh ||
+    template.title
+  const summary =
+    template.summary_i18n?.en ||
+    template.summary_i18n?.zh ||
+    template.seed
+  return [
+    normalizePlazaTemplateText(title),
+    normalizePlazaTemplateText(summary),
+  ].join("::")
+}
+
+export function dedupePublicTemplatesForPlaza(
+  templates: NarrativeTemplateSummary[],
+): NarrativeTemplateSummary[] {
+  const seen = new Set<string>()
+  return templates.filter((template) => {
+    const key = publicTemplateDisplayKey(template)
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 export function HomePage({
   onOpenCreate,
   onOpenPlay,
@@ -258,7 +289,7 @@ export function HomePage({
       .listPublicNarrativeTemplates()
       .then((res) => {
         if (cancelled) return
-        setPublicTemplates(res.items)
+        setPublicTemplates(dedupePublicTemplatesForPlaza(res.items))
       })
       .catch((err) => {
         if (cancelled) return

@@ -38,6 +38,9 @@ def test_home_plaza_uses_generated_public_templates_not_frontend_presets() -> No
     assert "api.createNarrativeStoryBrief" not in home
     assert "api.createNarrativeTemplate" not in home
     assert "listPublicNarrativeTemplates" in home
+    assert "export function publicTemplateDisplayKey" in home
+    assert "export function dedupePublicTemplatesForPlaza" in home
+    assert "setPublicTemplates(dedupePublicTemplatesForPlaza(res.items))" in home
     assert "api.startNarrativeSession(templateId)" in home
     assert "DEFAULT_HOME_STORY_SPECS" in library
     assert "ensure_default_home_story_library" in library
