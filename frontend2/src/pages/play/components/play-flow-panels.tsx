@@ -45,6 +45,8 @@ import { useCompactLayout } from "../hooks/use-compact-layout"
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
 
+type DecisionForecastGroup = "cost" | "upside" | "shift"
+
 type SceneParallaxOffset = {
   x: number
   y: number
@@ -3472,44 +3474,139 @@ export function ActionArea({
       </motion.div>
     ) : null
 
+  const decisionForecastLabelForGroup = useCallback((group: DecisionForecastGroup) => {
+    if (group === "cost") return t("play.gameplay_decision_cost_label")
+    if (group === "upside") return t("play.gameplay_decision_upside_label")
+    return t("play.gameplay_decision_shift_label")
+  }, [t])
+
+  const decisionForecastGroupForChip = useCallback((chip: GameplayActionForecast): DecisionForecastGroup => {
+    if (chip.tone === "cost") return "cost"
+    if (chip.tone === "gain" || chip.tone === "unlock") return "upside"
+    return "shift"
+  }, [])
+
+  const renderDecisionForecast = useCallback((
+    chips: GameplayActionForecast[],
+    options?: { compact?: boolean; detail?: boolean },
+  ) => {
+    if (!chips.length) return null
+    const groups: Array<{ id: DecisionForecastGroup; chips: GameplayActionForecast[] }> = [
+      { id: "cost" as DecisionForecastGroup, chips: chips.filter((chip) => decisionForecastGroupForChip(chip) === "cost") },
+      { id: "upside" as DecisionForecastGroup, chips: chips.filter((chip) => decisionForecastGroupForChip(chip) === "upside") },
+      { id: "shift" as DecisionForecastGroup, chips: chips.filter((chip) => decisionForecastGroupForChip(chip) === "shift") },
+    ].filter((group) => group.chips.length > 0)
+
+    return (
+      <span
+        style={{
+          ...ppStyles.gameplayDecisionForecast,
+          ...(options?.compact ? ppStyles.gameplayDecisionForecastCompact : null),
+          ...(options?.detail ? ppStyles.gameplayDecisionForecastDetail : null),
+        }}
+        data-gameplay-decision-forecast="true"
+        aria-label={t("play.gameplay_decision_forecast_label")}
+      >
+        <span style={ppStyles.gameplayDecisionForecastHeader}>
+          {t("play.gameplay_decision_forecast_label")}
+        </span>
+        <span
+          style={{
+            ...ppStyles.gameplayDecisionGroups,
+            ...(options?.compact ? ppStyles.gameplayDecisionGroupsCompact : null),
+          }}
+        >
+          {groups.map((group) => (
+            <span
+              key={group.id}
+              style={{
+                ...ppStyles.gameplayDecisionGroup,
+                ...(group.id === "cost"
+                  ? ppStyles.gameplayDecisionGroupCost
+                  : group.id === "upside"
+                    ? ppStyles.gameplayDecisionGroupUpside
+                    : ppStyles.gameplayDecisionGroupShift),
+              }}
+              data-gameplay-decision-group={group.id}
+            >
+              <span style={ppStyles.gameplayDecisionGroupLabel}>
+                {decisionForecastLabelForGroup(group.id)}
+              </span>
+              <span style={ppStyles.gameplayDecisionChipRow}>
+                {group.chips.map((chip) => (
+                  <span
+                    key={`${group.id}-${chip.label}`}
+                    title={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
+                    aria-label={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
+                    style={{
+                      ...ppStyles.gameplayForecastChip,
+                      ...(chip.tone === "gain"
+                        ? ppStyles.gameplayToneGain
+                        : chip.tone === "cost"
+                          ? ppStyles.gameplayToneCost
+                          : chip.tone === "unlock"
+                            ? ppStyles.gameplayToneUnlock
+                            : {}),
+                    }}
+                    data-gameplay-forecast-chip="normal-play"
+                  >
+                    {chip.label}
+                  </span>
+                ))}
+              </span>
+            </span>
+          ))}
+        </span>
+      </span>
+    )
+  }, [decisionForecastGroupForChip, decisionForecastLabelForGroup, t])
+
   const renderSelectedOptionDetail = (
     hint: string,
-    forecastDetails: GameplayActionForecast[],
-  ) => (
-    <motion.span
-      style={{
-        ...ppStyles.optionExpandedDetail,
-        ...(compactActionChrome ? ppStyles.optionExpandedDetailCompact : null),
-        ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
-      }}
-      data-play-action-card-detail="true"
-      initial={reducedMotion ? false : { opacity: 0, y: -4 }}
-      animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
-      transition={reducedMotion ? { duration: 0.01 } : { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
-    >
-      <span style={ppStyles.optionExpandedDetailLabel}>
-        {t("play.option_expanded_detail_label")}
-      </span>
-      <span style={ppStyles.optionExpandedDetailText}>
-        {hint || t("play.preview_action_risk_default")}
-      </span>
-      {forecastDetails.map((chip) => (
-        <Fragment key={`${chip.label}-${chip.detail}`}>
-          <span style={ppStyles.optionExpandedDetailLabel}>
-            {t("play.gameplay_forecast_detail_label")}
+    forecasts: GameplayActionForecast[],
+  ) => {
+    const forecastDetails = forecasts.filter((chip) => chip.detail)
+    return (
+      <motion.span
+        style={{
+          ...ppStyles.optionExpandedDetail,
+          ...(compactActionChrome ? ppStyles.optionExpandedDetailCompact : null),
+          ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
+        }}
+        data-play-action-card-detail="true"
+        initial={reducedMotion ? false : { opacity: 0, y: -4 }}
+        animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
+        transition={reducedMotion ? { duration: 0.01 } : { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
+      >
+        <span style={ppStyles.optionExpandedDetailLabel}>
+          {t("play.option_expanded_detail_label")}
+        </span>
+        <span style={ppStyles.optionExpandedDetailText}>
+          {hint || t("play.preview_action_risk_default")}
+        </span>
+        {forecasts.length ? (
+          <span style={ppStyles.optionExpandedDecisionBlock}>
+            {renderDecisionForecast(forecasts, { compact: compactActionChrome, detail: true })}
           </span>
-          <span
-            style={ppStyles.optionExpandedDetailText}
-            data-gameplay-forecast-detail="normal-play"
-            title={chip.detail}
-          >
-            {chip.detail}
-          </span>
-        </Fragment>
-      ))}
-    </motion.span>
-  )
+        ) : null}
+        {forecastDetails.map((chip) => (
+          <Fragment key={`${chip.label}-${chip.detail}`}>
+            <span style={ppStyles.optionExpandedDetailLabel}>
+              {t("play.gameplay_forecast_detail_label")}
+            </span>
+            <span
+              style={ppStyles.optionExpandedDetailText}
+              data-gameplay-forecast-detail="normal-play"
+              title={chip.detail}
+            >
+              {chip.detail}
+            </span>
+          </Fragment>
+        ))}
+      </motion.span>
+    )
+  }
 
   return (
     <motion.div
@@ -3774,7 +3871,6 @@ export function ActionArea({
                 const isPicked = pickedIndex === i
                 const isUnpicked = pickedIndex !== null && pickedIndex !== i
                 const optionForecasts = actionForecasts?.[i] ?? []
-                const forecastDetails = optionForecasts.filter((chip) => chip.detail)
                 const optionShortcutKey = i < 9 ? String(i + 1) : null
                 const isChoiceDimmed =
                   selectedOptionIndex !== null && !isSelected && pickedIndex === null
@@ -3850,7 +3946,7 @@ export function ActionArea({
                           </span>
                         ) : null}
                         <span>{parsed.body}</span>
-                        {opt.hint && !isSelected ? (
+                        {opt.hint && !isSelected && optionForecasts.length === 0 ? (
                           <span
                             style={{
                               ...ppStyles.optionHintInline,
@@ -3863,33 +3959,10 @@ export function ActionArea({
                         ) : null}
                         {optionForecasts.length ? (
                           <span
-                            style={{
-                              ...ppStyles.gameplayForecastChipRow,
-                              ...(compactActionChrome ? ppStyles.gameplayForecastChipRowCompact : null),
-                            }}
+                            style={ppStyles.gameplayDecisionForecastShell}
                             data-gameplay-action-forecast="true"
-                            aria-label={t("play.gameplay_forecast_label")}
                           >
-                            {optionForecasts.map((chip) => (
-                              <span
-                                key={`${i}-${chip.label}`}
-                                title={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
-                                aria-label={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
-                                style={{
-                                  ...ppStyles.gameplayForecastChip,
-                                  ...(chip.tone === "gain"
-                                    ? ppStyles.gameplayToneGain
-                                    : chip.tone === "cost"
-                                      ? ppStyles.gameplayToneCost
-                                      : chip.tone === "unlock"
-                                        ? ppStyles.gameplayToneUnlock
-                                        : {}),
-                                }}
-                                data-gameplay-forecast-chip="normal-play"
-                              >
-                                {chip.label}
-                              </span>
-                            ))}
+                            {renderDecisionForecast(optionForecasts, { compact: compactActionChrome })}
                           </span>
                         ) : null}
                         <span
@@ -3900,7 +3973,7 @@ export function ActionArea({
                         >
                           {isSelected ? t("play.selected_move_kicker") : t("play.option_expand_cta")}
                         </span>
-                        {isSelected ? renderSelectedOptionDetail(opt.hint ?? "", forecastDetails) : null}
+                        {isSelected ? renderSelectedOptionDetail(opt.hint ?? "", optionForecasts) : null}
                       </div>
                     </motion.button>
                     <AnimatePresence initial={false}>

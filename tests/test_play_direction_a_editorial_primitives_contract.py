@@ -313,6 +313,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "data-gameplay-pressure-track={track.id}" in play_page
     assert 'data-gameplay-action-forecast="true"' in panels
     assert 'data-gameplay-forecast-chip="normal-play"' in panels
+    assert 'data-gameplay-decision-forecast="true"' in panels
+    assert 'data-gameplay-decision-group={group.id}' in panels
+    assert 'type DecisionForecastGroup = "cost" | "upside" | "shift"' in panels
     assert 'data-gameplay-impact-summary="true"' in play_page
     assert 'data-gameplay-delta="normal-play"' in play_page
     assert "gameplayEnvelopePanel" in styles
@@ -320,12 +323,20 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayLoopStepActive" in styles
     assert "gameplayLoopStepDone" in styles
     assert "gameplayForecastChip" in styles
+    assert "gameplayDecisionForecast" in styles
+    assert "gameplayDecisionGroupCost" in styles
+    assert "gameplayDecisionGroupUpside" in styles
+    assert "gameplayDecisionGroupShift" in styles
     assert "gameplayImpactPanel" in styles
     assert '"play.gameplay_loop_label": "Action loop"' in strings
     assert '"play.gameplay_loop_choose_label": "Choose move"' in strings
     assert '"play.gameplay_loop_react_label": "Room reacts"' in strings
     assert '"play.gameplay_loop_update_label": "See changes"' in strings
     assert '"play.gameplay_objective_label": "Goal"' in strings
+    assert '"play.gameplay_decision_forecast_label": "Decision forecast"' in strings
+    assert '"play.gameplay_decision_cost_label": "Costs"' in strings
+    assert '"play.gameplay_decision_upside_label": "Opens"' in strings
+    assert '"play.gameplay_decision_shift_label": "Shifts"' in strings
     assert '"play.gameplay_impact_label": "Observed changes"' in strings
     assert "fetch(" not in envelope
     for forbidden in ("provider", "model", "schema", "token", "fallback", "debug"):
