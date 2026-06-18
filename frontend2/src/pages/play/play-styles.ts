@@ -5005,7 +5005,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     flex: 1,
   },
 
-  endingActions: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 },
+  endingActions: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 12,
+    marginBottom: 22,
+  },
   endingActionsRow: {
     display: "flex",
     alignItems: "center",

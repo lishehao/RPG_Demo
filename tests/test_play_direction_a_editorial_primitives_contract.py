@@ -691,9 +691,14 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     ending_screen = panels[panels.index("export function EndingScreen") : panels.index("function displayEndingLabel")]
 
     assert "Illustrated banner is secondary to the result text" in ending_screen
-    assert ending_screen.index("style={ppStyles.endingPassage}") < ending_screen.index("...ppStyles.endingHero")
+    assert 'data-play-ending-actions="true"' in ending_screen
+    assert 'data-play-ending-illustration="true"' in ending_screen
+    assert ending_screen.index("style={ppStyles.endingPassage}") < ending_screen.index('data-play-ending-actions="true"')
+    assert ending_screen.index('data-play-ending-actions="true"') < ending_screen.index('data-play-ending-illustration="true"')
+    assert ending_screen.index('data-play-ending-illustration="true"') < ending_screen.index("...ppStyles.endingHero")
     assert 'height: 150' in styles[styles.index("endingHero") : styles.index("endingSplashOverlay")]
     assert 'padding: "10px 0 28px"' in styles[styles.index("endingCardInner") : styles.index("endingLabelChip")]
+    assert 'marginBottom: 22' in styles[styles.index("endingActions") : styles.index("endingActionsRow")]
 
 
 def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> None:

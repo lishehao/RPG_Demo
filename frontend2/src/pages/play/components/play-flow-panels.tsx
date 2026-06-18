@@ -1266,37 +1266,90 @@ export function EndingScreen({
             {ending.passage}
           </motion.div>
 
-        {/* Illustrated banner is secondary to the result text: it adds
-            ceremony after the player has already read what ending they hit. */}
-        <motion.div
-          initial={initialOr({ opacity: 0, scale: 1.04 })}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: delayOr(0.95), ...transitions.slow }}
-          style={{
-            ...ppStyles.endingHero,
-            backgroundImage: `${tv.gradient}, url(${illustration})`,
-          }}
-        >
-          {tierSplash ? (
-            <motion.div
-              initial={initialOr({ opacity: 0, scale: 1.08 })}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: delayOr(1.05), ...transitions.ceremony }}
-              style={{
-                ...ppStyles.endingSplashOverlay,
-                backgroundImage: `url(${tierSplash})`,
-              }}
-            />
-          ) : null}
-          <div style={ppStyles.endingTierBadge}>
-            <span style={ppStyles.endingTierBadgeText}>{tv.badgeText}</span>
-            {ending.early_terminated && ending.failure_trigger ? (
-              <span style={ppStyles.endingTierTrigger}>
-                {t("play.ending_trigger_prefix", { trigger: ending.failure_trigger })}
-              </span>
+          <motion.div
+            data-play-ending-actions="true"
+            initial={initialOr({ opacity: 0, y: 8 })}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: delayOr(0.95), ...itemTransition }}
+            style={ppStyles.endingActions}
+          >
+            <div style={ppStyles.endingActionsRow}>
+              <motion.button
+                onClick={onShare}
+                type="button"
+                style={ppStyles.endingPrimaryAction}
+                whileHover={{ scale: 1.02 }}
+                whileTap={tapPress}
+                key={shareCopied ? "copied" : "default"}
+                initial={shareCopied ? { scale: 0.92 } : false}
+                animate={shareCopied ? { scale: [0.92, 1.06, 1] } : { scale: 1 }}
+                transition={transitions.base}
+              >
+                {shareCopied ? t("play.ending_share_copied") : t("play.ending_share")}
+              </motion.button>
+              {/* Replay-with-different-role — closes the loop. Without
+                  this, finishing a run was a dead end; user had to nav
+                  back home → find template → re-pick role. Now it's
+                  one click. We deliberately route through the template
+                  detail page rather than auto-picking a new role —
+                  seeing the role cards is part of the re-engagement. */}
+              <motion.button
+                style={ppStyles.endingTextAction}
+                onClick={onPlayAgain}
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={tapPress}
+              >
+                {t("play.ending_replay")}
+              </motion.button>
+              <motion.button
+                style={ppStyles.endingTextActionMuted}
+                onClick={onBackHome}
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={tapPress}
+              >
+                {t("action.back_home")}
+              </motion.button>
+            </div>
+            <p style={ppStyles.endingShareHint}>
+              {t("play.ending_share_hint")}
+            </p>
+          </motion.div>
+
+          {/* Illustrated banner is secondary to the result text: it adds
+              ceremony after the player has already read what ending they hit
+              and seen the available next actions. */}
+          <motion.div
+            data-play-ending-illustration="true"
+            initial={initialOr({ opacity: 0, scale: 1.04 })}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: delayOr(1.15), ...transitions.slow }}
+            style={{
+              ...ppStyles.endingHero,
+              backgroundImage: `${tv.gradient}, url(${illustration})`,
+            }}
+          >
+            {tierSplash ? (
+              <motion.div
+                initial={initialOr({ opacity: 0, scale: 1.08 })}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: delayOr(1.25), ...transitions.ceremony }}
+                style={{
+                  ...ppStyles.endingSplashOverlay,
+                  backgroundImage: `url(${tierSplash})`,
+                }}
+              />
             ) : null}
-          </div>
-        </motion.div>
+            <div style={ppStyles.endingTierBadge}>
+              <span style={ppStyles.endingTierBadgeText}>{tv.badgeText}</span>
+              {ending.early_terminated && ending.failure_trigger ? (
+                <span style={ppStyles.endingTierTrigger}>
+                  {t("play.ending_trigger_prefix", { trigger: ending.failure_trigger })}
+                </span>
+              ) : null}
+            </div>
+          </motion.div>
 
         {/* Highlight reel — LLM picks merged with user bookmarks. Kept as
             a text recap instead of a stack of separate cards. */}
@@ -1399,55 +1452,6 @@ export function EndingScreen({
           </motion.section>
         ) : null}
 
-        <motion.div
-          initial={initialOr({ opacity: 0, y: 8 })}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: delayOr(1.7), ...itemTransition }}
-          style={ppStyles.endingActions}
-        >
-          <div style={ppStyles.endingActionsRow}>
-            <motion.button
-              onClick={onShare}
-              type="button"
-              style={ppStyles.endingPrimaryAction}
-              whileHover={{ scale: 1.02 }}
-              whileTap={tapPress}
-              key={shareCopied ? "copied" : "default"}
-              initial={shareCopied ? { scale: 0.92 } : false}
-              animate={shareCopied ? { scale: [0.92, 1.06, 1] } : { scale: 1 }}
-              transition={transitions.base}
-            >
-              {shareCopied ? t("play.ending_share_copied") : t("play.ending_share")}
-            </motion.button>
-            {/* Replay-with-different-role — closes the loop. Without
-                this, finishing a run was a dead end; user had to nav
-                back home → find template → re-pick role. Now it's
-                one click. We deliberately route through the template
-                detail page rather than auto-picking a new role —
-                seeing the role cards is part of the re-engagement. */}
-            <motion.button
-              style={ppStyles.endingTextAction}
-              onClick={onPlayAgain}
-              type="button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={tapPress}
-            >
-              {t("play.ending_replay")}
-            </motion.button>
-            <motion.button
-              style={ppStyles.endingTextActionMuted}
-              onClick={onBackHome}
-              type="button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={tapPress}
-            >
-              {t("action.back_home")}
-            </motion.button>
-          </div>
-          <p style={ppStyles.endingShareHint}>
-            {t("play.ending_share_hint")}
-          </p>
-        </motion.div>
         </div>
       </motion.div>
     </motion.section>
