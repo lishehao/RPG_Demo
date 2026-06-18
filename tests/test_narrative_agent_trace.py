@@ -5,6 +5,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+import pytest
 
 import rpg_backend.main as main_module
 from rpg_backend.narrative import engine as narrative_engine
@@ -612,6 +613,53 @@ def test_advance_with_missing_gateway_uses_deterministic_beta_turn(tmp_path) -> 
     assert events[2].payload.status == "pass"
     assert response.agent_plan is not None
     assert response.agent_events
+
+
+def test_final_turn_with_missing_gateway_completes_with_local_ending(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(repo, difficulty="story")
+    repo.touch_session("sess_agent_trace", increment_turns=7)
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.advance(
+        "sess_agent_trace",
+        AdvanceTurnRequest(chosen_option_index=0),
+        player_user_id="local-dev",
+    )
+    session = repo.get_session("sess_agent_trace")
+
+    assert response.is_complete is True
+    assert response.ending is not None
+    assert response.ending.label == "决裂"
+    assert "[Probe]" not in response.ending.passage
+    assert "fallback" not in response.ending.passage.casefold()
+    assert "AI service" not in response.ending.passage
+    assert session.turn_count == 8
+    assert session.turn_budget == 8
+    assert session.ending_label == "决裂"
+
+
+def test_history_repairs_budget_exhausted_session_without_ending(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(repo, difficulty="story")
+    repo.touch_session("sess_agent_trace", increment_turns=9)
+    service = NarrativeService(repository=repo, gateway=None)
+
+    history = service.get_story_history("sess_agent_trace", player_user_id="local-dev")
+    session = repo.get_session("sess_agent_trace")
+
+    assert history.session.turn_count == 8
+    assert history.session.turn_budget == 8
+    assert history.session.ending_label == "决裂"
+    assert session.ending_label == "决裂"
+    assert session.turn_count == 9
+    with pytest.raises(Exception) as exc_info:
+        service.validate_advance_request(
+            "sess_agent_trace",
+            AdvanceTurnRequest(chosen_option_index=0),
+            player_user_id="local-dev",
+        )
+    assert getattr(exc_info.value, "code", "") == "session_complete"
 
 
 def test_turn_endpoint_with_missing_gateway_returns_deterministic_beta_turn(tmp_path) -> None:

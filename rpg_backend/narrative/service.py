@@ -72,6 +72,7 @@ from rpg_backend.narrative.engine import (
     compute_current_inventory,
     generate_opening,
     judge_failure,
+    EndingResult,
     OpeningResult,
     synthesize_branches,
     synthesize_early_ending,
@@ -1154,11 +1155,13 @@ class NarrativeService:
     ) -> StoryHistoryResponse:
         session = self._load_session_for_player(session_id, player_user_id)
         template = self._repo.get_template(session.template_id)
+        active_role = _resolve_player_role(template, session.selected_player_role_id)
+        if self._finalize_if_budget_exhausted(session, template, player_role=active_role):
+            session = self._repo.get_session(session_id)
         messages = self._repo.list_story_messages(session_id)
         agent_events = (
             self._repo.list_agent_events(session_id) if include_agent_trace else []
         )
-        active_role = _resolve_player_role(template, session.selected_player_role_id)
         starting_assets = active_role.starting_assets if active_role else []
         current_inventory = compute_current_inventory(starting_assets, messages)
         # turn_count derived from message stream (narrator/player pairs)
@@ -1205,6 +1208,13 @@ class NarrativeService:
                 status_code=409,
             )
         template = self._repo.get_template(session.template_id)
+        active_role = _resolve_player_role(template, session.selected_player_role_id)
+        if self._finalize_if_budget_exhausted(session, template, player_role=active_role):
+            raise NarrativeServiceError(
+                code="session_complete",
+                message="这一局故事已经走完了——刷新后可以看你的结局。",
+                status_code=409,
+            )
         history = self._repo.list_story_messages(session_id)
         if not history:
             raise NarrativeServiceError(
@@ -1468,6 +1478,13 @@ class NarrativeService:
                 status_code=409,
             )
         template = self._repo.get_template(session.template_id)
+        active_role = _resolve_player_role(template, session.selected_player_role_id)
+        if self._finalize_if_budget_exhausted(session, template, player_role=active_role):
+            raise NarrativeServiceError(
+                code="session_complete",
+                message="这一局故事已经走完了——刷新后可以看你的结局。",
+                status_code=409,
+            )
         history = self._repo.list_story_messages(session_id)
         if not history:
             raise NarrativeServiceError(
@@ -1511,6 +1528,13 @@ class NarrativeService:
                 status_code=409,
             )
         template = self._repo.get_template(session.template_id)
+        active_role = _resolve_player_role(template, session.selected_player_role_id)
+        if self._finalize_if_budget_exhausted(session, template, player_role=active_role):
+            raise NarrativeServiceError(
+                code="session_complete",
+                message="这一局故事已经走完了——刷新后可以看你的结局。",
+                status_code=409,
+            )
         upcoming_turn_index = session.turn_count + 1
         is_final_turn = upcoming_turn_index >= session.turn_budget
         if is_final_turn:
@@ -1525,44 +1549,44 @@ class NarrativeService:
         # Regular turns still reserve the advance_turn retry path.
         return 2
 
-    def _finalize_session(
+    def _finalize_if_budget_exhausted(
         self,
-        session_id: str,
+        session: NarrativeSession,
         template: NarrativeTemplate,
         *,
         player_role: PlayerRole | None = None,
-    ) -> NarrativeEnding | None:
-        """Synthesize the ending and persist it. Logs and silently no-ops on
-        LLM failure — the player can still read the final narrator beat;
-        the frontend will show 'ending generation failed, refresh' if it
-        sees is_complete=False on a budget-reached turn."""
-        full_history = self._repo.list_story_messages(session_id)
-        try:
-            result = synthesize_ending(
-                gateway=self.gateway,
-                seed=template.seed,
-                title=template.title,
-                cast=template.cast,
-                history=full_history,
-                turn_count=len([m for m in full_history if m.role == "narrator"]) - 1,
-                player_role=player_role,
-                language=template.language,
-            )
-        except (NarrativeGatewayError, ValueError) as exc:
-            print(
-                f"[narrative.service] ending synthesis failed for session={session_id}: {_safe_exception_label(exc)}",
-                flush=True,
-            )
-            return None
-        tier = tier_for_label(result.label)
-        # Synthesize highlights + branches AFTER ending exists. Both
-        # non-fatal — return [] on any failure. Run in parallel since
-        # they're independent LLM calls — cuts post-game wait from
-        # ~9s sequential to ~5s.
+    ) -> bool:
+        """Repair sessions that reached the turn budget without a saved ending.
+
+        This can happen when a final live ending call fails. The player should
+        never be able to keep advancing past the budget, so reads and preflight
+        validation force a local closeout before exposing the session again.
+        """
+        if session.ending_label is not None or session.turn_count < session.turn_budget:
+            return False
+        return self._finalize_session(
+            session.session_id,
+            template,
+            player_role=player_role,
+        ) is not None
+
+    def _synthesize_postgame_artifacts(
+        self,
+        *,
+        session_id: str,
+        template: NarrativeTemplate,
+        full_history: list[StoryMessage],
+        result: EndingResult,
+        tier: str,
+        player_role: PlayerRole | None = None,
+        log_prefix: str = "ending",
+    ) -> tuple[list, list]:
+        if self._gateway is None:
+            return [], []
         with ThreadPoolExecutor(max_workers=2) as pool:
             hl_future = pool.submit(
                 synthesize_highlights,
-                gateway=self.gateway,
+                gateway=self._gateway,
                 seed=template.seed,
                 title=template.title,
                 cast=template.cast,
@@ -1574,7 +1598,7 @@ class NarrativeService:
             )
             br_future = pool.submit(
                 synthesize_branches,
-                gateway=self.gateway,
+                gateway=self._gateway,
                 seed=template.seed,
                 title=template.title,
                 cast=template.cast,
@@ -1585,8 +1609,79 @@ class NarrativeService:
                 player_role=player_role,
                 language=template.language,
             )
-            highlights = hl_future.result()
-            branches = br_future.result()
+            try:
+                highlights = hl_future.result()
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"[narrative.service] {log_prefix} highlights failed for session={session_id}: {_safe_exception_label(exc)}",
+                    flush=True,
+                )
+                highlights = []
+            try:
+                branches = br_future.result()
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"[narrative.service] {log_prefix} branches failed for session={session_id}: {_safe_exception_label(exc)}",
+                    flush=True,
+                )
+                branches = []
+        return highlights, branches
+
+    def _finalize_session(
+        self,
+        session_id: str,
+        template: NarrativeTemplate,
+        *,
+        player_role: PlayerRole | None = None,
+    ) -> NarrativeEnding | None:
+        """Synthesize and persist an ending.
+
+        LLM ending generation is preferred, but final turn completion must not
+        depend on provider health. If the live ending fails, a conservative
+        local closeout is persisted so the session cannot advance beyond its
+        budget.
+        """
+        full_history = self._repo.list_story_messages(session_id)
+        try:
+            if self._gateway is None:
+                raise NarrativeServiceError(
+                    code="llm_unavailable",
+                    message="Narrative LLM gateway is not configured.",
+                    status_code=500,
+                )
+            result = synthesize_ending(
+                gateway=self._gateway,
+                seed=template.seed,
+                title=template.title,
+                cast=template.cast,
+                history=full_history,
+                turn_count=len([m for m in full_history if m.role == "narrator"]) - 1,
+                player_role=player_role,
+                language=template.language,
+            )
+        except (NarrativeGatewayError, NarrativeServiceError, ValueError, AttributeError) as exc:
+            print(
+                f"[narrative.service] ending synthesis failed for session={session_id}; using local closeout: {_safe_exception_label(exc)}",
+                flush=True,
+            )
+            result = _deterministic_ending_fallback(
+                template=template,
+                history=full_history,
+                player_role=player_role,
+            )
+        tier = tier_for_label(result.label)
+        # Synthesize highlights + branches AFTER ending exists. Both
+        # non-fatal — return [] on any failure. Run in parallel since
+        # they're independent LLM calls — cuts post-game wait from
+        # ~9s sequential to ~5s.
+        highlights, branches = self._synthesize_postgame_artifacts(
+            session_id=session_id,
+            template=template,
+            full_history=full_history,
+            result=result,
+            tier=tier,
+            player_role=player_role,
+        )
         self._repo.record_session_ending(
             session_id,
             label=result.label,
@@ -1636,8 +1731,14 @@ class NarrativeService:
         turn_budget."""
         full_history = self._repo.list_story_messages(session_id)
         try:
+            if self._gateway is None:
+                raise NarrativeServiceError(
+                    code="llm_unavailable",
+                    message="Narrative LLM gateway is not configured.",
+                    status_code=500,
+                )
             result = synthesize_early_ending(
-                gateway=self.gateway,
+                gateway=self._gateway,
                 seed=template.seed,
                 title=template.title,
                 cast=template.cast,
@@ -1647,46 +1748,33 @@ class NarrativeService:
                 player_role=player_role,
                 language=template.language,
             )
-        except (NarrativeGatewayError, ValueError) as exc:
+        except (NarrativeGatewayError, NarrativeServiceError, ValueError, AttributeError) as exc:
             print(
-                f"[narrative.service] early-ending synthesis failed for session={session_id}: {_safe_exception_label(exc)}",
+                f"[narrative.service] early-ending synthesis failed for session={session_id}; using local closeout: {_safe_exception_label(exc)}",
                 flush=True,
             )
-            return None
+            result = _deterministic_ending_fallback(
+                template=template,
+                history=full_history,
+                player_role=player_role,
+                early=True,
+                failure_reason=failure_reason,
+            )
         # Early endings are always tier=collapsed by design.
         tier = "collapsed"
         # Highlights + branches for the early collapse. Branches
         # especially valuable here — "you'd have hit a non-collapse
         # ending if you'd done X earlier" is core replay incentive.
         # Parallelize for the same latency win as the full ending path.
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            hl_future = pool.submit(
-                synthesize_highlights,
-                gateway=self.gateway,
-                seed=template.seed,
-                title=template.title,
-                cast=template.cast,
-                history=full_history,
-                ending_label=result.label,
-                ending_subtitle=result.subtitle,
-                player_role=player_role,
-                language=template.language,
-            )
-            br_future = pool.submit(
-                synthesize_branches,
-                gateway=self.gateway,
-                seed=template.seed,
-                title=template.title,
-                cast=template.cast,
-                history=full_history,
-                ending_label=result.label,
-                ending_tier=tier,
-                ending_passage=result.passage,
-                player_role=player_role,
-                language=template.language,
-            )
-            highlights = hl_future.result()
-            branches = br_future.result()
+        highlights, branches = self._synthesize_postgame_artifacts(
+            session_id=session_id,
+            template=template,
+            full_history=full_history,
+            result=result,
+            tier=tier,
+            player_role=player_role,
+            log_prefix="early-ending",
+        )
         self._repo.record_session_ending(
             session_id,
             label=result.label,
@@ -2127,6 +2215,101 @@ def _public_replay_cast(cast: list[CastMember]) -> list[CastMember]:
         )
         for member in cast
     ]
+
+
+def _deterministic_ending_fallback(
+    *,
+    template: NarrativeTemplate,
+    history: list[StoryMessage],
+    player_role: PlayerRole | None = None,
+    early: bool = False,
+    failure_reason: str | None = None,
+) -> EndingResult:
+    """Local, player-safe closeout used only when live ending generation fails."""
+    last_player = next((m for m in reversed(history) if m.role == "player"), None)
+    last_narrator = next((m for m in reversed(history) if m.role == "narrator"), None)
+    cast_names = [member.display_name for member in template.cast[:3] if member.display_name]
+    cast_line = _fallback_names_text(cast_names) if cast_names else "the room"
+    title = normalize_whitespace(template.title or "this run")
+    action = _ending_action_clause(last_player.content if last_player else "")
+    objective = _sentence_mid_clause(normalize_whitespace(
+        (player_role.hidden_objective if player_role else "")
+        or (template.player_goals[0].goal if template.player_goals else "")
+        or "keep the truth visible"
+    ))
+    latest_pressure = normalize_whitespace(last_narrator.content if last_narrator else "")
+    if template.language == "zh":
+        if early:
+            reason = normalize_whitespace(failure_reason or "局面已经越过安全线")
+            passage = (
+                f"最后，{title}没能再被拖回原来的秩序。"
+                f"你选择了{action or '最后一步'}，但{cast_line}之间的裂缝已经公开，{reason}。"
+                f"这一局没有给任何人漂亮的退场，只留下必须被承认的代价。"
+                f"你带着{objective}走出房间，知道下一次选择不能再假装没有发生。"
+            )
+            return EndingResult(passage=passage, label="失控", subtitle="我没能把局面拉回安全线")
+        pressure_sentence = f"最后一幕仍压着你：{_ending_excerpt(latest_pressure, 110)}。" if latest_pressure else ""
+        passage = (
+            f"{title}在你的最后选择后落定。"
+            f"你选择了{action or '最后一步'}，让{cast_line}必须面对公开的版本。"
+            f"{pressure_sentence}"
+            f"局面并不干净，也不轻松，但最后的目标终于可见：{objective}。"
+            "你离开时知道，这段关系已经不可能回到原点。"
+        )
+        return EndingResult(passage=passage, label="决裂", subtitle="我把最后的版本留在桌上")
+
+    if early:
+        reason = normalize_whitespace(failure_reason or "the room crossed the line")
+        passage = (
+            f"{title} can no longer be pulled back into order. "
+            f"After you chose to {action}, {cast_line} have to face the break in public, and {reason}. "
+            "No one gets a clean exit; the cost is simply too visible now. "
+            f"You leave with one thing still intact: {objective}."
+        )
+        return EndingResult(
+            passage=passage,
+            label="失控",
+            subtitle="I could not pull the room back",
+        )
+    pressure_sentence = (
+        f"The last pressure still hangs in the room: {_ending_excerpt(latest_pressure, 180)}. "
+        if latest_pressure
+        else ""
+    )
+    passage = (
+        f"{title} settles around your final choice. "
+        f"You chose to {action}, and {cast_line} can no longer hide inside another delay. "
+        f"{pressure_sentence}"
+        f"The outcome is not clean, but the objective is finally visible: {objective}. "
+        "You walk out knowing the next version of this story will have to include what happened here."
+    )
+    return EndingResult(
+        passage=passage,
+        label="决裂",
+        subtitle="I leave the final version on the table",
+    )
+
+
+def _ending_action_clause(raw: str) -> str:
+    text = normalize_whitespace(re.sub(r"^\[[^\]]+\]\s*", "", raw or ""))
+    if "—" in text:
+        text = normalize_whitespace(text.split("—", 1)[1])
+    if not text:
+        return "make the final choice"
+    return text[:1].lower() + text[1:]
+
+
+def _ending_excerpt(raw: str, limit: int) -> str:
+    text = normalize_whitespace(raw)[:limit].strip()
+    return text.rstrip(" .。!！?？,，;；:：—–-")
+
+
+def _sentence_mid_clause(raw: str) -> str:
+    text = normalize_whitespace(raw)
+    if not text:
+        return "keep the truth visible"
+    text = text.rstrip(" .。!！?？,，;；:：")
+    return text[:1].lower() + text[1:]
 
 
 def _story_brief_prefers_reliable_opening(brief: StoryBrief) -> bool:
@@ -3764,6 +3947,7 @@ def _summarize_template(
 def _summarize_session(
     session: NarrativeSession, template: NarrativeTemplate
 ) -> NarrativeSessionSummary:
+    display_turn_count = min(session.turn_count, session.turn_budget)
     return NarrativeSessionSummary(
         session_id=session.session_id,
         template_id=session.template_id,
@@ -3772,7 +3956,7 @@ def _summarize_session(
         template_title_i18n=template.title_i18n,
         template_summary_i18n=template.summary_i18n,
         player_user_id=session.player_user_id,
-        turn_count=session.turn_count,
+        turn_count=display_turn_count,
         turn_budget=session.turn_budget,
         difficulty=session.difficulty,
         player_role=_resolve_player_role(template, session.selected_player_role_id),
