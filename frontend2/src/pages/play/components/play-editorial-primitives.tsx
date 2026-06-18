@@ -133,6 +133,8 @@ export function SceneSupportRail({
   compact,
   advisorAvatarUrl,
   advisorPersona,
+  focusedActorId,
+  onFocusActor,
   onAskAdvisor,
 }: {
   story: NarrativeStoryHistoryResponse
@@ -140,6 +142,8 @@ export function SceneSupportRail({
   compact: boolean
   advisorAvatarUrl: string
   advisorPersona: string
+  focusedActorId?: string | null
+  onFocusActor?: (actor: { id: string; name: string }) => void
   onAskAdvisor: () => void
 }) {
   const t = useT()
@@ -184,23 +188,43 @@ export function SceneSupportRail({
       </PrimitiveSection>
       <PrimitiveSection title="In the room">
         <div style={primitiveStyles.actorList}>
-          {actors.map((actor) => (
-            <div key={actor.id} style={primitiveStyles.actorRow}>
-              <span style={primitiveStyles.actorFrame}>
-                <img
-                  data-play-cast-portrait="true"
-                  src={actor.avatarUrl}
-                  alt=""
-                  style={primitiveStyles.portraitImage}
-                  onError={handlePortraitError}
-                />
-              </span>
-              <span style={primitiveStyles.actorText}>
-                <strong style={primitiveStyles.actorName}>{actor.name}</strong>
-                <span style={primitiveStyles.actorRole}>{actor.role}</span>
-              </span>
-            </div>
-          ))}
+          {actors.map((actor) => {
+            const focused = focusedActorId === actor.id
+            return (
+              <button
+                key={actor.id}
+                type="button"
+                style={{
+                  ...primitiveStyles.actorRow,
+                  ...primitiveStyles.actorRowButton,
+                  ...(focused ? primitiveStyles.actorRowFocused : null),
+                }}
+                data-play-cast-resource="true"
+                data-play-cast-resource-id={actor.id}
+                data-play-cast-focus={focused ? "true" : undefined}
+                aria-pressed={focused}
+                title={t("play.actor_focus_title", { name: actor.name })}
+                onClick={() => onFocusActor?.({ id: actor.id, name: actor.name })}
+              >
+                <span style={primitiveStyles.actorFrame}>
+                  <img
+                    data-play-cast-portrait="true"
+                    src={actor.avatarUrl}
+                    alt=""
+                    style={primitiveStyles.portraitImage}
+                    onError={handlePortraitError}
+                  />
+                </span>
+                <span style={primitiveStyles.actorText}>
+                  <strong style={primitiveStyles.actorName}>{actor.name}</strong>
+                  <span style={primitiveStyles.actorRole}>{actor.role}</span>
+                  <span style={primitiveStyles.actorFocusCue}>
+                    {focused ? t("play.actor_focus_active") : t("play.actor_focus_cta")}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
         </div>
       </PrimitiveSection>
       <PrimitiveSection title={t("play.advisor_card_title")}>
@@ -359,8 +383,12 @@ const primitiveStyles: Record<string, CSSProperties> = {
     position: "relative",
     minHeight: 228,
     overflow: "hidden",
-    borderTop: "1px solid rgba(212,168,83,0.50)",
-    borderBottom: "1px solid rgba(212,168,83,0.25)",
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(212,168,83,0.50)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(212,168,83,0.25)",
     background: "rgba(12,12,16,0.82)",
     marginBottom: 16,
   },
@@ -449,8 +477,12 @@ const primitiveStyles: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     gap: 0,
-    borderTop: "1px solid rgba(212,168,83,0.48)",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(212,168,83,0.48)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(255,255,255,0.06)",
     background: "linear-gradient(180deg, rgba(12,12,16,0.92), rgba(42,12,16,0.68))",
     boxShadow: "inset 1px 0 0 rgba(245,200,120,0.12)",
   },
@@ -463,7 +495,9 @@ const primitiveStyles: Record<string, CSSProperties> = {
   },
   supportSection: {
     padding: "14px 14px 13px",
-    borderBottom: "1px solid rgba(245,200,120,0.12)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(245,200,120,0.12)",
     display: "flex",
     flexDirection: "column",
     gap: 7,
@@ -492,8 +526,18 @@ const primitiveStyles: Record<string, CSSProperties> = {
     aspectRatio: "4 / 5",
     display: "block",
     overflow: "hidden",
-    border: "1px solid rgba(245,200,120,0.48)",
-    borderTop: "2px solid rgba(245,200,120,0.82)",
+    borderTopWidth: 2,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(245,200,120,0.82)",
+    borderRightWidth: 1,
+    borderRightStyle: "solid",
+    borderRightColor: "rgba(245,200,120,0.48)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(245,200,120,0.48)",
+    borderLeftWidth: 1,
+    borderLeftStyle: "solid",
+    borderLeftColor: "rgba(245,200,120,0.48)",
     background: "linear-gradient(135deg, rgba(245,200,120,0.16), rgba(112,24,28,0.36))",
     boxShadow: "0 12px 24px rgba(0,0,0,0.32)",
   },
@@ -525,11 +569,43 @@ const primitiveStyles: Record<string, CSSProperties> = {
     gap: 9,
     alignItems: "center",
   },
+  actorRowButton: {
+    width: "100%",
+    minWidth: 0,
+    padding: "2px 0",
+    borderTopWidth: 0,
+    borderTopStyle: "none",
+    borderRightWidth: 0,
+    borderRightStyle: "none",
+    borderBottomWidth: 0,
+    borderBottomStyle: "none",
+    borderLeftWidth: 0,
+    borderLeftStyle: "none",
+    borderRadius: 0,
+    background: "transparent",
+    color: "inherit",
+    font: "inherit",
+    textAlign: "left",
+    cursor: "pointer",
+  },
+  actorRowFocused: {
+    background: "linear-gradient(90deg, rgba(213,154,62,0.12), transparent 70%)",
+  },
   actorFrame: {
     width: 44,
     aspectRatio: "4 / 5",
-    border: "1px solid rgba(245,200,120,0.36)",
-    borderTop: "2px solid rgba(245,200,120,0.70)",
+    borderTopWidth: 2,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(245,200,120,0.70)",
+    borderRightWidth: 1,
+    borderRightStyle: "solid",
+    borderRightColor: "rgba(245,200,120,0.36)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(245,200,120,0.36)",
+    borderLeftWidth: 1,
+    borderLeftStyle: "solid",
+    borderLeftColor: "rgba(245,200,120,0.36)",
     background: "linear-gradient(135deg, rgba(245,200,120,0.16), rgba(112,24,28,0.36))",
     display: "block",
     overflow: "hidden",
@@ -560,13 +636,25 @@ const primitiveStyles: Record<string, CSSProperties> = {
     fontSize: 11.5,
     lineHeight: 1.25,
   },
+  actorFocusCue: {
+    width: "fit-content",
+    color: "rgba(229,190,124,0.72)",
+    fontSize: 10.5,
+    lineHeight: 1.15,
+    fontWeight: 760,
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(229,190,124,0.20)",
+  },
   advisorRow: {
     display: "grid",
     gridTemplateColumns: "44px minmax(0, 1fr)",
     gap: 9,
     alignItems: "center",
     padding: "2px 0",
-    borderLeft: "1px solid rgba(213,154,62,0.22)",
+    borderLeftWidth: 1,
+    borderLeftStyle: "solid",
+    borderLeftColor: "rgba(213,154,62,0.22)",
   },
   advisorRowCompact: {
     gridTemplateColumns: "44px minmax(0, 1fr)",
@@ -577,8 +665,18 @@ const primitiveStyles: Record<string, CSSProperties> = {
     aspectRatio: "4 / 5",
     display: "block",
     overflow: "hidden",
-    border: "1px solid rgba(245,200,120,0.40)",
-    borderTop: "2px solid rgba(230,170,76,0.74)",
+    borderTopWidth: 2,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(230,170,76,0.74)",
+    borderRightWidth: 1,
+    borderRightStyle: "solid",
+    borderRightColor: "rgba(245,200,120,0.40)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(245,200,120,0.40)",
+    borderLeftWidth: 1,
+    borderLeftStyle: "solid",
+    borderLeftColor: "rgba(245,200,120,0.40)",
     background: "linear-gradient(135deg, rgba(245,200,120,0.14), rgba(18,19,19,0.48))",
     boxShadow: "0 8px 16px rgba(0,0,0,0.24)",
   },

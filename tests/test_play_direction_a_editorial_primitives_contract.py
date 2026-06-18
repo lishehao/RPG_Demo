@@ -51,13 +51,28 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "getDefaultAvatar" in primitives
     assert 'data-play-player-portrait="true"' in primitives
     assert 'data-play-cast-portrait="true"' in primitives
+    assert 'data-play-cast-resource="true"' in primitives
+    assert 'data-play-cast-resource-id={actor.id}' in primitives
+    assert 'data-play-cast-focus={focused ? "true" : undefined}' in primitives
+    assert "aria-pressed={focused}" in primitives
+    assert "focusedActorId?: string | null" in primitives
+    assert "onFocusActor?: (actor: { id: string; name: string }) => void" in primitives
+    assert "onClick={() => onFocusActor?.({ id: actor.id, name: actor.name })}" in primitives
+    assert "actorRowButton" in primitives
+    assert "actorRowFocused" in primitives
+    assert "actorFocusCue" in primitives
     assert 'data-play-advisor-card="true"' in primitives
     assert 'data-play-advisor-ask="true"' in primitives
     assert 'data-play-advisor-portrait="true"' in primitives
     assert "advisorAvatarUrl={advisorAvatar}" in play_page
+    assert "focusedActorId={focusedActorId}" in play_page
+    assert "onFocusActor={focusSceneActor}" in play_page
     assert "onAskAdvisor={openAdvisor}" in play_page
     assert "play.advisor_card_name" in primitives
     assert "play.advisor_card_background" in primitives
+    assert "play.actor_focus_title" in primitives
+    assert "play.actor_focus_cta" in primitives
+    assert "play.actor_focus_active" in primitives
     assert "advisorRow" in primitives
     assert "advisorRowCompact" in primitives
     assert "advisorCard:" not in primitives
@@ -267,6 +282,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "buildGameplayEnvelope({" in play_page
     assert "backendEnvelope: story.gameplay_envelope ?? null" in play_page
     assert "gameplay_envelope: response.gameplay_envelope ?? null" in play_page
+    assert "const [focusedActorId, setFocusedActorId] = useState<string | null>(null)" in play_page
+    assert "const actorFocus = focusedActorId && focusedActorName" in play_page
+    assert "const focusSceneActor = (actor: { id: string; name: string }) => {" in play_page
+    assert "setFocusedActorId(wasFocused ? null : actor.id)" in play_page
+    assert 'behavior: prefersReducedMotion ? "auto" : "smooth"' in play_page
     assert "<GameplayStatePanel envelope={gameplayEnvelope} />" in play_page
     assert "<GameplayLoopGuide" in play_page
     assert 'data-gameplay-loop-guide="normal-play"' in play_page
@@ -279,7 +299,16 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "<GameplayImpactSummary envelope={gameplayEnvelope} />" in play_page
     assert "!isComplete && !busy && turnsCompleted > 0" in play_page
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
+    assert "actorFocus={actorFocus}" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
+    assert "actorFocus?: { id: string; name: string } | null" in panels
+    assert "const actorFocusOptionMatches = useMemo" in panels
+    assert "target?.id === actorFocus.id" in panels
+    assert 'data-play-actor-focus-cue="true"' in panels
+    assert 'data-play-actor-focus-id={actorFocus.id}' in panels
+    assert "data-play-actor-focus-match-count={actorFocusMatchCount}" in panels
+    assert 'data-play-action-actor-focus-match={isActorFocusMatch ? "true" : undefined}' in panels
+    assert 'data-play-action-actor-focus-dimmed={isActorFocusDimmed ? "true" : undefined}' in panels
     assert 'data-gameplay-forecast-detail="normal-play"' in panels
     assert '"play.gameplay_forecast_detail_label": "Why now"' in strings
     assert 'data-gameplay-envelope="true"' in play_page
@@ -324,6 +353,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayLoopStepActive" in styles
     assert "gameplayLoopStepDone" in styles
     assert "gameplayForecastChip" in styles
+    assert "optionBtnActorFocusMatch" in styles
+    assert "optionBtnActorFocusDimmed" in styles
+    assert "actorFocusCue" in styles
     assert "gameplayDecisionForecast" in styles
     assert "gameplayDecisionGroupCost" in styles
     assert "gameplayDecisionGroupUpside" in styles
@@ -340,6 +372,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_loop_update_label": "See changes"' in strings
     assert '"play.gameplay_objective_label": "Goal"' in strings
     assert '"play.gameplay_decision_forecast_label": "Decision forecast"' in strings
+    assert '"play.actor_focus_label": "Character focus"' in strings
+    assert '"play.actor_focus_match_detail": "{count} moves directly involve {name}"' in strings
+    assert '"play.actor_focus_no_match": "No move names {name} directly; use a custom move to test them."' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings

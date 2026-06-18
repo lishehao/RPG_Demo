@@ -2641,7 +2641,7 @@ function findActionTarget(
   hint: string | undefined,
   castNameById: Record<string, string>,
   latestNpcPulses: NarrativeNPCPulse[],
-): { name: string; pulse?: NarrativeNPCPulse } | null {
+): { id: string; name: string; pulse?: NarrativeNPCPulse } | null {
   const haystack = `${body} ${hint ?? ""}`.toLowerCase()
   const matched = Object.entries(castNameById)
     .map(([id, name]) => ({ id, name }))
@@ -2656,6 +2656,7 @@ function findActionTarget(
     })
   if (!matched) return null
   return {
+    id: matched.id,
     name: matched.name,
     pulse: latestNpcPulses.find((pulse) => pulse.npc_id === matched.id),
   }
@@ -2675,6 +2676,7 @@ export function ActionArea({
   turnsCompleted,
   turnsRemaining,
   turnBudget,
+  actorFocus,
   showFreeInput,
   freeInput,
   setFreeInput,
@@ -2699,6 +2701,7 @@ export function ActionArea({
   turnsCompleted: number
   turnsRemaining: number
   turnBudget: number
+  actorFocus?: { id: string; name: string } | null
   showFreeInput: boolean
   freeInput: string
   setFreeInput: (v: string) => void
@@ -3015,6 +3018,15 @@ export function ActionArea({
   const selectedOptionParsed = selectedOption ? parseOptionLabel(selectedOption.label) : null
   const visibleOptionEntries = options
     .map((opt, i) => ({ opt, i }))
+  const actorFocusOptionMatches = useMemo(() => {
+    if (!actorFocus) return options.map(() => false)
+    return options.map((opt) => {
+      const parsed = parseOptionLabel(opt.label)
+      const target = findActionTarget(parsed.body, opt.hint, castNameById, latestNpcPulses)
+      return target?.id === actorFocus.id
+    })
+  }, [actorFocus, castNameById, latestNpcPulses, options])
+  const actorFocusMatchCount = actorFocusOptionMatches.filter(Boolean).length
   const freeActionDraft = freeInput.trim()
   const freeActionReady = freeActionDraft.length > 0
   const freeActionTarget = freeActionDraft
@@ -3893,6 +3905,27 @@ export function ActionArea({
         </section>
       ) : null}
 
+      {showStandardOptions && actorFocus ? (
+        <div
+          style={{
+            ...ppStyles.actorFocusCue,
+            ...(actorFocusMatchCount > 0 ? ppStyles.actorFocusCueMatched : ppStyles.actorFocusCueEmpty),
+          }}
+          data-play-actor-focus-cue="true"
+          data-play-actor-focus-id={actorFocus.id}
+          data-play-actor-focus-match-count={actorFocusMatchCount}
+          aria-label={t("play.actor_focus_label")}
+        >
+          <span style={ppStyles.actorFocusCueLabel}>{t("play.actor_focus_label")}</span>
+          <strong style={ppStyles.actorFocusCueName}>{actorFocus.name}</strong>
+          <span style={ppStyles.actorFocusCueDetail}>
+            {actorFocusMatchCount > 0
+              ? t("play.actor_focus_match_detail", { name: actorFocus.name, count: actorFocusMatchCount })
+              : t("play.actor_focus_no_match", { name: actorFocus.name })}
+          </span>
+        </div>
+      ) : null}
+
       {armedCard ? (
           <section
             ref={setCommitFocusNode}
@@ -4015,6 +4048,8 @@ export function ActionArea({
                 const isPicked = pickedIndex === i
                 const isUnpicked = pickedIndex !== null && pickedIndex !== i
                 const optionForecasts = actionForecasts?.[i] ?? []
+                const isActorFocusMatch = actorFocusOptionMatches[i] ?? false
+                const isActorFocusDimmed = Boolean(actorFocus && actorFocusMatchCount > 0 && !isActorFocusMatch)
                 const optionShortcutKey = i < 9 ? String(i + 1) : null
                 const isChoiceDimmed =
                   selectedOptionIndex !== null && !isSelected && pickedIndex === null
@@ -4029,9 +4064,19 @@ export function ActionArea({
                         ...(isSelected && pickedIndex === null ? ppStyles.optionBtnSelected : null),
                         ...(isSelected && pickedIndex === null ? ppStyles.optionBtnExpanded : null),
                         ...(isChoiceDimmed ? ppStyles.optionBtnDeemphasized : null),
+                        ...(isActorFocusMatch ? ppStyles.optionBtnActorFocusMatch : null),
+                        ...(isActorFocusDimmed ? ppStyles.optionBtnActorFocusDimmed : null),
                         ...(isPicked ? ppStyles.optionBtnPicked : null),
                         ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
-                        opacity: isUnpicked ? 0.28 : actionControlsDisabled && !isPicked ? 0.5 : isChoiceDimmed ? 0.54 : 1,
+                        opacity: isUnpicked
+                          ? 0.28
+                          : actionControlsDisabled && !isPicked
+                            ? 0.5
+                            : isChoiceDimmed
+                              ? 0.54
+                              : isActorFocusDimmed
+                                ? 0.66
+                                : 1,
                         pointerEvents: actionControlsDisabled ? "none" : "auto",
                       }}
                       onClick={() => handleOptionSelect(i)}
@@ -4040,6 +4085,8 @@ export function ActionArea({
                       data-play-action-option-card="true"
                       data-play-selected-move={isSelected ? "true" : undefined}
                       data-play-action-card-expanded={isSelected ? "true" : undefined}
+                      data-play-action-actor-focus-match={isActorFocusMatch ? "true" : undefined}
+                      data-play-action-actor-focus-dimmed={isActorFocusDimmed ? "true" : undefined}
                       aria-pressed={isSelected}
                       aria-expanded={isSelected}
                       aria-keyshortcuts={optionShortcutKey ?? undefined}

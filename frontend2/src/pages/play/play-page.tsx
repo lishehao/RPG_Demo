@@ -357,6 +357,7 @@ export function PlayPage({
   const advisorReturnFocusRef = useRef<HTMLElement | null>(null)
   const [actionCommitmentActive, setActionCommitmentActive] = useState(false)
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
+  const [focusedActorId, setFocusedActorId] = useState<string | null>(null)
   const [showActionJump, setShowActionJump] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
@@ -713,6 +714,24 @@ export function PlayPage({
       : gameplayLoopStage === "choose"
         ? t("play.action_jump_detail_choose")
         : t("play.action_jump_detail_default")
+  const focusedActorName = focusedActorId ? castNameById[focusedActorId] ?? focusedActorId : null
+  const actorFocus = focusedActorId && focusedActorName
+    ? { id: focusedActorId, name: focusedActorName }
+    : null
+  const focusSceneActor = (actor: { id: string; name: string }) => {
+    const wasFocused = focusedActorId === actor.id
+    setFocusedActorId(wasFocused ? null : actor.id)
+    if (wasFocused || typeof window === "undefined" || !actionAreaVisible) return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>("[data-play-action-area='true']")
+        ?.scrollIntoView({
+          block: "center",
+          behavior: prefersReducedMotion ? "auto" : "smooth",
+        })
+    })
+  }
   const advisorSuggestions = buildAdvisorSuggestions({
     story,
     lastNarrator,
@@ -929,6 +948,7 @@ export function PlayPage({
               turnsCompleted={turnsCompleted}
               turnsRemaining={turnsRemaining}
               turnBudget={turnBudget}
+              actorFocus={actorFocus}
               showFreeInput={showFreeInput}
               freeInput={freeInput}
               setFreeInput={setFreeInput}
@@ -992,6 +1012,8 @@ export function PlayPage({
                 compact={compactPlayChrome}
                 advisorAvatarUrl={advisorAvatar}
                 advisorPersona={story.template.advisor_persona}
+                focusedActorId={focusedActorId}
+                onFocusActor={focusSceneActor}
                 onAskAdvisor={openAdvisor}
               />
             ) : null}
