@@ -3110,9 +3110,9 @@ export function ActionArea({
   const freeActionTargetName = freeActionTarget?.name ?? ""
   const freeActionContextTargetName =
     freeActionFocusContext?.kind === "actor" ? freeActionFocusContext.label : ""
-  const freeActionTargetNameForFeedback = freeActionTargetName || freeActionContextTargetName
+  const freeActionTargetNameForFeedback = freeActionContextTargetName || freeActionTargetName
   const freeActionSubmittedText =
-    freeActionDraft && freeActionContextTargetName && !freeActionTargetName
+    freeActionDraft && freeActionContextTargetName && freeActionTargetName !== freeActionContextTargetName
       ? `${freeActionContextTargetName} — ${freeActionDraft}`
       : freeActionDraft
   const freeComposerOpen = showFreeInput || options.length === 0

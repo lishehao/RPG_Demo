@@ -21,7 +21,11 @@ from rpg_backend.narrative.contracts import (
 )
 from rpg_backend.narrative.engine import build_agent_plan
 from rpg_backend.narrative.repository import NarrativeRepository
-from rpg_backend.narrative.service import NarrativeService, _fallback_turn_action_phrase
+from rpg_backend.narrative.service import (
+    NarrativeService,
+    _fallback_turn_action_phrase,
+    _fallback_turn_pulses,
+)
 from rpg_backend.responses_transport import ResponsesJSONResponse
 from tests.auth_helpers import ensure_authenticated_client
 
@@ -79,6 +83,33 @@ def test_fallback_turn_action_phrase_preserves_explicit_focus_target() -> None:
         _fallback_turn_action_phrase("Mira Vale — Ask why she backed off")
         == "your move toward Mira Vale — Ask why she backed off"
     )
+
+
+def test_fallback_turn_pulses_prioritize_explicit_action_target(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(repo)
+    template = repo.get_template("tmpl_agent_trace")
+    history = repo.list_story_messages("sess_agent_trace")
+    plan = build_agent_plan(
+        cast=template.cast,
+        history=history,
+        turn_index=2,
+        turn_budget=8,
+        difficulty="gauntlet",
+        player_role=_player_role(),
+        current_inventory=["sealed audit packet"],
+        narrator_ord=2,
+    )
+
+    pulses = _fallback_turn_pulses(
+        template=template,
+        agent_plan=plan,
+        played_leverage=None,
+        profile="high_drama",
+        player_action="Mira — Ask why she backed off",
+    )
+
+    assert [pulse.npc_id for pulse in pulses][:1] == ["mira"]
 
 
 def _create_template_and_session(

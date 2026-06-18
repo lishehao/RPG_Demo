@@ -2241,6 +2241,7 @@ def _deterministic_turn_fallback(
         agent_plan=agent_plan,
         played_leverage=played_leverage,
         profile=profile,
+        player_action=player_action,
     )
     passage = _fallback_turn_passage(
         template=template,
@@ -2282,11 +2283,13 @@ def _fallback_turn_pulses(
     agent_plan: AgentPlan,
     played_leverage: PlayedLeverageCard | None,
     profile: str,
+    player_action: str = "",
 ) -> list[NPCPulse]:
     cast_by_id = {member.character_id: member for member in template.cast}
     candidate_ids: list[str] = []
     if played_leverage is not None and played_leverage.npc_id in cast_by_id:
         candidate_ids.append(played_leverage.npc_id)
+    candidate_ids.extend(_fallback_turn_action_target_ids(template, player_action))
     candidate_ids.extend(
         npc_id for npc_id in agent_plan.director.active_npc_ids if npc_id in cast_by_id
     )
@@ -2314,6 +2317,24 @@ def _fallback_turn_pulses(
         if len(pulses) >= 2:
             break
     return pulses
+
+
+def _fallback_turn_action_target_ids(
+    template: NarrativeTemplate,
+    player_action: str,
+) -> list[str]:
+    action = normalize_whitespace(player_action or "").casefold()
+    if not action:
+        return []
+    matches: list[tuple[int, str]] = []
+    for member in template.cast:
+        name = normalize_whitespace(member.display_name).casefold()
+        if not name:
+            continue
+        position = action.find(name)
+        if position >= 0:
+            matches.append((position, member.character_id))
+    return [npc_id for _, npc_id in sorted(matches, key=lambda item: item[0])]
 
 
 def _fallback_turn_pulse_state(profile: str, *, played: bool) -> str:

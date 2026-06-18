@@ -359,8 +359,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "freeActionFocusContext?.toggleHint ?? t(\"play.action_open_free_hint\")" in panels
     assert "freeActionFocusContext?.toggleTitle ?? t(\"play.action_open_free_title\")" in panels
     assert "const freeActionContextTargetName =" in panels
-    assert "const freeActionTargetNameForFeedback = freeActionTargetName || freeActionContextTargetName" in panels
+    assert "const freeActionTargetNameForFeedback = freeActionContextTargetName || freeActionTargetName" in panels
     assert "const freeActionSubmittedText =" in panels
+    assert "freeActionTargetName !== freeActionContextTargetName" in panels
     assert "`${freeActionContextTargetName} — ${freeActionDraft}`" in panels
     assert "onSubmitFree(diaryOverride, freeActionSubmittedText)" in panels
     assert ": freeActionTargetNameForFeedback || undefined" in panels
