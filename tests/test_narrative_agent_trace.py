@@ -180,6 +180,49 @@ def _create_template_and_session(
     )
 
 
+def test_start_session_pads_sparse_opening_options(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "state.sqlite3"))
+    repo.create_template(
+        template_id="tmpl_sparse_opening",
+        owner_user_id="usr_owner",
+        seed="A cofounder announces the secret merger before the audit is ready.",
+        title="Sparse Opening Test",
+        cast=_cast(),
+        advisor_persona="A calm strategy coach.",
+        opening_passage="The boardroom waits for the final version.",
+        opening_options=[
+            StoryOption(
+                label="[Probe] Ask who benefits from the version",
+                hint="Tests Mira's account",
+                handle="ask benefit",
+            )
+        ],
+        player_goals=[
+            PlayerGoal(goal="Keep the audit honest", stakes="The record may be buried.")
+        ],
+        failure_conditions=[],
+        player_role_options=[_player_role()],
+        visibility="public",
+        language="en",
+    )
+    service = NarrativeService(repository=repo, gateway=None)
+
+    response = service.start_session(
+        "tmpl_sparse_opening",
+        player_user_id="local-dev",
+        turn_budget=8,
+    )
+    history = service.get_story_history(
+        response.session.session_id,
+        player_user_id="local-dev",
+    )
+
+    assert len(response.opening.options) == 3
+    assert response.opening.options[0].label == "[Probe] Ask who benefits from the version"
+    assert response.opening.options[1].label != response.opening.options[0].label
+    assert len(history.messages[0].options) == 3
+
+
 def _append_agent_plan_event(repo: NarrativeRepository, session_id: str) -> AgentPlan:
     plan = build_agent_plan(
         cast=_cast(),

@@ -2082,7 +2082,7 @@ class NarrativeService:
             ord=0,
             role="narrator",
             content=template.opening_passage,
-            options=template.opening_options,
+            options=_playable_opening_options(template),
             chosen_option_index=None,
         )
         self._repo.append_story_message(session_id, opening_message)
@@ -2458,6 +2458,27 @@ def _template_tension_profile(template: NarrativeTemplate) -> str:
     if any(term in text for term in ("family", "wedding", "parents", "dinner")):
         return "family_social"
     return "high_drama"
+
+
+def _playable_opening_options(template: NarrativeTemplate) -> list[StoryOption]:
+    options = list(template.opening_options or [])
+    if len(options) >= 3:
+        return options
+
+    seen = {normalize_whitespace(option.label).casefold() for option in options}
+    for fallback_option in _fallback_turn_options(
+        template,
+        _template_tension_profile(template),
+        pulses=[],
+    ):
+        key = normalize_whitespace(fallback_option.label).casefold()
+        if key in seen:
+            continue
+        options.append(fallback_option)
+        seen.add(key)
+        if len(options) >= 3:
+            break
+    return options
 
 
 def _fallback_turn_pulses(
