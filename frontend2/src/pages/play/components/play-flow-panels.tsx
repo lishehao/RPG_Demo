@@ -1236,12 +1236,42 @@ export function EndingScreen({
         transition={itemTransition}
         style={ppStyles.endingCard}
       >
-        {/* Illustrated banner — the visual punctuation that makes the
-            ending feel like a closed object the player can screenshot. */}
+        <div style={ppStyles.endingCardInner}>
+          <motion.div
+            initial={initialOr({ opacity: 0, scale: 0.6 })}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={
+              skipChoreography
+                ? transitions.snap
+                : labelChipSpring
+            }
+            style={{ ...ppStyles.endingLabelChip, color: tv.labelColor }}
+          >
+            {endingDisplayLabel}
+          </motion.div>
+          <motion.h2
+            initial={initialOr({ opacity: 0, y: 14 })}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: delayOr(0.6), ...itemTransition }}
+            style={ppStyles.endingSubtitle}
+          >
+            {endingSubtitle}
+          </motion.h2>
+          <motion.div
+            initial={initialOr({ opacity: 0 })}
+            animate={{ opacity: 1 }}
+            transition={{ delay: delayOr(0.85), ...transitions.slow }}
+            style={ppStyles.endingPassage}
+          >
+            {ending.passage}
+          </motion.div>
+
+        {/* Illustrated banner is secondary to the result text: it adds
+            ceremony after the player has already read what ending they hit. */}
         <motion.div
-          initial={initialOr({ opacity: 0, scale: 1.06 })}
+          initial={initialOr({ opacity: 0, scale: 1.04 })}
           animate={{ opacity: 1, scale: 1 }}
-          transition={transitions.slow}
+          transition={{ delay: delayOr(0.95), ...transitions.slow }}
           style={{
             ...ppStyles.endingHero,
             backgroundImage: `${tv.gradient}, url(${illustration})`,
@@ -1249,9 +1279,9 @@ export function EndingScreen({
         >
           {tierSplash ? (
             <motion.div
-              initial={initialOr({ opacity: 0, scale: 1.12 })}
+              initial={initialOr({ opacity: 0, scale: 1.08 })}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: delayOr(0.25), ...transitions.ceremony }}
+              transition={{ delay: delayOr(1.05), ...transitions.ceremony }}
               style={{
                 ...ppStyles.endingSplashOverlay,
                 backgroundImage: `url(${tierSplash})`,
@@ -1266,35 +1296,6 @@ export function EndingScreen({
               </span>
             ) : null}
           </div>
-        </motion.div>
-        <div style={ppStyles.endingCardInner}>
-        <motion.div
-          initial={initialOr({ opacity: 0, scale: 0.6 })}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={
-            skipChoreography
-              ? transitions.snap
-              : labelChipSpring
-          }
-          style={{ ...ppStyles.endingLabelChip, color: tv.labelColor }}
-        >
-          {endingDisplayLabel}
-        </motion.div>
-        <motion.h2
-          initial={initialOr({ opacity: 0, y: 14 })}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: delayOr(0.6), ...itemTransition }}
-          style={ppStyles.endingSubtitle}
-        >
-          {endingSubtitle}
-        </motion.h2>
-        <motion.div
-          initial={initialOr({ opacity: 0 })}
-          animate={{ opacity: 1 }}
-          transition={{ delay: delayOr(0.85), ...transitions.slow }}
-          style={ppStyles.endingPassage}
-        >
-          {ending.passage}
         </motion.div>
 
         {/* Highlight reel — LLM picks merged with user bookmarks. Kept as

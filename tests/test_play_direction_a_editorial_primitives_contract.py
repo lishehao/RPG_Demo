@@ -685,6 +685,17 @@ def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() ->
     assert '"play.action_jump_detail_update": "Review what changed, then choose next."' in strings
 
 
+def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    ending_screen = panels[panels.index("export function EndingScreen") : panels.index("function displayEndingLabel")]
+
+    assert "Illustrated banner is secondary to the result text" in ending_screen
+    assert ending_screen.index("style={ppStyles.endingPassage}") < ending_screen.index("...ppStyles.endingHero")
+    assert 'height: 150' in styles[styles.index("endingHero") : styles.index("endingSplashOverlay")]
+    assert 'padding: "10px 0 28px"' in styles[styles.index("endingCardInner") : styles.index("endingLabelChip")]
+
+
 def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()

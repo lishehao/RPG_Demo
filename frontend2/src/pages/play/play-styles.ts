@@ -4705,12 +4705,13 @@ export const ppStyles: Record<string, CSSProperties> = {
   },
   endingHero: {
     width: "100%",
-    height: 210,
+    height: 150,
     backgroundSize: "cover",
     backgroundPosition: "center",
-    marginBottom: -1,
+    margin: "4px 0 24px",
     position: "relative",
     overflow: "hidden",
+    borderRadius: 8,
   },
   endingSplashOverlay: {
     position: "absolute",
@@ -4720,7 +4721,7 @@ export const ppStyles: Record<string, CSSProperties> = {
     mixBlendMode: "screen",
     pointerEvents: "none",
   },
-  endingCardInner: { padding: "22px 0 28px" },
+  endingCardInner: { padding: "10px 0 28px" },
   endingLabelChip: {
     display: "inline-block",
     padding: "0 0 4px",
@@ -4751,7 +4752,7 @@ export const ppStyles: Record<string, CSSProperties> = {
     paddingBottom: 0,
     borderBottomWidth: 0,
     borderBottomStyle: "none",
-    marginBottom: 28,
+    marginBottom: 16,
   },
   // Highlight reel below ending passage — chronological pivotal moments
   highlightReel: {
