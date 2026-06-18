@@ -234,6 +234,11 @@ function GameplayStatePanel({
 function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
   const t = useT()
   if (envelope.impact.length === 0) return null
+  const primaryImpact =
+    envelope.impact.find((delta) => delta.tone === "cost") ??
+    envelope.impact.find((delta) => delta.tone === "unlock" || delta.tone === "gain") ??
+    envelope.impact.find((delta) => delta.tone === "shift") ??
+    envelope.impact[0]
   const nextChoiceSignals = envelope.actionForecasts
     .map((row) => row.find((chip) => chip.tone === "unlock" || chip.tone === "gain" || chip.detail) ?? row[0] ?? null)
     .filter((chip): chip is NonNullable<typeof chip> => Boolean(chip))
@@ -267,6 +272,24 @@ function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
         <span style={ppStyles.gameplayImpactKicker}>{t("play.gameplay_impact_label")}</span>
         <span style={ppStyles.gameplayImpactHint}>{t("play.feedback_impact_hint")}</span>
       </div>
+      {primaryImpact ? (
+        <div
+          style={ppStyles.gameplayImpactSpotlight}
+          data-gameplay-impact-spotlight="true"
+          data-gameplay-impact-spotlight-tone={primaryImpact.tone}
+          aria-label={`${t("play.feedback_key_consequence_label")}: ${primaryImpact.label}`}
+        >
+          <span style={ppStyles.gameplayImpactSpotlightLabel}>{t("play.feedback_key_consequence_label")}</span>
+          <strong
+            style={{
+              ...ppStyles.gameplayImpactSpotlightValue,
+              ...(gameplayToneStyle(primaryImpact.tone) ?? {}),
+            }}
+          >
+            {primaryImpact.label}
+          </strong>
+        </div>
+      ) : null}
       <div style={ppStyles.gameplayImpactGroups}>
         {impactGroups.map((group) => (
           <div

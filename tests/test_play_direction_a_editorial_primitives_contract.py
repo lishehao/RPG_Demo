@@ -383,6 +383,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-decision-group={group.id}' in panels
     assert 'type DecisionForecastGroup = "cost" | "upside" | "shift"' in panels
     assert 'data-gameplay-impact-summary="true"' in play_page
+    assert 'data-gameplay-impact-spotlight="true"' in play_page
+    assert "data-gameplay-impact-spotlight-tone={primaryImpact.tone}" in play_page
+    assert "const primaryImpact =" in play_page
     assert 'data-gameplay-impact-group={group.id}' in play_page
     assert 'data-gameplay-impact-group="next"' in play_page
     assert 'data-gameplay-next-choice-signals="true"' in play_page
@@ -412,6 +415,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayDecisionGroupUpside" in styles
     assert "gameplayDecisionGroupShift" in styles
     assert "gameplayImpactPanel" in styles
+    assert "gameplayImpactSpotlight" in styles
+    assert "gameplayImpactSpotlightValue" in styles
     assert "gameplayImpactGroups" in styles
     assert "outcomeReceiptHeader" in styles
     assert "outcomeReceiptHint" in styles
@@ -442,6 +447,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.outcome_next_hint": "Shapes the next choices"' in strings
     assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
+    assert '"play.feedback_key_consequence_label": "Key consequence"' in strings
     assert '"play.feedback_next_choice_label": "Next choice signals"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert 'data-play-outcome-receipt="true"' in panels
