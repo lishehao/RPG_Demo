@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-APP_URL = "http://127.0.0.1:5173"
+APP_URL = "http://127.0.0.1:8001"
 DOC_CAPTURE_DIR = REPO_ROOT / "docs" / "demo-video" / "v2-captures"
 REMOTION_CAPTURE_DIR = REPO_ROOT / "remotion-demo" / "public" / "captures"
 FRAME_DIR = Path("/private/tmp/tiny_stories_admissions_typing_frames")

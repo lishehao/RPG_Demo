@@ -51,7 +51,7 @@ class ParallelWorkerSpec:
 
 def parse_args(argv: list[str] | None = None) -> LaunchReadinessConfig:
     parser = argparse.ArgumentParser(description="Run the prelaunch Playwright launch-readiness suite.")
-    parser.add_argument("--app-url", default="http://127.0.0.1:5173")
+    parser.add_argument("--app-url", default="http://127.0.0.1:8001")
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     parser.add_argument("--browsers", default="chromium")
     parser.add_argument("--layers", default="env,core,recovery,parallel")

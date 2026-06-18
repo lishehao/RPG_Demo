@@ -251,7 +251,7 @@ cp .env.example .env
 #   APP_RESPONSES_PLAY_API_KEY=...
 #   APP_RESPONSES_PLAY_MODEL=deepseek-v4-flash
 
-uvicorn rpg_backend.main:app --reload
+uvicorn rpg_backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 In another terminal:
@@ -262,8 +262,8 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. For the curated portfolio path, open
-`http://localhost:5173/#/portfolio`.
+Open `http://127.0.0.1:8001`. For the curated portfolio path, open
+`http://127.0.0.1:8001/#/portfolio`.
 
 Useful checks:
 

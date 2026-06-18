@@ -8,13 +8,20 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 5173,
+      host: "127.0.0.1",
+      port: 8001,
+      strictPort: true,
       proxy: {
         "^/(health|me|auth|author|stories|play|benchmark|narrative)": {
           target: backendTarget,
           changeOrigin: true,
         },
       },
+    },
+    preview: {
+      host: "127.0.0.1",
+      port: 8001,
+      strictPort: true,
     },
   }
 })

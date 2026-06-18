@@ -86,15 +86,15 @@ cp .env.example .env
 #   APP_RESPONSES_PLAY_MODEL=...
 
 # 3. 起后端 (port 8000)
-uvicorn rpg_backend.main:app --reload
+uvicorn rpg_backend.main:app --host 127.0.0.1 --port 8000 --reload
 
-# 4. 起前端 (新终端,port 5173,自动 proxy 到 8000)
+# 4. 起前端 (新终端,port 8001,自动 proxy 到 8000)
 cd frontend2
 npm install
 npm run dev
 ```
 
-打开 `http://localhost:5173`.注册一个用户名 → 创建一个故事 → 选 role → 玩.
+打开 `http://127.0.0.1:8001`.注册一个用户名 → 创建一个故事 → 选 role → 玩.
 
 > **第一次创建模板** 会调 LLM 生成 opening + cast + roles + failure conditions + inter-NPC leverage 网络,大约 12-20 秒(qwen-flash class 模型).每回合推进约 5-8 秒.
 
