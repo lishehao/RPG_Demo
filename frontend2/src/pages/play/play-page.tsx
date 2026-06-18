@@ -187,6 +187,16 @@ function actorFromDisplayName(
   return { id: matched[0], name: matched[1] }
 }
 
+function impactDeltaKey(delta: GameplayEnvelope["impact"][number]): string {
+  const parsed = parseRelationshipDeltaLabel(delta.label)
+  if (parsed) return `relationship:${parsed.name.toLowerCase()}:${parsed.shift.toLowerCase()}`
+  return `${delta.tone}:${delta.label.replace(/\s+/g, " ").trim().toLowerCase()}`
+}
+
+function isLowSignalForecastLabel(label: string): boolean {
+  return /^(Target |Room read$)/i.test(label.trim())
+}
+
 function impactSourceMoveText(message: NarrativeStoryMessage | null): string | null {
   if (!message || message.role !== "player") return null
   const parsed = parseOptionLabel(message.content)
@@ -311,35 +321,52 @@ function GameplayImpactSummary({
     envelope.impact.find((delta) => delta.tone === "unlock" || delta.tone === "gain") ??
     envelope.impact.find((delta) => delta.tone === "shift") ??
     envelope.impact[0]
+  const primaryImpactKey = primaryImpact ? impactDeltaKey(primaryImpact) : null
+  const secondaryImpacts = envelope.impact.filter(
+    (delta) => impactDeltaKey(delta) !== primaryImpactKey,
+  )
   const forecastChoiceSignals = envelope.actionForecasts
-    .map((row) => row.find((chip) => chip.tone === "unlock" || chip.tone === "gain" || chip.detail) ?? row[0] ?? null)
+    .map((row) => row.find((chip) => chip.detail || chip.tone === "unlock" || chip.tone === "gain" || chip.tone === "cost") ?? null)
     .filter((chip): chip is NonNullable<typeof chip> => Boolean(chip))
+    .filter((chip) => chip.detail || !isLowSignalForecastLabel(chip.label))
     .filter((chip, index, all) => all.findIndex((candidate) => candidate.label === chip.label) === index)
-  const targetChoiceSignals = (nextChoiceTargets ?? []).map((target) => ({
+    .slice(0, 2)
+  const uniqueNextChoiceTargets = (nextChoiceTargets ?? []).filter(
+    (target, index, all) => all.findIndex((candidate) => candidate.id === target.id) === index,
+  )
+  const targetChoiceSignals = uniqueNextChoiceTargets.map((target) => ({
     label: `${t("play.action_target_label")} ${target.name}`,
     detail: t("play.action_target_title", { name: target.name }),
     tone: "shift" as GameplayChipTone,
     targetId: target.id,
     targetName: target.name,
   }))
-  const nextChoiceSignals = [...targetChoiceSignals, ...forecastChoiceSignals]
+  const nextChoiceSignals = (forecastChoiceSignals.length > 0
+    ? forecastChoiceSignals
+    : targetChoiceSignals.length > 1
+      ? [{
+          label: t("play.feedback_next_choice_changed_label"),
+          detail: t("play.feedback_next_choice_changed_detail"),
+          tone: "shift" as GameplayChipTone,
+        }]
+      : targetChoiceSignals)
     .filter((chip, index, all) => all.findIndex((candidate) => candidate.label === chip.label) === index)
     .slice(0, 3)
   const impactGroups = [
     {
       id: "cost",
       label: t("play.feedback_impact_cost_label"),
-      items: envelope.impact.filter((delta) => delta.tone === "cost"),
+      items: secondaryImpacts.filter((delta) => delta.tone === "cost"),
     },
     {
       id: "opened",
       label: t("play.feedback_impact_opened_label"),
-      items: envelope.impact.filter((delta) => delta.tone === "gain" || delta.tone === "unlock"),
+      items: secondaryImpacts.filter((delta) => delta.tone === "gain" || delta.tone === "unlock"),
     },
     {
       id: "shift",
       label: t("play.feedback_impact_shift_label"),
-      items: envelope.impact.filter((delta) => delta.tone === "shift"),
+      items: secondaryImpacts.filter((delta) => delta.tone === "shift"),
     },
   ].filter((group) => group.items.length > 0)
   const renderImpactValue = (

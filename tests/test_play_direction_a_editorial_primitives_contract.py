@@ -449,6 +449,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-impact-spotlight="true"' in play_page
     assert "data-gameplay-impact-spotlight-tone={primaryImpact.tone}" in play_page
     assert "const primaryImpact =" in play_page
+    assert "function impactDeltaKey(" in play_page
+    assert "const secondaryImpacts = envelope.impact.filter(" in play_page
+    assert "function isLowSignalForecastLabel(" in play_page
+    assert "chip.detail || !isLowSignalForecastLabel(chip.label)" in play_page
+    assert "play.feedback_next_choice_changed_label" in play_page
     assert "function parseRelationshipDeltaLabel(" in play_page
     assert "function relationshipShiftCopy(" in play_page
     assert "function actorFromDisplayName(" in play_page
@@ -548,6 +553,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
     assert '"play.feedback_key_consequence_label": "Key consequence"' in strings
     assert '"play.feedback_next_choice_label": "Next choice signals"' in strings
+    assert '"play.feedback_next_choice_changed_label": "Next choices changed"' in strings
+    assert '"play.feedback_next_choice_changed_detail": "The next actions are refocused by the room reaction and state changes."' in strings
     assert '"play.impact_focus_actor_title": "Focus moves involving {name}"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert 'data-play-outcome-receipt="true"' in panels
