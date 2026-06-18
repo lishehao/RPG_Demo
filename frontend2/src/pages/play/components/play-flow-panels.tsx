@@ -3215,6 +3215,15 @@ export function ActionArea({
   const freeActionToggleTitle = freeInput.trim()
     ? t("play.action_resume_free_title")
     : t("play.action_open_free_title")
+  const openFreeActionComposer = () => {
+    if (actionControlsDisabled) return
+    setSelectedOptionIndex(null)
+    setArmedCardId(null)
+    setShowFreeInput(true)
+    window.requestAnimationFrame(() => {
+      freeTextareaRef.current?.focus()
+    })
+  }
   const freeTextareaCanClose = options.length > 0
   const freeTextareaKeyShortcuts = freeTextareaCanClose
     ? "Meta+Enter Control+Enter Escape"
@@ -3997,6 +4006,22 @@ export function ActionArea({
           <span style={ppStyles.resourceFocusCueLabel}>{t("play.resource_focus_label")}</span>
           <strong style={ppStyles.resourceFocusCueName}>{resourceFocus.label}</strong>
           <span style={ppStyles.resourceFocusCueDetail}>{resourceFocusDetail}</span>
+          {resourceFocusMatchCount === 0 && showFreeActionToggle ? (
+            <button
+              type="button"
+              style={{
+                ...ppStyles.resourceFocusCueAction,
+                ...inlineActionDisabledStyle,
+              }}
+              onClick={openFreeActionComposer}
+              disabled={actionControlsDisabled}
+              data-play-resource-focus-custom-move="true"
+              aria-label={freeActionToggleTitle}
+              title={freeActionToggleTitle}
+            >
+              {freeActionToggleText}
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -4410,11 +4435,7 @@ export function ActionArea({
                 ...ppStyles.alternateActionButton,
                 ...inlineActionDisabledStyle,
               }}
-              onClick={() => {
-                setSelectedOptionIndex(null)
-                setArmedCardId(null)
-                setShowFreeInput(true)
-              }}
+              onClick={openFreeActionComposer}
               disabled={actionControlsDisabled}
               aria-label={freeActionToggleTitle}
               title={freeActionToggleTitle}

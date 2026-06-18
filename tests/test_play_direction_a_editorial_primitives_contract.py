@@ -327,9 +327,13 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const resourceFocusOptionMatches = useMemo" in panels
     assert "isResourceFocusAction(resourceFocus.id, parsed.body, opt.hint, actionForecasts?.[index] ?? [])" in panels
     assert "function resourceFocusDetailText(" in panels
+    assert "const openFreeActionComposer = () => {" in panels
     assert 'data-play-resource-focus-cue="true"' in panels
     assert 'data-play-resource-focus-id={resourceFocus.id}' in panels
     assert "data-play-resource-focus-match-count={resourceFocusMatchCount}" in panels
+    assert "resourceFocusMatchCount === 0 && showFreeActionToggle" in panels
+    assert 'data-play-resource-focus-custom-move="true"' in panels
+    assert "onClick={openFreeActionComposer}" in panels
     assert 'data-play-action-resource-focus-match={isResourceFocusMatch ? "true" : undefined}' in panels
     assert 'data-play-action-resource-focus-dimmed={isResourceFocusDimmed ? "true" : undefined}' in panels
     assert 'data-play-action-target-chip="true"' in panels
@@ -393,6 +397,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayTrackFocused" in styles
     assert "gameplayTrackAction" in styles
     assert "resourceFocusCue" in styles
+    assert "resourceFocusCueAction" in styles
     assert "optionBtnResourceFocusMatch" in styles
     assert "optionBtnActorFocusMatch" in styles
     assert "optionBtnActorFocusDimmed" in styles
