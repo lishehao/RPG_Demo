@@ -2255,7 +2255,7 @@ def _deterministic_turn_fallback(
             ord=next_ord,
             role="narrator",
             content=passage,
-            options=_fallback_turn_options(template, profile),
+            options=_fallback_turn_options(template, profile, pulses),
             chosen_option_index=None,
             npc_pulse=pulses,
             inventory_delta=None,
@@ -2544,36 +2544,43 @@ def _fallback_turn_stage_line(stage_phase: str, profile: str) -> str:
     return "The pressure stays visible enough that the room has to answer."
 
 
-def _fallback_turn_options(template: NarrativeTemplate, profile: str) -> list[StoryOption]:
+def _fallback_turn_options(
+    template: NarrativeTemplate,
+    profile: str,
+    pulses: list[NPCPulse] | None = None,
+) -> list[StoryOption]:
     object_label = _fallback_turn_object_label(template)
+    names = _fallback_turn_names(template, pulses or [])
+    first = names[0] if names else "the closest witness"
+    second = names[1] if len(names) > 1 else "the room"
     if profile == "cozy_mystery":
         return [
-            StoryOption(label=f"[Ally] Let the shy witness describe the {object_label}", hint="Keeps the mystery gentle", handle="ask witness"),
-            StoryOption(label=f"[Probe] Check the {object_label} without blaming anyone", hint="Tests the clue first", handle="check clue"),
-            StoryOption(label="[Watch] Give the room a softer reset", hint="Buys a calmer beat", handle="soft reset"),
+            StoryOption(label=f"[Ally] Let {first} describe the {object_label}", hint=f"Keeps {first}'s answer gentle", handle="ask witness"),
+            StoryOption(label=f"[Probe] Check the {object_label} with {first}", hint="Tests the clue first", handle="check clue"),
+            StoryOption(label=f"[Watch] Let {second} soften the room", hint="Buys a calmer beat", handle="soft reset"),
         ]
     if profile == "comedy":
         return [
-            StoryOption(label="[Ally] Invite the overlooked group into the test", hint="Keeps the joke shared", handle="invite group"),
-            StoryOption(label=f"[Probe] Ask who noticed the {object_label} change", hint="Turns timing into evidence", handle="ask prop"),
-            StoryOption(label="[Watch] Let the callback settle before moving", hint="Waits for the room to react", handle="let land"),
+            StoryOption(label=f"[Ally] Invite {first} into the joke", hint="Keeps the joke shared", handle="invite group"),
+            StoryOption(label=f"[Probe] Ask {first} who noticed the {object_label} change", hint="Turns timing into evidence", handle="ask prop"),
+            StoryOption(label=f"[Watch] Let {second} catch the callback", hint="Waits for the room to react", handle="let land"),
         ]
     if profile == "fantasy_sci_fi":
         return [
-            StoryOption(label="[Probe] Ask which old rule changed", hint="Turns the sign into a clue", handle="ask rule"),
-            StoryOption(label="[Ally] Let the quieter faction interpret the sign", hint="Gives background pressure a voice", handle="quiet voice"),
+            StoryOption(label=f"[Probe] Ask {first} which old rule changed", hint="Turns the sign into a clue", handle="ask rule"),
+            StoryOption(label=f"[Ally] Let {second} interpret the sign", hint="Gives background pressure a voice", handle="quiet voice"),
             StoryOption(label=f"[Watch] Hold the {object_label} where everyone can see it", hint="Keeps the room honest", handle="show object"),
         ]
     if profile == "family_social":
         return [
-            StoryOption(label="[Ally] Give the hurt party room to explain", hint="Protects repair before rupture", handle="give room"),
-            StoryOption(label="[Probe] Ask what was misunderstood first", hint="Looks for the old wound", handle="ask wound"),
-            StoryOption(label="[Watch] Let someone else name the cost", hint="Tests who still cares", handle="wait cost"),
+            StoryOption(label=f"[Ally] Give {first} room to explain", hint="Protects repair before rupture", handle="give room"),
+            StoryOption(label=f"[Probe] Ask {first} what was misunderstood first", hint="Looks for the old wound", handle="ask wound"),
+            StoryOption(label=f"[Watch] Let {second} name the cost", hint="Tests who still cares", handle="wait cost"),
         ]
     return [
-        StoryOption(label="[Probe] Ask who benefits from this version", hint="Tests the public account", handle="ask benefit"),
-        StoryOption(label="[Counter] Put one concrete fact on the table", hint="Makes the room answer", handle="show fact"),
-        StoryOption(label="[Watch] Let the next speaker expose their stake", hint="Delays without yielding", handle="watch stake"),
+        StoryOption(label=f"[Probe] Ask {first} who benefits from this version", hint=f"Tests {first}'s account", handle="ask benefit"),
+        StoryOption(label=f"[Counter] Put one concrete fact to {first}", hint=f"Makes {first} answer", handle="show fact"),
+        StoryOption(label=f"[Watch] Let {second} react to {first}", hint="Checks who moves next", handle="watch stake"),
     ]
 
 

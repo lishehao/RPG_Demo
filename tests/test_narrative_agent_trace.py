@@ -12,6 +12,7 @@ from rpg_backend.narrative.contracts import (
     AgentPlan,
     AdvanceTurnRequest,
     CastMember,
+    NPCPulse,
     NPCLeverageOverNPC,
     PlayerGoal,
     PlayerLeverageOverNPC,
@@ -24,6 +25,7 @@ from rpg_backend.narrative.repository import NarrativeRepository
 from rpg_backend.narrative.service import (
     NarrativeService,
     _fallback_turn_action_phrase,
+    _fallback_turn_options,
     _fallback_turn_pulses,
 )
 from rpg_backend.responses_transport import ResponsesJSONResponse
@@ -110,6 +112,27 @@ def test_fallback_turn_pulses_prioritize_explicit_action_target(tmp_path) -> Non
     )
 
     assert [pulse.npc_id for pulse in pulses][:1] == ["mira"]
+
+
+def test_fallback_turn_options_follow_latest_pulse_targets(tmp_path) -> None:
+    repo = NarrativeRepository(str(tmp_path / "runtime.sqlite3"))
+    _create_template_and_session(repo)
+    template = repo.get_template("tmpl_agent_trace")
+    pulses = [
+        NPCPulse(npc_id="mira", state="wary", shift="wary"),
+        NPCPulse(npc_id="evan", state="wary", shift="wary"),
+    ]
+
+    options = _fallback_turn_options(
+        template,
+        "high_drama",
+        pulses,
+    )
+
+    labels = [option.label for option in options]
+    assert labels[0] == "[Probe] Ask Mira who benefits from this version"
+    assert labels[1] == "[Counter] Put one concrete fact to Mira"
+    assert labels[2] == "[Watch] Let Evan react to Mira"
 
 
 def _create_template_and_session(
