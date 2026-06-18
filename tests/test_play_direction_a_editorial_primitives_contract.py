@@ -358,6 +358,16 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "freeActionFocusContext?.toggleText ?? t(\"play.action_open_free\")" in panels
     assert "freeActionFocusContext?.toggleHint ?? t(\"play.action_open_free_hint\")" in panels
     assert "freeActionFocusContext?.toggleTitle ?? t(\"play.action_open_free_title\")" in panels
+    assert "const freeActionContextTargetName =" in panels
+    assert "const freeActionTargetNameForFeedback = freeActionTargetName || freeActionContextTargetName" in panels
+    assert "const freeActionSubmittedText =" in panels
+    assert "`${freeActionContextTargetName} — ${freeActionDraft}`" in panels
+    assert "onSubmitFree(diaryOverride, freeActionSubmittedText)" in panels
+    assert ": freeActionTargetNameForFeedback || undefined" in panels
+    assert "title: freeActionSubmittedText" in panels
+    assert "onSubmitFree: (diaryOverride?: string, freeInputOverride?: string) => void" in panels
+    assert "const publicMove = (freeInputOverride ?? freeInput).trim()" in play_page
+    assert "free_input: publicMove" in play_page
     assert 'data-play-action-actor-focus-match={isActorFocusMatch ? "true" : undefined}' in panels
     assert 'data-play-action-actor-focus-dimmed={isActorFocusDimmed ? "true" : undefined}' in panels
     assert 'data-gameplay-forecast-detail="normal-play"' in panels

@@ -2763,7 +2763,7 @@ export function ActionArea({
   onCommitmentSummaryChange: (summary: ActionCommitmentSummary | null) => void
   onPickOption: (idx: number, diaryOverride?: string) => void
   onPlayLeverage: (card: LeverageCardView, diaryOverride?: string) => void
-  onSubmitFree: (diaryOverride?: string) => void
+  onSubmitFree: (diaryOverride?: string, freeInputOverride?: string) => void
 }) {
   const t = useT()
   // Local "I picked option N this turn" so we can immediately reflect
@@ -2909,15 +2909,6 @@ export function ActionArea({
     setPickedIndex(i)
     setSelectedOptionIndex(i)
     onPickOption(i, diaryOverride)
-  }
-
-  const handleSubmitFreeWithReflect = (diaryOverride?: string) => {
-    if (!freeInput.trim() || busy || actionSubmitLockedRef.current) return
-    actionSubmitLockedRef.current = true
-    setSelectedOptionIndex(null)
-    setArmedCardId(null)
-    setSubmittedFree(true)
-    onSubmitFree(diaryOverride)
   }
 
   const handleLeverageReveal = (card: LeverageCardView, diaryOverride?: string) => {
@@ -3117,6 +3108,13 @@ export function ActionArea({
     ? findActionTarget(freeActionDraft, undefined, castNameById, latestNpcPulses)
     : null
   const freeActionTargetName = freeActionTarget?.name ?? ""
+  const freeActionContextTargetName =
+    freeActionFocusContext?.kind === "actor" ? freeActionFocusContext.label : ""
+  const freeActionTargetNameForFeedback = freeActionTargetName || freeActionContextTargetName
+  const freeActionSubmittedText =
+    freeActionDraft && freeActionContextTargetName && !freeActionTargetName
+      ? `${freeActionContextTargetName} — ${freeActionDraft}`
+      : freeActionDraft
   const freeComposerOpen = showFreeInput || options.length === 0
   const selectedOptionGuideTitle = selectedOptionParsed?.tag
     ? t("play.turn_guide_selected_named_title", { tag: selectedOptionParsed.tag })
@@ -3253,6 +3251,14 @@ export function ActionArea({
       freeTextareaRef.current?.focus()
     })
   }
+  const handleSubmitFreeWithReflect = (diaryOverride?: string) => {
+    if (!freeActionSubmittedText || busy || actionSubmitLockedRef.current) return
+    actionSubmitLockedRef.current = true
+    setSelectedOptionIndex(null)
+    setArmedCardId(null)
+    setSubmittedFree(true)
+    onSubmitFree(diaryOverride, freeActionSubmittedText)
+  }
   const freeTextareaCanClose = options.length > 0
   const freeTextareaKeyShortcuts = freeTextareaCanClose
     ? "Meta+Enter Control+Enter Escape"
@@ -3266,13 +3272,13 @@ export function ActionArea({
   const resolvingMoveText =
     pickedOptionParsed?.body ??
     submittedLeverageLabel ??
-    (submittedFree ? freeActionDraft || t("play.resolve_custom_move") : "")
+    (submittedFree ? freeActionSubmittedText || t("play.resolve_custom_move") : "")
   const resolvingTarget =
     pickedOption && pickedOptionParsed
       ? findActionTarget(pickedOptionParsed.body, pickedOption.hint, castNameById, latestNpcPulses)?.name
       : submittedLeverageLabel
         ? submittedLeverageTarget ?? undefined
-        : freeActionTarget?.name
+        : freeActionTargetNameForFeedback || undefined
   const diaryDraft = diary.trim()
   const diaryPreview =
     diaryDraft.length > 130 ? `${diaryDraft.slice(0, 127)}...` : diaryDraft
@@ -3318,9 +3324,9 @@ export function ActionArea({
       return {
         kind: "free",
         kicker: t("play.advisor_commitment_kind_free"),
-        title: freeActionDraft,
-        detail: freeActionTargetName
-          ? t("play.preview_action_target_value", { target: freeActionTargetName })
+        title: freeActionSubmittedText,
+        detail: freeActionTargetNameForFeedback
+          ? t("play.preview_action_target_value", { target: freeActionTargetNameForFeedback })
           : t("play.preview_action_read_room"),
         motive,
       }
@@ -3342,7 +3348,8 @@ export function ActionArea({
     busy,
     diaryDraft,
     freeActionDraft,
-    freeActionTargetName,
+    freeActionSubmittedText,
+    freeActionTargetNameForFeedback,
     pickedIndex,
     selectedOptionBody,
     selectedOptionHint,

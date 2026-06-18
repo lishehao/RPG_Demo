@@ -1214,10 +1214,11 @@ export function PlayPage({
                   },
                 })
               }
-              onSubmitFree={(diaryOverride) => {
-                if (!freeInput.trim()) return
+              onSubmitFree={(diaryOverride, freeInputOverride) => {
+                const publicMove = (freeInputOverride ?? freeInput).trim()
+                if (!publicMove) return
                 void handleAdvance({
-                  free_input: freeInput.trim(),
+                  free_input: publicMove,
                   diary: (diaryOverride ?? diary).trim() || undefined,
                 })
               }}
