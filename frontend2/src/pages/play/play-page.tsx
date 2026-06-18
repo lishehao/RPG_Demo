@@ -145,14 +145,26 @@ function gameplayToneStyle(tone: GameplayChipTone): CSSProperties | null {
   return null
 }
 
+type GameplayResourceFocusId = "time" | "pressure" | "evidence"
+
+function isGameplayResourceFocusId(value: string): value is GameplayResourceFocusId {
+  return value === "time" || value === "pressure" || value === "evidence"
+}
+
+function gameplayResourceFocusTitle(t: ReturnType<typeof useT>, id: GameplayResourceFocusId): string {
+  if (id === "time") return t("play.resource_focus_time_title")
+  if (id === "pressure") return t("play.resource_focus_pressure_title")
+  return t("play.resource_focus_evidence_title")
+}
+
 function GameplayStatePanel({
   envelope,
   focusedResourceId,
-  onFocusEvidence,
+  onFocusResource,
 }: {
   envelope: GameplayEnvelope
-  focusedResourceId?: "evidence" | null
-  onFocusEvidence?: () => void
+  focusedResourceId?: GameplayResourceFocusId | null
+  onFocusResource?: (id: GameplayResourceFocusId) => void
 }) {
   const t = useT()
   return (
@@ -168,11 +180,12 @@ function GameplayStatePanel({
       </div>
       <div style={ppStyles.gameplayTrackGrid} aria-label={t("play.gameplay_tracks_label")}>
         {envelope.tracks.map((track) => {
-          const isEvidence = track.id === "evidence"
-          const isFocused = focusedResourceId === "evidence" && isEvidence
+          const focusableTrackId = isGameplayResourceFocusId(track.id) ? track.id : null
+          const isFocused = focusedResourceId === focusableTrackId && focusableTrackId !== null
+          const focusTitle = focusableTrackId ? gameplayResourceFocusTitle(t, focusableTrackId) : ""
           const trackStyle = {
             ...ppStyles.gameplayTrack,
-            ...(isEvidence ? ppStyles.gameplayTrackButton : null),
+            ...(focusableTrackId ? ppStyles.gameplayTrackButton : null),
             ...(gameplayToneStyle(track.tone) ?? {}),
             ...(isFocused ? ppStyles.gameplayTrackFocused : null),
           }
@@ -180,25 +193,26 @@ function GameplayStatePanel({
             <>
               <span style={ppStyles.gameplayTrackLabel}>{track.label}</span>
               <span style={ppStyles.gameplayTrackValue}>{track.value}</span>
-              {isEvidence ? (
+              {focusableTrackId ? (
                 <span style={ppStyles.gameplayTrackAction}>
                   {isFocused ? t("play.resource_focus_active") : t("play.resource_focus_cta")}
                 </span>
               ) : null}
             </>
           )
-          return isEvidence ? (
+          return focusableTrackId ? (
             <button
               key={track.id}
               type="button"
               style={trackStyle}
               data-gameplay-pressure-track={track.id}
-              data-gameplay-evidence-resource="true"
+              data-gameplay-resource-track={focusableTrackId}
+              data-gameplay-evidence-resource={focusableTrackId === "evidence" ? "true" : undefined}
               data-gameplay-resource-focus={isFocused ? "true" : undefined}
               aria-pressed={isFocused}
-              aria-label={`${track.label}: ${track.value}. ${t("play.resource_focus_evidence_title")}`}
-              title={t("play.resource_focus_evidence_title")}
-              onClick={onFocusEvidence}
+              aria-label={`${track.label}: ${track.value}. ${focusTitle}`}
+              title={focusTitle}
+              onClick={() => onFocusResource?.(focusableTrackId)}
             >
               {content}
             </button>
@@ -401,7 +415,7 @@ export function PlayPage({
   const [actionCommitmentActive, setActionCommitmentActive] = useState(false)
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [focusedActorId, setFocusedActorId] = useState<string | null>(null)
-  const [focusedResourceId, setFocusedResourceId] = useState<"evidence" | null>(null)
+  const [focusedResourceId, setFocusedResourceId] = useState<GameplayResourceFocusId | null>(null)
   const [showActionJump, setShowActionJump] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
@@ -762,6 +776,9 @@ export function PlayPage({
   const actorFocus = focusedActorId && focusedActorName
     ? { id: focusedActorId, name: focusedActorName }
     : null
+  const focusedResourceTrack = focusedResourceId
+    ? gameplayEnvelope.tracks.find((track) => track.id === focusedResourceId) ?? null
+    : null
   const focusSceneActor = (actor: { id: string; name: string }) => {
     const wasFocused = focusedActorId === actor.id
     setFocusedActorId(wasFocused ? null : actor.id)
@@ -779,9 +796,9 @@ export function PlayPage({
         })
     })
   }
-  const focusEvidenceResource = () => {
-    const wasFocused = focusedResourceId === "evidence"
-    setFocusedResourceId(wasFocused ? null : "evidence")
+  const focusGameplayResource = (resourceId: GameplayResourceFocusId) => {
+    const wasFocused = focusedResourceId === resourceId
+    setFocusedResourceId(wasFocused ? null : resourceId)
     if (!wasFocused) {
       setFocusedActorId(null)
     }
@@ -857,7 +874,7 @@ export function PlayPage({
               <GameplayStatePanel
                 envelope={gameplayEnvelope}
                 focusedResourceId={focusedResourceId}
-                onFocusEvidence={focusEvidenceResource}
+                onFocusResource={focusGameplayResource}
               />
               <GameplayLoopGuide
                 stage={gameplayLoopStage}
@@ -1017,8 +1034,8 @@ export function PlayPage({
               turnsRemaining={turnsRemaining}
               turnBudget={turnBudget}
               actorFocus={actorFocus}
-              resourceFocus={focusedResourceId === "evidence"
-                ? { id: "evidence", label: t("play.resource_focus_evidence_label") }
+              resourceFocus={focusedResourceId && focusedResourceTrack
+                ? { id: focusedResourceId, label: focusedResourceTrack.label }
                 : null}
               showFreeInput={showFreeInput}
               freeInput={freeInput}

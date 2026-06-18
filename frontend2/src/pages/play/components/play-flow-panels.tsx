@@ -2662,16 +2662,50 @@ function findActionTarget(
   }
 }
 
-function isEvidenceRelatedAction(
+type GameplayResourceFocusId = "time" | "pressure" | "evidence"
+
+function isResourceFocusAction(
+  resourceId: GameplayResourceFocusId,
   body: string,
   hint: string | undefined,
   forecasts: GameplayActionForecast[],
 ): boolean {
-  if (forecasts.some((chip) => /\b(evidence|clue|proof|lead|badge|recording|footage|document|receipt|log)\b/i.test(chip.label))) {
+  const forecastText = forecasts.map((chip) => chip.label).join(" ")
+  if (resourceId === "time") {
+    if (/\b(time|turn|clock|delay|wait|minutes?)\b/i.test(forecastText)) return true
+    const haystack = `${body} ${hint ?? ""}`.toLowerCase()
+    return /\b(time|clock|countdown|minute|deadline|delay|stall|wait|hold|freeze|rush|hurry)\b/.test(haystack)
+  }
+  if (resourceId === "pressure") {
+    if (/\b(pressure|risk|danger|heat|suspicion|public)\b/i.test(forecastText)) return true
+    const haystack = `${body} ${hint ?? ""}`.toLowerCase()
+    return /\b(pressure|risk|danger|threat|panic|public|expose|accuse|confront|force|sponsor|suspicion)\b/.test(haystack)
+  }
+  if (/\b(evidence|clue|proof|lead|badge|recording|footage|document|receipt|log)\b/i.test(forecastText)) {
     return true
   }
   const haystack = `${body} ${hint ?? ""}`.toLowerCase()
   return /\b(clue|evidence|proof|recording|footage|badge|phone|message|lead|find|discover|document|receipt|log|memo|security)\b/.test(haystack)
+}
+
+function resourceFocusDetailText(
+  t: ReturnType<typeof useT>,
+  resourceId: GameplayResourceFocusId,
+  matchCount: number,
+): string {
+  if (resourceId === "time") {
+    return matchCount > 0
+      ? t("play.resource_focus_time_match_detail", { count: matchCount })
+      : t("play.resource_focus_time_no_match")
+  }
+  if (resourceId === "pressure") {
+    return matchCount > 0
+      ? t("play.resource_focus_pressure_match_detail", { count: matchCount })
+      : t("play.resource_focus_pressure_no_match")
+  }
+  return matchCount > 0
+    ? t("play.resource_focus_evidence_match_detail", { count: matchCount })
+    : t("play.resource_focus_evidence_no_match")
 }
 
 // ---------------------------------------------------------------------------
@@ -2715,7 +2749,7 @@ export function ActionArea({
   turnsRemaining: number
   turnBudget: number
   actorFocus?: { id: string; name: string } | null
-  resourceFocus?: { id: "evidence"; label: string } | null
+  resourceFocus?: { id: GameplayResourceFocusId; label: string } | null
   showFreeInput: boolean
   freeInput: string
   setFreeInput: (v: string) => void
@@ -3045,15 +3079,11 @@ export function ActionArea({
     if (!resourceFocus) return options.map(() => false)
     return options.map((opt, index) => {
       const parsed = parseOptionLabel(opt.label)
-      return isEvidenceRelatedAction(parsed.body, opt.hint, actionForecasts?.[index] ?? [])
+      return isResourceFocusAction(resourceFocus.id, parsed.body, opt.hint, actionForecasts?.[index] ?? [])
     })
   }, [actionForecasts, options, resourceFocus])
   const resourceFocusMatchCount = resourceFocusOptionMatches.filter(Boolean).length
-  const resourceFocusDetail = resourceFocus
-    ? resourceFocusMatchCount > 0
-      ? t("play.resource_focus_evidence_match_detail", { count: resourceFocusMatchCount })
-      : t("play.resource_focus_evidence_no_match")
-    : ""
+  const resourceFocusDetail = resourceFocus ? resourceFocusDetailText(t, resourceFocus.id, resourceFocusMatchCount) : ""
   const freeActionDraft = freeInput.trim()
   const freeActionReady = freeActionDraft.length > 0
   const freeActionTarget = freeActionDraft

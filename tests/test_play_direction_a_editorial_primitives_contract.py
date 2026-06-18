@@ -283,17 +283,21 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "backendEnvelope: story.gameplay_envelope ?? null" in play_page
     assert "gameplay_envelope: response.gameplay_envelope ?? null" in play_page
     assert "const [focusedActorId, setFocusedActorId] = useState<string | null>(null)" in play_page
-    assert "const [focusedResourceId, setFocusedResourceId] = useState<\"evidence\" | null>(null)" in play_page
+    assert 'type GameplayResourceFocusId = "time" | "pressure" | "evidence"' in play_page
+    assert "function isGameplayResourceFocusId(value: string): value is GameplayResourceFocusId" in play_page
+    assert "const [focusedResourceId, setFocusedResourceId] = useState<GameplayResourceFocusId | null>(null)" in play_page
     assert "const actorFocus = focusedActorId && focusedActorName" in play_page
+    assert "const focusedResourceTrack = focusedResourceId" in play_page
     assert "const focusSceneActor = (actor: { id: string; name: string }) => {" in play_page
     assert "setFocusedResourceId(null)" in play_page
     assert "setFocusedActorId(wasFocused ? null : actor.id)" in play_page
-    assert "const focusEvidenceResource = () => {" in play_page
-    assert "setFocusedResourceId(wasFocused ? null : \"evidence\")" in play_page
-    assert "data-gameplay-evidence-resource=\"true\"" in play_page
+    assert "const focusGameplayResource = (resourceId: GameplayResourceFocusId) => {" in play_page
+    assert "setFocusedResourceId(wasFocused ? null : resourceId)" in play_page
+    assert "data-gameplay-resource-track={focusableTrackId}" in play_page
+    assert 'data-gameplay-evidence-resource={focusableTrackId === "evidence" ? "true" : undefined}' in play_page
     assert "data-gameplay-resource-focus={isFocused ? \"true\" : undefined}" in play_page
     assert "focusedResourceId={focusedResourceId}" in play_page
-    assert "onFocusEvidence={focusEvidenceResource}" in play_page
+    assert "onFocusResource={focusGameplayResource}" in play_page
     assert 'behavior: prefersReducedMotion ? "auto" : "smooth"' in play_page
     assert "<GameplayStatePanel" in play_page
     assert "envelope={gameplayEnvelope}" in play_page
@@ -309,16 +313,20 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "!isComplete && !busy && turnsCompleted > 0" in play_page
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actorFocus={actorFocus}" in play_page
-    assert "resourceFocus={focusedResourceId === \"evidence\"" in play_page
+    assert "resourceFocus={focusedResourceId && focusedResourceTrack" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
     assert "actorFocus?: { id: string; name: string } | null" in panels
-    assert "resourceFocus?: { id: \"evidence\"; label: string } | null" in panels
+    assert 'type GameplayResourceFocusId = "time" | "pressure" | "evidence"' in panels
+    assert "resourceFocus?: { id: GameplayResourceFocusId; label: string } | null" in panels
     assert "const optionTargets = useMemo(() => options.map" in panels
     assert "const actorFocusOptionMatches = useMemo" in panels
     assert "target?.id === actorFocus.id" in panels
-    assert "function isEvidenceRelatedAction(" in panels
+    assert "function isResourceFocusAction(" in panels
+    assert "resourceId === \"time\"" in panels
+    assert "resourceId === \"pressure\"" in panels
     assert "const resourceFocusOptionMatches = useMemo" in panels
-    assert "isEvidenceRelatedAction(parsed.body, opt.hint, actionForecasts?.[index] ?? [])" in panels
+    assert "isResourceFocusAction(resourceFocus.id, parsed.body, opt.hint, actionForecasts?.[index] ?? [])" in panels
+    assert "function resourceFocusDetailText(" in panels
     assert 'data-play-resource-focus-cue="true"' in panels
     assert 'data-play-resource-focus-id={resourceFocus.id}' in panels
     assert "data-play-resource-focus-match-count={resourceFocusMatchCount}" in panels
@@ -412,6 +420,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.action_target_title": "This move primarily points at {name}"' in strings
     assert '"play.resource_focus_label": "Resource focus"' in strings
     assert '"play.resource_focus_evidence_label": "Evidence"' in strings
+    assert '"play.resource_focus_time_title": "Highlight moves that spend, buy, or change time pressure"' in strings
+    assert '"play.resource_focus_pressure_title": "Highlight moves that change public pressure, danger, or tension"' in strings
+    assert '"play.resource_focus_time_match_detail": "{count} moves affect time pressure"' in strings
+    assert '"play.resource_focus_pressure_match_detail": "{count} moves affect pressure"' in strings
     assert '"play.resource_focus_evidence_match_detail": "{count} moves can push a clue or proof forward"' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
