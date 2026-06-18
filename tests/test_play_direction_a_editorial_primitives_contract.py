@@ -318,7 +318,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-loop-step-active={isActive ? "true" : "false"}' in play_page
     assert 'data-gameplay-loop-step-done={isDone ? "true" : "false"}' in play_page
     assert 'busy\n      ? "react"' in play_page
-    assert 'actionAreaVisible && turnsCompleted > 0 && gameplayEnvelope.impact.length > 0\n        ? "update"' in play_page
+    assert "const showGameplayImpactSummary =" in play_page
+    assert 'showGameplayImpactSummary\n        ? "update"' in play_page
     assert "<GameplayImpactSummary" in play_page
     assert "envelope={gameplayEnvelope}" in play_page
     assert "castNameById={castNameById}" in play_page
@@ -736,19 +737,26 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
 
 
 def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     story_beat = panels[panels.index("export function StoryBeat") : panels.index("  // player move (echoed action)")]
 
+    assert "const showGameplayImpactSummary =" in play_page
+    assert "suppressLatestFeedbackDigest={" in play_page
+    assert "showGameplayImpactSummary" in play_page
+    assert "suppressLatestFeedbackDigest?: boolean" in story_beat
     assert "const latestDigestPulses" in story_beat
     assert "const showLatestBeatDigest" in story_beat
+    assert "!suppressLatestFeedbackDigest" in story_beat
     assert "const latestDigestA11yItems" in story_beat
     assert "const latestDigestA11yLabel" in story_beat
     assert 'aria-label={latestDigestA11yLabel}' in story_beat
     assert "latestDigestPulses.length > 0 || hasDelta || latestOptionCount > 0" in story_beat
     assert "hasDelta && latestDigestPulses.length === 0" in story_beat
+    assert "outcomeItems.length > 0 && !suppressLatestFeedbackDigest" in story_beat
     assert 'data-play-latest-beat-digest="true"' in story_beat
     assert "data-play-latest-beat-digest-pulse={pulse.npc_id}" in story_beat
     assert 'data-play-latest-beat-digest-options="true"' in story_beat

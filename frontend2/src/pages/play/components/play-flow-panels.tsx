@@ -1545,6 +1545,7 @@ export function StoryBeat({
   pickedActionText,
   isLatestNarrator,
   hasFollowingPlayerEcho,
+  suppressLatestFeedbackDigest,
   isBookmarked,
   onToggleBookmark,
 }: {
@@ -1560,6 +1561,7 @@ export function StoryBeat({
   pickedActionText?: string
   isLatestNarrator?: boolean
   hasFollowingPlayerEcho?: boolean
+  suppressLatestFeedbackDigest?: boolean
   /** True if the user has bookmarked this narrator beat. */
   isBookmarked?: boolean
   /** Click handler for the bookmark icon. Undefined hides the icon
@@ -1602,6 +1604,7 @@ export function StoryBeat({
     const latestOptionCount = message.options.length
     const showLatestDigestInventory = hasDelta && latestDigestPulses.length === 0
     const showLatestBeatDigest =
+      !suppressLatestFeedbackDigest &&
       !!isLatestNarrator &&
       !hasFollowingPlayerEcho &&
       (latestDigestPulses.length > 0 || hasDelta || latestOptionCount > 0)
@@ -1792,7 +1795,7 @@ export function StoryBeat({
             castNameById={castNameById}
           />
         ) : null}
-        {outcomeItems.length > 0 ? (
+        {outcomeItems.length > 0 && !suppressLatestFeedbackDigest ? (
           <OutcomeReceipt
             items={outcomeItems}
             compact={!showDetailedOutcome || showDetailedImpactEvidence}

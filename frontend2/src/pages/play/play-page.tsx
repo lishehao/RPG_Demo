@@ -1012,6 +1012,8 @@ export function PlayPage({
     castNameById,
     backendEnvelope: story.gameplay_envelope ?? null,
   })
+  const showGameplayImpactSummary =
+    actionAreaVisible && turnsCompleted > 0 && gameplayEnvelope.impact.length > 0
   const nextChoiceTargets = lastNarrator
     ? uniqueActionTargetsForOptions(lastNarrator.options, castNameById, lastNarrator.npc_pulse ?? [])
     : []
@@ -1019,7 +1021,7 @@ export function PlayPage({
     ? "ending"
     : busy
       ? "react"
-      : actionAreaVisible && turnsCompleted > 0 && gameplayEnvelope.impact.length > 0
+      : showGameplayImpactSummary
         ? "update"
         : actionAreaVisible
           ? "choose"
@@ -1228,6 +1230,11 @@ export function PlayPage({
                 pickedActionText={pickedActionText}
                 isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}
                 hasFollowingPlayerEcho={hasFollowingPlayerEcho}
+                suppressLatestFeedbackDigest={
+                  m.role === "narrator" &&
+                  m.ord === lastNarrator?.ord &&
+                  showGameplayImpactSummary
+                }
                 isBookmarked={m.role === "narrator" && bookmarkedOrds.has(m.ord)}
                 onToggleBookmark={
                   m.role === "narrator" && !isComplete
