@@ -302,8 +302,14 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "actorFocus={actorFocus}" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
     assert "actorFocus?: { id: string; name: string } | null" in panels
+    assert "const optionTargets = useMemo(() => options.map" in panels
     assert "const actorFocusOptionMatches = useMemo" in panels
     assert "target?.id === actorFocus.id" in panels
+    assert 'data-play-action-target-chip="true"' in panels
+    assert 'data-play-action-target-id={actionTarget.id}' in panels
+    assert 'aria-label={t("play.action_target_title", { name: actionTarget.name })}' in panels
+    assert 't("play.action_target_label")' in panels
+    assert 't("play.action_target_title", { name: actionTarget.name })' in panels
     assert 'data-play-actor-focus-cue="true"' in panels
     assert 'data-play-actor-focus-id={actorFocus.id}' in panels
     assert "data-play-actor-focus-match-count={actorFocusMatchCount}" in panels
@@ -353,6 +359,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayLoopStepActive" in styles
     assert "gameplayLoopStepDone" in styles
     assert "gameplayForecastChip" in styles
+    assert "optionTargetChip" in styles
+    assert "optionTargetLabel" in styles
+    assert "optionTargetName" in styles
     assert "optionBtnActorFocusMatch" in styles
     assert "optionBtnActorFocusDimmed" in styles
     assert "actorFocusCue" in styles
@@ -375,6 +384,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_label": "Character focus"' in strings
     assert '"play.actor_focus_match_detail": "{count} moves directly involve {name}"' in strings
     assert '"play.actor_focus_no_match": "No move names {name} directly; use a custom move to test them."' in strings
+    assert '"play.action_target_label": "Target"' in strings
+    assert '"play.action_target_title": "This move primarily points at {name}"' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings

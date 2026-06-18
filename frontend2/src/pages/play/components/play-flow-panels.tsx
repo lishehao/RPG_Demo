@@ -3018,14 +3018,14 @@ export function ActionArea({
   const selectedOptionParsed = selectedOption ? parseOptionLabel(selectedOption.label) : null
   const visibleOptionEntries = options
     .map((opt, i) => ({ opt, i }))
+  const optionTargets = useMemo(() => options.map((opt) => {
+    const parsed = parseOptionLabel(opt.label)
+    return findActionTarget(parsed.body, opt.hint, castNameById, latestNpcPulses)
+  }), [castNameById, latestNpcPulses, options])
   const actorFocusOptionMatches = useMemo(() => {
-    if (!actorFocus) return options.map(() => false)
-    return options.map((opt) => {
-      const parsed = parseOptionLabel(opt.label)
-      const target = findActionTarget(parsed.body, opt.hint, castNameById, latestNpcPulses)
-      return target?.id === actorFocus.id
-    })
-  }, [actorFocus, castNameById, latestNpcPulses, options])
+    if (!actorFocus) return optionTargets.map(() => false)
+    return optionTargets.map((target) => target?.id === actorFocus.id)
+  }, [actorFocus, optionTargets])
   const actorFocusMatchCount = actorFocusOptionMatches.filter(Boolean).length
   const freeActionDraft = freeInput.trim()
   const freeActionReady = freeActionDraft.length > 0
@@ -4048,6 +4048,7 @@ export function ActionArea({
                 const isPicked = pickedIndex === i
                 const isUnpicked = pickedIndex !== null && pickedIndex !== i
                 const optionForecasts = actionForecasts?.[i] ?? []
+                const actionTarget = optionTargets[i] ?? null
                 const isActorFocusMatch = actorFocusOptionMatches[i] ?? false
                 const isActorFocusDimmed = Boolean(actorFocus && actorFocusMatchCount > 0 && !isActorFocusMatch)
                 const optionShortcutKey = i < 9 ? String(i + 1) : null
@@ -4143,10 +4144,23 @@ export function ActionArea({
                           <span
                             style={ppStyles.optionActionText}
                             data-play-action-card-body="true"
-                          >
-                            {parsed.body}
-                          </span>
+                        >
+                          {parsed.body}
                         </span>
+                        {actionTarget ? (
+                          <span
+                            style={ppStyles.optionTargetChip}
+                            data-play-action-target-chip="true"
+                            data-play-action-target-id={actionTarget.id}
+                            aria-label={t("play.action_target_title", { name: actionTarget.name })}
+                            title={t("play.action_target_title", { name: actionTarget.name })}
+                          >
+                            <span style={ppStyles.optionTargetLabel}>{t("play.action_target_label")}</span>
+                            {" "}
+                            <span style={ppStyles.optionTargetName}>{actionTarget.name}</span>
+                          </span>
+                        ) : null}
+                      </span>
                         {opt.hint && !isSelected && optionForecasts.length === 0 ? (
                           <span
                             style={{
