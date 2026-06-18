@@ -313,6 +313,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "envelope={gameplayEnvelope}" in play_page
     assert "castNameById={castNameById}" in play_page
     assert "nextChoiceTargets={nextChoiceTargets}" in play_page
+    assert "function impactSourceMoveText(" in play_page
+    assert "const impactSourceMove = impactSourceMoveText(previousPlayerForLastNarrator)" in play_page
+    assert "sourceMoveText={impactSourceMove}" in play_page
+    assert 'data-gameplay-impact-source-move="true"' in play_page
     assert "function uniqueActionTargetsForOptions(" in play_page
     assert "findActionTarget(parsed.body, option.hint, castNameById, latestNpcPulses)" in play_page
     assert "const nextChoiceTargets = lastNarrator" in play_page
@@ -485,6 +489,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayDecisionGroupUpside" in styles
     assert "gameplayDecisionGroupShift" in styles
     assert "gameplayImpactPanel" in styles
+    assert "gameplayImpactSourceMove" in styles
+    assert "gameplayImpactSourceLabel" in styles
+    assert "gameplayImpactSourceText" in styles
     assert "gameplayImpactSpotlight" in styles
     assert "gameplayImpactSpotlightValue" in styles
     assert "gameplayRelationshipDelta" in styles
@@ -501,6 +508,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_loop_react_label": "Room reacts"' in strings
     assert '"play.gameplay_loop_update_label": "See changes"' in strings
     assert '"play.gameplay_objective_label": "Goal"' in strings
+    assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "Decision forecast"' in strings
     assert '"play.actor_focus_label": "Character focus"' in strings
     assert '"play.actor_focus_match_detail": "{count} moves directly involve {name}"' in strings

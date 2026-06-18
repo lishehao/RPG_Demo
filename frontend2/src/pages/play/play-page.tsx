@@ -187,6 +187,14 @@ function actorFromDisplayName(
   return { id: matched[0], name: matched[1] }
 }
 
+function impactSourceMoveText(message: NarrativeStoryMessage | null): string | null {
+  if (!message || message.role !== "player") return null
+  const parsed = parseOptionLabel(message.content)
+  const text = (parsed.body || message.content).trim()
+  if (!text) return null
+  return text.length > 88 ? `${text.slice(0, 85)}...` : text
+}
+
 function uniqueActionTargetsForOptions(
   options: NarrativeStoryMessage["options"],
   castNameById: Record<string, string>,
@@ -285,12 +293,14 @@ function GameplayImpactSummary({
   envelope,
   castNameById,
   nextChoiceTargets,
+  sourceMoveText,
   focusedActorId,
   onFocusActor,
 }: {
   envelope: GameplayEnvelope
   castNameById: Record<string, string>
   nextChoiceTargets?: Array<{ id: string; name: string }>
+  sourceMoveText?: string | null
   focusedActorId?: string | null
   onFocusActor?: (actor: { id: string; name: string }) => void
 }) {
@@ -392,6 +402,18 @@ function GameplayImpactSummary({
         <span style={ppStyles.gameplayImpactKicker}>{t("play.gameplay_impact_label")}</span>
         <span style={ppStyles.gameplayImpactHint}>{t("play.feedback_impact_hint")}</span>
       </div>
+      {sourceMoveText ? (
+        <div
+          style={ppStyles.gameplayImpactSourceMove}
+          data-gameplay-impact-source-move="true"
+          title={sourceMoveText}
+        >
+          <span style={ppStyles.gameplayImpactSourceLabel}>
+            {t("play.feedback_source_move_label")}{" "}
+          </span>
+          <strong style={ppStyles.gameplayImpactSourceText}>{sourceMoveText}</strong>
+        </div>
+      ) : null}
       {primaryImpact ? (
         <div
           style={ppStyles.gameplayImpactSpotlight}
@@ -950,6 +972,7 @@ export function PlayPage({
     const previous = story.messages[idx - 1]
     return previous?.role === "player" ? previous : null
   })()
+  const impactSourceMove = impactSourceMoveText(previousPlayerForLastNarrator)
   const gameplayEnvelope = buildGameplayEnvelope({
     story,
     lastNarrator,
@@ -1192,6 +1215,7 @@ export function PlayPage({
               envelope={gameplayEnvelope}
               castNameById={castNameById}
               nextChoiceTargets={nextChoiceTargets}
+              sourceMoveText={impactSourceMove}
               focusedActorId={focusedActorId}
               onFocusActor={focusSceneActor}
             />
