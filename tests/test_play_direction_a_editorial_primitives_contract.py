@@ -705,6 +705,14 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert '"play.action_jump_detail_update": "Review what changed, then choose next."' in strings
 
 
+def test_empty_trump_card_resource_stays_out_of_main_action_surface() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+
+    assert "const showLeverageRail = leverageCards.length > 0 && !commitmentSurfaceOpen" in panels
+    assert "roleHasNoLeverage) && !commitmentSurfaceOpen" not in panels
+    assert "roleHasNoLeverage ||" not in panels
+
+
 def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()

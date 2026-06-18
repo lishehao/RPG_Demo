@@ -3339,7 +3339,7 @@ export function ActionArea({
   const showFreeActionSurface = !armedCard && selectedOptionIndex === null && !showPickedReflection
   const showFreeComposer = showFreeActionSurface && freeComposerOpen
   const showStandardOptions = !armedCard && !showFreeComposer && !showPickedReflection
-  const showLeverageRail = (leverageCards.length > 0 || roleHasNoLeverage) && !commitmentSurfaceOpen
+  const showLeverageRail = leverageCards.length > 0 && !commitmentSurfaceOpen
   const showFreeActionToggle =
     showFreeActionSurface &&
     !showFreeInput &&
