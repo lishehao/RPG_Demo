@@ -47,6 +47,7 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
     assets = (ROOT / "frontend2/src/shared/lib/webtoon-assets.ts").read_text()
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert "getAvatarForCastMember" in primitives
     assert "getDefaultAvatar" in primitives
@@ -74,6 +75,8 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "play.actor_focus_title" in primitives
     assert "play.actor_focus_cta" in primitives
     assert "play.actor_focus_active" in primitives
+    assert '"play.actor_focus_cta": "Show moves"' in strings
+    assert '"play.actor_focus_active": "Showing moves"' in strings
     assert "advisorRow" in primitives
     assert "advisorRowCompact" in primitives
     assert "advisorCard:" not in primitives
