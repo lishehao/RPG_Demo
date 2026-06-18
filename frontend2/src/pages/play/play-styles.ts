@@ -2425,6 +2425,12 @@ export const ppStyles: Record<string, CSSProperties> = {
     rowGap: 5,
     flexWrap: "wrap" as const,
   },
+  gameplayNextChoiceChip: {
+    background: "rgba(112,188,135,0.055)",
+    borderLeftWidth: 1,
+    borderLeftStyle: "solid",
+    borderLeftColor: "rgba(112,188,135,0.34)",
+  },
   gameplayDeltaChip: {
     maxWidth: "100%",
     padding: "3px 7px",

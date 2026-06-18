@@ -234,6 +234,11 @@ function GameplayStatePanel({
 function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
   const t = useT()
   if (envelope.impact.length === 0) return null
+  const nextChoiceSignals = envelope.actionForecasts
+    .map((row) => row.find((chip) => chip.tone === "unlock" || chip.tone === "gain" || chip.detail) ?? row[0] ?? null)
+    .filter((chip): chip is NonNullable<typeof chip> => Boolean(chip))
+    .filter((chip, index, all) => all.findIndex((candidate) => candidate.label === chip.label) === index)
+    .slice(0, 3)
   const impactGroups = [
     {
       id: "cost",
@@ -283,6 +288,31 @@ function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
             </div>
           </div>
         ))}
+        {nextChoiceSignals.length > 0 ? (
+          <div
+            style={ppStyles.gameplayImpactGroup}
+            data-gameplay-impact-group="next"
+            data-gameplay-next-choice-signals="true"
+          >
+            <span style={ppStyles.gameplayImpactGroupLabel}>{t("play.feedback_next_choice_label")}</span>
+            <div style={ppStyles.gameplayImpactList}>
+              {nextChoiceSignals.map((signal, index) => (
+                <span
+                  key={`${signal.label}-${index}`}
+                  style={{
+                    ...ppStyles.gameplayDeltaChip,
+                    ...ppStyles.gameplayNextChoiceChip,
+                    ...(gameplayToneStyle(signal.tone) ?? {}),
+                  }}
+                  data-gameplay-next-choice-signal="normal-play"
+                  title={signal.detail ?? signal.label}
+                >
+                  {signal.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   )

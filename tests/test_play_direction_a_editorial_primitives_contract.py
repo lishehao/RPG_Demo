@@ -384,6 +384,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'type DecisionForecastGroup = "cost" | "upside" | "shift"' in panels
     assert 'data-gameplay-impact-summary="true"' in play_page
     assert 'data-gameplay-impact-group={group.id}' in play_page
+    assert 'data-gameplay-impact-group="next"' in play_page
+    assert 'data-gameplay-next-choice-signals="true"' in play_page
+    assert 'data-gameplay-next-choice-signal="normal-play"' in play_page
+    assert "nextChoiceSignals" in play_page
     assert 'data-gameplay-delta="normal-play"' in play_page
     assert "gameplayEnvelopePanel" in styles
     assert "gameplayLoopPanel" in styles
@@ -399,6 +403,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "resourceFocusCue" in styles
     assert "resourceFocusCueAction" in styles
     assert "optionBtnResourceFocusMatch" in styles
+    assert "gameplayNextChoiceChip" in styles
     assert "optionBtnActorFocusMatch" in styles
     assert "optionBtnActorFocusDimmed" in styles
     assert "actorFocusCue" in styles
@@ -437,6 +442,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.outcome_next_hint": "Shapes the next choices"' in strings
     assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
+    assert '"play.feedback_next_choice_label": "Next choice signals"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert 'data-play-outcome-receipt="true"' in panels
     assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
