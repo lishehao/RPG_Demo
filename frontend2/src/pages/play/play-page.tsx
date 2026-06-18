@@ -177,22 +177,54 @@ function GameplayStatePanel({ envelope }: { envelope: GameplayEnvelope }) {
 function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
   const t = useT()
   if (envelope.impact.length === 0) return null
+  const impactGroups = [
+    {
+      id: "cost",
+      label: t("play.feedback_impact_cost_label"),
+      items: envelope.impact.filter((delta) => delta.tone === "cost"),
+    },
+    {
+      id: "opened",
+      label: t("play.feedback_impact_opened_label"),
+      items: envelope.impact.filter((delta) => delta.tone === "gain" || delta.tone === "unlock"),
+    },
+    {
+      id: "shift",
+      label: t("play.feedback_impact_shift_label"),
+      items: envelope.impact.filter((delta) => delta.tone === "shift"),
+    },
+  ].filter((group) => group.items.length > 0)
+
   return (
     <section
       style={ppStyles.gameplayImpactPanel}
       data-gameplay-impact-summary="true"
       aria-label={t("play.gameplay_impact_label")}
     >
-      <span style={ppStyles.gameplayImpactKicker}>{t("play.gameplay_impact_label")}</span>
-      <div style={ppStyles.gameplayImpactList}>
-        {envelope.impact.map((delta, index) => (
-          <span
-            key={`${delta.label}-${index}`}
-            style={{ ...ppStyles.gameplayDeltaChip, ...(gameplayToneStyle(delta.tone) ?? {}) }}
-            data-gameplay-delta="normal-play"
+      <div style={ppStyles.gameplayImpactHeader}>
+        <span style={ppStyles.gameplayImpactKicker}>{t("play.gameplay_impact_label")}</span>
+        <span style={ppStyles.gameplayImpactHint}>{t("play.feedback_impact_hint")}</span>
+      </div>
+      <div style={ppStyles.gameplayImpactGroups}>
+        {impactGroups.map((group) => (
+          <div
+            key={group.id}
+            style={ppStyles.gameplayImpactGroup}
+            data-gameplay-impact-group={group.id}
           >
-            {delta.label}
-          </span>
+            <span style={ppStyles.gameplayImpactGroupLabel}>{group.label}</span>
+            <div style={ppStyles.gameplayImpactList}>
+              {group.items.map((delta, index) => (
+                <span
+                  key={`${delta.label}-${index}`}
+                  style={{ ...ppStyles.gameplayDeltaChip, ...(gameplayToneStyle(delta.tone) ?? {}) }}
+                  data-gameplay-delta="normal-play"
+                >
+                  {delta.label}
+                </span>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </section>

@@ -317,6 +317,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-decision-group={group.id}' in panels
     assert 'type DecisionForecastGroup = "cost" | "upside" | "shift"' in panels
     assert 'data-gameplay-impact-summary="true"' in play_page
+    assert 'data-gameplay-impact-group={group.id}' in play_page
     assert 'data-gameplay-delta="normal-play"' in play_page
     assert "gameplayEnvelopePanel" in styles
     assert "gameplayLoopPanel" in styles
@@ -328,6 +329,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayDecisionGroupUpside" in styles
     assert "gameplayDecisionGroupShift" in styles
     assert "gameplayImpactPanel" in styles
+    assert "gameplayImpactGroups" in styles
+    assert "feedbackPendingTimeline" in styles
+    assert "feedbackPendingStepActive" in styles
     assert '"play.gameplay_loop_label": "Action loop"' in strings
     assert '"play.gameplay_loop_choose_label": "Choose move"' in strings
     assert '"play.gameplay_loop_react_label": "Room reacts"' in strings
@@ -338,6 +342,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings
     assert '"play.gameplay_impact_label": "Observed changes"' in strings
+    assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
+    assert '"play.feedback_impact_opened_label": "Opened"' in strings
+    assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert "fetch(" not in envelope
     for forbidden in ("provider", "model", "schema", "token", "fallback", "debug"):
         assert forbidden not in envelope.casefold()
@@ -372,6 +379,9 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-support-actions="true"' in panels
     assert 'data-play-move-receipt="true"' in panels
     assert 'data-play-room-reacting="true"' in panels
+    assert 'data-play-feedback-timeline="true"' in panels
+    assert 'data-play-feedback-step={step.id}' in panels
+    assert 'data-play-feedback-step-state={step.state}' in panels
     assert 'data-play-pending-reaction-panel="true"' in panels
     assert "const showStandardOptions = !armedCard && !showFreeComposer && !showPickedReflection" in panels
     assert ".filter(({ i }) => focusedOptionIndex" not in panels

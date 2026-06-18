@@ -2444,6 +2444,11 @@ function ResolvingTurnPanel({
     ? t("play.resolve_status_target", { target })
     : t("play.resolve_status_room")
   const moveCopy = moveText || t("play.resolve_custom_move")
+  const feedbackSteps = [
+    { id: "receipt", label: t("play.feedback_pending_receipt_label"), state: "done" },
+    { id: "reaction", label: t("play.feedback_pending_reaction_label"), state: "active" },
+    { id: "update", label: t("play.feedback_pending_update_label"), state: "waiting" },
+  ] as const
   const resolvingAriaLabel = [t("play.resolve_title"), moveMeta, moveCopy, resolveStatus, progressCopy]
     .filter(Boolean)
     .join(". ")
@@ -2508,6 +2513,30 @@ function ResolvingTurnPanel({
             />
           ))}
         </span>
+      </div>
+      <div
+        style={ppStyles.feedbackPendingTimeline}
+        data-play-feedback-timeline="true"
+        aria-label={t("play.feedback_pending_timeline_label")}
+      >
+        {feedbackSteps.map((step) => (
+          <span
+            key={step.id}
+            style={{
+              ...ppStyles.feedbackPendingStep,
+              ...(step.state === "done"
+                ? ppStyles.feedbackPendingStepDone
+                : step.state === "active"
+                  ? ppStyles.feedbackPendingStepActive
+                  : null),
+            }}
+            data-play-feedback-step={step.id}
+            data-play-feedback-step-state={step.state}
+          >
+            <span style={ppStyles.feedbackPendingStepDot} aria-hidden />
+            <span style={ppStyles.feedbackPendingStepLabel}>{step.label}</span>
+          </span>
+        ))}
       </div>
     </motion.div>
   )
