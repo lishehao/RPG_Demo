@@ -25,6 +25,7 @@ from rpg_backend.narrative.engine import build_agent_plan
 from rpg_backend.narrative.repository import NarrativeRepository
 from rpg_backend.narrative.service import (
     NarrativeService,
+    _fallback_verb,
     _fallback_turn_action_phrase,
     _fallback_turn_options,
     _fallback_turn_pulses,
@@ -86,6 +87,12 @@ def test_fallback_turn_action_phrase_preserves_explicit_focus_target() -> None:
         _fallback_turn_action_phrase("Mira Vale — Ask why she backed off")
         == "your move toward Mira Vale — Ask why she backed off"
     )
+
+
+def test_fallback_verb_treats_title_case_character_names_as_singular() -> None:
+    assert _fallback_verb("Lena Rojas", "recalculates", "recalculate") == "recalculates"
+    assert _fallback_verb("Arthur Vance", "watches", "watch") == "watches"
+    assert _fallback_verb("Lena Rojas and Arthur Vance", "reacts", "react") == "react"
 
 
 def test_fallback_turn_pulses_prioritize_explicit_action_target(tmp_path) -> None:

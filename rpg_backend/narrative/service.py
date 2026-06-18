@@ -2722,13 +2722,21 @@ def _fallback_turn_names(template: NarrativeTemplate, pulses: list[NPCPulse]) ->
 
 
 def _fallback_name_is_plural(name: str) -> bool:
-    lower = name.strip().casefold()
+    stripped = name.strip()
+    lower = stripped.casefold()
     if not lower or lower in {"the room", "the boardroom", "the family table"}:
         return False
     if lower in {"hydroponics", "communications", "finance", "transit", "medical", "education", "security"}:
         return False
     if any(token in lower for token in (" and ", ",", "&")):
         return True
+    name_tokens = [token for token in re.split(r"\s+", stripped) if token]
+    if (
+        len(name_tokens) >= 2
+        and name_tokens[0].casefold() not in {"a", "an", "the"}
+        and all(token[:1].isupper() for token in name_tokens[:2])
+    ):
+        return False
     last = re.sub(r"[^a-z]+", "", lower.split()[-1]) if lower.split() else lower
     if last.endswith(("ss", "us")):
         return False
