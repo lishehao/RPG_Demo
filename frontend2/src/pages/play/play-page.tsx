@@ -854,7 +854,7 @@ export function PlayPage({
   }, [])
 
   useEffect(() => {
-    if (!story || !compactPlayChrome || busy || advisorOpen || ending) {
+    if (!story || busy || advisorOpen || ending) {
       setShowActionJump(false)
       return
     }

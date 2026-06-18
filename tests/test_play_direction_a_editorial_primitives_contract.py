@@ -666,7 +666,7 @@ def test_play_retry_banner_separates_signal_label_from_body_for_accessibility() 
     assert "errorInlineSignalBody" in styles
 
 
-def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() -> None:
+def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     action_jump = (ROOT / "frontend2/src/pages/play/components/play-action-jump.tsx").read_text()
     action_jump_utils = (ROOT / "frontend2/src/pages/play/components/play-action-jump-utils.ts").read_text()
@@ -674,7 +674,8 @@ def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() ->
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert "const [showActionJump, setShowActionJump] = useState(false)" in play_page
-    assert "!story || !compactPlayChrome || busy || advisorOpen || ending" in play_page
+    assert "!story || busy || advisorOpen || ending" in play_page
+    assert "!story || !compactPlayChrome || busy || advisorOpen || ending" not in play_page
     assert "currentActionAreaVisible" in play_page
     assert "isPlayActionAreaAwayFromViewport(actionArea)" in play_page
     assert "const actionJumpDetail =" in play_page
@@ -690,7 +691,9 @@ def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() ->
     assert "actionJumpDetail" in styles
     assert "actionJumpArrow" in styles
     assert 'position: "fixed"' in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
-    assert '"play.action_jump_label": "Continue your next move"' in strings
+    assert "maxWidth: 430" in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
+    assert '"play.action_jump_kicker": "Your move"' in strings
+    assert '"play.action_jump_label": "Continue to choices"' in strings
     assert '"play.action_jump_detail_choose": "Goal, pressure, and choices are ready."' in strings
     assert '"play.action_jump_detail_update": "Review what changed, then choose next."' in strings
 
