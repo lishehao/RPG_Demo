@@ -4125,11 +4125,19 @@ export function ActionArea({
           data-play-actor-focus-cue="true"
           data-play-actor-focus-id={actorFocus.id}
           data-play-actor-focus-match-count={actorFocusMatchCount}
-          aria-label={t("play.actor_focus_label")}
+          aria-label={`${t("play.actor_focus_label")}: ${actorFocus.name}. ${
+            actorFocusMatchCount > 0
+              ? t("play.actor_focus_match_detail", { name: actorFocus.name, count: actorFocusMatchCount })
+              : t("play.actor_focus_no_match", { name: actorFocus.name })
+          }`}
         >
-          <span style={ppStyles.actorFocusCueLabel}>{t("play.actor_focus_label")}</span>
-          <strong style={ppStyles.actorFocusCueName}>{actorFocus.name}</strong>
+          <span style={ppStyles.actorFocusCueHead} data-play-actor-focus-cue-head="true">
+            <span style={ppStyles.actorFocusCueLabel}>{t("play.actor_focus_label")}</span>
+            <span style={ppStyles.actorFocusCueDivider} aria-hidden>{" · "}</span>
+            <strong style={ppStyles.actorFocusCueName}>{actorFocus.name}</strong>
+          </span>
           <span style={ppStyles.actorFocusCueDetail}>
+            {" "}
             {actorFocusMatchCount > 0
               ? t("play.actor_focus_match_detail", { name: actorFocus.name, count: actorFocusMatchCount })
               : t("play.actor_focus_no_match", { name: actorFocus.name })}
@@ -4164,9 +4172,12 @@ export function ActionArea({
           data-play-resource-focus-match-count={resourceFocusMatchCount}
           aria-label={`${t("play.resource_focus_label")}: ${resourceFocus.label}. ${resourceFocusDetail}`}
         >
-          <span style={ppStyles.resourceFocusCueLabel}>{t("play.resource_focus_label")}</span>
-          <strong style={ppStyles.resourceFocusCueName}>{resourceFocus.label}</strong>
-          <span style={ppStyles.resourceFocusCueDetail}>{resourceFocusDetail}</span>
+          <span style={ppStyles.resourceFocusCueHead} data-play-resource-focus-cue-head="true">
+            <span style={ppStyles.resourceFocusCueLabel}>{t("play.resource_focus_label")}</span>
+            <span style={ppStyles.resourceFocusCueDivider} aria-hidden>{" · "}</span>
+            <strong style={ppStyles.resourceFocusCueName}>{resourceFocus.label}</strong>
+          </span>
+          <span style={ppStyles.resourceFocusCueDetail}> {resourceFocusDetail}</span>
           {resourceFocusMatchCount === 0 && showFreeActionToggle ? (
             <button
               type="button"

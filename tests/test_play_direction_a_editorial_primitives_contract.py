@@ -345,6 +345,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-resource-focus-cue="true"' in panels
     assert 'data-play-resource-focus-id={resourceFocus.id}' in panels
     assert "data-play-resource-focus-match-count={resourceFocusMatchCount}" in panels
+    assert 'data-play-resource-focus-cue-head="true"' in panels
+    assert "ppStyles.resourceFocusCueDivider" in panels
     assert "resourceFocusMatchCount === 0 && showFreeActionToggle" in panels
     assert 'data-play-resource-focus-custom-move="true"' in panels
     assert "onClick={openFreeActionComposer}" in panels
@@ -367,6 +369,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-actor-focus-cue="true"' in panels
     assert 'data-play-actor-focus-id={actorFocus.id}' in panels
     assert "data-play-actor-focus-match-count={actorFocusMatchCount}" in panels
+    assert 'data-play-actor-focus-cue-head="true"' in panels
+    assert "ppStyles.actorFocusCueDivider" in panels
+    assert 'aria-label={`${t("play.actor_focus_label")}: ${actorFocus.name}. ${' in panels
     assert "actorFocusMatchCount === 0 && showFreeActionToggle" in panels
     assert 'data-play-actor-focus-custom-move="true"' in panels
     assert "const freeActionFocusContext = actorFocus && actorFocusMatchCount === 0" in panels
@@ -458,6 +463,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayTrackFocused" in styles
     assert "gameplayTrackAction" in styles
     assert "resourceFocusCue" in styles
+    assert "resourceFocusCueHead" in styles
+    assert "resourceFocusCueDivider" in styles
     assert "resourceFocusCueAction" in styles
     assert "gameplayNextChoiceTargetButton" in styles
     assert "gameplayNextChoiceTargetFocused" in styles
@@ -471,6 +478,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "optionBtnActorFocusMatch" in styles
     assert "optionBtnActorFocusDimmed" in styles
     assert "actorFocusCue" in styles
+    assert "actorFocusCueHead" in styles
+    assert "actorFocusCueDivider" in styles
     assert "gameplayDecisionForecast" in styles
     assert "gameplayDecisionGroupCost" in styles
     assert "gameplayDecisionGroupUpside" in styles
