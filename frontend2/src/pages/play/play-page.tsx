@@ -199,6 +199,93 @@ function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
   )
 }
 
+type GameplayLoopStage = "read" | "choose" | "react" | "update" | "ending"
+
+function GameplayLoopGuide({
+  stage,
+  hasImpact,
+}: {
+  stage: GameplayLoopStage
+  hasImpact: boolean
+}) {
+  const t = useT()
+  const steps: Array<{
+    id: GameplayLoopStage
+    label: string
+    detail: string
+  }> = [
+    {
+      id: "read",
+      label: t("play.gameplay_loop_read_label"),
+      detail: t("play.gameplay_loop_read_detail"),
+    },
+    {
+      id: "choose",
+      label: t("play.gameplay_loop_choose_label"),
+      detail: t("play.gameplay_loop_choose_detail"),
+    },
+    {
+      id: "react",
+      label: t("play.gameplay_loop_react_label"),
+      detail: t("play.gameplay_loop_react_detail"),
+    },
+    {
+      id: "update",
+      label: t("play.gameplay_loop_update_label"),
+      detail: t("play.gameplay_loop_update_detail"),
+    },
+  ]
+  const stageOrder: GameplayLoopStage[] = ["read", "choose", "react", "update"]
+  const activeIndex = stage === "ending" ? steps.length : Math.max(0, stageOrder.indexOf(stage))
+
+  return (
+    <section
+      style={ppStyles.gameplayLoopPanel}
+      data-gameplay-loop-guide="normal-play"
+      data-gameplay-loop-stage={stage}
+      aria-label={t("play.gameplay_loop_label")}
+    >
+      <div style={ppStyles.gameplayLoopHeader}>
+        <span style={ppStyles.gameplayLoopKicker}>{t("play.gameplay_loop_kicker")}</span>
+        <strong style={ppStyles.gameplayLoopTitle}>
+          {stage === "ending"
+            ? t("play.gameplay_loop_status_ending")
+            : stage === "react"
+              ? t("play.gameplay_loop_status_react")
+              : hasImpact && stage === "update"
+                ? t("play.gameplay_loop_status_update")
+                : t("play.gameplay_loop_status_choose")}
+        </strong>
+      </div>
+      <ol style={ppStyles.gameplayLoopSteps}>
+        {steps.map((step, index) => {
+          const isActive = step.id === stage
+          const isDone = stage === "ending" || index < activeIndex
+          return (
+            <li
+              key={step.id}
+              style={{
+                ...ppStyles.gameplayLoopStep,
+                ...(isActive ? ppStyles.gameplayLoopStepActive : {}),
+                ...(isDone ? ppStyles.gameplayLoopStepDone : {}),
+              }}
+              data-gameplay-loop-step={step.id}
+              data-gameplay-loop-step-active={isActive ? "true" : "false"}
+              data-gameplay-loop-step-done={isDone ? "true" : "false"}
+            >
+              <span style={ppStyles.gameplayLoopIndex}>{index + 1}</span>
+              <span style={ppStyles.gameplayLoopStepText}>
+                <strong style={ppStyles.gameplayLoopStepLabel}>{step.label}</strong>
+                <span style={ppStyles.gameplayLoopStepDetail}>{step.detail}</span>
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+    </section>
+  )
+}
+
 export function PlayPage({
   sessionId,
   reviewerMode = false,
@@ -579,6 +666,15 @@ export function PlayPage({
     castNameById,
     backendEnvelope: story.gameplay_envelope ?? null,
   })
+  const gameplayLoopStage: GameplayLoopStage = isComplete
+    ? "ending"
+    : busy
+      ? "react"
+      : actionAreaVisible && turnsCompleted > 0 && gameplayEnvelope.impact.length > 0
+        ? "update"
+        : actionAreaVisible
+          ? "choose"
+          : "read"
   const advisorSuggestions = buildAdvisorSuggestions({
     story,
     lastNarrator,
@@ -636,7 +732,13 @@ export function PlayPage({
           ) : null}
 
           {!isComplete ? (
-            <GameplayStatePanel envelope={gameplayEnvelope} />
+            <>
+              <GameplayStatePanel envelope={gameplayEnvelope} />
+              <GameplayLoopGuide
+                stage={gameplayLoopStage}
+                hasImpact={gameplayEnvelope.impact.length > 0}
+              />
+            </>
           ) : null}
 
           {isComplete && ending ? (

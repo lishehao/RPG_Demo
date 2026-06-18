@@ -268,6 +268,14 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "backendEnvelope: story.gameplay_envelope ?? null" in play_page
     assert "gameplay_envelope: response.gameplay_envelope ?? null" in play_page
     assert "<GameplayStatePanel envelope={gameplayEnvelope} />" in play_page
+    assert "<GameplayLoopGuide" in play_page
+    assert 'data-gameplay-loop-guide="normal-play"' in play_page
+    assert "data-gameplay-loop-stage={stage}" in play_page
+    assert "data-gameplay-loop-step={step.id}" in play_page
+    assert 'data-gameplay-loop-step-active={isActive ? "true" : "false"}' in play_page
+    assert 'data-gameplay-loop-step-done={isDone ? "true" : "false"}' in play_page
+    assert 'busy\n      ? "react"' in play_page
+    assert 'actionAreaVisible && turnsCompleted > 0 && gameplayEnvelope.impact.length > 0\n        ? "update"' in play_page
     assert "<GameplayImpactSummary envelope={gameplayEnvelope} />" in play_page
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
@@ -307,8 +315,15 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-impact-summary="true"' in play_page
     assert 'data-gameplay-delta="normal-play"' in play_page
     assert "gameplayEnvelopePanel" in styles
+    assert "gameplayLoopPanel" in styles
+    assert "gameplayLoopStepActive" in styles
+    assert "gameplayLoopStepDone" in styles
     assert "gameplayForecastChip" in styles
     assert "gameplayImpactPanel" in styles
+    assert '"play.gameplay_loop_label": "Action loop"' in strings
+    assert '"play.gameplay_loop_choose_label": "Choose move"' in strings
+    assert '"play.gameplay_loop_react_label": "Room reacts"' in strings
+    assert '"play.gameplay_loop_update_label": "See changes"' in strings
     assert '"play.gameplay_objective_label": "Goal"' in strings
     assert '"play.gameplay_impact_label": "Observed changes"' in strings
     assert "fetch(" not in envelope
