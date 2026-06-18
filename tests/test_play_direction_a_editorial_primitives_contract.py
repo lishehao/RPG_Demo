@@ -345,6 +345,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'aria-label={t("play.action_target_title", { name: actionTarget.name })}' in panels
     assert 't("play.action_target_label")' in panels
     assert 't("play.action_target_title", { name: actionTarget.name })' in panels
+    assert 'data-play-action-target-detail="true"' in panels
+    assert "data-play-action-target-detail-id={target.id}" in panels
+    assert 't("play.action_target_detail_label")' in panels
+    assert 't("play.action_target_detail_text", { name: target.name })' in panels
     assert 'data-play-actor-focus-cue="true"' in panels
     assert 'data-play-actor-focus-id={actorFocus.id}' in panels
     assert "data-play-actor-focus-match-count={actorFocusMatchCount}" in panels
@@ -479,6 +483,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
     assert '"play.action_target_label": "Target"' in strings
     assert '"play.action_target_title": "This move primarily points at {name}"' in strings
+    assert '"play.action_target_detail_label": "Focus"' in strings
+    assert '"play.action_target_detail_text": "This move primarily pushes {name}\'s reaction."' in strings
     assert '"play.resource_focus_label": "Resource focus"' in strings
     assert '"play.resource_focus_evidence_label": "Evidence"' in strings
     assert '"play.resource_focus_time_title": "Highlight moves that spend, buy, or change time pressure"' in strings

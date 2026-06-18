@@ -3801,6 +3801,7 @@ export function ActionArea({
   const renderSelectedOptionDetail = (
     hint: string,
     forecasts: GameplayActionForecast[],
+    target?: { id: string; name: string } | null,
   ) => {
     const forecastDetails = forecasts.filter((chip) => chip.detail)
     return (
@@ -3830,6 +3831,26 @@ export function ActionArea({
             {hint || t("play.preview_action_risk_default")}
           </span>
         </span>
+        {target ? (
+          <span
+            style={{
+              ...ppStyles.optionExpandedDetailSection,
+              ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
+            }}
+            data-play-action-target-detail="true"
+            data-play-action-target-detail-id={target.id}
+          >
+            <span style={ppStyles.optionExpandedDetailLabel}>
+              {t("play.action_target_detail_label")}
+            </span>
+            <span
+              style={ppStyles.optionExpandedDetailText}
+              title={t("play.action_target_title", { name: target.name })}
+            >
+              {t("play.action_target_detail_text", { name: target.name })}
+            </span>
+          </span>
+        ) : null}
         {forecasts.length ? (
           <span
             style={{
@@ -4347,7 +4368,7 @@ export function ActionArea({
                         >
                           {isSelected ? t("play.selected_move_kicker") : t("play.option_expand_cta")}
                         </span>
-                        {isSelected ? renderSelectedOptionDetail(opt.hint ?? "", optionForecasts) : null}
+                        {isSelected ? renderSelectedOptionDetail(opt.hint ?? "", optionForecasts, actionTarget) : null}
                       </div>
                     </motion.button>
                     <AnimatePresence initial={false}>
