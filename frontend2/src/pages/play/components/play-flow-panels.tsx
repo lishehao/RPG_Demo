@@ -47,6 +47,19 @@ const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
 
 type DecisionForecastGroup = "cost" | "upside" | "shift"
 
+type ResolvingCommitmentSignal = {
+  id: string
+  label: string
+  tone: GameplayActionForecast["tone"]
+  title?: string
+}
+
+function resolvingSignalToneStyle(tone: GameplayActionForecast["tone"]): CSSProperties {
+  if (tone === "cost") return ppStyles.gameplayDecisionGroupCost
+  if (tone === "gain" || tone === "unlock") return ppStyles.gameplayDecisionGroupUpside
+  return ppStyles.gameplayDecisionGroupShift
+}
+
 type SceneParallaxOffset = {
   x: number
   y: number
@@ -2517,11 +2530,13 @@ function ResolvingTurnPanel({
   moveText,
   privateIntent,
   target,
+  commitmentSignals = [],
 }: {
   moveTag?: string
   moveText: string
   privateIntent?: string
   target?: string
+  commitmentSignals?: ResolvingCommitmentSignal[]
 }) {
   const t = useT()
   const reducedMotion = useReducedMotion()
@@ -2580,6 +2595,29 @@ function ResolvingTurnPanel({
           <span style={ppStyles.resolvingPrivateLine}>
             <span style={ppStyles.resolvingPrivateLabel}>{t("play.move_packet_private_label")}</span>
             <span style={ppStyles.resolvingPrivateCopy} title={privateIntentCopy}>{privateIntentCopy}</span>
+          </span>
+        ) : null}
+        {commitmentSignals.length ? (
+          <span
+            style={ppStyles.resolvingCommitmentSignals}
+            data-play-move-receipt-signals="true"
+            aria-label={t("play.move_receipt_signals_label")}
+          >
+            {commitmentSignals.map((signal) => (
+              <span
+                key={signal.id}
+                style={{
+                  ...ppStyles.gameplayDeltaChip,
+                  ...ppStyles.resolvingCommitmentSignalChip,
+                  ...resolvingSignalToneStyle(signal.tone),
+                }}
+                data-play-move-receipt-signal="true"
+                data-play-move-receipt-signal-tone={signal.tone}
+                title={signal.title ?? signal.label}
+              >
+                {signal.label}
+              </span>
+            ))}
           </span>
         ) : null}
       </div>
@@ -3279,6 +3317,56 @@ export function ActionArea({
       : submittedLeverageLabel
         ? submittedLeverageTarget ?? undefined
         : freeActionTargetNameForFeedback || undefined
+  const pickedOptionTarget =
+    pickedOption && pickedOptionParsed
+      ? findActionTarget(pickedOptionParsed.body, pickedOption.hint, castNameById, latestNpcPulses)
+      : null
+  const pickedOptionForecasts = pickedIndex !== null ? actionForecasts?.[pickedIndex] ?? [] : []
+  const resolvingCommitmentSignals = useMemo<ResolvingCommitmentSignal[]>(() => {
+    const signals: ResolvingCommitmentSignal[] = []
+    const pushSignal = (signal: ResolvingCommitmentSignal) => {
+      if (signals.some((existing) => existing.label === signal.label)) return
+      signals.push(signal)
+    }
+    if (pickedOptionTarget) {
+      pushSignal({
+        id: `target:${pickedOptionTarget.id}`,
+        label: `${t("play.action_target_label")} ${pickedOptionTarget.name}`,
+        tone: "shift",
+        title: t("play.action_target_title", { name: pickedOptionTarget.name }),
+      })
+    } else if (submittedLeverageTarget) {
+      pushSignal({
+        id: `target:leverage:${submittedLeverageTarget}`,
+        label: `${t("play.action_target_label")} ${submittedLeverageTarget}`,
+        tone: "shift",
+        title: t("play.action_target_title", { name: submittedLeverageTarget }),
+      })
+    } else if (submittedFree && freeActionTargetNameForFeedback) {
+      pushSignal({
+        id: `target:free:${freeActionTargetNameForFeedback}`,
+        label: `${t("play.action_target_label")} ${freeActionTargetNameForFeedback}`,
+        tone: "shift",
+        title: t("play.action_target_title", { name: freeActionTargetNameForFeedback }),
+      })
+    }
+    pickedOptionForecasts.slice(0, 3).forEach((forecast, index) => {
+      pushSignal({
+        id: `forecast:${index}:${forecast.label}`,
+        label: forecast.label,
+        tone: forecast.tone,
+        title: forecast.detail ?? forecast.label,
+      })
+    })
+    return signals.slice(0, 3)
+  }, [
+    freeActionTargetNameForFeedback,
+    pickedOptionForecasts,
+    pickedOptionTarget,
+    submittedFree,
+    submittedLeverageTarget,
+    t,
+  ])
   const diaryDraft = diary.trim()
   const diaryPreview =
     diaryDraft.length > 130 ? `${diaryDraft.slice(0, 127)}...` : diaryDraft
@@ -4392,6 +4480,7 @@ export function ActionArea({
             moveText={resolvingMoveText}
             privateIntent={diaryDraft}
             target={resolvingTarget}
+            commitmentSignals={resolvingCommitmentSignals}
           />
         ) : null}
       </AnimatePresence>

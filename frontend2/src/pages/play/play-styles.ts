@@ -3751,6 +3751,21 @@ export const ppStyles: Record<string, CSSProperties> = {
     WebkitBoxOrient: "vertical" as const,
     overflow: "hidden",
   },
+  resolvingCommitmentSignals: {
+    gridColumn: "1 / -1",
+    minWidth: 0,
+    display: "flex",
+    flexWrap: "wrap" as const,
+    alignItems: "center",
+    gap: 5,
+    paddingTop: 1,
+  },
+  resolvingCommitmentSignalChip: {
+    maxWidth: "100%",
+    fontSize: 10.5,
+    padding: "2px 6px",
+    background: "rgba(255,245,230,0.045)",
+  },
   roomReactingPanel: {
     minWidth: 0,
     padding: "12px 12px 12px",
