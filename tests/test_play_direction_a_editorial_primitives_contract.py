@@ -646,6 +646,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "onOpenAdvisor" not in selected_confirm
     assert "option_change_cta" not in selected_confirm
     assert "optionForecasts.length && !isSelected" in panels
+    assert "renderCollapsedForecast(optionForecasts)" in panels
+    assert 'data-gameplay-action-forecast-summary="true"' in panels
+    assert "gameplayForecastInline" in styles
+    assert "gameplayForecastInlineLabel" in styles
+    assert '"play.option_forecast_kicker": "Forecast"' in strings
     assert "change choice" not in strings
     assert '"play.selected_move_kicker": "Selected move"' in strings
     assert '"play.selected_move_commit_cta": "Take this action"' in strings

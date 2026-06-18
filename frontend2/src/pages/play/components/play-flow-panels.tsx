@@ -3967,6 +3967,43 @@ export function ActionArea({
     )
   }, [decisionForecastGroupForChip, decisionForecastLabelForGroup, t])
 
+  const renderCollapsedForecast = useCallback((chips: GameplayActionForecast[]) => {
+    if (!chips.length) return null
+    return (
+      <span
+        style={ppStyles.gameplayForecastInline}
+        data-gameplay-action-forecast-summary="true"
+        aria-label={t("play.gameplay_decision_forecast_label")}
+      >
+        <span style={ppStyles.gameplayForecastInlineLabel}>
+          {t("play.option_forecast_kicker")}
+        </span>
+        <span style={ppStyles.gameplayForecastChipRow}>
+          {chips.slice(0, 3).map((chip) => (
+            <span
+              key={`forecast-summary-${chip.label}`}
+              title={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
+              aria-label={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
+              style={{
+                ...ppStyles.gameplayForecastChip,
+                ...(chip.tone === "gain"
+                  ? ppStyles.gameplayToneGain
+                  : chip.tone === "cost"
+                    ? ppStyles.gameplayToneCost
+                    : chip.tone === "unlock"
+                      ? ppStyles.gameplayToneUnlock
+                      : {}),
+              }}
+              data-gameplay-forecast-chip="normal-play"
+            >
+              {chip.label}
+            </span>
+          ))}
+        </span>
+      </span>
+    )
+  }, [t])
+
   const renderSelectedOptionDetail = (
     hint: string,
     forecasts: GameplayActionForecast[],
@@ -4537,7 +4574,7 @@ export function ActionArea({
                             style={ppStyles.gameplayDecisionForecastShell}
                             data-gameplay-action-forecast="true"
                           >
-                            {renderDecisionForecast(optionForecasts, { compact: compactActionChrome })}
+                            {renderCollapsedForecast(optionForecasts)}
                           </span>
                         ) : null}
                         <span
