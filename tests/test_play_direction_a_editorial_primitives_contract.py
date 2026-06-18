@@ -386,6 +386,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-impact-spotlight="true"' in play_page
     assert "data-gameplay-impact-spotlight-tone={primaryImpact.tone}" in play_page
     assert "const primaryImpact =" in play_page
+    assert "function parseRelationshipDeltaLabel(" in play_page
+    assert "function relationshipShiftCopy(" in play_page
+    assert 'data-gameplay-relationship-delta="true"' in play_page
+    assert "aria-label={`${parsed.name} ${relationshipShiftCopy(t, parsed.shift)}`}" in play_page
     assert 'data-gameplay-impact-group={group.id}' in play_page
     assert 'data-gameplay-impact-group="next"' in play_page
     assert 'data-gameplay-next-choice-signals="true"' in play_page
@@ -417,6 +421,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayImpactPanel" in styles
     assert "gameplayImpactSpotlight" in styles
     assert "gameplayImpactSpotlightValue" in styles
+    assert "gameplayRelationshipDelta" in styles
+    assert "gameplayRelationshipDeltaShift" in styles
     assert "gameplayImpactGroups" in styles
     assert "outcomeReceiptHeader" in styles
     assert "outcomeReceiptHint" in styles

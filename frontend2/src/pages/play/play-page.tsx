@@ -157,6 +157,23 @@ function gameplayResourceFocusTitle(t: ReturnType<typeof useT>, id: GameplayReso
   return t("play.resource_focus_evidence_title")
 }
 
+function parseRelationshipDeltaLabel(label: string): { name: string; shift: string } | null {
+  const match = label.match(/^(.+?):\s*(warmer|colder|wary|broken|steady)$/i)
+  if (!match) return null
+  return {
+    name: match[1]?.trim() ?? "",
+    shift: match[2]?.trim().toLowerCase() ?? "",
+  }
+}
+
+function relationshipShiftCopy(t: ReturnType<typeof useT>, shift: string): string {
+  if (shift === "warmer") return t("play.impact_warmer")
+  if (shift === "colder") return t("play.impact_colder")
+  if (shift === "wary") return t("play.impact_wary")
+  if (shift === "broken") return t("play.impact_broken")
+  return t("play.impact_steady")
+}
+
 function GameplayStatePanel({
   envelope,
   focusedResourceId,
@@ -261,6 +278,25 @@ function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
       items: envelope.impact.filter((delta) => delta.tone === "shift"),
     },
   ].filter((group) => group.items.length > 0)
+  const renderImpactValue = (
+    delta: (typeof envelope.impact)[number],
+    mode: "spotlight" | "chip",
+  ) => {
+    const parsed = parseRelationshipDeltaLabel(delta.label)
+    if (!parsed) return delta.label
+    return (
+      <span
+        style={mode === "spotlight" ? ppStyles.gameplayRelationshipDeltaSpotlight : ppStyles.gameplayRelationshipDelta}
+        data-gameplay-relationship-delta="true"
+        aria-label={`${parsed.name} ${relationshipShiftCopy(t, parsed.shift)}`}
+      >
+        <span style={ppStyles.gameplayRelationshipDeltaName}>{parsed.name}</span>
+        <span style={ppStyles.gameplayRelationshipDeltaShift}>
+          {relationshipShiftCopy(t, parsed.shift)}
+        </span>
+      </span>
+    )
+  }
 
   return (
     <section
@@ -285,8 +321,9 @@ function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
               ...ppStyles.gameplayImpactSpotlightValue,
               ...(gameplayToneStyle(primaryImpact.tone) ?? {}),
             }}
+            title={primaryImpact.label}
           >
-            {primaryImpact.label}
+            {renderImpactValue(primaryImpact, "spotlight")}
           </strong>
         </div>
       ) : null}
@@ -304,8 +341,9 @@ function GameplayImpactSummary({ envelope }: { envelope: GameplayEnvelope }) {
                   key={`${delta.label}-${index}`}
                   style={{ ...ppStyles.gameplayDeltaChip, ...(gameplayToneStyle(delta.tone) ?? {}) }}
                   data-gameplay-delta="normal-play"
+                  title={delta.label}
                 >
-                  {delta.label}
+                  {renderImpactValue(delta, "chip")}
                 </span>
               ))}
             </div>
