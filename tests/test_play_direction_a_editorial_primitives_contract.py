@@ -277,6 +277,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'busy\n      ? "react"' in play_page
     assert 'actionAreaVisible && turnsCompleted > 0 && gameplayEnvelope.impact.length > 0\n        ? "update"' in play_page
     assert "<GameplayImpactSummary envelope={gameplayEnvelope} />" in play_page
+    assert "!isComplete && !busy && turnsCompleted > 0" in play_page
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
     assert 'data-gameplay-forecast-detail="normal-play"' in panels

@@ -837,7 +837,7 @@ export function PlayPage({
             )
           })}
 
-          {!isComplete && !busy ? (
+          {!isComplete && !busy && turnsCompleted > 0 ? (
             <GameplayImpactSummary envelope={gameplayEnvelope} />
           ) : null}
 
