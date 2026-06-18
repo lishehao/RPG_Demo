@@ -3302,6 +3302,23 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.3,
   },
+  optionTitleLine: {
+    minWidth: 0,
+    display: "inline-flex",
+    alignItems: "baseline",
+    columnGap: 7,
+    rowGap: 2,
+    flex: "1 1 360px",
+    flexWrap: "wrap" as const,
+  },
+  optionActionText: {
+    minWidth: 0,
+    color: "inherit",
+    fontSize: "inherit",
+    lineHeight: "inherit",
+    fontWeight: 650,
+    overflowWrap: "anywhere" as const,
+  },
   optionTagChip: {
     fontSize: 11,
     fontWeight: 850,
@@ -3360,9 +3377,8 @@ export const ppStyles: Record<string, CSSProperties> = {
   optionExpandedDetail: {
     flexBasis: "100%",
     display: "grid",
-    gridTemplateColumns: "auto minmax(0, 1fr)",
-    columnGap: 9,
-    rowGap: 4,
+    gridTemplateColumns: "minmax(0, 1fr)",
+    rowGap: 8,
     marginTop: 6,
     paddingTop: 8,
     borderTopWidth: 1,
@@ -3372,6 +3388,18 @@ export const ppStyles: Record<string, CSSProperties> = {
   optionExpandedDetailCompact: {
     gridTemplateColumns: "minmax(0, 1fr)",
     marginTop: 7,
+  },
+  optionExpandedDetailSection: {
+    minWidth: 0,
+    display: "grid",
+    gridTemplateColumns: "minmax(92px, auto) minmax(0, 1fr)",
+    alignItems: "baseline",
+    columnGap: 9,
+    rowGap: 4,
+  },
+  optionExpandedDetailSectionCompact: {
+    gridTemplateColumns: "minmax(0, 1fr)",
+    rowGap: 3,
   },
   optionExpandedDetailLabel: {
     color: actionPalette.amberTextStrong,

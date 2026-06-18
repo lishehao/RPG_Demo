@@ -367,6 +367,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-decision-tray="true"' not in panels
     assert 'data-play-action-card-expanded={isSelected ? "true" : undefined}' in panels
     assert 'data-play-action-card-detail="true"' in panels
+    assert 'data-play-action-card-title="true"' in panels
+    assert 'data-play-action-card-body="true"' in panels
+    assert 'data-play-action-card-detail-section="result"' in panels
+    assert 'data-play-action-card-detail-section="forecast"' in panels
+    assert 'data-play-action-card-detail-section="why-now"' in panels
     assert 'data-play-action-card-confirm="true"' in panels
     assert 'data-play-action-card-confirm-panel="true"' in panels
     assert 'data-play-action-option-card="true"' in panels
@@ -392,6 +397,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "optionCardConfirmPanel" in styles
     assert "optionCardConfirmRail" in styles
     assert "optionCardPrimaryActionGrid" in styles
+    assert "optionTitleLine" in styles
+    assert "optionActionText" in styles
+    assert "optionExpandedDetailSection" in styles
+    assert "optionExpandedDetailSectionCompact" in styles
     assert 'gridTemplateColumns: "auto minmax(0, 1fr)"' not in selected_confirm_styles
     assert "borderRadius: 999" in selected_confirm_styles
     assert "minHeight: 40" in selected_button_styles
@@ -417,6 +426,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "ask_friend_inline" not in selected_confirm
     assert "onOpenAdvisor" not in selected_confirm
     assert "option_change_cta" not in selected_confirm
+    assert "optionForecasts.length && !isSelected" in panels
     assert "change choice" not in strings
     assert '"play.selected_move_kicker": "Selected move"' in strings
     assert '"play.selected_move_commit_cta": "Take this action"' in strings
@@ -427,6 +437,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.room_reacting_title": "The room is reacting"' in strings
     assert '"play.option_expand_cta": "View move"' in strings
     assert '"play.option_expanded_detail_label": "Consequence"' in strings
+    assert '"play.option_expanded_result_label": "Likely result"' in strings
 
 
 def test_play_retry_banner_separates_signal_label_from_body_for_accessibility() -> None:

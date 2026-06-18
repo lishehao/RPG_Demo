@@ -1,4 +1,4 @@
-import { Fragment, type CSSProperties, type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react"
 import type {
   NarrativeAdvisorMessage,
@@ -3689,19 +3689,40 @@ export function ActionArea({
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
         transition={reducedMotion ? { duration: 0.01 } : { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
       >
-        <span style={ppStyles.optionExpandedDetailLabel}>
-          {t("play.option_expanded_detail_label")}
-        </span>
-        <span style={ppStyles.optionExpandedDetailText}>
-          {hint || t("play.preview_action_risk_default")}
+        <span
+          style={{
+            ...ppStyles.optionExpandedDetailSection,
+            ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
+          }}
+          data-play-action-card-detail-section="result"
+        >
+          <span style={ppStyles.optionExpandedDetailLabel}>
+            {t("play.option_expanded_result_label")}
+          </span>
+          <span style={ppStyles.optionExpandedDetailText}>
+            {hint || t("play.preview_action_risk_default")}
+          </span>
         </span>
         {forecasts.length ? (
-          <span style={ppStyles.optionExpandedDecisionBlock}>
+          <span
+            style={{
+              ...ppStyles.optionExpandedDetailSection,
+              ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
+            }}
+            data-play-action-card-detail-section="forecast"
+          >
             {renderDecisionForecast(forecasts, { compact: compactActionChrome, detail: true })}
           </span>
         ) : null}
         {forecastDetails.map((chip) => (
-          <Fragment key={`${chip.label}-${chip.detail}`}>
+          <span
+            key={`${chip.label}-${chip.detail}`}
+            style={{
+              ...ppStyles.optionExpandedDetailSection,
+              ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
+            }}
+            data-play-action-card-detail-section="why-now"
+          >
             <span style={ppStyles.optionExpandedDetailLabel}>
               {t("play.gameplay_forecast_detail_label")}
             </span>
@@ -3712,7 +3733,7 @@ export function ActionArea({
             >
               {chip.detail}
             </span>
-          </Fragment>
+          </span>
         ))}
       </motion.span>
     )
@@ -4045,17 +4066,27 @@ export function ActionArea({
                             {optionShortcutKey}
                           </kbd>
                         ) : null}
-                        {parsed.tag ? (
+                        <span
+                          style={ppStyles.optionTitleLine}
+                          data-play-action-card-title="true"
+                        >
+                          {parsed.tag ? (
+                            <span
+                              style={{
+                                ...ppStyles.optionTagChip,
+                                ...optionTagStyle(parsed.tag),
+                              }}
+                            >
+                              {parsed.tag}
+                            </span>
+                          ) : null}
                           <span
-                            style={{
-                              ...ppStyles.optionTagChip,
-                              ...optionTagStyle(parsed.tag),
-                            }}
+                            style={ppStyles.optionActionText}
+                            data-play-action-card-body="true"
                           >
-                            {parsed.tag}
+                            {parsed.body}
                           </span>
-                        ) : null}
-                        <span>{parsed.body}</span>
+                        </span>
                         {opt.hint && !isSelected && optionForecasts.length === 0 ? (
                           <span
                             style={{
@@ -4067,7 +4098,7 @@ export function ActionArea({
                             {opt.hint}
                           </span>
                         ) : null}
-                        {optionForecasts.length ? (
+                        {optionForecasts.length && !isSelected ? (
                           <span
                             style={ppStyles.gameplayDecisionForecastShell}
                             data-gameplay-action-forecast="true"
