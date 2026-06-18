@@ -1505,6 +1505,34 @@ export function StoryBeat({
     const inlineImpactPulses = [...impactPulses]
       .sort((a, b) => outcomePriority(b.shift) - outcomePriority(a.shift))
       .slice(0, 3)
+    const latestDigestPulses = [...impactPulses]
+      .sort((a, b) => outcomePriority(b.shift) - outcomePriority(a.shift))
+      .slice(0, 2)
+    const latestOptionCount = message.options.length
+    const showLatestDigestInventory = hasDelta && latestDigestPulses.length === 0
+    const showLatestBeatDigest =
+      !!isLatestNarrator &&
+      !hasFollowingPlayerEcho &&
+      (latestDigestPulses.length > 0 || hasDelta || latestOptionCount > 0)
+    const latestDigestA11yItems = [
+      ...latestDigestPulses.map((pulse) => {
+        const name = (castNameById && castNameById[pulse.npc_id]) || pulse.npc_id
+        return `${name} ${pulseDeltaLabel(pulse.shift, t)}`
+      }),
+      ...(showLatestDigestInventory
+        ? [`${t("play.latest_beat_digest_hand")} ${t("play.latest_beat_digest_hand_changed")}`]
+        : []),
+      ...(latestOptionCount > 0
+        ? [
+            `${t("play.latest_beat_digest_next")} ${t("play.latest_beat_digest_options", {
+              count: latestOptionCount,
+            })}`,
+          ]
+        : []),
+    ]
+    const latestDigestA11yLabel = latestDigestA11yItems.length
+      ? `${t("play.latest_beat_digest_label")}: ${latestDigestA11yItems.join("; ")}`
+      : t("play.latest_beat_digest_label")
     const hasTensionShift = impactPulses.some(
       (p) => p.shift === "colder" || p.shift === "wary",
     )
@@ -1602,6 +1630,59 @@ export function StoryBeat({
           </motion.div>
         ) : null}
         <div style={textStyle}>{message.content}</div>
+        {showLatestBeatDigest ? (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08, ...itemTransition }}
+            style={ppStyles.latestBeatDigest}
+            aria-label={latestDigestA11yLabel}
+            data-play-latest-beat-digest="true"
+          >
+            <span style={ppStyles.latestBeatDigestLabel}>
+              {t("play.latest_beat_digest_label")}
+            </span>
+            <span style={ppStyles.latestBeatDigestItems}>
+              {latestDigestPulses.map((pulse) => {
+                const name = (castNameById && castNameById[pulse.npc_id]) || pulse.npc_id
+                return (
+                  <span
+                    key={`${pulse.npc_id}:${pulse.shift}:latest-digest`}
+                    style={ppStyles.latestBeatDigestItem}
+                    data-play-latest-beat-digest-pulse={pulse.npc_id}
+                  >
+                    <span style={ppStyles.latestBeatDigestName}>{name}</span>
+                    <strong style={ppStyles.latestBeatDigestValue}>
+                      {pulseDeltaLabel(pulse.shift, t)}
+                    </strong>
+                  </span>
+                )
+              })}
+              {showLatestDigestInventory ? (
+                <span
+                  style={ppStyles.latestBeatDigestItem}
+                  data-play-latest-beat-digest-inventory="true"
+                >
+                  <span style={ppStyles.latestBeatDigestName}>{t("play.latest_beat_digest_hand")}</span>
+                  <strong style={ppStyles.latestBeatDigestValue}>
+                    {t("play.latest_beat_digest_hand_changed")}
+                  </strong>
+                </span>
+              ) : null}
+              {latestOptionCount > 0 ? (
+                <span
+                  style={ppStyles.latestBeatDigestItem}
+                  data-play-latest-beat-digest-options="true"
+                >
+                  <span style={ppStyles.latestBeatDigestName}>{t("play.latest_beat_digest_next")}</span>
+                  <strong style={ppStyles.latestBeatDigestValue}>
+                    {t("play.latest_beat_digest_options", { count: latestOptionCount })}
+                  </strong>
+                </span>
+              ) : null}
+            </span>
+          </motion.div>
+        ) : null}
         {isBookmarked ? (
           <motion.div
             initial={{ opacity: 0, y: -3 }}

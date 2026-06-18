@@ -473,6 +473,29 @@ def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() ->
     assert '"play.action_jump_detail_update": "Review what changed, then choose next."' in strings
 
 
+def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    story_beat = panels[panels.index("export function StoryBeat") : panels.index("  // player move (echoed action)")]
+
+    assert "const latestDigestPulses" in story_beat
+    assert "const showLatestBeatDigest" in story_beat
+    assert "const latestDigestA11yItems" in story_beat
+    assert "const latestDigestA11yLabel" in story_beat
+    assert 'aria-label={latestDigestA11yLabel}' in story_beat
+    assert "latestDigestPulses.length > 0 || hasDelta || latestOptionCount > 0" in story_beat
+    assert "hasDelta && latestDigestPulses.length === 0" in story_beat
+    assert 'data-play-latest-beat-digest="true"' in story_beat
+    assert "data-play-latest-beat-digest-pulse={pulse.npc_id}" in story_beat
+    assert 'data-play-latest-beat-digest-options="true"' in story_beat
+    assert "latestBeatDigest" in styles
+    assert "latestBeatDigestItems" in styles
+    assert '"play.latest_beat_digest_label": "Current beat"' in strings
+    assert '"play.latest_beat_digest_options": "{count} moves ready"' in strings
+
+
 def test_play_long_history_fixture_exercises_action_jump_with_real_action_area() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
