@@ -455,14 +455,22 @@ def test_compact_play_has_jump_to_action_affordance_without_desktop_clutter() ->
     assert "!story || !compactPlayChrome || busy || advisorOpen || ending" in play_page
     assert "currentActionAreaVisible" in play_page
     assert "isPlayActionAreaAwayFromViewport(actionArea)" in play_page
-    assert "<PlayActionJumpButton />" in play_page
+    assert "const actionJumpDetail =" in play_page
+    assert "stage={gameplayLoopStage}" in play_page
+    assert "detail={actionJumpDetail}" in play_page
     assert 'data-play-action-jump="true"' in action_jump
+    assert "data-play-action-jump-stage={stage}" in action_jump
+    assert 'data-play-action-jump-detail="true"' in action_jump
     assert "onPointerDown={onClick}" in action_jump
     assert "scrollToPlayActionArea" in action_jump_utils
     assert "[data-play-action-area='true']" in action_jump_utils
     assert "actionJumpButton" in styles
+    assert "actionJumpDetail" in styles
+    assert "actionJumpArrow" in styles
     assert 'position: "fixed"' in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
     assert '"play.action_jump_label": "Continue your next move"' in strings
+    assert '"play.action_jump_detail_choose": "Goal, pressure, and choices are ready."' in strings
+    assert '"play.action_jump_detail_update": "Review what changed, then choose next."' in strings
 
 
 def test_play_long_history_fixture_exercises_action_jump_with_real_action_area() -> None:
@@ -485,9 +493,12 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert 'data-play-long-history-fixture="true"' in fixture
     assert "<ActionArea" in fixture
     assert "<PlayActionJumpButton" in fixture
+    assert 'stage="choose"' in fixture
+    assert 'detail={t("play.action_jump_detail_choose")}' in fixture
     assert "scrollToPlayActionArea()" in fixture
     assert "isPlayActionAreaAwayFromViewport(actionArea)" in fixture
     assert 'data-play-action-jump="true"' in action_jump
+    assert "data-play-action-jump-stage={stage}" in action_jump
     assert "window.scrollTo" in action_jump_utils
     for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
         assert forbidden not in fixture.casefold()

@@ -160,6 +160,8 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
       </section>
       {showActionJump ? (
         <PlayActionJumpButton
+          detail={t("play.action_jump_detail_choose")}
+          stage="choose"
           onClick={() => {
             scrollToPlayActionArea()
             window.setTimeout(() => updateLongHistoryJump(setShowActionJump), 360)

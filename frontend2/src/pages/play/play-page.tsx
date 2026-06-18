@@ -707,6 +707,12 @@ export function PlayPage({
         : actionAreaVisible
           ? "choose"
           : "read"
+  const actionJumpDetail =
+    gameplayLoopStage === "update"
+      ? t("play.action_jump_detail_update")
+      : gameplayLoopStage === "choose"
+        ? t("play.action_jump_detail_choose")
+        : t("play.action_jump_detail_default")
   const advisorSuggestions = buildAdvisorSuggestions({
     story,
     lastNarrator,
@@ -1033,7 +1039,10 @@ export function PlayPage({
       </AnimatePresence>
       <AnimatePresence>
         {showActionJump ? (
-          <PlayActionJumpButton />
+          <PlayActionJumpButton
+            detail={actionJumpDetail}
+            stage={gameplayLoopStage}
+          />
         ) : null}
       </AnimatePresence>
     </div>
