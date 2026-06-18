@@ -23,6 +23,7 @@ def test_play_route_mounts_direction_a_editorial_primitives() -> None:
 
     assert 'data-play-direction="editorial-primitive-kit"' in primitives
     assert 'data-play-primitive="MoodPlate"' in primitives
+    assert 'data-play-mood-state={isComplete ? "complete" : "active"}' in primitives
     assert 'data-play-primitive="StoryTimeline"' in primitives
     assert 'data-play-primitive="SceneSupportRail"' in primitives
     assert "<RunContextPanel" not in play_page
@@ -146,6 +147,13 @@ def test_finish_mode_normal_play_reduces_top_metadata_density() -> None:
     scene_rail = primitives[primitives.index("export function SceneSupportRail") : primitives.index("function PrimitiveSection")]
     story_beat = panels[panels.index("export function StoryBeat") : panels.index("export function computeLiveInventory")]
 
+    assert "isComplete={isComplete}" in play_page
+    assert "isComplete?: boolean" in mood_plate
+    assert "moodPlateComplete" in mood_plate
+    assert "moodPlateCopyComplete" in mood_plate
+    assert "moodTitleComplete" in mood_plate
+    assert "This run is finished. Review the ending, then replay or share it." in mood_plate
+    assert "{!isComplete ? (" in mood_plate
     assert "cast={story.template.cast.map" not in play_page
     assert "const castLine" not in mood_plate
     assert "story.template.seed" not in mood_plate
@@ -219,6 +227,8 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
     assert 'case "playActionFixture"' in app
     assert "PlayActionStateFixture" in app
     assert 'data-play-action-fixture="true"' in fixture
+    assert "Action surface rehearsal." in fixture
+    assert "Choose a move, confirm it" not in fixture
     assert "<ActionArea" in fixture
     assert "setBusy(true)" in fixture
     assert "setTurn((value) => value + 1)" in fixture

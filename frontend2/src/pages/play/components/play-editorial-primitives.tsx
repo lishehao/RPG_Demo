@@ -77,6 +77,7 @@ export function MoodPlate({
   turnBudget,
   turnsRemaining,
   compact,
+  isComplete = false,
 }: {
   story: NarrativeStoryHistoryResponse
   coverUrl: string
@@ -85,11 +86,14 @@ export function MoodPlate({
   turnBudget: number
   turnsRemaining: number
   compact: boolean
+  isComplete?: boolean
 }) {
   const imageUrl = sceneUrl || coverUrl
   const progress = `Turn ${turnsCompleted} of ${turnBudget}`
-  const stage = turnsRemaining <= 2 ? "Coda" : turnsCompleted <= 0 ? "Opening" : "In motion"
-  const context = turnsCompleted <= 0
+  const stage = isComplete ? "Complete" : turnsRemaining <= 2 ? "Coda" : turnsCompleted <= 0 ? "Opening" : "In motion"
+  const context = isComplete
+    ? "This run is finished. Review the ending, then replay or share it."
+    : turnsCompleted <= 0
     ? "First shot is live. Choose the pressure you step into."
     : turnsRemaining <= 2
       ? "The room is close to its final break."
@@ -98,24 +102,46 @@ export function MoodPlate({
   return (
     <section
       data-play-primitive="MoodPlate"
+      data-play-mood-state={isComplete ? "complete" : "active"}
       style={{
         ...primitiveStyles.moodPlate,
         ...(compact ? primitiveStyles.moodPlateCompact : null),
+        ...(isComplete ? primitiveStyles.moodPlateComplete : null),
       }}
     >
+      {!isComplete ? (
+        <>
+          <div
+            aria-hidden
+            style={{
+              ...primitiveStyles.moodPlateImage,
+              backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.98) 0%, rgba(12,12,16,0.72) 42%, rgba(12,12,16,0.18) 100%), linear-gradient(180deg, rgba(12,12,16,0.18) 0%, rgba(12,12,16,0.78) 100%), url(${imageUrl})`,
+            }}
+          />
+          <div style={primitiveStyles.moodPlateRule} aria-hidden />
+        </>
+      ) : null}
       <div
-        aria-hidden
         style={{
-          ...primitiveStyles.moodPlateImage,
-          backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.98) 0%, rgba(12,12,16,0.72) 42%, rgba(12,12,16,0.18) 100%), linear-gradient(180deg, rgba(12,12,16,0.18) 0%, rgba(12,12,16,0.78) 100%), url(${imageUrl})`,
+          ...primitiveStyles.moodPlateCopy,
+          ...(isComplete ? primitiveStyles.moodPlateCopyComplete : null),
         }}
-      />
-      <div style={primitiveStyles.moodPlateRule} aria-hidden />
-      <div style={primitiveStyles.moodPlateCopy}>
-        <h1 style={{ ...primitiveStyles.moodTitle, ...(compact ? primitiveStyles.moodTitleCompact : null) }}>
+      >
+        <h1
+          style={{
+            ...primitiveStyles.moodTitle,
+            ...(compact ? primitiveStyles.moodTitleCompact : null),
+            ...(isComplete ? primitiveStyles.moodTitleComplete : null),
+          }}
+        >
           {story.template.title}
         </h1>
-        <div style={primitiveStyles.moodDeck}>
+        <div
+          style={{
+            ...primitiveStyles.moodDeck,
+            ...(isComplete ? primitiveStyles.moodDeckComplete : null),
+          }}
+        >
           <Truncated lines={1}>{context}</Truncated>
         </div>
         <div style={primitiveStyles.moodMetaRow}>
@@ -396,6 +422,18 @@ const primitiveStyles: Record<string, CSSProperties> = {
     minHeight: 188,
     marginBottom: 12,
   },
+  moodPlateComplete: {
+    minHeight: 0,
+    marginBottom: 12,
+    overflow: "visible",
+    background: "transparent",
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(212,168,83,0.24)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(255,255,255,0.07)",
+  },
   moodPlateImage: {
     position: "absolute",
     inset: 0,
@@ -420,6 +458,11 @@ const primitiveStyles: Record<string, CSSProperties> = {
     flexDirection: "column",
     gap: 13,
   },
+  moodPlateCopyComplete: {
+    width: "100%",
+    padding: "13px 36px 14px",
+    gap: 5,
+  },
   eyebrow: {
     color: "rgba(245,200,120,0.88)",
     fontSize: 11,
@@ -441,11 +484,23 @@ const primitiveStyles: Record<string, CSSProperties> = {
     fontSize: 28,
     lineHeight: 1.04,
   },
+  moodTitleComplete: {
+    fontSize: 18,
+    lineHeight: 1.25,
+    fontWeight: 560,
+    textShadow: "none",
+    color: "rgba(255,246,232,0.94)",
+  },
   moodDeck: {
     color: "rgba(244,239,230,0.78)",
     fontSize: 14.5,
     lineHeight: 1.55,
     maxWidth: 540,
+  },
+  moodDeckComplete: {
+    color: "rgba(244,239,230,0.66)",
+    fontSize: 13,
+    maxWidth: "none",
   },
   moodMetaRow: {
     display: "flex",

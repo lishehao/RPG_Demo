@@ -1078,6 +1078,7 @@ export function PlayPage({
           turnBudget={turnBudget}
           turnsRemaining={turnsRemaining}
           compact={compactPlayChrome}
+          isComplete={isComplete}
         />
 
         <PlaySurfaceGrid compact={compactPlayChrome}>
