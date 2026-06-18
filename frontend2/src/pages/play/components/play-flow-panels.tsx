@@ -241,6 +241,41 @@ function truncateRecoveryText(value: string, max = 64): string {
   return `${clean.slice(0, max - 3).trim()}...`
 }
 
+type EndingFallbackRecapItem = {
+  ord: number
+  turn: number
+  move: string
+  reaction: string
+}
+
+function truncateEndingRecapText(value: string, max = 136): string {
+  const clean = value.replace(/\s+/g, " ").trim()
+  if (clean.length <= max) return clean
+  return `${clean.slice(0, max - 3).trim()}...`
+}
+
+function buildFallbackEndingRecap(messages: NarrativeStoryMessage[]): EndingFallbackRecapItem[] {
+  const playerMessages = messages.filter((message) => message.role === "player")
+  return playerMessages
+    .slice(-3)
+    .map((message) => {
+      const parsedMove = parseOptionLabel(message.content)
+      const move = truncateEndingRecapText(parsedMove.body || message.content, 118)
+      const nextNarrator = messages.find(
+        (candidate) => candidate.role === "narrator" && candidate.ord > message.ord,
+      )
+      return {
+        ord: message.ord,
+        turn: Math.floor(message.ord / 2) + 1,
+        move,
+        reaction: nextNarrator
+          ? truncateEndingRecapText(nextNarrator.content)
+          : "",
+      }
+    })
+    .filter((item) => item.move.length > 0)
+}
+
 export function buildFailedActionRecovery({
   action,
   options,
@@ -1149,6 +1184,9 @@ export function EndingScreen({
     ...userOnlyHighlights,
     ...llmHighlights,
   ].sort((a, b) => a.beat_ord - b.beat_ord)
+  const fallbackRecap = mergedHighlights.length === 0
+    ? buildFallbackEndingRecap(messages)
+    : []
 
   // Skip the 1.7s choreography in two cases:
   //  1. User prefers reduced motion (a11y system pref)
@@ -1350,6 +1388,41 @@ export function EndingScreen({
               ) : null}
             </div>
           </motion.div>
+
+          {fallbackRecap.length > 0 ? (
+            <motion.section
+              data-play-ending-recap="fallback"
+              initial={initialOr({ opacity: 0, y: 12 })}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: delayOr(1.28), ...itemTransition }}
+              style={ppStyles.endingRecapSection}
+            >
+              <div style={ppStyles.endingRecapLabel}>
+                {t("play.ending_recap_title")}
+              </div>
+              <p style={ppStyles.endingRecapHint}>
+                {t("play.ending_recap_hint")}
+              </p>
+              <div style={ppStyles.endingRecapList}>
+                {fallbackRecap.map((item) => (
+                  <div key={`ending-recap-${item.ord}`} style={ppStyles.endingRecapItem}>
+                    <div style={ppStyles.endingRecapTurn}>
+                      {t("play.ending_recap_turn", { turn: item.turn })}
+                    </div>
+                    <div style={ppStyles.endingRecapMove}>{item.move}</div>
+                    {item.reaction ? (
+                      <div style={ppStyles.endingRecapReaction}>
+                        <span style={ppStyles.endingRecapReactionLabel}>
+                          {t("play.ending_recap_reaction")}
+                        </span>
+                        <span>{item.reaction}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </motion.section>
+          ) : null}
 
         {/* Highlight reel — LLM picks merged with user bookmarks. Kept as
             a text recap instead of a stack of separate cards. */}
