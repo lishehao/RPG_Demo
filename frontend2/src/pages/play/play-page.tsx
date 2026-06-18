@@ -65,6 +65,7 @@ import {
   buildFailedActionRecovery,
   computeBeatIntensity,
   computeLiveInventory,
+  findActionTarget,
   latestAgentPlanFromEvents,
   parseOptionLabel,
 } from "./components/play-flow-panels"
@@ -186,6 +187,26 @@ function actorFromDisplayName(
   return { id: matched[0], name: matched[1] }
 }
 
+function uniqueActionTargetsForOptions(
+  options: NarrativeStoryMessage["options"],
+  castNameById: Record<string, string>,
+  latestNpcPulses: NarrativeNPCPulse[],
+): Array<{ id: string; name: string }> {
+  const seen = new Set<string>()
+  return options
+    .map((option) => {
+      const parsed = parseOptionLabel(option.label)
+      return findActionTarget(parsed.body, option.hint, castNameById, latestNpcPulses)
+    })
+    .filter((target): target is { id: string; name: string } => Boolean(target))
+    .filter((target) => {
+      if (seen.has(target.id)) return false
+      seen.add(target.id)
+      return true
+    })
+    .slice(0, 3)
+}
+
 function GameplayStatePanel({
   envelope,
   focusedResourceId,
@@ -263,11 +284,13 @@ function GameplayStatePanel({
 function GameplayImpactSummary({
   envelope,
   castNameById,
+  nextChoiceTargets,
   focusedActorId,
   onFocusActor,
 }: {
   envelope: GameplayEnvelope
   castNameById: Record<string, string>
+  nextChoiceTargets?: Array<{ id: string; name: string }>
   focusedActorId?: string | null
   onFocusActor?: (actor: { id: string; name: string }) => void
 }) {
@@ -278,9 +301,17 @@ function GameplayImpactSummary({
     envelope.impact.find((delta) => delta.tone === "unlock" || delta.tone === "gain") ??
     envelope.impact.find((delta) => delta.tone === "shift") ??
     envelope.impact[0]
-  const nextChoiceSignals = envelope.actionForecasts
+  const forecastChoiceSignals = envelope.actionForecasts
     .map((row) => row.find((chip) => chip.tone === "unlock" || chip.tone === "gain" || chip.detail) ?? row[0] ?? null)
     .filter((chip): chip is NonNullable<typeof chip> => Boolean(chip))
+    .filter((chip, index, all) => all.findIndex((candidate) => candidate.label === chip.label) === index)
+  const targetChoiceSignals = (nextChoiceTargets ?? []).map((target) => ({
+    label: `${t("play.action_target_label")} ${target.name}`,
+    detail: t("play.action_target_title", { name: target.name }),
+    tone: "shift" as GameplayChipTone,
+    targetId: target.id,
+  }))
+  const nextChoiceSignals = [...targetChoiceSignals, ...forecastChoiceSignals]
     .filter((chip, index, all) => all.findIndex((candidate) => candidate.label === chip.label) === index)
     .slice(0, 3)
   const impactGroups = [
@@ -418,6 +449,7 @@ function GameplayImpactSummary({
                     ...(gameplayToneStyle(signal.tone) ?? {}),
                   }}
                   data-gameplay-next-choice-signal="normal-play"
+                  data-gameplay-next-choice-target-id={"targetId" in signal ? signal.targetId : undefined}
                   title={signal.detail ?? signal.label}
                 >
                   {signal.label}
@@ -900,6 +932,9 @@ export function PlayPage({
     castNameById,
     backendEnvelope: story.gameplay_envelope ?? null,
   })
+  const nextChoiceTargets = lastNarrator
+    ? uniqueActionTargetsForOptions(lastNarrator.options, castNameById, lastNarrator.npc_pulse ?? [])
+    : []
   const gameplayLoopStage: GameplayLoopStage = isComplete
     ? "ending"
     : busy
@@ -1126,6 +1161,7 @@ export function PlayPage({
             <GameplayImpactSummary
               envelope={gameplayEnvelope}
               castNameById={castNameById}
+              nextChoiceTargets={nextChoiceTargets}
               focusedActorId={focusedActorId}
               onFocusActor={focusSceneActor}
             />

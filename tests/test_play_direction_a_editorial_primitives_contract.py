@@ -312,6 +312,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "<GameplayImpactSummary" in play_page
     assert "envelope={gameplayEnvelope}" in play_page
     assert "castNameById={castNameById}" in play_page
+    assert "nextChoiceTargets={nextChoiceTargets}" in play_page
+    assert "function uniqueActionTargetsForOptions(" in play_page
+    assert "findActionTarget(parsed.body, option.hint, castNameById, latestNpcPulses)" in play_page
+    assert "const nextChoiceTargets = lastNarrator" in play_page
+    assert 'data-gameplay-next-choice-target-id={"targetId" in signal ? signal.targetId : undefined}' in play_page
     assert "focusedActorId={focusedActorId}" in play_page
     assert "onFocusActor={focusSceneActor}" in play_page
     assert "!isComplete && !busy && turnsCompleted > 0" in play_page
@@ -322,6 +327,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "actorFocus?: { id: string; name: string } | null" in panels
     assert 'type GameplayResourceFocusId = "time" | "pressure" | "evidence"' in panels
     assert "resourceFocus?: { id: GameplayResourceFocusId; label: string } | null" in panels
+    assert "export function findActionTarget(" in panels
     assert "const optionTargets = useMemo(() => options.map" in panels
     assert "const actorFocusOptionMatches = useMemo" in panels
     assert "target?.id === actorFocus.id" in panels

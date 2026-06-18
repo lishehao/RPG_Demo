@@ -2636,7 +2636,7 @@ function ResolvingTurnPanel({
   )
 }
 
-function findActionTarget(
+export function findActionTarget(
   body: string,
   hint: string | undefined,
   castNameById: Record<string, string>,
