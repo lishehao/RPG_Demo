@@ -63,7 +63,7 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
   const [freeInput, setFreeInput] = useState("")
   const [diary, setDiary] = useState("")
   const [showDiary, setShowDiary] = useState(false)
-  const [status, setStatus] = useState("Choose a move, confirm it, then watch the next action set appear.")
+  const [status, setStatus] = useState("Action surface rehearsal.")
   const [commitmentSummary, setCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const options = useMemo(() => (turn % 2 === 0 ? FIRST_OPTIONS : NEXT_OPTIONS), [turn])
 
