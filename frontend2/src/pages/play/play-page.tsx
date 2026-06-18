@@ -310,6 +310,7 @@ function GameplayImpactSummary({
     detail: t("play.action_target_title", { name: target.name }),
     tone: "shift" as GameplayChipTone,
     targetId: target.id,
+    targetName: target.name,
   }))
   const nextChoiceSignals = [...targetChoiceSignals, ...forecastChoiceSignals]
     .filter((chip, index, all) => all.findIndex((candidate) => candidate.label === chip.label) === index)
@@ -440,21 +441,50 @@ function GameplayImpactSummary({
           >
             <span style={ppStyles.gameplayImpactGroupLabel}>{t("play.feedback_next_choice_label")}</span>
             <div style={ppStyles.gameplayImpactList}>
-              {nextChoiceSignals.map((signal, index) => (
-                <span
-                  key={`${signal.label}-${index}`}
-                  style={{
-                    ...ppStyles.gameplayDeltaChip,
-                    ...ppStyles.gameplayNextChoiceChip,
-                    ...(gameplayToneStyle(signal.tone) ?? {}),
-                  }}
-                  data-gameplay-next-choice-signal="normal-play"
-                  data-gameplay-next-choice-target-id={"targetId" in signal ? signal.targetId : undefined}
-                  title={signal.detail ?? signal.label}
-                >
-                  {signal.label}
-                </span>
-              ))}
+              {nextChoiceSignals.map((signal, index) => {
+                const targetSignal = "targetId" in signal && signal.targetId
+                  ? signal as typeof signal & { targetId: string; targetName: string }
+                  : null
+                const signalStyle = {
+                  ...ppStyles.gameplayDeltaChip,
+                  ...ppStyles.gameplayNextChoiceChip,
+                  ...(gameplayToneStyle(signal.tone) ?? {}),
+                  ...(targetSignal ? ppStyles.gameplayNextChoiceTargetChip : null),
+                  ...(targetSignal && focusedActorId === targetSignal.targetId ? ppStyles.gameplayNextChoiceTargetFocused : null),
+                }
+                if (targetSignal && onFocusActor) {
+                  return (
+                    <button
+                      key={`${signal.label}-${index}`}
+                      type="button"
+                      style={{
+                        ...signalStyle,
+                        ...ppStyles.gameplayNextChoiceTargetButton,
+                      }}
+                      data-gameplay-next-choice-signal="normal-play"
+                      data-gameplay-next-choice-target-focus="true"
+                      data-gameplay-next-choice-target-id={targetSignal.targetId}
+                      aria-pressed={focusedActorId === targetSignal.targetId}
+                      aria-label={`${signal.label}. ${t("play.impact_focus_actor_title", { name: targetSignal.targetName })}`}
+                      title={signal.detail ?? signal.label}
+                      onClick={() => onFocusActor({ id: targetSignal.targetId, name: targetSignal.targetName })}
+                    >
+                      {signal.label}
+                    </button>
+                  )
+                }
+                return (
+                  <span
+                    key={`${signal.label}-${index}`}
+                    style={signalStyle}
+                    data-gameplay-next-choice-signal="normal-play"
+                    data-gameplay-next-choice-target-id={targetSignal?.targetId}
+                    title={signal.detail ?? signal.label}
+                  >
+                    {signal.label}
+                  </span>
+                )
+              })}
             </div>
           </div>
         ) : null}

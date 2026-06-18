@@ -2525,6 +2525,20 @@ export const ppStyles: Record<string, CSSProperties> = {
     borderLeftStyle: "solid",
     borderLeftColor: "rgba(112,188,135,0.34)",
   },
+  gameplayNextChoiceTargetChip: {
+    background: "rgba(213,154,62,0.075)",
+    borderLeftColor: "rgba(213,154,62,0.40)",
+  },
+  gameplayNextChoiceTargetButton: {
+    cursor: "pointer",
+    appearance: "none" as const,
+    font: "inherit",
+    textAlign: "left" as const,
+  },
+  gameplayNextChoiceTargetFocused: {
+    background: "rgba(213,154,62,0.13)",
+    boxShadow: "0 0 0 2px rgba(213,154,62,0.13)",
+  },
   gameplayDeltaChip: {
     maxWidth: "100%",
     padding: "3px 7px",

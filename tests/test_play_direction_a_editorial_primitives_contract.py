@@ -316,7 +316,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "function uniqueActionTargetsForOptions(" in play_page
     assert "findActionTarget(parsed.body, option.hint, castNameById, latestNpcPulses)" in play_page
     assert "const nextChoiceTargets = lastNarrator" in play_page
-    assert 'data-gameplay-next-choice-target-id={"targetId" in signal ? signal.targetId : undefined}' in play_page
+    assert "data-gameplay-next-choice-target-id={targetSignal.targetId}" in play_page
+    assert "data-gameplay-next-choice-target-id={targetSignal?.targetId}" in play_page
+    assert 'data-gameplay-next-choice-target-focus="true"' in play_page
+    assert 'onClick={() => onFocusActor({ id: targetSignal.targetId, name: targetSignal.targetName })}' in play_page
+    assert 'aria-pressed={focusedActorId === targetSignal.targetId}' in play_page
     assert "focusedActorId={focusedActorId}" in play_page
     assert "onFocusActor={focusSceneActor}" in play_page
     assert "!isComplete && !busy && turnsCompleted > 0" in play_page
@@ -450,6 +454,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayTrackAction" in styles
     assert "resourceFocusCue" in styles
     assert "resourceFocusCueAction" in styles
+    assert "gameplayNextChoiceTargetButton" in styles
+    assert "gameplayNextChoiceTargetFocused" in styles
     assert "freeActionContext" in styles
     assert "freeActionContextName" in styles
     assert "freeActionContextDetail" in styles
