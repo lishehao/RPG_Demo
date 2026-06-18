@@ -2662,6 +2662,18 @@ function findActionTarget(
   }
 }
 
+function isEvidenceRelatedAction(
+  body: string,
+  hint: string | undefined,
+  forecasts: GameplayActionForecast[],
+): boolean {
+  if (forecasts.some((chip) => /\b(evidence|clue|proof|lead|badge|recording|footage|document|receipt|log)\b/i.test(chip.label))) {
+    return true
+  }
+  const haystack = `${body} ${hint ?? ""}`.toLowerCase()
+  return /\b(clue|evidence|proof|recording|footage|badge|phone|message|lead|find|discover|document|receipt|log|memo|security)\b/.test(haystack)
+}
+
 // ---------------------------------------------------------------------------
 // Action area — options + free input
 // ---------------------------------------------------------------------------
@@ -2677,6 +2689,7 @@ export function ActionArea({
   turnsRemaining,
   turnBudget,
   actorFocus,
+  resourceFocus,
   showFreeInput,
   freeInput,
   setFreeInput,
@@ -2702,6 +2715,7 @@ export function ActionArea({
   turnsRemaining: number
   turnBudget: number
   actorFocus?: { id: string; name: string } | null
+  resourceFocus?: { id: "evidence"; label: string } | null
   showFreeInput: boolean
   freeInput: string
   setFreeInput: (v: string) => void
@@ -3027,6 +3041,19 @@ export function ActionArea({
     return optionTargets.map((target) => target?.id === actorFocus.id)
   }, [actorFocus, optionTargets])
   const actorFocusMatchCount = actorFocusOptionMatches.filter(Boolean).length
+  const resourceFocusOptionMatches = useMemo(() => {
+    if (!resourceFocus) return options.map(() => false)
+    return options.map((opt, index) => {
+      const parsed = parseOptionLabel(opt.label)
+      return isEvidenceRelatedAction(parsed.body, opt.hint, actionForecasts?.[index] ?? [])
+    })
+  }, [actionForecasts, options, resourceFocus])
+  const resourceFocusMatchCount = resourceFocusOptionMatches.filter(Boolean).length
+  const resourceFocusDetail = resourceFocus
+    ? resourceFocusMatchCount > 0
+      ? t("play.resource_focus_evidence_match_detail", { count: resourceFocusMatchCount })
+      : t("play.resource_focus_evidence_no_match")
+    : ""
   const freeActionDraft = freeInput.trim()
   const freeActionReady = freeActionDraft.length > 0
   const freeActionTarget = freeActionDraft
@@ -3926,6 +3953,23 @@ export function ActionArea({
         </div>
       ) : null}
 
+      {showStandardOptions && resourceFocus ? (
+        <div
+          style={{
+            ...ppStyles.resourceFocusCue,
+            ...(resourceFocusMatchCount > 0 ? ppStyles.resourceFocusCueMatched : ppStyles.resourceFocusCueEmpty),
+          }}
+          data-play-resource-focus-cue="true"
+          data-play-resource-focus-id={resourceFocus.id}
+          data-play-resource-focus-match-count={resourceFocusMatchCount}
+          aria-label={`${t("play.resource_focus_label")}: ${resourceFocus.label}. ${resourceFocusDetail}`}
+        >
+          <span style={ppStyles.resourceFocusCueLabel}>{t("play.resource_focus_label")}</span>
+          <strong style={ppStyles.resourceFocusCueName}>{resourceFocus.label}</strong>
+          <span style={ppStyles.resourceFocusCueDetail}>{resourceFocusDetail}</span>
+        </div>
+      ) : null}
+
       {armedCard ? (
           <section
             ref={setCommitFocusNode}
@@ -4051,6 +4095,8 @@ export function ActionArea({
                 const actionTarget = optionTargets[i] ?? null
                 const isActorFocusMatch = actorFocusOptionMatches[i] ?? false
                 const isActorFocusDimmed = Boolean(actorFocus && actorFocusMatchCount > 0 && !isActorFocusMatch)
+                const isResourceFocusMatch = resourceFocusOptionMatches[i] ?? false
+                const isResourceFocusDimmed = Boolean(resourceFocus && resourceFocusMatchCount > 0 && !isResourceFocusMatch)
                 const optionShortcutKey = i < 9 ? String(i + 1) : null
                 const isChoiceDimmed =
                   selectedOptionIndex !== null && !isSelected && pickedIndex === null
@@ -4067,6 +4113,8 @@ export function ActionArea({
                         ...(isChoiceDimmed ? ppStyles.optionBtnDeemphasized : null),
                         ...(isActorFocusMatch ? ppStyles.optionBtnActorFocusMatch : null),
                         ...(isActorFocusDimmed ? ppStyles.optionBtnActorFocusDimmed : null),
+                        ...(isResourceFocusMatch ? ppStyles.optionBtnResourceFocusMatch : null),
+                        ...(isResourceFocusDimmed ? ppStyles.optionBtnResourceFocusDimmed : null),
                         ...(isPicked ? ppStyles.optionBtnPicked : null),
                         ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
                         opacity: isUnpicked
@@ -4077,7 +4125,9 @@ export function ActionArea({
                               ? 0.54
                               : isActorFocusDimmed
                                 ? 0.66
-                                : 1,
+                                : isResourceFocusDimmed
+                                  ? 0.66
+                                  : 1,
                         pointerEvents: actionControlsDisabled ? "none" : "auto",
                       }}
                       onClick={() => handleOptionSelect(i)}
@@ -4088,6 +4138,8 @@ export function ActionArea({
                       data-play-action-card-expanded={isSelected ? "true" : undefined}
                       data-play-action-actor-focus-match={isActorFocusMatch ? "true" : undefined}
                       data-play-action-actor-focus-dimmed={isActorFocusDimmed ? "true" : undefined}
+                      data-play-action-resource-focus-match={isResourceFocusMatch ? "true" : undefined}
+                      data-play-action-resource-focus-dimmed={isResourceFocusDimmed ? "true" : undefined}
                       aria-pressed={isSelected}
                       aria-expanded={isSelected}
                       aria-keyshortcuts={optionShortcutKey ?? undefined}

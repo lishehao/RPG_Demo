@@ -283,11 +283,20 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "backendEnvelope: story.gameplay_envelope ?? null" in play_page
     assert "gameplay_envelope: response.gameplay_envelope ?? null" in play_page
     assert "const [focusedActorId, setFocusedActorId] = useState<string | null>(null)" in play_page
+    assert "const [focusedResourceId, setFocusedResourceId] = useState<\"evidence\" | null>(null)" in play_page
     assert "const actorFocus = focusedActorId && focusedActorName" in play_page
     assert "const focusSceneActor = (actor: { id: string; name: string }) => {" in play_page
+    assert "setFocusedResourceId(null)" in play_page
     assert "setFocusedActorId(wasFocused ? null : actor.id)" in play_page
+    assert "const focusEvidenceResource = () => {" in play_page
+    assert "setFocusedResourceId(wasFocused ? null : \"evidence\")" in play_page
+    assert "data-gameplay-evidence-resource=\"true\"" in play_page
+    assert "data-gameplay-resource-focus={isFocused ? \"true\" : undefined}" in play_page
+    assert "focusedResourceId={focusedResourceId}" in play_page
+    assert "onFocusEvidence={focusEvidenceResource}" in play_page
     assert 'behavior: prefersReducedMotion ? "auto" : "smooth"' in play_page
-    assert "<GameplayStatePanel envelope={gameplayEnvelope} />" in play_page
+    assert "<GameplayStatePanel" in play_page
+    assert "envelope={gameplayEnvelope}" in play_page
     assert "<GameplayLoopGuide" in play_page
     assert 'data-gameplay-loop-guide="normal-play"' in play_page
     assert "data-gameplay-loop-stage={stage}" in play_page
@@ -300,11 +309,21 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "!isComplete && !busy && turnsCompleted > 0" in play_page
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actorFocus={actorFocus}" in play_page
+    assert "resourceFocus={focusedResourceId === \"evidence\"" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
     assert "actorFocus?: { id: string; name: string } | null" in panels
+    assert "resourceFocus?: { id: \"evidence\"; label: string } | null" in panels
     assert "const optionTargets = useMemo(() => options.map" in panels
     assert "const actorFocusOptionMatches = useMemo" in panels
     assert "target?.id === actorFocus.id" in panels
+    assert "function isEvidenceRelatedAction(" in panels
+    assert "const resourceFocusOptionMatches = useMemo" in panels
+    assert "isEvidenceRelatedAction(parsed.body, opt.hint, actionForecasts?.[index] ?? [])" in panels
+    assert 'data-play-resource-focus-cue="true"' in panels
+    assert 'data-play-resource-focus-id={resourceFocus.id}' in panels
+    assert "data-play-resource-focus-match-count={resourceFocusMatchCount}" in panels
+    assert 'data-play-action-resource-focus-match={isResourceFocusMatch ? "true" : undefined}' in panels
+    assert 'data-play-action-resource-focus-dimmed={isResourceFocusDimmed ? "true" : undefined}' in panels
     assert 'data-play-action-target-chip="true"' in panels
     assert 'data-play-action-target-id={actionTarget.id}' in panels
     assert 'aria-label={t("play.action_target_title", { name: actionTarget.name })}' in panels
@@ -362,6 +381,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "optionTargetChip" in styles
     assert "optionTargetLabel" in styles
     assert "optionTargetName" in styles
+    assert "gameplayTrackButton" in styles
+    assert "gameplayTrackFocused" in styles
+    assert "gameplayTrackAction" in styles
+    assert "resourceFocusCue" in styles
+    assert "optionBtnResourceFocusMatch" in styles
     assert "optionBtnActorFocusMatch" in styles
     assert "optionBtnActorFocusDimmed" in styles
     assert "actorFocusCue" in styles
@@ -386,6 +410,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_no_match": "No move names {name} directly; use a custom move to test them."' in strings
     assert '"play.action_target_label": "Target"' in strings
     assert '"play.action_target_title": "This move primarily points at {name}"' in strings
+    assert '"play.resource_focus_label": "Resource focus"' in strings
+    assert '"play.resource_focus_evidence_label": "Evidence"' in strings
+    assert '"play.resource_focus_evidence_match_detail": "{count} moves can push a clue or proof forward"' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings

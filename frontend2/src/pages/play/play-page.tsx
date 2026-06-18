@@ -145,7 +145,15 @@ function gameplayToneStyle(tone: GameplayChipTone): CSSProperties | null {
   return null
 }
 
-function GameplayStatePanel({ envelope }: { envelope: GameplayEnvelope }) {
+function GameplayStatePanel({
+  envelope,
+  focusedResourceId,
+  onFocusEvidence,
+}: {
+  envelope: GameplayEnvelope
+  focusedResourceId?: "evidence" | null
+  onFocusEvidence?: () => void
+}) {
   const t = useT()
   return (
     <section
@@ -159,16 +167,51 @@ function GameplayStatePanel({ envelope }: { envelope: GameplayEnvelope }) {
         <strong style={ppStyles.gameplayObjectiveText}>{envelope.objective}</strong>
       </div>
       <div style={ppStyles.gameplayTrackGrid} aria-label={t("play.gameplay_tracks_label")}>
-        {envelope.tracks.map((track) => (
-          <span
-            key={track.id}
-            style={{ ...ppStyles.gameplayTrack, ...(gameplayToneStyle(track.tone) ?? {}) }}
-            data-gameplay-pressure-track={track.id}
-          >
-            <span style={ppStyles.gameplayTrackLabel}>{track.label}</span>
-            <span style={ppStyles.gameplayTrackValue}>{track.value}</span>
-          </span>
-        ))}
+        {envelope.tracks.map((track) => {
+          const isEvidence = track.id === "evidence"
+          const isFocused = focusedResourceId === "evidence" && isEvidence
+          const trackStyle = {
+            ...ppStyles.gameplayTrack,
+            ...(isEvidence ? ppStyles.gameplayTrackButton : null),
+            ...(gameplayToneStyle(track.tone) ?? {}),
+            ...(isFocused ? ppStyles.gameplayTrackFocused : null),
+          }
+          const content = (
+            <>
+              <span style={ppStyles.gameplayTrackLabel}>{track.label}</span>
+              <span style={ppStyles.gameplayTrackValue}>{track.value}</span>
+              {isEvidence ? (
+                <span style={ppStyles.gameplayTrackAction}>
+                  {isFocused ? t("play.resource_focus_active") : t("play.resource_focus_cta")}
+                </span>
+              ) : null}
+            </>
+          )
+          return isEvidence ? (
+            <button
+              key={track.id}
+              type="button"
+              style={trackStyle}
+              data-gameplay-pressure-track={track.id}
+              data-gameplay-evidence-resource="true"
+              data-gameplay-resource-focus={isFocused ? "true" : undefined}
+              aria-pressed={isFocused}
+              aria-label={`${track.label}: ${track.value}. ${t("play.resource_focus_evidence_title")}`}
+              title={t("play.resource_focus_evidence_title")}
+              onClick={onFocusEvidence}
+            >
+              {content}
+            </button>
+          ) : (
+            <span
+              key={track.id}
+              style={trackStyle}
+              data-gameplay-pressure-track={track.id}
+            >
+              {content}
+            </span>
+          )
+        })}
       </div>
     </section>
   )
@@ -358,6 +401,7 @@ export function PlayPage({
   const [actionCommitmentActive, setActionCommitmentActive] = useState(false)
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [focusedActorId, setFocusedActorId] = useState<string | null>(null)
+  const [focusedResourceId, setFocusedResourceId] = useState<"evidence" | null>(null)
   const [showActionJump, setShowActionJump] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
@@ -721,6 +765,26 @@ export function PlayPage({
   const focusSceneActor = (actor: { id: string; name: string }) => {
     const wasFocused = focusedActorId === actor.id
     setFocusedActorId(wasFocused ? null : actor.id)
+    if (!wasFocused) {
+      setFocusedResourceId(null)
+    }
+    if (wasFocused || typeof window === "undefined" || !actionAreaVisible) return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>("[data-play-action-area='true']")
+        ?.scrollIntoView({
+          block: "center",
+          behavior: prefersReducedMotion ? "auto" : "smooth",
+        })
+    })
+  }
+  const focusEvidenceResource = () => {
+    const wasFocused = focusedResourceId === "evidence"
+    setFocusedResourceId(wasFocused ? null : "evidence")
+    if (!wasFocused) {
+      setFocusedActorId(null)
+    }
     if (wasFocused || typeof window === "undefined" || !actionAreaVisible) return
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     window.requestAnimationFrame(() => {
@@ -790,7 +854,11 @@ export function PlayPage({
 
           {!isComplete ? (
             <>
-              <GameplayStatePanel envelope={gameplayEnvelope} />
+              <GameplayStatePanel
+                envelope={gameplayEnvelope}
+                focusedResourceId={focusedResourceId}
+                onFocusEvidence={focusEvidenceResource}
+              />
               <GameplayLoopGuide
                 stage={gameplayLoopStage}
                 hasImpact={gameplayEnvelope.impact.length > 0}
@@ -949,6 +1017,9 @@ export function PlayPage({
               turnsRemaining={turnsRemaining}
               turnBudget={turnBudget}
               actorFocus={actorFocus}
+              resourceFocus={focusedResourceId === "evidence"
+                ? { id: "evidence", label: t("play.resource_focus_evidence_label") }
+                : null}
               showFreeInput={showFreeInput}
               freeInput={freeInput}
               setFreeInput={setFreeInput}
