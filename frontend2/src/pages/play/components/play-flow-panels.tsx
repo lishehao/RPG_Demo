@@ -410,6 +410,9 @@ export function RunContextPanel({
             </span>
           ) : null}
         </span>
+        <span style={ppStyles.runInventoryHint}>
+          {t("play.run_assets_hint")}
+        </span>
       </div>
     ) : null
   const renderRunProgress = () =>

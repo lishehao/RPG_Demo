@@ -386,6 +386,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "liveInventory={liveInventory}" in play_page
     assert "leverageCards={leverageCards}" in play_page
     assert 'data-play-run-context="true"' in panels
+    assert 't("play.run_assets_hint")' in panels
+    assert "runInventoryHint" in styles
+    assert '"play.run_assets_hint": "Mention in your own move"' in strings
+    assert '"play.run_assets_hint": "可写进自定义行动"' in strings
     assert "const [focusedActorId, setFocusedActorId] = useState<string | null>(null)" in play_page
     assert 'type GameplayResourceFocusId = "time" | "pressure" | "evidence"' in play_page
     assert "function isGameplayResourceFocusId(value: string): value is GameplayResourceFocusId" in play_page

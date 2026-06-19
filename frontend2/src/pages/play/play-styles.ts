@@ -326,6 +326,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     rowGap: 2,
     flexWrap: "wrap" as const,
   },
+  runInventoryHint: {
+    color: "rgba(232,218,205,0.44)",
+    fontSize: 10.5,
+    lineHeight: 1.3,
+  },
   runInventoryItem: {
     display: "inline-flex",
     alignItems: "baseline",
