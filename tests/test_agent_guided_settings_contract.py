@@ -188,6 +188,10 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
     assert 'hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")' in source
     assert "seedRecipe:" in styles
     assert "seedRecipeLine:" in styles
+    assert 'gridTemplateColumns: "minmax(0, 1fr) 148px"' in styles
+    assert 'composerHint: {\n    display: "block"' in styles
+    assert 'composerBar: {\n    gridColumn: "2"' in styles
+    assert 'flexDirection: "column" as const' in styles
     for key in (
         '"create.seed_recipe_label": "A strong seed needs"',
         '"create.seed_recipe_people_label": "Who is present"',
