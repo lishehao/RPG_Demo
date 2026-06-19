@@ -622,6 +622,7 @@ function GameplayLoopGuide({
   hasImpact: boolean
 }) {
   const t = useT()
+  const compactLoop = useCompactLayout("(max-width: 680px)")
   const steps: Array<{
     id: GameplayLoopStage
     label: string
@@ -670,7 +671,13 @@ function GameplayLoopGuide({
                 : t("play.gameplay_loop_status_choose")}
         </strong>
       </div>
-      <ol style={ppStyles.gameplayLoopSteps}>
+      <ol
+        style={{
+          ...ppStyles.gameplayLoopSteps,
+          ...(compactLoop ? ppStyles.gameplayLoopStepsCompact : null),
+        }}
+        data-gameplay-loop-steps-compact={compactLoop ? "true" : "false"}
+      >
         {steps.map((step, index) => {
           const isActive = step.id === stage
           const isDone = stage === "ending" || index < activeIndex
@@ -679,6 +686,7 @@ function GameplayLoopGuide({
               key={step.id}
               style={{
                 ...ppStyles.gameplayLoopStep,
+                ...(compactLoop ? ppStyles.gameplayLoopStepCompact : {}),
                 ...(isActive ? ppStyles.gameplayLoopStepActive : {}),
                 ...(isDone ? ppStyles.gameplayLoopStepDone : {}),
               }}
@@ -688,8 +696,22 @@ function GameplayLoopGuide({
             >
               <span style={ppStyles.gameplayLoopIndex}>{index + 1}</span>
               <span style={ppStyles.gameplayLoopStepText}>
-                <strong style={ppStyles.gameplayLoopStepLabel}>{step.label}</strong>
-                <span style={ppStyles.gameplayLoopStepDetail}>{step.detail}</span>
+                <strong
+                  style={{
+                    ...ppStyles.gameplayLoopStepLabel,
+                    ...(compactLoop ? ppStyles.gameplayLoopStepLabelCompact : null),
+                  }}
+                >
+                  {step.label}
+                </strong>
+                <span
+                  style={{
+                    ...ppStyles.gameplayLoopStepDetail,
+                    ...(compactLoop ? ppStyles.gameplayLoopStepDetailCompact : null),
+                  }}
+                >
+                  {step.detail}
+                </span>
               </span>
             </li>
           )

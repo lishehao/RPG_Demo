@@ -440,6 +440,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "data-gameplay-loop-step={step.id}" in play_page
     assert 'data-gameplay-loop-step-active={isActive ? "true" : "false"}' in play_page
     assert 'data-gameplay-loop-step-done={isDone ? "true" : "false"}' in play_page
+    assert "const compactLoop = useCompactLayout(\"(max-width: 680px)\")" in play_page
+    assert "data-gameplay-loop-steps-compact={compactLoop ? \"true\" : \"false\"}" in play_page
+    assert "gameplayLoopStepsCompact" in styles
+    assert "gameplayLoopStepLabelCompact" in styles
     assert 'busy\n      ? "react"' in play_page
     assert "const showGameplayImpactSummary =" in play_page
     assert 'showGameplayImpactSummary\n        ? "update"' in play_page

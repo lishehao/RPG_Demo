@@ -2194,6 +2194,10 @@ export const ppStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
     gap: 6,
   },
+  gameplayLoopStepsCompact: {
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 7,
+  },
   gameplayLoopStep: {
     minWidth: 0,
     padding: "7px 7px 7px 8px",
@@ -2215,6 +2219,10 @@ export const ppStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "18px minmax(0, 1fr)",
     alignItems: "start",
     gap: 6,
+  },
+  gameplayLoopStepCompact: {
+    minHeight: 56,
+    padding: "7px 8px",
   },
   gameplayLoopStepActive: {
     borderTopWidth: 1,
@@ -2265,6 +2273,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap" as const,
   },
+  gameplayLoopStepLabelCompact: {
+    whiteSpace: "normal" as const,
+    overflow: "visible",
+    textOverflow: "clip",
+  },
   gameplayLoopStepDetail: {
     minWidth: 0,
     color: "rgba(232,218,205,0.50)",
@@ -2273,6 +2286,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap" as const,
+  },
+  gameplayLoopStepDetailCompact: {
+    whiteSpace: "normal" as const,
+    overflow: "visible",
+    textOverflow: "clip",
   },
   gameplayToneGain: {
     borderLeftColor: "rgba(112,188,135,0.48)",
