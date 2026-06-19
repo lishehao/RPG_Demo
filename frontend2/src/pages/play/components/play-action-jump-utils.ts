@@ -1,11 +1,11 @@
 export function isPlayActionAreaAwayFromViewport(actionArea: HTMLElement): boolean {
   const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
   const rect = actionArea.getBoundingClientRect()
+  const upperComfortEdge = headerHeight + 64
   const lowerComfortEdge = window.innerHeight - 132
   return (
-    rect.top < headerHeight + 10 ||
-    rect.top > lowerComfortEdge ||
-    rect.bottom > window.innerHeight + 48
+    rect.bottom < upperComfortEdge ||
+    rect.top > lowerComfortEdge
   )
 }
 
