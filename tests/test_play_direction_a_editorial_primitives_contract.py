@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
 
     assert "from \"./components/play-editorial-primitives\"" in play_page
     for component in (
@@ -26,6 +27,14 @@ def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     assert 'data-play-mood-state={isComplete ? "complete" : "active"}' in primitives
     assert 'data-play-primitive="StoryTimeline"' in primitives
     assert 'data-play-primitive="SceneSupportRail"' in primitives
+    assert 'data-play-story-beat="true"' in panels
+    assert 'data-play-story-beat-role="narrator"' in panels
+    assert 'data-play-story-beat-role="player"' in panels
+    assert 'data-play-story-beat-stack="true"' in play_page
+    assert "function CurrentScenePreview" in play_page
+    assert 'data-play-current-scene-preview="true"' in play_page
+    assert "cleanNarrativeDisplayText(message.content)" in play_page
+    assert '"play.current_scene_label": "Current scene"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
     story_timeline_block = play_page[play_page.index("<StoryTimeline innerRef={scrollerRef}>"):]
     assert "<RunContextPanel" in story_timeline_block
     assert story_timeline_block.index("<RunContextPanel") < story_timeline_block.index("<GameplayStatePanel")

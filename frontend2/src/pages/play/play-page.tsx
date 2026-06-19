@@ -21,6 +21,7 @@ import { Truncated } from "../../shared/ui/truncated"
 import { useBookmarks } from "../../shared/lib/bookmarks"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
+import { cleanNarrativeDisplayText } from "../../shared/lib/narrative-display-text"
 import {
   cascadeDelay,
   fadeTransition,
@@ -612,6 +613,25 @@ function GameplayImpactSummary({
 }
 
 type GameplayLoopStage = "read" | "choose" | "react" | "update" | "ending"
+
+function CurrentScenePreview({ message }: { message: NarrativeStoryMessage }) {
+  const t = useT()
+  return (
+    <section
+      style={ppStyles.currentScenePreview}
+      data-play-current-scene-preview="true"
+      aria-label={t("play.current_scene_label")}
+    >
+      <div style={ppStyles.currentScenePreviewHeader}>
+        <span style={ppStyles.currentScenePreviewKicker}>{t("play.current_scene_label")}</span>
+        <span style={ppStyles.currentScenePreviewHint}>{t("play.current_scene_hint")}</span>
+      </div>
+      <p style={ppStyles.currentScenePreviewText}>
+        <Truncated lines={3}>{cleanNarrativeDisplayText(message.content)}</Truncated>
+      </p>
+    </section>
+  )
+}
 
 function GameplayLoopGuide({
   stage,
@@ -1265,6 +1285,10 @@ export function PlayPage({
             </div>
           ) : null}
 
+          {!isComplete && compactPlayChrome && lastNarrator ? (
+            <CurrentScenePreview message={lastNarrator} />
+          ) : null}
+
           {!isComplete ? (
             <>
               <GameplayStatePanel
@@ -1313,83 +1337,90 @@ export function PlayPage({
             />
           ) : null}
 
-          {story.messages.map((m, idx) => {
-            // For player messages that picked an option, find the
-            // previous narrator beat and look up the displayed option.
-            // Using this in StoryBeat lets us render the exact option the
-            // player chose instead of a terse backend handle like "let him".
-            let pickedHandle: string | undefined
-            let pickedActionText: string | undefined
-            let previousPlayerMessage: NarrativeStoryMessage | undefined
-            const hasFollowingPlayerEcho =
-              m.role === "narrator" && story.messages[idx + 1]?.role === "player"
-            if (m.role === "player" && idx > 0) {
-              const prev = story.messages[idx - 1]
-              if (
-                prev?.role === "narrator" &&
-                prev.chosen_option_index != null &&
-                prev.options[prev.chosen_option_index]
-              ) {
-                const pickedOption = prev.options[prev.chosen_option_index]
-                const parsedPickedOption = parseOptionLabel(pickedOption.label)
-                pickedHandle = parsedPickedOption.tag || undefined
-                pickedActionText = parsedPickedOption.body || pickedOption.label
+          <div
+            style={ppStyles.storyBeatStack}
+            data-play-story-beat-stack="true"
+          >
+            {story.messages.map((m, idx) => {
+              // For player messages that picked an option, find the
+              // previous narrator beat and look up the displayed option.
+              // Using this in StoryBeat lets us render the exact option the
+              // player chose instead of a terse backend handle like "let him".
+              let pickedHandle: string | undefined
+              let pickedActionText: string | undefined
+              let previousPlayerMessage: NarrativeStoryMessage | undefined
+              const hasFollowingPlayerEcho =
+                m.role === "narrator" && story.messages[idx + 1]?.role === "player"
+              if (m.role === "player" && idx > 0) {
+                const prev = story.messages[idx - 1]
+                if (
+                  prev?.role === "narrator" &&
+                  prev.chosen_option_index != null &&
+                  prev.options[prev.chosen_option_index]
+                ) {
+                  const pickedOption = prev.options[prev.chosen_option_index]
+                  const parsedPickedOption = parseOptionLabel(pickedOption.label)
+                  pickedHandle = parsedPickedOption.tag || undefined
+                  pickedActionText = parsedPickedOption.body || pickedOption.label
+                }
               }
-            }
-            if (m.role === "narrator" && idx > 0) {
-              const prev = story.messages[idx - 1]
-              if (prev?.role === "player") {
-                previousPlayerMessage = prev
+              if (m.role === "narrator" && idx > 0) {
+                const prev = story.messages[idx - 1]
+                if (prev?.role === "player") {
+                  previousPlayerMessage = prev
+                }
               }
-            }
-            return (
-              <StoryBeat
-                key={`${m.role}-${m.ord}`}
-                message={m}
-                previousPlayerMessage={previousPlayerMessage}
-                castNameById={castNameById}
-                intensity={
-                  m.role === "narrator"
-                    ? computeBeatIntensity(m, turnBudget)
-                    : "calm"
-                }
-                sceneUrl={
-                  m.role === "narrator"
-                    ? getSceneByPhase(
-                        playSegmentPhaseForMessage(m, turnBudget),
-                        `${story.template.template_id}|${m.ord}`,
-                        playSegmentSceneCorpus(story, m),
-                      )
-                    : undefined
-                }
-                pickedHandle={pickedHandle}
-                pickedActionText={pickedActionText}
-                isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}
-                hasFollowingPlayerEcho={hasFollowingPlayerEcho}
-                suppressLatestFeedbackDigest={
-                  m.role === "narrator" &&
-                  m.ord === lastNarrator?.ord &&
-                  showGameplayImpactSummary
-                }
-                isBookmarked={m.role === "narrator" && bookmarkedOrds.has(m.ord)}
-                onToggleBookmark={
-                  m.role === "narrator" && !isComplete
-                    ? () => toggleBookmark(m.ord)
-                    : undefined
-                }
-              />
-            )
-          })}
+              return (
+                <StoryBeat
+                  key={`${m.role}-${m.ord}`}
+                  message={m}
+                  previousPlayerMessage={previousPlayerMessage}
+                  castNameById={castNameById}
+                  intensity={
+                    m.role === "narrator"
+                      ? computeBeatIntensity(m, turnBudget)
+                      : "calm"
+                  }
+                  sceneUrl={
+                    m.role === "narrator"
+                      ? getSceneByPhase(
+                          playSegmentPhaseForMessage(m, turnBudget),
+                          `${story.template.template_id}|${m.ord}`,
+                          playSegmentSceneCorpus(story, m),
+                        )
+                      : undefined
+                  }
+                  pickedHandle={pickedHandle}
+                  pickedActionText={pickedActionText}
+                  isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}
+                  hasFollowingPlayerEcho={hasFollowingPlayerEcho}
+                  suppressLatestFeedbackDigest={
+                    m.role === "narrator" &&
+                    m.ord === lastNarrator?.ord &&
+                    showGameplayImpactSummary
+                  }
+                  isBookmarked={m.role === "narrator" && bookmarkedOrds.has(m.ord)}
+                  onToggleBookmark={
+                    m.role === "narrator" && !isComplete
+                      ? () => toggleBookmark(m.ord)
+                      : undefined
+                  }
+                />
+              )
+            })}
+          </div>
 
           {!isComplete && !busy && turnsCompleted > 0 ? (
-            <GameplayImpactSummary
-              envelope={gameplayEnvelope}
-              castNameById={castNameById}
-              nextChoiceTargets={nextChoiceTargets}
-              sourceMoveText={impactSourceMove}
-              focusedActorId={focusedActorId}
-              onFocusActor={focusSceneActor}
-            />
+            <div data-play-impact-summary-wrap="true">
+              <GameplayImpactSummary
+                envelope={gameplayEnvelope}
+                castNameById={castNameById}
+                nextChoiceTargets={nextChoiceTargets}
+                sourceMoveText={impactSourceMove}
+                focusedActorId={focusedActorId}
+                onFocusActor={focusSceneActor}
+              />
+            </div>
           ) : null}
 
           <AnimatePresence>
@@ -1426,69 +1457,71 @@ export function PlayPage({
           {/* Action area pinned at the bottom of the story column.
               Hidden when the session is complete. */}
           {actionAreaVisible && lastNarrator ? (
-            <ActionArea
-              // Key on the narrator beat ord so the entire ActionArea
-              // remounts each turn — option cascade re-fires from
-              // {opacity: 0, x: -6} every advance, instead of only on
-              // first paint. Free-input / diary text lives in parent
-              // state, so remount doesn't drop user typing.
-              key={`actions-${lastNarrator.ord}`}
-              options={lastNarrator.options}
-              actionForecasts={gameplayEnvelope.actionForecasts}
-              leverageCards={leverageCards}
-              roleHasNoLeverage={Boolean(story.session.player_role) && leverageCards.length === 0}
-              latestNpcPulses={lastNarrator.npc_pulse ?? []}
-              castNameById={castNameById}
-              turnsCompleted={turnsCompleted}
-              turnsRemaining={turnsRemaining}
-              turnBudget={turnBudget}
-              hasRecentImpact={showGameplayImpactSummary}
-              actorFocus={actorFocus}
-              resourceFocus={focusedResourceId && focusedResourceTrack
-                ? { id: focusedResourceId, label: focusedResourceTrack.label }
-                : null}
-              inventoryFocusItem={focusedInventoryItem}
-              showFreeInput={showFreeInput}
-              freeInput={freeInput}
-              setFreeInput={setFreeInput}
-              setShowFreeInput={setShowFreeInput}
-              diary={diary}
-              setDiary={setDiary}
-              showDiary={showDiary}
-              setShowDiary={setShowDiary}
-              busy={busy}
-              onCommitmentActiveChange={setActionCommitmentActive}
-              onCommitmentSummaryChange={setActionCommitmentSummary}
-              onClearActorFocus={() => setFocusedActorId(null)}
-              onClearResourceFocus={() => setFocusedResourceId(null)}
-              onClearInventoryFocus={() => setFocusedInventoryItem(null)}
-              onPickOption={(i, diaryOverride) =>
-                void handleAdvance({
-                  chosen_option_index: i,
-                  diary: (diaryOverride ?? diary).trim() || undefined,
-                })
-              }
-              onPlayLeverage={(card, diaryOverride) =>
-                void handleAdvance({
-                  free_input: leveragePlayInput(card, story.template.language),
-                  diary: (diaryOverride ?? diary).trim() || undefined,
-                  played_leverage: {
-                    card_id: card.card_id,
-                    npc_id: card.npc_id,
-                    leverage: card.leverage,
-                    action: "reveal",
-                  },
-                })
-              }
-              onSubmitFree={(diaryOverride, freeInputOverride) => {
-                const publicMove = (freeInputOverride ?? freeInput).trim()
-                if (!publicMove) return
-                void handleAdvance({
-                  free_input: publicMove,
-                  diary: (diaryOverride ?? diary).trim() || undefined,
-                })
-              }}
+            <div data-play-action-area-wrap="true">
+              <ActionArea
+                // Key on the narrator beat ord so the entire ActionArea
+                // remounts each turn — option cascade re-fires from
+                // {opacity: 0, x: -6} every advance, instead of only on
+                // first paint. Free-input / diary text lives in parent
+                // state, so remount doesn't drop user typing.
+                key={`actions-${lastNarrator.ord}`}
+                options={lastNarrator.options}
+                actionForecasts={gameplayEnvelope.actionForecasts}
+                leverageCards={leverageCards}
+                roleHasNoLeverage={Boolean(story.session.player_role) && leverageCards.length === 0}
+                latestNpcPulses={lastNarrator.npc_pulse ?? []}
+                castNameById={castNameById}
+                turnsCompleted={turnsCompleted}
+                turnsRemaining={turnsRemaining}
+                turnBudget={turnBudget}
+                hasRecentImpact={showGameplayImpactSummary}
+                actorFocus={actorFocus}
+                resourceFocus={focusedResourceId && focusedResourceTrack
+                  ? { id: focusedResourceId, label: focusedResourceTrack.label }
+                  : null}
+                inventoryFocusItem={focusedInventoryItem}
+                showFreeInput={showFreeInput}
+                freeInput={freeInput}
+                setFreeInput={setFreeInput}
+                setShowFreeInput={setShowFreeInput}
+                diary={diary}
+                setDiary={setDiary}
+                showDiary={showDiary}
+                setShowDiary={setShowDiary}
+                busy={busy}
+                onCommitmentActiveChange={setActionCommitmentActive}
+                onCommitmentSummaryChange={setActionCommitmentSummary}
+                onClearActorFocus={() => setFocusedActorId(null)}
+                onClearResourceFocus={() => setFocusedResourceId(null)}
+                onClearInventoryFocus={() => setFocusedInventoryItem(null)}
+                onPickOption={(i, diaryOverride) =>
+                  void handleAdvance({
+                    chosen_option_index: i,
+                    diary: (diaryOverride ?? diary).trim() || undefined,
+                  })
+                }
+                onPlayLeverage={(card, diaryOverride) =>
+                  void handleAdvance({
+                    free_input: leveragePlayInput(card, story.template.language),
+                    diary: (diaryOverride ?? diary).trim() || undefined,
+                    played_leverage: {
+                      card_id: card.card_id,
+                      npc_id: card.npc_id,
+                      leverage: card.leverage,
+                      action: "reveal",
+                    },
+                  })
+                }
+                onSubmitFree={(diaryOverride, freeInputOverride) => {
+                  const publicMove = (freeInputOverride ?? freeInput).trim()
+                  if (!publicMove) return
+                  void handleAdvance({
+                    free_input: publicMove,
+                    diary: (diaryOverride ?? diary).trim() || undefined,
+                  })
+                }}
               />
+            </div>
           ) : !isComplete && busy ? (
             <LoadingShim variant="inline" label={t("play.busy_shim")} />
           ) : null}

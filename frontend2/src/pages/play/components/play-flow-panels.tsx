@@ -1722,6 +1722,8 @@ export function StoryBeat({
           ...(isLatestActionableBeat ? ppStyles.narratorBeatActionable : null),
           ...(isBookmarked ? ppStyles.narratorBeatBookmarked : null),
         }}
+        data-play-story-beat="true"
+        data-play-story-beat-role="narrator"
         data-play-latest-narrator={isLatestNarrator ? "true" : undefined}
       >
         {/* Bookmark toggle — top-right of every narrator beat while
@@ -1968,6 +1970,8 @@ export function StoryBeat({
         ...ppStyles.playerBeat,
         ...(played ? ppStyles.playerBeatLeverageMove : null),
       }}
+      data-play-story-beat="true"
+      data-play-story-beat-role="player"
     >
       <div style={ppStyles.playerLabel}>
         {t("play.beat_player_label")}
