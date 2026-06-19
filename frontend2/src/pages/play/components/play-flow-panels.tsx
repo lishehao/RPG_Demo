@@ -4399,7 +4399,7 @@ export function ActionArea({
               style={ppStyles.gameplayForecastReasonText}
               data-gameplay-forecast-reason-text="normal-play"
             >
-              {reasonChip.detail}
+              {t("play.gameplay_forecast_detail_preview")}
             </span>
           </span>
         ) : null}

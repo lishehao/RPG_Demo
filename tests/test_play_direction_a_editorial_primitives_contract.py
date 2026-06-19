@@ -789,10 +789,13 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-forecast-detail="normal-play"' in panels
     assert 'data-gameplay-forecast-reason-preview="normal-play"' in panels
     assert 'data-gameplay-forecast-reason-text="normal-play"' in panels
+    assert 't("play.gameplay_forecast_detail_preview")' in panels
     assert 'aria-label={`${t("play.gameplay_forecast_detail_label")}: ${reasonChip.detail}`}' in panels
     assert "gameplayForecastInlineWithReason" in styles
     assert "gameplayForecastReasonPreview" in styles
     assert '"play.gameplay_forecast_detail_label": "Why now"' in strings
+    assert '"play.gameplay_forecast_detail_preview": "Open to see why this move fits now."' in strings
+    assert '"play.gameplay_forecast_detail_preview": "展开后看为什么这步现在可用。"' in strings
     assert 'data-gameplay-envelope="true"' in play_page
     assert "data-gameplay-envelope-source={envelope.source}" in play_page
     assert 'source: "backend" | "live_enriched" | "ui-derived"' in envelope
