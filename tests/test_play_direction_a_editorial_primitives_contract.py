@@ -643,7 +643,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.free_context_actor_label": "Own move target"' in strings
     assert '"play.free_context_resource_label": "Own move focus"' in strings
     assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
-    assert '"play.action_open_free_actor": "Write move for {name}"' in strings
+    assert '"play.action_open_free_actor": "Write your own move for {name}"' in strings
+    assert '"play.action_open_free_resource": "Write your own move around {label}"' in strings
     assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
     assert '"play.free_action_boundary_hint": "Write what others can see or hear here; put your real purpose in inner motive."' in strings
     assert '"play.action_target_label": "Who reacts"' in strings
