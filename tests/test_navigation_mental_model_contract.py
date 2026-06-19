@@ -135,6 +135,17 @@ def test_world_advisor_preview_explains_playtime_use() -> None:
     assert '"world.advisor_hint": "During play, ask them for a low-risk read before choosing."' in strings
 
 
+def test_replay_preview_labels_why_highlights_matter() -> None:
+    replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert 'data-replay-preview-why="true"' in replay
+    assert 't("replay.preview_why_label")' in replay
+    assert "previewRecordWhyLabel" in replay
+    assert '"replay.preview_why_label": "为什么关键"' in strings
+    assert '"replay.preview_why_label": "Why it mattered"' in strings
+
+
 def test_home_story_entries_are_generated_playable_template_objects() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()

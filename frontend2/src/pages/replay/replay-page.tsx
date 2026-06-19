@@ -228,7 +228,12 @@ export function ReplayPage({
                     <div style={rpStyles.previewRecordText}>
                       <h3 style={rpStyles.previewRecordHeadline}>{h.headline}</h3>
                       <p style={rpStyles.previewRecordBody}>{h.body_excerpt}</p>
-                      <p style={rpStyles.previewRecordWhy}>{h.why_pivotal}</p>
+                      <p style={rpStyles.previewRecordWhy} data-replay-preview-why="true">
+                        <span style={rpStyles.previewRecordWhyLabel}>
+                          {t("replay.preview_why_label")}
+                        </span>
+                        <span>{h.why_pivotal}</span>
+                      </p>
                     </div>
                   </article>
                 ))}
@@ -672,10 +677,19 @@ const rpStyles: Record<string, CSSProperties> = {
     fontStyle: "italic" as const,
   },
   previewRecordWhy: {
+    display: "grid",
+    gap: 3,
     fontSize: 12.5,
     lineHeight: 1.55,
     color: "var(--text-muted)",
-    margin: 0,
+    margin: "8px 0 0",
+  },
+  previewRecordWhyLabel: {
+    color: "rgba(245,200,120,0.8)",
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.3,
+    textTransform: "uppercase" as const,
   },
   previewHint: {
     fontSize: 13,
