@@ -2641,9 +2641,8 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontSize: 11.6,
     lineHeight: 1.28,
     fontWeight: 700,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap" as const,
+    whiteSpace: "normal" as const,
+    overflowWrap: "anywhere" as const,
   },
   gameplayImpactSpotlight: {
     minWidth: 0,

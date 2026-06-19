@@ -869,6 +869,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayImpactSourceMove" in styles
     assert "gameplayImpactSourceLabel" in styles
     assert "gameplayImpactSourceText" in styles
+    source_text_block = styles[styles.index("gameplayImpactSourceText: {"):styles.index("gameplayImpactSpotlight: {")]
+    assert 'whiteSpace: "normal" as const' in source_text_block
+    assert 'overflowWrap: "anywhere" as const' in source_text_block
+    assert 'textOverflow: "ellipsis"' not in source_text_block
     assert "gameplayImpactSpotlight" in styles
     assert "gameplayImpactSpotlightValue" in styles
     assert "gameplayRelationshipDelta" in styles
