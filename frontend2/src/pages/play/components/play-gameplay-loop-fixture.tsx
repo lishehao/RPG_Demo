@@ -492,7 +492,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             </div>
             {consultedPerson ? (
               <article style={styles.personAdvice} data-gameplay-person-advice="true">
-                <span style={styles.kicker}>Advice from {consultedPerson.name}</span>
+                <span style={styles.kicker}>{consultedPerson.name} can open this</span>
                 <strong style={styles.personAdviceTitle}>{consultedPerson.suggestedMove}</strong>
                 <span style={styles.personAdviceBody}>{consultedPerson.advice}</span>
               </article>
