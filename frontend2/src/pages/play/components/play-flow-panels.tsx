@@ -4301,37 +4301,61 @@ export function ActionArea({
 
   const renderCollapsedForecast = useCallback((chips: GameplayActionForecast[]) => {
     if (!chips.length) return null
+    const reasonChip = chips.find((chip) => chip.detail)
     return (
       <span
-        style={ppStyles.gameplayForecastInline}
+        style={{
+          ...ppStyles.gameplayForecastInline,
+          ...(reasonChip?.detail ? ppStyles.gameplayForecastInlineWithReason : null),
+        }}
         data-gameplay-action-forecast-summary="true"
         aria-label={t("play.gameplay_decision_forecast_label")}
       >
-        <span style={ppStyles.gameplayForecastInlineLabel}>
-          {t("play.option_forecast_kicker")}
+        <span style={ppStyles.gameplayForecastInlineChips}>
+          <span style={ppStyles.gameplayForecastInlineLabel}>
+            {t("play.option_forecast_kicker")}
+          </span>
+          <span style={ppStyles.gameplayForecastChipRow}>
+            {chips.slice(0, 3).map((chip) => (
+              <span
+                key={`forecast-summary-${chip.label}`}
+                title={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
+                aria-label={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
+                style={{
+                  ...ppStyles.gameplayForecastChip,
+                  ...(chip.tone === "gain"
+                    ? ppStyles.gameplayToneGain
+                    : chip.tone === "cost"
+                      ? ppStyles.gameplayToneCost
+                      : chip.tone === "unlock"
+                        ? ppStyles.gameplayToneUnlock
+                        : {}),
+                }}
+                data-gameplay-forecast-chip="normal-play"
+              >
+                {chip.label}
+              </span>
+            ))}
+          </span>
         </span>
-        <span style={ppStyles.gameplayForecastChipRow}>
-          {chips.slice(0, 3).map((chip) => (
-            <span
-              key={`forecast-summary-${chip.label}`}
-              title={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
-              aria-label={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
-              style={{
-                ...ppStyles.gameplayForecastChip,
-                ...(chip.tone === "gain"
-                  ? ppStyles.gameplayToneGain
-                  : chip.tone === "cost"
-                    ? ppStyles.gameplayToneCost
-                    : chip.tone === "unlock"
-                      ? ppStyles.gameplayToneUnlock
-                      : {}),
-              }}
-              data-gameplay-forecast-chip="normal-play"
-            >
-              {chip.label}
+        {reasonChip?.detail ? (
+          <span
+            style={ppStyles.gameplayForecastReasonPreview}
+            data-gameplay-forecast-reason-preview="normal-play"
+            aria-label={`${t("play.gameplay_forecast_detail_label")}: ${reasonChip.detail}`}
+            title={reasonChip.detail}
+          >
+            <span style={ppStyles.gameplayForecastReasonLabel}>
+              {t("play.gameplay_forecast_detail_label")}
             </span>
-          ))}
-        </span>
+            <span
+              style={ppStyles.gameplayForecastReasonText}
+              data-gameplay-forecast-reason-text="normal-play"
+            >
+              {reasonChip.detail}
+            </span>
+          </span>
+        ) : null}
       </span>
     )
   }, [t])
