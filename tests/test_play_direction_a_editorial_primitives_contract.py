@@ -89,10 +89,10 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "play.actor_focus_title" in primitives
     assert '"play.actor_focus_cta_none": "No preset move"' in strings
     assert '"play.actor_focus_active_none": "No preset move"' in strings
-    assert '"play.actor_focus_cta_count_one": "1 test move"' in strings
-    assert '"play.actor_focus_cta_count_many": "{count} test moves"' in strings
-    assert '"play.actor_focus_active_count_one": "Showing 1 test move"' in strings
-    assert '"play.actor_focus_active_count_many": "Showing {count} test moves"' in strings
+    assert '"play.actor_focus_cta_count_one": "1 relevant move"' in strings
+    assert '"play.actor_focus_cta_count_many": "{count} relevant moves"' in strings
+    assert '"play.actor_focus_active_count_one": "Showing 1 relevant move"' in strings
+    assert '"play.actor_focus_active_count_many": "Showing {count} relevant moves"' in strings
     assert "advisorRow" in primitives
     assert "advisorRowCompact" in primitives
     assert "advisorCard:" not in primitives
@@ -601,6 +601,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_forecast_label": "Likely impact"' in strings
     assert '"play.actor_focus_label": "Focus on person"' in strings
     assert '"play.actor_focus_showing_label": "Moves involving {name}"' in strings
+    assert '"play.actor_focus_title": "Show moves involving {name}"' in strings
     assert '"play.actor_focus_cta_none": "No preset move"' in strings
     assert '"play.actor_focus_active_none": "No preset move"' in strings
     assert '"play.actor_focus_match_detail_one": "1 current move makes this person react."' in strings
