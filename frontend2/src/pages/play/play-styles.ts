@@ -292,11 +292,11 @@ export const ppStyles: Record<string, CSSProperties> = {
   },
   runContextObjectiveText: {
     minWidth: 0,
-    color: "rgba(255,245,230,0.76)",
+    color: "rgba(255,245,230,0.92)",
     fontFamily: "var(--font-narrative)",
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 1.42,
-    fontWeight: 500,
+    fontWeight: 560,
   },
   runContextObjectiveHint: {
     display: "block",
@@ -421,9 +421,9 @@ export const ppStyles: Record<string, CSSProperties> = {
   },
   runRoleTitle: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 27,
-    lineHeight: 1.1,
-    color: "white",
+    fontSize: 18,
+    lineHeight: 1.15,
+    color: "rgba(255,245,230,0.78)",
     fontWeight: 500,
     textShadow: "none",
   },

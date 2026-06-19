@@ -507,6 +507,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 't("play.run_assets_use_title", { item })' in panels
     assert "runInventoryHint" in styles
     assert "runInventoryItemButton" in styles
+    assert "runContextObjectiveText" in styles
+    assert 'fontSize: 16' in styles
+    assert "runRoleTitle" in styles
+    assert 'fontSize: 18' in styles
     assert '"play.run_assets_hint": "Mention in your own move"' in strings
     assert '"play.run_assets_hint": "可写进自定义行动"' in strings
     assert '"play.run_assets_use_title": "Use {item} in your own move"' in strings
