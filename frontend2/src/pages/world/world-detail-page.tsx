@@ -621,6 +621,28 @@ function SelectedRoleLaunchPanel({
             </div>
           ) : null}
         </div>
+        <div style={tdStyles.roleLaunchRead} data-world-role-launch-read="true">
+          <div style={tdStyles.roleLaunchReadTitle}>{t("world.role_launch_read_title")}</div>
+          <div style={tdStyles.roleLaunchReadList}>
+            <span style={tdStyles.roleLaunchReadItem} data-world-role-launch-read-item="goal">
+              <span style={tdStyles.roleLaunchReadDot} />
+              <span style={tdStyles.roleLaunchReadText}>{t("world.role_launch_read_goal")}</span>
+            </span>
+            <span style={tdStyles.roleLaunchReadItem} data-world-role-launch-read-item="resources">
+              <span style={tdStyles.roleLaunchReadDot} />
+              <span style={tdStyles.roleLaunchReadText}>
+                {t("world.role_launch_read_resources", {
+                  cards: role.leverages_over_npcs.length,
+                  items: role.starting_assets.length,
+                })}
+              </span>
+            </span>
+            <span style={tdStyles.roleLaunchReadItem} data-world-role-launch-read-item="opening">
+              <span style={tdStyles.roleLaunchReadDot} />
+              <span style={tdStyles.roleLaunchReadText}>{t("world.role_launch_read_opening")}</span>
+            </span>
+          </div>
+        </div>
       </div>
       <div
         style={{
@@ -1275,6 +1297,42 @@ const tdStyles: Record<string, CSSProperties> = {
     color: "rgba(246,221,176,0.62)",
     fontSize: 11.5,
     fontWeight: 700,
+  },
+  roleLaunchRead: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTop: "1px solid rgba(255,255,255,0.075)",
+    display: "grid",
+    gap: 7,
+  },
+  roleLaunchReadTitle: {
+    color: "rgba(246,221,176,0.72)",
+    fontSize: 11.2,
+    fontWeight: 780,
+    lineHeight: 1.25,
+  },
+  roleLaunchReadList: {
+    display: "grid",
+    gap: 6,
+  },
+  roleLaunchReadItem: {
+    display: "grid",
+    gridTemplateColumns: "6px minmax(0, 1fr)",
+    gap: 8,
+    alignItems: "baseline",
+    minWidth: 0,
+  },
+  roleLaunchReadDot: {
+    width: 5,
+    height: 5,
+    borderRadius: "50%",
+    background: "rgba(245,200,120,0.7)",
+    transform: "translateY(-1px)",
+  },
+  roleLaunchReadText: {
+    color: "rgba(232,218,205,0.66)",
+    fontSize: 12,
+    lineHeight: 1.45,
   },
   roleLaunchActions: {
     display: "flex",

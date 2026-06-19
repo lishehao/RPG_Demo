@@ -140,6 +140,28 @@ def test_world_role_launch_has_ready_and_starting_feedback() -> None:
     assert "cursor: \"progress\"" in world
 
 
+def test_world_role_launch_explains_first_turn_reading() -> None:
+    world = (ROOT / "frontend2/src/pages/world/world-detail-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert 'data-world-role-launch-read="true"' in world
+    assert 'data-world-role-launch-read-item="goal"' in world
+    assert 'data-world-role-launch-read-item="resources"' in world
+    assert 'data-world-role-launch-read-item="opening"' in world
+    assert 't("world.role_launch_read_title")' in world
+    assert 't("world.role_launch_read_goal")' in world
+    assert 't("world.role_launch_read_resources"' in world
+    assert 't("world.role_launch_read_opening")' in world
+    assert '"world.role_launch_read_title": "第一回合这样读"' in strings
+    assert '"world.role_launch_read_goal": "先看暗线目标：它决定你为什么要选这一步。"' in strings
+    assert '"world.role_launch_read_resources": "你带着 {cards} 张反将牌、{items} 件物品；普通选择不够时再亮出来。"' in strings
+    assert '"world.role_launch_read_opening": "开场相同，但房间会按这个身份的压力回应你。"' in strings
+    assert '"world.role_launch_read_title": "How to read turn one"' in strings
+    assert '"world.role_launch_read_goal": "Read the private goal first; it explains why one move matters."' in strings
+    assert '"world.role_launch_read_resources": "You bring {cards} leverage cards and {items} items; reveal them when normal moves are not enough."' in strings
+    assert '"world.role_launch_read_opening": "The opening is the same, but the room reacts to this identity\'s pressure."' in strings
+
+
 def test_world_owner_visibility_explains_current_reach() -> None:
     world = (ROOT / "frontend2/src/pages/world/world-detail-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
