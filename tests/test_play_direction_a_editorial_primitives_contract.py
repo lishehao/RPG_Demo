@@ -637,14 +637,18 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_forecast_label": "这个选择的影响"' in strings
     assert '"play.gameplay_decision_upside_label": "机会"' in strings
     assert '"play.gameplay_decision_shift_label": "变化"' in strings
-    assert '"play.gameplay_impact_label": "Observed changes"' in strings
+    assert '"play.gameplay_impact_label": "After your move"' in strings
     assert '"play.outcome_next_hint": "Shapes the next choices"' in strings
     assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
-    assert '"play.feedback_key_consequence_label": "Key consequence"' in strings
-    assert '"play.feedback_next_choice_label": "Next choice signals"' in strings
-    assert '"play.feedback_next_choice_changed_label": "Next choices changed"' in strings
-    assert '"play.feedback_next_choice_changed_detail": "The next actions are refocused by the room reaction and state changes."' in strings
+    assert '"play.feedback_key_consequence_label": "Main result"' in strings
+    assert '"play.feedback_next_choice_label": "Why next moves changed"' in strings
+    assert '"play.feedback_next_choice_changed_label": "Next moves changed"' in strings
+    assert '"play.feedback_next_choice_changed_detail": "New actions are refocused by who reacted, what changed, and any clues you opened."' in strings
+    assert '"play.gameplay_impact_label": "行动之后"' in strings
+    assert '"play.feedback_key_consequence_label": "主要结果"' in strings
+    assert '"play.feedback_next_choice_label": "下一步为什么变了"' in strings
+    assert '"play.feedback_next_choice_changed_label": "下一组行动已改变"' in strings
     assert '"play.impact_focus_actor_title": "Focus moves involving {name}"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert 'data-play-outcome-receipt="true"' in panels
