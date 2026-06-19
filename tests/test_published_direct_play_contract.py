@@ -181,6 +181,8 @@ def test_home_completed_memory_cards_explain_replay_destination() -> None:
     assert 'data-home-completed-memory-hint="true"' in home
     assert 't("home.memory_hint")' in home
     assert "memoryHint" in home
+    assert '"home.memory_action": "查看回放 →"' in strings
+    assert '"home.memory_action": "View replay →"' in strings
     assert '"home.memory_hint": "打开高光和完整回放，复盘这一局怎么走到这里。"' in strings
     assert '"home.memory_hint": "Open highlights and the full replay to see how this run got there."' in strings
 
