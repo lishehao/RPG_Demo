@@ -285,9 +285,13 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Badge clue opened new moves." in fixture
     assert "You can use the badge clue in the next move." in fixture
     assert "function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean): Track[]" in fixture
+    assert "function resolvedSummaryForAction(action: FixtureAction | null): string" in fixture
     assert "return SHOW_BADGE_TRACKS" in fixture
     assert "return TRAP_ANSWER_TRACKS" in fixture
     assert "setTracks(resolvedTracksForAction(committed.action, clueWasUnlocked))" in fixture
+    assert 'data-gameplay-resolved-summary="true"' in fixture
+    assert "Arthur is publicly tied to the missing badge" in fixture
+    assert "The badge becomes a usable route" in fixture
     assert "The badge clue becomes a path to the control door." in fixture
     assert "The room tightens as two stories collide." in fixture
     assert "Badge clue has changed the action set." not in fixture

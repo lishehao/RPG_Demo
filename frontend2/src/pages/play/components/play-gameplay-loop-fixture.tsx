@@ -255,6 +255,26 @@ function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean
   return clueWasUnlocked ? RESOLVED_TRACKS : INITIAL_TRACKS
 }
 
+function resolvedSummaryForAction(action: FixtureAction | null): string {
+  if (!action) return "The room has shifted. Use the new state before the countdown closes."
+  if (action.id === "lena-hold") {
+    return "Lena steadies the room, giving you a calmer but still proof-light next choice."
+  }
+  if (action.id === "arthur-badge") {
+    return "Arthur is publicly tied to the missing badge, and the badge clue opens sharper moves."
+  }
+  if (action.id === "marcus-stall") {
+    return "Marcus buys breathing room, but Lena notices the sponsor pressure is steering the night."
+  }
+  if (action.id === "show-badge") {
+    return "The badge becomes a usable route: Lena can point you toward the control door."
+  }
+  if (action.id === "trap-answer") {
+    return "Arthur and Marcus now have conflicting public stories, raising pressure and leverage together."
+  }
+  return "The room has shifted. Use the new state before the countdown closes."
+}
+
 const toneStyle: Record<FixtureDelta["tone"], CSSProperties> = {
   gain: {
     border: "1px solid rgba(126, 204, 164, 0.28)",
@@ -561,6 +581,9 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 <span style={styles.kicker} data-gameplay-resolved-title="true">What changed</span>
                 <span style={styles.headerNote}>Use these changes to pick your next move.</span>
               </div>
+              <p style={styles.resolvedSummary} data-gameplay-resolved-summary="true">
+                {resolvedSummaryForAction(committed?.action ?? null)}
+              </p>
               <div style={styles.chipRow}>
                 {resolvedDeltas.map((delta) => (
                   <DeltaChip key={delta.id} delta={delta} hook="delta" />
@@ -927,6 +950,13 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
     display: "grid",
     gap: 10,
+  },
+  resolvedSummary: {
+    margin: 0,
+    color: actionPalette.ivoryText,
+    fontFamily: "var(--font-narrative)",
+    fontSize: 17,
+    lineHeight: 1.35,
   },
   rail: {
     minWidth: 0,
