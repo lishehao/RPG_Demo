@@ -1251,6 +1251,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.action_submit": "Submit this move →"' in strings
     assert '"play.action_submit": "提交这个行动 →"' in strings
     assert '"play.leverage_resource_label": "Leverage card"' in strings
+    assert '"play.leverage_summary_chip_risk": "Risk"' in strings
+    assert '"play.leverage_card_risk": "Everyone will remember"' in strings
+    assert '"play.leverage_summary_chip_risk": "Memory risk"' not in strings
+    assert '"play.leverage_card_risk": "Room remembers"' not in strings
     assert '"play.leverage_summary_action": "Reveal against {target}"' in strings
     assert '"play.leverage_summary_choose": "Choose a leverage card"' in strings
     assert '"play.turn_guide_leverage_title": "Leverage ready: {target}"' in strings
