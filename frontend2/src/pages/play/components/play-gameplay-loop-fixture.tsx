@@ -171,22 +171,22 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
 
 const toneStyle: Record<FixtureDelta["tone"], CSSProperties> = {
   gain: {
-    borderColor: "rgba(126, 204, 164, 0.28)",
+    border: "1px solid rgba(126, 204, 164, 0.28)",
     color: "rgba(196, 246, 216, 0.92)",
     background: "rgba(62, 134, 96, 0.16)",
   },
   cost: {
-    borderColor: "rgba(229, 176, 100, 0.30)",
+    border: "1px solid rgba(229, 176, 100, 0.30)",
     color: "rgba(244, 210, 153, 0.92)",
     background: "rgba(141, 92, 36, 0.16)",
   },
   unlock: {
-    borderColor: "rgba(216, 177, 99, 0.34)",
+    border: "1px solid rgba(216, 177, 99, 0.34)",
     color: "rgba(249, 226, 174, 0.95)",
     background: "rgba(151, 107, 40, 0.18)",
   },
   shift: {
-    borderColor: "rgba(172, 178, 196, 0.24)",
+    border: "1px solid rgba(172, 178, 196, 0.24)",
     color: "rgba(224, 226, 235, 0.88)",
     background: "rgba(101, 108, 128, 0.14)",
   },
@@ -257,6 +257,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
       setSelectedId(null)
       setMotiveOpen(false)
       setMotive("")
+      setConsultedPersonId(null)
     }, 780)
     return () => window.clearTimeout(timer)
   }, [committed, isPending])
@@ -675,7 +676,7 @@ const styles: Record<string, CSSProperties> = {
     transition: "border-color 160ms ease, transform 160ms ease, background 160ms ease",
   },
   actionCardSelected: {
-    borderColor: actionPalette.selectedBorderLeft,
+    border: `1px solid ${actionPalette.selectedBorderLeft}`,
     background: actionPalette.selectedBackground,
     boxShadow: actionPalette.selectedGlow,
   },
@@ -853,7 +854,7 @@ const styles: Record<string, CSSProperties> = {
     padding: 8,
   },
   personRowConsulted: {
-    borderColor: "rgba(229,190,124,0.26)",
+    border: "1px solid rgba(229,190,124,0.26)",
     background: "rgba(64,46,21,0.20)",
   },
   avatarFrame: {
@@ -896,7 +897,7 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 780,
   },
   personActionActive: {
-    borderColor: "rgba(229,190,124,0.36)",
+    border: "1px solid rgba(229,190,124,0.36)",
     background: "rgba(229,190,124,0.14)",
     color: actionPalette.ivoryText,
   },

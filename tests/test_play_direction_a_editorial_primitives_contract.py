@@ -313,6 +313,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-person-advice-select="true"' in fixture
     assert "Select this move" in fixture
     assert "selectSuggestedAction(consultedSuggestedAction)" in fixture
+    assert "borderColor" not in fixture
     assert 'data-gameplay-clue-card={unlockedClue ? "green-room-badge" : "locked"}' in fixture
     assert 'data-gameplay-forecast-chip={hook === "forecast" ? "true" : undefined}' in fixture
     assert 'data-gameplay-delta={hook === "delta" ? "true" : undefined}' in fixture
@@ -326,6 +327,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "setPhase(\"pending\")" in fixture
     assert "setPhase(\"resolved\")" in fixture
     assert "setUnlockedClue(true)" in fixture
+    assert "setConsultedPersonId(null)" in fixture
     assert "unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS" in fixture
     assert "fetch(" not in fixture
     assert "episodeGoal" in prd
