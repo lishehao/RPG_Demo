@@ -886,6 +886,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.option_forecast_kicker": "Likely impact"' in strings
     assert '"play.turn_guide_idle_title": "Choose one move"' in strings
     assert '"play.turn_guide_idle_detail": "Select a card first, then submit it."' in strings
+    assert '"play.action_status_ready": "Move controls ready."' in strings
     assert '"play.turn_guide_idle_title": "选择一个行动"' in strings
     assert '"play.turn_guide_idle_detail": "先选中卡片，再提交这个行动。"' in strings
     assert '"play.option_shortcut_title": "Press {key} to select; then submit"' in strings
@@ -920,6 +921,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.leverage_summary_action": "Reveal against {target}"' in strings
     assert '"play.leverage_summary_choose": "Choose a leverage card"' in strings
     assert '"play.turn_guide_leverage_title": "Leverage ready: {target}"' in strings
+    assert 't("play.action_status_ready")' in panels
     assert "Trump card" not in strings
     assert "trump card" not in strings
     assert "Not submitted yet" not in strings
