@@ -3352,6 +3352,39 @@ export function ActionArea({
               text: t("play.free_starter_inventory_ask_text", { item: freeActionFocusContext.label }),
             },
           ]
+        : freeActionFocusContext.kind === "resource"
+          ? freeActionFocusContext.id === "time"
+            ? [
+                {
+                  label: t("play.free_starter_time_buy_label"),
+                  text: t("play.free_starter_time_buy_text"),
+                },
+                {
+                  label: t("play.free_starter_time_force_label"),
+                  text: t("play.free_starter_time_force_text"),
+                },
+              ]
+            : freeActionFocusContext.id === "pressure"
+              ? [
+                  {
+                    label: t("play.free_starter_pressure_calm_label"),
+                    text: t("play.free_starter_pressure_calm_text"),
+                  },
+                  {
+                    label: t("play.free_starter_pressure_raise_label"),
+                    text: t("play.free_starter_pressure_raise_text"),
+                  },
+                ]
+              : [
+                  {
+                    label: t("play.free_starter_evidence_show_label"),
+                    text: t("play.free_starter_evidence_show_text"),
+                  },
+                  {
+                    label: t("play.free_starter_evidence_trace_label"),
+                    text: t("play.free_starter_evidence_trace_text"),
+                  },
+                ]
         : []
     : []
   const freeComposerOpen = showFreeInput || options.length === 0
