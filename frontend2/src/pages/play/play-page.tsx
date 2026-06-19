@@ -283,12 +283,6 @@ function GameplayStatePanel({
       data-gameplay-envelope-source={envelope.source}
       aria-label={t("play.gameplay_state_label")}
     >
-      <div style={ppStyles.gameplayObjectiveRow} data-gameplay-objective="normal-play">
-        <span style={ppStyles.gameplayObjectiveKicker}>{t("play.gameplay_objective_label")}</span>
-        <strong style={ppStyles.gameplayObjectiveText} data-gameplay-objective-text="normal-play">
-          {envelope.objective}
-        </strong>
-      </div>
       <div style={ppStyles.gameplayStakesHeader} data-gameplay-stakes-header="normal-play">
         <span style={ppStyles.gameplayStakesLabel}>{t("play.gameplay_tracks_label")}</span>
         <span style={ppStyles.gameplayStakesHint}>{t("play.gameplay_tracks_hint")}</span>

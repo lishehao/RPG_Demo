@@ -472,7 +472,7 @@ export function RunContextPanel({
           <span style={ppStyles.runCompactMeta}>{runMetaText}</span>
         </div>
         {role ? (
-          <div style={ppStyles.runCompactObjective}>
+          <div style={ppStyles.runCompactObjective} data-play-run-objective="true">
             <strong style={ppStyles.runCompactObjectiveText}>
               {role.hidden_objective}
             </strong>
@@ -507,7 +507,7 @@ export function RunContextPanel({
         <span style={ppStyles.runContextMeta}>{runMetaText}</span>
       </div>
       {role ? (
-        <div style={ppStyles.runContextObjectiveLine}>
+        <div style={ppStyles.runContextObjectiveLine} data-play-run-objective="true">
           <strong style={ppStyles.runContextObjectiveText}>{role.hidden_objective}</strong>
           <span style={ppStyles.runContextObjectiveHint} data-play-run-context-lens="true">
             {t("play.run_context_lens_hint")}
