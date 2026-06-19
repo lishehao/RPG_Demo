@@ -204,8 +204,12 @@ def test_story_brief_revision_actions_explain_click_effect() -> None:
     assert "briefRevisionActionLabel" in styles_source
     assert "briefRevisionActionDesc" in styles_source
     assert "briefRevisionHint" in styles_source
-    assert '"create.brief_revision_hint": "点一条会把修正加入对话，再重新整理 Brief。"' in strings
-    assert '"create.brief_revision_hint": "Choose one to add that correction to the chat, then reshape the Brief."' in strings
+    assert '"create.brief_revision_actions": "让第一幕更稳"' in strings
+    assert '"create.brief_revision_hint": "点一条补进草稿，我会重新整理这张计划。"' in strings
+    assert '"create.brief_revision_actions": "Ways to strengthen"' in strings
+    assert '"create.brief_revision_hint": "Pick one to add it to your notes, then I’ll reshape this plan."' in strings
+    assert "Choose one to add that correction to the chat" not in strings
+    assert "Revision actions" not in strings
 
 
 def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
@@ -246,7 +250,8 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.seed_recipe_secret_label": "What can break"',
         '"create.guide_add_opening": "Send opening"',
         '"create.guide_add_answer": "Send answer"',
-        '"create.guide_add_correction": "Send correction"',
+        '"create.guide_add_correction": "Send update"',
+        '"create.brief_keep_correcting": "Add more detail"',
         '"create.guide_revision_count": "{n} follow-ups"',
         '"create.guide_next_prompt_hint": "Answer the Story Butler prompt next."',
         '"create.guide_ready_brief_hint": "The Story Brief will shape itself once ready."',
@@ -256,7 +261,8 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.seed_recipe_secret_label": "什么会爆"',
         '"create.guide_add_opening": "发送开场"',
         '"create.guide_add_answer": "发送回答"',
-        '"create.guide_add_correction": "发送修正"',
+        '"create.guide_add_correction": "发送补充"',
+        '"create.brief_keep_correcting": "补更多细节"',
         '"create.guide_revision_count": "{n} 条补充"',
         '"create.guide_next_prompt_hint": "继续回答 Story Butler 的追问"',
         '"create.guide_ready_brief_hint": "信息足够后会自动整理 Brief"',
