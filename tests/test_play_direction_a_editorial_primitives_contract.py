@@ -795,9 +795,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "gameplayForecastInlineLabel" in styles
     assert '"play.option_forecast_kicker": "Likely impact"' in strings
     assert '"play.turn_guide_idle_title": "Choose one move"' in strings
-    assert '"play.turn_guide_idle_detail": "Select a card first, then confirm it."' in strings
+    assert '"play.turn_guide_idle_detail": "Select a card first, then submit it."' in strings
     assert '"play.turn_guide_idle_title": "选择一个行动"' in strings
-    assert '"play.turn_guide_idle_detail": "先选中卡片，再确认提交。"' in strings
+    assert '"play.turn_guide_idle_detail": "先选中卡片，再提交这个行动。"' in strings
+    assert '"play.option_shortcut_title": "Press {key} to select; then submit"' in strings
+    assert '"play.option_shortcut_title": "按 {key} 选择；然后提交"' in strings
     assert '"play.action_open_free": "Write your own move"' in strings
     assert '"play.action_open_free_hint": "Say or do something else."' in strings
     assert '"play.action_open_free_title": "Open your own move input"' in strings
@@ -820,6 +822,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_selected_named_detail": "Review this move. Submit it, or add inner motive."' in strings
     assert '"play.turn_guide_selected_detail": "先复核这一步，再提交或补一句真实动机。"' in strings
     assert '"play.action_submit": "Submit this move →"' in strings
+    assert '"play.action_submit": "提交这个行动 →"' in strings
     assert '"play.leverage_resource_label": "Leverage card"' in strings
     assert '"play.turn_guide_leverage_title": "Leverage ready: {target}"' in strings
     assert "Trump card" not in strings
