@@ -472,6 +472,9 @@ export function RunContextPanel({
             <strong style={ppStyles.runCompactObjectiveText}>
               {role.hidden_objective}
             </strong>
+            <span style={ppStyles.runContextObjectiveHint} data-play-run-context-lens="true">
+              {t("play.run_context_lens_hint")}
+            </span>
           </div>
         ) : null}
         {renderInventoryLine()}
@@ -502,6 +505,9 @@ export function RunContextPanel({
       {role ? (
         <div style={ppStyles.runContextObjectiveLine}>
           <strong style={ppStyles.runContextObjectiveText}>{role.hidden_objective}</strong>
+          <span style={ppStyles.runContextObjectiveHint} data-play-run-context-lens="true">
+            {t("play.run_context_lens_hint")}
+          </span>
         </div>
       ) : null}
       {renderInventoryLine()}

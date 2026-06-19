@@ -298,6 +298,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     lineHeight: 1.42,
     fontWeight: 500,
   },
+  runContextObjectiveHint: {
+    display: "block",
+    marginTop: 3,
+    color: "rgba(232,218,205,0.46)",
+    fontSize: 11.4,
+    lineHeight: 1.4,
+  },
   runInventoryLine: {
     marginTop: 6,
     display: "flex",

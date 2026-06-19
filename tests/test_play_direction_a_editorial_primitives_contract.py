@@ -539,6 +539,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "resourceActionCounts={resourceActionCounts}" in play_page
     assert "onFocusResource={focusGameplayResource}" in play_page
     assert 'behavior: prefersReducedMotion ? "auto" : "smooth"' in play_page
+    assert 'data-play-run-context-lens="true"' in panels
+    assert 't("play.run_context_lens_hint")' in panels
+    assert "runContextObjectiveHint" in styles
+    assert '"play.run_context_lens_hint": "Use this goal as the lens for reading the scene."' in strings
+    assert '"play.run_context_lens_hint": "用这个目标去读场景，再决定下一步。"' in strings
     assert "<GameplayStatePanel" in play_page
     assert "envelope={gameplayEnvelope}" in play_page
     assert 'data-gameplay-objective-text="normal-play"' in play_page
