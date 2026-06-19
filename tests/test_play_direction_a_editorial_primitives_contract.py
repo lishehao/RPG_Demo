@@ -1003,6 +1003,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.advisor_send": "问朋友"' in strings
     assert '"play.move_receipt_title": "Your move"' in strings
     assert '"play.room_reacting_title": "The room is reacting"' in strings
+    assert '"play.resolve_status_room": "Reading the room"' in strings
+    assert '"play.resolve_status_room": "The room is reacting"' not in strings
     assert '"play.option_expand_cta": "Select move"' in strings
     assert '"play.option_expand_cta": "选择行动"' in strings
     assert '"play.option_expanded_detail_label": "Consequence"' in strings
