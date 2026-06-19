@@ -616,7 +616,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 <strong style={styles.receiptTitle}>{committed.action.title}</strong>
                 {committed.motive ? <span style={styles.receiptMotive}>Motive: {committed.motive}</span> : null}
                 <div style={styles.receiptImpact} data-gameplay-pending-impact="true">
-                  <span style={styles.receiptImpactLabel}>Queued impact</span>
+                  <span style={styles.receiptImpactLabel}>Effects in motion</span>
                   <div style={styles.chipRow}>
                     {committed.action.forecast.map((delta) => (
                       <DeltaChip key={delta.id} delta={delta} />
