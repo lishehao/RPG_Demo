@@ -284,6 +284,10 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-unlocked-action={unlockedClue ? "true" : undefined}' in fixture
     assert 'data-play-move-receipt="true"' in fixture
     assert 'data-play-room-reacting="true"' in fixture
+    assert 'data-gameplay-resolved-title="true"' in fixture
+    assert "After your move" in fixture
+    assert "What changed now shapes the next choices." in fixture
+    assert ">Changed<" not in fixture
     assert "setPhase(\"pending\")" in fixture
     assert "setPhase(\"resolved\")" in fixture
     assert "setUnlockedClue(true)" in fixture

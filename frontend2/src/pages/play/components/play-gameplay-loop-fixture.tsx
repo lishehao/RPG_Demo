@@ -433,8 +433,8 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
           {phase === "resolved" ? (
             <section style={styles.resolvedPanel} data-gameplay-resolved="true">
               <div style={styles.sectionHeader}>
-                <span style={styles.kicker}>Changed</span>
-                <span style={styles.headerNote}>The next moves now respond to the clue.</span>
+                <span style={styles.kicker} data-gameplay-resolved-title="true">After your move</span>
+                <span style={styles.headerNote}>What changed now shapes the next choices.</span>
               </div>
               <div style={styles.chipRow}>
                 {resolvedDeltas.map((delta) => (
