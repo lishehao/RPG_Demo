@@ -181,6 +181,8 @@ export function SceneSupportRail({
   const pressure = scenePressureText(story, lastNarrator)
   const actors = sceneActors(story, lastNarrator?.npc_pulse ?? [])
   const advisorName = advisorDisplayName(advisorPersona, t("play.advisor_card_name"))
+  const advisorAskTitle = t("play.advisor_card_ask_title", { name: advisorName })
+  const advisorAskDetail = t("play.advisor_card_ask_detail")
   return (
     <aside
       data-play-primitive="SceneSupportRail"
@@ -296,8 +298,8 @@ export function SceneSupportRail({
                   ...(compact ? primitiveStyles.advisorAskButtonCompact : null),
                 }}
                 data-play-advisor-ask="true"
-                title={t("play.advisor_card_ask_title", { name: advisorName })}
-                aria-label={`${t("play.advisor_card_ask_title", { name: advisorName })}: ${advisorPersona}`}
+                title={`${advisorAskTitle} · ${advisorAskDetail}`}
+                aria-label={`${advisorAskTitle}: ${advisorAskDetail}. ${advisorPersona}`}
                 onClick={onAskAdvisor}
               >
                 {t("play.advisor_card_ask")}

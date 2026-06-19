@@ -89,6 +89,10 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert 'title="People you can involve"' in primitives
     assert "play.advisor_card_name" in primitives
     assert "play.advisor_card_background" in primitives
+    assert "advisorAskTitle" in primitives
+    assert "advisorAskDetail" in primitives
+    assert 'title={`${advisorAskTitle} · ${advisorAskDetail}`}' in primitives
+    assert 'aria-label={`${advisorAskTitle}: ${advisorAskDetail}. ${advisorPersona}`}' in primitives
     assert "play.actor_focus_title" in primitives
     assert '"play.actor_focus_cta_none": "No preset move"' in strings
     assert '"play.actor_focus_active_none": "No preset move"' in strings
@@ -1138,6 +1142,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.inner_motive_submit_cta": "Submit with motive"' in strings
     assert '"play.inner_motive_submit_cta": "带着动机提交"' in strings
     assert '"play.advisor_card_name": "Dana Vale"' in strings
+    assert '"play.advisor_card_ask_detail": "Get a low-risk read; you still choose the move"' in strings
+    assert '"play.advisor_card_ask_detail": "低风险读局；最后行动仍由你决定"' in strings
     assert 'data-play-advisor-empty-primer="true"' in panels
     assert "const [draftSuggestion, setDraftSuggestion] = useState<string | null>(null)" in panels
     assert "setDraftSuggestion(suggestion)" in panels
