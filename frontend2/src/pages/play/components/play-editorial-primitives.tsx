@@ -97,7 +97,7 @@ export function MoodPlate({
     ? "First shot is live. Choose the pressure you step into."
     : turnsRemaining <= 2
       ? "The room is close to its final break."
-      : "The latest beat is ready for your next move."
+      : "The room is waiting."
 
   return (
     <section
