@@ -230,6 +230,18 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontSize: 17,
     lineHeight: 1.55,
   },
+  currentScenePreviewNextCue: {
+    display: "block",
+    marginTop: 8,
+    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(229,190,124,0.12)",
+    color: "rgba(246,221,176,0.66)",
+    fontSize: 11.5,
+    lineHeight: 1.28,
+    fontWeight: 720,
+  },
 
   runContextPanel: {
     margin: "0 0 16px",

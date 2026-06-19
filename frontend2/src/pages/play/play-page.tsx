@@ -643,6 +643,12 @@ function CurrentScenePreview({ message }: { message: NarrativeStoryMessage }) {
       <p style={ppStyles.currentScenePreviewText}>
         <Truncated lines={3}>{cleanNarrativeDisplayText(message.content)}</Truncated>
       </p>
+      <span
+        style={ppStyles.currentScenePreviewNextCue}
+        data-play-current-scene-next-cue="true"
+      >
+        {t("play.current_scene_next_cue")}
+      </span>
     </section>
   )
 }

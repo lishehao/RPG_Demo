@@ -10,6 +10,8 @@ def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert "from \"./components/play-editorial-primitives\"" in play_page
     for component in (
@@ -33,8 +35,12 @@ def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     assert 'data-play-story-beat-stack="true"' in play_page
     assert "function CurrentScenePreview" in play_page
     assert 'data-play-current-scene-preview="true"' in play_page
+    assert 'data-play-current-scene-next-cue="true"' in play_page
     assert "cleanNarrativeDisplayText(message.content)" in play_page
-    assert '"play.current_scene_label": "Current scene"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    assert '"play.current_scene_label": "Current scene"' in strings
+    assert '"play.current_scene_next_cue": "Then use the choices below to answer this moment."' in strings
+    assert '"play.current_scene_next_cue": "再用下方选择回应这一刻。"' in strings
+    assert "currentScenePreviewNextCue" in styles
     story_timeline_block = play_page[play_page.index("<StoryTimeline innerRef={scrollerRef}>"):]
     assert "<RunContextPanel" in story_timeline_block
     assert story_timeline_block.index("<RunContextPanel") < story_timeline_block.index("<GameplayStatePanel")
