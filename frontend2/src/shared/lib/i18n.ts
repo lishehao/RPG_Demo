@@ -1028,6 +1028,7 @@ export const STRINGS_ZH = {
   // === replay page ===
   "replay.view_preview": "高光",
   "replay.view_full": "完整",
+  "replay.view_mode_hint": "先看关键转折；想细读时切到完整故事。",
   "replay.preview_label": "这一局的关键转折（{count}）",
   "replay.preview_hint": "这些选择把这一局推向最终结局。",
   "replay.preview_why_label": "为什么关键",
@@ -2027,6 +2028,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   // === replay page ===
   "replay.view_preview": "Highlights",
   "replay.view_full": "Full read",
+  "replay.view_mode_hint": "Start with the key turns; switch to full when you want every beat.",
   "replay.preview_label": "The key turns in this run ({count})",
   "replay.preview_hint": "The choices that pushed this run toward its ending.",
   "replay.preview_why_label": "Why it mattered",

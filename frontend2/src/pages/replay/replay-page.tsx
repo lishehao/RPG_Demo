@@ -192,21 +192,29 @@ export function ReplayPage({
             in that case "full" is the only sensible mode anyway. */}
         {hasPreviewHighlights ? (
           <div style={rpStyles.viewModeRow}>
-            <span style={rpStyles.viewModeLabel}>
-              {viewMode === "preview" ? t("replay.view_preview") : t("replay.view_full")}
+            <span style={rpStyles.viewModePrimaryLine}>
+              <span style={rpStyles.viewModeLabel}>
+                {viewMode === "preview" ? t("replay.view_preview") : t("replay.view_full")}
+              </span>
+              <button
+                type="button"
+                style={rpStyles.viewModeAction}
+                onClick={() => setViewMode(viewMode === "preview" ? "full" : "preview")}
+                aria-label={
+                  viewMode === "preview"
+                    ? t("replay.view_full")
+                    : t("replay.view_preview")
+                }
+              >
+                {viewMode === "preview" ? t("replay.view_full") : t("replay.view_preview")}
+              </button>
             </span>
-            <button
-              type="button"
-              style={rpStyles.viewModeAction}
-              onClick={() => setViewMode(viewMode === "preview" ? "full" : "preview")}
-              aria-label={
-                viewMode === "preview"
-                  ? t("replay.view_full")
-                  : t("replay.view_preview")
-              }
+            <span
+              style={rpStyles.viewModeHint}
+              data-replay-view-mode-hint="true"
             >
-              {viewMode === "preview" ? t("replay.view_full") : t("replay.view_preview")}
-            </button>
+              {t("replay.view_mode_hint")}
+            </span>
           </div>
         ) : null}
 
@@ -603,16 +611,20 @@ const rpStyles: Record<string, CSSProperties> = {
   },
   storyColumn: {},
   viewModeRow: {
-    display: "flex",
-    alignItems: "baseline",
-    columnGap: 10,
-    rowGap: 5,
-    flexWrap: "wrap" as const,
+    display: "grid",
+    gap: 5,
     margin: "0 0 24px",
     padding: 0,
     background: "transparent",
     border: "none",
     borderRadius: 0,
+  },
+  viewModePrimaryLine: {
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 10,
+    rowGap: 5,
+    flexWrap: "wrap" as const,
   },
   viewModeLabel: {
     color: "rgba(245,200,120,0.78)",
@@ -634,6 +646,12 @@ const rpStyles: Record<string, CSSProperties> = {
     cursor: "pointer",
     fontFamily: "inherit",
     fontWeight: 650,
+  },
+  viewModeHint: {
+    maxWidth: 560,
+    color: "rgba(232,218,205,0.60)",
+    fontSize: 12.5,
+    lineHeight: 1.45,
   },
   highlightCarousel: {
     display: "grid",

@@ -174,9 +174,14 @@ def test_replay_preview_labels_why_highlights_matter() -> None:
     replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
+    assert 'data-replay-view-mode-hint="true"' in replay
+    assert 't("replay.view_mode_hint")' in replay
+    assert "viewModeHint" in replay
     assert 'data-replay-preview-why="true"' in replay
     assert 't("replay.preview_why_label")' in replay
     assert "previewRecordWhyLabel" in replay
+    assert '"replay.view_mode_hint": "先看关键转折；想细读时切到完整故事。"' in strings
+    assert '"replay.view_mode_hint": "Start with the key turns; switch to full when you want every beat."' in strings
     assert '"replay.preview_why_label": "为什么关键"' in strings
     assert '"replay.preview_why_label": "Why it mattered"' in strings
 
