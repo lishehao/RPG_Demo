@@ -282,7 +282,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
       <section style={styles.shell} aria-label="Gameplay loop rehearsal">
         <div style={styles.mainColumn}>
           <section style={styles.objectivePanel} data-gameplay-objective="true">
-            <span style={styles.kicker}>Episode goal</span>
+            <span style={styles.kicker}>Your goal</span>
             <h1 style={styles.title}>Find the singer before the countdown ends</h1>
             <p style={styles.bodyCopy}>
               The awards livestream is still running. Every move should buy time, expose proof, or move a person into position.

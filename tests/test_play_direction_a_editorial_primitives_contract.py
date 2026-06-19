@@ -272,6 +272,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "PlayGameplayLoopFixture" in app
     assert 'data-gameplay-loop-fixture="true"' in fixture
     assert 'data-gameplay-objective="true"' in fixture
+    assert "Your goal" in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert 'data-gameplay-person-action="true"' in fixture
     assert 'data-gameplay-people-usage-note="true"' in fixture
@@ -598,7 +599,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_loop_choose_detail": "代价、机会、目标"' in strings
     assert '"play.gameplay_loop_react_label": "Watch reaction"' in strings
     assert '"play.gameplay_loop_update_label": "Use changes"' in strings
-    assert '"play.gameplay_objective_label": "Goal"' in strings
+    assert '"play.gameplay_objective_label": "Your goal"' in strings
+    assert '"play.gameplay_objective_label": "你的目标"' in strings
     assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "Likely impact"' in strings
     assert '"play.actor_focus_label": "Focus on person"' in strings
