@@ -417,6 +417,10 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "setConsultedPersonId(person.id)" in fixture
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
     assert 'data-gameplay-person-inline-advice="true"' in fixture
+    assert "`Use ${firstName(consultedPerson.name)}'s move`" in fixture
+    assert "`${firstName(consultedPerson.name)}'s move selected`" in fixture
+    assert "Select this move" not in fixture
+    assert "Suggestion selected" not in fixture
     assert "personInlineAdvice" in fixture
     assert "personInlineAdviceBody" not in fixture
     assert "Suggested move" in fixture
@@ -450,8 +454,6 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-person-advice-select="true"' in fixture
     assert 'data-gameplay-person-advice-armed={adviceArmed ? "true" : undefined}' in fixture
     assert 'data-gameplay-person-advice-select-active={adviceArmed ? "true" : undefined}' in fixture
-    assert "Select this move" in fixture
-    assert "Suggestion selected" in fixture
     assert "advice is attached" in fixture
     assert "selectSuggestedAction(consultedSuggestedAction)" in fixture
     assert 'const unlockedClueAction = unlockedClue' in fixture

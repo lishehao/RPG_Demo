@@ -924,7 +924,9 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                     data-gameplay-person-advice-select-active={adviceArmed ? "true" : undefined}
                     onClick={() => selectSuggestedAction(consultedSuggestedAction)}
                   >
-                    {adviceArmed ? "Suggestion selected" : "Select this move"}
+                    {adviceArmed
+                      ? `${firstName(consultedPerson.name)}'s move selected`
+                      : `Use ${firstName(consultedPerson.name)}'s move`}
                   </button>
                 ) : null}
               </article>
