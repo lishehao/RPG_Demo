@@ -297,7 +297,9 @@ function GameplayStatePanel({
             : 0
           const resourceActionLabel = isFocused
             ? resourceMatchCount > 0
-              ? t("play.resource_focus_active_count", { count: resourceMatchCount })
+              ? resourceMatchCount === 1
+                ? t("play.resource_focus_active_count_one")
+                : t("play.resource_focus_active_count_many", { count: resourceMatchCount })
               : t("play.resource_focus_active_none")
             : resourceMatchCount === 1
               ? t("play.resource_focus_cta_count_one")

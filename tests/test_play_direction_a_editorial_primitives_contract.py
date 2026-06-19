@@ -89,10 +89,10 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "play.actor_focus_title" in primitives
     assert '"play.actor_focus_cta_none": "No preset move"' in strings
     assert '"play.actor_focus_active_none": "No preset move"' in strings
-    assert '"play.actor_focus_cta_count_one": "1 move"' in strings
-    assert '"play.actor_focus_cta_count_many": "{count} moves"' in strings
-    assert '"play.actor_focus_active_count_one": "Showing 1 move"' in strings
-    assert '"play.actor_focus_active_count_many": "Showing {count} moves"' in strings
+    assert '"play.actor_focus_cta_count_one": "1 test move"' in strings
+    assert '"play.actor_focus_cta_count_many": "{count} test moves"' in strings
+    assert '"play.actor_focus_active_count_one": "Showing 1 test move"' in strings
+    assert '"play.actor_focus_active_count_many": "Showing {count} test moves"' in strings
     assert "advisorRow" in primitives
     assert "advisorRowCompact" in primitives
     assert "advisorCard:" not in primitives
@@ -346,6 +346,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-evidence-resource={focusableTrackId === "evidence" ? "true" : undefined}' in play_page
     assert "data-gameplay-resource-focus={isFocused ? \"true\" : undefined}" in play_page
     assert "data-gameplay-resource-action-count={resourceMatchCount}" in play_page
+    assert 't("play.resource_focus_active_count_one")' in play_page
+    assert 't("play.resource_focus_active_count_many", { count: resourceMatchCount })' in play_page
     assert "focusedResourceId={focusedResourceId}" in play_page
     assert "resourceActionCounts={resourceActionCounts}" in play_page
     assert "onFocusResource={focusGameplayResource}" in play_page
@@ -595,14 +597,14 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_objective_label": "Goal"' in strings
     assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "What this changes"' in strings
-    assert '"play.actor_focus_label": "Character focus"' in strings
-    assert '"play.actor_focus_showing_label": "Showing moves for {name}"' in strings
+    assert '"play.actor_focus_label": "Person to test"' in strings
+    assert '"play.actor_focus_showing_label": "Moves that test {name}"' in strings
     assert '"play.actor_focus_cta_none": "No preset move"' in strings
     assert '"play.actor_focus_active_none": "No preset move"' in strings
-    assert '"play.actor_focus_match_detail_one": "1 current move directly involves this character."' in strings
-    assert '"play.actor_focus_match_detail_many": "{count} current moves directly involve this character."' in strings
-    assert '"play.actor_focus_matches_label": "Matching moves"' in strings
-    assert '"play.actor_focus_no_match": "No current move names this character directly; use a custom move to test them."' in strings
+    assert '"play.actor_focus_match_detail_one": "1 current move directly tests this person."' in strings
+    assert '"play.actor_focus_match_detail_many": "{count} current moves directly test this person."' in strings
+    assert '"play.actor_focus_matches_label": "Current choices"' in strings
+    assert '"play.actor_focus_no_match": "No current move names them; write a custom move if you want to pull them in."' in strings
     assert '"play.actor_focus_clear": "Clear"' in strings
     assert '"play.free_context_actor_label": "Custom move target"' in strings
     assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
@@ -614,26 +616,28 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.action_target_detail_label": "Who reacts"' in strings
     assert '"play.action_target_detail_text": "This move mainly tests {name}\'s reaction."' in strings
     assert '"play.move_receipt_signals_label": "Target and impact committed by this move"' in strings
-    assert '"play.resource_focus_cta": "Show moves"' in strings
-    assert '"play.resource_focus_active": "Showing moves"' in strings
-    assert '"play.resource_focus_cta_count_one": "1 move"' in strings
-    assert '"play.resource_focus_cta_count_many": "{count} moves"' in strings
-    assert '"play.resource_focus_active_count": "Showing {count}"' in strings
-    assert '"play.resource_focus_label": "Resource focus"' in strings
-    assert '"play.resource_focus_showing_label": "Showing {name} moves"' in strings
+    assert '"play.resource_focus_cta": "Use this"' in strings
+    assert '"play.resource_focus_active": "Using this"' in strings
+    assert '"play.resource_focus_cta_count_one": "1 usable move"' in strings
+    assert '"play.resource_focus_cta_count_many": "{count} usable moves"' in strings
+    assert '"play.resource_focus_active_count_one": "1 usable move"' in strings
+    assert '"play.resource_focus_active_count_many": "{count} usable moves"' in strings
+    assert '"play.resource_focus_active_count": "Usable moves: {count}"' in strings
+    assert '"play.resource_focus_label": "Resource to use"' in strings
+    assert '"play.resource_focus_showing_label": "Moves that use {name}"' in strings
     assert '"play.resource_focus_clear": "Clear"' in strings
     assert '"play.resource_focus_evidence_label": "Evidence"' in strings
-    assert '"play.resource_focus_time_title": "Highlight moves that spend, buy, or change time pressure"' in strings
-    assert '"play.resource_focus_pressure_title": "Highlight moves that change public pressure, danger, or tension"' in strings
+    assert '"play.resource_focus_time_title": "Show moves that buy, spend, or squeeze time"' in strings
+    assert '"play.resource_focus_pressure_title": "Show moves that calm, raise, or redirect pressure"' in strings
     assert '"play.resource_focus_cta_none": "No preset move"' in strings
     assert '"play.resource_focus_active_none": "No preset move"' in strings
-    assert '"play.resource_focus_time_match_detail_one": "1 current move affects time pressure."' in strings
-    assert '"play.resource_focus_time_match_detail_many": "{count} current moves affect time pressure."' in strings
-    assert '"play.resource_focus_pressure_match_detail_one": "1 current move affects pressure."' in strings
-    assert '"play.resource_focus_pressure_match_detail_many": "{count} current moves affect pressure."' in strings
-    assert '"play.resource_focus_evidence_match_detail_one": "1 current move can push a clue or proof forward."' in strings
-    assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can push a clue or proof forward."' in strings
-    assert '"play.resource_focus_matches_label": "Matching moves"' in strings
+    assert '"play.resource_focus_time_match_detail_one": "1 current move can buy, spend, or squeeze time."' in strings
+    assert '"play.resource_focus_time_match_detail_many": "{count} current moves can buy, spend, or squeeze time."' in strings
+    assert '"play.resource_focus_pressure_match_detail_one": "1 current move can calm, raise, or redirect pressure."' in strings
+    assert '"play.resource_focus_pressure_match_detail_many": "{count} current moves can calm, raise, or redirect pressure."' in strings
+    assert '"play.resource_focus_evidence_match_detail_one": "1 current move can turn a clue or proof into leverage."' in strings
+    assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can turn clues or proof into leverage."' in strings
+    assert '"play.resource_focus_matches_label": "Current choices"' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings
@@ -653,7 +657,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_key_consequence_label": "主要结果"' in strings
     assert '"play.feedback_next_choice_label": "下一步为什么变了"' in strings
     assert '"play.feedback_next_choice_changed_label": "下一组行动已改变"' in strings
-    assert '"play.impact_focus_actor_title": "Focus moves involving {name}"' in strings
+    assert '"play.impact_focus_actor_title": "Show moves that test {name}"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert 'data-play-outcome-receipt="true"' in panels
     assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
