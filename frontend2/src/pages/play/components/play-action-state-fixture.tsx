@@ -41,6 +41,62 @@ function shortActionLabel(action: string): string {
   return action.replace(/^\[[^\]]+\]\s*/, "").trim()
 }
 
+type RehearsalOutcome = {
+  title: string
+  summary: string
+  items: Array<{
+    label: string
+    value: string
+    tone: "safe" | "tense" | "gold"
+  }>
+}
+
+function rehearsalOutcomeForMove(action: string): RehearsalOutcome {
+  const normalized = action.toLowerCase()
+  if (normalized.includes("producer") || normalized.includes("freeze")) {
+    return {
+      title: "Time bought",
+      summary: "The countdown stops long enough for the next move to use a concrete clue.",
+      items: [
+        { label: "Room", value: "producer holding", tone: "safe" },
+        { label: "Clue", value: "badge can surface", tone: "gold" },
+        { label: "Next", value: "reveal or deflect", tone: "tense" },
+      ],
+    }
+  }
+  if (normalized.includes("sponsor") || normalized.includes("control")) {
+    return {
+      title: "Pressure moved",
+      summary: "The sponsor is now part of the room's attention instead of background noise.",
+      items: [
+        { label: "Pressure", value: "public answer forced", tone: "tense" },
+        { label: "Trust", value: "producer watching", tone: "safe" },
+        { label: "Next", value: "private hallway opens", tone: "gold" },
+      ],
+    }
+  }
+  if (normalized.includes("dancer") || normalized.includes("crowd")) {
+    return {
+      title: "Crowd steadied",
+      summary: "The room stays playable, but the search now depends on proof instead of noise control.",
+      items: [
+        { label: "Crowd", value: "panic contained", tone: "safe" },
+        { label: "Evidence", value: "badge route clearer", tone: "gold" },
+        { label: "Risk", value: "rumor still rising", tone: "tense" },
+      ],
+    }
+  }
+  return {
+    title: "Custom move registered",
+    summary: "The room accepted the move; the next choices are now shaped by that pressure.",
+    items: [
+      { label: "Room", value: "attention shifted", tone: "safe" },
+      { label: "Pressure", value: "new angle created", tone: "tense" },
+      { label: "Next", value: "choices updated", tone: "gold" },
+    ],
+  }
+}
+
 export function PlayActionStateFixture({
   onBackHome,
   scenario,
@@ -65,7 +121,10 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
   const [showDiary, setShowDiary] = useState(false)
   const [status, setStatus] = useState("Action surface rehearsal.")
   const [commitmentSummary, setCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
-  const options = useMemo(() => (turn % 2 === 0 ? FIRST_OPTIONS : NEXT_OPTIONS), [turn])
+  const [submittedMove, setSubmittedMove] = useState("")
+  const [outcome, setOutcome] = useState<RehearsalOutcome | null>(null)
+  const [showNextOptions, setShowNextOptions] = useState(false)
+  const options = useMemo(() => (showNextOptions ? NEXT_OPTIONS : FIRST_OPTIONS), [showNextOptions])
 
   useEffect(() => {
     if (!busy) return
@@ -75,14 +134,18 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
       setFreeInput("")
       setDiary("")
       setShowDiary(false)
+      setShowNextOptions(true)
       setTurn((value) => value + 1)
-      setStatus("Result landed. The next action set is ready.")
+      setOutcome(rehearsalOutcomeForMove(submittedMove))
+      setStatus("What changed")
     }, 720)
     return () => window.clearTimeout(timer)
-  }, [busy])
+  }, [busy, submittedMove])
 
   const submitMove = (label: string) => {
     if (busy) return
+    setSubmittedMove(label)
+    setOutcome(null)
     setStatus(`Move held: ${shortActionLabel(label)}`)
     setBusy(true)
   }
@@ -112,18 +175,73 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
         }}
         aria-label="Play action rehearsal"
       >
-        <p
-          style={{ margin: 0, color: "rgba(255,245,230,0.76)", lineHeight: 1.5 }}
-          aria-live="polite"
-        >
-          {status}
-        </p>
+        {!outcome ? (
+          <p
+            style={{ margin: 0, color: "rgba(255,245,230,0.76)", lineHeight: 1.5 }}
+            aria-live="polite"
+          >
+            {status}
+          </p>
+        ) : null}
         {commitmentSummary ? (
           <p
             style={{ margin: 0, color: "rgba(246,221,176,0.74)", fontSize: 12.5, lineHeight: 1.45 }}
           >
             {commitmentSummary.kicker}: {commitmentSummary.title}
           </p>
+        ) : null}
+        {outcome ? (
+          <section
+            style={{
+              ...ppStyles.outcomeReceipt,
+              gap: 10,
+            }}
+            aria-label={`What changed: ${outcome.title}`}
+            data-play-action-result-feedback="true"
+          >
+            <span style={ppStyles.outcomeReceiptHeader}>
+              <span style={ppStyles.outcomeReceiptKicker} data-play-action-result-title="true">
+                What changed
+              </span>
+              <span style={ppStyles.outcomeReceiptHint}>
+                Use this before choosing the next move.
+              </span>
+            </span>
+            <strong
+              style={{
+                color: "rgba(255,248,232,0.96)",
+                fontSize: 16,
+                lineHeight: 1.25,
+              }}
+            >
+              {outcome.title}
+            </strong>
+            <span style={{ color: "rgba(246,239,222,0.74)", fontSize: 13, lineHeight: 1.45 }}>
+              {outcome.summary}
+            </span>
+            <span style={ppStyles.outcomeReceiptSentence}>
+              {outcome.items.map((item) => (
+                <span
+                  key={`${item.label}:${item.value}`}
+                  style={ppStyles.outcomeReceiptPhrase}
+                  data-play-action-result-item="true"
+                  data-play-action-result-tone={item.tone}
+                >
+                  <span style={ppStyles.outcomeReceiptItemLabel}>{item.label}:</span>
+                  <strong
+                    style={{
+                      ...ppStyles.outcomeReceiptValue,
+                      ...(item.tone === "safe" ? ppStyles.outcomeReceiptChipSafe : null),
+                      ...(item.tone === "tense" ? ppStyles.outcomeReceiptChipTense : null),
+                      ...(item.tone === "gold" ? ppStyles.outcomeReceiptChipGold : null),
+                    }}
+                  >
+                    {item.value}
+                  </strong>
+                </span>
+              ))}
+            </span>
+          </section>
         ) : null}
         <ActionArea
           key={turn}

@@ -254,6 +254,16 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
     assert "<ActionArea" in fixture
     assert "setBusy(true)" in fixture
     assert "setTurn((value) => value + 1)" in fixture
+    assert "showNextOptions ? NEXT_OPTIONS : FIRST_OPTIONS" in fixture
+    assert "setShowNextOptions(true)" in fixture
+    assert "turn % 2 === 0 ? FIRST_OPTIONS : NEXT_OPTIONS" not in fixture
+    assert "type RehearsalOutcome" in fixture
+    assert "rehearsalOutcomeForMove(submittedMove)" in fixture
+    assert "!outcome ? (" in fixture
+    assert 'data-play-action-result-feedback="true"' in fixture
+    assert 'data-play-action-result-item="true"' in fixture
+    assert "Use this before choosing the next move." in fixture
+    assert "Result landed. The next action set is ready." not in fixture
     assert "data-play-action-state={actionState}" in panels
     assert 'aria-live="polite"' in panels
     assert 'aria-atomic="true"' in panels
