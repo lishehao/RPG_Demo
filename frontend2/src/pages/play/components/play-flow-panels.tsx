@@ -3744,7 +3744,7 @@ export function ActionArea({
       const cursor = node.value.length
       node.setSelectionRange(cursor, cursor)
       node.scrollIntoView({
-        block: "center",
+        block: "nearest",
         behavior: prefersReducedMotion ? "auto" : "smooth",
       })
     }

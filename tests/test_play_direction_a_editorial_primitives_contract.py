@@ -841,6 +841,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-inner-motive-primary="true"' in panels
     assert 'data-play-inner-motive-panel={context === "option" ? "true" : undefined}' in panels
     assert "isWritingOptionDiary ? null : (" in selected_confirm
+    assert 'block: "nearest"' in panels
+    assert 'block: "center",\n        behavior: prefersReducedMotion ? "auto" : "smooth",' not in panels[
+        panels.index("const focusDiaryTextarea") : panels.index("const renderDiaryAttachPreview")
+    ]
     assert 'data-play-selected-move={isSelected ? "true" : undefined}' in panels
     assert 'data-play-primary-commit="true"' in panels
     assert 'data-play-support-actions="true"' in panels
@@ -929,11 +933,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_inner_motive_title": "Add private motive"' in strings
     assert (
         '"play.turn_guide_inner_motive_detail": '
-        '"Write what you privately want. NPCs will not hear it; submit with motive or skip."' in strings
+        '"Write what you privately want. NPCs will not hear it; submit with motive or go back."' in strings
     )
     assert '"play.turn_guide_selected_detail": "先复核这一步，再提交或补一句真实动机。"' in strings
     assert '"play.turn_guide_inner_motive_title": "补内心动机"' in strings
-    assert '"play.turn_guide_inner_motive_detail": "写下你私下想达成什么；NPC 不会听见。可以带着动机提交或跳过。"' in strings
+    assert '"play.turn_guide_inner_motive_detail": "写下你私下想达成什么；NPC 不会听见。可以带着动机提交或返回行动。"' in strings
     assert 'isWritingOptionDiary\n      ? t("play.turn_guide_inner_motive_title")' in panels
     assert 'isWritingOptionDiary\n      ? t("play.turn_guide_inner_motive_detail")' in panels
     assert '"play.option_change_cta": "Choose another move"' in strings
@@ -951,6 +955,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.inner_motive_cta": "Add inner motive"' in strings
     assert '"play.inner_motive_button_hint": "Say what you secretly mean"' in strings
     assert '"play.inner_motive_attached_hint": "Will submit with this move"' in strings
+    assert '"play.diary_skip": "Back to move"' in strings
+    assert '"play.diary_skip": "返回行动"' in strings
     assert '"play.private_intent_hint": "What you secretly mean; NPCs do not hear it"' in strings
     assert '"play.diary_label_hint": "What you secretly mean; others do not hear it."' in strings
     assert '"play.diary_attach_empty_hint": "Say what you secretly mean."' in strings
