@@ -442,6 +442,23 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             ))}
           </section>
 
+          {phase === "resolved" ? (
+            <section style={styles.resolvedPanel} data-gameplay-resolved="true">
+              <div style={styles.sectionHeader}>
+                <span style={styles.kicker} data-gameplay-resolved-title="true">What changed</span>
+                <span style={styles.headerNote}>Use these changes to pick your next move.</span>
+              </div>
+              <p style={styles.resolvedSummary} data-gameplay-resolved-summary="true">
+                {resolvedSummaryForAction(committed?.action ?? null)}
+              </p>
+              <div style={styles.chipRow}>
+                {resolvedDeltas.map((delta) => (
+                  <DeltaChip key={delta.id} delta={delta} hook="delta" />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           {phase === "pending" && committed ? (
             <section style={styles.pendingStack} data-gameplay-reaction-panel="true">
               <article style={styles.receiptPanel} data-play-move-receipt="true">
@@ -574,23 +591,6 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               </div>
             </section>
           )}
-
-          {phase === "resolved" ? (
-            <section style={styles.resolvedPanel} data-gameplay-resolved="true">
-              <div style={styles.sectionHeader}>
-                <span style={styles.kicker} data-gameplay-resolved-title="true">What changed</span>
-                <span style={styles.headerNote}>Use these changes to pick your next move.</span>
-              </div>
-              <p style={styles.resolvedSummary} data-gameplay-resolved-summary="true">
-                {resolvedSummaryForAction(committed?.action ?? null)}
-              </p>
-              <div style={styles.chipRow}>
-                {resolvedDeltas.map((delta) => (
-                  <DeltaChip key={delta.id} delta={delta} hook="delta" />
-                ))}
-              </div>
-            </section>
-          ) : null}
         </div>
 
         <aside style={styles.rail} aria-label="People and clues">

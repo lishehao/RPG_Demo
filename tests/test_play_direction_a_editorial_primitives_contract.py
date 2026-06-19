@@ -292,6 +292,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "return TRAP_ANSWER_TRACKS" in fixture
     assert "setTracks(resolvedTracksForAction(committed.action, clueWasUnlocked))" in fixture
     assert 'data-gameplay-resolved-summary="true"' in fixture
+    assert fixture.index('data-gameplay-resolved="true"') < fixture.index('data-gameplay-action-area="true"')
     assert "Arthur is publicly tied to the missing badge" in fixture
     assert "The badge becomes a usable route" in fixture
     assert "The badge clue becomes a path to the control door." in fixture
