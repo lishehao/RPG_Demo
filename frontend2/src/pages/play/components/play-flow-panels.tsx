@@ -3942,10 +3942,11 @@ export function ActionArea({
     )
   }
   const renderDiaryEditor = (context: "leverage" | "option" | "free") => {
+    const optionMotiveNeedsText = context === "option" && !diary.trim()
     const diarySubmitDisabled =
       actionControlsDisabled ||
       (context === "option" && selectedOptionIndex === null) ||
-      (context === "option" && !diary.trim()) ||
+      optionMotiveNeedsText ||
       (context === "leverage" && !armedCard) ||
       (context === "free" && !freeInput.trim())
     const diaryPublicMove =
@@ -4020,6 +4021,14 @@ export function ActionArea({
           rows={2}
           maxLength={600}
         />
+        {optionMotiveNeedsText ? (
+          <span
+            style={ppStyles.diaryDisabledReason}
+            data-play-inner-motive-disabled-reason="true"
+          >
+            {t("play.inner_motive_submit_disabled_hint")}
+          </span>
+        ) : null}
         <div style={ppStyles.diaryActions}>
           <button
             style={{
@@ -4041,7 +4050,11 @@ export function ActionArea({
             }}
             disabled={diarySubmitDisabled}
             aria-keyshortcuts="Meta+Enter Control+Enter"
-            title={t("play.shortcut_mod_enter_submit")}
+            title={
+              optionMotiveNeedsText
+                ? t("play.inner_motive_submit_disabled_hint")
+                : t("play.shortcut_mod_enter_submit")
+            }
             type="button"
           >
             {context === "leverage"

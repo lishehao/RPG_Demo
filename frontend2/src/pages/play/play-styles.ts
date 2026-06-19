@@ -5126,6 +5126,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "var(--font-narrative)",
     minHeight: 42,
   },
+  diaryDisabledReason: {
+    marginTop: -2,
+    color: "rgba(232,218,205,0.58)",
+    fontSize: 11.4,
+    lineHeight: 1.35,
+    fontWeight: 680,
+  },
   diaryActions: {
     display: "flex",
     alignItems: "center",
