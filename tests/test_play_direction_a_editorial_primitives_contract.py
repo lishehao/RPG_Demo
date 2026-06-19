@@ -603,8 +603,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.free_action_boundary_hint": "Write what others can see or hear here; put your real purpose in inner motive."' in strings
     assert '"play.action_target_label": "Target"' in strings
     assert '"play.action_target_title": "This move primarily points at {name}"' in strings
-    assert '"play.action_target_detail_label": "Focus"' in strings
-    assert '"play.action_target_detail_text": "This move primarily pushes {name}\'s reaction."' in strings
+    assert '"play.action_target_detail_label": "Who reacts"' in strings
+    assert '"play.action_target_detail_text": "This move mainly tests {name}\'s reaction."' in strings
     assert '"play.move_receipt_signals_label": "Target and impact committed by this move"' in strings
     assert '"play.resource_focus_cta": "Show moves"' in strings
     assert '"play.resource_focus_active": "Showing moves"' in strings
