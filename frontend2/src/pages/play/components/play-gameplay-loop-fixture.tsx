@@ -318,6 +318,9 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const consultedSuggestedAction = consultedPerson
     ? actions.find((action) => action.title === consultedPerson.suggestedMove) ?? null
     : null
+  const unlockedClueAction = unlockedClue
+    ? actions.find((action) => action.id === "show-badge") ?? null
+    : null
   const isPending = phase === "pending"
   const actionHeaderTitle = motiveOpen
     ? "Add inner motive"
@@ -648,6 +651,16 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                   ? "Arthur has to explain why this access badge was missing."
                   : "A concrete clue will open a sharper next move."}
               </span>
+              {unlockedClueAction ? (
+                <button
+                  type="button"
+                  style={styles.clueUseButton}
+                  data-gameplay-clue-use="green-room-badge"
+                  onClick={() => selectSuggestedAction(unlockedClueAction)}
+                >
+                  Use clue
+                </button>
+              ) : null}
             </article>
           </section>
         </aside>
@@ -1051,5 +1064,16 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.mutedIvory,
     fontSize: 12.5,
     lineHeight: 1.35,
+  },
+  clueUseButton: {
+    justifySelf: "start",
+    marginTop: 4,
+    border: "1px solid rgba(216,177,99,0.34)",
+    borderRadius: 6,
+    background: "rgba(216,177,99,0.14)",
+    color: actionPalette.amberText,
+    padding: "7px 10px",
+    fontWeight: 850,
+    cursor: "pointer",
   },
 }

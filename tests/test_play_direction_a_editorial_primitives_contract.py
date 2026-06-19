@@ -326,6 +326,11 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-person-advice-select="true"' in fixture
     assert "Select this move" in fixture
     assert "selectSuggestedAction(consultedSuggestedAction)" in fixture
+    assert 'const unlockedClueAction = unlockedClue' in fixture
+    assert 'actions.find((action) => action.id === "show-badge")' in fixture
+    assert 'data-gameplay-clue-use="green-room-badge"' in fixture
+    assert "Use clue" in fixture
+    assert "selectSuggestedAction(unlockedClueAction)" in fixture
     assert "borderColor" not in fixture
     assert 'data-gameplay-clue-card={unlockedClue ? "green-room-badge" : "locked"}' in fixture
     assert 'data-gameplay-forecast-chip={hook === "forecast" ? "true" : undefined}' in fixture
