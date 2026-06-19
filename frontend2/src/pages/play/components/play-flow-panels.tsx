@@ -2854,6 +2854,7 @@ export function ActionArea({
   busy,
   onCommitmentActiveChange,
   onCommitmentSummaryChange,
+  onClearActorFocus,
   onPickOption,
   onPlayLeverage,
   onSubmitFree,
@@ -2880,6 +2881,7 @@ export function ActionArea({
   busy: boolean
   onCommitmentActiveChange: (active: boolean) => void
   onCommitmentSummaryChange: (summary: ActionCommitmentSummary | null) => void
+  onClearActorFocus?: () => void
   onPickOption: (idx: number, diaryOverride?: string) => void
   onPlayLeverage: (card: LeverageCardView, diaryOverride?: string) => void
   onSubmitFree: (diaryOverride?: string, freeInputOverride?: string) => void
@@ -3185,6 +3187,16 @@ export function ActionArea({
     return optionTargets.map((target) => target?.id === actorFocus.id)
   }, [actorFocus, optionTargets])
   const actorFocusMatchCount = actorFocusOptionMatches.filter(Boolean).length
+  const actorFocusDetail = actorFocus
+    ? actorFocusMatchCount > 0
+      ? t(
+          actorFocusMatchCount === 1
+            ? "play.actor_focus_match_detail_one"
+            : "play.actor_focus_match_detail_many",
+          { count: actorFocusMatchCount },
+        )
+      : t("play.actor_focus_no_match")
+    : ""
   const resourceFocusOptionMatches = useMemo(() => {
     if (!resourceFocus) return options.map(() => false)
     return options.map((opt, index) => {
@@ -4243,22 +4255,32 @@ export function ActionArea({
           data-play-actor-focus-cue="true"
           data-play-actor-focus-id={actorFocus.id}
           data-play-actor-focus-match-count={actorFocusMatchCount}
-          aria-label={`${t("play.actor_focus_label")}: ${actorFocus.name}. ${
-            actorFocusMatchCount > 0
-              ? t("play.actor_focus_match_detail", { name: actorFocus.name, count: actorFocusMatchCount })
-              : t("play.actor_focus_no_match", { name: actorFocus.name })
-          }`}
+          aria-label={`${t("play.actor_focus_label")}: ${actorFocus.name}. ${actorFocusDetail}`}
         >
           <span style={ppStyles.actorFocusCueHead} data-play-actor-focus-cue-head="true">
             <span style={ppStyles.actorFocusCueLabel}>{t("play.actor_focus_label")}</span>
-            <span style={ppStyles.actorFocusCueDivider} aria-hidden>{" · "}</span>
-            <strong style={ppStyles.actorFocusCueName}>{actorFocus.name}</strong>
+            <strong style={ppStyles.actorFocusCueName}>
+              {t("play.actor_focus_showing_label", { name: actorFocus.name })}
+            </strong>
           </span>
+          {onClearActorFocus ? (
+            <button
+              type="button"
+              style={{
+                ...ppStyles.actorFocusCueClear,
+                ...inlineActionDisabledStyle,
+              }}
+              onClick={onClearActorFocus}
+              disabled={actionControlsDisabled}
+              data-play-actor-focus-clear="true"
+              aria-label={t("play.actor_focus_clear")}
+              title={t("play.actor_focus_clear")}
+            >
+              {t("play.actor_focus_clear")}
+            </button>
+          ) : null}
           <span style={ppStyles.actorFocusCueDetail}>
-            {" "}
-            {actorFocusMatchCount > 0
-              ? t("play.actor_focus_match_detail", { name: actorFocus.name, count: actorFocusMatchCount })
-              : t("play.actor_focus_no_match", { name: actorFocus.name })}
+            {actorFocusDetail}
           </span>
           {actorFocusMatchCount === 0 && showFreeActionToggle ? (
             <button

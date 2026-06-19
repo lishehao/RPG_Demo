@@ -69,6 +69,7 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "advisorAvatarUrl={advisorAvatar}" in play_page
     assert "focusedActorId={focusedActorId}" in play_page
     assert "onFocusActor={focusSceneActor}" in play_page
+    assert "onClearActorFocus={() => setFocusedActorId(null)}" in play_page
     assert "onAskAdvisor={openAdvisor}" in play_page
     assert "play.advisor_card_name" in primitives
     assert "play.advisor_card_background" in primitives
@@ -353,6 +354,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const optionTargets = useMemo(() => options.map" in panels
     assert "const actorFocusOptionMatches = useMemo" in panels
     assert "target?.id === actorFocus.id" in panels
+    assert "const actorFocusDetail = actorFocus" in panels
+    assert "play.actor_focus_match_detail_one" in panels
+    assert "play.actor_focus_match_detail_many" in panels
     assert "function isResourceFocusAction(" in panels
     assert "resourceId === \"time\"" in panels
     assert "resourceId === \"pressure\"" in panels
@@ -388,8 +392,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-actor-focus-id={actorFocus.id}' in panels
     assert "data-play-actor-focus-match-count={actorFocusMatchCount}" in panels
     assert 'data-play-actor-focus-cue-head="true"' in panels
-    assert "ppStyles.actorFocusCueDivider" in panels
-    assert 'aria-label={`${t("play.actor_focus_label")}: ${actorFocus.name}. ${' in panels
+    assert "play.actor_focus_showing_label" in panels
+    assert "onClearActorFocus?: () => void" in panels
+    assert 'data-play-actor-focus-clear="true"' in panels
+    assert "ppStyles.actorFocusCueClear" in panels
+    assert 'aria-label={`${t("play.actor_focus_label")}: ${actorFocus.name}. ${actorFocusDetail}`}' in panels
     assert "actorFocusMatchCount === 0 && showFreeActionToggle" in panels
     assert 'data-play-actor-focus-custom-move="true"' in panels
     assert "const freeActionFocusContext = actorFocus && actorFocusMatchCount === 0" in panels
@@ -502,7 +509,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "optionBtnActorFocusDimmed" in styles
     assert "actorFocusCue" in styles
     assert "actorFocusCueHead" in styles
-    assert "actorFocusCueDivider" in styles
+    assert "actorFocusCueClear" in styles
     assert "gameplayDecisionForecast" in styles
     assert "gameplayDecisionGroupCost" in styles
     assert "gameplayDecisionGroupUpside" in styles
@@ -530,8 +537,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "Decision forecast"' in strings
     assert '"play.actor_focus_label": "Character focus"' in strings
-    assert '"play.actor_focus_match_detail": "{count} moves directly involve {name}"' in strings
-    assert '"play.actor_focus_no_match": "No move names {name} directly; use a custom move to test them."' in strings
+    assert '"play.actor_focus_showing_label": "Showing moves for {name}"' in strings
+    assert '"play.actor_focus_match_detail_one": "1 current move directly involves this character."' in strings
+    assert '"play.actor_focus_match_detail_many": "{count} current moves directly involve this character."' in strings
+    assert '"play.actor_focus_no_match": "No current move names this character directly; use a custom move to test them."' in strings
+    assert '"play.actor_focus_clear": "Clear"' in strings
     assert '"play.free_context_actor_label": "Custom move target"' in strings
     assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
     assert '"play.action_open_free_actor": "Write move for {name}"' in strings
