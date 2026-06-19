@@ -1114,13 +1114,16 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "const [draftSuggestion, setDraftSuggestion] = useState<string | null>(null)" in panels
     assert "setDraftSuggestion(suggestion)" in panels
     assert 'data-play-advisor-draft-hint="true"' in panels
+    assert 'data-play-advisor-suggestion-instruction="true"' in panels
     assert "advisorEmptyPrimer" in styles
     assert "advisorEmptyPrimerTitle" in styles
+    assert "advisorSuggestionInstruction" in styles
     assert "advisorDraftHint" in styles
     assert '"play.advisor_title": "Ask for a second read"' in strings
     assert '"play.advisor_empty_primer_title": "Ask for one read first"' in strings
     assert '"play.advisor_empty_primer_body": "Your friend can flag risk, wording, and pushback; you still choose the move."' in strings
     assert '"play.advisor_suggestions_label": "Quick questions"' in strings
+    assert '"play.advisor_suggestions_instruction": "Tap one to draft it, then edit before asking."' in strings
     assert '"play.advisor_suggestion_apply_title": "Use suggested question: {question}"' in strings
     assert '"play.advisor_suggestion_insert": "Use question"' in strings
     assert '"play.advisor_title": "Your outsider friend"' not in strings

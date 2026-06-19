@@ -6170,9 +6170,9 @@ export const ppStyles: Record<string, CSSProperties> = {
     gap: 8,
   },
   advisorSuggestionBlock: {
-    display: "flex",
-    alignItems: "baseline",
-    gap: 9,
+    display: "grid",
+    alignItems: "stretch",
+    gap: 5,
     minWidth: 0,
   },
   advisorSuggestionBlockEmpty: {
@@ -6191,6 +6191,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 650,
     letterSpacing: 0,
     textTransform: "none" as const,
+  },
+  advisorSuggestionInstruction: {
+    color: "rgba(232,218,205,0.56)",
+    fontSize: 11,
+    lineHeight: 1.28,
+    fontWeight: 560,
+    overflowWrap: "anywhere" as const,
   },
   advisorSuggestionRow: {
     minWidth: 0,

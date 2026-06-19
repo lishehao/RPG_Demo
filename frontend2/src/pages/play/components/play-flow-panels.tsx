@@ -5482,6 +5482,12 @@ export function AdvisorSidechat({
         <span style={ppStyles.advisorSuggestionLabel}>
           {t("play.advisor_suggestions_label")}
         </span>
+        <span
+          style={ppStyles.advisorSuggestionInstruction}
+          data-play-advisor-suggestion-instruction="true"
+        >
+          {t("play.advisor_suggestions_instruction")}
+        </span>
         <div
           style={{
             ...ppStyles.advisorSuggestionRow,
