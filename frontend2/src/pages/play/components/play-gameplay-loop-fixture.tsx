@@ -853,6 +853,15 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                     <span style={styles.clueLinkHint}>
                       A proof-backed path, not another vague public challenge.
                     </span>
+                    {unlockedClueAction.availableBecause ? (
+                      <span
+                        style={styles.clueLinkWhy}
+                        data-gameplay-clue-why="green-room-badge"
+                      >
+                        <span style={styles.clueLinkWhyLabel}>Why this opens</span>
+                        <span style={styles.clueLinkWhyText}>{unlockedClueAction.availableBecause}</span>
+                      </span>
+                    ) : null}
                   </div>
                   <div
                     style={styles.chipRow}
@@ -1473,6 +1482,27 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.faintIvory,
     fontSize: 11.5,
     lineHeight: 1.35,
+  },
+  clueLinkWhy: {
+    marginTop: 3,
+    borderTop: "1px solid rgba(216,177,99,0.14)",
+    paddingTop: 6,
+    display: "grid",
+    gap: 3,
+  },
+  clueLinkWhyLabel: {
+    color: actionPalette.amberText,
+    fontSize: 10.5,
+    fontWeight: 850,
+    lineHeight: 1.15,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  clueLinkWhyText: {
+    color: actionPalette.ivoryText,
+    fontSize: 11.5,
+    lineHeight: 1.34,
+    overflowWrap: "anywhere",
   },
   clueUseButton: {
     justifySelf: "start",
