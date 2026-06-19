@@ -650,18 +650,20 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_shift_label": "变化"' in strings
     assert '"play.gameplay_impact_label": "What changed"' in strings
     assert '"play.feedback_impact_hint": "Use these changes to pick your next move."' in strings
-    assert '"play.outcome_next_hint": "Shapes the next choices"' in strings
+    assert '"play.outcome_next_hint": "Use this to choose the next move"' in strings
     assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
     assert '"play.feedback_key_consequence_label": "Main result"' in strings
-    assert '"play.feedback_next_choice_label": "Why next moves changed"' in strings
-    assert '"play.feedback_next_choice_changed_label": "Next moves changed"' in strings
-    assert '"play.feedback_next_choice_changed_detail": "New actions are refocused by who reacted, what changed, and any clues you opened."' in strings
+    assert '"play.feedback_next_choice_label": "Why these moves are here"' in strings
+    assert '"play.feedback_next_choice_changed_label": "New moves opened"' in strings
+    assert '"play.feedback_next_choice_changed_detail": "These moves come from the people, clues, and pressure you just changed."' in strings
     assert '"play.gameplay_impact_label": "发生了什么"' in strings
     assert '"play.feedback_impact_hint": "用这些变化决定下一步"' in strings
     assert '"play.feedback_key_consequence_label": "主要结果"' in strings
-    assert '"play.feedback_next_choice_label": "下一步为什么变了"' in strings
-    assert '"play.feedback_next_choice_changed_label": "下一组行动已改变"' in strings
+    assert '"play.outcome_next_hint": "用它决定下一步"' in strings
+    assert '"play.feedback_next_choice_label": "为什么出现这些行动"' in strings
+    assert '"play.feedback_next_choice_changed_label": "新行动已打开"' in strings
+    assert '"play.feedback_next_choice_changed_detail": "这些行动来自刚刚改变的人物、线索和压力。"' in strings
     assert '"play.impact_focus_actor_title": "Show moves that test {name}"' in strings
     assert '"play.feedback_pending_receipt_label": "Move sent"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
