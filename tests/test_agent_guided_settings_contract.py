@@ -68,6 +68,10 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert 'data-create-privacy-settings="true"' in source
     assert 'data-create-privacy-mode={privacyPromptVisible ? "confirmation" : "setup"}' in source
     assert "privacySetupVisible" in source
+    assert "const [privacySetupVisible, setPrivacySetupVisible] = useState(false)" in source
+    assert 'data-create-privacy-summary="true"' in source
+    assert 'data-create-privacy-change="true"' in source
+    assert "setPrivacySetupVisible(true)" in source
     assert "setPrivacySetupVisible(false)" in source
     assert "VISIBILITY_OPTION_IDS.map" in source
     assert "handleVisibilityChoice(id)" in source
@@ -86,6 +90,8 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
 
     assert '"create.privacy_intro_question": "Who can play this story? Pick explicitly before changing it."' in strings
     assert '"create.privacy_setup_desc": "Default is {value}. You can start writing now, or switch it to link-only or public here."' in strings
+    assert '"create.privacy_summary_label": "Visibility"' in strings
+    assert '"create.privacy_summary_change": "Change"' in strings
     assert '"create.visibility_private_desc": "Only you can play this story."' in strings
     assert '"create.visibility_unlisted_desc": "Send the link to friends' in strings
     assert '"create.visibility_public_desc": "Anyone can find and play your story."' in strings
@@ -102,6 +108,14 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert "DIFFICULTY_OPTIONS.map" not in checkpoint_segment
     assert "STORY_LANGUAGE_OPTIONS[uiLang].map" not in checkpoint_segment
     assert "TENSION_PROFILE_OPTIONS.map" not in checkpoint_segment
+
+    summary_start = source.index('data-create-privacy-summary="true"')
+    summary_end = source.index('{briefBusy ? (', summary_start)
+    summary_segment = source[summary_start:summary_end]
+    assert 't("create.privacy_summary_label")' in summary_segment
+    assert 't(selectedVisibility.labelKey)' in summary_segment
+    assert 't("create.privacy_summary_change")' in summary_segment
+    assert "VISIBILITY_OPTION_IDS.map" not in summary_segment
 
     composer_start = source.index("{privacyIntroComplete ? (")
     composer_end = source.index("{error ? <div style={cpStyles.error}>", composer_start)

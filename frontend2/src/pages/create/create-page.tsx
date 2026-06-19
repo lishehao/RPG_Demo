@@ -96,7 +96,7 @@ export function CreatePage({
   const [guideBusy, setGuideBusy] = useState(false)
   const [correctionCount, setCorrectionCount] = useState(0)
   const [visibility, setVisibility] = useState<NarrativeTemplateVisibility>("private")
-  const [privacySetupVisible, setPrivacySetupVisible] = useState(true)
+  const [privacySetupVisible, setPrivacySetupVisible] = useState(false)
   const [privacyPromptVisible, setPrivacyPromptVisible] = useState(false)
   const [privacyRecordedVisibility, setPrivacyRecordedVisibility] =
     useState<NarrativeTemplateVisibility | null>("private")
@@ -780,6 +780,29 @@ export function CreatePage({
                     )
                   })}
                 </div>
+              </div>
+            ) : null}
+            {!privacySetupVisible && !privacyPromptVisible && !activeBriefResponse ? (
+              <div
+                data-create-privacy-summary="true"
+                style={{
+                  ...cpStyles.privacySummary,
+                  ...(compactLayout ? cpStyles.privacySummaryCompact : null),
+                }}
+              >
+                <span style={cpStyles.privacySummaryCopy}>
+                  <span style={cpStyles.privacySummaryLabel}>{t("create.privacy_summary_label")}</span>
+                  <strong style={cpStyles.privacySummaryValue}>{t(selectedVisibility.labelKey)}</strong>
+                </span>
+                <button
+                  type="button"
+                  style={cpStyles.privacySummaryChange}
+                  onClick={() => setPrivacySetupVisible(true)}
+                  disabled={busy || briefBusy || guideBusy}
+                  data-create-privacy-change="true"
+                >
+                  {t("create.privacy_summary_change")}
+                </button>
               </div>
             ) : null}
             {briefBusy ? (
