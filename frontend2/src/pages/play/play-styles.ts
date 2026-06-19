@@ -1098,11 +1098,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     rowGap: 6,
   },
   outcomeReceiptHeader: {
-    minWidth: "min(100%, 132px)",
-    maxWidth: "min(100%, 180px)",
+    minWidth: "min(100%, 176px)",
+    maxWidth: "min(100%, 260px)",
     display: "grid",
     gap: 2,
-    flex: "0 1 160px",
+    flex: "0 1 230px",
   },
   outcomeReceiptKicker: {
     color: "rgba(245,210,140,0.84)",
@@ -1119,9 +1119,9 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontSize: 10.8,
     lineHeight: 1.25,
     fontWeight: 620,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap" as const,
+    overflow: "visible",
+    textOverflow: "clip",
+    whiteSpace: "normal" as const,
   },
   outcomeReceiptInlineLabel: {
     color: "rgba(232,218,205,0.48)",

@@ -852,6 +852,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayImpactGroups" in styles
     assert "outcomeReceiptHeader" in styles
     assert "outcomeReceiptHint" in styles
+    outcome_hint_block = styles[styles.index("outcomeReceiptHint: {"):styles.index("outcomeReceiptInlineLabel: {")]
+    assert 'whiteSpace: "normal" as const' in outcome_hint_block
+    assert 'textOverflow: "ellipsis"' not in outcome_hint_block
     assert "feedbackPendingTimeline" in styles
     assert "feedbackPendingStepActive" in styles
     assert "roomReactingCues" in styles
