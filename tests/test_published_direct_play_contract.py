@@ -83,7 +83,7 @@ def test_home_editorial_tiles_use_regular_rectangular_component_archetypes() -> 
     assert 'data-home-tile-archetype={archetype}' in home
     assert 'data-home-full-bleed="true"' in home
     assert 'data-home-reading-band="true"' in home
-    assert 'data-home-tile-text-body="title-deck-only"' in home
+    assert 'data-home-tile-text-body="title-deck-action"' in home
     full_bleed = home[home.index("function FullBleedTileImage") : home.index("function TileMediaWell")]
     assert "hpStyles.fullBleedReadingBand" in full_bleed
     assert 'data-home-framed-editorial="true"' in home
@@ -169,7 +169,7 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
     assert "Story Butler" not in template
     assert "starter_premise" not in home
     assert "Preset story" not in home
-    assert '"home.card_action": "Enter story →"' in strings
+    assert '"home.card_action": "Start episode →"' in strings
 
 
 def test_home_story_tiles_hide_extra_metadata_rows_by_default() -> None:
@@ -183,14 +183,16 @@ def test_home_story_tiles_hide_extra_metadata_rows_by_default() -> None:
     assert 'template.cast.map((c) => c.display_name).join(" · ")' not in published
 
 
-def test_home_story_tiles_render_low_information_body_only() -> None:
+def test_home_story_tiles_render_low_information_body_with_clear_start_action() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     published = home[home.index("function PublishedTileComposition") : home.index("function FullBleedTileImage")]
     body = home[home.index("function HomeTileTextBody") : home.index("function FullBleedTileImage")]
 
-    assert 'data-home-tile-text-body="title-deck-only"' in body
+    assert 'data-home-tile-text-body="title-deck-action"' in body
     assert "<TileTitle" in body
     assert "editorialTileDeck" in body
+    assert 'data-home-tile-primary-action="true"' in body
+    assert "{view.copy.primaryAction}" in body
     assert "<Truncated" not in body
     assert "lineClampStyle" not in body
     assert "TileKicker" not in published

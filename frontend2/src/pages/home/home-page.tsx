@@ -977,7 +977,7 @@ function HomeTileTextBody({
 }) {
   const tightTile = span === "notice-wide" || span === "dispatch"
   return (
-    <span data-home-tile-text-body="title-deck-only" style={hpStyles.tileLowInfoBody}>
+    <span data-home-tile-text-body="title-deck-action" style={hpStyles.tileLowInfoBody}>
       <TileTitle span={span} compact={compact} lines={tightTile ? 2 : 3}>{view.title}</TileTitle>
       <span
         style={{
@@ -986,6 +986,9 @@ function HomeTileTextBody({
         }}
       >
         {view.deck}
+      </span>
+      <span style={hpStyles.editorialTileAction} data-home-tile-primary-action="true">
+        {view.copy.primaryAction}
       </span>
     </span>
   )

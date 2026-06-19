@@ -114,6 +114,6 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert 'data-home-tile-span={span}' in template
     assert "displayView.copy.primaryAction" in template
     assert "view.copy.typeLabel" not in template
-    assert 'data-home-tile-text-body="title-deck-only"' in home
+    assert 'data-home-tile-text-body="title-deck-action"' in home
     assert "Story Butler" not in template
-    assert '"home.card_action": "Enter story →"' in strings
+    assert '"home.card_action": "Start episode →"' in strings
