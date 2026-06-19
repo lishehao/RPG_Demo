@@ -4998,9 +4998,8 @@ export function ActionArea({
                     <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.inlineCommitPrimaryActions }}>
                       <button
                         style={{
-                          ...ppStyles.actionPrimaryLine,
-                          ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
-                          ...(actionControlsDisabled ? ppStyles.actionPrimaryLineDisabled : null),
+                          ...ppStyles.freeSubmitButton,
+                          ...(actionControlsDisabled ? ppStyles.freeSubmitButtonDisabled : null),
                         }}
                         onClick={() => handleSubmitFreeWithReflect()}
                         disabled={actionControlsDisabled}
