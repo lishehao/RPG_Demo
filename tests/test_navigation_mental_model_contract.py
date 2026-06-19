@@ -55,6 +55,20 @@ def test_shared_header_supports_explicit_back_for_secondary_pages() -> None:
     assert '"action.back_home": "← 故事入口"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
 
+def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
+    portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
+
+    assert "PORTFOLIO_REVIEW_ORDER" in portfolio
+    assert "Watch 75s demo" in portfolio
+    assert "Launch reviewer run" in portfolio
+    assert "Inspect evidence" in portfolio
+    assert 'data-portfolio-review-order="true"' in portfolio
+    assert "data-portfolio-review-step={item.step}" in portfolio
+    assert ".portfolio-review-order" in theme
+    assert "grid-template-columns: 34px minmax(0, 1fr)" in theme
+
+
 def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     header = (ROOT / "frontend2/src/shared/ui/header.tsx").read_text()
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()

@@ -495,6 +495,39 @@ kbd {
   cursor: default;
   opacity: 0.52;
 }
+.portfolio-review-order {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 26px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  list-style: none;
+}
+.portfolio-review-order li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.portfolio-review-order span {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+}
+.portfolio-review-order strong {
+  display: block;
+  color: rgba(244,239,230,0.92);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.portfolio-review-order p {
+  margin: 4px 0 0;
+  color: rgba(244,239,230,0.58);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
 
 .portfolio-hero__video {
   overflow: hidden;

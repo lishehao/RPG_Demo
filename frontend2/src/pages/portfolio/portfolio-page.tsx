@@ -14,6 +14,24 @@ import {
   YOUTUBE_DEMO_URL,
 } from "./portfolio-data"
 
+const PORTFOLIO_REVIEW_ORDER = [
+  {
+    step: "watch",
+    title: "Watch 75s demo",
+    detail: "See the complete product loop before opening the live runtime.",
+  },
+  {
+    step: "launch",
+    title: "Launch reviewer run",
+    detail: "Start the locked seed and verify the generated play surface yourself.",
+  },
+  {
+    step: "inspect",
+    title: "Inspect evidence",
+    detail: "Use reviewer mode to check state, advisor boundary, and ending logic.",
+  },
+] as const
+
 export function PortfolioPage({
   onBackHome,
   onOpenCreate,
@@ -49,6 +67,21 @@ export function PortfolioPage({
                 Launch reviewer route
               </button>
             </div>
+            <ol
+              className="portfolio-review-order"
+              aria-label="Recommended portfolio review order"
+              data-portfolio-review-order="true"
+            >
+              {PORTFOLIO_REVIEW_ORDER.map((item, idx) => (
+                <li key={item.step} data-portfolio-review-step={item.step}>
+                  <span>{String(idx + 1).padStart(2, "0")}</span>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
           <div className="portfolio-hero__video" aria-label="Tiny Stories YouTube demo preview">
             <iframe
