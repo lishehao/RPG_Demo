@@ -94,8 +94,8 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert 'title={`${advisorAskTitle} · ${advisorAskDetail}`}' in primitives
     assert 'aria-label={`${advisorAskTitle}: ${advisorAskDetail}. ${advisorPersona}`}' in primitives
     assert "play.actor_focus_title" in primitives
-    assert '"play.actor_focus_cta_none": "No preset move"' in strings
-    assert '"play.actor_focus_active_none": "No preset move"' in strings
+    assert '"play.actor_focus_cta_none": "Write own move"' in strings
+    assert '"play.actor_focus_active_none": "Ready to write"' in strings
     assert '"play.actor_focus_cta_count_one": "1 relevant move"' in strings
     assert '"play.actor_focus_cta_count_many": "{count} relevant moves"' in strings
     assert '"play.actor_focus_active_count_one": "Showing 1 relevant move"' in strings
@@ -743,6 +743,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "free_input: publicMove" in play_page
     assert 'data-play-action-actor-focus-match={isActorFocusMatch ? "true" : undefined}' in panels
     assert 'data-play-action-actor-focus-dimmed={isActorFocusDimmed ? "true" : undefined}' in panels
+    assert 't("play.actor_focus_custom_label", { name: actorFocus.name })' in panels
+    assert '"play.actor_focus_cta_none": "Write own move"' in strings
+    assert '"play.actor_focus_active_none": "Ready to write"' in strings
+    assert '"play.actor_focus_custom_label": "Write {name} into a move"' in strings
     assert 'data-gameplay-forecast-detail-chip="normal-play"' in panels
     assert "optionExpandedDetailBody" in styles
     assert "optionExpandedDetailChip" in styles
@@ -893,9 +897,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_forecast_label": "Likely impact"' in strings
     assert '"play.actor_focus_label": "Focus on person"' in strings
     assert '"play.actor_focus_showing_label": "Moves involving {name}"' in strings
-    assert '"play.actor_focus_title": "Show moves involving {name}"' in strings
-    assert '"play.actor_focus_cta_none": "No preset move"' in strings
-    assert '"play.actor_focus_active_none": "No preset move"' in strings
+    assert '"play.actor_focus_custom_label": "Write {name} into a move"' in strings
+    assert '"play.actor_focus_title": "Pull {name} into this move"' in strings
+    assert '"play.actor_focus_cta_none": "Write own move"' in strings
+    assert '"play.actor_focus_active_none": "Ready to write"' in strings
     assert '"play.actor_focus_match_detail_one": "1 current move makes this person react."' in strings
     assert '"play.actor_focus_match_detail_many": "{count} current moves make this person react."' in strings
     assert '"play.actor_focus_instruction": "Choose a matching move, or write your own."' in strings

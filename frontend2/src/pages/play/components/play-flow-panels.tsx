@@ -4682,7 +4682,9 @@ export function ActionArea({
           <span style={ppStyles.actorFocusCueHead} data-play-actor-focus-cue-head="true">
             <span style={ppStyles.actorFocusCueLabel}>{t("play.actor_focus_label")}</span>
             <strong style={ppStyles.actorFocusCueName}>
-              {t("play.actor_focus_showing_label", { name: actorFocus.name })}
+              {actorFocusMatchCount === 0
+                ? t("play.actor_focus_custom_label", { name: actorFocus.name })
+                : t("play.actor_focus_showing_label", { name: actorFocus.name })}
             </strong>
           </span>
           {onClearActorFocus ? (
