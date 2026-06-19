@@ -471,12 +471,25 @@ export const cpStyles: Record<string, CSSProperties> = {
   storyShapeLedgerRow: {
     minWidth: 0,
     display: "grid",
-    gap: 4,
-    padding: "8px 10px 8px 0",
+    gap: 3,
+    padding: "9px 11px 9px 0",
     borderRight: "1px solid rgba(212,168,83,0.20)",
     color: "rgba(255,255,255,0.70)",
     fontSize: 11.5,
     lineHeight: 1.34,
+  },
+  storyShapeLedgerValue: {
+    color: "rgba(255,245,230,0.90)",
+    fontSize: 13,
+    lineHeight: 1.24,
+    fontWeight: 820,
+    overflowWrap: "anywhere" as const,
+  },
+  storyShapeLedgerDetail: {
+    color: "rgba(255,255,255,0.52)",
+    fontSize: 11.2,
+    lineHeight: 1.35,
+    overflowWrap: "anywhere" as const,
   },
   guideAvatarAnalyzing: {
     boxShadow: "0 0 0 1px rgba(0,0,0,0.62), 0 0 24px rgba(212,168,83,0.24), 0 18px 44px rgba(0,0,0,0.36)",

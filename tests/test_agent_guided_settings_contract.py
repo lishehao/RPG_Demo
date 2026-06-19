@@ -125,6 +125,18 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
     assert 't("create.setting_pressure_mode")' in panels_source
     assert 't("create.setting_story_language")' in panels_source
     assert 't("create.setting_tone")' in panels_source
+    assert "runLengthDetail" in source
+    assert "pressureModeDetail" in source
+    assert "storyLanguageDetail" in source
+    assert "toneDetail" in source
+    assert "t(selectedBudget.descKey)" in source
+    assert "t(selectedDifficulty.descKey)" in source
+    assert "selectedLanguage.desc" in source
+    assert "t(selectedTension.descKey)" in source
+    assert 'data-create-shape-read-row={row.id}' in panels_source
+    assert 'data-create-shape-read-detail={row.id}' in panels_source
+    assert "storyShapeLedgerValue" in styles_source
+    assert "storyShapeLedgerDetail" in styles_source
     assert 'data-create-brief-handoff-note="true"' in panels_source
     assert 'data-create-brief-play-plan="true"' in panels_source
     assert 't("create.brief_handoff_note_ready")' in panels_source
@@ -147,10 +159,16 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"create.setting_pressure_mode": "Pressure mode"',
         '"create.setting_story_language": "Story language"',
         '"create.setting_tone": "Tone"',
+        '"create.budget_medium_desc": "A full episode, complete arc."',
+        '"create.difficulty_story_desc": "You can\'t really lose. The story always lands on a complete ending."',
+        '"create.tension_auto_desc": "Infer the profile from the seed."',
         '"create.setting_run_length": "时长"',
         '"create.setting_pressure_mode": "压力模式"',
         '"create.setting_story_language": "故事语言"',
         '"create.setting_tone": "语气"',
+        '"create.budget_medium_desc": "一集短剧，起承转合完整"',
+        '"create.difficulty_story_desc": "你不会真正失败，故事一定会走到一个完整结局。"',
+        '"create.tension_auto_desc": "根据种子自动判断张力类型"',
         '"create.brief_handoff_note_ready": "Next, I’ll generate role cards, the opening passage, and playable choices, then send you into Play."',
         '"create.brief_handoff_note_blocked": "Tighten the Brief first; once ready, I’ll build the first scene and playable choices."',
         '"create.brief_play_plan_label": "Ready for Play"',

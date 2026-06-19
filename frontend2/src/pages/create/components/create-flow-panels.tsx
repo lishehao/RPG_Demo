@@ -197,10 +197,30 @@ export function StoryShapeReadLedger({
 }) {
   const t = useT()
   const rows = [
-    { label: t("create.setting_run_length"), value: shapeRead.runLength },
-    { label: t("create.setting_pressure_mode"), value: shapeRead.pressureMode },
-    { label: t("create.setting_story_language"), value: shapeRead.storyLanguage },
-    { label: t("create.setting_tone"), value: shapeRead.tone },
+    {
+      id: "run-length",
+      label: t("create.setting_run_length"),
+      value: shapeRead.runLength,
+      detail: shapeRead.runLengthDetail,
+    },
+    {
+      id: "pressure-mode",
+      label: t("create.setting_pressure_mode"),
+      value: shapeRead.pressureMode,
+      detail: shapeRead.pressureModeDetail,
+    },
+    {
+      id: "story-language",
+      label: t("create.setting_story_language"),
+      value: shapeRead.storyLanguage,
+      detail: shapeRead.storyLanguageDetail,
+    },
+    {
+      id: "tone",
+      label: t("create.setting_tone"),
+      value: shapeRead.tone,
+      detail: shapeRead.toneDetail,
+    },
   ]
   return (
     <div
@@ -211,9 +231,12 @@ export function StoryShapeReadLedger({
       }}
     >
       {rows.map((row) => (
-        <span key={row.label} style={cpStyles.storyShapeLedgerRow}>
+        <span key={row.id} data-create-shape-read-row={row.id} style={cpStyles.storyShapeLedgerRow}>
           <strong>{row.label}</strong>
-          <span>{row.value}</span>
+          <span style={cpStyles.storyShapeLedgerValue}>{row.value}</span>
+          <span data-create-shape-read-detail={row.id} style={cpStyles.storyShapeLedgerDetail}>
+            {row.detail}
+          </span>
         </span>
       ))}
     </div>

@@ -148,9 +148,13 @@ export function CreatePage({
     TENSION_PROFILE_OPTIONS.find((o) => o.id === desiredTensionProfile) ?? TENSION_PROFILE_OPTIONS[0]
   const storyShapeRead: StoryShapeRead = {
     runLength: `${t(selectedBudget.labelKey)} · ${t(selectedBudget.timeKey)}`,
+    runLengthDetail: t(selectedBudget.descKey),
     pressureMode: t(selectedDifficulty.labelKey),
+    pressureModeDetail: t(selectedDifficulty.descKey),
     storyLanguage: selectedLanguage.label,
+    storyLanguageDetail: selectedLanguage.desc,
     tone: t(selectedTension.labelKey),
+    toneDetail: t(selectedTension.descKey),
   }
   const guideMessages = useMemo<GuideMessage[]>(
     () => {

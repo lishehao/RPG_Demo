@@ -14,7 +14,11 @@ export type GuideMessage = {
 
 export type StoryShapeRead = {
   runLength: string
+  runLengthDetail: string
   pressureMode: string
+  pressureModeDetail: string
   storyLanguage: string
+  storyLanguageDetail: string
   tone: string
+  toneDetail: string
 }
