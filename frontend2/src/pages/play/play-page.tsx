@@ -72,7 +72,11 @@ import {
   parseOptionLabel,
 } from "./components/play-flow-panels"
 import { PlayActionJumpButton } from "./components/play-action-jump"
-import { isPlayActionAreaAwayFromViewport, scrollToPlayActionArea } from "./components/play-action-jump-utils"
+import {
+  isPlayActionAreaAwayFromViewport,
+  scrollToPlayActionArea,
+  scrollToPlayImpactSummaryOrAction,
+} from "./components/play-action-jump-utils"
 import { PlayRetryRecoveryBanner } from "./components/play-retry-recovery"
 import {
   buildGameplayEnvelope,
@@ -1020,7 +1024,7 @@ export function PlayPage({
 
   const handleActionJump = useCallback(() => {
     setShowActionJump(false)
-    scrollToPlayActionArea()
+    scrollToPlayImpactSummaryOrAction()
   }, [])
 
   const handleUseInventoryItem = useCallback((item: string) => {

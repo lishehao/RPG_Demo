@@ -1272,6 +1272,7 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "const actionJumpDetail =" in play_page
     assert "const handleActionJump = useCallback" in play_page
     assert "setShowActionJump(false)" in play_page
+    assert "scrollToPlayImpactSummaryOrAction()" in play_page
     assert "scrollToPlayActionArea()" in play_page
     assert "onClick={handleActionJump}" in play_page
     assert "stage={gameplayLoopStage}" in play_page
@@ -1285,7 +1286,10 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert 'data-play-action-jump-detail="true"' in action_jump
     assert "onPointerDown={onClick}" in action_jump
     assert "scrollToPlayActionArea" in action_jump_utils
+    assert "scrollToPlayImpactSummaryOrAction" in action_jump_utils
     assert "[data-play-action-area='true']" in action_jump_utils
+    assert "[data-gameplay-impact-summary='true']" in action_jump_utils
+    assert "scrollToPlayActionArea()" in action_jump_utils
     assert "const upperComfortEdge = headerHeight + 64" in action_jump_utils
     assert "const lowerComfortEdge = window.innerHeight - 24" in action_jump_utils
     assert "rect.bottom < upperComfortEdge" in action_jump_utils
