@@ -3388,14 +3388,32 @@ export function ActionArea({
         : []
     : []
   const freeComposerOpen = showFreeInput || options.length === 0
+  const diaryContext = armedCard
+    ? "leverage"
+    : selectedOption && selectedOptionParsed && pickedIndex === null && !busy
+      ? "option"
+      : freeComposerOpen
+        ? "free"
+        : "idle"
+  const isWritingOptionDiary = showDiary && diaryContext === "option"
+  const isWritingLeverageDiary = showDiary && diaryContext === "leverage"
+  const isWritingFreeDiary = showDiary && diaryContext === "free"
   const selectedOptionGuideTitle = selectedOptionParsed?.tag
-    ? t("play.turn_guide_selected_named_title", { tag: selectedOptionParsed.tag })
-    : t("play.turn_guide_selected_title")
+    ? isWritingOptionDiary
+      ? t("play.turn_guide_inner_motive_title")
+      : t("play.turn_guide_selected_named_title", { tag: selectedOptionParsed.tag })
+    : isWritingOptionDiary
+      ? t("play.turn_guide_inner_motive_title")
+      : t("play.turn_guide_selected_title")
   const selectedOptionGuideDetail = selectedOptionParsed?.body
-    ? t("play.turn_guide_selected_named_detail", {
-        action: truncateRecoveryText(selectedOptionParsed.body, 72),
-      })
-    : t("play.turn_guide_selected_detail")
+    ? isWritingOptionDiary
+      ? t("play.turn_guide_inner_motive_detail")
+      : t("play.turn_guide_selected_named_detail", {
+          action: truncateRecoveryText(selectedOptionParsed.body, 72),
+        })
+    : isWritingOptionDiary
+      ? t("play.turn_guide_inner_motive_detail")
+      : t("play.turn_guide_selected_detail")
 
   useEffect(() => {
     if (busy || !freeComposerOpen || !freeActionReady) return
@@ -3686,16 +3704,6 @@ export function ActionArea({
   useEffect(() => {
     onCommitmentSummaryChange(actionCommitmentSummary)
   }, [actionCommitmentSummary, onCommitmentSummaryChange])
-  const diaryContext = armedCard
-    ? "leverage"
-    : selectedOption && selectedOptionParsed && pickedIndex === null && !busy
-      ? "option"
-      : freeComposerOpen
-        ? "free"
-        : "idle"
-  const isWritingOptionDiary = showDiary && diaryContext === "option"
-  const isWritingLeverageDiary = showDiary && diaryContext === "leverage"
-  const isWritingFreeDiary = showDiary && diaryContext === "free"
   const diaryScopeKey = armedCard
     ? `leverage:${armedCard.card_id}`
     : selectedOptionIndex !== null && pickedIndex === null && !busy
@@ -4292,6 +4300,7 @@ export function ActionArea({
             ...(compactActionChrome ? ppStyles.turnGuideCompact : null),
           }}
           aria-label={t("play.turn_guide_kicker")}
+          data-play-turn-guide="true"
         >
           <div style={ppStyles.turnGuideCopy}>
             <strong style={ppStyles.turnGuideTitle}>{turnGuide.title}</strong>

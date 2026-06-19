@@ -830,6 +830,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-card-detail="true"' in panels
     assert 'data-play-action-card-title="true"' in panels
     assert 'data-play-action-card-body="true"' in panels
+    assert 'data-play-turn-guide="true"' in panels
     assert 'data-play-action-card-detail-section="result"' in panels
     assert 'data-play-action-card-detail-section="forecast"' in panels
     assert 'data-play-action-card-detail-section="why-now"' in panels
@@ -925,7 +926,16 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.selected_move_commit_cta": "提交这个行动"' in strings
     assert '"play.turn_guide_selected_detail": "Review this move. Submit it, or add what you secretly mean."' in strings
     assert '"play.turn_guide_selected_named_detail": "Review this move. Submit it, or add inner motive."' in strings
+    assert '"play.turn_guide_inner_motive_title": "Add private motive"' in strings
+    assert (
+        '"play.turn_guide_inner_motive_detail": '
+        '"Write what you privately want. NPCs will not hear it; submit with motive or skip."' in strings
+    )
     assert '"play.turn_guide_selected_detail": "先复核这一步，再提交或补一句真实动机。"' in strings
+    assert '"play.turn_guide_inner_motive_title": "补内心动机"' in strings
+    assert '"play.turn_guide_inner_motive_detail": "写下你私下想达成什么；NPC 不会听见。可以带着动机提交或跳过。"' in strings
+    assert 'isWritingOptionDiary\n      ? t("play.turn_guide_inner_motive_title")' in panels
+    assert 'isWritingOptionDiary\n      ? t("play.turn_guide_inner_motive_detail")' in panels
     assert '"play.option_change_cta": "Choose another move"' in strings
     assert '"play.option_change_cta": "换一个行动"' in strings
     assert '"play.action_submit": "Submit this move →"' in strings
