@@ -273,6 +273,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-loop-fixture="true"' in fixture
     assert 'data-gameplay-objective="true"' in fixture
     assert "Your goal" in fixture
+    assert 'data-gameplay-stakes-header="true"' in fixture
+    assert "What is at stake" in fixture
+    assert "Watch these while choosing a move." in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert "Compare likely impact before you commit." in fixture
     assert 'aria-label="Likely impact"' in fixture
@@ -512,6 +515,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplay_metadata_json" in backend_repository
     assert "TurnGameplayMetadata.model_validate" in backend_repository
     assert 'data-gameplay-objective="normal-play"' in play_page
+    assert 'data-gameplay-stakes-header="normal-play"' in play_page
     assert "data-gameplay-pressure-track={track.id}" in play_page
     assert 'data-gameplay-action-forecast="true"' in panels
     assert 'data-gameplay-forecast-chip="normal-play"' in panels
@@ -605,6 +609,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_loop_update_label": "Use changes"' in strings
     assert '"play.gameplay_objective_label": "Your goal"' in strings
     assert '"play.gameplay_objective_label": "你的目标"' in strings
+    assert '"play.gameplay_tracks_label": "What is at stake"' in strings
+    assert '"play.gameplay_tracks_hint": "Watch these while choosing a move"' in strings
+    assert '"play.gameplay_tracks_label": "风险与资源"' in strings
+    assert '"play.gameplay_tracks_hint": "选择行动时盯住这些变化"' in strings
+    assert "gameplayStakesHeader" in styles
     assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "Likely impact"' in strings
     assert '"play.actor_focus_label": "Focus on person"' in strings

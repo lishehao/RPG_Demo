@@ -2023,6 +2023,26 @@ export const ppStyles: Record<string, CSSProperties> = {
     WebkitBoxOrient: "vertical" as const,
     overflow: "hidden",
   },
+  gameplayStakesHeader: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 8,
+    rowGap: 3,
+    flexWrap: "wrap" as const,
+  },
+  gameplayStakesLabel: {
+    color: "rgba(246,221,176,0.68)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 820,
+  },
+  gameplayStakesHint: {
+    color: "rgba(232,218,205,0.46)",
+    fontSize: 10.5,
+    lineHeight: 1.25,
+    fontWeight: 560,
+  },
   gameplayTrackGrid: {
     minWidth: 0,
     display: "grid",

@@ -287,6 +287,10 @@ function GameplayStatePanel({
           {envelope.objective}
         </strong>
       </div>
+      <div style={ppStyles.gameplayStakesHeader} data-gameplay-stakes-header="normal-play">
+        <span style={ppStyles.gameplayStakesLabel}>{t("play.gameplay_tracks_label")}</span>
+        <span style={ppStyles.gameplayStakesHint}>{t("play.gameplay_tracks_hint")}</span>
+      </div>
       <div style={ppStyles.gameplayTrackGrid} aria-label={t("play.gameplay_tracks_label")}>
         {envelope.tracks.map((track) => {
           const focusableTrackId = isGameplayResourceFocusId(track.id) ? track.id : null
