@@ -95,6 +95,16 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     assert "heroCtaHint" in replay
 
 
+def test_world_role_launch_has_ready_and_starting_feedback() -> None:
+    world = (ROOT / "frontend2/src/pages/world/world-detail-page.tsx").read_text()
+
+    assert 'data-world-role-launch-state={busy ? "starting" : "ready"}' in world
+    assert 'data-world-role-launch-cta={busy ? "starting" : "ready"}' in world
+    assert "roleLaunchPanelStarting" in world
+    assert "roleLaunchButtonStarting" in world
+    assert "cursor: \"progress\"" in world
+
+
 def test_home_story_entries_are_generated_playable_template_objects() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()

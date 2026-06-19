@@ -562,8 +562,10 @@ function SelectedRoleLaunchPanel({
 
   return (
     <motion.div
+      data-world-role-launch-state={busy ? "starting" : "ready"}
       style={{
         ...tdStyles.roleLaunchPanel,
+        ...(busy ? tdStyles.roleLaunchPanelStarting : null),
         ...(compactLayout ? tdStyles.roleLaunchPanelCompact : null),
       }}
       initial={{ opacity: 0, y: 6 }}
@@ -611,7 +613,11 @@ function SelectedRoleLaunchPanel({
       >
         <motion.button
           type="button"
-          style={tdStyles.roleLaunchButton}
+          style={{
+            ...tdStyles.roleLaunchButton,
+            ...(busy ? tdStyles.roleLaunchButtonStarting : null),
+          }}
+          data-world-role-launch-cta={busy ? "starting" : "ready"}
           onClick={onStart}
           disabled={busy}
           whileHover={busy ? undefined : hoverLift}
@@ -1139,6 +1145,9 @@ const tdStyles: Record<string, CSSProperties> = {
     gap: 10,
     alignItems: "start",
   },
+  roleLaunchPanelStarting: {
+    borderTopColor: "rgba(154,236,172,0.34)",
+  },
   roleLaunchPanelCompact: {
     marginTop: 8,
     gap: 10,
@@ -1249,6 +1258,11 @@ const tdStyles: Record<string, CSSProperties> = {
     cursor: "pointer",
     fontFamily: "inherit",
     whiteSpace: "nowrap" as const,
+  },
+  roleLaunchButtonStarting: {
+    color: "rgba(184,245,196,0.94)",
+    borderBottom: "1px solid rgba(154,236,172,0.48)",
+    cursor: "progress",
   },
   roleLaunchHint: {
     maxWidth: 340,
