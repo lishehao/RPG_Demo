@@ -319,6 +319,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const actorFocus = focusedActorId && focusedActorName" in play_page
     assert "const focusedResourceTrack = focusedResourceId" in play_page
     assert "resourceActionCountsForOptions" in play_page
+    assert 't("play.resource_focus_cta_none")' in play_page
+    assert 't("play.resource_focus_active_none")' in play_page
     assert "isResourceFocusAction(resourceId, parsed.body, option.hint, actionForecasts[index] ?? [])" in play_page
     assert "const focusSceneActor = (actor: { id: string; name: string }) => {" in play_page
     assert "setFocusedResourceId(null)" in play_page
@@ -604,6 +606,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_evidence_label": "Evidence"' in strings
     assert '"play.resource_focus_time_title": "Highlight moves that spend, buy, or change time pressure"' in strings
     assert '"play.resource_focus_pressure_title": "Highlight moves that change public pressure, danger, or tension"' in strings
+    assert '"play.resource_focus_cta_none": "No preset move"' in strings
+    assert '"play.resource_focus_active_none": "No preset move"' in strings
     assert '"play.resource_focus_time_match_detail_one": "1 current move affects time pressure."' in strings
     assert '"play.resource_focus_time_match_detail_many": "{count} current moves affect time pressure."' in strings
     assert '"play.resource_focus_pressure_match_detail_one": "1 current move affects pressure."' in strings
