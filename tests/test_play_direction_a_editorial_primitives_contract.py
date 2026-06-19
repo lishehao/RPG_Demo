@@ -750,7 +750,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const visibleChips = chips.filter((chip) => !chip.detail)" in panels
     assert "visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === \"cost\")" in panels
     assert "{visibleChips.map((chip) => (" in panels
-    assert 'data-gameplay-forecast-detail-chip="normal-play"' in panels
+    assert 'data-gameplay-forecast-detail-chip="normal-play"' not in panels
     assert "optionExpandedDetailBody" in styles
     assert "optionExpandedDetailChip" in styles
     assert 'data-gameplay-forecast-detail="normal-play"' in panels

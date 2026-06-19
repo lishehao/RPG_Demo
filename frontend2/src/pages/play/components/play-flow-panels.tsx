@@ -4490,12 +4490,6 @@ export function ActionArea({
             </span>
             <span style={ppStyles.optionExpandedDetailBody}>
               <span
-                style={ppStyles.optionExpandedDetailChip}
-                data-gameplay-forecast-detail-chip="normal-play"
-              >
-                {chip.label}
-              </span>
-              <span
                 style={ppStyles.optionExpandedDetailText}
                 data-gameplay-forecast-detail="normal-play"
                 title={chip.detail}
