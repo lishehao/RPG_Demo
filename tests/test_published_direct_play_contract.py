@@ -185,6 +185,17 @@ def test_home_completed_memory_cards_explain_replay_destination() -> None:
     assert '"home.memory_hint": "Open highlights and the full replay to see how this run got there."' in strings
 
 
+def test_home_continue_spotlight_explains_preserved_run_state() -> None:
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert 'data-home-resume-hint="true"' in home
+    assert 't("home.resume_hint")' in home
+    assert "resumeHint" in home
+    assert '"home.resume_hint": "会保留你的身份、物品、关系和上一回合局势。"' in strings
+    assert '"home.resume_hint": "Keeps your role, items, relationships, and last-turn situation."' in strings
+
+
 def test_home_story_tiles_hide_extra_metadata_rows_by_default() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     published = home[home.index("function PublishedTileComposition") : home.index("function FullBleedTileImage")]

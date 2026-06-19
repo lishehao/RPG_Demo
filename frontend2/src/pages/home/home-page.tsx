@@ -626,6 +626,9 @@ function ContinueRunSpotlight({
           {formatRelative(session.last_active_at, t)}
           {roleLabel ? ` · ${roleLabel}` : ""}
         </div>
+        <div style={hpStyles.resumeHint} data-home-resume-hint="true">
+          {t("home.resume_hint")}
+        </div>
       </div>
       <div style={hpStyles.resumeProgress} aria-hidden>
         <span style={{ ...hpStyles.resumeProgressFill, width: `${progress * 100}%` }} />
@@ -1389,6 +1392,12 @@ const hpStyles: Record<string, CSSProperties> = {
     marginTop: 7,
     color: "var(--text-faint)",
     fontSize: 12,
+  },
+  resumeHint: {
+    marginTop: 8,
+    color: "var(--text-muted)",
+    fontSize: 12,
+    lineHeight: 1.45,
   },
   resumeProgress: {
     height: 1,
