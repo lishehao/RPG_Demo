@@ -289,8 +289,8 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-play-move-receipt="true"' in fixture
     assert 'data-play-room-reacting="true"' in fixture
     assert 'data-gameplay-resolved-title="true"' in fixture
-    assert "After your move" in fixture
-    assert "What changed now shapes the next choices." in fixture
+    assert "What changed" in fixture
+    assert "Use these changes to pick your next move." in fixture
     assert ">Changed<" not in fixture
     assert "setPhase(\"pending\")" in fixture
     assert "setPhase(\"resolved\")" in fixture
@@ -648,7 +648,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_forecast_label": "预计影响"' in strings
     assert '"play.gameplay_decision_upside_label": "机会"' in strings
     assert '"play.gameplay_decision_shift_label": "变化"' in strings
-    assert '"play.gameplay_impact_label": "After your move"' in strings
+    assert '"play.gameplay_impact_label": "What changed"' in strings
+    assert '"play.feedback_impact_hint": "Use these changes to pick your next move."' in strings
     assert '"play.outcome_next_hint": "Shapes the next choices"' in strings
     assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
@@ -656,7 +657,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_next_choice_label": "Why next moves changed"' in strings
     assert '"play.feedback_next_choice_changed_label": "Next moves changed"' in strings
     assert '"play.feedback_next_choice_changed_detail": "New actions are refocused by who reacted, what changed, and any clues you opened."' in strings
-    assert '"play.gameplay_impact_label": "行动之后"' in strings
+    assert '"play.gameplay_impact_label": "发生了什么"' in strings
+    assert '"play.feedback_impact_hint": "用这些变化决定下一步"' in strings
     assert '"play.feedback_key_consequence_label": "主要结果"' in strings
     assert '"play.feedback_next_choice_label": "下一步为什么变了"' in strings
     assert '"play.feedback_next_choice_changed_label": "下一组行动已改变"' in strings
