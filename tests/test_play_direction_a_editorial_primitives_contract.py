@@ -618,6 +618,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings
+    assert '"play.option_forecast_kicker": "影响"' in strings
+    assert '"play.gameplay_decision_forecast_label": "这个选择的影响"' in strings
+    assert '"play.gameplay_decision_upside_label": "机会"' in strings
+    assert '"play.gameplay_decision_shift_label": "变化"' in strings
     assert '"play.gameplay_impact_label": "Observed changes"' in strings
     assert '"play.outcome_next_hint": "Shapes the next choices"' in strings
     assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
