@@ -497,7 +497,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
 
           <section style={styles.railSection}>
             <div style={styles.sectionHeader}>
-              <span style={styles.kicker}>Clues</span>
+              <span style={styles.kicker}>Clues you can use</span>
               <span style={styles.headerNote}>{unlockedClue ? "1 usable" : "0 usable yet"}</span>
             </div>
             <article
