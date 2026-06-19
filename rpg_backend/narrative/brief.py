@@ -534,7 +534,7 @@ def build_story_brief(
         revision_suggestions=revision_suggestions,
         revision_actions=revision_actions,
         adaptation_note=(
-            "Beta planner draft: this card shows how Tiny Stories will adapt the premise before generation."
+            "Review this scene plan before generation; it guides the first playable moment."
         ),
         runtime_fit_status=fit_status,
         runtime_fit_rationale=fit_rationale,
@@ -1139,10 +1139,10 @@ def _premise_summary(
 
 def _fit_rationale(status: str, profile: TensionProfile) -> str:
     if status == "not_fit":
-        return "The current runtime is locked to 3+ active parties; this premise should add another stakeholder before generation."
+        return "Add another active stakeholder or pressure source before generation."
     if status == "needs_revision":
-        return "The runtime can attempt this, but the brief recommends clearer public conflict, pressure, or cast shape first."
-    return f"This fits the current multi-party runtime using the {profile.replace('_', ' ')} tension profile."
+        return "This can enter Play, but clearer public conflict, pressure, or cast shape will make the first scene stronger."
+    return f"This has enough active cast, pressure, and player focus for a {profile.replace('_', ' ')} first scene."
 
 
 def _has_high_stakes_conflict(seed: str) -> bool:

@@ -630,7 +630,7 @@ class StoryBrief(BaseModel):
     revision_suggestions: list[str] = Field(default_factory=list, max_length=8)
     revision_actions: list[StoryBriefRevisionAction] = Field(default_factory=list, max_length=8)
     adaptation_note: str = Field(
-        default="Beta planner draft: review the adaptation before generation; it is not a fidelity guarantee.",
+        default="Review this scene plan before generation; it guides the first playable moment.",
         min_length=1,
         max_length=220,
     )

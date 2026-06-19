@@ -213,7 +213,7 @@ export function CreatePage({
       : null
   const composerActionLabel = !hasSeed
     ? t("create.guide_add_opening")
-    : guideReadyToBrief
+    : activeBrief || guideReadyToBrief
       ? t("create.guide_add_correction")
       : t("create.guide_add_answer")
 

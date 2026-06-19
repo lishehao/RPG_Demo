@@ -224,6 +224,7 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
     assert 't("create.guide_add_opening")' in source
     assert 't("create.guide_add_answer")' in source
     assert 't("create.guide_add_correction")' in source
+    assert "activeBrief || guideReadyToBrief" in source
     assert 'hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")' not in source
     assert 't("create.char_count", { n: draftTurn.length })' in source
     assert 't("create.char_count", { n: seed.length })' not in source
@@ -246,6 +247,7 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.guide_add_opening": "Send opening"',
         '"create.guide_add_answer": "Send answer"',
         '"create.guide_add_correction": "Send correction"',
+        '"create.guide_revision_count": "{n} follow-ups"',
         '"create.guide_next_prompt_hint": "Answer the Story Butler prompt next."',
         '"create.guide_ready_brief_hint": "The Story Brief will shape itself once ready."',
         '"create.seed_recipe_label": "好种子需要"',
@@ -255,10 +257,39 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.guide_add_opening": "发送开场"',
         '"create.guide_add_answer": "发送回答"',
         '"create.guide_add_correction": "发送修正"',
+        '"create.guide_revision_count": "{n} 条补充"',
         '"create.guide_next_prompt_hint": "继续回答 Story Butler 的追问"',
         '"create.guide_ready_brief_hint": "信息足够后会自动整理 Brief"',
     ):
         assert key in strings
+
+
+def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
+    panels_source = (ROOT / "frontend2/src/pages/create/components/create-flow-panels.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    brief_source = (ROOT / "rpg_backend/narrative/brief.py").read_text()
+    contracts_source = (ROOT / "rpg_backend/narrative/contracts.py").read_text()
+
+    assert "FIT_REASON_LABEL_KEYS" in panels_source
+    assert 't("create.brief_plan_note")' in panels_source
+    assert "{brief.adaptation_note}" not in panels_source
+    assert "{brief.runtime_fit_rationale}" not in panels_source
+    assert '"create.brief_card_label": "Scene plan · Story Brief"' in strings
+    assert '"create.brief_fit": "Ready for Play"' in strings
+    assert '"create.brief_plan_note": "This is the plan for the first playable scene.' in strings
+    assert '"create.brief_fit_reason_fit": "This has enough cast, pressure, and player focus' in strings
+    assert '"create.brief_card_label": "场景计划 · Brief"' in strings
+    assert '"create.brief_fit": "可进入故事"' in strings
+    assert '"create.brief_plan_note": "这是接下来生成第一幕会使用的计划。' in strings
+    for stale_copy in (
+        "Production slate · Story Brief",
+        "Ready to try generation",
+        "Beta planner draft",
+        "current multi-party runtime",
+    ):
+        assert stale_copy not in strings
+        assert stale_copy not in brief_source
+        assert stale_copy not in contracts_source
 
 
 def test_opening_generation_wait_state_explains_playable_outputs() -> None:

@@ -21,6 +21,12 @@ const FIT_STATUS_LABEL_KEYS: Record<NarrativeStoryBrief["runtime_fit_status"], S
   not_fit: "create.brief_not_fit",
 }
 
+const FIT_REASON_LABEL_KEYS: Record<NarrativeStoryBrief["runtime_fit_status"], StringKey> = {
+  fit: "create.brief_fit_reason_fit",
+  needs_revision: "create.brief_fit_reason_needs_revision",
+  not_fit: "create.brief_fit_reason_not_fit",
+}
+
 const CONSTRAINT_DISPOSITION_LABEL_KEYS = {
   preserved: "create.brief_preserved",
   compressed: "create.brief_compressed",
@@ -294,7 +300,7 @@ export function StoryBriefCard({
           {t(FIT_STATUS_LABEL_KEYS[brief.runtime_fit_status])}
         </span>
       </div>
-      <div style={cpStyles.briefBetaNote}>{brief.adaptation_note}</div>
+      <div style={cpStyles.briefBetaNote}>{t("create.brief_plan_note")}</div>
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
       <StoryShapeReadLedger shapeRead={shapeRead} compact={compact} inBrief />
       <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
@@ -404,7 +410,7 @@ export function StoryBriefCard({
         </div>
       ) : null}
       <div style={cpStyles.briefFooter}>
-        <span>{brief.runtime_fit_rationale}</span>
+        <span>{t(FIT_REASON_LABEL_KEYS[brief.runtime_fit_status])}</span>
         <strong>{canGenerate ? nextStep : t("create.brief_revise_first")}</strong>
       </div>
       <div
