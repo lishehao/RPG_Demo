@@ -1129,6 +1129,7 @@ export function PlayPage({
     setFocusedActorId(wasFocused ? null : actor.id)
     if (!wasFocused) {
       setFocusedResourceId(null)
+      setFocusedInventoryItem(null)
     }
     if (wasFocused || typeof window === "undefined" || !actionAreaVisible) return
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -1146,6 +1147,7 @@ export function PlayPage({
     setFocusedResourceId(wasFocused ? null : resourceId)
     if (!wasFocused) {
       setFocusedActorId(null)
+      setFocusedInventoryItem(null)
     }
     if (wasFocused || typeof window === "undefined" || !actionAreaVisible) return
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
