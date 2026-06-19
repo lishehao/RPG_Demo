@@ -560,7 +560,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
 
           <div style={styles.sectionHeader} data-gameplay-stakes-header="true">
             <span style={styles.kicker}>What is at stake</span>
-            <span style={styles.headerNote}>Watch these while choosing a move.</span>
+            <span style={styles.headerNote}>Each move trades time, pressure, trust, or proof.</span>
           </div>
           <section style={styles.trackGrid} aria-label="What is at stake">
             {tracks.map((track) => (

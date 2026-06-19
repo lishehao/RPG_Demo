@@ -304,7 +304,8 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Your goal" in fixture
     assert 'data-gameplay-stakes-header="true"' in fixture
     assert "What is at stake" in fixture
-    assert "Watch these while choosing a move." in fixture
+    assert "Each move trades time, pressure, trust, or proof." in fixture
+    assert "Watch these while choosing a move." not in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert 'gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))"' in fixture
     assert 'gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))"' not in fixture
