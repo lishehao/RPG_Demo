@@ -944,8 +944,8 @@ export const STRINGS_ZH = {
   "replay.advisor_speaker_advisor": "顾问",
   "replay.player_label": "TA",
   "replay.ending_divider": "故事到这里",
-  "replay.cta_hint": "想看自己能玩出什么结局？回到首页找广场上的同一个故事开个新一局。",
-  "replay.cta_play_template": "自己玩这一篇",
+  "replay.cta_hint": "同一个开场，换你来选会走到不同结局。",
+  "replay.cta_play_template": "自己开一局 →",
   "replay.cta_back_plaza": "回到广场",
 } as const
 
@@ -1831,8 +1831,8 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "replay.advisor_speaker_advisor": "Advisor",
   "replay.player_label": "They",
   "replay.ending_divider": "End of the story",
-  "replay.cta_hint": "Curious what ending you'd land on? Head home and start a fresh run from the same story on the plaza.",
-  "replay.cta_play_template": "Play this story",
+  "replay.cta_hint": "Same opening. Your choices can land somewhere else.",
+  "replay.cta_play_template": "Start your own run →",
   "replay.cta_back_plaza": "Back to plaza",
 }
 
