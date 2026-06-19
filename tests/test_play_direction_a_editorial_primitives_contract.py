@@ -329,6 +329,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert '{ label: "Uses", values: resourceUses, emptyLabel: "No clue used" }' in fixture
     assert '!isResourceUseDelta(delta) && (delta.tone === "unlock" || delta.tone === "shift")' in fixture
     assert "You can use the badge clue in the next move." in fixture
+    assert "Green-room badge clue is attached to this move" in fixture
+    assert "Use green-room badge clue on its opened move" in fixture
+    assert "aria-pressed={clueArmed}" in fixture
     assert "function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean): Track[]" in fixture
     assert "function resolvedSummaryForAction(action: FixtureAction | null): string" in fixture
     assert "const resolvedPanelRef = useRef<HTMLElement | null>(null)" in fixture
