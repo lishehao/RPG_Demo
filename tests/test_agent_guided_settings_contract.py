@@ -223,6 +223,11 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
     assert 'hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")' in source
     assert 't("create.char_count", { n: draftTurn.length })' in source
     assert 't("create.char_count", { n: seed.length })' not in source
+    assert "const composerProgressHint =" in source
+    assert 't("create.guide_next_prompt_hint")' in source
+    assert 't("create.guide_ready_brief_hint")' in source
+    assert "create.submit_shortcut" not in source
+    assert "create.submit_shortcut" not in strings
     assert "seedRecipe:" in styles
     assert "seedRecipeLine:" in styles
     assert 'gridTemplateColumns: "minmax(0, 1fr) 148px"' in styles
@@ -236,12 +241,16 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.seed_recipe_secret_label": "What can break"',
         '"create.guide_add_opening": "Send opening"',
         '"create.guide_add_correction": "Send correction"',
+        '"create.guide_next_prompt_hint": "Answer the Story Butler prompt next."',
+        '"create.guide_ready_brief_hint": "The Story Brief will shape itself once ready."',
         '"create.seed_recipe_label": "好种子需要"',
         '"create.seed_recipe_people_label": "谁在场"',
         '"create.seed_recipe_pressure_label": "为什么现在"',
         '"create.seed_recipe_secret_label": "什么会爆"',
         '"create.guide_add_opening": "发送开场"',
         '"create.guide_add_correction": "发送修正"',
+        '"create.guide_next_prompt_hint": "继续回答 Story Butler 的追问"',
+        '"create.guide_ready_brief_hint": "信息足够后会自动整理 Brief"',
     ):
         assert key in strings
 

@@ -183,10 +183,6 @@ export function CreatePage({
     },
     [chatMessages, privacyIntroComplete, t],
   )
-  const submitModKey = useMemo(() => {
-    if (typeof navigator === "undefined") return "Ctrl"
-    return /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘" : "Ctrl"
-  }, [])
   const busyLabel = openingHandoffLabelKey
     ? t(openingHandoffLabelKey)
     : busyElapsedSeconds >= 45
@@ -209,6 +205,12 @@ export function CreatePage({
       ? t("create.guide_planning_slow")
       : t("create.guide_planning_now")
   const guideThinkingCopy = t("create.guide_thinking")
+  const composerProgressHint =
+    hasSeed && !activeBrief && !compactLayout
+      ? guideReadyToBrief
+        ? t("create.guide_ready_brief_hint")
+        : t("create.guide_next_prompt_hint")
+      : null
 
   const applyStoryGuideSettings = (settings?: StoryGuideSettingDeltas) => {
     if (!settings) return
@@ -1048,9 +1050,9 @@ export function CreatePage({
                 {correctionCount > 0 ? (
                   <span style={cpStyles.count}>{t("create.guide_revision_count", { n: correctionCount })}</span>
                 ) : null}
-                {hasSeed && !activeBrief && !compactLayout ? (
+                {composerProgressHint ? (
                   <span style={cpStyles.shortcutHint}>
-                    {t("create.submit_shortcut", { mod: submitModKey })}
+                    {composerProgressHint}
                   </span>
                 ) : null}
               </div>
