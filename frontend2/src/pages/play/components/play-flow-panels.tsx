@@ -3628,6 +3628,14 @@ export function ActionArea({
     diaryDraft.length > 130 ? `${diaryDraft.slice(0, 127)}...` : diaryDraft
   const selectedOptionBody = selectedOptionParsed?.body ?? ""
   const selectedOptionHint = selectedOption?.hint ?? ""
+  const selectedOptionForecasts =
+    selectedOptionIndex !== null ? actionForecasts?.[selectedOptionIndex] ?? [] : []
+  const selectedOptionTarget =
+    selectedOptionIndex !== null ? optionTargets[selectedOptionIndex] ?? null : null
+  const selectedOptionSubmitSummary =
+    selectedOptionForecasts.length > 0
+      ? selectedOptionForecasts.slice(0, 2).map((chip) => chip.label).join(" · ")
+      : selectedOptionHint || t("play.selected_move_ready_detail")
   const actionState =
     showPickedReflection
       ? "pending"
@@ -3960,6 +3968,24 @@ export function ActionArea({
             >
               <span style={ppStyles.optionCardConfirmMeta}>
                 {t("play.selected_move_number", { index: selectedOptionIndex + 1 })}
+              </span>
+              <span
+                style={ppStyles.optionCardSubmitSummary}
+                data-play-selected-move-submit-summary="true"
+              >
+                <span style={ppStyles.optionCardSubmitSummaryHead}>
+                  <span style={ppStyles.optionCardSubmitSummaryLabel}>
+                    {t("play.selected_move_ready_label")}
+                  </span>
+                  <span style={ppStyles.optionCardSubmitSummaryTarget}>
+                    {selectedOptionTarget
+                      ? t("play.selected_move_target_chip", { target: selectedOptionTarget.name })
+                      : t("play.selected_move_room_chip")}
+                  </span>
+                </span>
+                <span style={ppStyles.optionCardSubmitSummaryText} title={selectedOptionSubmitSummary}>
+                  {selectedOptionSubmitSummary}
+                </span>
               </span>
               <div
                 style={{

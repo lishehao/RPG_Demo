@@ -931,6 +931,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-card-detail-section="why-now"' in panels
     assert 'data-play-action-card-confirm="true"' in panels
     assert 'data-play-action-card-confirm-panel="true"' in panels
+    assert 'data-play-selected-move-submit-summary="true"' in panels
     assert 'data-play-action-option-card="true"' in panels
     assert 'data-play-action-collapse-zone="true"' in panels
     assert 'data-play-inner-motive-primary="true"' in panels
@@ -957,6 +958,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'setSelectedOptionIndex(null)' in panels
     assert "optionCardConfirmPanel" in styles
     assert "optionCardConfirmRail" in styles
+    assert "optionCardSubmitSummary" in styles
+    assert "optionCardSubmitSummaryTarget" in styles
     assert "optionCardPrimaryActionGrid" in styles
     assert "optionTitleLine" in styles
     assert "optionActionText" in styles
@@ -1004,6 +1007,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_idle_detail": "先选中卡片，再提交这个行动。"' in strings
     assert '"play.option_shortcut_title": "Press {key} to select; then submit"' in strings
     assert '"play.option_shortcut_title": "按 {key} 选择；然后提交"' in strings
+    assert '"play.selected_move_ready_label": "Ready to submit"' in strings
+    assert '"play.selected_move_ready_label": "准备提交"' in strings
+    assert '"play.selected_move_room_chip": "Affects the room"' in strings
+    assert '"play.selected_move_room_chip": "影响全场"' in strings
     assert '"play.action_open_free": "Write your own move"' in strings
     assert '"play.action_open_free_hint": "Say or do something else."' in strings
     assert '"play.action_open_free_title": "Open your own move input"' in strings
