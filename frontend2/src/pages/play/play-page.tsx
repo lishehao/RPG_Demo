@@ -283,7 +283,9 @@ function GameplayStatePanel({
     >
       <div style={ppStyles.gameplayObjectiveRow} data-gameplay-objective="normal-play">
         <span style={ppStyles.gameplayObjectiveKicker}>{t("play.gameplay_objective_label")}</span>
-        <strong style={ppStyles.gameplayObjectiveText}>{envelope.objective}</strong>
+        <strong style={ppStyles.gameplayObjectiveText} data-gameplay-objective-text="normal-play">
+          {envelope.objective}
+        </strong>
       </div>
       <div style={ppStyles.gameplayTrackGrid} aria-label={t("play.gameplay_tracks_label")}>
         {envelope.tracks.map((track) => {

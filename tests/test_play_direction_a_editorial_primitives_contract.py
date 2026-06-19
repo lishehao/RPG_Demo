@@ -335,6 +335,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'behavior: prefersReducedMotion ? "auto" : "smooth"' in play_page
     assert "<GameplayStatePanel" in play_page
     assert "envelope={gameplayEnvelope}" in play_page
+    assert 'data-gameplay-objective-text="normal-play"' in play_page
+    assert "WebkitLineClamp: 2" in styles
+    assert 'whiteSpace: "nowrap" as const' not in styles[styles.index("gameplayObjectiveText:"):styles.index("gameplayTrackGrid:", styles.index("gameplayObjectiveText:"))]
     assert "<GameplayLoopGuide" in play_page
     assert 'data-gameplay-loop-guide="normal-play"' in play_page
     assert "data-gameplay-loop-stage={stage}" in play_page
