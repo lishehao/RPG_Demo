@@ -855,17 +855,14 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                         style={styles.personInlineAdvice}
                         data-gameplay-person-inline-advice="true"
                       >
-                        <span style={styles.personInlineAdviceLabel}>
-                          {person.suggestionKind === "action" ? "Suggested move" : "Tradeoff frame"}
-                        </span>
-                        <strong style={styles.personInlineAdviceTitle}>
-                          {person.suggestedMove}
-                        </strong>
-                        <span style={styles.personInlineAdviceBody}>
-                          {person.advice}
-                        </span>
+                      <span style={styles.personInlineAdviceLabel}>
+                        {person.suggestionKind === "action" ? "Suggested move" : "Tradeoff frame"}
                       </span>
-                    ) : null}
+                      <strong style={styles.personInlineAdviceTitle}>
+                        {person.suggestedMove}
+                      </strong>
+                    </span>
+                  ) : null}
                   </article>
                 )
               })}
@@ -1504,13 +1501,26 @@ const styles: Record<string, CSSProperties> = {
     gridColumn: "1 / -1",
     minWidth: 0,
     marginTop: 2,
-    border: "1px solid rgba(229,190,124,0.16)",
-    borderLeft: "2px solid rgba(229,190,124,0.34)",
-    borderRadius: 7,
-    background: "rgba(229,190,124,0.07)",
-    padding: "8px 9px",
-    display: "grid",
-    gap: 4,
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "rgba(229,190,124,0.12)",
+    borderRightWidth: 1,
+    borderRightStyle: "solid",
+    borderRightColor: "rgba(229,190,124,0.12)",
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "rgba(229,190,124,0.12)",
+    borderLeftWidth: 2,
+    borderLeftStyle: "solid",
+    borderLeftColor: "rgba(229,190,124,0.34)",
+    borderRadius: 6,
+    background: "rgba(229,190,124,0.045)",
+    padding: "6px 8px",
+    display: "flex",
+    alignItems: "baseline",
+    columnGap: 7,
+    rowGap: 3,
+    flexWrap: "wrap",
   },
   personInlineAdviceLabel: {
     color: actionPalette.amberText,
@@ -1525,13 +1535,6 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.ivoryText,
     fontSize: 13,
     lineHeight: 1.25,
-    overflowWrap: "anywhere",
-  },
-  personInlineAdviceBody: {
-    minWidth: 0,
-    color: actionPalette.faintIvory,
-    fontSize: 11.5,
-    lineHeight: 1.32,
     overflowWrap: "anywhere",
   },
   personAdvice: {
