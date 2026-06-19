@@ -291,6 +291,11 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert "Review selected move" in fixture
     assert "Submit it, or add what you secretly mean." in fixture
+    assert 'data-gameplay-motive-frame="true"' in fixture
+    assert "Public move" in fixture
+    assert "Private motive" in fixture
+    assert "NPCs only see the move; this tells the story what you are trying to achieve." in fixture
+    assert "motiveFrame" in fixture
     assert 'data-gameplay-selected-review={selectedAction ? "true" : undefined}' in fixture
     assert "function impactSummary(action: FixtureAction)" in fixture
     assert 'data-gameplay-selected-check="true"' in fixture

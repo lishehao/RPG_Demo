@@ -659,6 +659,21 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                               <label style={styles.motiveLabel} htmlFor="gameplay-loop-motive">
                                 Say what you secretly mean.
                               </label>
+                              <div
+                                style={styles.motiveFrame}
+                                data-gameplay-motive-frame="true"
+                              >
+                                <span style={styles.motiveFrameRow}>
+                                  <span style={styles.motiveFrameLabel}>Public move</span>
+                                  <span style={styles.motiveFrameText}>{action.title}</span>
+                                </span>
+                                <span style={styles.motiveFrameRow}>
+                                  <span style={styles.motiveFrameLabel}>Private motive</span>
+                                  <span style={styles.motiveFrameText}>
+                                    NPCs only see the move; this tells the story what you are trying to achieve.
+                                  </span>
+                                </span>
+                              </div>
                               <textarea
                                 id="gameplay-loop-motive"
                                 value={motive}
@@ -1165,6 +1180,37 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.mutedIvory,
     fontSize: 13,
     fontWeight: 740,
+  },
+  motiveFrame: {
+    border: "1px solid rgba(180,150,230,0.18)",
+    borderLeft: "2px solid rgba(180,150,230,0.36)",
+    borderRadius: 8,
+    background: "rgba(180,150,230,0.07)",
+    padding: "8px 9px",
+    display: "grid",
+    gap: 6,
+  },
+  motiveFrameRow: {
+    minWidth: 0,
+    display: "grid",
+    gridTemplateColumns: "94px minmax(0, 1fr)",
+    gap: 8,
+    alignItems: "baseline",
+  },
+  motiveFrameLabel: {
+    color: actionPalette.faintIvory,
+    fontSize: 10.5,
+    fontWeight: 850,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+    lineHeight: 1.15,
+  },
+  motiveFrameText: {
+    minWidth: 0,
+    color: actionPalette.ivoryText,
+    fontSize: 11.5,
+    lineHeight: 1.32,
+    overflowWrap: "anywhere",
   },
   motiveInput: {
     width: "100%",
