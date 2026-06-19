@@ -710,6 +710,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "free_input: publicMove" in play_page
     assert 'data-play-action-actor-focus-match={isActorFocusMatch ? "true" : undefined}' in panels
     assert 'data-play-action-actor-focus-dimmed={isActorFocusDimmed ? "true" : undefined}' in panels
+    assert 'data-gameplay-forecast-detail-chip="normal-play"' in panels
+    assert "optionExpandedDetailBody" in styles
+    assert "optionExpandedDetailChip" in styles
     assert 'data-gameplay-forecast-detail="normal-play"' in panels
     assert '"play.gameplay_forecast_detail_label": "Why now"' in strings
     assert 'data-gameplay-envelope="true"' in play_page

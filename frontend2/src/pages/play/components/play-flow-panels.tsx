@@ -4314,12 +4314,20 @@ export function ActionArea({
             <span style={ppStyles.optionExpandedDetailLabel}>
               {t("play.gameplay_forecast_detail_label")}
             </span>
-            <span
-              style={ppStyles.optionExpandedDetailText}
-              data-gameplay-forecast-detail="normal-play"
-              title={chip.detail}
-            >
-              {chip.detail}
+            <span style={ppStyles.optionExpandedDetailBody}>
+              <span
+                style={ppStyles.optionExpandedDetailChip}
+                data-gameplay-forecast-detail-chip="normal-play"
+              >
+                {chip.label}
+              </span>
+              <span
+                style={ppStyles.optionExpandedDetailText}
+                data-gameplay-forecast-detail="normal-play"
+                title={chip.detail}
+              >
+                {chip.detail}
+              </span>
             </span>
           </span>
         ))}
