@@ -317,7 +317,7 @@ function GameplayStatePanel({
               ? t("play.resource_focus_cta_count_one")
               : resourceMatchCount > 1
                 ? t("play.resource_focus_cta_count_many", { count: resourceMatchCount })
-                : t("play.resource_focus_cta_none")
+                : null
           const trackStyle = {
             ...ppStyles.gameplayTrack,
             ...(focusableTrackId ? ppStyles.gameplayTrackButton : null),
@@ -329,7 +329,7 @@ function GameplayStatePanel({
             <>
               <span style={ppStyles.gameplayTrackLabel}>{track.label}</span>
               <span style={ppStyles.gameplayTrackValue}>{track.value}</span>
-              {focusableTrackId ? (
+              {focusableTrackId && resourceActionLabel ? (
                 <span style={ppStyles.gameplayTrackAction}>
                   {resourceActionLabel}
                 </span>

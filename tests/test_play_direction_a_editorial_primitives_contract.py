@@ -542,7 +542,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const actorActionCounts = lastNarrator" in play_page
     assert "const resourceActionCounts = lastNarrator" in play_page
     assert "resourceActionCountsForOptions" in play_page
-    assert 't("play.resource_focus_cta_none")' in play_page
+    assert 't("play.resource_focus_cta_none")' not in play_page
     assert 't("play.resource_focus_active_none")' in play_page
     assert "isResourceFocusAction(resourceId, parsed.body, option.hint, actionForecasts[index] ?? [])" in play_page
     assert "const focusSceneActor = (actor: { id: string; name: string }) => {" in play_page
@@ -973,7 +973,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_time_title": "Show moves that buy, spend, or squeeze time"' in strings
     assert '"play.resource_focus_pressure_title": "Show moves that calm, raise, or redirect pressure"' in strings
     assert '"play.resource_focus_cta_none": "No preset move"' in strings
-    assert '"play.resource_focus_active_none": "No preset move"' in strings
+    assert '"play.resource_focus_active_none": "Write own move"' in strings
+    assert '"play.resource_focus_active_none": "自写一步"' in strings
     assert '"play.resource_focus_time_match_detail_one": "1 current move can buy, spend, or squeeze time."' in strings
     assert '"play.resource_focus_time_match_detail_many": "{count} current moves can buy, spend, or squeeze time."' in strings
     assert '"play.resource_focus_pressure_match_detail_one": "1 current move can calm, raise, or redirect pressure."' in strings
