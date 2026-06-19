@@ -599,12 +599,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_objective_label": "Goal"' in strings
     assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "Likely impact"' in strings
-    assert '"play.actor_focus_label": "Person to test"' in strings
-    assert '"play.actor_focus_showing_label": "Moves that test {name}"' in strings
+    assert '"play.actor_focus_label": "Focus on person"' in strings
+    assert '"play.actor_focus_showing_label": "Moves involving {name}"' in strings
     assert '"play.actor_focus_cta_none": "No preset move"' in strings
     assert '"play.actor_focus_active_none": "No preset move"' in strings
-    assert '"play.actor_focus_match_detail_one": "1 current move directly tests this person."' in strings
-    assert '"play.actor_focus_match_detail_many": "{count} current moves directly test this person."' in strings
+    assert '"play.actor_focus_match_detail_one": "1 current move makes this person react."' in strings
+    assert '"play.actor_focus_match_detail_many": "{count} current moves make this person react."' in strings
     assert '"play.actor_focus_matches_label": "Current choices"' in strings
     assert '"play.actor_focus_no_match": "No current move names them; write a custom move if you want to pull them in."' in strings
     assert '"play.actor_focus_clear": "Clear"' in strings
@@ -625,8 +625,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_active_count_one": "1 usable move"' in strings
     assert '"play.resource_focus_active_count_many": "{count} usable moves"' in strings
     assert '"play.resource_focus_active_count": "Usable moves: {count}"' in strings
-    assert '"play.resource_focus_label": "Resource to use"' in strings
-    assert '"play.resource_focus_showing_label": "Moves that use {name}"' in strings
+    assert '"play.resource_focus_label": "Focus on resource"' in strings
+    assert '"play.resource_focus_showing_label": "Moves about {name}"' in strings
     assert '"play.resource_focus_clear": "Clear"' in strings
     assert '"play.resource_focus_evidence_label": "Evidence"' in strings
     assert '"play.resource_focus_time_title": "Show moves that buy, spend, or squeeze time"' in strings
