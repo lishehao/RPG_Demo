@@ -74,6 +74,7 @@ import {
 import { PlayActionJumpButton } from "./components/play-action-jump"
 import {
   isPlayActionAreaAwayFromViewport,
+  isPlayElementAwayFromViewport,
   scrollToPlayActionArea,
   scrollToPlayImpactSummaryOrAction,
 } from "./components/play-action-jump-utils"
@@ -997,7 +998,9 @@ export function PlayPage({
         setShowActionJump(false)
         return
       }
-      setShowActionJump(isPlayActionAreaAwayFromViewport(actionArea))
+      const impactSummary = document.querySelector<HTMLElement>("[data-gameplay-impact-summary='true']")
+      const impactSummaryVisible = impactSummary !== null && !isPlayElementAwayFromViewport(impactSummary)
+      setShowActionJump(isPlayActionAreaAwayFromViewport(actionArea) && !impactSummaryVisible)
     }
 
     const requestUpdate = () => {

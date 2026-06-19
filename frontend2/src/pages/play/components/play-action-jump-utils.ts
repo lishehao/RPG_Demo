@@ -1,12 +1,16 @@
-export function isPlayActionAreaAwayFromViewport(actionArea: HTMLElement): boolean {
+export function isPlayElementAwayFromViewport(element: HTMLElement): boolean {
   const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
-  const rect = actionArea.getBoundingClientRect()
+  const rect = element.getBoundingClientRect()
   const upperComfortEdge = headerHeight + 64
   const lowerComfortEdge = window.innerHeight - 24
   return (
     rect.bottom < upperComfortEdge ||
     rect.top > lowerComfortEdge
   )
+}
+
+export function isPlayActionAreaAwayFromViewport(actionArea: HTMLElement): boolean {
+  return isPlayElementAwayFromViewport(actionArea)
 }
 
 export function scrollToPlayActionArea() {

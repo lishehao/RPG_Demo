@@ -1269,6 +1269,9 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "!story || !compactPlayChrome || busy || advisorOpen || ending" not in play_page
     assert "currentActionAreaVisible" in play_page
     assert "isPlayActionAreaAwayFromViewport(actionArea)" in play_page
+    assert "isPlayElementAwayFromViewport(impactSummary)" in play_page
+    assert "impactSummaryVisible" in play_page
+    assert "&& !impactSummaryVisible" in play_page
     assert "const actionJumpDetail =" in play_page
     assert "const handleActionJump = useCallback" in play_page
     assert "setShowActionJump(false)" in play_page
@@ -1285,6 +1288,7 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert 'data-play-action-jump-compact={compactJump ? "true" : "false"}' in action_jump
     assert 'data-play-action-jump-detail="true"' in action_jump
     assert "onPointerDown={onClick}" in action_jump
+    assert "isPlayElementAwayFromViewport" in action_jump_utils
     assert "scrollToPlayActionArea" in action_jump_utils
     assert "scrollToPlayImpactSummaryOrAction" in action_jump_utils
     assert "[data-play-action-area='true']" in action_jump_utils
