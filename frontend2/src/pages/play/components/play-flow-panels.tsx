@@ -3329,17 +3329,30 @@ export function ActionArea({
     freeActionDraft && freeActionContextTargetName && freeActionTargetName !== freeActionContextTargetName
       ? `${freeActionContextTargetName} — ${freeActionDraft}`
       : freeActionDraft
-  const freeActionStarterMoves = freeActionFocusContext?.kind === "actor" && !freeActionDraft
-    ? [
-        {
-          label: t("play.free_starter_actor_ask_label"),
-          text: t("play.free_starter_actor_ask_text", { name: freeActionFocusContext.label }),
-        },
-        {
-          label: t("play.free_starter_actor_pressure_label"),
-          text: t("play.free_starter_actor_pressure_text", { name: freeActionFocusContext.label }),
-        },
-      ]
+  const freeActionStarterMoves = !freeActionDraft && freeActionFocusContext
+    ? freeActionFocusContext.kind === "actor"
+      ? [
+          {
+            label: t("play.free_starter_actor_ask_label"),
+            text: t("play.free_starter_actor_ask_text", { name: freeActionFocusContext.label }),
+          },
+          {
+            label: t("play.free_starter_actor_pressure_label"),
+            text: t("play.free_starter_actor_pressure_text", { name: freeActionFocusContext.label }),
+          },
+        ]
+      : freeActionFocusContext.kind === "inventory"
+        ? [
+            {
+              label: t("play.free_starter_inventory_show_label"),
+              text: t("play.free_starter_inventory_show_text", { item: freeActionFocusContext.label }),
+            },
+            {
+              label: t("play.free_starter_inventory_ask_label"),
+              text: t("play.free_starter_inventory_ask_text", { item: freeActionFocusContext.label }),
+            },
+          ]
+        : []
     : []
   const freeComposerOpen = showFreeInput || options.length === 0
   const selectedOptionGuideTitle = selectedOptionParsed?.tag
@@ -4873,6 +4886,7 @@ export function ActionArea({
             ) : null}
             <textarea
               className="play-free-textarea"
+              data-play-free-action-input="true"
               ref={freeTextareaRef}
               style={ppStyles.freeTextarea}
               value={freeInput}
@@ -4924,6 +4938,7 @@ export function ActionArea({
                         }}
                         onClick={() => handleSubmitFreeWithReflect()}
                         disabled={actionControlsDisabled}
+                        data-play-free-action-submit="true"
                         aria-keyshortcuts="Meta+Enter Control+Enter"
                         title={t("play.shortcut_mod_enter_submit")}
                         type="button"

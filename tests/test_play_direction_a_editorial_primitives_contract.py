@@ -539,9 +539,14 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "play.free_context_inventory_detail" in panels
     assert "play.action_free_inventory_placeholder" in panels
     assert "play.action_open_free_inventory" in panels
-    assert "const freeActionStarterMoves = freeActionFocusContext?.kind === \"actor\" && !freeActionDraft" in panels
+    assert "const freeActionStarterMoves = !freeActionDraft && freeActionFocusContext" in panels
+    assert "freeActionFocusContext.kind === \"inventory\"" in panels
+    assert "play.free_starter_inventory_show_label" in panels
+    assert "play.free_starter_inventory_ask_text" in panels
     assert 'data-play-free-action-starters="true"' in panels
     assert 'data-play-free-action-starter="true"' in panels
+    assert 'data-play-free-action-input="true"' in panels
+    assert 'data-play-free-action-submit="true"' in panels
     assert "setFreeInput(starter.text)" in panels
     assert 'data-play-free-action-context="true"' in panels
     assert "data-play-free-action-context-kind={freeActionFocusContext.kind}" in panels
@@ -716,6 +721,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.free_starters_label": "Starter lines"' in strings
     assert '"play.free_starter_actor_ask_label": "Ask directly"' in strings
     assert '"play.free_starter_actor_pressure_label": "Apply pressure"' in strings
+    assert '"play.free_starter_inventory_show_label": "Show it"' in strings
+    assert '"play.free_starter_inventory_ask_label": "Ask who fears it"' in strings
     assert '"play.free_starter_apply_title": "Use starter: {move}"' in strings
     assert '"play.action_open_free_resource": "Write your own move around {label}"' in strings
     assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
