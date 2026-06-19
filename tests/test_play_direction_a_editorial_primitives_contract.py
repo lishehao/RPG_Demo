@@ -762,7 +762,13 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_selected_detail": "Ready to commit. Take it, or add what you secretly mean."' in strings
     assert '"play.turn_guide_selected_named_detail": "Ready to commit. Take this move, or add inner motive."' in strings
     assert "Not submitted yet" not in strings
-    assert '"play.inner_motive_cta": "Use inner motive"' in strings
+    assert '"play.inner_motive_cta": "Add inner motive"' in strings
+    assert '"play.inner_motive_button_hint": "Say what you secretly mean"' in strings
+    assert '"play.inner_motive_attached_hint": "Will submit with this move"' in strings
+    assert '"play.private_intent_hint": "What you secretly mean; NPCs do not hear it"' in strings
+    assert '"play.diary_label_hint": "What you secretly mean; others do not hear it."' in strings
+    assert '"play.diary_attach_empty_hint": "Say what you secretly mean."' in strings
+    assert "Use inner motive" not in strings
     assert '"play.inner_motive_submit_cta": "Take action with motive"' in strings
     assert '"play.advisor_card_name": "Dana Vale"' in strings
     assert 'data-play-advisor-empty-primer="true"' in panels

@@ -360,7 +360,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                           {motiveOpen ? (
                             <div style={styles.motivePanel} data-gameplay-motive-panel="true">
                               <label style={styles.motiveLabel} htmlFor="gameplay-loop-motive">
-                                Add the motive behind your move.
+                                Say what you secretly mean.
                               </label>
                               <textarea
                                 id="gameplay-loop-motive"
@@ -417,7 +417,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                                 }}
                                 data-gameplay-inner-motive="true"
                               >
-                                Use inner motive
+                                Add inner motive
                               </button>
                             </div>
                           )}
