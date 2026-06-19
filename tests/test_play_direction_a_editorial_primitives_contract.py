@@ -1058,6 +1058,9 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
         panels.index("const focusDiaryTextarea") : panels.index("const renderDiaryAttachPreview")
     ]
     assert 'data-play-selected-move={isSelected ? "true" : undefined}' in panels
+    assert "pickedOptionForecasts.filter((forecast) => !forecast.detail).slice(0, 3)" in panels
+    assert "const selectedOptionSubmitForecasts = selectedOptionForecasts.filter((chip) => !chip.detail)" in panels
+    assert "selectedOptionSubmitForecasts.slice(0, 2).map((chip) => chip.label).join(\" · \")" in panels
     assert 'document.querySelector<HTMLElement>("[data-play-selected-move=\'true\']")' in panels
     assert "headerHeight - 12" in panels
     assert "window.scrollTo({ top, left: 0, behavior })" in panels

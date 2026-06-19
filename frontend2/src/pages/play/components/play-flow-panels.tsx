@@ -3722,7 +3722,7 @@ export function ActionArea({
         title: t("play.action_target_title", { name: freeActionTargetNameForFeedback }),
       })
     }
-    pickedOptionForecasts.slice(0, 3).forEach((forecast, index) => {
+    pickedOptionForecasts.filter((forecast) => !forecast.detail).slice(0, 3).forEach((forecast, index) => {
       pushSignal({
         id: `forecast:${index}:${forecast.label}`,
         label: forecast.label,
@@ -3746,12 +3746,13 @@ export function ActionArea({
   const selectedOptionHint = selectedOption?.hint ?? ""
   const selectedOptionForecasts =
     selectedOptionIndex !== null ? actionForecasts?.[selectedOptionIndex] ?? [] : []
+  const selectedOptionSubmitForecasts = selectedOptionForecasts.filter((chip) => !chip.detail)
   const selectedOptionTarget =
     selectedOptionIndex !== null ? optionTargets[selectedOptionIndex] ?? null : null
   const selectedOptionSubmitSummary =
-    selectedOptionForecasts.length > 0
-      ? selectedOptionForecasts.slice(0, 2).map((chip) => chip.label).join(" · ")
-      : selectedOptionHint || t("play.selected_move_ready_detail")
+    selectedOptionSubmitForecasts.length > 0
+      ? selectedOptionSubmitForecasts.slice(0, 2).map((chip) => chip.label).join(" · ")
+      : selectedOptionHint || selectedOptionForecasts.find((chip) => chip.detail)?.detail || t("play.selected_move_ready_detail")
   const actionState =
     showPickedReflection
       ? "pending"
