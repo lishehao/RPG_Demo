@@ -225,6 +225,21 @@ function uniqueActionTargetsForOptions(
     .slice(0, 3)
 }
 
+function actionTargetCountsForOptions(
+  options: NarrativeStoryMessage["options"],
+  castNameById: Record<string, string>,
+  latestNpcPulses: NarrativeNPCPulse[],
+): Record<string, number> {
+  const counts: Record<string, number> = {}
+  options.forEach((option) => {
+    const parsed = parseOptionLabel(option.label)
+    const target = findActionTarget(parsed.body, option.hint, castNameById, latestNpcPulses)
+    if (!target) return
+    counts[target.id] = (counts[target.id] ?? 0) + 1
+  })
+  return counts
+}
+
 function GameplayStatePanel({
   envelope,
   focusedResourceId,
@@ -1022,6 +1037,12 @@ export function PlayPage({
   const nextChoiceTargets = lastNarrator
     ? uniqueActionTargetsForOptions(lastNarrator.options, castNameById, lastNarrator.npc_pulse ?? [])
     : []
+  const actorActionCounts = useMemo(
+    () => lastNarrator
+      ? actionTargetCountsForOptions(lastNarrator.options, castNameById, lastNarrator.npc_pulse ?? [])
+      : {},
+    [castNameById, lastNarrator],
+  )
   const gameplayLoopStage: GameplayLoopStage = isComplete
     ? "ending"
     : busy
@@ -1382,6 +1403,7 @@ export function PlayPage({
                 advisorAvatarUrl={advisorAvatar}
                 advisorPersona={story.template.advisor_persona}
                 focusedActorId={focusedActorId}
+                actorActionCounts={actorActionCounts}
                 onFocusActor={focusSceneActor}
                 onAskAdvisor={openAdvisor}
               />

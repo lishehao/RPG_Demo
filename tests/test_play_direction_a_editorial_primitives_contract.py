@@ -56,6 +56,12 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert 'data-play-cast-resource="true"' in primitives
     assert 'data-play-cast-resource-id={actor.id}' in primitives
     assert 'data-play-cast-focus={focused ? "true" : undefined}' in primitives
+    assert "actorActionCounts?: Record<string, number>" in primitives
+    assert "const actionCount = actorActionCounts?.[actor.id] ?? 0" in primitives
+    assert 'data-play-cast-action-count={actionCount}' in primitives
+    assert "play.actor_focus_cta_count_one" in primitives
+    assert "play.actor_focus_cta_count_many" in primitives
+    assert "play.actor_focus_active_count" in primitives
     assert "aria-pressed={focused}" in primitives
     assert "focusedActorId?: string | null" in primitives
     assert "onFocusActor?: (actor: { id: string; name: string }) => void" in primitives
@@ -68,6 +74,8 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert 'data-play-advisor-portrait="true"' in primitives
     assert "advisorAvatarUrl={advisorAvatar}" in play_page
     assert "focusedActorId={focusedActorId}" in play_page
+    assert "actionTargetCountsForOptions" in play_page
+    assert "actorActionCounts={actorActionCounts}" in play_page
     assert "onFocusActor={focusSceneActor}" in play_page
     assert "onClearActorFocus={() => setFocusedActorId(null)}" in play_page
     assert "onAskAdvisor={openAdvisor}" in play_page
@@ -78,6 +86,9 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "play.actor_focus_active" in primitives
     assert '"play.actor_focus_cta": "Show moves"' in strings
     assert '"play.actor_focus_active": "Showing moves"' in strings
+    assert '"play.actor_focus_cta_count_one": "1 move"' in strings
+    assert '"play.actor_focus_cta_count_many": "{count} moves"' in strings
+    assert '"play.actor_focus_active_count": "Showing {count}"' in strings
     assert "advisorRow" in primitives
     assert "advisorRowCompact" in primitives
     assert "advisorCard:" not in primitives

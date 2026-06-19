@@ -160,6 +160,7 @@ export function SceneSupportRail({
   advisorAvatarUrl,
   advisorPersona,
   focusedActorId,
+  actorActionCounts,
   onFocusActor,
   onAskAdvisor,
 }: {
@@ -169,6 +170,7 @@ export function SceneSupportRail({
   advisorAvatarUrl: string
   advisorPersona: string
   focusedActorId?: string | null
+  actorActionCounts?: Record<string, number>
   onFocusActor?: (actor: { id: string; name: string }) => void
   onAskAdvisor: () => void
 }) {
@@ -216,6 +218,16 @@ export function SceneSupportRail({
         <div style={primitiveStyles.actorList}>
           {actors.map((actor) => {
             const focused = focusedActorId === actor.id
+            const actionCount = actorActionCounts?.[actor.id] ?? 0
+            const focusCue = focused
+              ? actionCount > 0
+                ? t("play.actor_focus_active_count", { count: actionCount })
+                : t("play.actor_focus_active")
+              : actionCount === 1
+                ? t("play.actor_focus_cta_count_one")
+                : actionCount > 1
+                  ? t("play.actor_focus_cta_count_many", { count: actionCount })
+                  : t("play.actor_focus_cta")
             return (
               <button
                 key={actor.id}
@@ -228,6 +240,7 @@ export function SceneSupportRail({
                 data-play-cast-resource="true"
                 data-play-cast-resource-id={actor.id}
                 data-play-cast-focus={focused ? "true" : undefined}
+                data-play-cast-action-count={actionCount}
                 aria-pressed={focused}
                 title={t("play.actor_focus_title", { name: actor.name })}
                 onClick={() => onFocusActor?.({ id: actor.id, name: actor.name })}
@@ -245,7 +258,7 @@ export function SceneSupportRail({
                   <strong style={primitiveStyles.actorName}>{actor.name}</strong>
                   <span style={primitiveStyles.actorRole}>{actor.role}</span>
                   <span style={primitiveStyles.actorFocusCue}>
-                    {focused ? t("play.actor_focus_active") : t("play.actor_focus_cta")}
+                    {focusCue}
                   </span>
                 </span>
               </button>
