@@ -318,6 +318,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const [focusedResourceId, setFocusedResourceId] = useState<GameplayResourceFocusId | null>(null)" in play_page
     assert "const actorFocus = focusedActorId && focusedActorName" in play_page
     assert "const focusedResourceTrack = focusedResourceId" in play_page
+    assert "useMemo" not in play_page
+    assert "const actorActionCounts = lastNarrator" in play_page
+    assert "const resourceActionCounts = lastNarrator" in play_page
     assert "resourceActionCountsForOptions" in play_page
     assert 't("play.resource_focus_cta_none")' in play_page
     assert 't("play.resource_focus_active_none")' in play_page

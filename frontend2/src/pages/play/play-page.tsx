@@ -1,4 +1,4 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react"
 import type {
   NarrativeAgentEventPayload,
@@ -1076,18 +1076,12 @@ export function PlayPage({
   const nextChoiceTargets = lastNarrator
     ? uniqueActionTargetsForOptions(lastNarrator.options, castNameById, lastNarrator.npc_pulse ?? [])
     : []
-  const actorActionCounts = useMemo(
-    () => lastNarrator
-      ? actionTargetCountsForOptions(lastNarrator.options, castNameById, lastNarrator.npc_pulse ?? [])
-      : {},
-    [castNameById, lastNarrator],
-  )
-  const resourceActionCounts = useMemo(
-    () => lastNarrator
-      ? resourceActionCountsForOptions(lastNarrator.options, gameplayEnvelope.actionForecasts)
-      : { time: 0, pressure: 0, evidence: 0 },
-    [gameplayEnvelope.actionForecasts, lastNarrator],
-  )
+  const actorActionCounts = lastNarrator
+    ? actionTargetCountsForOptions(lastNarrator.options, castNameById, lastNarrator.npc_pulse ?? [])
+    : {}
+  const resourceActionCounts = lastNarrator
+    ? resourceActionCountsForOptions(lastNarrator.options, gameplayEnvelope.actionForecasts)
+    : { time: 0, pressure: 0, evidence: 0 }
   const gameplayLoopStage: GameplayLoopStage = isComplete
     ? "ending"
     : busy
