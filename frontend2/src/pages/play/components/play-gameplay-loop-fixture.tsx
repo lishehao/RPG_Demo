@@ -109,7 +109,7 @@ const INITIAL_ACTIONS: FixtureAction[] = [
     body: "Name the green-room access gap and make Arthur answer before the room drifts.",
     forecast: [
       { id: "pressure-up", label: "Pressure +1", tone: "cost" },
-      { id: "evidence-unlock", label: "Evidence unlocked", tone: "unlock" },
+      { id: "evidence-unlock", label: "Badge clue found", tone: "unlock" },
       { id: "arthur-attention", label: "Arthur must answer", tone: "shift" },
     ],
     resolved: [
@@ -127,7 +127,7 @@ const INITIAL_ACTIONS: FixtureAction[] = [
     forecast: [
       { id: "time-gain", label: "Time +1", tone: "gain" },
       { id: "lena-cost", label: "Lena trust -1", tone: "cost" },
-      { id: "opportunity-open", label: "Hallway opportunity", tone: "unlock" },
+      { id: "opportunity-open", label: "Hallway opens", tone: "unlock" },
     ],
     resolved: [
       { id: "more-time", label: "Time +1", tone: "gain" },
