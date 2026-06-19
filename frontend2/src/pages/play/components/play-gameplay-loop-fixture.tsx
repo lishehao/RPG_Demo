@@ -32,6 +32,16 @@ type CommittedMove = {
   motive: string
 }
 
+type PersonResource = {
+  id: string
+  name: string
+  role: string
+  state: string
+  action: string
+  advice: string
+  suggestedMove: string
+}
+
 const INITIAL_TRACKS: Track[] = [
   { id: "time", label: "Time", value: "8 min", note: "Countdown before the live award reveal." },
   { id: "pressure", label: "Public pressure", value: "2 / 5", note: "The room is restless, but not breaking." },
@@ -46,7 +56,7 @@ const RESOLVED_TRACKS: Track[] = [
   { id: "evidence", label: "Evidence", value: "1 / 3", note: "You can use the badge clue in the next move." },
 ]
 
-const PEOPLE = [
+const INITIAL_PEOPLE: PersonResource[] = [
   {
     id: "lena",
     name: "Lena",
@@ -82,6 +92,45 @@ const PEOPLE = [
     action: "Ask Dana which pressure point matters.",
     advice: "Dana points out the tradeoff, but the decision still stays with you.",
     suggestedMove: "Pick the move whose cost you can afford.",
+  },
+]
+
+const UNLOCKED_PEOPLE: PersonResource[] = [
+  {
+    id: "lena",
+    name: "Lena",
+    role: "Stage manager",
+    state: "Ready to route people through the control door.",
+    action: "Ask Lena how the badge changes the route.",
+    advice: "Lena can turn the badge into a cleaner path instead of another public delay.",
+    suggestedMove: "Show Lena the green-room badge",
+  },
+  {
+    id: "arthur",
+    name: "Arthur",
+    role: "Producer",
+    state: "Watching Marcus' story harden in public.",
+    action: "Ask Arthur to respond after Marcus speaks.",
+    advice: "Arthur is useful now because Marcus has a public story he can contradict.",
+    suggestedMove: "Let Arthur contradict Marcus",
+  },
+  {
+    id: "marcus",
+    name: "Marcus",
+    role: "Sponsor rep",
+    state: "Trying to make the badge problem look routine.",
+    action: "Ask Marcus to repeat his timeline.",
+    advice: "Marcus' version gives Arthur something to contradict, but it raises room pressure.",
+    suggestedMove: "Let Arthur contradict Marcus",
+  },
+  {
+    id: "dana",
+    name: "Dana Vale",
+    role: "Crisis confidant",
+    state: "Weighs proof against the cost of using it.",
+    action: "Ask Dana which unlocked move is worth the risk.",
+    advice: "Dana points out the tradeoff, but the decision still stays with you.",
+    suggestedMove: "Pick the unlocked move whose cost you can defend.",
   },
 ]
 
@@ -226,8 +275,9 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const [consultedPersonId, setConsultedPersonId] = useState<string | null>(null)
   const actionAreaRef = useRef<HTMLElement | null>(null)
   const actions = useMemo(() => (unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS), [unlockedClue])
+  const people = useMemo(() => (unlockedClue ? UNLOCKED_PEOPLE : INITIAL_PEOPLE), [unlockedClue])
   const selectedAction = actions.find((action) => action.id === selectedId) ?? null
-  const consultedPerson = PEOPLE.find((person) => person.id === consultedPersonId) ?? null
+  const consultedPerson = people.find((person) => person.id === consultedPersonId) ?? null
   const consultedSuggestedAction = consultedPerson
     ? actions.find((action) => action.title === consultedPerson.suggestedMove) ?? null
     : null
@@ -486,7 +536,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               <span style={styles.headerNote} data-gameplay-people-usage-note="true">Ask them to open paths, block pressure, or reveal clues.</span>
             </div>
             <div style={styles.personList}>
-              {PEOPLE.map((person) => {
+              {people.map((person) => {
                 const consulted = consultedPersonId === person.id
                 return (
                   <article

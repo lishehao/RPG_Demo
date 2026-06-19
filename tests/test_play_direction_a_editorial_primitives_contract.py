@@ -306,6 +306,13 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
     assert 'data-gameplay-person-advice="true"' in fixture
     assert "{consultedPerson.name} can open this" in fixture
+    assert "const INITIAL_PEOPLE: PersonResource[]" in fixture
+    assert "const UNLOCKED_PEOPLE: PersonResource[]" in fixture
+    assert "const people = useMemo(() => (unlockedClue ? UNLOCKED_PEOPLE : INITIAL_PEOPLE), [unlockedClue])" in fixture
+    assert "Show Lena the green-room badge" in fixture
+    assert "Let Arthur contradict Marcus" in fixture
+    assert "Ask Lena how the badge changes the route." in fixture
+    assert "Ask Arthur to respond after Marcus speaks." in fixture
     assert "const consultedSuggestedAction = consultedPerson" in fixture
     assert "const actionAreaRef = useRef<HTMLElement | null>(null)" in fixture
     assert "const selectSuggestedAction = (action: FixtureAction)" in fixture
