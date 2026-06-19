@@ -48,28 +48,40 @@ const RESOLVED_TRACKS: Track[] = [
 
 const PEOPLE = [
   {
+    id: "lena",
     name: "Lena",
     role: "Stage manager",
     state: "Watching the countdown and the side doors.",
     action: "Ask Lena to hold the crowd.",
+    advice: "Lena can keep the room steady if you give her a specific job.",
+    suggestedMove: "Ask Lena to hold the crowd",
   },
   {
+    id: "arthur",
     name: "Arthur",
     role: "Producer",
     state: "Trying to keep the sponsor calm.",
     action: "Press Arthur for the last confirmed timestamp.",
+    advice: "Arthur reacts when the question is public and tied to a concrete gap.",
+    suggestedMove: "Pressure Arthur on the missing badge",
   },
   {
+    id: "marcus",
     name: "Marcus",
     role: "Sponsor rep",
     state: "Smiling too hard for the cameras.",
     action: "Read Marcus before the next public answer.",
+    advice: "Marcus can buy time, but asking him costs trust with the people backstage.",
+    suggestedMove: "Send Marcus to stall sponsors",
   },
   {
+    id: "dana",
     name: "Dana Vale",
     role: "Crisis confidant",
     state: "Frames the move without taking control.",
     action: "Ask Dana which pressure point matters.",
+    advice: "Dana points out the tradeoff, but the decision still stays with you.",
+    suggestedMove: "Pick the move whose cost you can afford.",
   },
 ]
 
@@ -211,8 +223,10 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const [unlockedClue, setUnlockedClue] = useState(false)
   const [tracks, setTracks] = useState(INITIAL_TRACKS)
   const [resolvedDeltas, setResolvedDeltas] = useState<FixtureDelta[]>([])
+  const [consultedPersonId, setConsultedPersonId] = useState<string | null>(null)
   const actions = useMemo(() => (unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS), [unlockedClue])
   const selectedAction = actions.find((action) => action.id === selectedId) ?? null
+  const consultedPerson = PEOPLE.find((person) => person.id === consultedPersonId) ?? null
   const isPending = phase === "pending"
 
   useEffect(() => {
@@ -438,26 +452,47 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               <span style={styles.headerNote}>People are resources.</span>
             </div>
             <div style={styles.personList}>
-              {PEOPLE.map((person) => (
-                <article key={person.name} style={styles.personRow}>
-                  <span style={styles.avatarFrame}>{initials(person.name)}</span>
-                  <span style={styles.personText}>
-                    <strong style={styles.personName}>{person.name}</strong>
-                    <span style={styles.personRole}>{person.role}</span>
-                    <span style={styles.personState}>{person.state}</span>
-                  </span>
-                  <button
-                    type="button"
-                    style={styles.personAction}
-                    data-gameplay-person-action="true"
-                    aria-label={person.action}
-                    title={person.action}
+              {PEOPLE.map((person) => {
+                const consulted = consultedPersonId === person.id
+                return (
+                  <article
+                    key={person.name}
+                    style={{
+                      ...styles.personRow,
+                      ...(consulted ? styles.personRowConsulted : null),
+                    }}
+                    data-gameplay-person-consulted={consulted ? "true" : undefined}
                   >
-                    Ask
-                  </button>
-                </article>
-              ))}
+                    <span style={styles.avatarFrame}>{initials(person.name)}</span>
+                    <span style={styles.personText}>
+                      <strong style={styles.personName}>{person.name}</strong>
+                      <span style={styles.personRole}>{person.role}</span>
+                      <span style={styles.personState}>{person.state}</span>
+                    </span>
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.personAction,
+                        ...(consulted ? styles.personActionActive : null),
+                      }}
+                      data-gameplay-person-action="true"
+                      aria-label={person.action}
+                      title={person.action}
+                      onClick={() => setConsultedPersonId(person.id)}
+                    >
+                      {consulted ? "Asked" : "Ask"}
+                    </button>
+                  </article>
+                )
+              })}
             </div>
+            {consultedPerson ? (
+              <article style={styles.personAdvice} data-gameplay-person-advice="true">
+                <span style={styles.kicker}>Advice from {consultedPerson.name}</span>
+                <strong style={styles.personAdviceTitle}>{consultedPerson.suggestedMove}</strong>
+                <span style={styles.personAdviceBody}>{consultedPerson.advice}</span>
+              </article>
+            ) : null}
           </section>
 
           <section style={styles.railSection}>
@@ -774,6 +809,10 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
     padding: 8,
   },
+  personRowConsulted: {
+    borderColor: "rgba(229,190,124,0.26)",
+    background: "rgba(64,46,21,0.20)",
+  },
   avatarFrame: {
     width: 42,
     height: 42,
@@ -812,6 +851,30 @@ const styles: Record<string, CSSProperties> = {
     padding: "6px 8px",
     cursor: "pointer",
     fontWeight: 780,
+  },
+  personActionActive: {
+    borderColor: "rgba(229,190,124,0.36)",
+    background: "rgba(229,190,124,0.14)",
+    color: actionPalette.ivoryText,
+  },
+  personAdvice: {
+    border: "1px solid rgba(229,190,124,0.18)",
+    borderRadius: 8,
+    background: "linear-gradient(145deg, rgba(36,29,18,0.58), rgba(8,9,10,0.76))",
+    padding: 12,
+    display: "grid",
+    gap: 5,
+  },
+  personAdviceTitle: {
+    color: actionPalette.ivoryText,
+    fontFamily: "var(--font-narrative)",
+    fontSize: 17,
+    lineHeight: 1.2,
+  },
+  personAdviceBody: {
+    color: actionPalette.mutedIvory,
+    fontSize: 12.5,
+    lineHeight: 1.38,
   },
   clueCard: {
     border: "1px solid rgba(229,190,124,0.14)",

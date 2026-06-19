@@ -258,6 +258,11 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-objective="true"' in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert 'data-gameplay-person-action="true"' in fixture
+    assert "consultedPersonId" in fixture
+    assert "setConsultedPersonId(person.id)" in fixture
+    assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
+    assert 'data-gameplay-person-advice="true"' in fixture
+    assert "Advice from {consultedPerson.name}" in fixture
     assert 'data-gameplay-clue-card={unlockedClue ? "green-room-badge" : "locked"}' in fixture
     assert 'data-gameplay-forecast-chip={hook === "forecast" ? "true" : undefined}' in fixture
     assert 'data-gameplay-delta={hook === "delta" ? "true" : undefined}' in fixture
