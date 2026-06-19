@@ -6273,4 +6273,18 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontFamily: "inherit",
     cursor: "pointer",
   },
+  longHistoryBeatLabel: {
+    display: "block",
+    color: "rgba(245,200,120,0.82)",
+    fontSize: 11,
+    fontWeight: 820,
+    letterSpacing: 0,
+    marginBottom: 5,
+  },
+  longHistoryBeatBody: {
+    display: "block",
+    color: "inherit",
+    fontSize: 15,
+    lineHeight: 1.55,
+  },
 }

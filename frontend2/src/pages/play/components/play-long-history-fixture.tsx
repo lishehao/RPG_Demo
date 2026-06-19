@@ -36,6 +36,15 @@ const HISTORY_BEATS = [
   "Changed: the sponsor's representative asks for a private word.",
 ]
 
+function splitHistoryBeat(beat: string): { label: string; body: string } {
+  if (beat.startsWith("You chose ")) {
+    return { label: "You chose", body: beat.replace(/^You chose\s+/, "") }
+  }
+  const [label, ...rest] = beat.split(":")
+  if (!rest.length) return { label: "Story", body: beat }
+  return { label: label.trim(), body: rest.join(":").trim() }
+}
+
 type LongHistoryOutcome = {
   title: string
   summary: string
@@ -175,21 +184,27 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
           {outcome ? "Result ready below." : status}
         </p>
         <div style={{ display: "grid", gap: 12 }}>
-          {HISTORY_BEATS.map((beat, index) => (
-            <article
-              key={beat}
-              style={{
-                minHeight: 118,
-                borderTop: "1px solid rgba(212,168,83,0.22)",
-                paddingTop: 12,
-                color: index % 2 === 0 ? "rgba(255,245,230,0.82)" : "rgba(232,218,205,0.66)",
-                fontFamily: "var(--font-narrative)",
-                lineHeight: 1.55,
-              }}
-            >
-              {beat}
-            </article>
-          ))}
+          {HISTORY_BEATS.map((beat, index) => {
+            const parsedBeat = splitHistoryBeat(beat)
+            return (
+              <article
+                key={beat}
+                style={{
+                  minHeight: 118,
+                  borderTop: "1px solid rgba(212,168,83,0.22)",
+                  paddingTop: 12,
+                  color: index % 2 === 0 ? "rgba(255,245,230,0.82)" : "rgba(232,218,205,0.66)",
+                  fontFamily: "var(--font-narrative)",
+                  lineHeight: 1.55,
+                }}
+                data-play-long-history-beat="true"
+                data-play-long-history-beat-kind={parsedBeat.label.toLowerCase().replace(/\s+/g, "-")}
+              >
+                <span style={ppStyles.longHistoryBeatLabel}>{parsedBeat.label}</span>
+                <span style={ppStyles.longHistoryBeatBody}>{parsedBeat.body}</span>
+              </article>
+            )
+          })}
         </div>
         {outcome ? (
           <section

@@ -1251,6 +1251,14 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert "PlayLongHistoryFixture" in action_state
     assert 'data-play-long-history-fixture="true"' in fixture
     assert "type LongHistoryOutcome" in fixture
+    assert "function splitHistoryBeat(beat: string): { label: string; body: string }" in fixture
+    assert 'return { label: "You chose", body: beat.replace(/^You chose\\s+/, "") }' in fixture
+    assert 'data-play-long-history-beat="true"' in fixture
+    assert "data-play-long-history-beat-kind={parsedBeat.label.toLowerCase().replace(/\\s+/g, \"-\")}" in fixture
+    assert "longHistoryBeatLabel" in fixture
+    assert "longHistoryBeatBody" in fixture
+    assert "longHistoryBeatLabel" in styles
+    assert "longHistoryBeatBody" in styles
     assert "nextFocus: string" in fixture
     assert "longHistoryOutcomeForMove(submittedMove)" in fixture
     assert "data-play-long-history-result-feedback=\"true\"" in fixture
