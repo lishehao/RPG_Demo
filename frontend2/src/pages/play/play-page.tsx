@@ -654,7 +654,10 @@ function GameplayLoopGuide({
 
   return (
     <section
-      style={ppStyles.gameplayLoopPanel}
+      style={{
+        ...ppStyles.gameplayLoopPanel,
+        ...(compactLoop ? ppStyles.gameplayLoopPanelCompact : null),
+      }}
       data-gameplay-loop-guide="normal-play"
       data-gameplay-loop-stage={stage}
       aria-label={t("play.gameplay_loop_label")}
