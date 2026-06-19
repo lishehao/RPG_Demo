@@ -7,6 +7,11 @@ import { itemTransition } from "../../shared/lib/motion-presets"
 import { PAGE_BG } from "../../shared/lib/webtoon-assets"
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{2,20}$/
+const CREATE_GUEST_PLAN_KEYS = [
+  "login.guest_plan_editor",
+  "login.guest_plan_saved",
+  "login.guest_plan_custom",
+] as const
 
 export function LoginPage({
   next,
@@ -132,6 +137,14 @@ export function LoginPage({
                 </span>
                 <span style={lpStyles.quickStartArrow} aria-hidden>→</span>
               </button>
+              <ul style={lpStyles.guestPlan} aria-label={t("login.guest_plan_label")} data-login-guest-plan="true">
+                {CREATE_GUEST_PLAN_KEYS.map((key) => (
+                  <li key={key} style={lpStyles.guestPlanItem} data-login-guest-plan-item={key}>
+                    <span style={lpStyles.guestPlanDot} aria-hidden />
+                    <span>{t(key)}</span>
+                  </li>
+                ))}
+              </ul>
               {!showCustomName ? (
                 <button
                   type="button"
@@ -374,6 +387,29 @@ const lpStyles: Record<string, CSSProperties> = {
     color: "rgba(245,200,120,0.84)",
     fontSize: 14,
     lineHeight: 1,
+  },
+  guestPlan: {
+    display: "grid",
+    rowGap: 6,
+    margin: "2px 0 16px",
+    padding: 0,
+    listStyle: "none",
+  },
+  guestPlanItem: {
+    display: "grid",
+    gridTemplateColumns: "8px minmax(0, 1fr)",
+    alignItems: "baseline",
+    columnGap: 8,
+    color: "rgba(255,255,255,0.58)",
+    fontSize: 11.5,
+    lineHeight: 1.42,
+  },
+  guestPlanDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 999,
+    background: "rgba(245,200,120,0.62)",
+    transform: "translateY(-1px)",
   },
   customNameToggle: {
     width: "fit-content",

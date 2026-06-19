@@ -91,6 +91,22 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert '"header.account": "账号"' in strings
 
 
+def test_create_entry_guest_path_explains_temporary_pen_name() -> None:
+    login = (ROOT / "frontend2/src/pages/auth/login-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert "CREATE_GUEST_PLAN_KEYS" in login
+    assert 'data-login-guest-plan="true"' in login
+    assert "data-login-guest-plan-item={key}" in login
+    assert 't("login.guest_plan_label")' in login
+    assert '"login.guest_plan_editor": "Opens the story editor without email or password."' in strings
+    assert '"login.guest_plan_saved": "Saves this draft and later runs under the same pen name."' in strings
+    assert '"login.guest_plan_custom": "You can still choose your own pen name when it matters."' in strings
+    assert '"login.guest_plan_editor": "进入故事编辑器，不需要邮箱或密码。"' in strings
+    assert '"login.guest_plan_saved": "这次创作和之后的游玩会挂在这个笔名下。"' in strings
+    assert '"login.guest_plan_custom": "想认真命名时，也可以改成自己的笔名。"' in strings
+
+
 def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     play = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     play_panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
