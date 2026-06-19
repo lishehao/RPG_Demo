@@ -110,7 +110,7 @@ const INITIAL_ACTIONS: FixtureAction[] = [
     forecast: [
       { id: "pressure-up", label: "Pressure +1", tone: "cost" },
       { id: "evidence-unlock", label: "Evidence unlocked", tone: "unlock" },
-      { id: "arthur-attention", label: "Arthur attention locked", tone: "shift" },
+      { id: "arthur-attention", label: "Arthur must answer", tone: "shift" },
     ],
     resolved: [
       { id: "pressure-rises", label: "Public pressure +1", tone: "cost" },
