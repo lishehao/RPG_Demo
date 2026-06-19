@@ -511,7 +511,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               }}
               data-gameplay-clue-card={unlockedClue ? "green-room-badge" : "locked"}
             >
-              <span style={styles.clueStatus}>{unlockedClue ? "Discovered" : "Locked"}</span>
+              <span style={styles.clueStatus}>{unlockedClue ? "Discovered" : "Not found yet"}</span>
               <strong style={styles.clueTitle}>{unlockedClue ? "Green-room badge" : "Green-room clue"}</strong>
               <span style={styles.clueBody}>
                 {unlockedClue

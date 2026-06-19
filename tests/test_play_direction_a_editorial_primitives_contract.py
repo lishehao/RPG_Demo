@@ -287,6 +287,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "People are resources." not in fixture
     assert "Clues you can use" in fixture
     assert "0 usable yet" in fixture
+    assert "Not found yet" in fixture
     assert "consultedPersonId" in fixture
     assert "setConsultedPersonId(person.id)" in fixture
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
