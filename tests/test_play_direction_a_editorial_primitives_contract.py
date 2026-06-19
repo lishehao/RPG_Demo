@@ -754,6 +754,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "gameplayForecastInline" in styles
     assert "gameplayForecastInlineLabel" in styles
     assert '"play.option_forecast_kicker": "Likely impact"' in strings
+    assert '"play.turn_guide_idle_detail": "Pick a move, or write your own."' in strings
+    assert "Pick a line" not in strings
     assert "change choice" not in strings
     assert '"play.selected_move_kicker": "Selected move"' in strings
     assert '"play.selected_move_commit_cta": "Take this action"' in strings
