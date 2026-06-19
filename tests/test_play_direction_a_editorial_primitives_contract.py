@@ -1257,9 +1257,12 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert "Result landed. The next action set is ready." not in fixture
     assert "<ActionArea" in fixture
     assert "<PlayActionJumpButton" in fixture
-    assert 'stage="choose"' in fixture
-    assert 'detail={t("play.action_jump_detail_choose")}' in fixture
-    assert 'compactDetail={t("play.action_jump_detail_choose_compact")}' in fixture
+    assert 'stage={outcome ? "update" : "choose"}' in fixture
+    assert 'detail={outcome ? t("play.action_jump_detail_update") : t("play.action_jump_detail_choose")}' in fixture
+    assert (
+        'compactDetail={outcome ? t("play.action_jump_detail_update_compact") '
+        ': t("play.action_jump_detail_choose_compact")}' in fixture
+    )
     assert "scrollToPlayActionArea()" in fixture
     assert "isPlayActionAreaAwayFromViewport(actionArea)" in fixture
     assert 'data-play-action-jump="true"' in action_jump
@@ -1268,5 +1271,6 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert "compactJump ? compactDetail?.trim() : detail?.trim()" in action_jump
     assert "window.scrollTo" in action_jump_utils
     assert '"play.action_jump_detail_choose_compact": "Choices are below the story."' in strings
+    assert '"play.action_jump_detail_update_compact": "Review changes first."' in strings
     for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
         assert forbidden not in fixture.casefold()
