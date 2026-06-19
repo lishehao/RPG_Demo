@@ -162,7 +162,10 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
     assert 'data-home-tile-span={span}' in template
     assert 'data-home-tile-start-state={isStarting ? "starting" : "idle"}' in template
     assert 't("home.card_action")' in helper
+    assert 'actionHint: t("home.card_action_hint")' in helper
+    assert 'data-home-tile-action-hint="true"' in template
     assert "displayView.copy.primaryAction" in template
+    assert "view.copy.actionHint" in template
     assert "editorialTileStarting" in template
     assert "displayView.copy.primaryAction}</TileCommand>" not in template
     assert "HomeTileTextBody" in template
@@ -172,6 +175,8 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
     assert "starter_premise" not in home
     assert "Preset story" not in home
     assert '"home.card_action": "Start episode →"' in strings
+    assert '"home.card_action_hint": "Opens turn one immediately."' in strings
+    assert '"home.card_action_hint": "直接进入第一回合。"' in strings
 
 
 def test_home_completed_memory_cards_explain_replay_destination() -> None:
@@ -220,8 +225,10 @@ def test_home_story_tiles_render_low_information_body_with_clear_start_action() 
     assert "<TileTitle" in body
     assert "editorialTileDeck" in body
     assert 'data-home-tile-primary-action="true"' in body
+    assert 'data-home-tile-action-hint="true"' in body
     assert 'data-home-tile-start-state={isStarting ? "starting" : "idle"}' in body
     assert "editorialTileActionStarting" in body
+    assert "editorialTileActionHint" in body
     assert "{view.copy.primaryAction}" in body
     assert "<Truncated" not in body
     assert "lineClampStyle" not in body

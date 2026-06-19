@@ -41,6 +41,7 @@ type HomeTileDeckMode = "premise" | "status" | "ending" | "brief"
 type HomeTileCopy = {
   typeLabel: string
   primaryAction: string
+  actionHint?: string
   accentTone: HomeTileAccentTone
   deckMode: HomeTileDeckMode
 }
@@ -165,6 +166,7 @@ export function getHomeTileCopy(
     return {
       typeLabel: t("home.published_label"),
       primaryAction: state?.isStarting ? t("home.card_starting") : t("home.card_action"),
+      actionHint: t("home.card_action_hint"),
       accentTone: "play",
       deckMode: "premise",
     }
@@ -1019,6 +1021,11 @@ function HomeTileTextBody({
       >
         {view.copy.primaryAction}
       </span>
+      {view.copy.actionHint ? (
+        <span style={hpStyles.editorialTileActionHint} data-home-tile-action-hint="true">
+          {view.copy.actionHint}
+        </span>
+      ) : null}
     </span>
   )
 }
@@ -1650,6 +1657,12 @@ const hpStyles: Record<string, CSSProperties> = {
   editorialTileActionStarting: {
     color: "rgba(184,245,196,0.94)",
     borderBottom: "1px solid rgba(154,236,172,0.48)",
+  },
+  editorialTileActionHint: {
+    marginTop: -5,
+    color: "rgba(232,218,205,0.56)",
+    fontSize: 11.2,
+    lineHeight: 1.35,
   },
   starterKicker: {
     color: "rgba(245,180,132,0.86)",
