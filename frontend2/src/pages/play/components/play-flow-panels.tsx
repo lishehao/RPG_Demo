@@ -3329,6 +3329,18 @@ export function ActionArea({
     freeActionDraft && freeActionContextTargetName && freeActionTargetName !== freeActionContextTargetName
       ? `${freeActionContextTargetName} — ${freeActionDraft}`
       : freeActionDraft
+  const freeActionStarterMoves = freeActionFocusContext?.kind === "actor" && !freeActionDraft
+    ? [
+        {
+          label: t("play.free_starter_actor_ask_label"),
+          text: t("play.free_starter_actor_ask_text", { name: freeActionFocusContext.label }),
+        },
+        {
+          label: t("play.free_starter_actor_pressure_label"),
+          text: t("play.free_starter_actor_pressure_text", { name: freeActionFocusContext.label }),
+        },
+      ]
+    : []
   const freeComposerOpen = showFreeInput || options.length === 0
   const selectedOptionGuideTitle = selectedOptionParsed?.tag
     ? t("play.turn_guide_selected_named_title", { tag: selectedOptionParsed.tag })
@@ -4832,6 +4844,31 @@ export function ActionArea({
                 <span style={ppStyles.freeActionContextDetail}>
                   {freeActionFocusContext.detail}
                 </span>
+              </div>
+            ) : null}
+            {freeActionStarterMoves.length > 0 ? (
+              <div
+                style={ppStyles.freeActionStarters}
+                data-play-free-action-starters="true"
+                aria-label={t("play.free_starters_label")}
+              >
+                <span style={ppStyles.freeActionStartersLabel}>
+                  {t("play.free_starters_label")}
+                </span>
+                {freeActionStarterMoves.map((starter) => (
+                  <button
+                    key={starter.label}
+                    type="button"
+                    style={ppStyles.freeActionStarterButton}
+                    onClick={() => setFreeInput(starter.text)}
+                    disabled={actionControlsDisabled}
+                    data-play-free-action-starter="true"
+                    title={starter.text}
+                    aria-label={t("play.free_starter_apply_title", { move: starter.text })}
+                  >
+                    {starter.label}
+                  </button>
+                ))}
               </div>
             ) : null}
             <textarea

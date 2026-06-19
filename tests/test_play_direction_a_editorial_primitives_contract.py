@@ -539,6 +539,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "play.free_context_inventory_detail" in panels
     assert "play.action_free_inventory_placeholder" in panels
     assert "play.action_open_free_inventory" in panels
+    assert "const freeActionStarterMoves = freeActionFocusContext?.kind === \"actor\" && !freeActionDraft" in panels
+    assert 'data-play-free-action-starters="true"' in panels
+    assert 'data-play-free-action-starter="true"' in panels
+    assert "setFreeInput(starter.text)" in panels
     assert 'data-play-free-action-context="true"' in panels
     assert "data-play-free-action-context-kind={freeActionFocusContext.kind}" in panels
     assert "data-play-free-action-context-id={freeActionFocusContext.id}" in panels
@@ -647,6 +651,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "freeActionContext" in styles
     assert "freeActionContextName" in styles
     assert "freeActionContextDetail" in styles
+    assert "freeActionStarters" in styles
+    assert "freeActionStarterButton" in styles
     assert "optionBtnResourceFocusMatch" in styles
     assert "gameplayNextChoiceChip" in styles
     assert "optionBtnActorFocusMatch" in styles
@@ -707,6 +713,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.free_context_resource_label": "Own move focus"' in strings
     assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
     assert '"play.action_open_free_actor": "Write your own move for {name}"' in strings
+    assert '"play.free_starters_label": "Starter lines"' in strings
+    assert '"play.free_starter_actor_ask_label": "Ask directly"' in strings
+    assert '"play.free_starter_actor_pressure_label": "Apply pressure"' in strings
+    assert '"play.free_starter_apply_title": "Use starter: {move}"' in strings
     assert '"play.action_open_free_resource": "Write your own move around {label}"' in strings
     assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
     assert '"play.free_action_boundary_hint": "Write what others can see or hear here; put your real purpose in inner motive."' in strings
