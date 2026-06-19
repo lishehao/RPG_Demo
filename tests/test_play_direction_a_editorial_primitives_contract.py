@@ -704,6 +704,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-resource-focus-cue="true"' in panels
     assert 'data-play-resource-focus-id={resourceFocus.id}' in panels
     assert "data-play-resource-focus-match-count={resourceFocusMatchCount}" in panels
+    assert 'data-play-resource-focus-filter-note="true"' in panels
     assert 'data-play-resource-focus-cue-head="true"' in panels
     assert 'data-play-resource-focus-matches="true"' in panels
     assert 'data-play-resource-focus-match-chip="true"' in panels
@@ -742,8 +743,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "play.actor_focus_showing_label" in panels
     assert "play.actor_focus_leverage_label" in panels
     assert "play.actor_focus_leverage_detail" in panels
+    assert "play.actor_focus_filter_note" in panels
     assert "onClearActorFocus?: () => void" in panels
     assert 'data-play-actor-focus-clear="true"' in panels
+    assert 'data-play-actor-focus-filter-note="true"' in panels
     assert "ppStyles.actorFocusCueClear" in panels
     assert 'aria-label={`${t("play.actor_focus_label")}: ${actorFocus.name}. ${actorFocusDetail}`}' in panels
     assert "actorFocusMatchCount === 0 && showFreeActionToggle" in panels
@@ -917,6 +920,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "resourceFocusMatchChip" in styles
     assert "resourceFocusCueClear" in styles
     assert "resourceFocusCueAction" in styles
+    assert "resourceFocusCueFilterNote" in styles
     assert "gameplayNextChoiceTargetButton" in styles
     assert "gameplayNextChoiceTargetFocused" in styles
     assert "resolvingCommitmentSignals" in styles
@@ -935,6 +939,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "actorFocusMatches" in styles
     assert "actorFocusMatchChip" in styles
     assert "actorFocusCueClear" in styles
+    assert "actorFocusCueFilterNote" in styles
     assert "gameplayDecisionForecast" in styles
     assert "gameplayDecisionGroupCost" in styles
     assert "gameplayDecisionGroupUpside" in styles
@@ -1000,10 +1005,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_match_detail_many": "{count} current moves make this person react."' in strings
     assert '"play.actor_focus_leverage_detail": "A leverage card is ready for {name}; reveal it above, or write your own move."' in strings
     assert '"play.actor_focus_instruction": "Choose a matching move, or write your own."' in strings
+    assert '"play.actor_focus_filter_note": "This only filters the current choices; no move is submitted yet."' in strings
     assert '"play.actor_focus_matches_label": "Matching moves"' in strings
     assert '"play.actor_focus_select_match": "Select move: {move}"' in strings
     assert '"play.actor_focus_no_match": "No current move names them; write your own move if you want to pull them in."' in strings
-    assert '"play.actor_focus_clear": "Clear"' in strings
+    assert '"play.actor_focus_clear": "Show all moves"' in strings
+    assert '"play.actor_focus_clear": "Clear"' not in strings
     assert '"play.free_context_actor_label": "Own move target"' in strings
     assert '"play.free_context_resource_label": "Own move focus"' in strings
     assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
@@ -1045,7 +1052,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_active_count_one": "正在显示 1 个行动"' in strings
     assert '"play.resource_focus_label": "Focus on resource"' in strings
     assert '"play.resource_focus_showing_label": "Moves about {name}"' in strings
-    assert '"play.resource_focus_clear": "Clear"' in strings
+    assert '"play.resource_focus_clear": "Show all moves"' in strings
+    assert '"play.resource_focus_clear": "Clear"' not in strings
     assert '"play.resource_focus_evidence_label": "Evidence"' in strings
     assert '"play.resource_focus_time_title": "Show moves that buy, spend, or squeeze time"' in strings
     assert '"play.resource_focus_pressure_title": "Show moves that calm, raise, or redirect pressure"' in strings
@@ -1059,6 +1067,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_evidence_match_detail_one": "1 current move can turn a clue or proof into leverage."' in strings
     assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can turn clues or proof into leverage."' in strings
     assert '"play.resource_focus_instruction": "Choose a matching move, or write your own."' in strings
+    assert '"play.resource_focus_filter_note": "This only filters the current choices; no move is submitted yet."' in strings
     assert '"play.resource_focus_matches_label": "Matching moves"' in strings
     assert '"play.resource_focus_select_match": "Select move: {move}"' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings

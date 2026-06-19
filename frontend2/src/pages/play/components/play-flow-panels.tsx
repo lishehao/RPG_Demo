@@ -4770,6 +4770,12 @@ export function ActionArea({
               {t("play.actor_focus_instruction")}
             </span>
           ) : null}
+          <span
+            style={ppStyles.actorFocusCueFilterNote}
+            data-play-actor-focus-filter-note="true"
+          >
+            {t("play.actor_focus_filter_note")}
+          </span>
           {actorFocusMatchedMoves.length > 0 ? (
             <span
               style={ppStyles.actorFocusMatches}
@@ -4857,6 +4863,12 @@ export function ActionArea({
               {t("play.resource_focus_instruction")}
             </span>
           ) : null}
+          <span
+            style={ppStyles.resourceFocusCueFilterNote}
+            data-play-resource-focus-filter-note="true"
+          >
+            {t("play.resource_focus_filter_note")}
+          </span>
           {resourceFocusMatchedMoves.length > 0 ? (
             <span
               style={ppStyles.resourceFocusMatches}
