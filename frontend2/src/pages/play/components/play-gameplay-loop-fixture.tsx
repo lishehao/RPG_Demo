@@ -239,7 +239,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
       ? "Submit it, or add what you secretly mean."
       : unlockedClue
         ? "Badge clue opened new moves."
-        : "Compare likely impact before you commit."
+        : "Compare likely impact before you submit."
 
   useEffect(() => {
     if (!isPending || !committed) return
