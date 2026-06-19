@@ -1169,6 +1169,12 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert 'scenario === "long-history"' in action_state
     assert "PlayLongHistoryFixture" in action_state
     assert 'data-play-long-history-fixture="true"' in fixture
+    assert "type LongHistoryOutcome" in fixture
+    assert "longHistoryOutcomeForMove(submittedMove)" in fixture
+    assert "data-play-long-history-result-feedback=\"true\"" in fixture
+    assert "data-play-long-history-result-item=\"true\"" in fixture
+    assert "scrollIntoView({ block: \"start\", behavior: \"smooth\" })" in fixture
+    assert "Result landed. The next action set is ready." not in fixture
     assert "<ActionArea" in fixture
     assert "<PlayActionJumpButton" in fixture
     assert 'stage="choose"' in fixture

@@ -36,6 +36,51 @@ const HISTORY_BEATS = [
   "Changed: the sponsor's representative asks for a private word.",
 ]
 
+type LongHistoryOutcome = {
+  title: string
+  summary: string
+  items: Array<{
+    label: string
+    value: string
+    tone: "safe" | "tense" | "gold"
+  }>
+}
+
+function longHistoryOutcomeForMove(action: string): LongHistoryOutcome {
+  const normalized = action.toLowerCase()
+  if (normalized.includes("timestamp") || normalized.includes("stabilize")) {
+    return {
+      title: "Timeline anchored",
+      summary: "The long transcript now has one reliable timestamp, so the next move can test who is lying.",
+      items: [
+        { label: "Time", value: "one timestamp fixed", tone: "safe" },
+        { label: "People", value: "producer steadier", tone: "safe" },
+        { label: "Next", value: "pressure the door story", tone: "gold" },
+      ],
+    }
+  }
+  if (normalized.includes("sponsor") || normalized.includes("control")) {
+    return {
+      title: "Sponsor exposed",
+      summary: "The room can now connect the missing singer to the control door instead of guessing.",
+      items: [
+        { label: "Pressure", value: "sponsor cornered", tone: "tense" },
+        { label: "Clue", value: "control door matters", tone: "gold" },
+        { label: "Risk", value: "public answer", tone: "tense" },
+      ],
+    }
+  }
+  return {
+    title: "Second watcher placed",
+    summary: "The service hall is covered, so the next choice can focus on evidence instead of chasing noise.",
+    items: [
+      { label: "Coverage", value: "hall watched", tone: "safe" },
+      { label: "Evidence", value: "badge route protected", tone: "gold" },
+      { label: "Next", value: "return to proof", tone: "safe" },
+    ],
+  }
+}
+
 function updateLongHistoryJump(setShowActionJump: (show: boolean) => void) {
   const actionArea = document.querySelector<HTMLElement>("[data-play-action-area='true']")
   setShowActionJump(actionArea ? isPlayActionAreaAwayFromViewport(actionArea) : false)
@@ -51,6 +96,8 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
   const [diary, setDiary] = useState("")
   const [showDiary, setShowDiary] = useState(false)
   const [status, setStatus] = useState("The current move is below a long transcript.")
+  const [submittedMove, setSubmittedMove] = useState("")
+  const [outcome, setOutcome] = useState<LongHistoryOutcome | null>(null)
   const options = useMemo(() => LONG_HISTORY_OPTIONS, [])
 
   useEffect(() => {
@@ -62,13 +109,21 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
       setDiary("")
       setShowDiary(false)
       setTurn((value) => value + 1)
-      setStatus("Result landed. The next action set is ready.")
+      setOutcome(longHistoryOutcomeForMove(submittedMove))
+      setStatus("What changed")
+      window.setTimeout(() => {
+        document
+          .querySelector<HTMLElement>("[data-play-long-history-result-feedback='true']")
+          ?.scrollIntoView({ block: "start", behavior: "smooth" })
+      }, 0)
     }, 720)
     return () => window.clearTimeout(timer)
-  }, [busy])
+  }, [busy, submittedMove])
 
   const submitMove = (label: string) => {
     if (busy) return
+    setSubmittedMove(label)
+    setOutcome(null)
     setStatus(`Move held: ${label}`)
     setBusy(true)
   }
@@ -113,7 +168,7 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
         aria-label="Long-history action rehearsal"
       >
         <p style={{ margin: 0, color: "rgba(255,245,230,0.74)", lineHeight: 1.5 }}>
-          {status}
+          {outcome ? "Result ready below." : status}
         </p>
         <div style={{ display: "grid", gap: 12 }}>
           {HISTORY_BEATS.map((beat, index) => (
@@ -132,6 +187,55 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
             </article>
           ))}
         </div>
+        {outcome ? (
+          <section
+            style={{
+              ...ppStyles.outcomeReceipt,
+              gap: 10,
+            }}
+            aria-label={`What changed: ${outcome.title}`}
+            data-play-long-history-result-feedback="true"
+          >
+            <span style={ppStyles.outcomeReceiptHeader}>
+              <span style={ppStyles.outcomeReceiptKicker}>What changed</span>
+              <span style={ppStyles.outcomeReceiptHint}>Use this before choosing the next move.</span>
+            </span>
+            <strong
+              style={{
+                color: "rgba(255,248,232,0.96)",
+                fontSize: 16,
+                lineHeight: 1.25,
+              }}
+            >
+              {outcome.title}
+            </strong>
+            <span style={{ color: "rgba(246,239,222,0.74)", fontSize: 13, lineHeight: 1.45 }}>
+              {outcome.summary}
+            </span>
+            <span style={ppStyles.outcomeReceiptSentence}>
+              {outcome.items.map((item) => (
+                <span
+                  key={`${item.label}:${item.value}`}
+                  style={ppStyles.outcomeReceiptPhrase}
+                  data-play-long-history-result-item="true"
+                  data-play-long-history-result-tone={item.tone}
+                >
+                  <span style={ppStyles.outcomeReceiptItemLabel}>{item.label}:</span>
+                  <strong
+                    style={{
+                      ...ppStyles.outcomeReceiptValue,
+                      ...(item.tone === "safe" ? ppStyles.outcomeReceiptChipSafe : null),
+                      ...(item.tone === "tense" ? ppStyles.outcomeReceiptChipTense : null),
+                      ...(item.tone === "gold" ? ppStyles.outcomeReceiptChipGold : null),
+                    }}
+                  >
+                    {item.value}
+                  </strong>
+                </span>
+              ))}
+            </span>
+          </section>
+        ) : null}
         <ActionArea
           key={turn}
           options={options}
@@ -153,7 +257,7 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
           busy={busy}
           onCommitmentActiveChange={() => {}}
           onCommitmentSummaryChange={() => {}}
-          onPickOption={(idx) => submitMove(options[idx]?.handle ?? "move")}
+          onPickOption={(idx) => submitMove(options[idx]?.label ?? "move")}
           onPlayLeverage={() => {}}
           onSubmitFree={() => submitMove(freeInput.trim() || "custom move")}
         />
