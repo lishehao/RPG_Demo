@@ -379,15 +379,26 @@ function DeltaChip({ delta, hook }: { delta: FixtureDelta; hook?: string }) {
   )
 }
 
+function isResourceUseDelta(delta: FixtureDelta): boolean {
+  return delta.id === "evidence-use"
+}
+
 function impactSummary(action: FixtureAction) {
   const costs = action.forecast.filter((delta) => delta.tone === "cost")
   const upsides = action.forecast.filter((delta) => delta.tone === "gain")
-  const openings = action.forecast.filter((delta) => delta.tone === "unlock" || delta.tone === "shift")
-  return [
+  const resourceUses = action.forecast.filter(isResourceUseDelta)
+  const openings = action.forecast.filter(
+    (delta) => !isResourceUseDelta(delta) && (delta.tone === "unlock" || delta.tone === "shift"),
+  )
+  const groups = [
     { label: "Costs", values: costs, emptyLabel: "No direct cost" },
     { label: "Upside", values: upsides, emptyLabel: "No direct gain" },
-    { label: "Opens", values: openings, emptyLabel: "No new path" },
   ]
+  if (resourceUses.length) {
+    groups.push({ label: "Uses", values: resourceUses, emptyLabel: "No clue used" })
+  }
+  groups.push({ label: "Opens", values: openings, emptyLabel: "No new path" })
+  return groups
 }
 
 export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void }) {
