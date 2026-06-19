@@ -4794,6 +4794,9 @@ export function ActionArea({
               autoFocus
               rows={2}
             />
+            <div style={ppStyles.freeBoundaryHint} data-play-free-action-boundary="true">
+              {t("play.free_action_boundary_hint")}
+            </div>
             {isWritingFreeDiary ? null : (
               <div
                 style={{

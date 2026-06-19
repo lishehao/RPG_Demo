@@ -4390,6 +4390,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     minHeight: 42,
     padding: "3px 0 7px",
   },
+  freeBoundaryHint: {
+    marginTop: 5,
+    color: "rgba(232,218,205,0.50)",
+    fontSize: 11.5,
+    lineHeight: 1.35,
+    fontWeight: 650,
+  },
   freeCommitDock: {
     marginTop: 6,
     paddingTop: 0,

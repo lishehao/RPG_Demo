@@ -438,6 +438,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "freeActionFocusContext?.toggleText ?? t(\"play.action_open_free\")" in panels
     assert "freeActionFocusContext?.toggleHint ?? t(\"play.action_open_free_hint\")" in panels
     assert "freeActionFocusContext?.toggleTitle ?? t(\"play.action_open_free_title\")" in panels
+    assert 'data-play-free-action-boundary="true"' in panels
+    assert 't("play.free_action_boundary_hint")' in panels
     assert "const freeActionContextTargetName =" in panels
     assert "const freeActionTargetNameForFeedback = freeActionContextTargetName || freeActionTargetName" in panels
     assert "const freeActionSubmittedText =" in panels
@@ -582,6 +584,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
     assert '"play.action_open_free_actor": "Write move for {name}"' in strings
     assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
+    assert '"play.free_action_boundary_hint": "Write what others can see or hear here; put your real purpose in inner motive."' in strings
     assert '"play.action_target_label": "Target"' in strings
     assert '"play.action_target_title": "This move primarily points at {name}"' in strings
     assert '"play.action_target_detail_label": "Focus"' in strings
