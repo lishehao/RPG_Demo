@@ -348,7 +348,7 @@ function GameplayStatePanel({
               data-gameplay-resource-focus={isFocused ? "true" : undefined}
               data-gameplay-resource-action-count={resourceMatchCount}
               aria-pressed={isFocused}
-              aria-label={`${track.label}: ${track.value}. ${focusTitle}`}
+              aria-label={`${track.label}: ${track.value}. ${resourceActionLabel ? `${resourceActionLabel}. ` : ""}${focusTitle}`}
               title={focusTitle}
               onClick={() => onFocusResource?.(focusableTrackId)}
             >

@@ -595,6 +595,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-evidence-resource={focusableTrackId === "evidence" ? "true" : undefined}' in play_page
     assert "data-gameplay-resource-focus={isFocused ? \"true\" : undefined}" in play_page
     assert "data-gameplay-resource-action-count={resourceMatchCount}" in play_page
+    assert 'aria-label={`${track.label}: ${track.value}. ${resourceActionLabel ? `${resourceActionLabel}. ` : ""}${focusTitle}`}' in play_page
+    assert 'aria-label={`${track.label}: ${track.value}. ${focusTitle}`}' not in play_page
     assert 't("play.resource_focus_active_count_one")' in play_page
     assert 't("play.resource_focus_active_count_many", { count: resourceMatchCount })' in play_page
     assert "focusedResourceId={focusedResourceId}" in play_page
