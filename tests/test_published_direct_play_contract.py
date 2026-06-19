@@ -194,6 +194,8 @@ def test_home_continue_spotlight_explains_preserved_run_state() -> None:
     assert "resumeHint" in home
     assert '"home.resume_hint": "会保留你的身份、物品、关系和上一回合局势。"' in strings
     assert '"home.resume_hint": "Keeps your role, items, relationships, and last-turn situation."' in strings
+    assert '"home.run_action": "继续这一局 →"' in strings
+    assert '"home.run_action": "Continue run →"' in strings
 
 
 def test_home_story_tiles_hide_extra_metadata_rows_by_default() -> None:
