@@ -661,7 +661,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_next_choice_label": "下一步为什么变了"' in strings
     assert '"play.feedback_next_choice_changed_label": "下一组行动已改变"' in strings
     assert '"play.impact_focus_actor_title": "Show moves that test {name}"' in strings
+    assert '"play.feedback_pending_receipt_label": "Move sent"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
+    assert '"play.feedback_pending_update_label": "Next moves forming"' in strings
     assert 'data-play-outcome-receipt="true"' in panels
     assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
     assert 'data-play-outcome-receipt-item="true"' in panels
