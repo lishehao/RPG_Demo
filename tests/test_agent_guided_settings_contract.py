@@ -116,9 +116,12 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
     assert 't("create.setting_story_language")' in panels_source
     assert 't("create.setting_tone")' in panels_source
     assert 'data-create-brief-handoff-note="true"' in panels_source
+    assert 'data-create-brief-play-plan="true"' in panels_source
     assert 't("create.brief_handoff_note_ready")' in panels_source
     assert 't("create.brief_handoff_note_blocked")' in panels_source
+    assert 't("create.brief_play_plan_label")' in panels_source
     assert "briefHandoffNote" in styles_source
+    assert "briefPlayPlanItems" in styles_source
 
     template_payload = source[source.index("api.createNarrativeTemplate") : source.index("const openingElapsedMs")]
     assert "turn_budget: turnBudget" in template_payload
@@ -140,8 +143,10 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"create.setting_tone": "语气"',
         '"create.brief_handoff_note_ready": "Next, I’ll generate role cards, the opening passage, and playable choices, then send you into Play."',
         '"create.brief_handoff_note_blocked": "Tighten the Brief first; once ready, I’ll build the first scene and playable choices."',
+        '"create.brief_play_plan_label": "Ready for Play"',
         '"create.brief_handoff_note_ready": "下一步会生成角色身份、第一段叙事和可选择行动，然后直接进入 Play。"',
         '"create.brief_handoff_note_blocked": "先补强 Brief；准备好后再生成第一幕和可玩选择。"',
+        '"create.brief_play_plan_label": "可进入 Play"',
     ):
         assert key in strings
 

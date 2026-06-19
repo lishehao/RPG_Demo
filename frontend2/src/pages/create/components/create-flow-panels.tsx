@@ -384,6 +384,19 @@ export function StoryBriefCard({
       >
         {canGenerate ? t("create.brief_handoff_note_ready") : t("create.brief_handoff_note_blocked")}
       </div>
+      {canGenerate ? (
+        <div data-create-brief-play-plan="true" style={cpStyles.briefPlayPlan}>
+          <span style={cpStyles.briefPlayPlanLabel}>{t("create.brief_play_plan_label")}</span>
+          <div style={cpStyles.briefPlayPlanItems}>
+            {BUSY_BUILD_PREVIEW.map((item) => (
+              <span key={item.labelKey} style={cpStyles.briefPlayPlanItem}>
+                <strong>{t(item.labelKey)}</strong>
+                <span>{t(item.detailKey)}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div style={cpStyles.briefChatActions}>
         {canGenerate ? (
           <button
