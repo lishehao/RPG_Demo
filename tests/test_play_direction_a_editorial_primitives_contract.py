@@ -1028,6 +1028,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
 
     assert 'data-play-decision-tray="true"' not in panels
     assert 'data-play-action-card-expanded={isSelected ? "true" : undefined}' in panels
+    assert 'data-play-action-card-select-cue="true"' in panels
     assert 'data-play-action-card-detail="true"' in panels
     assert 'data-play-action-card-title="true"' in panels
     assert 'data-play-action-card-body="true"' in panels
@@ -1112,6 +1113,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "renderCollapsedForecast(optionForecasts)" in panels
     assert 'data-gameplay-action-forecast-summary="true"' in panels
     assert "actionTarget && !isSelected" in panels
+    option_expand_cue = styles[styles.index("optionExpandCue:") : styles.index("optionExpandCueActive:")]
+    assert 'borderRadius: 5' in option_expand_cue
+    assert 'background: "rgba(213,154,62,0.10)"' in option_expand_cue
+    assert 'borderBottomStyle: "solid"' in option_expand_cue
     assert "const hintEchoesForecastChips" in panels
     assert "const showNarrativeResult = hint.trim().length > 0 && !hintEchoesForecastChips(hint, forecasts)" in panels
     assert 'hint || t("play.preview_action_risk_default")' not in panels

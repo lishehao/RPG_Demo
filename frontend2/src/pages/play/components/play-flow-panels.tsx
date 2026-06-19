@@ -5146,6 +5146,7 @@ export function ActionArea({
                             ...ppStyles.optionExpandCue,
                             ...(isSelected ? ppStyles.optionExpandCueActive : null),
                           }}
+                          data-play-action-card-select-cue="true"
                         >
                           {isSelected ? t("play.selected_move_kicker") : t("play.option_expand_cta")}
                         </span>
