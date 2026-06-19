@@ -220,14 +220,16 @@ export function SceneSupportRail({
             const focused = focusedActorId === actor.id
             const actionCount = actorActionCounts?.[actor.id] ?? 0
             const focusCue = focused
-              ? actionCount > 0
-                ? t("play.actor_focus_active_count", { count: actionCount })
-                : t("play.actor_focus_active")
+              ? actionCount === 1
+                ? t("play.actor_focus_active_count_one")
+                : actionCount > 1
+                  ? t("play.actor_focus_active_count_many", { count: actionCount })
+                  : t("play.actor_focus_active_none")
               : actionCount === 1
                 ? t("play.actor_focus_cta_count_one")
                 : actionCount > 1
                   ? t("play.actor_focus_cta_count_many", { count: actionCount })
-                  : t("play.actor_focus_cta")
+                  : t("play.actor_focus_cta_none")
             return (
               <button
                 key={actor.id}
@@ -242,6 +244,7 @@ export function SceneSupportRail({
                 data-play-cast-focus={focused ? "true" : undefined}
                 data-play-cast-action-count={actionCount}
                 aria-pressed={focused}
+                aria-label={`${actor.name}. ${actor.role}. ${focusCue}. ${t("play.actor_focus_title", { name: actor.name })}`}
                 title={t("play.actor_focus_title", { name: actor.name })}
                 onClick={() => onFocusActor?.({ id: actor.id, name: actor.name })}
               >
@@ -257,7 +260,7 @@ export function SceneSupportRail({
                 <span style={primitiveStyles.actorText}>
                   <strong style={primitiveStyles.actorName}>{actor.name}</strong>
                   <span style={primitiveStyles.actorRole}>{actor.role}</span>
-                  <span style={primitiveStyles.actorFocusCue}>
+                  <span style={primitiveStyles.actorFocusCue} data-play-cast-focus-cue="true">
                     {focusCue}
                   </span>
                 </span>

@@ -59,9 +59,14 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "actorActionCounts?: Record<string, number>" in primitives
     assert "const actionCount = actorActionCounts?.[actor.id] ?? 0" in primitives
     assert 'data-play-cast-action-count={actionCount}' in primitives
+    assert 'data-play-cast-focus-cue="true"' in primitives
+    assert 'aria-label={`${actor.name}. ${actor.role}. ${focusCue}. ${t("play.actor_focus_title", { name: actor.name })}`}' in primitives
+    assert "play.actor_focus_cta_none" in primitives
+    assert "play.actor_focus_active_none" in primitives
     assert "play.actor_focus_cta_count_one" in primitives
     assert "play.actor_focus_cta_count_many" in primitives
-    assert "play.actor_focus_active_count" in primitives
+    assert "play.actor_focus_active_count_one" in primitives
+    assert "play.actor_focus_active_count_many" in primitives
     assert "aria-pressed={focused}" in primitives
     assert "focusedActorId?: string | null" in primitives
     assert "onFocusActor?: (actor: { id: string; name: string }) => void" in primitives
@@ -82,13 +87,12 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "play.advisor_card_name" in primitives
     assert "play.advisor_card_background" in primitives
     assert "play.actor_focus_title" in primitives
-    assert "play.actor_focus_cta" in primitives
-    assert "play.actor_focus_active" in primitives
-    assert '"play.actor_focus_cta": "Show moves"' in strings
-    assert '"play.actor_focus_active": "Showing moves"' in strings
+    assert '"play.actor_focus_cta_none": "No preset move"' in strings
+    assert '"play.actor_focus_active_none": "No preset move"' in strings
     assert '"play.actor_focus_cta_count_one": "1 move"' in strings
     assert '"play.actor_focus_cta_count_many": "{count} moves"' in strings
-    assert '"play.actor_focus_active_count": "Showing {count}"' in strings
+    assert '"play.actor_focus_active_count_one": "Showing 1 move"' in strings
+    assert '"play.actor_focus_active_count_many": "Showing {count} moves"' in strings
     assert "advisorRow" in primitives
     assert "advisorRowCompact" in primitives
     assert "advisorCard:" not in primitives
@@ -585,6 +589,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_forecast_label": "What this changes"' in strings
     assert '"play.actor_focus_label": "Character focus"' in strings
     assert '"play.actor_focus_showing_label": "Showing moves for {name}"' in strings
+    assert '"play.actor_focus_cta_none": "No preset move"' in strings
+    assert '"play.actor_focus_active_none": "No preset move"' in strings
     assert '"play.actor_focus_match_detail_one": "1 current move directly involves this character."' in strings
     assert '"play.actor_focus_match_detail_many": "{count} current moves directly involve this character."' in strings
     assert '"play.actor_focus_matches_label": "Matching moves"' in strings
