@@ -932,6 +932,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_pending_receipt_label": "Move sent"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert '"play.feedback_pending_update_label": "Next moves forming"' in strings
+    assert '"play.feedback_pending_next_hint": "The next moves come from the people, clues, and pressure this move changes."' in strings
+    assert '"play.feedback_pending_next_hint": "下一组行动会从刚刚被改变的人物、线索和压力里长出来。"' in strings
     assert 'data-play-outcome-receipt="true"' in panels
     assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
     assert 'data-play-outcome-receipt-item="true"' in panels
@@ -985,6 +987,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-move-receipt="true"' in panels
     assert 'data-play-room-reacting="true"' in panels
     assert 'data-play-feedback-timeline="true"' in panels
+    assert 'data-play-feedback-timeline-hint="true"' in panels
     assert 'data-play-feedback-step={step.id}' in panels
     assert 'data-play-feedback-step-state={step.state}' in panels
     assert 'data-play-pending-reaction-panel="true"' in panels

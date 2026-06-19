@@ -2786,6 +2786,9 @@ function ResolvingTurnPanel({
             <span style={ppStyles.feedbackPendingStepLabel}>{step.label}</span>
           </span>
         ))}
+        <span style={ppStyles.feedbackPendingHint} data-play-feedback-timeline-hint="true">
+          {t("play.feedback_pending_next_hint")}
+        </span>
       </div>
     </motion.div>
   )

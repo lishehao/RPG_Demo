@@ -4353,6 +4353,14 @@ export const ppStyles: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap" as const,
   },
+  feedbackPendingHint: {
+    gridColumn: "1 / -1",
+    minWidth: 0,
+    color: "rgba(232,218,205,0.48)",
+    fontSize: 11.2,
+    lineHeight: 1.4,
+    paddingTop: 2,
+  },
   resolvingPrivateLine: {
     minWidth: 0,
     gridColumn: "2",
