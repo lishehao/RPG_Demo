@@ -362,6 +362,13 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
         ? `${consultedPerson.name} suggests a move`
         : `${consultedPerson.name} helps weigh the tradeoff`
     : ""
+  const adviceHint = consultedPerson
+    ? adviceMode === "action"
+      ? adviceArmed
+        ? "This suggested move is selected."
+        : "You can select this move directly."
+      : "Use this frame to compare the current moves; Dana does not choose for you."
+    : ""
   const unlockedClueAction = unlockedClue
     ? actions.find((action) => action.id === "show-badge") ?? null
     : null
@@ -679,6 +686,12 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 <span style={styles.kicker}>{adviceHeader}</span>
                 <strong style={styles.personAdviceTitle}>{consultedPerson.suggestedMove}</strong>
                 <span style={styles.personAdviceBody}>{consultedPerson.advice}</span>
+                <span
+                  style={styles.personAdviceHint}
+                  data-gameplay-person-advice-hint="true"
+                >
+                  {adviceHint}
+                </span>
                 {consultedSuggestedAction ? (
                   <button
                     type="button"
@@ -1100,6 +1113,11 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.mutedIvory,
     fontSize: 12.5,
     lineHeight: 1.38,
+  },
+  personAdviceHint: {
+    color: actionPalette.faintIvory,
+    fontSize: 11.5,
+    lineHeight: 1.35,
   },
   personAdviceAction: {
     justifySelf: "start",

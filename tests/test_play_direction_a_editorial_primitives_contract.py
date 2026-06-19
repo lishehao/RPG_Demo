@@ -333,9 +333,13 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-person-advice="true"' in fixture
     assert 'suggestionKind: "action" | "judgment"' in fixture
     assert 'data-gameplay-person-advice-mode={adviceMode}' in fixture
+    assert 'data-gameplay-person-advice-hint="true"' in fixture
     assert 'consultedPerson.suggestionKind === "action"' in fixture
     assert '`${consultedPerson.name} suggests a move`' in fixture
     assert '`${consultedPerson.name} helps weigh the tradeoff`' in fixture
+    assert "You can select this move directly." in fixture
+    assert "Use this frame to compare the current moves; Dana does not choose for you." in fixture
+    assert "This suggested move is selected." in fixture
     assert "Choose the move whose cost you can defend." in fixture
     assert "Choose the unlocked move whose cost you can defend." in fixture
     assert "can help frame this" not in fixture
