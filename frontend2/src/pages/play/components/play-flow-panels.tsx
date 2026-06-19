@@ -5068,6 +5068,7 @@ export function ActionArea({
               aria-label={freeActionToggleTitle}
               title={freeActionToggleTitle}
               type="button"
+              data-play-free-action-toggle="true"
             >
               <span style={ppStyles.alternateActionLabel}>{freeActionToggleText}</span>
               <span style={ppStyles.alternateActionHint}>{freeActionToggleHint}</span>

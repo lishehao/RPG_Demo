@@ -563,6 +563,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const freeActionToggleShownInFocusCue =" in panels
     assert "const showAlternateFreeActionToggle = showFreeActionToggle && !freeActionToggleShownInFocusCue" in panels
     assert "{showAlternateFreeActionToggle ? (" in panels
+    assert 'data-play-free-action-toggle="true"' in panels
+    assert "alternateActionButton" in styles
+    assert "minHeight: 48" in styles[styles.index("alternateActionButton") : styles.index("alternateActionLabel")]
+    assert 'borderRadius: 6' in styles[styles.index("alternateActionButton") : styles.index("alternateActionLabel")]
     assert "setFreeInput(starter.text)" in panels
     assert 'data-play-free-action-context="true"' in panels
     assert "data-play-free-action-context-kind={freeActionFocusContext.kind}" in panels
