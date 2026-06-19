@@ -2,7 +2,7 @@ export function isPlayActionAreaAwayFromViewport(actionArea: HTMLElement): boole
   const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
   const rect = actionArea.getBoundingClientRect()
   const upperComfortEdge = headerHeight + 64
-  const lowerComfortEdge = window.innerHeight - 132
+  const lowerComfortEdge = window.innerHeight - 24
   return (
     rect.bottom < upperComfortEdge ||
     rect.top > lowerComfortEdge

@@ -1220,6 +1220,7 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "scrollToPlayActionArea" in action_jump_utils
     assert "[data-play-action-area='true']" in action_jump_utils
     assert "const upperComfortEdge = headerHeight + 64" in action_jump_utils
+    assert "const lowerComfortEdge = window.innerHeight - 24" in action_jump_utils
     assert "rect.bottom < upperComfortEdge" in action_jump_utils
     assert "rect.bottom > window.innerHeight" not in action_jump_utils
     assert "actionJumpButton" in styles
