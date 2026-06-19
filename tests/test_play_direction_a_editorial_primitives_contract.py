@@ -308,6 +308,11 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "You can use the badge clue in the next move." in fixture
     assert "function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean): Track[]" in fixture
     assert "function resolvedSummaryForAction(action: FixtureAction | null): string" in fixture
+    assert "function nextActionBridgeForAction(action: FixtureAction | null): string" in fixture
+    assert 'data-gameplay-next-actions-bridge="true"' in fixture
+    assert "Why the next moves changed" in fixture
+    assert "The badge clue changed the menu" in fixture
+    assert "you can now use proof directly or turn it into public leverage" in fixture
     assert "return SHOW_BADGE_TRACKS" in fixture
     assert "return TRAP_ANSWER_TRACKS" in fixture
     assert "setTracks(resolvedTracksForAction(committed.action, clueWasUnlocked))" in fixture
@@ -326,6 +331,11 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Hallway opens" in fixture
     assert "Evidence unlocked" not in fixture
     assert "Hallway opportunity" not in fixture
+    assert "availableBecause?: string" in fixture
+    assert 'data-gameplay-action-why-now="true"' in fixture
+    assert "Why now" in fixture
+    assert "The green-room badge turns a vague suspicion into a route Lena can act on." in fixture
+    assert "Arthur and Marcus now have competing public stories the room can compare." in fixture
     assert 'data-gameplay-person-action="true"' in fixture
     assert 'data-gameplay-people-usage-note="true"' in fixture
     assert "People you can involve" in fixture

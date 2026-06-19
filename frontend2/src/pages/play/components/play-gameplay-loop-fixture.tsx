@@ -25,6 +25,7 @@ type FixtureAction = {
   forecast: FixtureDelta[]
   resolved: FixtureDelta[]
   unlocksClue?: boolean
+  availableBecause?: string
 }
 
 type CommittedMove = {
@@ -229,6 +230,7 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
     number: 1,
     title: "Show Lena the green-room badge",
     body: "Use the badge as proof and ask Lena to point you toward the last person with access.",
+    availableBecause: "The green-room badge turns a vague suspicion into a route Lena can act on.",
     forecast: [
       { id: "evidence-use", label: "Use badge clue", tone: "unlock" },
       { id: "lena-trust", label: "Lena trust +1", tone: "gain" },
@@ -244,6 +246,7 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
     number: 2,
     title: "Let Arthur contradict Marcus",
     body: "Hold the badge back and make the two public stories collide in front of the room.",
+    availableBecause: "Arthur and Marcus now have competing public stories the room can compare.",
     forecast: [
       { id: "pressure-risk", label: "Pressure +1", tone: "cost" },
       { id: "leverage-gain", label: "Leverage +1", tone: "gain" },
@@ -282,6 +285,26 @@ function resolvedSummaryForAction(action: FixtureAction | null): string {
     return "Arthur and Marcus now have conflicting public stories, raising pressure and leverage together."
   }
   return "The room has shifted. Use the new state before the countdown closes."
+}
+
+function nextActionBridgeForAction(action: FixtureAction | null): string {
+  if (!action) return "Read the changed pressure, then pick the next move that uses it."
+  if (action.id === "lena-hold") {
+    return "The room is calmer, so the next move should spend that control on proof."
+  }
+  if (action.id === "arthur-badge") {
+    return "The badge clue changed the menu: you can now use proof directly or turn it into public leverage."
+  }
+  if (action.id === "marcus-stall") {
+    return "Marcus bought time, but the next move needs proof before Lena loses more trust."
+  }
+  if (action.id === "show-badge") {
+    return "The badge route is active; the next move should follow the control-door lead."
+  }
+  if (action.id === "trap-answer") {
+    return "The contradiction is live; the next move should use pressure before the room closes ranks."
+  }
+  return "Read the changed pressure, then pick the next move that uses it."
 }
 
 const toneStyle: Record<FixtureDelta["tone"], CSSProperties> = {
@@ -505,6 +528,12 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                   <DeltaChip key={delta.id} delta={delta} hook="delta" />
                 ))}
               </div>
+              <div style={styles.nextActionBridge} data-gameplay-next-actions-bridge="true">
+                <span style={styles.nextActionBridgeLabel}>Why the next moves changed</span>
+                <strong style={styles.nextActionBridgeCopy}>
+                  {nextActionBridgeForAction(committed?.action ?? null)}
+                </strong>
+              </div>
             </section>
           ) : null}
 
@@ -561,6 +590,15 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                       <span style={styles.actionMeta}>Move {action.number}</span>
                       <strong style={styles.actionTitle}>{action.title}</strong>
                       <p style={styles.actionBody}>{action.body}</p>
+                      {action.availableBecause ? (
+                        <span
+                          style={styles.actionWhyNow}
+                          data-gameplay-action-why-now="true"
+                        >
+                          <strong style={styles.actionWhyNowLabel}>Why now</strong>
+                          {action.availableBecause}
+                        </span>
+                      ) : null}
                       <div style={styles.chipRow} aria-label="Likely impact">
                         {action.forecast.map((delta) => (
                           <DeltaChip key={delta.id} delta={delta} hook="forecast" />
@@ -933,6 +971,24 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.45,
     fontSize: 13.5,
   },
+  actionWhyNow: {
+    border: "1px solid rgba(216,177,99,0.18)",
+    borderRadius: 8,
+    background: "rgba(151,107,40,0.10)",
+    color: actionPalette.mutedIvory,
+    padding: "8px 9px",
+    display: "grid",
+    gap: 3,
+    fontSize: 12,
+    lineHeight: 1.35,
+  },
+  actionWhyNowLabel: {
+    color: actionPalette.amberText,
+    fontSize: 10.5,
+    fontWeight: 850,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
   chipRow: {
     display: "flex",
     flexWrap: "wrap",
@@ -1105,6 +1161,26 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.ivoryText,
     fontFamily: "var(--font-narrative)",
     fontSize: 17,
+    lineHeight: 1.35,
+  },
+  nextActionBridge: {
+    border: "1px solid rgba(216,177,99,0.22)",
+    background: "rgba(151,107,40,0.12)",
+    borderRadius: 8,
+    padding: "10px 11px",
+    display: "grid",
+    gap: 4,
+  },
+  nextActionBridgeLabel: {
+    color: actionPalette.amberText,
+    fontSize: 10.5,
+    fontWeight: 850,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  nextActionBridgeCopy: {
+    color: actionPalette.ivoryText,
+    fontSize: 13,
     lineHeight: 1.35,
   },
   rail: {
