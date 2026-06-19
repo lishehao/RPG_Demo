@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useT } from "../../../shared/lib/i18n"
 import { actionPalette, ppStyles } from "../play-styles"
 
@@ -224,6 +224,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const [tracks, setTracks] = useState(INITIAL_TRACKS)
   const [resolvedDeltas, setResolvedDeltas] = useState<FixtureDelta[]>([])
   const [consultedPersonId, setConsultedPersonId] = useState<string | null>(null)
+  const actionAreaRef = useRef<HTMLElement | null>(null)
   const actions = useMemo(() => (unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS), [unlockedClue])
   const selectedAction = actions.find((action) => action.id === selectedId) ?? null
   const consultedPerson = PEOPLE.find((person) => person.id === consultedPersonId) ?? null
@@ -264,6 +265,13 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     if (isPending) return
     setSelectedId((current) => (current === action.id ? current : action.id))
     setMotiveOpen(false)
+  }
+
+  const selectSuggestedAction = (action: FixtureAction) => {
+    selectAction(action)
+    window.setTimeout(() => {
+      actionAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 0)
   }
 
   const collapseSelection = () => {
@@ -339,6 +347,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             </section>
           ) : (
             <section
+              ref={actionAreaRef}
               style={styles.actionArea}
               data-gameplay-action-area="true"
               onPointerDown={(event) => {
@@ -520,7 +529,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                     type="button"
                     style={styles.personAdviceAction}
                     data-gameplay-person-advice-select="true"
-                    onClick={() => selectAction(consultedSuggestedAction)}
+                    onClick={() => selectSuggestedAction(consultedSuggestedAction)}
                   >
                     Select this move
                   </button>
