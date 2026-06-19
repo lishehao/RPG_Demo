@@ -747,6 +747,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_cta_none": "Write own move"' in strings
     assert '"play.actor_focus_active_none": "Ready to write"' in strings
     assert '"play.actor_focus_custom_label": "Write {name} into a move"' in strings
+    assert "const visibleChips = chips.filter((chip) => !chip.detail)" in panels
+    assert "visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === \"cost\")" in panels
+    assert "{visibleChips.map((chip) => (" in panels
     assert 'data-gameplay-forecast-detail-chip="normal-play"' in panels
     assert "optionExpandedDetailBody" in styles
     assert "optionExpandedDetailChip" in styles

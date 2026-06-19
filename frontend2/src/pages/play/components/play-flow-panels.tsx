@@ -4229,10 +4229,12 @@ export function ActionArea({
     options?: { compact?: boolean; detail?: boolean },
   ) => {
     if (!chips.length) return null
+    const visibleChips = chips.filter((chip) => !chip.detail)
+    if (!visibleChips.length) return null
     const groups: Array<{ id: DecisionForecastGroup; chips: GameplayActionForecast[] }> = [
-      { id: "cost" as DecisionForecastGroup, chips: chips.filter((chip) => decisionForecastGroupForChip(chip) === "cost") },
-      { id: "upside" as DecisionForecastGroup, chips: chips.filter((chip) => decisionForecastGroupForChip(chip) === "upside") },
-      { id: "shift" as DecisionForecastGroup, chips: chips.filter((chip) => decisionForecastGroupForChip(chip) === "shift") },
+      { id: "cost" as DecisionForecastGroup, chips: visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === "cost") },
+      { id: "upside" as DecisionForecastGroup, chips: visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === "upside") },
+      { id: "shift" as DecisionForecastGroup, chips: visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === "shift") },
     ].filter((group) => group.chips.length > 0)
 
     return (
@@ -4302,6 +4304,7 @@ export function ActionArea({
   const renderCollapsedForecast = useCallback((chips: GameplayActionForecast[]) => {
     if (!chips.length) return null
     const reasonChip = chips.find((chip) => chip.detail)
+    const visibleChips = chips.filter((chip) => !chip.detail).slice(0, 3)
     return (
       <span
         style={{
@@ -4316,7 +4319,7 @@ export function ActionArea({
             {t("play.option_forecast_kicker")}
           </span>
           <span style={ppStyles.gameplayForecastChipRow}>
-            {chips.slice(0, 3).map((chip) => (
+            {visibleChips.map((chip) => (
               <span
                 key={`forecast-summary-${chip.label}`}
                 title={chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
