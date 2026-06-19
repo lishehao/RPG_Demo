@@ -275,6 +275,7 @@ function GameplayStatePanel({
   onFocusResource?: (id: GameplayResourceFocusId) => void
 }) {
   const t = useT()
+  const compactTracks = useCompactLayout("(max-width: 680px)")
   return (
     <section
       style={ppStyles.gameplayEnvelopePanel}
@@ -292,7 +293,14 @@ function GameplayStatePanel({
         <span style={ppStyles.gameplayStakesLabel}>{t("play.gameplay_tracks_label")}</span>
         <span style={ppStyles.gameplayStakesHint}>{t("play.gameplay_tracks_hint")}</span>
       </div>
-      <div style={ppStyles.gameplayTrackGrid} aria-label={t("play.gameplay_tracks_label")}>
+      <div
+        style={{
+          ...ppStyles.gameplayTrackGrid,
+          ...(compactTracks ? ppStyles.gameplayTrackGridCompact : null),
+        }}
+        data-gameplay-track-grid-compact={compactTracks ? "true" : "false"}
+        aria-label={t("play.gameplay_tracks_label")}
+      >
         {envelope.tracks.map((track) => {
           const focusableTrackId = isGameplayResourceFocusId(track.id) ? track.id : null
           const isFocused = focusedResourceId === focusableTrackId && focusableTrackId !== null
@@ -314,6 +322,7 @@ function GameplayStatePanel({
           const trackStyle = {
             ...ppStyles.gameplayTrack,
             ...(focusableTrackId ? ppStyles.gameplayTrackButton : null),
+            ...(compactTracks ? ppStyles.gameplayTrackCompact : null),
             ...(gameplayToneStyle(track.tone) ?? {}),
             ...(isFocused ? ppStyles.gameplayTrackFocused : null),
           }

@@ -2077,6 +2077,10 @@ export const ppStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
     gap: 6,
   },
+  gameplayTrackGridCompact: {
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 7,
+  },
   gameplayTrack: {
     minWidth: 0,
     padding: "6px 7px",
@@ -2096,6 +2100,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     borderLeftColor: "rgba(229,190,124,0.08)",
     display: "grid",
     gap: 2,
+  },
+  gameplayTrackCompact: {
+    minHeight: 60,
+    padding: "7px 8px",
+    gap: 3,
   },
   gameplayTrackButton: {
     width: "100%",

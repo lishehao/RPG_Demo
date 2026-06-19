@@ -465,6 +465,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actorFocus={actorFocus}" in play_page
     assert "resourceFocus={focusedResourceId && focusedResourceTrack" in play_page
+    assert "const compactTracks = useCompactLayout(\"(max-width: 680px)\")" in play_page
+    assert "data-gameplay-track-grid-compact={compactTracks ? \"true\" : \"false\"}" in play_page
+    assert "gameplayTrackGridCompact" in styles
+    assert "gridTemplateColumns: \"repeat(2, minmax(0, 1fr))\"" in styles
+    assert "gameplayTrackCompact" in styles
     assert "onClearResourceFocus={() => setFocusedResourceId(null)}" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
     assert "actorFocus?: { id: string; name: string } | null" in panels
