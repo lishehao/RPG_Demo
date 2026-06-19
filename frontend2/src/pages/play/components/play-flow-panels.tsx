@@ -3417,63 +3417,78 @@ export function ActionArea({
     freeActionDraft && freeActionContextTargetName && freeActionTargetName !== freeActionContextTargetName
       ? `${freeActionContextTargetName} — ${freeActionDraft}`
       : freeActionDraft
-  const freeActionStarterMoves = !freeActionDraft && freeActionFocusContext
-    ? freeActionFocusContext.kind === "actor"
-      ? [
-          {
-            label: t("play.free_starter_actor_ask_label"),
-            text: t("play.free_starter_actor_ask_text", { name: freeActionFocusContext.label }),
-          },
-          {
-            label: t("play.free_starter_actor_pressure_label"),
-            text: t("play.free_starter_actor_pressure_text", { name: freeActionFocusContext.label }),
-          },
-        ]
-      : freeActionFocusContext.kind === "inventory"
+  const freeActionStarterMoves = !freeActionDraft
+    ? freeActionFocusContext
+      ? freeActionFocusContext.kind === "actor"
         ? [
             {
-              label: t("play.free_starter_inventory_show_label"),
-              text: t("play.free_starter_inventory_show_text", { item: freeActionFocusContext.label }),
+              label: t("play.free_starter_actor_ask_label"),
+              text: t("play.free_starter_actor_ask_text", { name: freeActionFocusContext.label }),
             },
             {
-              label: t("play.free_starter_inventory_ask_label"),
-              text: t("play.free_starter_inventory_ask_text", { item: freeActionFocusContext.label }),
+              label: t("play.free_starter_actor_pressure_label"),
+              text: t("play.free_starter_actor_pressure_text", { name: freeActionFocusContext.label }),
             },
           ]
-        : freeActionFocusContext.kind === "resource"
-          ? freeActionFocusContext.id === "time"
-            ? [
-                {
-                  label: t("play.free_starter_time_buy_label"),
-                  text: t("play.free_starter_time_buy_text"),
-                },
-                {
-                  label: t("play.free_starter_time_force_label"),
-                  text: t("play.free_starter_time_force_text"),
-                },
-              ]
-            : freeActionFocusContext.id === "pressure"
+        : freeActionFocusContext.kind === "inventory"
+          ? [
+              {
+                label: t("play.free_starter_inventory_show_label"),
+                text: t("play.free_starter_inventory_show_text", { item: freeActionFocusContext.label }),
+              },
+              {
+                label: t("play.free_starter_inventory_ask_label"),
+                text: t("play.free_starter_inventory_ask_text", { item: freeActionFocusContext.label }),
+              },
+            ]
+          : freeActionFocusContext.kind === "resource"
+            ? freeActionFocusContext.id === "time"
               ? [
                   {
-                    label: t("play.free_starter_pressure_calm_label"),
-                    text: t("play.free_starter_pressure_calm_text"),
+                    label: t("play.free_starter_time_buy_label"),
+                    text: t("play.free_starter_time_buy_text"),
                   },
                   {
-                    label: t("play.free_starter_pressure_raise_label"),
-                    text: t("play.free_starter_pressure_raise_text"),
+                    label: t("play.free_starter_time_force_label"),
+                    text: t("play.free_starter_time_force_text"),
                   },
                 ]
-              : [
-                  {
-                    label: t("play.free_starter_evidence_show_label"),
-                    text: t("play.free_starter_evidence_show_text"),
-                  },
-                  {
-                    label: t("play.free_starter_evidence_trace_label"),
-                    text: t("play.free_starter_evidence_trace_text"),
-                  },
-                ]
-        : []
+              : freeActionFocusContext.id === "pressure"
+                ? [
+                    {
+                      label: t("play.free_starter_pressure_calm_label"),
+                      text: t("play.free_starter_pressure_calm_text"),
+                    },
+                    {
+                      label: t("play.free_starter_pressure_raise_label"),
+                      text: t("play.free_starter_pressure_raise_text"),
+                    },
+                  ]
+                : [
+                    {
+                      label: t("play.free_starter_evidence_show_label"),
+                      text: t("play.free_starter_evidence_show_text"),
+                    },
+                    {
+                      label: t("play.free_starter_evidence_trace_label"),
+                      text: t("play.free_starter_evidence_trace_text"),
+                    },
+                  ]
+          : []
+      : [
+          {
+            label: t("play.free_starter_general_ask_label"),
+            text: t("play.free_starter_general_ask_text"),
+          },
+          {
+            label: t("play.free_starter_general_pressure_label"),
+            text: t("play.free_starter_general_pressure_text"),
+          },
+          {
+            label: t("play.free_starter_general_time_label"),
+            text: t("play.free_starter_general_time_text"),
+          },
+        ]
     : []
   const freeComposerOpen = showFreeInput || options.length === 0
   const diaryContext = armedCard

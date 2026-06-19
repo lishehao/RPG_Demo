@@ -693,7 +693,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "play.free_context_inventory_detail" in panels
     assert "play.action_free_inventory_placeholder" in panels
     assert "play.action_open_free_inventory" in panels
-    assert "const freeActionStarterMoves = !freeActionDraft && freeActionFocusContext" in panels
+    assert "const freeActionStarterMoves = !freeActionDraft" in panels
+    assert "freeActionFocusContext" in panels[panels.index("const freeActionStarterMoves = !freeActionDraft"):]
     assert "freeActionFocusContext.kind === \"inventory\"" in panels
     assert "freeActionFocusContext.kind === \"resource\"" in panels
     assert "play.free_starter_inventory_show_label" in panels
@@ -701,6 +702,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "play.free_starter_time_buy_text" in panels
     assert "play.free_starter_pressure_raise_label" in panels
     assert "play.free_starter_evidence_trace_text" in panels
+    assert "play.free_starter_general_ask_label" in panels
+    assert "play.free_starter_general_pressure_text" in panels
+    assert "play.free_starter_general_time_text" in panels
     assert 'data-play-free-action-starters="true"' in panels
     assert 'data-play-free-action-starter="true"' in panels
     assert 'data-play-free-action-input="true"' in panels
@@ -906,6 +910,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.free_starter_time_buy_label": "Buy time"' in strings
     assert '"play.free_starter_pressure_calm_label": "Calm first"' in strings
     assert '"play.free_starter_evidence_trace_label": "Trace the clue"' in strings
+    assert '"play.free_starter_general_ask_label": "Ask a direct question"' in strings
+    assert '"play.free_starter_general_pressure_label": "Name the risk"' in strings
+    assert '"play.free_starter_general_time_label": "Hold the room"' in strings
+    assert '"play.free_starter_general_ask_label": "直接问一句"' in strings
     assert '"play.free_starter_apply_title": "Use starter: {move}"' in strings
     assert '"play.action_open_free_resource": "Write your own move around {label}"' in strings
     assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
