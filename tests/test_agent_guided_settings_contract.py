@@ -278,14 +278,28 @@ def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
     assert '"create.brief_fit": "Ready for Play"' in strings
     assert '"create.brief_plan_note": "This is the plan for the first playable scene.' in strings
     assert '"create.brief_fit_reason_fit": "This has enough cast, pressure, and player focus' in strings
+    assert '"create.brief_profile": "Story feel"' in strings
+    assert '"create.brief_primary_cast": "Main cast"' in strings
+    assert '"create.brief_kernel": "Core tension"' in strings
+    assert '"create.brief_constraints": "Must keep"' in strings
+    assert '"create.brief_card_mechanic": "Player hook"' in strings
     assert '"create.brief_card_label": "场景计划 · Brief"' in strings
     assert '"create.brief_fit": "可进入故事"' in strings
     assert '"create.brief_plan_note": "这是接下来生成第一幕会使用的计划。' in strings
+    assert '"create.brief_profile": "故事气质"' in strings
+    assert '"create.brief_primary_cast": "主要人物"' in strings
+    assert '"create.brief_kernel": "核心冲突"' in strings
+    assert '"create.brief_constraints": "必须保留"' in strings
+    assert '"create.brief_card_mechanic": "玩家抓手"' in strings
     for stale_copy in (
         "Production slate · Story Brief",
         "Ready to try generation",
         "Beta planner draft",
         "current multi-party runtime",
+        '"create.brief_profile": "Profile"',
+        '"create.brief_kernel": "Tension kernel"',
+        '"create.brief_card_mechanic": "Intervention card"',
+        '"create.brief_constraints": "Preserved constraints"',
     ):
         assert stale_copy not in strings
         assert stale_copy not in brief_source
