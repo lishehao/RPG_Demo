@@ -1311,6 +1311,9 @@ export function EndingScreen({
             transition={{ delay: delayOr(0.95), ...itemTransition }}
             style={ppStyles.endingActions}
           >
+            <span data-play-ending-next-step-label="true" style={ppStyles.endingActionsLabel}>
+              {t("play.ending_next_steps")}
+            </span>
             <div style={ppStyles.endingActionsRow}>
               <motion.button
                 onClick={onShare}

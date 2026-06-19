@@ -919,6 +919,7 @@ export const STRINGS_ZH = {
   "play.ending_branch_chosen_tag": "你那回合选了",
   "play.ending_branch_arrow": "↓ 但如果选了 ↓",
   "play.ending_branch_alt_tag": "另一条路",
+  "play.ending_next_steps": "下一步",
   "play.ending_share_copied": "✓ 链接已复制",
   "play.ending_share_hint": "把链接发给朋友 — 他们能玩同一个开场，看自己会走出什么结局。",
 
@@ -1831,6 +1832,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.ending_branch_chosen_tag": "You chose",
   "play.ending_branch_arrow": "↓ but if you'd picked ↓",
   "play.ending_branch_alt_tag": "The other path",
+  "play.ending_next_steps": "Next steps",
   "play.ending_share_copied": "✓ Link copied",
   "play.ending_share_hint": "Send the link to a friend — they'll play the same opening and see what ending they land on.",
 

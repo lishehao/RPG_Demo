@@ -5235,8 +5235,14 @@ export const ppStyles: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     alignItems: "flex-start",
-    gap: 12,
+    gap: 9,
     marginBottom: 22,
+  },
+  endingActionsLabel: {
+    color: "rgba(245,200,120,0.78)",
+    fontSize: 11,
+    lineHeight: 1.2,
+    fontWeight: 840,
   },
   endingActionsRow: {
     display: "flex",
