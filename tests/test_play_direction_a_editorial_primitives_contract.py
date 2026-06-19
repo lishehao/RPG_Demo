@@ -678,8 +678,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-actor-focus-cue="true"' in panels
     assert 'data-play-actor-focus-id={actorFocus.id}' in panels
     assert "data-play-actor-focus-match-count={actorFocusMatchCount}" in panels
+    assert "const actorFocusLeverageCard = useMemo(() => {" in panels
+    assert 'data-play-actor-focus-leverage={actorFocusLeverageCard ? "true" : undefined}' in panels
     assert 'data-play-actor-focus-cue-head="true"' in panels
     assert "play.actor_focus_showing_label" in panels
+    assert "play.actor_focus_leverage_label" in panels
+    assert "play.actor_focus_leverage_detail" in panels
     assert "onClearActorFocus?: () => void" in panels
     assert 'data-play-actor-focus-clear="true"' in panels
     assert "ppStyles.actorFocusCueClear" in panels
@@ -901,11 +905,13 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_label": "Focus on person"' in strings
     assert '"play.actor_focus_showing_label": "Moves involving {name}"' in strings
     assert '"play.actor_focus_custom_label": "Write {name} into a move"' in strings
+    assert '"play.actor_focus_leverage_label": "Leverage ready for {name}"' in strings
     assert '"play.actor_focus_title": "Pull {name} into this move"' in strings
     assert '"play.actor_focus_cta_none": "Write own move"' in strings
     assert '"play.actor_focus_active_none": "Ready to write"' in strings
     assert '"play.actor_focus_match_detail_one": "1 current move makes this person react."' in strings
     assert '"play.actor_focus_match_detail_many": "{count} current moves make this person react."' in strings
+    assert '"play.actor_focus_leverage_detail": "A leverage card is ready for {name}; reveal it above, or write your own move."' in strings
     assert '"play.actor_focus_instruction": "Choose a matching move, or write your own."' in strings
     assert '"play.actor_focus_matches_label": "Matching moves"' in strings
     assert '"play.actor_focus_select_match": "Select move: {move}"' in strings
@@ -914,6 +920,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.free_context_actor_label": "Own move target"' in strings
     assert '"play.free_context_resource_label": "Own move focus"' in strings
     assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
+    assert '"play.free_context_actor_leverage_detail": "You can reveal the leverage above, or write another way to test {name}."' in strings
     assert '"play.action_open_free_actor": "Write your own move for {name}"' in strings
     assert '"play.free_starters_label": "Starter lines"' in strings
     assert '"play.free_starter_actor_ask_label": "Ask directly"' in strings

@@ -3334,6 +3334,17 @@ export function ActionArea({
     return optionTargets.map((target) => target?.id === actorFocus.id)
   }, [actorFocus, optionTargets])
   const actorFocusMatchCount = actorFocusOptionMatches.filter(Boolean).length
+  const actorFocusLeverageCard = useMemo(() => {
+    if (!actorFocus) return null
+    const focusedName = actorFocus.name.trim().toLowerCase()
+    const focusedId = actorFocus.id.trim().toLowerCase()
+    return (
+      playableLeverageCards.find((card) => {
+        const targetName = card.target_name.trim().toLowerCase()
+        return targetName === focusedName || targetName === focusedId
+      }) ?? null
+    )
+  }, [actorFocus, playableLeverageCards])
   const actorFocusMatchedMoves = useMemo(() => {
     if (!actorFocus) return []
     return options
@@ -3353,7 +3364,9 @@ export function ActionArea({
             : "play.actor_focus_match_detail_many",
           { count: actorFocusMatchCount },
         )
-      : t("play.actor_focus_no_match")
+      : actorFocusLeverageCard
+        ? t("play.actor_focus_leverage_detail", { name: actorFocus.name })
+        : t("play.actor_focus_no_match")
     : ""
   const resourceFocusOptionMatches = useMemo(() => {
     if (!resourceFocus) return options.map(() => false)
@@ -3380,7 +3393,9 @@ export function ActionArea({
         kind: "actor" as const,
         id: actorFocus.id,
         label: actorFocus.name,
-        detail: t("play.free_context_actor_detail", { name: actorFocus.name }),
+        detail: actorFocusLeverageCard
+          ? t("play.free_context_actor_leverage_detail", { name: actorFocus.name })
+          : t("play.free_context_actor_detail", { name: actorFocus.name }),
         placeholder: t("play.action_free_actor_placeholder", { name: actorFocus.name }),
         toggleText: t("play.action_open_free_actor", { name: actorFocus.name }),
         toggleHint: t("play.action_open_free_actor_hint"),
@@ -4693,18 +4708,21 @@ export function ActionArea({
         <div
           style={{
             ...ppStyles.actorFocusCue,
-            ...(actorFocusMatchCount > 0 ? ppStyles.actorFocusCueMatched : ppStyles.actorFocusCueEmpty),
+            ...(actorFocusMatchCount > 0 || actorFocusLeverageCard ? ppStyles.actorFocusCueMatched : ppStyles.actorFocusCueEmpty),
           }}
           data-play-actor-focus-cue="true"
           data-play-actor-focus-id={actorFocus.id}
           data-play-actor-focus-match-count={actorFocusMatchCount}
+          data-play-actor-focus-leverage={actorFocusLeverageCard ? "true" : undefined}
           aria-label={`${t("play.actor_focus_label")}: ${actorFocus.name}. ${actorFocusDetail}`}
         >
           <span style={ppStyles.actorFocusCueHead} data-play-actor-focus-cue-head="true">
             <span style={ppStyles.actorFocusCueLabel}>{t("play.actor_focus_label")}</span>
             <strong style={ppStyles.actorFocusCueName}>
               {actorFocusMatchCount === 0
-                ? t("play.actor_focus_custom_label", { name: actorFocus.name })
+                ? actorFocusLeverageCard
+                  ? t("play.actor_focus_leverage_label", { name: actorFocus.name })
+                  : t("play.actor_focus_custom_label", { name: actorFocus.name })
                 : t("play.actor_focus_showing_label", { name: actorFocus.name })}
             </strong>
           </span>
