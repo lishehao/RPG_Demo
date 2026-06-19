@@ -5342,7 +5342,22 @@ export function AdvisorSidechat({
           ref={scrollerRef}
         >
           {messages.length === 0 ? (
-            hasAdvisorDraft ? null : renderSuggestionBlock("empty")
+            hasAdvisorDraft ? null : (
+              <>
+                <div
+                  style={ppStyles.advisorEmptyPrimer}
+                  data-play-advisor-empty-primer="true"
+                >
+                  <strong style={ppStyles.advisorEmptyPrimerTitle}>
+                    {t("play.advisor_empty_primer_title")}
+                  </strong>
+                  <span style={ppStyles.advisorEmptyPrimerBody}>
+                    {t("play.advisor_empty_primer_body")}
+                  </span>
+                </div>
+                {renderSuggestionBlock("empty")}
+              </>
+            )
           ) : (
             messages.map((m, index) => {
               const isOracle = m.role === "advisor" && oracleOrds.has(m.ord)
