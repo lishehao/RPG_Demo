@@ -4128,7 +4128,12 @@ export function ActionArea({
                   }
                   transition={isOptionCommitPending && !reducedMotion ? { duration: 0.9, repeat: Infinity, repeatType: "mirror" } : undefined}
                 >
-                  {isOptionCommitPending ? t("play.action_busy") : t("play.selected_move_commit_cta")}
+                  <span style={ppStyles.optionPrimaryButtonLabel}>
+                    {isOptionCommitPending ? t("play.action_busy") : t("play.selected_move_commit_cta")}
+                  </span>
+                  <span style={ppStyles.optionPrimaryButtonHint}>
+                    {t("play.selected_move_commit_hint")}
+                  </span>
                 </motion.button>
                 <motion.button
                   style={{

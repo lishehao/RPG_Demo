@@ -1113,6 +1113,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.selected_move_kicker": "Selected move"' in strings
     assert '"play.selected_move_commit_cta": "Submit this move"' in strings
     assert '"play.selected_move_commit_cta": "提交这个行动"' in strings
+    assert '"play.selected_move_commit_hint": "Room reacts next"' in strings
+    assert '"play.selected_move_commit_hint": "接着看房间反应"' in strings
+    assert "optionPrimaryButtonLabel" in styles
+    assert "optionPrimaryButtonHint" in styles
+    assert 't("play.selected_move_commit_hint")' in panels
     assert '"play.turn_guide_selected_detail": "Review this move. Submit it, or add what you secretly mean."' in strings
     assert '"play.turn_guide_selected_named_detail": "Review this move. Submit it, or add inner motive."' in strings
     assert '"play.turn_guide_inner_motive_title": "Add private motive"' in strings
