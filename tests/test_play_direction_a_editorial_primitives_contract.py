@@ -1284,7 +1284,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.selected_move_room_chip": "Affects the room"' in strings
     assert '"play.selected_move_room_chip": "影响全场"' in strings
     assert '"play.action_open_free": "Write your own move"' in strings
-    assert '"play.action_open_free_hint": "Say or do something else."' in strings
+    assert '"play.action_open_free_hint": "Write a public line or action."' in strings
+    assert '"play.action_open_free_hint": "Say or do something else."' not in strings
+    assert '"play.action_open_free_hint": "写别人能看见或听见的一步。"' in strings
+    assert '"play.action_open_free_hint": "不用预设，直接写一句。"' not in strings
     assert '"play.action_open_free_title": "Open your own move input"' in strings
     assert (
         '"play.turn_guide_free_ready_detail": '
