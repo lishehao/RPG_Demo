@@ -439,6 +439,7 @@ export function RunContextPanel({
         animate={{ opacity: 1, y: 0 }}
         transition={itemTransition}
         aria-label={t("play.run_context_label")}
+        data-play-run-context="true"
       >
         <div style={ppStyles.runCompactHeader}>
           <span style={ppStyles.runCompactRoleTag}>{t("play.run_identity_prefix")}</span>
@@ -470,6 +471,7 @@ export function RunContextPanel({
       animate={{ opacity: 1, y: 0 }}
       transition={itemTransition}
       aria-label={t("play.run_context_label")}
+      data-play-run-context="true"
     >
       <div style={ppStyles.runContextHeader}>
         <span style={ppStyles.runKicker}>{t("play.run_identity_prefix")}</span>

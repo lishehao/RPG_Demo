@@ -26,7 +26,9 @@ def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     assert 'data-play-mood-state={isComplete ? "complete" : "active"}' in primitives
     assert 'data-play-primitive="StoryTimeline"' in primitives
     assert 'data-play-primitive="SceneSupportRail"' in primitives
-    assert "<RunContextPanel" not in play_page
+    story_timeline_block = play_page[play_page.index("<StoryTimeline innerRef={scrollerRef}>"):]
+    assert "<RunContextPanel" in story_timeline_block
+    assert story_timeline_block.index("<RunContextPanel") < story_timeline_block.index("<GameplayStatePanel")
 
 
 def test_play_primitives_keep_story_world_mental_model() -> None:
@@ -379,6 +381,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "buildGameplayEnvelope({" in play_page
     assert "backendEnvelope: story.gameplay_envelope ?? null" in play_page
     assert "gameplay_envelope: response.gameplay_envelope ?? null" in play_page
+    assert "RunContextPanel" in play_page
+    assert "<RunContextPanel" in play_page
+    assert "liveInventory={liveInventory}" in play_page
+    assert "leverageCards={leverageCards}" in play_page
+    assert 'data-play-run-context="true"' in panels
     assert "const [focusedActorId, setFocusedActorId] = useState<string | null>(null)" in play_page
     assert 'type GameplayResourceFocusId = "time" | "pressure" | "evidence"' in play_page
     assert "function isGameplayResourceFocusId(value: string): value is GameplayResourceFocusId" in play_page

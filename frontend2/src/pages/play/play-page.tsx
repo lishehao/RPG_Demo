@@ -60,6 +60,7 @@ import {
   EndingScreen,
   Header,
   RuntimeInspector,
+  RunContextPanel,
   StoryBeat,
   buildAdvisorSuggestions,
   buildFailedActionRecovery,
@@ -1183,6 +1184,18 @@ export function PlayPage({
 
         <PlaySurfaceGrid compact={compactPlayChrome}>
           <StoryTimeline innerRef={scrollerRef}>
+          {!isComplete ? (
+            <RunContextPanel
+              story={story}
+              turnsCompleted={turnsCompleted}
+              turnBudget={turnBudget}
+              turnsRemaining={turnsRemaining}
+              liveInventory={liveInventory}
+              leverageCards={leverageCards}
+              isComplete={isComplete}
+            />
+          ) : null}
+
           {/* Gauntlet-mode goals stay as a single reminder line instead of
               another nested panel in the story column. */}
           {isGauntlet && story.template.player_goals && story.template.player_goals.length > 0 ? (
