@@ -554,6 +554,17 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 <div>
                   <strong style={styles.reactionTitle}>The room is reacting</strong>
                   <p style={styles.reactionCopy}>Lena turns toward Arthur. The sponsor smiles for the camera and waits to see who breaks first.</p>
+                  <div style={styles.reactionSteps} data-gameplay-pending-steps="true">
+                    <span style={styles.reactionStep} data-gameplay-pending-step="room">
+                      Room reacts
+                    </span>
+                    <span style={styles.reactionStep} data-gameplay-pending-step="state">
+                      Pressure and trust shift
+                    </span>
+                    <span style={styles.reactionStep} data-gameplay-pending-step="moves">
+                      Next moves form
+                    </span>
+                  </div>
                 </div>
               </article>
             </section>
@@ -1157,6 +1168,22 @@ const styles: Record<string, CSSProperties> = {
     margin: "5px 0 0",
     color: actionPalette.mutedIvory,
     lineHeight: 1.45,
+  },
+  reactionSteps: {
+    marginTop: 10,
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+    gap: 7,
+  },
+  reactionStep: {
+    border: "1px solid rgba(229,190,124,0.16)",
+    borderRadius: 999,
+    background: "rgba(0,0,0,0.16)",
+    color: actionPalette.faintIvory,
+    padding: "6px 8px",
+    fontSize: 11.5,
+    fontWeight: 760,
+    lineHeight: 1.15,
   },
   resolvedPanel: {
     border: "1px solid rgba(126,204,164,0.18)",
