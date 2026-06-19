@@ -358,6 +358,10 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "consultedPersonId" in fixture
     assert "setConsultedPersonId(person.id)" in fixture
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
+    assert 'data-gameplay-person-inline-advice="true"' in fixture
+    assert "personInlineAdvice" in fixture
+    assert "Suggested move" in fixture
+    assert "Tradeoff frame" in fixture
     assert 'data-gameplay-person-advice="true"' in fixture
     assert 'suggestionKind: "action" | "judgment"' in fixture
     assert 'data-gameplay-person-advice-mode={adviceMode}' in fixture

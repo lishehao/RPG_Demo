@@ -771,6 +771,22 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                     >
                       {consulted ? `Asked ${actionName}` : `Ask ${actionName}`}
                     </button>
+                    {consulted ? (
+                      <span
+                        style={styles.personInlineAdvice}
+                        data-gameplay-person-inline-advice="true"
+                      >
+                        <span style={styles.personInlineAdviceLabel}>
+                          {person.suggestionKind === "action" ? "Suggested move" : "Tradeoff frame"}
+                        </span>
+                        <strong style={styles.personInlineAdviceTitle}>
+                          {person.suggestedMove}
+                        </strong>
+                        <span style={styles.personInlineAdviceBody}>
+                          {person.advice}
+                        </span>
+                      </span>
+                    ) : null}
                   </article>
                 )
               })}
@@ -1318,6 +1334,40 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid rgba(229,190,124,0.36)",
     background: "rgba(229,190,124,0.14)",
     color: actionPalette.ivoryText,
+  },
+  personInlineAdvice: {
+    gridColumn: "1 / -1",
+    minWidth: 0,
+    marginTop: 2,
+    border: "1px solid rgba(229,190,124,0.16)",
+    borderLeft: "2px solid rgba(229,190,124,0.34)",
+    borderRadius: 7,
+    background: "rgba(229,190,124,0.07)",
+    padding: "8px 9px",
+    display: "grid",
+    gap: 4,
+  },
+  personInlineAdviceLabel: {
+    color: actionPalette.amberText,
+    fontSize: 10.5,
+    fontWeight: 850,
+    lineHeight: 1.15,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  personInlineAdviceTitle: {
+    minWidth: 0,
+    color: actionPalette.ivoryText,
+    fontSize: 13,
+    lineHeight: 1.25,
+    overflowWrap: "anywhere",
+  },
+  personInlineAdviceBody: {
+    minWidth: 0,
+    color: actionPalette.faintIvory,
+    fontSize: 11.5,
+    lineHeight: 1.32,
+    overflowWrap: "anywhere",
   },
   personAdvice: {
     border: "1px solid rgba(229,190,124,0.18)",
