@@ -710,6 +710,20 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                           ) : (
                             <div style={styles.selectedDecisionStack}>
                               <div
+                                style={styles.selectedSubmitSummary}
+                                data-gameplay-selected-submit-summary="true"
+                              >
+                                <span style={styles.selectedSubmitSummaryLabel}>
+                                  Ready to submit
+                                </span>
+                                <strong style={styles.selectedSubmitSummaryTitle}>
+                                  Your move: {action.title}
+                                </strong>
+                                <span style={styles.selectedSubmitSummaryCopy}>
+                                  Next, the room reacts and updates pressure, trust, clues, and next moves.
+                                </span>
+                              </div>
+                              <div
                                 style={styles.selectedCheck}
                                 data-gameplay-selected-check="true"
                               >
@@ -1103,6 +1117,31 @@ const styles: Record<string, CSSProperties> = {
   selectedDecisionStack: {
     display: "grid",
     gap: 10,
+  },
+  selectedSubmitSummary: {
+    border: "1px solid rgba(229,190,124,0.17)",
+    borderRadius: 8,
+    background: "linear-gradient(135deg, rgba(229,190,124,0.13), rgba(0,0,0,0.12))",
+    padding: "10px 11px",
+    display: "grid",
+    gap: 5,
+  },
+  selectedSubmitSummaryLabel: {
+    color: actionPalette.amberText,
+    fontSize: 10.5,
+    fontWeight: 850,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  selectedSubmitSummaryTitle: {
+    color: actionPalette.ivoryText,
+    fontSize: 14.5,
+    lineHeight: 1.25,
+  },
+  selectedSubmitSummaryCopy: {
+    color: actionPalette.mutedIvory,
+    fontSize: 12.5,
+    lineHeight: 1.35,
   },
   selectedCheck: {
     border: "1px solid rgba(229,190,124,0.13)",

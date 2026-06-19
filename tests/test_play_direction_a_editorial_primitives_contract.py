@@ -297,6 +297,11 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "NPCs only see the move; this tells the story what you are trying to achieve." in fixture
     assert "motiveFrame" in fixture
     assert 'data-gameplay-selected-review={selectedAction ? "true" : undefined}' in fixture
+    assert 'data-gameplay-selected-submit-summary="true"' in fixture
+    assert "Ready to submit" in fixture
+    assert "Your move: {action.title}" in fixture
+    assert "Next, the room reacts and updates pressure, trust, clues, and next moves." in fixture
+    assert "selectedSubmitSummary" in fixture
     assert "function impactSummary(action: FixtureAction)" in fixture
     assert 'data-gameplay-selected-check="true"' in fixture
     assert "Before you submit" in fixture
