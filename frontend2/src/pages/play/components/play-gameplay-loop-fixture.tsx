@@ -342,6 +342,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const consultedSuggestedAction = consultedPerson
     ? actions.find((action) => action.title === consultedPerson.suggestedMove) ?? null
     : null
+  const adviceArmed = !!consultedSuggestedAction && selectedId === consultedSuggestedAction.id
   const unlockedClueAction = unlockedClue
     ? actions.find((action) => action.id === "show-badge") ?? null
     : null
@@ -647,20 +648,33 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               })}
             </div>
             {consultedPerson ? (
-              <article style={styles.personAdvice} data-gameplay-person-advice="true">
+              <article
+                style={{
+                  ...styles.personAdvice,
+                  ...(adviceArmed ? styles.personAdviceArmed : null),
+                }}
+                data-gameplay-person-advice="true"
+                data-gameplay-person-advice-armed={adviceArmed ? "true" : undefined}
+              >
                 <span style={styles.kicker}>
-                  {consultedPerson.name} {consultedSuggestedAction ? "can open this" : "can help frame this"}
+                  {adviceArmed
+                    ? `${consultedPerson.name}'s advice is attached`
+                    : `${consultedPerson.name} ${consultedSuggestedAction ? "can open this" : "can help frame this"}`}
                 </span>
                 <strong style={styles.personAdviceTitle}>{consultedPerson.suggestedMove}</strong>
                 <span style={styles.personAdviceBody}>{consultedPerson.advice}</span>
                 {consultedSuggestedAction ? (
                   <button
                     type="button"
-                    style={styles.personAdviceAction}
+                    style={{
+                      ...styles.personAdviceAction,
+                      ...(adviceArmed ? styles.personAdviceActionActive : null),
+                    }}
                     data-gameplay-person-advice-select="true"
+                    data-gameplay-person-advice-select-active={adviceArmed ? "true" : undefined}
                     onClick={() => selectSuggestedAction(consultedSuggestedAction)}
                   >
-                    Select this move
+                    {adviceArmed ? "Suggestion selected" : "Select this move"}
                   </button>
                 ) : null}
               </article>
@@ -1056,6 +1070,10 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 5,
   },
+  personAdviceArmed: {
+    border: "1px solid rgba(92,196,137,0.34)",
+    background: "linear-gradient(145deg, rgba(28,62,42,0.44), rgba(8,9,10,0.78))",
+  },
   personAdviceTitle: {
     color: actionPalette.ivoryText,
     fontFamily: "var(--font-narrative)",
@@ -1078,6 +1096,11 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     padding: "7px 11px",
     cursor: "pointer",
+  },
+  personAdviceActionActive: {
+    border: "1px solid rgba(92,196,137,0.42)",
+    background: "rgba(92,196,137,0.15)",
+    color: "rgba(206,248,222,0.96)",
   },
   clueCard: {
     border: "1px solid rgba(229,190,124,0.14)",

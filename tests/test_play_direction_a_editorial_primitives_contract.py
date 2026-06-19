@@ -331,7 +331,8 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "setConsultedPersonId(person.id)" in fixture
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
     assert 'data-gameplay-person-advice="true"' in fixture
-    assert '{consultedPerson.name} {consultedSuggestedAction ? "can open this" : "can help frame this"}' in fixture
+    assert '`${consultedPerson.name} ${consultedSuggestedAction ? "can open this" : "can help frame this"}`' in fixture
+    assert '`${consultedPerson.name}\'s advice is attached`' in fixture
     assert "const INITIAL_PEOPLE: PersonResource[]" in fixture
     assert "const UNLOCKED_PEOPLE: PersonResource[]" in fixture
     assert "const people = useMemo(() => (unlockedClue ? UNLOCKED_PEOPLE : INITIAL_PEOPLE), [unlockedClue])" in fixture
@@ -340,11 +341,16 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Ask Lena how the badge changes the route." in fixture
     assert "Ask Arthur to respond after Marcus speaks." in fixture
     assert "const consultedSuggestedAction = consultedPerson" in fixture
+    assert "const adviceArmed = !!consultedSuggestedAction && selectedId === consultedSuggestedAction.id" in fixture
     assert "const actionAreaRef = useRef<HTMLElement | null>(null)" in fixture
     assert "const selectSuggestedAction = (action: FixtureAction)" in fixture
     assert 'actionAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })' in fixture
     assert 'data-gameplay-person-advice-select="true"' in fixture
+    assert 'data-gameplay-person-advice-armed={adviceArmed ? "true" : undefined}' in fixture
+    assert 'data-gameplay-person-advice-select-active={adviceArmed ? "true" : undefined}' in fixture
     assert "Select this move" in fixture
+    assert "Suggestion selected" in fixture
+    assert "advice is attached" in fixture
     assert "selectSuggestedAction(consultedSuggestedAction)" in fixture
     assert 'const unlockedClueAction = unlockedClue' in fixture
     assert 'actions.find((action) => action.id === "show-badge")' in fixture
