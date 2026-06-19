@@ -1240,8 +1240,13 @@ export const cpStyles: Record<string, CSSProperties> = {
   },
   briefRevisionActions: {
     display: "grid",
-    gap: 7,
+    gap: 5,
     marginBottom: 11,
+  },
+  briefRevisionHint: {
+    color: "rgba(255,255,255,0.54)",
+    fontSize: 11.5,
+    lineHeight: 1.35,
   },
   briefRevisionActionRow: {
     display: "flex",

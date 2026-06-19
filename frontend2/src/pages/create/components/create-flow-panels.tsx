@@ -356,6 +356,9 @@ export function StoryBriefCard({
       {brief.revision_actions.length > 0 ? (
         <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
           <span style={cpStyles.briefFieldLabel}>{t("create.brief_revision_actions")}</span>
+          <span style={cpStyles.briefRevisionHint} data-create-brief-revision-hint="true">
+            {t("create.brief_revision_hint")}
+          </span>
           <div style={cpStyles.briefRevisionActionRow}>
             {brief.revision_actions.slice(0, 5).map((action) => (
               <button
