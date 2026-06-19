@@ -90,6 +90,9 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     main_start = world.index("<main", hero_start)
     assert 't("world.crumb_back_home")' not in world[hero_start:main_start]
     assert 't("replay.crumb_back_home")' in replay
+    assert 'data-replay-hero-fork-hint="true"' in replay
+    assert 't("replay.cta_hint")' in replay
+    assert "heroCtaHint" in replay
 
 
 def test_home_story_entries_are_generated_playable_template_objects() -> None:

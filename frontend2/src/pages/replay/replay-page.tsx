@@ -177,6 +177,11 @@ export function ReplayPage({
             >
               {replay.template_forkable ? t("replay.cta_play_template") : t("replay.cta_back_plaza")}
             </button>
+            {replay.template_forkable ? (
+              <span data-replay-hero-fork-hint="true" style={rpStyles.heroCtaHint}>
+                {t("replay.cta_hint")}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -555,10 +560,16 @@ const rpStyles: Record<string, CSSProperties> = {
   },
   heroActions: {
     display: "flex",
-    alignItems: "center",
+    alignItems: "baseline",
     flexWrap: "wrap" as const,
     gap: 14,
     marginTop: 18,
+  },
+  heroCtaHint: {
+    maxWidth: 280,
+    color: "rgba(255,255,255,0.64)",
+    fontSize: 12.5,
+    lineHeight: 1.4,
   },
   primaryAction: {
     width: "fit-content",
