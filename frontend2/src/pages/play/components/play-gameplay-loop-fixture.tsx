@@ -307,6 +307,10 @@ function initials(name: string): string {
     .join("")
 }
 
+function firstName(name: string): string {
+  return name.split(/\s+/).filter(Boolean)[0] ?? name
+}
+
 function DeltaChip({ delta, hook }: { delta: FixtureDelta; hook?: string }) {
   return (
     <span
@@ -602,6 +606,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             <div style={styles.personList}>
               {people.map((person) => {
                 const consulted = consultedPersonId === person.id
+                const actionName = firstName(person.name)
                 return (
                   <article
                     key={person.name}
@@ -628,7 +633,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                       title={person.action}
                       onClick={() => setConsultedPersonId(person.id)}
                     >
-                      {consulted ? "Asked" : "Ask"}
+                      {consulted ? `Asked ${actionName}` : `Ask ${actionName}`}
                     </button>
                   </article>
                 )

@@ -320,6 +320,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-people-usage-note="true"' in fixture
     assert "People you can involve" in fixture
     assert "Ask them to open paths, block pressure, or reveal clues." in fixture
+    assert "function firstName(name: string)" in fixture
+    assert 'consulted ? `Asked ${actionName}` : `Ask ${actionName}`' in fixture
+    assert '{consulted ? "Asked" : "Ask"}' not in fixture
     assert "People are resources." not in fixture
     assert "Clues you can use" in fixture
     assert "0 usable yet" in fixture
