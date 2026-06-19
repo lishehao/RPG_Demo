@@ -856,6 +856,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "feedbackPendingStepActive" in styles
     assert "roomReactingCues" in styles
     assert "roomReactingCue" in styles
+    assert "optionOpenedByChange" in styles
+    assert "optionOpenedByChangeLabel" in styles
     assert '"play.gameplay_loop_label": "How turns work"' in strings
     assert '"play.gameplay_loop_kicker": "This turn"' in strings
     assert '"play.gameplay_loop_read_label": "Read the room"' in strings
@@ -965,8 +967,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_pending_cue_state": "检查线索和压力"' in strings
     assert '"play.feedback_pending_next_hint": "The next moves come from the people, clues, and pressure this move changes."' in strings
     assert '"play.feedback_pending_next_hint": "下一组行动会从刚刚被改变的人物、线索和压力里长出来。"' in strings
+    assert '"play.option_opened_by_change_label": "From last change"' in strings
+    assert '"play.option_opened_by_change_label": "来自刚才变化"' in strings
     assert 'data-play-room-reacting-cues="true"' in panels
     assert 'data-play-room-reacting-cue="true"' in panels
+    assert 'data-play-option-opened-by-change="true"' in panels
     assert 'data-play-outcome-receipt="true"' in panels
     assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
     assert 'data-play-outcome-receipt-item="true"' in panels

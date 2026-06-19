@@ -4944,6 +4944,8 @@ export function ActionArea({
                 const optionShortcutKey = i < 9 ? String(i + 1) : null
                 const isChoiceDimmed =
                   selectedOptionIndex !== null && !isSelected && pickedIndex === null
+                const showRecentImpactHint =
+                  hasRecentImpact && !!opt.hint && !isSelected && optionForecasts.length === 0
                 return (
                   <div key={i} style={ppStyles.optionChoiceShell}>
                     <motion.button
@@ -5061,15 +5063,31 @@ export function ActionArea({
                         ) : null}
                       </span>
                         {opt.hint && !isSelected && optionForecasts.length === 0 ? (
-                          <span
-                            style={{
-                              ...ppStyles.optionHintInline,
-                              ...(compactActionChrome ? ppStyles.optionHintInlineCompact : null),
-                            }}
-                            title={opt.hint}
-                          >
-                            {opt.hint}
-                          </span>
+                          showRecentImpactHint ? (
+                            <span
+                              style={{
+                                ...ppStyles.optionOpenedByChange,
+                                ...(compactActionChrome ? ppStyles.optionOpenedByChangeCompact : null),
+                              }}
+                              data-play-option-opened-by-change="true"
+                              title={opt.hint}
+                            >
+                              <span style={ppStyles.optionOpenedByChangeLabel}>
+                                {t("play.option_opened_by_change_label")}
+                              </span>
+                              <span style={ppStyles.optionOpenedByChangeText}>{opt.hint}</span>
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                ...ppStyles.optionHintInline,
+                                ...(compactActionChrome ? ppStyles.optionHintInlineCompact : null),
+                              }}
+                              title={opt.hint}
+                            >
+                              {opt.hint}
+                            </span>
+                          )
                         ) : null}
                         {optionForecasts.length && !isSelected ? (
                           <span
