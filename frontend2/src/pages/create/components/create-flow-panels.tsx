@@ -391,7 +391,13 @@ export function StoryBriefCard({
                 title={action.description}
                 onClick={() => onApplyRevisionAction(action.seed_append)}
               >
-                {action.label}
+                <span style={cpStyles.briefRevisionActionLabel}>{action.label}</span>
+                <span
+                  style={cpStyles.briefRevisionActionDesc}
+                  data-create-brief-revision-action-desc="true"
+                >
+                  {action.description}
+                </span>
               </button>
             ))}
           </div>

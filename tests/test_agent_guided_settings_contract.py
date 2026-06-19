@@ -186,6 +186,9 @@ def test_story_brief_revision_actions_explain_click_effect() -> None:
 
     assert 'data-create-brief-revision-hint="true"' in panels_source
     assert 't("create.brief_revision_hint")' in panels_source
+    assert 'data-create-brief-revision-action-desc="true"' in panels_source
+    assert "briefRevisionActionLabel" in styles_source
+    assert "briefRevisionActionDesc" in styles_source
     assert "briefRevisionHint" in styles_source
     assert '"create.brief_revision_hint": "点一条会把修正加入对话，再重新整理 Brief。"' in strings
     assert '"create.brief_revision_hint": "Choose one to add that correction to the chat, then reshape the Brief."' in strings
