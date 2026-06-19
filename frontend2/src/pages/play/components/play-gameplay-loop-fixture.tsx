@@ -385,7 +385,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                                   }}
                                   data-gameplay-confirm="true"
                                 >
-                                  Take action with motive
+                                  Submit with motive
                                 </button>
                                 <button
                                   type="button"
@@ -410,7 +410,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                                 }}
                                 data-gameplay-confirm="true"
                               >
-                                Take this action
+                                Submit this move
                               </button>
                               <button
                                 type="button"
