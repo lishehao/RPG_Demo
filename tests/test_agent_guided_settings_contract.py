@@ -185,6 +185,7 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
     assert 't("create.seed_recipe_people_label")' in source
     assert 't("create.seed_recipe_pressure_label")' in source
     assert 't("create.seed_recipe_secret_label")' in source
+    assert 'hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")' in source
     assert "seedRecipe:" in styles
     assert "seedRecipeLine:" in styles
     for key in (
@@ -192,10 +193,14 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.seed_recipe_people_label": "Who is present"',
         '"create.seed_recipe_pressure_label": "Why now"',
         '"create.seed_recipe_secret_label": "What can break"',
+        '"create.guide_add_opening": "Send opening"',
+        '"create.guide_add_correction": "Send correction"',
         '"create.seed_recipe_label": "好种子需要"',
         '"create.seed_recipe_people_label": "谁在场"',
         '"create.seed_recipe_pressure_label": "为什么现在"',
         '"create.seed_recipe_secret_label": "什么会爆"',
+        '"create.guide_add_opening": "发送开场"',
+        '"create.guide_add_correction": "发送修正"',
     ):
         assert key in strings
 
