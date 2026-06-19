@@ -289,7 +289,7 @@ def _gameplay_forecast_for_option(option: StoryOption) -> list[GameplayChip]:
         r"\b(ask|probe|question|interview|witness|account|source|handled|last seen|saw)\b",
         haystack,
     ):
-        _add_gameplay_chip(chips, "Evidence lead", "unlock")
+        _add_gameplay_chip(chips, "May reveal proof", "unlock")
     if re.search(
         r"\b(trust|calm|cover|protect|help|ally|promise|reassure|soften|support|invite|speak|explain|give room)\b",
         haystack,
@@ -299,19 +299,19 @@ def _gameplay_forecast_for_option(option: StoryOption) -> list[GameplayChip]:
         r"\b(clue|evidence|proof|recording|footage|badge|phone|message|lead|find|discover|document|receipt)\b",
         haystack,
     ):
-        _add_gameplay_chip(chips, "Evidence lead", "unlock")
+        _add_gameplay_chip(chips, "May reveal proof", "unlock")
     if re.search(
         r"\b(leverage|trump|blackmail|secret|threat|trade|bargain|deal)\b",
         haystack,
     ):
-        _add_gameplay_chip(chips, "Leverage", "unlock")
+        _add_gameplay_chip(chips, "Use leverage", "unlock")
     if re.search(
         r"\b(risk|danger|escalate|reckless|storm|break|shatter|corner|trap)\b",
         haystack,
     ):
         _add_gameplay_chip(chips, "Risk +1", "cost")
     if not chips:
-        _add_gameplay_chip(chips, "Room read", "shift")
+        _add_gameplay_chip(chips, "Read the room", "shift")
     return chips[:3]
 
 

@@ -106,8 +106,8 @@ def test_gameplay_forecast_turns_probe_actions_into_useful_signals() -> None:
     )
 
     labels = [chip.label for chip in chips]
-    assert "Evidence lead" in labels
-    assert "Room read" not in labels
+    assert "May reveal proof" in labels
+    assert "Read the room" not in labels
 
 
 def test_gameplay_forecast_keeps_gentle_witness_actions_playable() -> None:
@@ -120,9 +120,9 @@ def test_gameplay_forecast_keeps_gentle_witness_actions_playable() -> None:
     )
 
     labels = [chip.label for chip in chips]
-    assert "Evidence lead" in labels
+    assert "May reveal proof" in labels
     assert "Trust +1" in labels
-    assert "Room read" not in labels
+    assert "Read the room" not in labels
 
 
 def test_fallback_turn_pulses_prioritize_explicit_action_target(tmp_path) -> None:

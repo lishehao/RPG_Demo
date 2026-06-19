@@ -156,18 +156,21 @@ export function deriveActionForecastChips(option: NarrativeStoryOption): Gamepla
   if (/\b(trust|calm|cover|protect|help|ally|promise|reassure|soften|support)\b/.test(haystack)) {
     addUniqueChip(chips, "Trust +1", "gain")
   }
+  if (/\b(ask|probe|question|interview|witness|account|source|handled|last seen|saw)\b/.test(haystack)) {
+    addUniqueChip(chips, "May reveal proof", "unlock")
+  }
   if (/\b(clue|evidence|proof|recording|footage|badge|phone|message|lead|find|discover|document|receipt)\b/.test(haystack)) {
-    addUniqueChip(chips, "Evidence lead", "unlock")
+    addUniqueChip(chips, "May reveal proof", "unlock")
   }
   if (/\b(leverage|trump|blackmail|secret|threat|trade|bargain|deal)\b/.test(haystack)) {
-    addUniqueChip(chips, "Leverage", "unlock")
+    addUniqueChip(chips, "Use leverage", "unlock")
   }
   if (/\b(risk|danger|escalate|reckless|storm|break|shatter|corner|trap)\b/.test(haystack)) {
     addUniqueChip(chips, "Risk +1", "cost")
   }
 
   if (chips.length === 0) {
-    addUniqueChip(chips, "Room read", "shift")
+    addUniqueChip(chips, "Read the room", "shift")
   }
   return chips.slice(0, 3)
 }

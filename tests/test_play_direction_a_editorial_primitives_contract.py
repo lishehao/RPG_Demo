@@ -505,6 +505,16 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "buildGameplayEnvelope" in envelope
     assert "deriveActionForecastChips" in envelope
     assert "normalizeBackendEnvelope" in envelope
+    assert '"May reveal proof"' in envelope
+    assert '"Read the room"' in envelope
+    assert '"Use leverage"' in envelope
+    assert '"Evidence lead"' not in envelope
+    assert '"Room read"' not in envelope
+    assert '"May reveal proof"' in backend_service
+    assert '"Read the room"' in backend_service
+    assert '"Use leverage"' in backend_service
+    assert '"Evidence lead"' not in backend_service
+    assert '"Room read"' not in backend_service
     assert "buildGameplayEnvelope({" in play_page
     assert "backendEnvelope: story.gameplay_envelope ?? null" in play_page
     assert "gameplay_envelope: response.gameplay_envelope ?? null" in play_page

@@ -201,7 +201,7 @@ function impactDeltaKey(delta: GameplayEnvelope["impact"][number]): string {
 }
 
 function isLowSignalForecastLabel(label: string): boolean {
-  return /^(Target |Room read$)/i.test(label.trim())
+  return /^(Target |Read the room$)/i.test(label.trim())
 }
 
 function impactSourceMoveText(message: NarrativeStoryMessage | null): string | null {
