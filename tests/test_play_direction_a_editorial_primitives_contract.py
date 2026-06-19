@@ -1378,7 +1378,8 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert 'position: "fixed"' in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
     assert "maxWidth: 430" in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
     assert '"play.action_jump_kicker": "Choices ready"' in strings
-    assert '"play.action_jump_label": "Jump to your move"' in strings
+    assert '"play.action_jump_label": "Choose your move"' in strings
+    assert '"play.action_jump_label": "Jump to your move"' not in strings
     assert '"play.action_jump_detail_choose": "Playable choices are ready below the story."' in strings
     assert '"play.action_jump_detail_update": "Review this turn\'s changes before choosing."' in strings
 
