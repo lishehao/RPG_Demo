@@ -1733,6 +1733,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     isolation: "isolate" as const,
     touchAction: "pan-y" as const,
   },
+  beatSceneBannerCompact: {
+    height: 88,
+    marginTop: -8,
+    marginBottom: 14,
+  },
   beatScenePlane: {
     position: "absolute" as const,
     inset: -12,

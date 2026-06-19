@@ -65,7 +65,7 @@ type SceneParallaxOffset = {
   y: number
 }
 
-function SceneParallaxBanner({ sceneUrl }: { sceneUrl: string }) {
+function SceneParallaxBanner({ sceneUrl, compact }: { sceneUrl: string; compact?: boolean }) {
   const reducedMotion = useReducedMotion()
   const [motionEnabled, setMotionEnabled] = useState(false)
   const [offset, setOffset] = useState<SceneParallaxOffset>({ x: 0, y: 0 })
@@ -120,11 +120,15 @@ function SceneParallaxBanner({ sceneUrl }: { sceneUrl: string }) {
       initial={{ opacity: 0, scale: 1.015 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={transitions.slow}
-      style={ppStyles.beatSceneBanner}
+      style={{
+        ...ppStyles.beatSceneBanner,
+        ...(compact ? ppStyles.beatSceneBannerCompact : null),
+      }}
       onPointerMove={handlePointerMove}
       onPointerLeave={resetOffset}
       onPointerCancel={resetOffset}
       data-play-segment-parallax="true"
+      data-play-segment-banner-density={compact ? "compact" : "full"}
       data-play-segment-motion={motionEnabled ? "pointer" : "static"}
       aria-hidden
     >
@@ -1638,6 +1642,11 @@ export function StoryBeat({
       .sort((a, b) => outcomePriority(b.shift) - outcomePriority(a.shift))
       .slice(0, 2)
     const latestOptionCount = message.options.length
+    const shouldCompactSceneBanner =
+      !!isLatestNarrator &&
+      intensity !== "peak" &&
+      latestOptionCount > 0 &&
+      !hasFollowingPlayerEcho
     const showLatestDigestInventory = hasDelta && latestDigestPulses.length === 0
     const showLatestBeatDigest =
       !suppressLatestFeedbackDigest &&
@@ -1735,7 +1744,7 @@ export function StoryBeat({
           </button>
         ) : null}
         {shouldShowSceneBanner ? (
-          <SceneParallaxBanner sceneUrl={sceneUrl} />
+          <SceneParallaxBanner sceneUrl={sceneUrl} compact={shouldCompactSceneBanner} />
         ) : null}
         {intensity === "rising" || intensity === "peak" ? (
           <div

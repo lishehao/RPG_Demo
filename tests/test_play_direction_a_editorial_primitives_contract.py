@@ -1307,6 +1307,9 @@ def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> Non
     assert "showGameplayImpactSummary" in play_page
     assert "suppressLatestFeedbackDigest?: boolean" in story_beat
     assert "const latestDigestPulses" in story_beat
+    assert "const shouldCompactSceneBanner =" in story_beat
+    assert "latestOptionCount > 0" in story_beat
+    assert "intensity !== \"peak\"" in story_beat
     assert "const showLatestBeatDigest" in story_beat
     assert "!suppressLatestFeedbackDigest" in story_beat
     assert "const latestDigestA11yItems" in story_beat
@@ -1319,6 +1322,9 @@ def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> Non
     assert 'data-play-latest-beat-digest="true"' in story_beat
     assert "data-play-latest-beat-digest-pulse={pulse.npc_id}" in story_beat
     assert 'data-play-latest-beat-digest-options="true"' in story_beat
+    assert 'data-play-segment-banner-density={compact ? "compact" : "full"}' in panels
+    assert "compact={shouldCompactSceneBanner}" in story_beat
+    assert "beatSceneBannerCompact" in styles
     assert "latestBeatDigest" in styles
     assert "latestBeatDigestHint" in styles
     assert "latestBeatDigestItems" in styles
