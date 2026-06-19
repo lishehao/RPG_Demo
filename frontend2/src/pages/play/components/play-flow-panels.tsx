@@ -3205,13 +3205,22 @@ export function ActionArea({
     if (!commitmentSurfaceOpen) return
     const frame = window.requestAnimationFrame(() => {
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      const behavior: ScrollBehavior = prefersReducedMotion ? "auto" : "smooth"
+      const selectedMove = document.querySelector<HTMLElement>("[data-play-selected-move='true']")
+      if (selectedMove) {
+        const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
+        const rect = selectedMove.getBoundingClientRect()
+        const top = Math.max(0, window.scrollY + rect.top - headerHeight - 12)
+        window.scrollTo({ top, left: 0, behavior })
+        return
+      }
       commitFocusRef.current?.scrollIntoView({
         block: "center",
-        behavior: prefersReducedMotion ? "auto" : "smooth",
+        behavior,
       })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [busy, commitmentSurfaceOpen])
+  }, [busy, commitmentSurfaceOpen, selectedOptionIndex])
 
   useEffect(() => {
     if (armedCardId && !playableLeverageCards.some((card) => card.card_id === armedCardId)) {

@@ -1058,6 +1058,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
         panels.index("const focusDiaryTextarea") : panels.index("const renderDiaryAttachPreview")
     ]
     assert 'data-play-selected-move={isSelected ? "true" : undefined}' in panels
+    assert 'document.querySelector<HTMLElement>("[data-play-selected-move=\'true\']")' in panels
+    assert "headerHeight - 12" in panels
+    assert "window.scrollTo({ top, left: 0, behavior })" in panels
+    assert "selectedOptionIndex])" in panels
     assert 'data-play-primary-commit="true"' in panels
     assert 'data-play-support-actions="true"' in panels
     assert 'data-play-move-receipt="true"' in panels
