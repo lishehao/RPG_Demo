@@ -795,6 +795,12 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.action_open_free": "Write your own move"' in strings
     assert '"play.action_open_free_hint": "Say or do something else."' in strings
     assert '"play.action_open_free_title": "Open your own move input"' in strings
+    assert (
+        '"play.turn_guide_free_ready_detail": '
+        '"Review this public move. Submit it, or add what you secretly mean."' in strings
+    )
+    assert '"play.turn_guide_free_ready_detail": "先复核这句公开行动，再提交或补一句真实动机。"' in strings
+    assert "Commit it, or add what you secretly mean." not in strings
     assert "Write custom move" not in strings
     assert "Pick a line" not in strings
     assert "change choice" not in strings
