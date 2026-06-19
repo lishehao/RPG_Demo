@@ -588,12 +588,14 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "outcomeReceiptHint" in styles
     assert "feedbackPendingTimeline" in styles
     assert "feedbackPendingStepActive" in styles
-    assert '"play.gameplay_loop_label": "Action loop"' in strings
-    assert '"play.gameplay_loop_choose_label": "Choose move"' in strings
-    assert '"play.gameplay_loop_choose_detail": "Costs and opportunities"' in strings
-    assert '"play.gameplay_loop_choose_detail": "预判代价和机会"' in strings
-    assert '"play.gameplay_loop_react_label": "Room reacts"' in strings
-    assert '"play.gameplay_loop_update_label": "See changes"' in strings
+    assert '"play.gameplay_loop_label": "How turns work"' in strings
+    assert '"play.gameplay_loop_kicker": "This turn"' in strings
+    assert '"play.gameplay_loop_read_label": "Read the room"' in strings
+    assert '"play.gameplay_loop_choose_label": "Choose a move"' in strings
+    assert '"play.gameplay_loop_choose_detail": "Costs, openings, target"' in strings
+    assert '"play.gameplay_loop_choose_detail": "代价、机会、目标"' in strings
+    assert '"play.gameplay_loop_react_label": "Watch reaction"' in strings
+    assert '"play.gameplay_loop_update_label": "Use changes"' in strings
     assert '"play.gameplay_objective_label": "Goal"' in strings
     assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "What this changes"' in strings
