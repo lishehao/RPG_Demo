@@ -539,7 +539,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_loop_update_label": "See changes"' in strings
     assert '"play.gameplay_objective_label": "Goal"' in strings
     assert '"play.feedback_source_move_label": "From your move"' in strings
-    assert '"play.gameplay_decision_forecast_label": "Decision forecast"' in strings
+    assert '"play.gameplay_decision_forecast_label": "What this changes"' in strings
     assert '"play.actor_focus_label": "Character focus"' in strings
     assert '"play.actor_focus_showing_label": "Showing moves for {name}"' in strings
     assert '"play.actor_focus_match_detail_one": "1 current move directly involves this character."' in strings
@@ -674,7 +674,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-gameplay-action-forecast-summary="true"' in panels
     assert "gameplayForecastInline" in styles
     assert "gameplayForecastInlineLabel" in styles
-    assert '"play.option_forecast_kicker": "Forecast"' in strings
+    assert '"play.option_forecast_kicker": "Changes"' in strings
     assert "change choice" not in strings
     assert '"play.selected_move_kicker": "Selected move"' in strings
     assert '"play.selected_move_commit_cta": "Take this action"' in strings
