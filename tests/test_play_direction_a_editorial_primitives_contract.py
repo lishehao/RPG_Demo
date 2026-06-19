@@ -863,6 +863,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-decision-group={group.id}' in panels
     assert 'type DecisionForecastGroup = "cost" | "upside" | "shift"' in panels
     assert 'data-gameplay-impact-summary="true"' in play_page
+    assert 'data-gameplay-impact-result-layer="true"' in play_page
+    assert 'aria-label={t("play.feedback_result_layer_label")}' in play_page
+    assert 'data-gameplay-impact-result-label="true"' in play_page
     assert 'data-gameplay-impact-spotlight="true"' in play_page
     assert "data-gameplay-impact-spotlight-tone={primaryImpact.tone}" in play_page
     assert "const primaryImpact =" in play_page
@@ -883,9 +886,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "aria-label={`${parsed.name} ${shiftCopy}`}" in play_page
     assert 'data-gameplay-impact-group={group.id}' in play_page
     assert 'data-gameplay-impact-group="next"' in play_page
-    assert "style={ppStyles.gameplayImpactNextGroup}" in play_page
+    assert "style={ppStyles.gameplayImpactNextBridge}" in play_page
     assert "style={ppStyles.gameplayImpactNextGroupLabel}" in play_page
     assert 'data-gameplay-next-choice-signals="true"' in play_page
+    assert 'data-gameplay-next-choice-bridge="normal-play"' in play_page
+    assert 'aria-label={t("play.feedback_next_choice_label")}' in play_page
     assert 'data-gameplay-next-choice-signal="normal-play"' in play_page
     assert "nextChoiceSignals" in play_page
     assert 'data-gameplay-delta="normal-play"' in play_page
@@ -943,7 +948,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayRelationshipDeltaButtonFocused" in styles
     assert "gameplayRelationshipDeltaShift" in styles
     assert "gameplayImpactGroups" in styles
+    assert "gameplayImpactResultLayer" in styles
+    assert "gameplayImpactLayerLabel" in styles
     assert "gameplayImpactNextGroup" in styles
+    assert "gameplayImpactNextBridge" in styles
     assert "gameplayImpactNextGroupLabel" in styles
     assert "outcomeReceiptHeader" in styles
     assert "outcomeReceiptHint" in styles
@@ -1055,21 +1063,25 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_upside_label": "机会"' in strings
     assert '"play.gameplay_decision_shift_label": "变化"' in strings
     assert '"play.gameplay_impact_label": "What changed"' in strings
-    assert '"play.feedback_impact_hint": "Use these changes to pick your next move."' in strings
+    assert '"play.feedback_impact_hint": "Read the result first, then choose from what it opened."' in strings
     assert '"play.outcome_next_hint": "Use this to choose the next move"' in strings
     assert '"play.feedback_impact_cost_label": "Cost / risk"' in strings
     assert '"play.feedback_impact_opened_label": "Opened"' in strings
+    assert '"play.feedback_result_layer_label": "Result from your last move"' in strings
     assert '"play.feedback_key_consequence_label": "Main result"' in strings
-    assert '"play.feedback_next_choice_label": "Why these moves are here"' in strings
-    assert '"play.feedback_next_choice_changed_label": "New moves opened"' in strings
-    assert '"play.feedback_next_choice_changed_detail": "These moves come from the people, clues, and pressure you just changed."' in strings
+    assert '"play.feedback_next_choice_label": "Next moves opened by it"' in strings
+    assert '"play.feedback_next_choice_changed_label": "Action menu changed"' in strings
+    assert '"play.feedback_next_choice_changed_detail": "The people, clues, or pressure that changed now shape these choices."' in strings
+    assert "Why these moves are here" not in strings
+    assert "New moves opened" not in strings
     assert '"play.gameplay_impact_label": "发生了什么"' in strings
-    assert '"play.feedback_impact_hint": "用这些变化决定下一步"' in strings
+    assert '"play.feedback_impact_hint": "先看已发生的结果，再用它打开的行动继续。"' in strings
+    assert '"play.feedback_result_layer_label": "上一步造成的结果"' in strings
     assert '"play.feedback_key_consequence_label": "主要结果"' in strings
     assert '"play.outcome_next_hint": "用它决定下一步"' in strings
-    assert '"play.feedback_next_choice_label": "为什么出现这些行动"' in strings
-    assert '"play.feedback_next_choice_changed_label": "新行动已打开"' in strings
-    assert '"play.feedback_next_choice_changed_detail": "这些行动来自刚刚改变的人物、线索和压力。"' in strings
+    assert '"play.feedback_next_choice_label": "因此出现的下一步"' in strings
+    assert '"play.feedback_next_choice_changed_label": "行动菜单已变化"' in strings
+    assert '"play.feedback_next_choice_changed_detail": "刚变化的人物、线索或压力正在影响这些选择。"' in strings
     assert '"play.impact_wary": "starts watching you"' in strings
     assert '"play.impact_broken": "turns against you"' in strings
     assert '"play.impact_wary": "gets wary"' not in strings

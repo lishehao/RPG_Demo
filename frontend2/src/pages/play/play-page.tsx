@@ -499,64 +499,79 @@ function GameplayImpactSummary({
         <span style={ppStyles.gameplayImpactKicker}>{t("play.gameplay_impact_label")}</span>
         <span style={ppStyles.gameplayImpactHint}>{t("play.feedback_impact_hint")}</span>
       </div>
-      {sourceMoveText ? (
-        <div
-          style={ppStyles.gameplayImpactSourceMove}
-          data-gameplay-impact-source-move="true"
-          title={sourceMoveText}
+      <div
+        style={ppStyles.gameplayImpactResultLayer}
+        data-gameplay-impact-result-layer="true"
+        aria-label={t("play.feedback_result_layer_label")}
+      >
+        <span
+          style={ppStyles.gameplayImpactLayerLabel}
+          data-gameplay-impact-result-label="true"
         >
-          <span style={ppStyles.gameplayImpactSourceLabel}>
-            {t("play.feedback_source_move_label")}{" "}
-          </span>
-          <strong style={ppStyles.gameplayImpactSourceText}>{sourceMoveText}</strong>
-        </div>
-      ) : null}
-      {primaryImpact ? (
-        <div
-          style={ppStyles.gameplayImpactSpotlight}
-          data-gameplay-impact-spotlight="true"
-          data-gameplay-impact-spotlight-tone={primaryImpact.tone}
-          aria-label={`${t("play.feedback_key_consequence_label")}: ${primaryImpact.label}`}
-        >
-          <span style={ppStyles.gameplayImpactSpotlightLabel}>{t("play.feedback_key_consequence_label")}</span>
-          <strong
-            style={{
-              ...ppStyles.gameplayImpactSpotlightValue,
-              ...(gameplayToneStyle(primaryImpact.tone) ?? {}),
-            }}
-            title={primaryImpact.label}
-          >
-            {renderImpactValue(primaryImpact, "spotlight")}
-          </strong>
-        </div>
-      ) : null}
-      <div style={ppStyles.gameplayImpactGroups}>
-        {impactGroups.map((group) => (
+          {t("play.feedback_result_layer_label")}
+        </span>
+        {sourceMoveText ? (
           <div
-            key={group.id}
-            style={ppStyles.gameplayImpactGroup}
-            data-gameplay-impact-group={group.id}
+            style={ppStyles.gameplayImpactSourceMove}
+            data-gameplay-impact-source-move="true"
+            title={sourceMoveText}
           >
-            <span style={ppStyles.gameplayImpactGroupLabel}>{group.label}</span>
-            <div style={ppStyles.gameplayImpactList}>
-              {group.items.map((delta, index) => (
-                <span
-                  key={`${delta.label}-${index}`}
-                  style={{ ...ppStyles.gameplayDeltaChip, ...(gameplayToneStyle(delta.tone) ?? {}) }}
-                  data-gameplay-delta="normal-play"
-                  title={delta.label}
-                >
-                  {renderImpactValue(delta, "chip")}
-                </span>
-              ))}
-            </div>
+            <span style={ppStyles.gameplayImpactSourceLabel}>
+              {t("play.feedback_source_move_label")}{" "}
+            </span>
+            <strong style={ppStyles.gameplayImpactSourceText}>{sourceMoveText}</strong>
           </div>
-        ))}
+        ) : null}
+        {primaryImpact ? (
+          <div
+            style={ppStyles.gameplayImpactSpotlight}
+            data-gameplay-impact-spotlight="true"
+            data-gameplay-impact-spotlight-tone={primaryImpact.tone}
+            aria-label={`${t("play.feedback_key_consequence_label")}: ${primaryImpact.label}`}
+          >
+            <span style={ppStyles.gameplayImpactSpotlightLabel}>{t("play.feedback_key_consequence_label")}</span>
+            <strong
+              style={{
+                ...ppStyles.gameplayImpactSpotlightValue,
+                ...(gameplayToneStyle(primaryImpact.tone) ?? {}),
+              }}
+              title={primaryImpact.label}
+            >
+              {renderImpactValue(primaryImpact, "spotlight")}
+            </strong>
+          </div>
+        ) : null}
+        <div style={ppStyles.gameplayImpactGroups}>
+          {impactGroups.map((group) => (
+            <div
+              key={group.id}
+              style={ppStyles.gameplayImpactGroup}
+              data-gameplay-impact-group={group.id}
+            >
+              <span style={ppStyles.gameplayImpactGroupLabel}>{group.label}</span>
+              <div style={ppStyles.gameplayImpactList}>
+                {group.items.map((delta, index) => (
+                  <span
+                    key={`${delta.label}-${index}`}
+                    style={{ ...ppStyles.gameplayDeltaChip, ...(gameplayToneStyle(delta.tone) ?? {}) }}
+                    data-gameplay-delta="normal-play"
+                    title={delta.label}
+                  >
+                    {renderImpactValue(delta, "chip")}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
         {nextChoiceSignals.length > 0 ? (
           <div
-            style={ppStyles.gameplayImpactNextGroup}
+            style={ppStyles.gameplayImpactNextBridge}
             data-gameplay-impact-group="next"
             data-gameplay-next-choice-signals="true"
+            data-gameplay-next-choice-bridge="normal-play"
+            aria-label={t("play.feedback_next_choice_label")}
           >
             <span style={ppStyles.gameplayImpactNextGroupLabel}>{t("play.feedback_next_choice_label")}</span>
             <div style={ppStyles.gameplayImpactList}>
@@ -607,7 +622,6 @@ function GameplayImpactSummary({
             </div>
           </div>
         ) : null}
-      </div>
     </section>
   )
 }
