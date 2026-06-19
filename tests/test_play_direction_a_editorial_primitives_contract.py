@@ -1041,10 +1041,13 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "gameplayForecastInlineLabel" in styles
     assert '"play.option_forecast_kicker": "Likely impact"' in strings
     assert '"play.turn_guide_idle_title": "Choose one move"' in strings
-    assert '"play.turn_guide_idle_detail": "Select a card first, then submit it."' in strings
+    assert '"play.turn_guide_idle_detail": "Read the goal and pressure above, then select a card to submit."' in strings
+    assert '"play.turn_guide_idle_detail_with_leverage": "Read the goal and pressure; select a card, prepare leverage, or write your own."' in strings
+    assert 'data-play-turn-guide-detail="true"' in panels
     assert '"play.action_status_ready": "Move controls ready."' in strings
     assert '"play.turn_guide_idle_title": "选择一个行动"' in strings
-    assert '"play.turn_guide_idle_detail": "先选中卡片，再提交这个行动。"' in strings
+    assert '"play.turn_guide_idle_detail": "先看上方目标和压力，再选中卡片提交。"' in strings
+    assert '"play.turn_guide_idle_detail_with_leverage": "先看目标和压力；选中卡片、准备反将牌，或自己写一句。"' in strings
     assert '"play.option_shortcut_title": "Press {key} to select; then submit"' in strings
     assert '"play.option_shortcut_title": "按 {key} 选择；然后提交"' in strings
     assert '"play.selected_move_ready_label": "Ready to submit"' in strings

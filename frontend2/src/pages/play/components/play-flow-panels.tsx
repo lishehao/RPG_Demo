@@ -4373,7 +4373,7 @@ export function ActionArea({
         >
           <div style={ppStyles.turnGuideCopy}>
             <strong style={ppStyles.turnGuideTitle}>{turnGuide.title}</strong>
-            <span style={ppStyles.turnGuideDetail}>{turnGuide.detail}</span>
+            <span style={ppStyles.turnGuideDetail} data-play-turn-guide-detail="true">{turnGuide.detail}</span>
           </div>
         </div>
       ) : null}
