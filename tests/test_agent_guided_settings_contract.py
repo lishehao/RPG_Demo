@@ -163,6 +163,33 @@ def test_story_brief_revision_actions_explain_click_effect() -> None:
     assert '"create.brief_revision_hint": "Choose one to add that correction to the chat, then reshape the Brief."' in strings
 
 
+def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
+    source = (ROOT / "frontend2/src/pages/create/create-page.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/create/create-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    recipe_idx = source.index('data-create-seed-recipe="true"')
+    examples_idx = source.index("visibleSeedExamples.map")
+    assert recipe_idx < examples_idx
+    assert 't("create.seed_recipe_label")' in source
+    assert 't("create.seed_recipe_people_label")' in source
+    assert 't("create.seed_recipe_pressure_label")' in source
+    assert 't("create.seed_recipe_secret_label")' in source
+    assert "seedRecipe:" in styles
+    assert "seedRecipeLine:" in styles
+    for key in (
+        '"create.seed_recipe_label": "A strong seed needs"',
+        '"create.seed_recipe_people_label": "Who is present"',
+        '"create.seed_recipe_pressure_label": "Why now"',
+        '"create.seed_recipe_secret_label": "What can break"',
+        '"create.seed_recipe_label": "好种子需要"',
+        '"create.seed_recipe_people_label": "谁在场"',
+        '"create.seed_recipe_pressure_label": "为什么现在"',
+        '"create.seed_recipe_secret_label": "什么会爆"',
+    ):
+        assert key in strings
+
+
 def test_opening_generation_wait_state_explains_playable_outputs() -> None:
     panels_source = (ROOT / "frontend2/src/pages/create/components/create-flow-panels.tsx").read_text()
     styles_source = (ROOT / "frontend2/src/pages/create/create-styles.ts").read_text()

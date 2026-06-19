@@ -909,7 +909,21 @@ export function CreatePage({
                 exit={{ opacity: 0, y: -4, height: 0, marginBottom: 0 }}
                 transition={itemTransition}
               >
-                <span style={cpStyles.examplesLabel}>{t("create.examples_label")}</span>
+                <div style={cpStyles.seedRecipe} data-create-seed-recipe="true">
+                  <span style={cpStyles.examplesLabel}>{t("create.seed_recipe_label")}</span>
+                  <span style={cpStyles.seedRecipeLine}>
+                    <strong>{t("create.seed_recipe_people_label")}</strong>
+                    <span>{t("create.seed_recipe_people_detail")}</span>
+                  </span>
+                  <span style={cpStyles.seedRecipeLine}>
+                    <strong>{t("create.seed_recipe_pressure_label")}</strong>
+                    <span>{t("create.seed_recipe_pressure_detail")}</span>
+                  </span>
+                  <span style={cpStyles.seedRecipeLine}>
+                    <strong>{t("create.seed_recipe_secret_label")}</strong>
+                    <span>{t("create.seed_recipe_secret_detail")}</span>
+                  </span>
+                </div>
                 <div
                   style={{
                     ...cpStyles.examplesList,

@@ -570,6 +570,19 @@ export const cpStyles: Record<string, CSSProperties> = {
     textTransform: "uppercase" as const,
     fontWeight: 760,
   },
+  seedRecipe: {
+    minWidth: 0,
+    display: "grid",
+    rowGap: 7,
+  },
+  seedRecipeLine: {
+    minWidth: 0,
+    display: "grid",
+    rowGap: 1,
+    color: "rgba(255,255,255,0.56)",
+    fontSize: 11.5,
+    lineHeight: 1.35,
+  },
   examplesList: {
     minWidth: 0,
     display: "grid",
