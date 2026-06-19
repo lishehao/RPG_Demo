@@ -3204,6 +3204,17 @@ export function ActionArea({
     return optionTargets.map((target) => target?.id === actorFocus.id)
   }, [actorFocus, optionTargets])
   const actorFocusMatchCount = actorFocusOptionMatches.filter(Boolean).length
+  const actorFocusMatchedMoveLabels = useMemo(() => {
+    if (!actorFocus) return []
+    return options
+      .map((opt, index) => ({
+        match: actorFocusOptionMatches[index],
+        label: parseOptionLabel(opt.label).body || opt.label,
+      }))
+      .filter((entry) => entry.match)
+      .map((entry) => entry.label)
+      .slice(0, 3)
+  }, [actorFocus, actorFocusOptionMatches, options])
   const actorFocusDetail = actorFocus
     ? actorFocusMatchCount > 0
       ? t(
@@ -4299,6 +4310,27 @@ export function ActionArea({
           <span style={ppStyles.actorFocusCueDetail}>
             {actorFocusDetail}
           </span>
+          {actorFocusMatchedMoveLabels.length > 0 ? (
+            <span
+              style={ppStyles.actorFocusMatches}
+              data-play-actor-focus-matches="true"
+              aria-label={t("play.actor_focus_matches_label")}
+            >
+              <span style={ppStyles.actorFocusMatchesLabel}>
+                {t("play.actor_focus_matches_label")}
+              </span>
+              {actorFocusMatchedMoveLabels.map((label) => (
+                <span
+                  key={label}
+                  style={ppStyles.actorFocusMatchChip}
+                  title={label}
+                  data-play-actor-focus-match-chip="true"
+                >
+                  {truncateRecoveryText(label, 56)}
+                </span>
+              ))}
+            </span>
+          ) : null}
           {actorFocusMatchCount === 0 && showFreeActionToggle ? (
             <button
               type="button"

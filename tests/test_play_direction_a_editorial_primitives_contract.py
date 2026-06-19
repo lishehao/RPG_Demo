@@ -361,6 +361,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const optionTargets = useMemo(() => options.map" in panels
     assert "const actorFocusOptionMatches = useMemo" in panels
     assert "target?.id === actorFocus.id" in panels
+    assert "actorFocusMatchedMoveLabels" in panels
+    assert 'data-play-actor-focus-matches="true"' in panels
+    assert 'data-play-actor-focus-match-chip="true"' in panels
     assert "const actorFocusDetail = actorFocus" in panels
     assert "play.actor_focus_match_detail_one" in panels
     assert "play.actor_focus_match_detail_many" in panels
@@ -518,6 +521,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "optionBtnActorFocusDimmed" in styles
     assert "actorFocusCue" in styles
     assert "actorFocusCueHead" in styles
+    assert "actorFocusMatches" in styles
+    assert "actorFocusMatchChip" in styles
     assert "actorFocusCueClear" in styles
     assert "gameplayDecisionForecast" in styles
     assert "gameplayDecisionGroupCost" in styles
@@ -549,6 +554,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_showing_label": "Showing moves for {name}"' in strings
     assert '"play.actor_focus_match_detail_one": "1 current move directly involves this character."' in strings
     assert '"play.actor_focus_match_detail_many": "{count} current moves directly involve this character."' in strings
+    assert '"play.actor_focus_matches_label": "Matching moves"' in strings
     assert '"play.actor_focus_no_match": "No current move names this character directly; use a custom move to test them."' in strings
     assert '"play.actor_focus_clear": "Clear"' in strings
     assert '"play.free_context_actor_label": "Custom move target"' in strings
