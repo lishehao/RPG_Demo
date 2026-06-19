@@ -42,7 +42,16 @@ function splitHistoryBeat(beat: string): { label: string; body: string } {
   }
   const [label, ...rest] = beat.split(":")
   if (!rest.length) return { label: "Story", body: beat }
-  return { label: label.trim(), body: rest.join(":").trim() }
+  const normalizedLabel = label.trim()
+  const playerLabel =
+    normalizedLabel === "Opening beat"
+      ? "Opening"
+      : normalizedLabel === "Changed"
+        ? "After your move"
+        : normalizedLabel === "Next beat"
+          ? "Next scene"
+          : normalizedLabel
+  return { label: playerLabel, body: rest.join(":").trim() }
 }
 
 type LongHistoryOutcome = {
