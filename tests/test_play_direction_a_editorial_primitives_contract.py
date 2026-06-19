@@ -613,11 +613,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.action_open_free_actor": "Write move for {name}"' in strings
     assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
     assert '"play.free_action_boundary_hint": "Write what others can see or hear here; put your real purpose in inner motive."' in strings
-    assert '"play.action_target_label": "Target"' in strings
-    assert '"play.action_target_title": "This move primarily points at {name}"' in strings
+    assert '"play.action_target_label": "Who reacts"' in strings
+    assert '"play.action_target_title": "This move tests {name}"' in strings
     assert '"play.action_target_detail_label": "Who reacts"' in strings
-    assert '"play.action_target_detail_text": "This move mainly tests {name}\'s reaction."' in strings
-    assert '"play.move_receipt_signals_label": "Target and impact committed by this move"' in strings
+    assert '"play.action_target_detail_text": "This move tests {name} and shows how they react."' in strings
+    assert '"play.move_receipt_signals_label": "Who reacted and what changed"' in strings
     assert '"play.resource_focus_cta": "Use this"' in strings
     assert '"play.resource_focus_active": "Using this"' in strings
     assert '"play.resource_focus_cta_count_one": "1 usable move"' in strings
