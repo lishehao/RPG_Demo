@@ -551,6 +551,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-free-action-starter="true"' in panels
     assert 'data-play-free-action-input="true"' in panels
     assert 'data-play-free-action-submit="true"' in panels
+    assert "const freeActionToggleShownInFocusCue =" in panels
+    assert "const showAlternateFreeActionToggle = showFreeActionToggle && !freeActionToggleShownInFocusCue" in panels
+    assert "{showAlternateFreeActionToggle ? (" in panels
     assert "setFreeInput(starter.text)" in panels
     assert 'data-play-free-action-context="true"' in panels
     assert "data-play-free-action-context-kind={freeActionFocusContext.kind}" in panels

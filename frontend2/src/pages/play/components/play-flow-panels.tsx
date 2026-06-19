@@ -3500,6 +3500,10 @@ export function ActionArea({
     showFreeActionSurface &&
     !showFreeInput &&
     options.length > 0
+  const freeActionToggleShownInFocusCue =
+    showStandardOptions &&
+    ((actorFocus && actorFocusMatchCount === 0) || (resourceFocus && resourceFocusMatchCount === 0))
+  const showAlternateFreeActionToggle = showFreeActionToggle && !freeActionToggleShownInFocusCue
   const freeActionToggleText = freeInput.trim()
     ? t("play.action_resume_free")
     : freeActionFocusContext?.toggleText ?? t("play.action_open_free")
@@ -5022,9 +5026,9 @@ export function ActionArea({
         ) : null
       ) : null}
 
-      {showFreeActionToggle ? (
+      {showAlternateFreeActionToggle ? (
         <div style={ppStyles.alternateActionRow}>
-          {showFreeActionToggle ? (
+          {showAlternateFreeActionToggle ? (
             <button
               style={{
                 ...ppStyles.alternateActionButton,
