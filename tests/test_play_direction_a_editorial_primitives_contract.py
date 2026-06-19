@@ -956,9 +956,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_objective_label": "Your goal"' in strings
     assert '"play.gameplay_objective_label": "你的目标"' in strings
     assert '"play.gameplay_tracks_label": "What is at stake"' in strings
-    assert '"play.gameplay_tracks_hint": "Watch these while choosing a move"' in strings
+    assert '"play.gameplay_tracks_hint": "Each move trades time, pressure, trust, or proof"' in strings
+    assert '"play.gameplay_tracks_hint": "Watch these while choosing a move"' not in strings
     assert '"play.gameplay_tracks_label": "风险与资源"' in strings
-    assert '"play.gameplay_tracks_hint": "选择行动时盯住这些变化"' in strings
+    assert '"play.gameplay_tracks_hint": "每次行动都在交换时间、压力、信任或证据"' in strings
+    assert '"play.gameplay_tracks_hint": "选择行动时盯住这些变化"' not in strings
     assert "gameplayStakesHeader" in styles
     assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "Likely impact"' in strings
