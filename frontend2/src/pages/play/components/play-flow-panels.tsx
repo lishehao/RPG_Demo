@@ -2096,11 +2096,52 @@ function optionTagStyle(tag: string): CSSProperties {
   // in engine.py keeps both sets stable, so this list rarely needs
   // updating.
   if (tag === "Leverage" || tag === "反将牌") return ACTIVE_GOLD
-  if (tag === "挑拨" || tag === "硬刚" || tag === "Provoke" || tag === "Confront") return ACTIVE_HOT
-  if (tag === "反将" || tag === "合作" || tag === "Counter" || tag === "Ally") return ACTIVE_TEAL
-  if (tag === "试探" || tag === "Probe") return ACTIVE_PURPLE
+  if (
+    tag === "挑拨" ||
+    tag === "硬刚" ||
+    ["Provoke", "Confront", "Press", "Push", "Challenge", "Accuse"].includes(tag)
+  ) return ACTIVE_HOT
+  if (
+    tag === "反将" ||
+    tag === "合作" ||
+    ["Counter", "Ally", "Support", "Reassure", "Cooperate"].includes(tag)
+  ) return ACTIVE_TEAL
+  if (
+    tag === "试探" ||
+    ["Probe", "Ask", "Question", "Search", "Listen", "Inspect"].includes(tag)
+  ) return ACTIVE_PURPLE
   // 妥协 / 观望 / 示弱 / Yield / Watch / Submit / unknown → PASSIVE
   return PASSIVE
+}
+
+function optionTagGuide(tag: string, t: ReturnType<typeof useT>): string {
+  const normalized = tag.trim().toLowerCase()
+  if (
+    ["probe", "ask", "question", "search", "listen", "inspect"].includes(normalized) ||
+    tag === "试探"
+  ) return t("play.option_intent_probe")
+  if (
+    ["confront", "provoke", "press", "push", "challenge", "accuse"].includes(normalized) ||
+    tag === "硬刚" ||
+    tag === "挑拨"
+  ) {
+    return t("play.option_intent_confront")
+  }
+  if (
+    ["ally", "counter", "support", "reassure", "cooperate"].includes(normalized) ||
+    tag === "合作" ||
+    tag === "反将"
+  ) {
+    return t("play.option_intent_ally")
+  }
+  if (
+    ["hold", "cover", "deflect", "distract", "stall", "calm", "wait", "watch", "yield"].includes(normalized) ||
+    ["稳住", "掩护", "转移", "拖延", "观望", "妥协"].includes(tag)
+  ) {
+    return t("play.option_intent_stabilize")
+  }
+  if (normalized === "leverage" || tag === "反将牌") return t("play.option_intent_leverage")
+  return t("play.option_intent_default")
 }
 
 function shiftArrow(shift: NarrativeNPCPulse["shift"]): string {
@@ -4260,6 +4301,7 @@ export function ActionArea({
     hint: string,
     forecasts: GameplayActionForecast[],
     target?: { id: string; name: string } | null,
+    intentGuide?: { tag: string; description: string } | null,
   ) => {
     const forecastDetails = forecasts.filter((chip) => chip.detail)
     const showNarrativeResult = hint.trim().length > 0 && !hintEchoesForecastChips(hint, forecasts)
@@ -4276,6 +4318,34 @@ export function ActionArea({
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
         transition={reducedMotion ? { duration: 0.01 } : { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
       >
+        {intentGuide ? (
+          <span
+            style={{
+              ...ppStyles.optionExpandedDetailSection,
+              ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
+            }}
+            data-play-action-card-detail-section="intent"
+          >
+            <span style={ppStyles.optionExpandedDetailLabel}>
+              {t("play.option_intent_label")}
+            </span>
+            <span style={ppStyles.optionExpandedDetailBody}>
+              <span
+                style={ppStyles.optionExpandedDetailChip}
+                data-play-action-intent-chip="true"
+                title={intentGuide.description}
+              >
+                {intentGuide.tag}
+              </span>
+              <span
+                style={ppStyles.optionExpandedDetailText}
+                data-play-action-intent-detail="true"
+              >
+                {intentGuide.description}
+              </span>
+            </span>
+          </span>
+        ) : null}
         {showNarrativeResult ? (
           <span
             style={{
@@ -4820,6 +4890,12 @@ export function ActionArea({
                 const isUnpicked = pickedIndex !== null && pickedIndex !== i
                 const optionForecasts = actionForecasts?.[i] ?? []
                 const actionTarget = optionTargets[i] ?? null
+                const optionIntentGuide = parsed.tag
+                  ? {
+                      tag: parsed.tag,
+                      description: optionTagGuide(parsed.tag, t),
+                    }
+                  : null
                 const isActorFocusMatch = actorFocusOptionMatches[i] ?? false
                 const isActorFocusDimmed = Boolean(actorFocus && actorFocusMatchCount > 0 && !isActorFocusMatch)
                 const isResourceFocusMatch = resourceFocusOptionMatches[i] ?? false
@@ -4916,6 +4992,9 @@ export function ActionArea({
                                 ...ppStyles.optionTagChip,
                                 ...optionTagStyle(parsed.tag),
                               }}
+                              data-play-action-card-intent="true"
+                              aria-label={optionIntentGuide?.description}
+                              title={optionIntentGuide?.description}
                             >
                               {parsed.tag}
                             </span>
@@ -4967,7 +5046,7 @@ export function ActionArea({
                         >
                           {isSelected ? t("play.selected_move_kicker") : t("play.option_expand_cta")}
                         </span>
-                        {isSelected ? renderSelectedOptionDetail(opt.hint ?? "", optionForecasts, actionTarget) : null}
+                        {isSelected ? renderSelectedOptionDetail(opt.hint ?? "", optionForecasts, actionTarget, optionIntentGuide) : null}
                       </div>
                     </motion.button>
                     <AnimatePresence initial={false}>

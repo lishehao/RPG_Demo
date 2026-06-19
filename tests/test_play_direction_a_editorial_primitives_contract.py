@@ -969,7 +969,14 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-card-detail="true"' in panels
     assert 'data-play-action-card-title="true"' in panels
     assert 'data-play-action-card-body="true"' in panels
+    assert "function optionTagGuide" in panels
+    assert 'data-play-action-card-intent="true"' in panels
+    assert 'data-play-action-card-detail-section="intent"' in panels
+    assert 'data-play-action-intent-chip="true"' in panels
+    assert 'data-play-action-intent-detail="true"' in panels
     assert 'data-play-turn-guide="true"' in panels
+    assert 'title={optionIntentGuide?.description}' in panels
+    assert 'aria-label={optionIntentGuide?.description}' in panels
     assert 'data-play-action-card-detail-section="result"' in panels
     assert 'data-play-action-card-detail-section="forecast"' in panels
     assert 'data-play-action-card-detail-section="why-now"' in panels
@@ -1048,6 +1055,13 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "gameplayForecastInline" in styles
     assert "gameplayForecastInlineLabel" in styles
     assert '"play.option_forecast_kicker": "Likely impact"' in strings
+    assert '"play.option_intent_label": "Move type"' in strings
+    assert '"play.option_intent_probe": "Test the room first. Use it when you need information or a reaction."' in strings
+    assert '"play.option_intent_confront": "Apply direct pressure. Use it when delay would make things worse."' in strings
+    assert '"play.option_intent_stabilize": "Stabilize or redirect the room. Use it when you need time, calm, or cover for someone."' in strings
+    assert '"play.option_intent_label": "行动意图"' in strings
+    assert '"play.option_intent_probe": "先试探局面，适合在需要信息或确认对方反应时使用。"' in strings
+    assert '"play.option_intent_stabilize": "稳住或转移局面，适合在需要争取时间、降温或保护某人时使用。"' in strings
     assert '"play.turn_guide_idle_title": "Choose one move"' in strings
     assert '"play.turn_guide_idle_detail": "Read the goal and pressure above, then select a card to submit."' in strings
     assert '"play.turn_guide_idle_detail_with_leverage": "Read the goal and pressure; select a card, prepare leverage, or write your own."' in strings
