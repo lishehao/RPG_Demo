@@ -18,6 +18,7 @@ import { useApi } from "../../../app/api-context"
 import { Truncated } from "../../../shared/ui/truncated"
 import { friendlyError } from "../../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../../shared/lib/i18n"
+import { cleanNarrativeDisplayText } from "../../../shared/lib/narrative-display-text"
 import {
   cascadeDelay,
   fadeTransition,
@@ -1768,7 +1769,7 @@ export function StoryBeat({
             </span>
           </motion.div>
         ) : null}
-        <div style={textStyle}>{message.content}</div>
+        <div style={textStyle}>{cleanNarrativeDisplayText(message.content)}</div>
         {showLatestBeatDigest ? (
           <motion.div
             initial={{ opacity: 0, y: 4 }}

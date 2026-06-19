@@ -1529,3 +1529,18 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert '"play.action_jump_detail_update_compact": "Tap to review, then choose."' in strings
     for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
         assert forbidden not in fixture.casefold()
+
+
+def test_narrative_display_text_cleanup_is_shared_by_play_and_replay() -> None:
+    cleanup = (ROOT / "frontend2/src/shared/lib/narrative-display-text.ts").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
+
+    assert "export function cleanNarrativeDisplayText(text: string): string" in cleanup
+    assert 'replace(/([.!?])\\.+(?=\\s|[A-Z])/g, "$1")' in cleanup
+    assert 'replace(/([!?])\\.(?=\\s|[A-Z])/g, "$1")' in cleanup
+    assert 'replace(/([.!?])([A-Z][a-z])/g, "$1 $2")' in cleanup
+    assert 'import { cleanNarrativeDisplayText } from "../../../shared/lib/narrative-display-text"' in panels
+    assert "{cleanNarrativeDisplayText(message.content)}</div>" in panels
+    assert 'import { cleanNarrativeDisplayText } from "../../shared/lib/narrative-display-text"' in replay
+    assert "{cleanNarrativeDisplayText(m.content)}" in replay

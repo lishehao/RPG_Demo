@@ -3,6 +3,7 @@ import type { NarrativePublicReplayResponse } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
 import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
+import { cleanNarrativeDisplayText } from "../../shared/lib/narrative-display-text"
 import { LoadingShim } from "../../shared/ui/loading-shim"
 import { EmptyState } from "../../shared/ui/empty-state"
 import {
@@ -385,7 +386,7 @@ function renderInterleavedStream(
                     ...(isExpanded ? null : rpStyles.narratorTextSkim),
                   }}
                 >
-                  {m.content}
+                  {cleanNarrativeDisplayText(m.content)}
                 </div>
                 {!isExpanded ? (
                   <div style={rpStyles.skimMore}>{t("replay.skim_expand")}</div>
