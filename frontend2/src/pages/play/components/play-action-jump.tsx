@@ -8,15 +8,17 @@ import { scrollToPlayActionArea } from "./play-action-jump-utils"
 export function PlayActionJumpButton({
   onClick = scrollToPlayActionArea,
   detail,
+  compactDetail,
   stage,
 }: {
   onClick?: () => void
   detail?: string
+  compactDetail?: string
   stage?: string
 }) {
   const t = useT()
   const compactJump = useCompactLayout("(max-width: 680px)")
-  const detailCopy = compactJump ? "" : detail?.trim()
+  const detailCopy = compactJump ? compactDetail?.trim() : detail?.trim()
   return (
     <motion.button
       key="play-action-jump"

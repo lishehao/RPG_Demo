@@ -265,6 +265,7 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
       {showActionJump ? (
         <PlayActionJumpButton
           detail={t("play.action_jump_detail_choose")}
+          compactDetail={t("play.action_jump_detail_choose_compact")}
           stage="choose"
           onClick={() => {
             scrollToPlayActionArea()

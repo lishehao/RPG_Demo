@@ -1122,7 +1122,8 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "stage={gameplayLoopStage}" in play_page
     assert "detail={actionJumpDetail}" in play_page
     assert "useCompactLayout(\"(max-width: 680px)\")" in action_jump
-    assert "const detailCopy = compactJump ? \"\" : detail?.trim()" in action_jump
+    assert "compactDetail?: string" in action_jump
+    assert "const detailCopy = compactJump ? compactDetail?.trim() : detail?.trim()" in action_jump
     assert 'data-play-action-jump="true"' in action_jump
     assert "data-play-action-jump-stage={stage}" in action_jump
     assert 'data-play-action-jump-compact={compactJump ? "true" : "false"}' in action_jump
@@ -1236,6 +1237,7 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     fixture = (ROOT / "frontend2/src/pages/play/components/play-long-history-fixture.tsx").read_text()
     action_jump = (ROOT / "frontend2/src/pages/play/components/play-action-jump.tsx").read_text()
     action_jump_utils = (ROOT / "frontend2/src/pages/play/components/play-action-jump-utils.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert 'segments[1] === "play-action"' in routes
     assert 'params.get("scenario") === "long-history"' in routes
@@ -1257,10 +1259,14 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert "<PlayActionJumpButton" in fixture
     assert 'stage="choose"' in fixture
     assert 'detail={t("play.action_jump_detail_choose")}' in fixture
+    assert 'compactDetail={t("play.action_jump_detail_choose_compact")}' in fixture
     assert "scrollToPlayActionArea()" in fixture
     assert "isPlayActionAreaAwayFromViewport(actionArea)" in fixture
     assert 'data-play-action-jump="true"' in action_jump
     assert "data-play-action-jump-stage={stage}" in action_jump
+    assert "compactDetail?: string" in action_jump
+    assert "compactJump ? compactDetail?.trim() : detail?.trim()" in action_jump
     assert "window.scrollTo" in action_jump_utils
+    assert '"play.action_jump_detail_choose_compact": "Choices are below the story."' in strings
     for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
         assert forbidden not in fixture.casefold()
