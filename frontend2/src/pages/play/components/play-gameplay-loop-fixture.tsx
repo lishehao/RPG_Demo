@@ -522,7 +522,11 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
         {t("action.back_home")}
       </button>
 
-      <section style={styles.shell} aria-label="Gameplay loop rehearsal">
+      <section
+        style={styles.shell}
+        aria-label="Gameplay loop rehearsal"
+        data-gameplay-layout-priority="action-first"
+      >
         <div style={styles.mainColumn}>
           <section style={styles.objectivePanel} data-gameplay-objective="true">
             <span style={styles.kicker}>Your goal</span>
@@ -1016,7 +1020,7 @@ const styles: Record<string, CSSProperties> = {
   },
   trackGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
     gap: 10,
   },
   trackCard: {

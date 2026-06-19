@@ -288,12 +288,15 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'case "playGameplayLoopFixture"' in app
     assert "PlayGameplayLoopFixture" in app
     assert 'data-gameplay-loop-fixture="true"' in fixture
+    assert 'data-gameplay-layout-priority="action-first"' in fixture
     assert 'data-gameplay-objective="true"' in fixture
     assert "Your goal" in fixture
     assert 'data-gameplay-stakes-header="true"' in fixture
     assert "What is at stake" in fixture
     assert "Watch these while choosing a move." in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
+    assert 'gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))"' in fixture
+    assert 'gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))"' not in fixture
     assert "Review selected move" in fixture
     assert "Submit it, or add what you secretly mean." in fixture
     assert 'data-gameplay-motive-frame="true"' in fixture
