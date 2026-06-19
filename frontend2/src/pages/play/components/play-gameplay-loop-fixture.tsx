@@ -986,14 +986,14 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                     aria-label={
                       clueArmed
                         ? "Green-room badge clue is attached to this move"
-                        : "Use green-room badge clue on its opened move"
+                        : "Attach green-room badge clue to its opened move"
                     }
                     aria-pressed={clueArmed}
                     data-gameplay-clue-use="green-room-badge"
                     data-gameplay-clue-use-active={clueArmed ? "true" : undefined}
                     onClick={() => selectSuggestedAction(unlockedClueAction)}
                   >
-                    {clueArmed ? "Using clue" : "Use clue"}
+                    {clueArmed ? "Badge clue attached" : "Attach badge clue"}
                   </button>
                 </>
               ) : null}

@@ -348,7 +348,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert '!isResourceUseDelta(delta) && (delta.tone === "unlock" || delta.tone === "shift")' in fixture
     assert "You can use the badge clue in the next move." in fixture
     assert "Green-room badge clue is attached to this move" in fixture
-    assert "Use green-room badge clue on its opened move" in fixture
+    assert "Attach green-room badge clue to its opened move" in fixture
     assert "aria-pressed={clueArmed}" in fixture
     assert "function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean): Track[]" in fixture
     assert "function resolvedSummaryForAction(action: FixtureAction | null): string" in fixture
@@ -470,8 +470,10 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-clue-use="green-room-badge"' in fixture
     assert 'data-gameplay-clue-armed={clueArmed ? "true" : undefined}' in fixture
     assert 'data-gameplay-clue-use-active={clueArmed ? "true" : undefined}' in fixture
-    assert "Use clue" in fixture
-    assert "Using clue" in fixture
+    assert "Attach badge clue" in fixture
+    assert "Badge clue attached" in fixture
+    assert "Use clue" not in fixture
+    assert "Using clue" not in fixture
     assert "This clue is attached to the selected move." in fixture
     assert "selectSuggestedAction(unlockedClueAction)" in fixture
     assert "borderColor" not in fixture
