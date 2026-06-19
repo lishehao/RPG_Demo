@@ -1235,9 +1235,11 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert "Illustrated banner is secondary to the result text" in ending_screen
     assert 'data-play-ending-actions="true"' in ending_screen
     assert 'data-play-ending-next-step-label="true"' in ending_screen
+    assert 'data-play-ending-next-step-hint="true"' in ending_screen
     assert 'data-play-ending-illustration="true"' in ending_screen
     assert ending_screen.index("style={ppStyles.endingPassage}") < ending_screen.index('data-play-ending-actions="true"')
     assert ending_screen.index('data-play-ending-next-step-label="true"') < ending_screen.index("style={ppStyles.endingActionsRow}")
+    assert ending_screen.index('data-play-ending-next-step-hint="true"') < ending_screen.index("style={ppStyles.endingActionsRow}")
     assert ending_screen.index('data-play-ending-actions="true"') < ending_screen.index('data-play-ending-illustration="true"')
     assert ending_screen.index('data-play-ending-illustration="true"') < ending_screen.index("...ppStyles.endingHero")
     assert "const fallbackRecap = mergedHighlights.length === 0" in ending_screen
@@ -1248,9 +1250,13 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert 'padding: "10px 0 28px"' in styles[styles.index("endingCardInner") : styles.index("endingLabelChip")]
     assert 'marginBottom: 22' in styles[styles.index("endingActions") : styles.index("endingActionsRow")]
     assert "endingActionsLabel" in styles
+    assert "endingActionsHint" in styles
     assert "endingRecapSection" in styles
     assert '"play.ending_recap_title": "How this run got here"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
     assert '"play.ending_next_steps": "Next steps"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    assert '"play.ending_next_steps_hint": "Share the ending you reached, or replay from the same opening."' in (
+        ROOT / "frontend2/src/shared/lib/i18n.ts"
+    ).read_text()
 
 
 def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> None:

@@ -5674,6 +5674,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     lineHeight: 1.2,
     fontWeight: 840,
   },
+  endingActionsHint: {
+    maxWidth: 620,
+    color: "rgba(232,218,205,0.62)",
+    fontSize: 12,
+    lineHeight: 1.42,
+    fontWeight: 560,
+  },
   endingActionsRow: {
     display: "flex",
     alignItems: "center",

@@ -1335,6 +1335,12 @@ export function EndingScreen({
             <span data-play-ending-next-step-label="true" style={ppStyles.endingActionsLabel}>
               {t("play.ending_next_steps")}
             </span>
+            <span
+              data-play-ending-next-step-hint="true"
+              style={ppStyles.endingActionsHint}
+            >
+              {t("play.ending_next_steps_hint")}
+            </span>
             <div style={ppStyles.endingActionsRow}>
               <motion.button
                 onClick={onShare}
