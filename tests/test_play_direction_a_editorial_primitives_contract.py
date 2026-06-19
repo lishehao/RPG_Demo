@@ -1007,11 +1007,15 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.move_receipt_signals_label": "Who reacted and what changed"' in strings
     assert '"play.resource_focus_cta": "Use this"' in strings
     assert '"play.resource_focus_active": "Using this"' in strings
-    assert '"play.resource_focus_cta_count_one": "1 usable move"' in strings
-    assert '"play.resource_focus_cta_count_many": "{count} usable moves"' in strings
-    assert '"play.resource_focus_active_count_one": "1 usable move"' in strings
-    assert '"play.resource_focus_active_count_many": "{count} usable moves"' in strings
-    assert '"play.resource_focus_active_count": "Usable moves: {count}"' in strings
+    assert '"play.resource_focus_cta_count_one": "1 move uses this"' in strings
+    assert '"play.resource_focus_cta_count_many": "{count} moves use this"' in strings
+    assert '"play.resource_focus_active_count_one": "Showing 1 move"' in strings
+    assert '"play.resource_focus_active_count_many": "Showing {count} moves"' in strings
+    assert '"play.resource_focus_active_count": "Showing: {count}"' in strings
+    assert '"play.resource_focus_cta_count_one": "1 usable move"' not in strings
+    assert '"play.resource_focus_active_count": "Usable moves: {count}"' not in strings
+    assert '"play.resource_focus_cta_count_one": "1 个行动会用到它"' in strings
+    assert '"play.resource_focus_active_count_one": "正在显示 1 个行动"' in strings
     assert '"play.resource_focus_label": "Focus on resource"' in strings
     assert '"play.resource_focus_showing_label": "Moves about {name}"' in strings
     assert '"play.resource_focus_clear": "Clear"' in strings
