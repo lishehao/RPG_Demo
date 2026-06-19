@@ -281,6 +281,7 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
           turnsCompleted={9 + turn}
           turnsRemaining={3}
           turnBudget={12}
+          hasRecentImpact={!!outcome}
           showFreeInput={showFreeInput}
           freeInput={freeInput}
           setFreeInput={setFreeInput}

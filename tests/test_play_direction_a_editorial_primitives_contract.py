@@ -1472,6 +1472,7 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert "longHistoryBeatBody" in styles
     assert "nextFocus: string" in fixture
     assert "longHistoryOutcomeForMove(submittedMove)" in fixture
+    assert "hasRecentImpact={!!outcome}" in fixture
     assert "data-play-long-history-result-feedback=\"true\"" in fixture
     assert "data-play-long-history-result-item=\"true\"" in fixture
     assert 'data-play-long-history-next-focus="true"' in fixture
