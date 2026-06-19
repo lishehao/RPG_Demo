@@ -724,6 +724,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "type ResolvingCommitmentSignal = {" in panels
     assert "const resolvingCommitmentSignals = useMemo<ResolvingCommitmentSignal[]>" in panels
     assert 'data-play-move-receipt-signals="true"' in panels
+    assert 'data-play-move-receipt-signals-label="true"' in panels
     assert 'data-play-move-receipt-signal="true"' in panels
     assert "commitmentSignals={resolvingCommitmentSignals}" in panels
     assert 'data-play-actor-focus-cue="true"' in panels
@@ -1014,7 +1015,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.action_target_title": "This move tests {name}"' in strings
     assert '"play.action_target_detail_label": "Who reacts"' in strings
     assert '"play.action_target_detail_text": "This move tests {name} and shows how they react."' in strings
-    assert '"play.move_receipt_signals_label": "Who reacted and what changed"' in strings
+    assert '"play.move_receipt_signals_label": "What this move puts in play"' in strings
+    assert '"play.move_receipt_signals_label": "这步行动正在推动什么"' in strings
+    assert '"play.move_receipt_signals_label": "Who reacted and what changed"' not in strings
     assert '"play.resource_focus_cta": "Use this"' in strings
     assert '"play.resource_focus_active": "Using this"' in strings
     assert '"play.resource_focus_cta_count_one": "1 move uses this"' in strings

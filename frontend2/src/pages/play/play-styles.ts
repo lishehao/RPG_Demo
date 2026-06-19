@@ -4395,6 +4395,12 @@ export const ppStyles: Record<string, CSSProperties> = {
     gap: 5,
     paddingTop: 1,
   },
+  resolvingCommitmentSignalsLabel: {
+    color: "rgba(246,221,176,0.58)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 760,
+  },
   resolvingCommitmentSignalChip: {
     maxWidth: "100%",
     fontSize: 10.5,

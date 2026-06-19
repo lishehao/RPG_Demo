@@ -2789,6 +2789,12 @@ function ResolvingTurnPanel({
             data-play-move-receipt-signals="true"
             aria-label={t("play.move_receipt_signals_label")}
           >
+            <span
+              style={ppStyles.resolvingCommitmentSignalsLabel}
+              data-play-move-receipt-signals-label="true"
+            >
+              {t("play.move_receipt_signals_label")}
+            </span>
             {commitmentSignals.map((signal) => (
               <span
                 key={signal.id}
