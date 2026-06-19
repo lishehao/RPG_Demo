@@ -2734,6 +2734,11 @@ function ResolvingTurnPanel({
     { id: "reaction", label: t("play.feedback_pending_reaction_label"), state: "active" },
     { id: "update", label: t("play.feedback_pending_update_label"), state: "waiting" },
   ] as const
+  const reactionCues = [
+    target ? t("play.feedback_pending_cue_target", { target }) : t("play.feedback_pending_cue_people"),
+    t("play.feedback_pending_cue_state"),
+    t("play.feedback_pending_cue_next"),
+  ]
   const resolvingAriaLabel = [t("play.resolve_title"), moveMeta, moveCopy, resolveStatus, progressCopy]
     .filter(Boolean)
     .join(". ")
@@ -2803,6 +2808,13 @@ function ResolvingTurnPanel({
           <span style={ppStyles.resolvingStatus}>{resolveStatus}</span>
           <strong style={ppStyles.roomReactingTitle}>{t("play.room_reacting_title")}</strong>
           <span style={ppStyles.resolvingProgressText}>{progressCopy}</span>
+          <span style={ppStyles.roomReactingCues} data-play-room-reacting-cues="true">
+            {reactionCues.map((cue) => (
+              <span key={cue} style={ppStyles.roomReactingCue} data-play-room-reacting-cue="true">
+                {cue}
+              </span>
+            ))}
+          </span>
         </span>
         <span style={ppStyles.resolvingDots} aria-hidden>
           {[0, 1, 2].map((i) => (

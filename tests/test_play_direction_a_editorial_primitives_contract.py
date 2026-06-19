@@ -854,6 +854,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "outcomeReceiptHint" in styles
     assert "feedbackPendingTimeline" in styles
     assert "feedbackPendingStepActive" in styles
+    assert "roomReactingCues" in styles
+    assert "roomReactingCue" in styles
     assert '"play.gameplay_loop_label": "How turns work"' in strings
     assert '"play.gameplay_loop_kicker": "This turn"' in strings
     assert '"play.gameplay_loop_read_label": "Read the room"' in strings
@@ -955,8 +957,16 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_pending_receipt_label": "Move sent"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert '"play.feedback_pending_update_label": "Next moves forming"' in strings
+    assert '"play.feedback_pending_cue_people": "Reading people"' in strings
+    assert '"play.feedback_pending_cue_target": "Reading {target}"' in strings
+    assert '"play.feedback_pending_cue_state": "Checking clues and pressure"' in strings
+    assert '"play.feedback_pending_cue_next": "Shaping next moves"' in strings
+    assert '"play.feedback_pending_cue_people": "观察人物反应"' in strings
+    assert '"play.feedback_pending_cue_state": "检查线索和压力"' in strings
     assert '"play.feedback_pending_next_hint": "The next moves come from the people, clues, and pressure this move changes."' in strings
     assert '"play.feedback_pending_next_hint": "下一组行动会从刚刚被改变的人物、线索和压力里长出来。"' in strings
+    assert 'data-play-room-reacting-cues="true"' in panels
+    assert 'data-play-room-reacting-cue="true"' in panels
     assert 'data-play-outcome-receipt="true"' in panels
     assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
     assert 'data-play-outcome-receipt-item="true"' in panels
