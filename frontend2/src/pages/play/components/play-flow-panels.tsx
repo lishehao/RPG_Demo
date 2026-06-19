@@ -1642,11 +1642,10 @@ export function StoryBeat({
       .sort((a, b) => outcomePriority(b.shift) - outcomePriority(a.shift))
       .slice(0, 2)
     const latestOptionCount = message.options.length
+    const isLatestActionableBeat =
+      !!isLatestNarrator && latestOptionCount > 0 && !hasFollowingPlayerEcho
     const shouldCompactSceneBanner =
-      !!isLatestNarrator &&
-      intensity !== "peak" &&
-      latestOptionCount > 0 &&
-      !hasFollowingPlayerEcho
+      isLatestActionableBeat && intensity !== "peak"
     const showLatestDigestInventory = hasDelta && latestDigestPulses.length === 0
     const showLatestBeatDigest =
       !suppressLatestFeedbackDigest &&
@@ -1719,6 +1718,7 @@ export function StoryBeat({
         style={{
           ...beatStyle,
           position: "relative",
+          ...(isLatestActionableBeat ? ppStyles.narratorBeatActionable : null),
           ...(isBookmarked ? ppStyles.narratorBeatBookmarked : null),
         }}
         data-play-latest-narrator={isLatestNarrator ? "true" : undefined}
@@ -1774,7 +1774,10 @@ export function StoryBeat({
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08, ...itemTransition }}
-            style={ppStyles.latestBeatDigest}
+            style={{
+              ...ppStyles.latestBeatDigest,
+              ...(isLatestActionableBeat ? ppStyles.latestBeatDigestActionable : null),
+            }}
             aria-label={latestDigestA11yLabel}
             data-play-latest-beat-digest="true"
           >

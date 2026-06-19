@@ -1327,6 +1327,9 @@ def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> Non
     assert "!suppressLatestFeedbackDigest" in story_beat
     assert "const latestDigestA11yItems" in story_beat
     assert "const latestDigestA11yLabel" in story_beat
+    assert "const isLatestActionableBeat =" in story_beat
+    assert "ppStyles.narratorBeatActionable" in story_beat
+    assert "ppStyles.latestBeatDigestActionable" in story_beat
     assert 'aria-label={latestDigestA11yLabel}' in story_beat
     assert 'data-play-latest-beat-digest-hint="true"' in story_beat
     assert "latestDigestPulses.length > 0 || hasDelta || latestOptionCount > 0" in story_beat
@@ -1337,8 +1340,10 @@ def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> Non
     assert 'data-play-latest-beat-digest-options="true"' in story_beat
     assert 'data-play-segment-banner-density={compact ? "compact" : "full"}' in panels
     assert "compact={shouldCompactSceneBanner}" in story_beat
+    assert "narratorBeatActionable" in styles
     assert "beatSceneBannerCompact" in styles
     assert "latestBeatDigest" in styles
+    assert "latestBeatDigestActionable" in styles
     assert "latestBeatDigestHint" in styles
     assert "latestBeatDigestItems" in styles
     assert '"play.latest_beat_digest_label": "Current scene"' in strings

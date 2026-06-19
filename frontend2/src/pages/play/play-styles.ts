@@ -1569,6 +1569,9 @@ export const ppStyles: Record<string, CSSProperties> = {
   },
 
   narratorBeat: { marginBottom: 32, position: "relative" as const, paddingRight: 36 },
+  narratorBeatActionable: {
+    marginBottom: 18,
+  },
   // Bookmarked beat — soft accent ring on the left edge, signals
   // "you marked this" without competing with the rising/peak intensity
   // ramp.
@@ -1658,6 +1661,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     columnGap: 10,
     rowGap: 6,
     flexWrap: "wrap" as const,
+  },
+  latestBeatDigestActionable: {
+    marginTop: 9,
+    paddingTop: 6,
+    rowGap: 4,
   },
   latestBeatDigestLabel: {
     color: "var(--text-faint)",
