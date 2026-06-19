@@ -1415,7 +1415,7 @@ export const cpStyles: Record<string, CSSProperties> = {
   busyPreviewItem: {
     minWidth: 0,
     display: "grid",
-    gap: 4,
+    gap: 6,
     padding: "8px 9px",
     borderTopWidth: 1,
     borderTopStyle: "solid",
@@ -1435,6 +1435,13 @@ export const cpStyles: Record<string, CSSProperties> = {
     fontSize: 11.5,
     lineHeight: 1.35,
   },
+  busyPreviewItemHeader: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   busyPreviewItemActive: {
     color: "rgba(255,238,204,0.9)",
     background: "rgba(245,200,120,0.08)",
@@ -1442,5 +1449,27 @@ export const cpStyles: Record<string, CSSProperties> = {
     borderRightColor: "rgba(245,200,120,0.16)",
     borderBottomColor: "rgba(245,200,120,0.16)",
     borderLeftColor: "rgba(245,200,120,0.3)",
+  },
+  busyPreviewItemDone: {
+    color: "rgba(218,255,224,0.82)",
+    background: "rgba(112,210,140,0.055)",
+    borderTopColor: "rgba(112,210,140,0.20)",
+    borderRightColor: "rgba(112,210,140,0.12)",
+    borderBottomColor: "rgba(112,210,140,0.12)",
+    borderLeftColor: "rgba(112,210,140,0.26)",
+  },
+  busyPreviewStatus: {
+    flex: "0 0 auto",
+    color: "rgba(255,255,255,0.48)",
+    fontSize: 10,
+    lineHeight: 1.2,
+    fontWeight: 820,
+    whiteSpace: "nowrap" as const,
+  },
+  busyPreviewStatusDone: {
+    color: "rgba(154,236,172,0.86)",
+  },
+  busyPreviewStatusCurrent: {
+    color: "rgba(245,200,120,0.9)",
   },
 }

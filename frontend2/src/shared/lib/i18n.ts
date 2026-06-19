@@ -346,6 +346,9 @@ export const STRINGS_ZH = {
   "create.busy_preview_opening_detail": "把冲突落成可读场面。",
   "create.busy_preview_choices": "首轮行动",
   "create.busy_preview_choices_detail": "准备能改变局面的选择。",
+  "create.busy_preview_done": "已准备",
+  "create.busy_preview_current": "正在做",
+  "create.busy_preview_pending": "接下来",
 
   // Login page
   "login.tag": "登录",
@@ -1266,6 +1269,9 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "create.busy_preview_opening_detail": "Turning the conflict into a playable moment.",
   "create.busy_preview_choices": "First moves",
   "create.busy_preview_choices_detail": "Preparing choices that can change the situation.",
+  "create.busy_preview_done": "Ready",
+  "create.busy_preview_current": "Building",
+  "create.busy_preview_pending": "Next",
 
   "login.tag": "Sign in",
   "login.title": "What's your name?",

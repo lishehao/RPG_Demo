@@ -53,6 +53,12 @@ const BUSY_BUILD_PREVIEW: Array<{ labelKey: StringKey; detailKey: StringKey }> =
   { labelKey: "create.busy_preview_choices", detailKey: "create.busy_preview_choices_detail" },
 ]
 
+const BUSY_PREVIEW_STATE_LABEL_KEYS: Record<"done" | "current" | "pending", StringKey> = {
+  done: "create.busy_preview_done",
+  current: "create.busy_preview_current",
+  pending: "create.busy_preview_pending",
+}
+
 export function BusyStages({ activeIndex, compact }: { activeIndex: number; compact: boolean }) {
   const t = useT()
   return (
@@ -98,16 +104,32 @@ export function BusyBuildPreview({ activeIndex, compact }: { activeIndex: number
       }}
     >
       {BUSY_BUILD_PREVIEW.map((item, index) => {
-        const active = index <= Math.min(activeIndex, BUSY_BUILD_PREVIEW.length - 1)
+        const previewCursor = Math.min(activeIndex, BUSY_BUILD_PREVIEW.length - 1)
+        const done = activeIndex >= BUSY_BUILD_PREVIEW.length || index < previewCursor
+        const current = activeIndex < BUSY_BUILD_PREVIEW.length && index === previewCursor
+        const state = done ? "done" : current ? "current" : "pending"
         return (
           <span
             key={item.labelKey}
+            data-create-opening-build-preview-item={state}
             style={{
               ...cpStyles.busyPreviewItem,
-              ...(active ? cpStyles.busyPreviewItemActive : null),
+              ...(done ? cpStyles.busyPreviewItemDone : null),
+              ...(current ? cpStyles.busyPreviewItemActive : null),
             }}
           >
-            <strong>{t(item.labelKey)}</strong>
+            <span style={cpStyles.busyPreviewItemHeader}>
+              <strong>{t(item.labelKey)}</strong>
+              <span
+                style={{
+                  ...cpStyles.busyPreviewStatus,
+                  ...(done ? cpStyles.busyPreviewStatusDone : null),
+                  ...(current ? cpStyles.busyPreviewStatusCurrent : null),
+                }}
+              >
+                {t(BUSY_PREVIEW_STATE_LABEL_KEYS[state])}
+              </span>
+            </span>
             <span>{t(item.detailKey)}</span>
           </span>
         )

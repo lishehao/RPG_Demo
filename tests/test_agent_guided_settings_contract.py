@@ -154,18 +154,28 @@ def test_opening_generation_wait_state_explains_playable_outputs() -> None:
     assert "export function BusyBuildPreview" in panels_source
     assert 'data-create-opening-build-preview="true"' in panels_source
     assert "BUSY_BUILD_PREVIEW" in panels_source
+    assert 'data-create-opening-build-preview-item={state}' in panels_source
+    assert "BUSY_PREVIEW_STATE_LABEL_KEYS" in panels_source
     assert '"create.busy_preview_role"' in panels_source
     assert '"create.busy_preview_opening"' in panels_source
     assert '"create.busy_preview_choices"' in panels_source
     assert "busyPreviewGridCompact" in styles_source
     assert "busyPreviewItemActive" in styles_source
+    assert "busyPreviewItemDone" in styles_source
+    assert "busyPreviewStatusCurrent" in styles_source
 
     for key in (
         '"create.busy_preview_role": "Player role"',
         '"create.busy_preview_opening": "First scene"',
         '"create.busy_preview_choices": "First moves"',
+        '"create.busy_preview_done": "Ready"',
+        '"create.busy_preview_current": "Building"',
+        '"create.busy_preview_pending": "Next"',
         '"create.busy_preview_role": "玩家身份"',
         '"create.busy_preview_opening": "第一幕"',
         '"create.busy_preview_choices": "首轮行动"',
+        '"create.busy_preview_done": "已准备"',
+        '"create.busy_preview_current": "正在做"',
+        '"create.busy_preview_pending": "接下来"',
     ):
         assert key in strings
