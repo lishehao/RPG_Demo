@@ -305,7 +305,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "setConsultedPersonId(person.id)" in fixture
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
     assert 'data-gameplay-person-advice="true"' in fixture
-    assert "{consultedPerson.name} can open this" in fixture
+    assert '{consultedPerson.name} {consultedSuggestedAction ? "can open this" : "can help frame this"}' in fixture
     assert "const INITIAL_PEOPLE: PersonResource[]" in fixture
     assert "const UNLOCKED_PEOPLE: PersonResource[]" in fixture
     assert "const people = useMemo(() => (unlockedClue ? UNLOCKED_PEOPLE : INITIAL_PEOPLE), [unlockedClue])" in fixture
