@@ -330,7 +330,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             >
               <div style={styles.sectionHeader}>
                 <span style={styles.kicker}>Choose a move</span>
-                <span style={styles.headerNote}>{unlockedClue ? "Badge clue has changed the action set." : "Forecasts show likely tradeoffs."}</span>
+                <span style={styles.headerNote}>{unlockedClue ? "Badge clue has changed the action set." : "Compare likely impact before you commit."}</span>
               </div>
               <div style={styles.actionGrid}>
                 {actions.map((action) => {
@@ -350,7 +350,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                       <span style={styles.actionMeta}>Move {action.number}</span>
                       <strong style={styles.actionTitle}>{action.title}</strong>
                       <p style={styles.actionBody}>{action.body}</p>
-                      <div style={styles.chipRow} aria-label="Forecast">
+                      <div style={styles.chipRow} aria-label="Likely impact">
                         {action.forecast.map((delta) => (
                           <DeltaChip key={delta.id} delta={delta} hook="forecast" />
                         ))}
