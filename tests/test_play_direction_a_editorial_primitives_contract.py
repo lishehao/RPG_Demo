@@ -273,6 +273,10 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-objective="true"' in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert 'data-gameplay-person-action="true"' in fixture
+    assert 'data-gameplay-people-usage-note="true"' in fixture
+    assert "Ask them to open or block paths." in fixture
+    assert "People are resources." not in fixture
+    assert "0 usable yet" in fixture
     assert "consultedPersonId" in fixture
     assert "setConsultedPersonId(person.id)" in fixture
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture

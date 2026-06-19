@@ -449,7 +449,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
           <section style={styles.railSection}>
             <div style={styles.sectionHeader}>
               <span style={styles.kicker}>In the room</span>
-              <span style={styles.headerNote}>People are resources.</span>
+              <span style={styles.headerNote} data-gameplay-people-usage-note="true">Ask them to open or block paths.</span>
             </div>
             <div style={styles.personList}>
               {PEOPLE.map((person) => {
@@ -498,7 +498,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
           <section style={styles.railSection}>
             <div style={styles.sectionHeader}>
               <span style={styles.kicker}>Clues</span>
-              <span style={styles.headerNote}>{unlockedClue ? "1 usable" : "None discovered"}</span>
+              <span style={styles.headerNote}>{unlockedClue ? "1 usable" : "0 usable yet"}</span>
             </div>
             <article
               style={{
