@@ -318,6 +318,13 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "You can use the badge clue in the next move." in fixture
     assert "function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean): Track[]" in fixture
     assert "function resolvedSummaryForAction(action: FixtureAction | null): string" in fixture
+    assert "const resolvedPanelRef = useRef<HTMLElement | null>(null)" in fixture
+    assert "panel.scrollIntoView({ behavior: prefersReducedMotion ? \"auto\" : \"smooth\", block: \"start\" })" in fixture
+    assert "scrollMarginTop: 18" in fixture
+    assert 'data-gameplay-resolved-receipt="true"' in fixture
+    assert "Move resolved" in fixture
+    assert "{committed?.action.title ?? \"Your last move\"}" in fixture
+    assert "resolvedReceipt" in fixture
     assert "function nextActionBridgeForAction(action: FixtureAction | null): string" in fixture
     assert 'data-gameplay-next-actions-bridge="true"' in fixture
     assert "Why the next moves changed" in fixture

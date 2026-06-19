@@ -402,6 +402,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const [resolvedDeltas, setResolvedDeltas] = useState<FixtureDelta[]>([])
   const [consultedPersonId, setConsultedPersonId] = useState<string | null>(null)
   const actionAreaRef = useRef<HTMLElement | null>(null)
+  const resolvedPanelRef = useRef<HTMLElement | null>(null)
   const actions = useMemo(() => (unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS), [unlockedClue])
   const people = useMemo(() => (unlockedClue ? UNLOCKED_PEOPLE : INITIAL_PEOPLE), [unlockedClue])
   const selectedAction = actions.find((action) => action.id === selectedId) ?? null
@@ -468,6 +469,17 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     }, 780)
     return () => window.clearTimeout(timer)
   }, [committed, isPending, unlockedClue])
+
+  useEffect(() => {
+    if (phase !== "resolved" || !committed) return
+    const panel = resolvedPanelRef.current
+    if (!panel) return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const timer = window.setTimeout(() => {
+      panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" })
+    }, 40)
+    return () => window.clearTimeout(timer)
+  }, [committed, phase])
 
   const selectAction = (action: FixtureAction) => {
     if (isPending) return
@@ -539,10 +551,20 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
           </section>
 
           {phase === "resolved" ? (
-            <section style={styles.resolvedPanel} data-gameplay-resolved="true">
+            <section
+              ref={resolvedPanelRef}
+              style={styles.resolvedPanel}
+              data-gameplay-resolved="true"
+            >
               <div style={styles.sectionHeader}>
                 <span style={styles.kicker} data-gameplay-resolved-title="true">What changed</span>
                 <span style={styles.headerNote}>Use these changes to pick your next move.</span>
+              </div>
+              <div style={styles.resolvedReceipt} data-gameplay-resolved-receipt="true">
+                <span style={styles.resolvedReceiptLabel}>Move resolved</span>
+                <strong style={styles.resolvedReceiptText}>
+                  {committed?.action.title ?? "Your last move"}
+                </strong>
               </div>
               <p style={styles.resolvedSummary} data-gameplay-resolved-summary="true">
                 {resolvedSummaryForAction(committed?.action ?? null)}
@@ -1338,12 +1360,33 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.15,
   },
   resolvedPanel: {
+    scrollMarginTop: 18,
     border: "1px solid rgba(126,204,164,0.18)",
     background: "rgba(10,17,14,0.70)",
     padding: 12,
     borderRadius: 8,
     display: "grid",
     gap: 10,
+  },
+  resolvedReceipt: {
+    display: "grid",
+    gap: 3,
+    padding: "9px 10px",
+    borderRadius: 8,
+    border: "1px solid rgba(154,236,172,0.16)",
+    background: "rgba(154,236,172,0.07)",
+  },
+  resolvedReceiptLabel: {
+    color: "rgba(194,236,202,0.68)",
+    fontSize: 10.5,
+    fontWeight: 850,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  resolvedReceiptText: {
+    color: actionPalette.ivoryText,
+    fontSize: 14,
+    lineHeight: 1.25,
   },
   resolvedSummary: {
     margin: 0,
