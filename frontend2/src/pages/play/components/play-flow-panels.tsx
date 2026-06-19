@@ -3945,6 +3945,7 @@ export function ActionArea({
     const diarySubmitDisabled =
       actionControlsDisabled ||
       (context === "option" && selectedOptionIndex === null) ||
+      (context === "option" && !diary.trim()) ||
       (context === "leverage" && !armedCard) ||
       (context === "free" && !freeInput.trim())
     const diaryPublicMove =

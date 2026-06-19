@@ -1192,6 +1192,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_selected_detail": "先复核这一步，再提交或补一句真实动机。"' in strings
     assert '"play.turn_guide_inner_motive_title": "补内心动机"' in strings
     assert '"play.turn_guide_inner_motive_detail": "写下你私下想达成什么；NPC 不会听见。可以带着动机提交或返回行动。"' in strings
+    assert '(context === "option" && !diary.trim())' in panels
     assert 'isWritingOptionDiary\n      ? t("play.turn_guide_inner_motive_title")' in panels
     assert 'isWritingOptionDiary\n      ? t("play.turn_guide_inner_motive_detail")' in panels
     assert '"play.option_change_cta": "Choose another move"' in strings
