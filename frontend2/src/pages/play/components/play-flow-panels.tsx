@@ -4958,6 +4958,7 @@ export function AdvisorSidechat({
   const [messages, setMessages] = useState<NarrativeAdvisorMessage[]>([])
   const [oracleOrds, setOracleOrds] = useState<Set<number>>(new Set())
   const [draft, setDraft] = useState("")
+  const [draftSuggestion, setDraftSuggestion] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingOracleQuestion, setPendingOracleQuestion] = useState<string | null>(null)
@@ -5147,6 +5148,7 @@ export function AdvisorSidechat({
     setBusy(true)
     setError(null)
     setDraft("")
+    setDraftSuggestion(null)
     setPendingOracleQuestion(null)
     try {
       const res = await api.askNarrativeAdvisor(sessionId, {
@@ -5167,6 +5169,7 @@ export function AdvisorSidechat({
     } catch (err) {
       setError(friendlyError(err, t("play.advisor_ask_failed")))
       setDraft(question)
+      setDraftSuggestion(null)
       setDraftFocusToken((token) => token + 1)
     } finally {
       setBusy(false)
@@ -5188,6 +5191,7 @@ export function AdvisorSidechat({
   }
   const applySuggestion = (suggestion: string) => {
     setDraft(suggestion)
+    setDraftSuggestion(suggestion)
     setDraftFocusToken((token) => token + 1)
   }
 
@@ -5432,7 +5436,12 @@ export function AdvisorSidechat({
               aria-label={t("play.advisor_textarea_placeholder")}
               aria-keyshortcuts="Meta+Enter Control+Enter"
               title={t("play.shortcut_mod_enter_submit")}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {
+                setDraft(e.target.value)
+                if (!e.target.value.trim()) {
+                  setDraftSuggestion(null)
+                }
+              }}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                   e.preventDefault()
@@ -5484,6 +5493,14 @@ export function AdvisorSidechat({
             ) : (
               <>
                 {isEmptyAdvisor || hasAdvisorDraft ? null : renderSuggestionBlock("composer")}
+                {hasAdvisorDraft && draftSuggestion ? (
+                  <span
+                    style={ppStyles.advisorDraftHint}
+                    data-play-advisor-draft-hint="true"
+                  >
+                    {t("play.advisor_draft_hint")}
+                  </span>
+                ) : null}
                 {hasAdvisorDraft ? (
                   <div
                     style={{

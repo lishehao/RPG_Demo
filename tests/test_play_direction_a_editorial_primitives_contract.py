@@ -718,10 +718,15 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.inner_motive_submit_cta": "Take action with motive"' in strings
     assert '"play.advisor_card_name": "Dana Vale"' in strings
     assert 'data-play-advisor-empty-primer="true"' in panels
+    assert "const [draftSuggestion, setDraftSuggestion] = useState<string | null>(null)" in panels
+    assert "setDraftSuggestion(suggestion)" in panels
+    assert 'data-play-advisor-draft-hint="true"' in panels
     assert "advisorEmptyPrimer" in styles
     assert "advisorEmptyPrimerTitle" in styles
+    assert "advisorDraftHint" in styles
     assert '"play.advisor_empty_primer_title": "Ask for one read first"' in strings
     assert '"play.advisor_empty_primer_body": "Your friend can flag risk, wording, and who may push back, but you still choose the move."' in strings
+    assert '"play.advisor_draft_hint": "Suggested question inserted. Edit it, then send."' in strings
     assert '"play.move_receipt_title": "Your move"' in strings
     assert '"play.room_reacting_title": "The room is reacting"' in strings
     assert '"play.option_expand_cta": "View move"' in strings

@@ -5849,6 +5849,15 @@ export const ppStyles: Record<string, CSSProperties> = {
     flexDirection: "column" as const,
     alignItems: "stretch",
   },
+  advisorDraftHint: {
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+    color: "rgba(232,218,205,0.54)",
+    fontSize: 11,
+    lineHeight: 1.25,
+    fontWeight: 620,
+    overflowWrap: "anywhere" as const,
+  },
   advisorTextarea: {
     flex: 1,
     background: "transparent",
