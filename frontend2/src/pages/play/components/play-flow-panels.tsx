@@ -3233,6 +3233,17 @@ export function ActionArea({
     })
   }, [actionForecasts, options, resourceFocus])
   const resourceFocusMatchCount = resourceFocusOptionMatches.filter(Boolean).length
+  const resourceFocusMatchedMoveLabels = useMemo(() => {
+    if (!resourceFocus) return []
+    return options
+      .map((opt, index) => ({
+        match: resourceFocusOptionMatches[index],
+        label: parseOptionLabel(opt.label).body || opt.label,
+      }))
+      .filter((entry) => entry.match)
+      .map((entry) => entry.label)
+      .slice(0, 3)
+  }, [options, resourceFocus, resourceFocusOptionMatches])
   const resourceFocusDetail = resourceFocus ? resourceFocusDetailText(t, resourceFocus.id, resourceFocusMatchCount) : ""
   const freeActionFocusContext = actorFocus && actorFocusMatchCount === 0
     ? {
@@ -4384,6 +4395,27 @@ export function ActionArea({
             </button>
           ) : null}
           <span style={ppStyles.resourceFocusCueDetail}>{resourceFocusDetail}</span>
+          {resourceFocusMatchedMoveLabels.length > 0 ? (
+            <span
+              style={ppStyles.resourceFocusMatches}
+              data-play-resource-focus-matches="true"
+              aria-label={t("play.resource_focus_matches_label")}
+            >
+              <span style={ppStyles.resourceFocusMatchesLabel}>
+                {t("play.resource_focus_matches_label")}
+              </span>
+              {resourceFocusMatchedMoveLabels.map((label) => (
+                <span
+                  key={label}
+                  style={ppStyles.resourceFocusMatchChip}
+                  title={label}
+                  data-play-resource-focus-match-chip="true"
+                >
+                  {truncateRecoveryText(label, 56)}
+                </span>
+              ))}
+            </span>
+          ) : null}
           {resourceFocusMatchCount === 0 && showFreeActionToggle ? (
             <button
               type="button"

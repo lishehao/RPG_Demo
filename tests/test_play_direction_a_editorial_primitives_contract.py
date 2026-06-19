@@ -372,12 +372,15 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "resourceId === \"pressure\"" in panels
     assert "const resourceFocusOptionMatches = useMemo" in panels
     assert "isResourceFocusAction(resourceFocus.id, parsed.body, opt.hint, actionForecasts?.[index] ?? [])" in panels
+    assert "resourceFocusMatchedMoveLabels" in panels
     assert "function resourceFocusDetailText(" in panels
     assert "const openFreeActionComposer = () => {" in panels
     assert 'data-play-resource-focus-cue="true"' in panels
     assert 'data-play-resource-focus-id={resourceFocus.id}' in panels
     assert "data-play-resource-focus-match-count={resourceFocusMatchCount}" in panels
     assert 'data-play-resource-focus-cue-head="true"' in panels
+    assert 'data-play-resource-focus-matches="true"' in panels
+    assert 'data-play-resource-focus-match-chip="true"' in panels
     assert "play.resource_focus_showing_label" in panels
     assert "ppStyles.resourceFocusCueClear" in panels
     assert 'data-play-resource-focus-clear="true"' in panels
@@ -506,6 +509,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayTrackAction" in styles
     assert "resourceFocusCue" in styles
     assert "resourceFocusCueHead" in styles
+    assert "resourceFocusMatches" in styles
+    assert "resourceFocusMatchChip" in styles
     assert "resourceFocusCueClear" in styles
     assert "resourceFocusCueAction" in styles
     assert "gameplayNextChoiceTargetButton" in styles
@@ -580,6 +585,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_pressure_match_detail_many": "{count} current moves affect pressure."' in strings
     assert '"play.resource_focus_evidence_match_detail_one": "1 current move can push a clue or proof forward."' in strings
     assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can push a clue or proof forward."' in strings
+    assert '"play.resource_focus_matches_label": "Matching moves"' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings
