@@ -4161,12 +4161,30 @@ export function ActionArea({
     )
   }, [t])
 
+  const normalizeForecastEchoText = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9+\-\s]+/gi, " ").replace(/\s+/g, " ").trim()
+
+  const hintEchoesForecastChips = (value: string, forecasts: GameplayActionForecast[]) => {
+    const normalizedHint = normalizeForecastEchoText(value)
+    const normalizedLabels = forecasts
+      .map((chip) => normalizeForecastEchoText(chip.label))
+      .filter(Boolean)
+    if (!normalizedHint || normalizedLabels.length === 0) return false
+    if (normalizedLabels.includes(normalizedHint)) return true
+    const remainder = normalizedLabels.reduce(
+      (remaining, label) => remaining.replace(label, " "),
+      normalizedHint,
+    ).replace(/\s+/g, "").trim()
+    return remainder.length <= 2
+  }
+
   const renderSelectedOptionDetail = (
     hint: string,
     forecasts: GameplayActionForecast[],
     target?: { id: string; name: string } | null,
   ) => {
     const forecastDetails = forecasts.filter((chip) => chip.detail)
+    const showNarrativeResult = hint.trim().length > 0 && !hintEchoesForecastChips(hint, forecasts)
     return (
       <motion.span
         style={{
@@ -4180,20 +4198,22 @@ export function ActionArea({
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
         transition={reducedMotion ? { duration: 0.01 } : { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
       >
-        <span
-          style={{
-            ...ppStyles.optionExpandedDetailSection,
-            ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
-          }}
-          data-play-action-card-detail-section="result"
-        >
-          <span style={ppStyles.optionExpandedDetailLabel}>
-            {t("play.option_expanded_result_label")}
+        {showNarrativeResult ? (
+          <span
+            style={{
+              ...ppStyles.optionExpandedDetailSection,
+              ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
+            }}
+            data-play-action-card-detail-section="result"
+          >
+            <span style={ppStyles.optionExpandedDetailLabel}>
+              {t("play.option_expanded_result_label")}
+            </span>
+            <span style={ppStyles.optionExpandedDetailText}>
+              {hint}
+            </span>
           </span>
-          <span style={ppStyles.optionExpandedDetailText}>
-            {hint || t("play.preview_action_risk_default")}
-          </span>
-        </span>
+        ) : null}
         {target ? (
           <span
             style={{
@@ -4798,7 +4818,7 @@ export function ActionArea({
                         >
                           {parsed.body}
                         </span>
-                        {actionTarget ? (
+                        {actionTarget && !isSelected ? (
                           <span
                             style={ppStyles.optionTargetChip}
                             data-play-action-target-chip="true"

@@ -890,6 +890,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "optionForecasts.length && !isSelected" in panels
     assert "renderCollapsedForecast(optionForecasts)" in panels
     assert 'data-gameplay-action-forecast-summary="true"' in panels
+    assert "actionTarget && !isSelected" in panels
+    assert "const hintEchoesForecastChips" in panels
+    assert "const showNarrativeResult = hint.trim().length > 0 && !hintEchoesForecastChips(hint, forecasts)" in panels
+    assert 'hint || t("play.preview_action_risk_default")' not in panels
     assert "gameplayForecastInline" in styles
     assert "gameplayForecastInlineLabel" in styles
     assert '"play.option_forecast_kicker": "Likely impact"' in strings
