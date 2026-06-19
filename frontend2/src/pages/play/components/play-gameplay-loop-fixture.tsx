@@ -312,6 +312,25 @@ function nextActionBridgeForAction(action: FixtureAction | null): string {
   return "Read the changed pressure, then pick the next move that uses it."
 }
 
+function pendingReactionCopyForAction(action: FixtureAction): string {
+  if (action.id === "lena-hold") {
+    return "Lena steps toward the crowd and turns your ask into a visible task before the room scatters."
+  }
+  if (action.id === "arthur-badge") {
+    return "Arthur stiffens as the badge gap becomes public; the room waits to see whether he can explain it."
+  }
+  if (action.id === "marcus-stall") {
+    return "Marcus moves toward the sponsor cluster, buying quiet while Lena notices who you trusted with time."
+  }
+  if (action.id === "show-badge") {
+    return "Lena studies the badge, then starts mapping who could have reached the control door."
+  }
+  if (action.id === "trap-answer") {
+    return "Marcus and Arthur are now exposed to the same room; one timeline has to bend."
+  }
+  return "The room reads your move, then pressure, trust, and next choices begin to shift."
+}
+
 const toneStyle: Record<FixtureDelta["tone"], CSSProperties> = {
   gain: {
     border: "1px solid rgba(126, 204, 164, 0.28)",
@@ -561,7 +580,12 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 <span style={styles.reactionPulse} aria-hidden="true" />
                 <div>
                   <strong style={styles.reactionTitle}>The room is reacting</strong>
-                  <p style={styles.reactionCopy}>Lena turns toward Arthur. The sponsor smiles for the camera and waits to see who breaks first.</p>
+                  <p
+                    style={styles.reactionCopy}
+                    data-gameplay-pending-reaction-copy="true"
+                  >
+                    {pendingReactionCopyForAction(committed.action)}
+                  </p>
                   <div style={styles.reactionSteps} data-gameplay-pending-steps="true">
                     <span style={styles.reactionStep} data-gameplay-pending-step="room">
                       Room reacts
