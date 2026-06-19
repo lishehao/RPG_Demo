@@ -211,6 +211,11 @@ export function CreatePage({
         ? t("create.guide_ready_brief_hint")
         : t("create.guide_next_prompt_hint")
       : null
+  const composerActionLabel = !hasSeed
+    ? t("create.guide_add_opening")
+    : guideReadyToBrief
+      ? t("create.guide_add_correction")
+      : t("create.guide_add_answer")
 
   const applyStoryGuideSettings = (settings?: StoryGuideSettingDeltas) => {
     if (!settings) return
@@ -1040,7 +1045,7 @@ export function CreatePage({
                       disabled={!draftTurn.trim() || busy || briefBusy || guideBusy}
                       onClick={() => void appendGuideTurn(draftTurn)}
                     >
-                      {hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")}
+                      {composerActionLabel}
                     </button>
                   </div>
                 </div>
