@@ -366,6 +366,11 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'const unlockedClueAction = unlockedClue' in fixture
     assert 'actions.find((action) => action.id === "show-badge")' in fixture
     assert "const clueArmed = !!unlockedClueAction && selectedId === unlockedClueAction.id" in fixture
+    assert 'data-gameplay-clue-link="green-room-badge"' in fixture
+    assert 'data-gameplay-clue-impact="green-room-badge"' in fixture
+    assert "Opens move" in fixture
+    assert "A proof-backed path, not another vague public challenge." in fixture
+    assert "Clue action impact" in fixture
     assert 'data-gameplay-clue-use="green-room-badge"' in fixture
     assert 'data-gameplay-clue-armed={clueArmed ? "true" : undefined}' in fixture
     assert 'data-gameplay-clue-use-active={clueArmed ? "true" : undefined}' in fixture

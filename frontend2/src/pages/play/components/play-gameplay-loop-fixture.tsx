@@ -728,18 +728,36 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               <strong style={styles.clueTitle}>{unlockedClue ? "Green-room badge" : "Green-room clue"}</strong>
               <span style={styles.clueBody}>{clueBody}</span>
               {unlockedClueAction ? (
-                <button
-                  type="button"
-                  style={{
-                    ...styles.clueUseButton,
-                    ...(clueArmed ? styles.clueUseButtonActive : null),
-                  }}
-                  data-gameplay-clue-use="green-room-badge"
-                  data-gameplay-clue-use-active={clueArmed ? "true" : undefined}
-                  onClick={() => selectSuggestedAction(unlockedClueAction)}
-                >
-                  {clueArmed ? "Using clue" : "Use clue"}
-                </button>
+                <>
+                  <div style={styles.clueLink} data-gameplay-clue-link="green-room-badge">
+                    <span style={styles.clueLinkLabel}>Opens move</span>
+                    <strong style={styles.clueLinkTitle}>{unlockedClueAction.title}</strong>
+                    <span style={styles.clueLinkHint}>
+                      A proof-backed path, not another vague public challenge.
+                    </span>
+                  </div>
+                  <div
+                    style={styles.chipRow}
+                    aria-label="Clue action impact"
+                    data-gameplay-clue-impact="green-room-badge"
+                  >
+                    {unlockedClueAction.forecast.map((delta) => (
+                      <DeltaChip key={delta.id} delta={delta} />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    style={{
+                      ...styles.clueUseButton,
+                      ...(clueArmed ? styles.clueUseButtonActive : null),
+                    }}
+                    data-gameplay-clue-use="green-room-badge"
+                    data-gameplay-clue-use-active={clueArmed ? "true" : undefined}
+                    onClick={() => selectSuggestedAction(unlockedClueAction)}
+                  >
+                    {clueArmed ? "Using clue" : "Use clue"}
+                  </button>
+                </>
               ) : null}
             </article>
           </section>
@@ -1168,6 +1186,32 @@ const styles: Record<string, CSSProperties> = {
   clueBody: {
     color: actionPalette.mutedIvory,
     fontSize: 12.5,
+    lineHeight: 1.35,
+  },
+  clueLink: {
+    marginTop: 2,
+    border: "1px solid rgba(216,177,99,0.20)",
+    borderRadius: 8,
+    background: "rgba(0,0,0,0.16)",
+    padding: "9px 10px",
+    display: "grid",
+    gap: 3,
+  },
+  clueLinkLabel: {
+    color: actionPalette.amberText,
+    fontSize: 10.5,
+    fontWeight: 820,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  clueLinkTitle: {
+    color: actionPalette.ivoryText,
+    fontSize: 13.5,
+    lineHeight: 1.2,
+  },
+  clueLinkHint: {
+    color: actionPalette.faintIvory,
+    fontSize: 11.5,
     lineHeight: 1.35,
   },
   clueUseButton: {
