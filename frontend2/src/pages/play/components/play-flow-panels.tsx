@@ -345,6 +345,7 @@ export function RunContextPanel({
   liveInventory,
   leverageCards,
   isComplete,
+  onUseInventoryItem,
 }: {
   story: NarrativeStoryHistoryResponse
   turnsCompleted: number
@@ -353,6 +354,7 @@ export function RunContextPanel({
   liveInventory: string[]
   leverageCards: LeverageCardView[]
   isComplete: boolean
+  onUseInventoryItem?: (item: string) => void
 }) {
   const t = useT()
   const compactRunContext = useCompactLayout("(max-width: 680px)")
@@ -401,7 +403,21 @@ export function RunContextPanel({
           {visibleInventory.map((item, index) => (
             <span key={`${item}-${index}`} style={ppStyles.runInventoryItem}>
               {index > 0 ? <span style={ppStyles.runInventoryDivider}>·</span> : null}
-              <span>{item}</span>
+              {onUseInventoryItem ? (
+                <button
+                  type="button"
+                  style={ppStyles.runInventoryItemButton}
+                  onClick={() => onUseInventoryItem(item)}
+                  data-play-run-inventory-use="true"
+                  data-play-run-inventory-item={item}
+                  aria-label={t("play.run_assets_use_title", { item })}
+                  title={t("play.run_assets_use_title", { item })}
+                >
+                  {item}
+                </button>
+              ) : (
+                <span>{item}</span>
+              )}
             </span>
           ))}
           {hiddenInventoryCount > 0 ? (
@@ -2866,6 +2882,7 @@ export function ActionArea({
   turnBudget,
   actorFocus,
   resourceFocus,
+  inventoryFocusItem,
   showFreeInput,
   freeInput,
   setFreeInput,
@@ -2879,6 +2896,7 @@ export function ActionArea({
   onCommitmentSummaryChange,
   onClearActorFocus,
   onClearResourceFocus,
+  onClearInventoryFocus,
   onPickOption,
   onPlayLeverage,
   onSubmitFree,
@@ -2894,6 +2912,7 @@ export function ActionArea({
   turnBudget: number
   actorFocus?: { id: string; name: string } | null
   resourceFocus?: { id: GameplayResourceFocusId; label: string } | null
+  inventoryFocusItem?: string | null
   showFreeInput: boolean
   freeInput: string
   setFreeInput: (v: string) => void
@@ -2907,6 +2926,7 @@ export function ActionArea({
   onCommitmentSummaryChange: (summary: ActionCommitmentSummary | null) => void
   onClearActorFocus?: () => void
   onClearResourceFocus?: () => void
+  onClearInventoryFocus?: () => void
   onPickOption: (idx: number, diaryOverride?: string) => void
   onPlayLeverage: (card: LeverageCardView, diaryOverride?: string) => void
   onSubmitFree: (diaryOverride?: string, freeInputOverride?: string) => void
@@ -3015,6 +3035,7 @@ export function ActionArea({
     if (hasSinglePlayableLeverage) {
       setSelectedOptionIndex(null)
       setShowFreeInput(false)
+      onClearInventoryFocus?.()
       setLeverageExpanded(false)
       setArmedCardId(primaryLeverageCard.card_id)
       return
@@ -3025,6 +3046,7 @@ export function ActionArea({
     if (busy || actionSubmitLockedRef.current || isRevealingLeverage) return
     setArmedCardId(null)
     setShowFreeInput(false)
+    onClearInventoryFocus?.()
     setSelectedOptionIndex(i)
   }
   const handleActionAreaPointerDownCapture = (event: PointerEvent<HTMLDivElement>) => {
@@ -3282,6 +3304,17 @@ export function ActionArea({
           toggleHint: t("play.action_open_free_resource_hint"),
           toggleTitle: t("play.action_open_free_resource_title", { label: resourceFocus.label }),
         }
+      : inventoryFocusItem
+        ? {
+            kind: "inventory" as const,
+            id: inventoryFocusItem,
+            label: inventoryFocusItem,
+            detail: t("play.free_context_inventory_detail", { item: inventoryFocusItem }),
+            placeholder: t("play.action_free_inventory_placeholder", { item: inventoryFocusItem }),
+            toggleText: t("play.action_open_free_inventory", { item: inventoryFocusItem }),
+            toggleHint: t("play.action_open_free_inventory_hint"),
+            toggleTitle: t("play.action_open_free_inventory_title", { item: inventoryFocusItem }),
+          }
       : null
   const freeActionDraft = freeInput.trim()
   const freeActionReady = freeActionDraft.length > 0
@@ -4276,6 +4309,7 @@ export function ActionArea({
                       if (card.used || actionControlsDisabled) return
                       setSelectedOptionIndex(null)
                       setShowFreeInput(false)
+                      onClearInventoryFocus?.()
                       setArmedCardId(isPrepared ? null : card.card_id)
                       if (compactLeverage && !isPrepared) {
                         setLeverageExpanded(false)
@@ -4783,7 +4817,9 @@ export function ActionArea({
                 <span style={ppStyles.freeActionContextLabel}>
                   {freeActionFocusContext.kind === "actor"
                     ? t("play.free_context_actor_label")
-                    : t("play.free_context_resource_label")}
+                    : freeActionFocusContext.kind === "inventory"
+                      ? t("play.free_context_inventory_label")
+                      : t("play.free_context_resource_label")}
                 </span>
                 <strong style={ppStyles.freeActionContextName}>
                   {freeActionFocusContext.label}
@@ -4814,6 +4850,7 @@ export function ActionArea({
                 } else if (e.key === "Escape" && options.length > 0) {
                   e.preventDefault()
                   setShowFreeInput(false)
+                  onClearInventoryFocus?.()
                   if (!freeInput.trim()) {
                     setFreeInput("")
                   }
@@ -4873,6 +4910,7 @@ export function ActionArea({
                         }}
                         onClick={() => {
                           setShowFreeInput(false)
+                          onClearInventoryFocus?.()
                           if (!freeActionDraft) {
                             setFreeInput("")
                           }

@@ -385,15 +385,26 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "<RunContextPanel" in play_page
     assert "liveInventory={liveInventory}" in play_page
     assert "leverageCards={leverageCards}" in play_page
+    assert "onUseInventoryItem={handleUseInventoryItem}" in play_page
     assert 'data-play-run-context="true"' in panels
     assert 't("play.run_assets_hint")' in panels
+    assert 'data-play-run-inventory-use="true"' in panels
+    assert 'data-play-run-inventory-item={item}' in panels
+    assert 't("play.run_assets_use_title", { item })' in panels
     assert "runInventoryHint" in styles
+    assert "runInventoryItemButton" in styles
     assert '"play.run_assets_hint": "Mention in your own move"' in strings
     assert '"play.run_assets_hint": "可写进自定义行动"' in strings
+    assert '"play.run_assets_use_title": "Use {item} in your own move"' in strings
+    assert '"play.run_assets_use_title": "用 {item} 写一个自定义行动"' in strings
     assert "const [focusedActorId, setFocusedActorId] = useState<string | null>(null)" in play_page
     assert 'type GameplayResourceFocusId = "time" | "pressure" | "evidence"' in play_page
     assert "function isGameplayResourceFocusId(value: string): value is GameplayResourceFocusId" in play_page
     assert "const [focusedResourceId, setFocusedResourceId] = useState<GameplayResourceFocusId | null>(null)" in play_page
+    assert "const [focusedInventoryItem, setFocusedInventoryItem] = useState<string | null>(null)" in play_page
+    assert "const handleUseInventoryItem = useCallback((item: string)" in play_page
+    assert "setFocusedInventoryItem(item)" in play_page
+    assert "setShowFreeInput(true)" in play_page
     assert "const actorFocus = focusedActorId && focusedActorName" in play_page
     assert "const focusedResourceTrack = focusedResourceId" in play_page
     assert "useMemo" not in play_page
@@ -519,6 +530,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "actorFocusMatchCount === 0 && showFreeActionToggle" in panels
     assert 'data-play-actor-focus-custom-move="true"' in panels
     assert "const freeActionFocusContext = actorFocus && actorFocusMatchCount === 0" in panels
+    assert "inventoryFocusItem?: string | null" in panels
+    assert "onClearInventoryFocus?: () => void" in panels
+    assert "play.free_context_inventory_label" in panels
+    assert "play.free_context_inventory_detail" in panels
+    assert "play.action_free_inventory_placeholder" in panels
+    assert "play.action_open_free_inventory" in panels
     assert 'data-play-free-action-context="true"' in panels
     assert "data-play-free-action-context-kind={freeActionFocusContext.kind}" in panels
     assert "data-play-free-action-context-id={freeActionFocusContext.id}" in panels

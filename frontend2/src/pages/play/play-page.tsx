@@ -731,6 +731,7 @@ export function PlayPage({
   const [actionCommitmentSummary, setActionCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [focusedActorId, setFocusedActorId] = useState<string | null>(null)
   const [focusedResourceId, setFocusedResourceId] = useState<GameplayResourceFocusId | null>(null)
+  const [focusedInventoryItem, setFocusedInventoryItem] = useState<string | null>(null)
   const [showActionJump, setShowActionJump] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const compactPlayChrome = useCompactLayout("(max-width: 680px)")
@@ -903,6 +904,7 @@ export function PlayPage({
         lastFailedActionRef.current = null
         setFreeInput("")
         setShowFreeInput(false)
+        setFocusedInventoryItem(null)
         setDiary("")
         setShowDiary(false)
       } catch (err) {
@@ -991,6 +993,17 @@ export function PlayPage({
   const handleActionJump = useCallback(() => {
     setShowActionJump(false)
     scrollToPlayActionArea()
+  }, [])
+
+  const handleUseInventoryItem = useCallback((item: string) => {
+    setFocusedInventoryItem(item)
+    setFocusedActorId(null)
+    setFocusedResourceId(null)
+    setShowDiary(false)
+    setShowFreeInput(true)
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => scrollToPlayActionArea())
+    }
   }, [])
 
   const lastNarrator = story
@@ -1193,6 +1206,7 @@ export function PlayPage({
               liveInventory={liveInventory}
               leverageCards={leverageCards}
               isComplete={isComplete}
+              onUseInventoryItem={handleUseInventoryItem}
             />
           ) : null}
 
@@ -1395,6 +1409,7 @@ export function PlayPage({
               resourceFocus={focusedResourceId && focusedResourceTrack
                 ? { id: focusedResourceId, label: focusedResourceTrack.label }
                 : null}
+              inventoryFocusItem={focusedInventoryItem}
               showFreeInput={showFreeInput}
               freeInput={freeInput}
               setFreeInput={setFreeInput}
@@ -1408,6 +1423,7 @@ export function PlayPage({
               onCommitmentSummaryChange={setActionCommitmentSummary}
               onClearActorFocus={() => setFocusedActorId(null)}
               onClearResourceFocus={() => setFocusedResourceId(null)}
+              onClearInventoryFocus={() => setFocusedInventoryItem(null)}
               onPickOption={(i, diaryOverride) =>
                 void handleAdvance({
                   chosen_option_index: i,
