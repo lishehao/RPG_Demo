@@ -323,6 +323,8 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Compare likely impact before you submit." in fixture
     assert "Compare likely impact before you commit." not in fixture
     assert "Badge clue opened new moves." in fixture
+    assert 'label: "Uses badge clue"' in fixture
+    assert 'label: "Use badge clue"' not in fixture
     assert "You can use the badge clue in the next move." in fixture
     assert "function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean): Track[]" in fixture
     assert "function resolvedSummaryForAction(action: FixtureAction | null): string" in fixture

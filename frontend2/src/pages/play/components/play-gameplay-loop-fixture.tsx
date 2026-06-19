@@ -237,7 +237,7 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
     body: "Use the badge as proof and ask Lena to point you toward the last person with access.",
     availableBecause: "The green-room badge turns a vague suspicion into a route Lena can act on.",
     forecast: [
-      { id: "evidence-use", label: "Use badge clue", tone: "unlock" },
+      { id: "evidence-use", label: "Uses badge clue", tone: "unlock" },
       { id: "lena-trust", label: "Lena trust +1", tone: "gain" },
       { id: "next-door", label: "Control door opens", tone: "unlock" },
     ],
