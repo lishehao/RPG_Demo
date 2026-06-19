@@ -40,6 +40,7 @@ type PersonResource = {
   action: string
   advice: string
   suggestedMove: string
+  suggestionKind: "action" | "judgment"
 }
 
 const INITIAL_TRACKS: Track[] = [
@@ -93,6 +94,7 @@ const INITIAL_PEOPLE: PersonResource[] = [
     action: "Ask Lena to hold the crowd.",
     advice: "Lena can keep the room steady if you give her a specific job.",
     suggestedMove: "Ask Lena to hold the crowd",
+    suggestionKind: "action",
   },
   {
     id: "arthur",
@@ -102,6 +104,7 @@ const INITIAL_PEOPLE: PersonResource[] = [
     action: "Press Arthur for the last confirmed timestamp.",
     advice: "Arthur reacts when the question is public and tied to a concrete gap.",
     suggestedMove: "Pressure Arthur on the missing badge",
+    suggestionKind: "action",
   },
   {
     id: "marcus",
@@ -111,6 +114,7 @@ const INITIAL_PEOPLE: PersonResource[] = [
     action: "Read Marcus before the next public answer.",
     advice: "Marcus can buy time, but asking him costs trust with the people backstage.",
     suggestedMove: "Send Marcus to stall sponsors",
+    suggestionKind: "action",
   },
   {
     id: "dana",
@@ -119,7 +123,8 @@ const INITIAL_PEOPLE: PersonResource[] = [
     state: "Frames the move without taking control.",
     action: "Ask Dana which pressure point matters.",
     advice: "Dana points out the tradeoff, but the decision still stays with you.",
-    suggestedMove: "Pick the move whose cost you can afford.",
+    suggestedMove: "Choose the move whose cost you can defend.",
+    suggestionKind: "judgment",
   },
 ]
 
@@ -132,6 +137,7 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     action: "Ask Lena how the badge changes the route.",
     advice: "Lena can turn the badge into a cleaner path instead of another public delay.",
     suggestedMove: "Show Lena the green-room badge",
+    suggestionKind: "action",
   },
   {
     id: "arthur",
@@ -141,6 +147,7 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     action: "Ask Arthur to respond after Marcus speaks.",
     advice: "Arthur is useful now because Marcus has a public story he can contradict.",
     suggestedMove: "Let Arthur contradict Marcus",
+    suggestionKind: "action",
   },
   {
     id: "marcus",
@@ -150,6 +157,7 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     action: "Ask Marcus to repeat his timeline.",
     advice: "Marcus' version gives Arthur something to contradict, but it raises room pressure.",
     suggestedMove: "Let Arthur contradict Marcus",
+    suggestionKind: "action",
   },
   {
     id: "dana",
@@ -158,7 +166,8 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     state: "Weighs proof against the cost of using it.",
     action: "Ask Dana which unlocked move is worth the risk.",
     advice: "Dana points out the tradeoff, but the decision still stays with you.",
-    suggestedMove: "Pick the unlocked move whose cost you can defend.",
+    suggestedMove: "Choose the unlocked move whose cost you can defend.",
+    suggestionKind: "judgment",
   },
 ]
 
@@ -340,9 +349,19 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const selectedAction = actions.find((action) => action.id === selectedId) ?? null
   const consultedPerson = people.find((person) => person.id === consultedPersonId) ?? null
   const consultedSuggestedAction = consultedPerson
-    ? actions.find((action) => action.title === consultedPerson.suggestedMove) ?? null
+    ? consultedPerson.suggestionKind === "action"
+      ? actions.find((action) => action.title === consultedPerson.suggestedMove) ?? null
+      : null
     : null
   const adviceArmed = !!consultedSuggestedAction && selectedId === consultedSuggestedAction.id
+  const adviceMode = consultedPerson?.suggestionKind ?? "action"
+  const adviceHeader = consultedPerson
+    ? adviceArmed
+      ? `${consultedPerson.name}'s advice is attached`
+      : adviceMode === "action"
+        ? `${consultedPerson.name} suggests a move`
+        : `${consultedPerson.name} helps weigh the tradeoff`
+    : ""
   const unlockedClueAction = unlockedClue
     ? actions.find((action) => action.id === "show-badge") ?? null
     : null
@@ -654,13 +673,10 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                   ...(adviceArmed ? styles.personAdviceArmed : null),
                 }}
                 data-gameplay-person-advice="true"
+                data-gameplay-person-advice-mode={adviceMode}
                 data-gameplay-person-advice-armed={adviceArmed ? "true" : undefined}
               >
-                <span style={styles.kicker}>
-                  {adviceArmed
-                    ? `${consultedPerson.name}'s advice is attached`
-                    : `${consultedPerson.name} ${consultedSuggestedAction ? "can open this" : "can help frame this"}`}
-                </span>
+                <span style={styles.kicker}>{adviceHeader}</span>
                 <strong style={styles.personAdviceTitle}>{consultedPerson.suggestedMove}</strong>
                 <span style={styles.personAdviceBody}>{consultedPerson.advice}</span>
                 {consultedSuggestedAction ? (

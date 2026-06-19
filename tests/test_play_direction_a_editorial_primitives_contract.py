@@ -331,7 +331,14 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "setConsultedPersonId(person.id)" in fixture
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
     assert 'data-gameplay-person-advice="true"' in fixture
-    assert '`${consultedPerson.name} ${consultedSuggestedAction ? "can open this" : "can help frame this"}`' in fixture
+    assert 'suggestionKind: "action" | "judgment"' in fixture
+    assert 'data-gameplay-person-advice-mode={adviceMode}' in fixture
+    assert 'consultedPerson.suggestionKind === "action"' in fixture
+    assert '`${consultedPerson.name} suggests a move`' in fixture
+    assert '`${consultedPerson.name} helps weigh the tradeoff`' in fixture
+    assert "Choose the move whose cost you can defend." in fixture
+    assert "Choose the unlocked move whose cost you can defend." in fixture
+    assert "can help frame this" not in fixture
     assert '`${consultedPerson.name}\'s advice is attached`' in fixture
     assert "const INITIAL_PEOPLE: PersonResource[]" in fixture
     assert "const UNLOCKED_PEOPLE: PersonResource[]" in fixture
