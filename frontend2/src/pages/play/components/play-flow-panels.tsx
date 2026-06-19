@@ -3925,6 +3925,12 @@ export function ActionArea({
             </span>
           </span>
         </div>
+        <div
+          style={ppStyles.diaryWritingHint}
+          data-play-inner-motive-writing-hint={context === "option" ? "true" : undefined}
+        >
+          {t("play.diary_writing_hint")}
+        </div>
         <textarea
           className="play-diary-textarea"
           ref={diaryTextareaRef}

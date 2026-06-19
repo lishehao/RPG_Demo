@@ -4932,6 +4932,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 650,
     overflowWrap: "anywhere" as const,
   },
+  diaryWritingHint: {
+    color: "rgba(255,245,230,0.58)",
+    fontSize: 11.4,
+    lineHeight: 1.35,
+    fontWeight: 620,
+    padding: "0 1px",
+  },
   diaryTextarea: {
     width: "100%",
     background: "rgba(4,5,6,0.36)",

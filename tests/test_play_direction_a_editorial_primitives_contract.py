@@ -988,6 +988,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-inner-motive-primary="true"' in panels
     assert 'data-play-inner-motive-panel={context === "option" ? "true" : undefined}' in panels
     assert 'data-play-inner-motive-frame={context === "option" ? "true" : undefined}' in panels
+    assert 'data-play-inner-motive-writing-hint={context === "option" ? "true" : undefined}' in panels
     assert "isWritingOptionDiary ? null : (" in selected_confirm
     assert 'block: "nearest"' in panels
     assert 'block: "center",\n        behavior: prefersReducedMotion ? "auto" : "smooth",' not in panels[
@@ -1130,6 +1131,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.diary_private_motive_label": "真实意图"' in strings
     assert '"play.private_intent_hint": "What you secretly mean; NPCs do not hear it"' in strings
     assert '"play.diary_label_hint": "What you secretly mean; others do not hear it."' in strings
+    assert '"play.diary_writing_hint": "Write the goal, suspicion, or person you are protecting; do not repeat the public move."' in strings
+    assert '"play.diary_writing_hint": "写目标、怀疑或你要保护的人；不要重复公开行动。"' in strings
     assert '"play.diary_attach_empty_hint": "Say what you secretly mean."' in strings
     assert "Use inner motive" not in strings
     assert '"play.inner_motive_submit_cta": "Submit with motive"' in strings
