@@ -362,6 +362,14 @@ export function HomePage({
               <br />
               {t("home.hero_title_l2")}
             </motion.h1>
+            <motion.p
+              variants={itemVariants}
+              transition={itemTransition}
+              style={{ ...hpStyles.heroSub, ...(compactHome ? hpStyles.heroSubCompact : null) }}
+              data-home-hero-sub="true"
+            >
+              {t("home.hero_sub")}
+            </motion.p>
             <motion.div
               variants={itemVariants}
               transition={itemTransition}
