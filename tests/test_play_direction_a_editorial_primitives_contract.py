@@ -598,7 +598,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_loop_update_label": "Use changes"' in strings
     assert '"play.gameplay_objective_label": "Goal"' in strings
     assert '"play.feedback_source_move_label": "From your move"' in strings
-    assert '"play.gameplay_decision_forecast_label": "What this changes"' in strings
+    assert '"play.gameplay_decision_forecast_label": "Likely impact"' in strings
     assert '"play.actor_focus_label": "Person to test"' in strings
     assert '"play.actor_focus_showing_label": "Moves that test {name}"' in strings
     assert '"play.actor_focus_cta_none": "No preset move"' in strings
@@ -643,8 +643,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings
-    assert '"play.option_forecast_kicker": "影响"' in strings
-    assert '"play.gameplay_decision_forecast_label": "这个选择的影响"' in strings
+    assert '"play.option_forecast_kicker": "预计影响"' in strings
+    assert '"play.gameplay_decision_forecast_label": "预计影响"' in strings
     assert '"play.gameplay_decision_upside_label": "机会"' in strings
     assert '"play.gameplay_decision_shift_label": "变化"' in strings
     assert '"play.gameplay_impact_label": "After your move"' in strings
@@ -753,7 +753,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-gameplay-action-forecast-summary="true"' in panels
     assert "gameplayForecastInline" in styles
     assert "gameplayForecastInlineLabel" in styles
-    assert '"play.option_forecast_kicker": "Changes"' in strings
+    assert '"play.option_forecast_kicker": "Likely impact"' in strings
     assert "change choice" not in strings
     assert '"play.selected_move_kicker": "Selected move"' in strings
     assert '"play.selected_move_commit_cta": "Take this action"' in strings
