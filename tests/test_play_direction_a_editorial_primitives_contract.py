@@ -638,9 +638,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_match_detail_one": "1 current move makes this person react."' in strings
     assert '"play.actor_focus_match_detail_many": "{count} current moves make this person react."' in strings
     assert '"play.actor_focus_matches_label": "Current choices"' in strings
-    assert '"play.actor_focus_no_match": "No current move names them; write a custom move if you want to pull them in."' in strings
+    assert '"play.actor_focus_no_match": "No current move names them; write your own move if you want to pull them in."' in strings
     assert '"play.actor_focus_clear": "Clear"' in strings
-    assert '"play.free_context_actor_label": "Custom move target"' in strings
+    assert '"play.free_context_actor_label": "Own move target"' in strings
+    assert '"play.free_context_resource_label": "Own move focus"' in strings
     assert '"play.free_context_actor_detail": "Write how you test {name}; the current options do not name them directly."' in strings
     assert '"play.action_open_free_actor": "Write move for {name}"' in strings
     assert '"play.action_free_actor_placeholder": "Write how you pull {name} into this move..."' in strings
@@ -806,6 +807,9 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_free_ready_detail": "先复核这句公开行动，再提交或补一句真实动机。"' in strings
     assert "Commit it, or add what you secretly mean." not in strings
     assert "Write custom move" not in strings
+    assert "write a custom move" not in strings
+    assert "Custom move target" not in strings
+    assert "Free action under review" not in strings
     assert "Pick a line" not in strings
     assert "change choice" not in strings
     assert '"play.selected_move_kicker": "Selected move"' in strings
