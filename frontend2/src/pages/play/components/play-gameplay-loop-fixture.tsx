@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react"
 import { useT } from "../../../shared/lib/i18n"
 import { actionPalette, ppStyles } from "../play-styles"
 
@@ -498,6 +498,12 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     setMotiveOpen(false)
   }
 
+  const handleActionCardKeyDown = (event: KeyboardEvent<HTMLElement>, action: FixtureAction) => {
+    if (event.key !== "Enter" && event.key !== " ") return
+    event.preventDefault()
+    selectAction(action)
+  }
+
   const selectSuggestedAction = (action: FixtureAction) => {
     selectAction(action)
     window.setTimeout(() => {
@@ -670,7 +676,12 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                       data-gameplay-action-card="true"
                       data-gameplay-unlocked-action={unlockedClue ? "true" : undefined}
                       data-gameplay-selected-action={selected ? "true" : undefined}
+                      role="button"
+                      tabIndex={isPending ? -1 : 0}
+                      aria-pressed={selected}
+                      aria-label={`Choose move ${action.number}: ${action.title}`}
                       onClick={() => selectAction(action)}
+                      onKeyDown={(event) => handleActionCardKeyDown(event, action)}
                     >
                       <span style={styles.actionMeta}>Move {action.number}</span>
                       <strong style={styles.actionTitle}>{action.title}</strong>
