@@ -548,6 +548,14 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 <span style={styles.kicker}>Your move</span>
                 <strong style={styles.receiptTitle}>{committed.action.title}</strong>
                 {committed.motive ? <span style={styles.receiptMotive}>Motive: {committed.motive}</span> : null}
+                <div style={styles.receiptImpact} data-gameplay-pending-impact="true">
+                  <span style={styles.receiptImpactLabel}>Queued impact</span>
+                  <div style={styles.chipRow}>
+                    {committed.action.forecast.map((delta) => (
+                      <DeltaChip key={delta.id} delta={delta} />
+                    ))}
+                  </div>
+                </div>
               </article>
               <article style={styles.reactionPanel} data-play-room-reacting="true">
                 <span style={styles.reactionPulse} aria-hidden="true" />
@@ -1141,6 +1149,16 @@ const styles: Record<string, CSSProperties> = {
   receiptMotive: {
     color: actionPalette.mutedIvory,
     fontSize: 13,
+  },
+  receiptImpact: {
+    marginTop: 3,
+    display: "grid",
+    gap: 7,
+  },
+  receiptImpactLabel: {
+    color: actionPalette.faintIvory,
+    fontSize: 11,
+    fontWeight: 780,
   },
   reactionPanel: {
     border: "1px solid rgba(229,190,124,0.18)",
