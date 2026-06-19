@@ -448,8 +448,8 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
         <aside style={styles.rail} aria-label="People and clues">
           <section style={styles.railSection}>
             <div style={styles.sectionHeader}>
-              <span style={styles.kicker}>In the room</span>
-              <span style={styles.headerNote} data-gameplay-people-usage-note="true">Ask them to open or block paths.</span>
+              <span style={styles.kicker}>People you can involve</span>
+              <span style={styles.headerNote} data-gameplay-people-usage-note="true">Ask them to open paths, block pressure, or reveal clues.</span>
             </div>
             <div style={styles.personList}>
               {PEOPLE.map((person) => {

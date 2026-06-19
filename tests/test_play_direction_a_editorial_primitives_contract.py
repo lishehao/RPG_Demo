@@ -84,6 +84,7 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "onFocusActor={focusSceneActor}" in play_page
     assert "onClearActorFocus={() => setFocusedActorId(null)}" in play_page
     assert "onAskAdvisor={openAdvisor}" in play_page
+    assert 'title="People you can involve"' in primitives
     assert "play.advisor_card_name" in primitives
     assert "play.advisor_card_background" in primitives
     assert "play.actor_focus_title" in primitives
@@ -274,7 +275,8 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert 'data-gameplay-person-action="true"' in fixture
     assert 'data-gameplay-people-usage-note="true"' in fixture
-    assert "Ask them to open or block paths." in fixture
+    assert "People you can involve" in fixture
+    assert "Ask them to open paths, block pressure, or reveal clues." in fixture
     assert "People are resources." not in fixture
     assert "0 usable yet" in fixture
     assert "consultedPersonId" in fixture

@@ -214,7 +214,7 @@ export function SceneSupportRail({
           <Truncated lines={3}>{pressure}</Truncated>
         </span>
       </PrimitiveSection>
-      <PrimitiveSection title="In the room">
+      <PrimitiveSection title="People you can involve">
         <div style={primitiveStyles.actorList}>
           {actors.map((actor) => {
             const focused = focusedActorId === actor.id
