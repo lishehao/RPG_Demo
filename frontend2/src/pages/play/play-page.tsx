@@ -1327,6 +1327,7 @@ export function PlayPage({
               onCommitmentActiveChange={setActionCommitmentActive}
               onCommitmentSummaryChange={setActionCommitmentSummary}
               onClearActorFocus={() => setFocusedActorId(null)}
+              onClearResourceFocus={() => setFocusedResourceId(null)}
               onPickOption={(i, diaryOverride) =>
                 void handleAdvance({
                   chosen_option_index: i,

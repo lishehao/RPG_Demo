@@ -346,10 +346,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
     assert "actorFocus={actorFocus}" in play_page
     assert "resourceFocus={focusedResourceId && focusedResourceTrack" in play_page
+    assert "onClearResourceFocus={() => setFocusedResourceId(null)}" in play_page
     assert "actionForecasts?: GameplayActionForecast[][]" in panels
     assert "actorFocus?: { id: string; name: string } | null" in panels
     assert 'type GameplayResourceFocusId = "time" | "pressure" | "evidence"' in panels
     assert "resourceFocus?: { id: GameplayResourceFocusId; label: string } | null" in panels
+    assert "onClearResourceFocus?: () => void" in panels
     assert "export function findActionTarget(" in panels
     assert "const optionTargets = useMemo(() => options.map" in panels
     assert "const actorFocusOptionMatches = useMemo" in panels
@@ -368,7 +370,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-resource-focus-id={resourceFocus.id}' in panels
     assert "data-play-resource-focus-match-count={resourceFocusMatchCount}" in panels
     assert 'data-play-resource-focus-cue-head="true"' in panels
-    assert "ppStyles.resourceFocusCueDivider" in panels
+    assert "play.resource_focus_showing_label" in panels
+    assert "ppStyles.resourceFocusCueClear" in panels
+    assert 'data-play-resource-focus-clear="true"' in panels
     assert "resourceFocusMatchCount === 0 && showFreeActionToggle" in panels
     assert 'data-play-resource-focus-custom-move="true"' in panels
     assert "onClick={openFreeActionComposer}" in panels
@@ -494,7 +498,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayTrackAction" in styles
     assert "resourceFocusCue" in styles
     assert "resourceFocusCueHead" in styles
-    assert "resourceFocusCueDivider" in styles
+    assert "resourceFocusCueClear" in styles
     assert "resourceFocusCueAction" in styles
     assert "gameplayNextChoiceTargetButton" in styles
     assert "gameplayNextChoiceTargetFocused" in styles
@@ -551,13 +555,20 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.action_target_detail_label": "Focus"' in strings
     assert '"play.action_target_detail_text": "This move primarily pushes {name}\'s reaction."' in strings
     assert '"play.move_receipt_signals_label": "Target and impact committed by this move"' in strings
+    assert '"play.resource_focus_cta": "Show moves"' in strings
+    assert '"play.resource_focus_active": "Showing moves"' in strings
     assert '"play.resource_focus_label": "Resource focus"' in strings
+    assert '"play.resource_focus_showing_label": "Showing {name} moves"' in strings
+    assert '"play.resource_focus_clear": "Clear"' in strings
     assert '"play.resource_focus_evidence_label": "Evidence"' in strings
     assert '"play.resource_focus_time_title": "Highlight moves that spend, buy, or change time pressure"' in strings
     assert '"play.resource_focus_pressure_title": "Highlight moves that change public pressure, danger, or tension"' in strings
-    assert '"play.resource_focus_time_match_detail": "{count} moves affect time pressure"' in strings
-    assert '"play.resource_focus_pressure_match_detail": "{count} moves affect pressure"' in strings
-    assert '"play.resource_focus_evidence_match_detail": "{count} moves can push a clue or proof forward"' in strings
+    assert '"play.resource_focus_time_match_detail_one": "1 current move affects time pressure."' in strings
+    assert '"play.resource_focus_time_match_detail_many": "{count} current moves affect time pressure."' in strings
+    assert '"play.resource_focus_pressure_match_detail_one": "1 current move affects pressure."' in strings
+    assert '"play.resource_focus_pressure_match_detail_many": "{count} current moves affect pressure."' in strings
+    assert '"play.resource_focus_evidence_match_detail_one": "1 current move can push a clue or proof forward."' in strings
+    assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can push a clue or proof forward."' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings

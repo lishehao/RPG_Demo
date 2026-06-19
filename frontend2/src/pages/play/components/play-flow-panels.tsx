@@ -2814,16 +2814,31 @@ function resourceFocusDetailText(
 ): string {
   if (resourceId === "time") {
     return matchCount > 0
-      ? t("play.resource_focus_time_match_detail", { count: matchCount })
+      ? t(
+          matchCount === 1
+            ? "play.resource_focus_time_match_detail_one"
+            : "play.resource_focus_time_match_detail_many",
+          { count: matchCount },
+        )
       : t("play.resource_focus_time_no_match")
   }
   if (resourceId === "pressure") {
     return matchCount > 0
-      ? t("play.resource_focus_pressure_match_detail", { count: matchCount })
+      ? t(
+          matchCount === 1
+            ? "play.resource_focus_pressure_match_detail_one"
+            : "play.resource_focus_pressure_match_detail_many",
+          { count: matchCount },
+        )
       : t("play.resource_focus_pressure_no_match")
   }
   return matchCount > 0
-    ? t("play.resource_focus_evidence_match_detail", { count: matchCount })
+    ? t(
+        matchCount === 1
+          ? "play.resource_focus_evidence_match_detail_one"
+          : "play.resource_focus_evidence_match_detail_many",
+        { count: matchCount },
+      )
     : t("play.resource_focus_evidence_no_match")
 }
 
@@ -2855,6 +2870,7 @@ export function ActionArea({
   onCommitmentActiveChange,
   onCommitmentSummaryChange,
   onClearActorFocus,
+  onClearResourceFocus,
   onPickOption,
   onPlayLeverage,
   onSubmitFree,
@@ -2882,6 +2898,7 @@ export function ActionArea({
   onCommitmentActiveChange: (active: boolean) => void
   onCommitmentSummaryChange: (summary: ActionCommitmentSummary | null) => void
   onClearActorFocus?: () => void
+  onClearResourceFocus?: () => void
   onPickOption: (idx: number, diaryOverride?: string) => void
   onPlayLeverage: (card: LeverageCardView, diaryOverride?: string) => void
   onSubmitFree: (diaryOverride?: string, freeInputOverride?: string) => void
@@ -4314,10 +4331,27 @@ export function ActionArea({
         >
           <span style={ppStyles.resourceFocusCueHead} data-play-resource-focus-cue-head="true">
             <span style={ppStyles.resourceFocusCueLabel}>{t("play.resource_focus_label")}</span>
-            <span style={ppStyles.resourceFocusCueDivider} aria-hidden>{" · "}</span>
-            <strong style={ppStyles.resourceFocusCueName}>{resourceFocus.label}</strong>
+            <strong style={ppStyles.resourceFocusCueName}>
+              {t("play.resource_focus_showing_label", { name: resourceFocus.label })}
+            </strong>
           </span>
-          <span style={ppStyles.resourceFocusCueDetail}> {resourceFocusDetail}</span>
+          {onClearResourceFocus ? (
+            <button
+              type="button"
+              style={{
+                ...ppStyles.resourceFocusCueClear,
+                ...inlineActionDisabledStyle,
+              }}
+              onClick={onClearResourceFocus}
+              disabled={actionControlsDisabled}
+              data-play-resource-focus-clear="true"
+              aria-label={t("play.resource_focus_clear")}
+              title={t("play.resource_focus_clear")}
+            >
+              {t("play.resource_focus_clear")}
+            </button>
+          ) : null}
+          <span style={ppStyles.resourceFocusCueDetail}>{resourceFocusDetail}</span>
           {resourceFocusMatchCount === 0 && showFreeActionToggle ? (
             <button
               type="button"
