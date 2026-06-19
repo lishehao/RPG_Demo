@@ -4445,34 +4445,46 @@ export function ActionArea({
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
         transition={reducedMotion ? { duration: 0.01 } : { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
       >
-        {intentGuide ? (
+        <span
+          style={ppStyles.optionExpandedDetailHeader}
+          data-play-action-card-detail-heading="true"
+        >
+          {t("play.action_decision_check_label")}
+        </span>
+        {forecasts.length ? (
           <span
             style={{
               ...ppStyles.optionExpandedDetailSection,
               ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
             }}
-            data-play-action-card-detail-section="intent"
+            data-play-action-card-detail-section="forecast"
+          >
+            {renderDecisionForecast(forecasts, { compact: compactActionChrome, detail: true })}
+          </span>
+        ) : null}
+        {forecastDetails.map((chip) => (
+          <span
+            key={`${chip.label}-${chip.detail}`}
+            style={{
+              ...ppStyles.optionExpandedDetailSection,
+              ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
+            }}
+            data-play-action-card-detail-section="why-now"
           >
             <span style={ppStyles.optionExpandedDetailLabel}>
-              {t("play.option_intent_label")}
+              {t("play.gameplay_forecast_detail_label")}
             </span>
             <span style={ppStyles.optionExpandedDetailBody}>
               <span
-                style={ppStyles.optionExpandedDetailChip}
-                data-play-action-intent-chip="true"
-                title={intentGuide.description}
-              >
-                {intentGuide.tag}
-              </span>
-              <span
                 style={ppStyles.optionExpandedDetailText}
-                data-play-action-intent-detail="true"
+                data-gameplay-forecast-detail="normal-play"
+                title={chip.detail}
               >
-                {intentGuide.description}
+                {chip.detail}
               </span>
             </span>
           </span>
-        ) : null}
+        ))}
         {showNarrativeResult ? (
           <span
             style={{
@@ -4509,40 +4521,34 @@ export function ActionArea({
             </span>
           </span>
         ) : null}
-        {forecasts.length ? (
+        {intentGuide ? (
           <span
             style={{
               ...ppStyles.optionExpandedDetailSection,
               ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
             }}
-            data-play-action-card-detail-section="forecast"
-          >
-            {renderDecisionForecast(forecasts, { compact: compactActionChrome, detail: true })}
-          </span>
-        ) : null}
-        {forecastDetails.map((chip) => (
-          <span
-            key={`${chip.label}-${chip.detail}`}
-            style={{
-              ...ppStyles.optionExpandedDetailSection,
-              ...(compactActionChrome ? ppStyles.optionExpandedDetailSectionCompact : null),
-            }}
-            data-play-action-card-detail-section="why-now"
+            data-play-action-card-detail-section="intent"
           >
             <span style={ppStyles.optionExpandedDetailLabel}>
-              {t("play.gameplay_forecast_detail_label")}
+              {t("play.option_intent_label")}
             </span>
             <span style={ppStyles.optionExpandedDetailBody}>
               <span
-                style={ppStyles.optionExpandedDetailText}
-                data-gameplay-forecast-detail="normal-play"
-                title={chip.detail}
+                style={ppStyles.optionExpandedDetailChip}
+                data-play-action-intent-chip="true"
+                title={intentGuide.description}
               >
-                {chip.detail}
+                {intentGuide.tag}
+              </span>
+              <span
+                style={ppStyles.optionExpandedDetailText}
+                data-play-action-intent-detail="true"
+              >
+                {intentGuide.description}
               </span>
             </span>
           </span>
-        ))}
+        ) : null}
       </motion.span>
     )
   }

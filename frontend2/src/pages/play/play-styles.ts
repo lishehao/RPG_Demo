@@ -4766,6 +4766,12 @@ export const ppStyles: Record<string, CSSProperties> = {
     gridTemplateColumns: "minmax(0, 1fr)",
     marginTop: 7,
   },
+  optionExpandedDetailHeader: {
+    color: actionPalette.ivoryText,
+    fontSize: 12,
+    lineHeight: 1.25,
+    fontWeight: 860,
+  },
   optionExpandedDetailSection: {
     minWidth: 0,
     display: "grid",

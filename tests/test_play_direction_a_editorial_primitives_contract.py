@@ -808,6 +808,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-forecast-detail-chip="normal-play"' not in panels
     assert "optionExpandedDetailBody" in styles
     assert "optionExpandedDetailChip" in styles
+    assert "optionExpandedDetailHeader" in styles
+    assert 'data-play-action-card-detail-heading="true"' in panels
+    assert 't("play.action_decision_check_label")' in panels
+    assert panels.index('data-play-action-card-detail-section="forecast"') < panels.index('data-play-action-card-detail-section="result"')
+    assert panels.index('data-play-action-card-detail-section="why-now"') < panels.index('data-play-action-target-detail="true"')
+    assert panels.index('data-play-action-target-detail="true"') < panels.index('data-play-action-card-detail-section="intent"')
     assert 'data-gameplay-forecast-detail="normal-play"' in panels
     assert 'data-gameplay-forecast-reason-preview="normal-play"' in panels
     assert 'data-gameplay-forecast-reason-text="normal-play"' in panels
@@ -816,6 +822,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayForecastInlineWithReason" in styles
     assert "gameplayForecastReasonPreview" in styles
     assert '"play.gameplay_forecast_detail_label": "Why now"' in strings
+    assert '"play.action_decision_check_label": "Decision check"' in strings
+    assert '"play.action_decision_check_label": "决策检查"' in strings
     assert '"play.gameplay_forecast_detail_preview": "Open to see why this move fits now."' in strings
     assert '"play.gameplay_forecast_detail_preview": "展开后看为什么这步现在可用。"' in strings
     assert 'data-gameplay-envelope="true"' in play_page
