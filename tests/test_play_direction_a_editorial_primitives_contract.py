@@ -995,15 +995,21 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "onClick={handleActionJump}" in play_page
     assert "stage={gameplayLoopStage}" in play_page
     assert "detail={actionJumpDetail}" in play_page
+    assert "useCompactLayout(\"(max-width: 680px)\")" in action_jump
+    assert "const detailCopy = compactJump ? \"\" : detail?.trim()" in action_jump
     assert 'data-play-action-jump="true"' in action_jump
     assert "data-play-action-jump-stage={stage}" in action_jump
+    assert 'data-play-action-jump-compact={compactJump ? "true" : "false"}' in action_jump
     assert 'data-play-action-jump-detail="true"' in action_jump
     assert "onPointerDown={onClick}" in action_jump
     assert "scrollToPlayActionArea" in action_jump_utils
     assert "[data-play-action-area='true']" in action_jump_utils
     assert "actionJumpButton" in styles
+    assert "actionJumpButtonCompact" in styles
+    assert "actionJumpCopyCompact" in styles
     assert "actionJumpDetail" in styles
     assert "actionJumpArrow" in styles
+    assert "actionJumpArrowCompact" in styles
     assert 'position: "fixed"' in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
     assert "maxWidth: 430" in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
     assert '"play.action_jump_kicker": "Your move"' in strings

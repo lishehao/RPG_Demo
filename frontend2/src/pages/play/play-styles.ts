@@ -4921,16 +4921,33 @@ export const ppStyles: Record<string, CSSProperties> = {
     textAlign: "left",
     backdropFilter: "blur(14px)",
   },
+  actionJumpButtonCompact: {
+    left: 14,
+    right: 14,
+    bottom: "calc(10px + env(safe-area-inset-bottom))",
+    minHeight: 44,
+    padding: "7px 9px 7px 11px",
+    gridTemplateColumns: "minmax(0, 1fr) 24px",
+    gap: 8,
+    borderRadius: 7,
+    boxShadow: "0 12px 28px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,238,198,0.08)",
+  },
   actionJumpCopy: {
     minWidth: 0,
     display: "grid",
     gap: 2,
+  },
+  actionJumpCopyCompact: {
+    gap: 1,
   },
   actionJumpKicker: {
     color: "rgba(245,200,120,0.82)",
     fontSize: 10.5,
     fontWeight: 820,
     lineHeight: 1.1,
+  },
+  actionJumpKickerCompact: {
+    fontSize: 10,
   },
   actionJumpText: {
     minWidth: 0,
@@ -4940,6 +4957,10 @@ export const ppStyles: Record<string, CSSProperties> = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap" as const,
+  },
+  actionJumpTextCompact: {
+    fontSize: 13,
+    lineHeight: 1.1,
   },
   actionJumpDetail: {
     minWidth: 0,
@@ -4963,6 +4984,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontSize: 16,
     lineHeight: 1,
     fontWeight: 900,
+  },
+  actionJumpArrowCompact: {
+    width: 24,
+    height: 24,
+    fontSize: 14,
   },
 
   approachingFinaleBanner: {
