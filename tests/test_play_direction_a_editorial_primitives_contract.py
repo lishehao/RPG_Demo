@@ -399,6 +399,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     backend_repository = (ROOT / "rpg_backend/narrative/repository.py").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    resource_focus_match_styles = styles.split("resourceFocusMatchChip: {", 1)[1].split(
+        "resourceFocusCueAction:",
+        1,
+    )[0]
 
     assert "buildGameplayEnvelope" in envelope
     assert "deriveActionForecastChips" in envelope
@@ -524,7 +528,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "resourceId === \"pressure\"" in panels
     assert "const resourceFocusOptionMatches = useMemo" in panels
     assert "isResourceFocusAction(resourceFocus.id, parsed.body, opt.hint, actionForecasts?.[index] ?? [])" in panels
-    assert "resourceFocusMatchedMoveLabels" in panels
+    assert "resourceFocusMatchedMoves" in panels
+    assert "data-play-resource-focus-match-option-index={index}" in panels
+    assert 'aria-label={t("play.resource_focus_select_match", { move: label })}' in panels
+    assert "resourceFocusMatchedMoveLabels" not in panels
     assert "function resourceFocusDetailText(" in panels
     assert "const openFreeActionComposer = () => {" in panels
     assert 'data-play-resource-focus-cue="true"' in panels
@@ -534,6 +541,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-resource-focus-matches="true"' in panels
     assert 'data-play-resource-focus-match-chip="true"' in panels
     assert "play.resource_focus_showing_label" in panels
+    assert 'fontFamily: "inherit"' in resource_focus_match_styles
+    assert 'cursor: "pointer"' in resource_focus_match_styles
+    assert 'textAlign: "left" as const' in resource_focus_match_styles
     assert "ppStyles.resourceFocusCueClear" in panels
     assert 'data-play-resource-focus-clear="true"' in panels
     assert "resourceFocusMatchCount === 0 && showFreeActionToggle" in panels
@@ -806,6 +816,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_evidence_match_detail_one": "1 current move can turn a clue or proof into leverage."' in strings
     assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can turn clues or proof into leverage."' in strings
     assert '"play.resource_focus_matches_label": "Current choices"' in strings
+    assert '"play.resource_focus_select_match": "Select move: {move}"' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings

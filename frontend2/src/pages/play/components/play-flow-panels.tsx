@@ -3266,15 +3266,15 @@ export function ActionArea({
     })
   }, [actionForecasts, options, resourceFocus])
   const resourceFocusMatchCount = resourceFocusOptionMatches.filter(Boolean).length
-  const resourceFocusMatchedMoveLabels = useMemo(() => {
+  const resourceFocusMatchedMoves = useMemo(() => {
     if (!resourceFocus) return []
     return options
       .map((opt, index) => ({
         match: resourceFocusOptionMatches[index],
+        index,
         label: parseOptionLabel(opt.label).body || opt.label,
       }))
       .filter((entry) => entry.match)
-      .map((entry) => entry.label)
       .slice(0, 3)
   }, [options, resourceFocus, resourceFocusOptionMatches])
   const resourceFocusDetail = resourceFocus ? resourceFocusDetailText(t, resourceFocus.id, resourceFocusMatchCount) : ""
@@ -4555,7 +4555,7 @@ export function ActionArea({
             </button>
           ) : null}
           <span style={ppStyles.resourceFocusCueDetail}>{resourceFocusDetail}</span>
-          {resourceFocusMatchedMoveLabels.length > 0 ? (
+          {resourceFocusMatchedMoves.length > 0 ? (
             <span
               style={ppStyles.resourceFocusMatches}
               data-play-resource-focus-matches="true"
@@ -4564,15 +4564,20 @@ export function ActionArea({
               <span style={ppStyles.resourceFocusMatchesLabel}>
                 {t("play.resource_focus_matches_label")}
               </span>
-              {resourceFocusMatchedMoveLabels.map((label) => (
-                <span
-                  key={label}
+              {resourceFocusMatchedMoves.map(({ index, label }) => (
+                <button
+                  key={`${index}-${label}`}
+                  type="button"
                   style={ppStyles.resourceFocusMatchChip}
+                  onClick={() => handleOptionSelect(index)}
+                  disabled={actionControlsDisabled}
                   title={label}
                   data-play-resource-focus-match-chip="true"
+                  data-play-resource-focus-match-option-index={index}
+                  aria-label={t("play.resource_focus_select_match", { move: label })}
                 >
                   {truncateRecoveryText(label, 56)}
-                </span>
+                </button>
               ))}
             </span>
           ) : null}
