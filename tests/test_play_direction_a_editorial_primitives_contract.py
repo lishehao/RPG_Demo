@@ -318,6 +318,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const [focusedResourceId, setFocusedResourceId] = useState<GameplayResourceFocusId | null>(null)" in play_page
     assert "const actorFocus = focusedActorId && focusedActorName" in play_page
     assert "const focusedResourceTrack = focusedResourceId" in play_page
+    assert "resourceActionCountsForOptions" in play_page
+    assert "isResourceFocusAction(resourceId, parsed.body, option.hint, actionForecasts[index] ?? [])" in play_page
     assert "const focusSceneActor = (actor: { id: string; name: string }) => {" in play_page
     assert "setFocusedResourceId(null)" in play_page
     assert "setFocusedActorId(wasFocused ? null : actor.id)" in play_page
@@ -326,7 +328,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "data-gameplay-resource-track={focusableTrackId}" in play_page
     assert 'data-gameplay-evidence-resource={focusableTrackId === "evidence" ? "true" : undefined}' in play_page
     assert "data-gameplay-resource-focus={isFocused ? \"true\" : undefined}" in play_page
+    assert "data-gameplay-resource-action-count={resourceMatchCount}" in play_page
     assert "focusedResourceId={focusedResourceId}" in play_page
+    assert "resourceActionCounts={resourceActionCounts}" in play_page
     assert "onFocusResource={focusGameplayResource}" in play_page
     assert 'behavior: prefersReducedMotion ? "auto" : "smooth"' in play_page
     assert "<GameplayStatePanel" in play_page
@@ -379,6 +383,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "play.actor_focus_match_detail_one" in panels
     assert "play.actor_focus_match_detail_many" in panels
     assert "function isResourceFocusAction(" in panels
+    assert "export function isResourceFocusAction" in panels
     assert "resourceId === \"time\"" in panels
     assert "resourceId === \"pressure\"" in panels
     assert "const resourceFocusOptionMatches = useMemo" in panels
@@ -584,6 +589,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.move_receipt_signals_label": "Target and impact committed by this move"' in strings
     assert '"play.resource_focus_cta": "Show moves"' in strings
     assert '"play.resource_focus_active": "Showing moves"' in strings
+    assert '"play.resource_focus_cta_count_one": "1 move"' in strings
+    assert '"play.resource_focus_cta_count_many": "{count} moves"' in strings
+    assert '"play.resource_focus_active_count": "Showing {count}"' in strings
     assert '"play.resource_focus_label": "Resource focus"' in strings
     assert '"play.resource_focus_showing_label": "Showing {name} moves"' in strings
     assert '"play.resource_focus_clear": "Clear"' in strings

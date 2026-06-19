@@ -66,6 +66,7 @@ import {
   computeBeatIntensity,
   computeLiveInventory,
   findActionTarget,
+  isResourceFocusAction,
   latestAgentPlanFromEvents,
   parseOptionLabel,
 } from "./components/play-flow-panels"
@@ -240,13 +241,36 @@ function actionTargetCountsForOptions(
   return counts
 }
 
+function resourceActionCountsForOptions(
+  options: NarrativeStoryMessage["options"],
+  actionForecasts: GameplayEnvelope["actionForecasts"],
+): Record<GameplayResourceFocusId, number> {
+  const counts: Record<GameplayResourceFocusId, number> = {
+    time: 0,
+    pressure: 0,
+    evidence: 0,
+  }
+  const focusIds: GameplayResourceFocusId[] = ["time", "pressure", "evidence"]
+  options.forEach((option, index) => {
+    const parsed = parseOptionLabel(option.label)
+    focusIds.forEach((resourceId) => {
+      if (isResourceFocusAction(resourceId, parsed.body, option.hint, actionForecasts[index] ?? [])) {
+        counts[resourceId] += 1
+      }
+    })
+  })
+  return counts
+}
+
 function GameplayStatePanel({
   envelope,
   focusedResourceId,
+  resourceActionCounts,
   onFocusResource,
 }: {
   envelope: GameplayEnvelope
   focusedResourceId?: GameplayResourceFocusId | null
+  resourceActionCounts?: Record<GameplayResourceFocusId, number>
   onFocusResource?: (id: GameplayResourceFocusId) => void
 }) {
   const t = useT()
@@ -266,6 +290,18 @@ function GameplayStatePanel({
           const focusableTrackId = isGameplayResourceFocusId(track.id) ? track.id : null
           const isFocused = focusedResourceId === focusableTrackId && focusableTrackId !== null
           const focusTitle = focusableTrackId ? gameplayResourceFocusTitle(t, focusableTrackId) : ""
+          const resourceMatchCount = focusableTrackId
+            ? resourceActionCounts?.[focusableTrackId] ?? 0
+            : 0
+          const resourceActionLabel = isFocused
+            ? resourceMatchCount > 0
+              ? t("play.resource_focus_active_count", { count: resourceMatchCount })
+              : t("play.resource_focus_active")
+            : resourceMatchCount === 1
+              ? t("play.resource_focus_cta_count_one")
+              : resourceMatchCount > 1
+                ? t("play.resource_focus_cta_count_many", { count: resourceMatchCount })
+                : t("play.resource_focus_cta")
           const trackStyle = {
             ...ppStyles.gameplayTrack,
             ...(focusableTrackId ? ppStyles.gameplayTrackButton : null),
@@ -278,7 +314,7 @@ function GameplayStatePanel({
               <span style={ppStyles.gameplayTrackValue}>{track.value}</span>
               {focusableTrackId ? (
                 <span style={ppStyles.gameplayTrackAction}>
-                  {isFocused ? t("play.resource_focus_active") : t("play.resource_focus_cta")}
+                  {resourceActionLabel}
                 </span>
               ) : null}
             </>
@@ -292,6 +328,7 @@ function GameplayStatePanel({
               data-gameplay-resource-track={focusableTrackId}
               data-gameplay-evidence-resource={focusableTrackId === "evidence" ? "true" : undefined}
               data-gameplay-resource-focus={isFocused ? "true" : undefined}
+              data-gameplay-resource-action-count={resourceMatchCount}
               aria-pressed={isFocused}
               aria-label={`${track.label}: ${track.value}. ${focusTitle}`}
               title={focusTitle}
@@ -1043,6 +1080,12 @@ export function PlayPage({
       : {},
     [castNameById, lastNarrator],
   )
+  const resourceActionCounts = useMemo(
+    () => lastNarrator
+      ? resourceActionCountsForOptions(lastNarrator.options, gameplayEnvelope.actionForecasts)
+      : { time: 0, pressure: 0, evidence: 0 },
+    [gameplayEnvelope.actionForecasts, lastNarrator],
+  )
   const gameplayLoopStage: GameplayLoopStage = isComplete
     ? "ending"
     : busy
@@ -1161,6 +1204,7 @@ export function PlayPage({
               <GameplayStatePanel
                 envelope={gameplayEnvelope}
                 focusedResourceId={focusedResourceId}
+                resourceActionCounts={resourceActionCounts}
                 onFocusResource={focusGameplayResource}
               />
               <GameplayLoopGuide

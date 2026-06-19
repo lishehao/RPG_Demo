@@ -2781,9 +2781,9 @@ export function findActionTarget(
   }
 }
 
-type GameplayResourceFocusId = "time" | "pressure" | "evidence"
+export type GameplayResourceFocusId = "time" | "pressure" | "evidence"
 
-function isResourceFocusAction(
+export function isResourceFocusAction(
   resourceId: GameplayResourceFocusId,
   body: string,
   hint: string | undefined,
