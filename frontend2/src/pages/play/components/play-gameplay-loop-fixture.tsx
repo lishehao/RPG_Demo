@@ -227,6 +227,9 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const actions = useMemo(() => (unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS), [unlockedClue])
   const selectedAction = actions.find((action) => action.id === selectedId) ?? null
   const consultedPerson = PEOPLE.find((person) => person.id === consultedPersonId) ?? null
+  const consultedSuggestedAction = consultedPerson
+    ? actions.find((action) => action.title === consultedPerson.suggestedMove) ?? null
+    : null
   const isPending = phase === "pending"
   const actionHeaderTitle = motiveOpen
     ? "Add inner motive"
@@ -512,6 +515,16 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 <span style={styles.kicker}>{consultedPerson.name} can open this</span>
                 <strong style={styles.personAdviceTitle}>{consultedPerson.suggestedMove}</strong>
                 <span style={styles.personAdviceBody}>{consultedPerson.advice}</span>
+                {consultedSuggestedAction ? (
+                  <button
+                    type="button"
+                    style={styles.personAdviceAction}
+                    data-gameplay-person-advice-select="true"
+                    onClick={() => selectAction(consultedSuggestedAction)}
+                  >
+                    Select this move
+                  </button>
+                ) : null}
               </article>
             ) : null}
           </section>
@@ -896,6 +909,18 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.mutedIvory,
     fontSize: 12.5,
     lineHeight: 1.38,
+  },
+  personAdviceAction: {
+    justifySelf: "start",
+    marginTop: 4,
+    border: "1px solid rgba(229,190,124,0.36)",
+    borderRadius: 999,
+    background: "rgba(229,190,124,0.12)",
+    color: actionPalette.ivoryText,
+    fontWeight: 800,
+    fontSize: 12,
+    padding: "7px 11px",
+    cursor: "pointer",
   },
   clueCard: {
     border: "1px solid rgba(229,190,124,0.14)",
