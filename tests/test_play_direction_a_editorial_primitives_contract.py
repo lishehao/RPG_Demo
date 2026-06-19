@@ -730,6 +730,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.advisor_empty_primer_title": "Ask for one read first"' in strings
     assert '"play.advisor_empty_primer_body": "Your friend can flag risk, wording, and who may push back, but you still choose the move."' in strings
     assert '"play.advisor_draft_hint": "Suggested question inserted. Edit it, then send."' in strings
+    assert '"play.advisor_send": "Ask friend"' in strings
+    assert '"play.advisor_send": "问朋友"' in strings
     assert '"play.move_receipt_title": "Your move"' in strings
     assert '"play.room_reacting_title": "The room is reacting"' in strings
     assert '"play.option_expand_cta": "View move"' in strings
