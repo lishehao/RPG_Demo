@@ -335,13 +335,15 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-action-why-now="true"' in fixture
     assert "Why now" in fixture
     assert "The green-room badge turns a vague suspicion into a route Lena can act on." in fixture
-    assert "Arthur and Marcus now have competing public stories the room can compare." in fixture
+    assert 'role: "Sponsor representative"' in fixture
+    assert 'role: "Show producer"' in fixture
+    assert "Marcus and Arthur now have competing public stories the room can compare." in fixture
     assert 'data-gameplay-person-action="true"' in fixture
     assert "shift?: string" in fixture
     assert 'data-gameplay-person-shift="true"' in fixture
     assert "Badge proof gives Lena a concrete route to manage." in fixture
-    assert "Arthur can now answer a public contradiction, not a vague suspicion." in fixture
-    assert "Marcus' timeline can be tested against the badge trail." in fixture
+    assert "Marcus can now answer a public contradiction, not a vague suspicion." in fixture
+    assert "Arthur's timeline can be tested against the badge trail." in fixture
     assert "Dana can compare proof-first moves instead of guessing." in fixture
     assert 'data-gameplay-people-usage-note="true"' in fixture
     assert "People you can involve" in fixture
@@ -374,9 +376,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "const UNLOCKED_PEOPLE: PersonResource[]" in fixture
     assert "const people = useMemo(() => (unlockedClue ? UNLOCKED_PEOPLE : INITIAL_PEOPLE), [unlockedClue])" in fixture
     assert "Show Lena the green-room badge" in fixture
-    assert "Let Arthur contradict Marcus" in fixture
+    assert "Let Marcus contradict Arthur" in fixture
     assert "Ask Lena how the badge changes the route." in fixture
-    assert "Ask Arthur to respond after Marcus speaks." in fixture
+    assert "Ask Marcus to respond after Arthur speaks." in fixture
     assert "const consultedSuggestedAction = consultedPerson" in fixture
     assert "const adviceArmed = !!consultedSuggestedAction && selectedId === consultedSuggestedAction.id" in fixture
     assert "const actionAreaRef = useRef<HTMLElement | null>(null)" in fixture

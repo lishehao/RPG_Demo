@@ -101,9 +101,9 @@ const INITIAL_PEOPLE: PersonResource[] = [
   {
     id: "arthur",
     name: "Arthur",
-    role: "Producer",
-    state: "Trying to keep the sponsor calm.",
-    action: "Press Arthur for the last confirmed timestamp.",
+    role: "Sponsor representative",
+    state: "Smiling too hard for the cameras.",
+    action: "Press Arthur on the missing badge.",
     advice: "Arthur reacts when the question is public and tied to a concrete gap.",
     suggestedMove: "Pressure Arthur on the missing badge",
     suggestionKind: "action",
@@ -111,9 +111,9 @@ const INITIAL_PEOPLE: PersonResource[] = [
   {
     id: "marcus",
     name: "Marcus",
-    role: "Sponsor rep",
-    state: "Smiling too hard for the cameras.",
-    action: "Read Marcus before the next public answer.",
+    role: "Show producer",
+    state: "Trying to keep the sponsor calm.",
+    action: "Ask Marcus to stall the sponsors.",
     advice: "Marcus can buy time, but asking him costs trust with the people backstage.",
     suggestedMove: "Send Marcus to stall sponsors",
     suggestionKind: "action",
@@ -145,23 +145,23 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
   {
     id: "arthur",
     name: "Arthur",
-    role: "Producer",
-    state: "Watching Marcus' story harden in public.",
-    shift: "Arthur can now answer a public contradiction, not a vague suspicion.",
-    action: "Ask Arthur to respond after Marcus speaks.",
-    advice: "Arthur is useful now because Marcus has a public story he can contradict.",
-    suggestedMove: "Let Arthur contradict Marcus",
+    role: "Sponsor representative",
+    state: "Trying to make the badge problem look routine.",
+    shift: "Arthur's timeline can be tested against the badge trail.",
+    action: "Ask Arthur to repeat his timeline.",
+    advice: "Arthur's version gives Marcus something to contradict, but it raises room pressure.",
+    suggestedMove: "Let Marcus contradict Arthur",
     suggestionKind: "action",
   },
   {
     id: "marcus",
     name: "Marcus",
-    role: "Sponsor rep",
-    state: "Trying to make the badge problem look routine.",
-    shift: "Marcus' timeline can be tested against the badge trail.",
-    action: "Ask Marcus to repeat his timeline.",
-    advice: "Marcus' version gives Arthur something to contradict, but it raises room pressure.",
-    suggestedMove: "Let Arthur contradict Marcus",
+    role: "Show producer",
+    state: "Watching Arthur's story harden in public.",
+    shift: "Marcus can now answer a public contradiction, not a vague suspicion.",
+    action: "Ask Marcus to respond after Arthur speaks.",
+    advice: "Marcus is useful now because Arthur has a public story he can contradict.",
+    suggestedMove: "Let Marcus contradict Arthur",
     suggestionKind: "action",
   },
   {
@@ -249,16 +249,16 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
   {
     id: "trap-answer",
     number: 2,
-    title: "Let Arthur contradict Marcus",
-    body: "Hold the badge back and make the two public stories collide in front of the room.",
-    availableBecause: "Arthur and Marcus now have competing public stories the room can compare.",
+    title: "Let Marcus contradict Arthur",
+    body: "Hold the badge back and make Arthur's sponsor story collide with Marcus' production timeline.",
+    availableBecause: "Marcus and Arthur now have competing public stories the room can compare.",
     forecast: [
       { id: "pressure-risk", label: "Pressure +1", tone: "cost" },
       { id: "leverage-gain", label: "Leverage +1", tone: "gain" },
     ],
     resolved: [
       { id: "leverage-live", label: "Sponsor leverage live", tone: "gain" },
-      { id: "room-shifts", label: "Room watches Marcus", tone: "shift" },
+      { id: "room-shifts", label: "Room watches Arthur", tone: "shift" },
     ],
   },
 ]
@@ -287,7 +287,7 @@ function resolvedSummaryForAction(action: FixtureAction | null): string {
     return "The badge becomes a usable route: Lena can point you toward the control door."
   }
   if (action.id === "trap-answer") {
-    return "Arthur and Marcus now have conflicting public stories, raising pressure and leverage together."
+    return "Marcus and Arthur now have conflicting public stories, raising pressure and leverage together."
   }
   return "The room has shifted. Use the new state before the countdown closes."
 }
