@@ -576,6 +576,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "feedbackPendingStepActive" in styles
     assert '"play.gameplay_loop_label": "Action loop"' in strings
     assert '"play.gameplay_loop_choose_label": "Choose move"' in strings
+    assert '"play.gameplay_loop_choose_detail": "Costs and opportunities"' in strings
+    assert '"play.gameplay_loop_choose_detail": "预判代价和机会"' in strings
     assert '"play.gameplay_loop_react_label": "Room reacts"' in strings
     assert '"play.gameplay_loop_update_label": "See changes"' in strings
     assert '"play.gameplay_objective_label": "Goal"' in strings
