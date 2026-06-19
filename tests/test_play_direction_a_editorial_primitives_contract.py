@@ -1382,6 +1382,16 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.advisor_draft_hint": "已插入建议问题，可以改一句再问朋友。"' not in strings
     assert '"play.advisor_send": "Ask friend"' in strings
     assert '"play.advisor_send": "问朋友"' in strings
+    assert '"play.oracle_button": "Deep read"' in strings
+    assert '"play.oracle_button_with_cost": "Deep read · spends 1 turn"' in strings
+    assert '"play.oracle_inline_summary": "Deep read spends 1 turn: {before} → {after} turns left"' in strings
+    assert '"play.oracle_tip_active": "Spend 1 turn for a deeper read from your friend ({turns} turns left)"' in strings
+    assert '"play.oracle_button": "Oracle read"' not in strings
+    assert '"play.oracle_button_with_cost": "Oracle read · costs 1 turn"' not in strings
+    assert '"play.oracle_button": "深度读局"' in strings
+    assert '"play.oracle_button_with_cost": "深度读局 · 消耗 1 回合"' in strings
+    assert '"play.oracle_inline_summary": "深度读局会消耗 1 回合：{before} → {after} 回合"' in strings
+    assert '"play.oracle_button": "看穿模式"' not in strings
     assert '"play.move_receipt_title": "Your move"' in strings
     assert '"play.room_reacting_title": "The room is reacting"' in strings
     assert '"play.resolve_status_room": "Reading the room"' in strings
