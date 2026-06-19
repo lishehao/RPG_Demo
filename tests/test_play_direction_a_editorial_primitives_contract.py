@@ -292,6 +292,16 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Review selected move" in fixture
     assert "Submit it, or add what you secretly mean." in fixture
     assert 'data-gameplay-selected-review={selectedAction ? "true" : undefined}' in fixture
+    assert "function impactSummary(action: FixtureAction)" in fixture
+    assert 'data-gameplay-selected-check="true"' in fixture
+    assert "Before you submit" in fixture
+    assert 'data-gameplay-selected-check-group={group.label.toLowerCase()}' in fixture
+    assert "Costs" in fixture
+    assert "Upside" in fixture
+    assert "Opens" in fixture
+    assert "No direct cost" in fixture
+    assert "No direct gain" in fixture
+    assert "No new path" in fixture
     assert "Compare likely impact before you submit." in fixture
     assert "Compare likely impact before you commit." not in fixture
     assert "Badge clue opened new moves." in fixture

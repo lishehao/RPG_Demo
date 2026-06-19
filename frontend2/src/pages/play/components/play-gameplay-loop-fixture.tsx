@@ -332,6 +332,17 @@ function DeltaChip({ delta, hook }: { delta: FixtureDelta; hook?: string }) {
   )
 }
 
+function impactSummary(action: FixtureAction) {
+  const costs = action.forecast.filter((delta) => delta.tone === "cost")
+  const upsides = action.forecast.filter((delta) => delta.tone === "gain")
+  const openings = action.forecast.filter((delta) => delta.tone === "unlock" || delta.tone === "shift")
+  return [
+    { label: "Costs", values: costs, emptyLabel: "No direct cost" },
+    { label: "Upside", values: upsides, emptyLabel: "No direct gain" },
+    { label: "Opens", values: openings, emptyLabel: "No new path" },
+  ]
+}
+
 export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void }) {
   const t = useT()
   const [phase, setPhase] = useState<FixturePhase>("choosing")
@@ -596,29 +607,53 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                               </div>
                             </div>
                           ) : (
-                            <div style={styles.confirmRow}>
-                              <button
-                                type="button"
-                                style={styles.primaryButton}
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  confirmAction(action)
-                                }}
-                                data-gameplay-confirm="true"
+                            <div style={styles.selectedDecisionStack}>
+                              <div
+                                style={styles.selectedCheck}
+                                data-gameplay-selected-check="true"
                               >
-                                Submit this move
-                              </button>
-                              <button
-                                type="button"
-                                style={styles.secondaryButton}
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  setMotiveOpen(true)
-                                }}
-                                data-gameplay-inner-motive="true"
-                              >
-                                Add inner motive
-                              </button>
+                                <span style={styles.selectedCheckKicker}>Before you submit</span>
+                                <div style={styles.selectedCheckGrid}>
+                                  {impactSummary(action).map((group) => (
+                                    <span
+                                      key={group.label}
+                                      style={styles.selectedCheckItem}
+                                      data-gameplay-selected-check-group={group.label.toLowerCase()}
+                                    >
+                                      <strong style={styles.selectedCheckLabel}>{group.label}</strong>
+                                      <span style={styles.selectedCheckValue}>
+                                        {group.values.length
+                                          ? group.values.map((delta) => delta.label).join(" / ")
+                                          : group.emptyLabel}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div style={styles.confirmRow}>
+                                <button
+                                  type="button"
+                                  style={styles.primaryButton}
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    confirmAction(action)
+                                  }}
+                                  data-gameplay-confirm="true"
+                                >
+                                  Submit this move
+                                </button>
+                                <button
+                                  type="button"
+                                  style={styles.secondaryButton}
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    setMotiveOpen(true)
+                                  }}
+                                  data-gameplay-inner-motive="true"
+                                >
+                                  Add inner motive
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -915,6 +950,45 @@ const styles: Record<string, CSSProperties> = {
     marginTop: 4,
     paddingTop: 12,
     borderTop: `1px solid ${actionPalette.champagneLine}`,
+  },
+  selectedDecisionStack: {
+    display: "grid",
+    gap: 10,
+  },
+  selectedCheck: {
+    border: "1px solid rgba(229,190,124,0.13)",
+    borderRadius: 8,
+    background: "rgba(0,0,0,0.14)",
+    padding: 10,
+    display: "grid",
+    gap: 8,
+  },
+  selectedCheckKicker: {
+    color: actionPalette.amberText,
+    fontSize: 10.5,
+    fontWeight: 850,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  selectedCheckGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 126px), 1fr))",
+    gap: 8,
+  },
+  selectedCheckItem: {
+    minWidth: 0,
+    display: "grid",
+    gap: 3,
+  },
+  selectedCheckLabel: {
+    color: actionPalette.faintIvory,
+    fontSize: 11,
+    fontWeight: 800,
+  },
+  selectedCheckValue: {
+    color: actionPalette.ivoryText,
+    fontSize: 12.5,
+    lineHeight: 1.3,
   },
   confirmRow: {
     display: "grid",
