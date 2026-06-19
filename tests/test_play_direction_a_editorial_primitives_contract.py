@@ -1237,6 +1237,7 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     fixture = (ROOT / "frontend2/src/pages/play/components/play-long-history-fixture.tsx").read_text()
     action_jump = (ROOT / "frontend2/src/pages/play/components/play-action-jump.tsx").read_text()
     action_jump_utils = (ROOT / "frontend2/src/pages/play/components/play-action-jump-utils.ts").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert 'segments[1] === "play-action"' in routes
@@ -1250,9 +1251,17 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert "PlayLongHistoryFixture" in action_state
     assert 'data-play-long-history-fixture="true"' in fixture
     assert "type LongHistoryOutcome" in fixture
+    assert "nextFocus: string" in fixture
     assert "longHistoryOutcomeForMove(submittedMove)" in fixture
     assert "data-play-long-history-result-feedback=\"true\"" in fixture
     assert "data-play-long-history-result-item=\"true\"" in fixture
+    assert 'data-play-long-history-next-focus="true"' in fixture
+    assert "Next choice:" in fixture
+    assert "Use the fixed timestamp to pressure the door story instead of asking broad questions." in fixture
+    assert "Use the control-door clue while the sponsor is still answering in public." in fixture
+    assert "Return to proof now that the hallway is watched." in fixture
+    assert "outcomeReceiptNextFocus" in styles
+    assert "outcomeReceiptNextValue" in styles
     assert "scrollIntoView({ block: \"start\", behavior: \"smooth\" })" in fixture
     assert "Result landed. The next action set is ready." not in fixture
     assert "<ActionArea" in fixture

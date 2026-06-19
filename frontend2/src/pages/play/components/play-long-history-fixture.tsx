@@ -39,6 +39,7 @@ const HISTORY_BEATS = [
 type LongHistoryOutcome = {
   title: string
   summary: string
+  nextFocus: string
   items: Array<{
     label: string
     value: string
@@ -52,6 +53,7 @@ function longHistoryOutcomeForMove(action: string): LongHistoryOutcome {
     return {
       title: "Timeline anchored",
       summary: "The long transcript now has one reliable timestamp, so the next move can test who is lying.",
+      nextFocus: "Use the fixed timestamp to pressure the door story instead of asking broad questions.",
       items: [
         { label: "Time", value: "one timestamp fixed", tone: "safe" },
         { label: "People", value: "producer steadier", tone: "safe" },
@@ -63,6 +65,7 @@ function longHistoryOutcomeForMove(action: string): LongHistoryOutcome {
     return {
       title: "Sponsor exposed",
       summary: "The room can now connect the missing singer to the control door instead of guessing.",
+      nextFocus: "Use the control-door clue while the sponsor is still answering in public.",
       items: [
         { label: "Pressure", value: "sponsor cornered", tone: "tense" },
         { label: "Clue", value: "control door matters", tone: "gold" },
@@ -73,6 +76,7 @@ function longHistoryOutcomeForMove(action: string): LongHistoryOutcome {
   return {
     title: "Second watcher placed",
     summary: "The service hall is covered, so the next choice can focus on evidence instead of chasing noise.",
+    nextFocus: "Return to proof now that the hallway is watched.",
     items: [
       { label: "Coverage", value: "hall watched", tone: "safe" },
       { label: "Evidence", value: "badge route protected", tone: "gold" },
@@ -233,6 +237,13 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
                   </strong>
                 </span>
               ))}
+            </span>
+            <span
+              style={ppStyles.outcomeReceiptNextFocus}
+              data-play-long-history-next-focus="true"
+            >
+              <span style={ppStyles.outcomeReceiptItemLabel}>Next choice:</span>
+              <strong style={ppStyles.outcomeReceiptNextValue}>{outcome.nextFocus}</strong>
             </span>
           </section>
         ) : null}
