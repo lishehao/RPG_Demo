@@ -3237,15 +3237,15 @@ export function ActionArea({
     return optionTargets.map((target) => target?.id === actorFocus.id)
   }, [actorFocus, optionTargets])
   const actorFocusMatchCount = actorFocusOptionMatches.filter(Boolean).length
-  const actorFocusMatchedMoveLabels = useMemo(() => {
+  const actorFocusMatchedMoves = useMemo(() => {
     if (!actorFocus) return []
     return options
       .map((opt, index) => ({
         match: actorFocusOptionMatches[index],
+        index,
         label: parseOptionLabel(opt.label).body || opt.label,
       }))
       .filter((entry) => entry.match)
-      .map((entry) => entry.label)
       .slice(0, 3)
   }, [actorFocus, actorFocusOptionMatches, options])
   const actorFocusDetail = actorFocus
@@ -4385,7 +4385,7 @@ export function ActionArea({
           <span style={ppStyles.actorFocusCueDetail}>
             {actorFocusDetail}
           </span>
-          {actorFocusMatchedMoveLabels.length > 0 ? (
+          {actorFocusMatchedMoves.length > 0 ? (
             <span
               style={ppStyles.actorFocusMatches}
               data-play-actor-focus-matches="true"
@@ -4394,15 +4394,20 @@ export function ActionArea({
               <span style={ppStyles.actorFocusMatchesLabel}>
                 {t("play.actor_focus_matches_label")}
               </span>
-              {actorFocusMatchedMoveLabels.map((label) => (
-                <span
-                  key={label}
+              {actorFocusMatchedMoves.map(({ index, label }) => (
+                <button
+                  key={`${index}-${label}`}
+                  type="button"
                   style={ppStyles.actorFocusMatchChip}
+                  onClick={() => handleOptionSelect(index)}
+                  disabled={actionControlsDisabled}
                   title={label}
                   data-play-actor-focus-match-chip="true"
+                  data-play-actor-focus-match-option-index={index}
+                  aria-label={t("play.actor_focus_select_match", { move: label })}
                 >
                   {truncateRecoveryText(label, 56)}
-                </span>
+                </button>
               ))}
             </span>
           ) : null}

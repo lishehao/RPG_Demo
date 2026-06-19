@@ -475,9 +475,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const optionTargets = useMemo(() => options.map" in panels
     assert "const actorFocusOptionMatches = useMemo" in panels
     assert "target?.id === actorFocus.id" in panels
-    assert "actorFocusMatchedMoveLabels" in panels
+    assert "actorFocusMatchedMoves" in panels
     assert 'data-play-actor-focus-matches="true"' in panels
     assert 'data-play-actor-focus-match-chip="true"' in panels
+    assert "data-play-actor-focus-match-option-index={index}" in panels
+    assert 'aria-label={t("play.actor_focus_select_match", { move: label })}' in panels
+    assert "onClick={() => handleOptionSelect(index)}" in panels
     assert "const actorFocusDetail = actorFocus" in panels
     assert "play.actor_focus_match_detail_one" in panels
     assert "play.actor_focus_match_detail_many" in panels
@@ -697,6 +700,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_match_detail_one": "1 current move makes this person react."' in strings
     assert '"play.actor_focus_match_detail_many": "{count} current moves make this person react."' in strings
     assert '"play.actor_focus_matches_label": "Current choices"' in strings
+    assert '"play.actor_focus_select_match": "Select move: {move}"' in strings
     assert '"play.actor_focus_no_match": "No current move names them; write your own move if you want to pull them in."' in strings
     assert '"play.actor_focus_clear": "Clear"' in strings
     assert '"play.free_context_actor_label": "Own move target"' in strings
