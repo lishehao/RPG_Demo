@@ -936,6 +936,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-collapse-zone="true"' in panels
     assert 'data-play-inner-motive-primary="true"' in panels
     assert 'data-play-inner-motive-panel={context === "option" ? "true" : undefined}' in panels
+    assert 'data-play-inner-motive-frame={context === "option" ? "true" : undefined}' in panels
     assert "isWritingOptionDiary ? null : (" in selected_confirm
     assert 'block: "nearest"' in panels
     assert 'block: "center",\n        behavior: prefersReducedMotion ? "auto" : "smooth",' not in panels[
@@ -972,6 +973,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "optionPrimaryCommitButton" in styles
     assert "optionMotiveCommitButton" in styles
     assert "diarySubmitButton" in styles
+    assert "diaryIntentFrame" in styles
+    assert "diaryIntentRow" in styles
     assert "moveReceiptPanel" in styles
     assert "roomReactingPanel" in styles
     assert "reducedMotionTransition" in styles
@@ -1059,6 +1062,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.inner_motive_attached_hint": "Will submit with this move"' in strings
     assert '"play.diary_skip": "Back to move"' in strings
     assert '"play.diary_skip": "返回行动"' in strings
+    assert '"play.diary_public_move_label": "Public move"' in strings
+    assert '"play.diary_public_move_label": "公开行动"' in strings
+    assert '"play.diary_private_motive_label": "Private motive"' in strings
+    assert '"play.diary_private_motive_label": "真实意图"' in strings
     assert '"play.private_intent_hint": "What you secretly mean; NPCs do not hear it"' in strings
     assert '"play.diary_label_hint": "What you secretly mean; others do not hear it."' in strings
     assert '"play.diary_attach_empty_hint": "Say what you secretly mean."' in strings

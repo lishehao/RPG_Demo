@@ -3830,6 +3830,12 @@ export function ActionArea({
       (context === "option" && selectedOptionIndex === null) ||
       (context === "leverage" && !armedCard) ||
       (context === "free" && !freeInput.trim())
+    const diaryPublicMove =
+      context === "option"
+        ? selectedOptionBody
+        : context === "leverage"
+          ? armedCardLeverage || (armedCardTargetName ? t("play.leverage_confirm_title", { target: armedCardTargetName }) : "")
+          : freeInput.trim()
 
     return showDiary && diaryContext === context ? (
       <div
@@ -3839,6 +3845,23 @@ export function ActionArea({
         <div style={ppStyles.diaryHeader}>
           <span style={ppStyles.diaryKicker}>{t("play.diary_inner_label")}</span>
           <span style={ppStyles.diaryMeta}>{t("play.private_intent_hint")}</span>
+        </div>
+        <div
+          style={ppStyles.diaryIntentFrame}
+          data-play-inner-motive-frame={context === "option" ? "true" : undefined}
+        >
+          <span style={ppStyles.diaryIntentRow}>
+            <span style={ppStyles.diaryIntentLabel}>{t("play.diary_public_move_label")}</span>
+            <span style={ppStyles.diaryIntentText} title={diaryPublicMove}>
+              {diaryPublicMove || t("play.diary_public_move_empty")}
+            </span>
+          </span>
+          <span style={ppStyles.diaryIntentRow}>
+            <span style={ppStyles.diaryIntentLabel}>{t("play.diary_private_motive_label")}</span>
+            <span style={ppStyles.diaryIntentText}>
+              {t("play.diary_private_motive_detail")}
+            </span>
+          </span>
         </div>
         <textarea
           className="play-diary-textarea"
