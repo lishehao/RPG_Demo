@@ -174,6 +174,17 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
     assert '"home.card_action": "Start episode →"' in strings
 
 
+def test_home_completed_memory_cards_explain_replay_destination() -> None:
+    home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert 'data-home-completed-memory-hint="true"' in home
+    assert 't("home.memory_hint")' in home
+    assert "memoryHint" in home
+    assert '"home.memory_hint": "打开高光和完整回放，复盘这一局怎么走到这里。"' in strings
+    assert '"home.memory_hint": "Open highlights and the full replay to see how this run got there."' in strings
+
+
 def test_home_story_tiles_hide_extra_metadata_rows_by_default() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     published = home[home.index("function PublishedTileComposition") : home.index("function FullBleedTileImage")]

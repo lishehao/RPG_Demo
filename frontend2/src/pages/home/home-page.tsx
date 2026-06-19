@@ -713,6 +713,9 @@ function SessionCard({
             {t("home.session_completed_meta")} · {formatRelative(session.last_active_at, t)} ·{" "}
             <span style={hpStyles.sessionAction}>{copy.primaryAction}</span>
           </div>
+          <div style={hpStyles.memoryHint} data-home-completed-memory-hint="true">
+            {t("home.memory_hint")}
+          </div>
         </>
       ) : (
         <div style={hpStyles.sessionMeta}>
@@ -1658,6 +1661,12 @@ const hpStyles: Record<string, CSSProperties> = {
   memoryAction: {
     borderBottomColor: "rgba(244,239,230,0.28)",
     color: "rgba(244,239,230,0.82)",
+  },
+  memoryHint: {
+    marginTop: 5,
+    fontSize: 11.5,
+    lineHeight: 1.45,
+    color: "rgba(244,239,230,0.56)",
   },
   fullBleedLayout: {
     position: "relative" as const,
