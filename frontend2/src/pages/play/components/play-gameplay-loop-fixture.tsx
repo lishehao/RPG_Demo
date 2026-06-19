@@ -228,6 +228,18 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const selectedAction = actions.find((action) => action.id === selectedId) ?? null
   const consultedPerson = PEOPLE.find((person) => person.id === consultedPersonId) ?? null
   const isPending = phase === "pending"
+  const actionHeaderTitle = motiveOpen
+    ? "Add inner motive"
+    : selectedAction
+      ? "Review selected move"
+      : "Choose a move"
+  const actionHeaderNote = motiveOpen
+    ? "Write the private reason, then submit with motive."
+    : selectedAction
+      ? "Submit it, or add what you secretly mean."
+      : unlockedClue
+        ? "Badge clue opened new moves."
+        : "Compare likely impact before you commit."
 
   useEffect(() => {
     if (!isPending || !committed) return
@@ -333,8 +345,13 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               }}
             >
               <div style={styles.sectionHeader}>
-                <span style={styles.kicker}>Choose a move</span>
-                <span style={styles.headerNote}>{unlockedClue ? "Badge clue opened new moves." : "Compare likely impact before you commit."}</span>
+                <span style={styles.kicker}>{actionHeaderTitle}</span>
+                <span
+                  style={styles.headerNote}
+                  data-gameplay-selected-review={selectedAction ? "true" : undefined}
+                >
+                  {actionHeaderNote}
+                </span>
               </div>
               <div style={styles.actionGrid}>
                 {actions.map((action) => {

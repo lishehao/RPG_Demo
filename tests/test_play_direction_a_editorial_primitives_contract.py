@@ -277,6 +277,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "What is at stake" in fixture
     assert "Watch these while choosing a move." in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
+    assert "Review selected move" in fixture
+    assert "Submit it, or add what you secretly mean." in fixture
+    assert 'data-gameplay-selected-review={selectedAction ? "true" : undefined}' in fixture
     assert "Compare likely impact before you commit." in fixture
     assert "Badge clue opened new moves." in fixture
     assert "You can use the badge clue in the next move." in fixture
