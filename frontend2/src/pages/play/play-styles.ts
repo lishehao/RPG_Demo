@@ -1660,6 +1660,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     letterSpacing: 0,
     whiteSpace: "nowrap" as const,
   },
+  latestBeatDigestHint: {
+    color: "rgba(232,218,205,0.50)",
+    fontSize: 10.5,
+    lineHeight: 1.2,
+    fontWeight: 560,
+    overflowWrap: "anywhere" as const,
+  },
   latestBeatDigestItems: {
     minWidth: 0,
     display: "flex",

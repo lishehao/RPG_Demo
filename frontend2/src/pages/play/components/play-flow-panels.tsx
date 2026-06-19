@@ -1760,6 +1760,12 @@ export function StoryBeat({
             <span style={ppStyles.latestBeatDigestLabel}>
               {t("play.latest_beat_digest_label")}
             </span>
+            <span
+              style={ppStyles.latestBeatDigestHint}
+              data-play-latest-beat-digest-hint="true"
+            >
+              {t("play.latest_beat_digest_hint")}
+            </span>
             <span style={ppStyles.latestBeatDigestItems}>
               {latestDigestPulses.map((pulse) => {
                 const name = (castNameById && castNameById[pulse.npc_id]) || pulse.npc_id

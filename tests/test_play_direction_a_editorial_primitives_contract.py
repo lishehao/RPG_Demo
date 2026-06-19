@@ -1271,6 +1271,7 @@ def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> Non
     assert "const latestDigestA11yItems" in story_beat
     assert "const latestDigestA11yLabel" in story_beat
     assert 'aria-label={latestDigestA11yLabel}' in story_beat
+    assert 'data-play-latest-beat-digest-hint="true"' in story_beat
     assert "latestDigestPulses.length > 0 || hasDelta || latestOptionCount > 0" in story_beat
     assert "hasDelta && latestDigestPulses.length === 0" in story_beat
     assert "outcomeItems.length > 0 && !suppressLatestFeedbackDigest" in story_beat
@@ -1278,8 +1279,10 @@ def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> Non
     assert "data-play-latest-beat-digest-pulse={pulse.npc_id}" in story_beat
     assert 'data-play-latest-beat-digest-options="true"' in story_beat
     assert "latestBeatDigest" in styles
+    assert "latestBeatDigestHint" in styles
     assert "latestBeatDigestItems" in styles
     assert '"play.latest_beat_digest_label": "Current scene"' in strings
+    assert '"play.latest_beat_digest_hint": "Read this before choosing."' in strings
     assert '"play.latest_beat_digest_next": "Next"' in strings
     assert '"play.latest_beat_digest_options": "{count} choices ready"' in strings
 
