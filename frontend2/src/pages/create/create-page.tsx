@@ -1021,7 +1021,7 @@ export function CreatePage({
                 </div>
               </div>
               <div style={cpStyles.editorMeta}>
-                <span style={cpStyles.count}>{t("create.char_count", { n: seed.length })}</span>
+                <span style={cpStyles.count}>{t("create.char_count", { n: draftTurn.length })}</span>
                 {correctionCount > 0 ? (
                   <span style={cpStyles.count}>{t("create.guide_revision_count", { n: correctionCount })}</span>
                 ) : null}

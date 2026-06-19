@@ -207,6 +207,8 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
     assert 't("create.seed_recipe_pressure_label")' in source
     assert 't("create.seed_recipe_secret_label")' in source
     assert 'hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")' in source
+    assert 't("create.char_count", { n: draftTurn.length })' in source
+    assert 't("create.char_count", { n: seed.length })' not in source
     assert "seedRecipe:" in styles
     assert "seedRecipeLine:" in styles
     assert 'gridTemplateColumns: "minmax(0, 1fr) 148px"' in styles
