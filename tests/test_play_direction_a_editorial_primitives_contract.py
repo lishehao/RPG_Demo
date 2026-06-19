@@ -1007,7 +1007,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_instruction": "Choose a matching move, or write your own."' in strings
     assert '"play.actor_focus_filter_note": "This only filters the current choices; no move is submitted yet."' in strings
     assert '"play.actor_focus_matches_label": "Matching moves"' in strings
-    assert '"play.actor_focus_select_match": "Select move: {move}"' in strings
+    assert '"play.actor_focus_select_match": "Review move: {move}"' in strings
+    assert '"play.actor_focus_select_match": "Select move: {move}"' not in strings
     assert '"play.actor_focus_no_match": "No current move names them; write your own move if you want to pull them in."' in strings
     assert '"play.actor_focus_clear": "Show all moves"' in strings
     assert '"play.actor_focus_clear": "Clear"' not in strings
@@ -1069,7 +1070,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_instruction": "Choose a matching move, or write your own."' in strings
     assert '"play.resource_focus_filter_note": "This only filters the current choices; no move is submitted yet."' in strings
     assert '"play.resource_focus_matches_label": "Matching moves"' in strings
-    assert '"play.resource_focus_select_match": "Select move: {move}"' in strings
+    assert '"play.resource_focus_select_match": "Review move: {move}"' in strings
+    assert '"play.resource_focus_select_match": "Select move: {move}"' not in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
     assert '"play.gameplay_decision_shift_label": "Shifts"' in strings
@@ -1269,8 +1271,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_idle_detail_with_leverage": "先看目标和压力；选中卡片、准备反将牌，或自己写一句。"' in strings
     assert '"play.turn_guide_after_impact_title": "根据变化选下一步"' in strings
     assert '"play.turn_guide_after_impact_detail": "这些行动来自刚刚改变的人物、线索和压力。"' in strings
-    assert '"play.option_shortcut_title": "Press {key} to select; then submit"' in strings
-    assert '"play.option_shortcut_title": "按 {key} 选择；然后提交"' in strings
+    assert '"play.option_shortcut_title": "Press {key} to review; submit after opening"' in strings
+    assert '"play.option_shortcut_title": "Press {key} to select; then submit"' not in strings
+    assert '"play.option_shortcut_title": "按 {key} 查看；展开后再提交"' in strings
+    assert '"play.option_shortcut_title": "按 {key} 选择；然后提交"' not in strings
     assert '"play.selected_move_ready_label": "Ready to submit"' in strings
     assert '"play.selected_move_ready_label": "准备提交"' in strings
     assert '"play.selected_move_room_chip": "Affects the room"' in strings
@@ -1380,8 +1384,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.room_reacting_title": "The room is reacting"' in strings
     assert '"play.resolve_status_room": "Reading the room"' in strings
     assert '"play.resolve_status_room": "The room is reacting"' not in strings
-    assert '"play.option_expand_cta": "Select move"' in strings
-    assert '"play.option_expand_cta": "选择行动"' in strings
+    assert '"play.option_expand_cta": "Review move"' in strings
+    assert '"play.option_expand_cta": "Select move"' not in strings
+    assert '"play.option_expand_cta": "查看行动"' in strings
+    assert '"play.option_expand_cta": "选择行动"' not in strings
     assert '"play.option_expanded_detail_label": "Consequence"' in strings
     assert '"play.option_expanded_result_label": "Likely result"' in strings
 
