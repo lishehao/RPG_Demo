@@ -646,11 +646,11 @@ export const STRINGS_ZH = {
   "play.beat_signal_shift_detail": "{names} 对你刚才的动作有了反应。",
   "play.beat_signal_rising_title": "压力上升",
   "play.beat_signal_rising_detail": "这一幕正在靠近转折点。",
-  "play.latest_beat_digest_label": "当前段落",
+  "play.latest_beat_digest_label": "当前场面",
   "play.latest_beat_digest_hand": "手牌",
   "play.latest_beat_digest_hand_changed": "有变化",
   "play.latest_beat_digest_next": "下一步",
-  "play.latest_beat_digest_options": "{count} 个可选行动",
+  "play.latest_beat_digest_options": "{count} 个选择就绪",
 
   // Play page — role banner (the "you" card)
   "play.role_you_tag": "这一局的你",
@@ -1602,11 +1602,11 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.beat_signal_shift_detail": "{names} reacted to your last move.",
   "play.beat_signal_rising_title": "Pressure rising",
   "play.beat_signal_rising_detail": "This scene is nearing a turn.",
-  "play.latest_beat_digest_label": "Current beat",
+  "play.latest_beat_digest_label": "Current scene",
   "play.latest_beat_digest_hand": "Hand",
   "play.latest_beat_digest_hand_changed": "Changed",
   "play.latest_beat_digest_next": "Next",
-  "play.latest_beat_digest_options": "{count} moves ready",
+  "play.latest_beat_digest_options": "{count} choices ready",
 
   "play.role_you_tag": "You, this run",
   "play.run_identity_prefix": "You are",

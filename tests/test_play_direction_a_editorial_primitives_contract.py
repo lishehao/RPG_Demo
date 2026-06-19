@@ -894,8 +894,9 @@ def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> Non
     assert 'data-play-latest-beat-digest-options="true"' in story_beat
     assert "latestBeatDigest" in styles
     assert "latestBeatDigestItems" in styles
-    assert '"play.latest_beat_digest_label": "Current beat"' in strings
-    assert '"play.latest_beat_digest_options": "{count} moves ready"' in strings
+    assert '"play.latest_beat_digest_label": "Current scene"' in strings
+    assert '"play.latest_beat_digest_next": "Next"' in strings
+    assert '"play.latest_beat_digest_options": "{count} choices ready"' in strings
 
 
 def test_play_long_history_fixture_exercises_action_jump_with_real_action_area() -> None:
