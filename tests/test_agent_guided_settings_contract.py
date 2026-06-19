@@ -62,6 +62,7 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert "<details" not in source
     assert "settingsDetails" not in source
     assert "privacyRecordedVisibility" in source
+    assert 'useState<NarrativeTemplateVisibility | null>("private")' in source
     assert "privacyIntroComplete" in source
     assert "appendPrivacyRecordedTurn" in source
     assert 'data-create-privacy-settings="true"' in source
@@ -71,12 +72,14 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert "VISIBILITY_OPTION_IDS.map" in source
     assert "handleVisibilityChoice(id)" in source
     assert "handleVisibilityChoice(visibility)" in source
-    assert 't("create.privacy_intro_question")' in source
+    assert 'id: "guide-opening"' in source
+    assert 't("create.guide_greeting")' in source
     assert 't("create.privacy_recorded_user"' in source
     assert 't("create.privacy_recorded_reply"' in source
     assert 'rows={1}' in source
 
-    assert '"create.privacy_intro_question": "Before we write, choose who can play this story."' in strings
+    assert '"create.privacy_intro_question": "Who can play this story? Pick explicitly before changing it."' in strings
+    assert '"create.privacy_setup_desc": "Default is {value}. You can start writing now, or switch it to link-only or public here."' in strings
     assert '"create.privacy_recorded_reply": "I’ve recorded {value}.' in strings
 
     checkpoint_start = source.index('data-create-privacy-settings="true"')

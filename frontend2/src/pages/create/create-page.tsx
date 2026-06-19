@@ -99,7 +99,7 @@ export function CreatePage({
   const [privacySetupVisible, setPrivacySetupVisible] = useState(true)
   const [privacyPromptVisible, setPrivacyPromptVisible] = useState(false)
   const [privacyRecordedVisibility, setPrivacyRecordedVisibility] =
-    useState<NarrativeTemplateVisibility | null>(null)
+    useState<NarrativeTemplateVisibility | null>("private")
   const [turnBudget, setTurnBudget] = useState<number>(12)
   const [difficulty, setDifficulty] = useState<NarrativeDifficulty>("story")
   // Default the story language to whatever the UI is in. The user can
@@ -162,6 +162,17 @@ export function CreatePage({
             text: t("create.privacy_intro_question"),
           },
           ...chatMessages,
+        ]
+      }
+      if (chatMessages.length === 0) {
+        return [
+          {
+            id: "guide-opening",
+            speaker: "guide",
+            text: t("create.guide_greeting"),
+            node: "ask_missing_slot",
+            state: "collecting",
+          },
         ]
       }
       return chatMessages
@@ -229,6 +240,7 @@ export function CreatePage({
     const time = Date.now()
     setChatMessages((current) => {
       const nextMessages = [...current]
+      const hadNoStoryPrompt = current.length === 0
       if (mode === "initial") {
         nextMessages.push({
           id: `user-privacy-${time}`,
@@ -244,6 +256,14 @@ export function CreatePage({
         state: "collecting",
       })
       if (mode === "initial") {
+        nextMessages.push({
+          id: `guide-privacy-greeting-${time}`,
+          speaker: "guide",
+          text: t("create.guide_greeting"),
+          node: "ask_missing_slot",
+          state: "collecting",
+        })
+      } else if (hadNoStoryPrompt) {
         nextMessages.push({
           id: `guide-privacy-greeting-${time}`,
           speaker: "guide",
@@ -268,6 +288,11 @@ export function CreatePage({
   }
 
   const hidePrivacySetup = () => {
+    if (privacyRecordedVisibility && !privacyPromptVisible) {
+      setPrivacySetupVisible(false)
+      window.requestAnimationFrame(() => seedTextareaRef.current?.focus())
+      return
+    }
     handleVisibilityChoice(visibility)
   }
 
