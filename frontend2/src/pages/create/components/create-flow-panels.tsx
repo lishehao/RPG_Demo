@@ -318,6 +318,15 @@ export function StoryBriefCard({
         <span>{brief.runtime_fit_rationale}</span>
         <strong>{canGenerate ? nextStep : t("create.brief_revise_first")}</strong>
       </div>
+      <div
+        data-create-brief-handoff-note="true"
+        style={{
+          ...cpStyles.briefHandoffNote,
+          ...(canGenerate ? cpStyles.briefHandoffNoteReady : cpStyles.briefHandoffNoteBlocked),
+        }}
+      >
+        {canGenerate ? t("create.brief_handoff_note_ready") : t("create.brief_handoff_note_blocked")}
+      </div>
       <div style={cpStyles.briefChatActions}>
         {canGenerate ? (
           <button
