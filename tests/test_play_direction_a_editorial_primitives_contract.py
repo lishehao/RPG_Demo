@@ -1288,8 +1288,8 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "actionJumpArrowCompact" in styles
     assert 'position: "fixed"' in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
     assert "maxWidth: 430" in styles[styles.index("actionJumpButton") : styles.index("actionJumpKicker")]
-    assert '"play.action_jump_kicker": "Your move"' in strings
-    assert '"play.action_jump_label": "Jump to choices"' in strings
+    assert '"play.action_jump_kicker": "Choices ready"' in strings
+    assert '"play.action_jump_label": "Jump to your move"' in strings
     assert '"play.action_jump_detail_choose": "Playable choices are ready below the story."' in strings
     assert '"play.action_jump_detail_update": "Review this turn\'s changes before choosing."' in strings
 
@@ -1453,7 +1453,7 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert "compactDetail?: string" in action_jump
     assert "compactJump ? compactDetail?.trim() : detail?.trim()" in action_jump
     assert "window.scrollTo" in action_jump_utils
-    assert '"play.action_jump_detail_choose_compact": "Tap to jump to choices."' in strings
-    assert '"play.action_jump_detail_update_compact": "Tap to review changes."' in strings
+    assert '"play.action_jump_detail_choose_compact": "Tap to choose now."' in strings
+    assert '"play.action_jump_detail_update_compact": "Tap to review, then choose."' in strings
     for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
         assert forbidden not in fixture.casefold()
