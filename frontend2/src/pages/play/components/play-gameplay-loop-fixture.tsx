@@ -443,12 +443,12 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     ? actions.find((action) => action.id === "show-badge") ?? null
     : null
   const clueArmed = !!unlockedClueAction && selectedId === unlockedClueAction.id
-  const clueStatus = clueArmed ? "Ready on move" : unlockedClue ? "Discovered" : "Not found yet"
+  const clueStatus = clueArmed ? "Attached to move" : unlockedClue ? "Discovered" : "Need proof"
   const clueBody = clueArmed
     ? "This clue is attached to the selected move."
     : unlockedClue
       ? "Arthur has to explain why this access badge was missing."
-      : "A concrete clue will open a sharper next move."
+      : "Find concrete proof to unlock a sharper next move."
   const isPending = phase === "pending"
   const actionHeaderTitle = motiveOpen
     ? "Add inner motive"
@@ -930,7 +930,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               data-gameplay-clue-armed={clueArmed ? "true" : undefined}
             >
               <span style={styles.clueStatus}>{clueStatus}</span>
-              <strong style={styles.clueTitle}>{unlockedClue ? "Green-room badge" : "Green-room clue"}</strong>
+              <strong style={styles.clueTitle}>{unlockedClue ? "Green-room badge" : "Find the green-room clue"}</strong>
               <span style={styles.clueBody}>{clueBody}</span>
               {unlockedClueAction ? (
                 <>
