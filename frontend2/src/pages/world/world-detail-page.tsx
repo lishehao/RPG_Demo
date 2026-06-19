@@ -318,6 +318,7 @@ export function TemplateDetailPage({
                     ...tdStyles.visBtn,
                     ...(template.visibility === v ? tdStyles.visBtnActive : {}),
                   }}
+                  data-world-visibility-option={v}
                   onClick={() => void handleVisibility(v)}
                   disabled={visBusy || template.visibility === v}
                   type="button"
@@ -326,6 +327,12 @@ export function TemplateDetailPage({
                 </button>
               ))}
             </div>
+            <p style={tdStyles.visibilityHint} data-world-visibility-current="true">
+              <span style={tdStyles.visibilityCurrent}>
+                {t("world.visibility_current", { label: visibilityLabel(template.visibility, t) })}
+              </span>
+              <span>{visibilityDescription(template.visibility, t)}</span>
+            </p>
           </section>
         ) : null}
       </main>
@@ -337,6 +344,12 @@ function visibilityLabel(v: NarrativeTemplateVisibility, t: ReturnType<typeof us
   if (v === "public") return t("world.visibility_public")
   if (v === "unlisted") return t("home.visibility_unlisted")
   return t("home.visibility_private")
+}
+
+function visibilityDescription(v: NarrativeTemplateVisibility, t: ReturnType<typeof useT>): string {
+  if (v === "public") return t("world.visibility_public_desc")
+  if (v === "unlisted") return t("world.visibility_unlisted_desc")
+  return t("world.visibility_private_desc")
 }
 
 function useCompactLayout(query = "(max-width: 900px)") {
@@ -1022,6 +1035,19 @@ const tdStyles: Record<string, CSSProperties> = {
     background: "transparent",
     color: "var(--accent)",
     borderBottomColor: "var(--accent)",
+  },
+  visibilityHint: {
+    display: "grid",
+    gap: 3,
+    maxWidth: 520,
+    margin: "12px 0 0",
+    fontSize: 12.5,
+    lineHeight: 1.55,
+    color: "var(--text-muted)",
+  },
+  visibilityCurrent: {
+    color: "var(--text)",
+    fontWeight: 650,
   },
 
   roleSection: { marginTop: 24, marginBottom: 28 },

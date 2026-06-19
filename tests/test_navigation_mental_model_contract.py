@@ -105,6 +105,23 @@ def test_world_role_launch_has_ready_and_starting_feedback() -> None:
     assert "cursor: \"progress\"" in world
 
 
+def test_world_owner_visibility_explains_current_reach() -> None:
+    world = (ROOT / "frontend2/src/pages/world/world-detail-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert "visibilityDescription(template.visibility, t)" in world
+    assert 'data-world-visibility-current="true"' in world
+    assert "data-world-visibility-option={v}" in world
+    assert '"world.visibility_current": "当前：{label}"' in strings
+    assert '"world.visibility_private_desc": "只有你能看到并继续测试这个故事。"' in strings
+    assert '"world.visibility_unlisted_desc": "拿到链接的人可以打开并玩出自己的版本。"' in strings
+    assert '"world.visibility_public_desc": "故事会出现在广场，任何玩家都能开始一局。"' in strings
+    assert '"world.visibility_current": "Current: {label}"' in strings
+    assert '"world.visibility_private_desc": "Only you can see and keep testing this story."' in strings
+    assert '"world.visibility_unlisted_desc": "People with the link can open it and play their own run."' in strings
+    assert '"world.visibility_public_desc": "The story appears in the plaza so anyone can start a run."' in strings
+
+
 def test_home_story_entries_are_generated_playable_template_objects() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
