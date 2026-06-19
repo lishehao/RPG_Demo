@@ -72,6 +72,10 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert "VISIBILITY_OPTION_IDS.map" in source
     assert "handleVisibilityChoice(id)" in source
     assert "handleVisibilityChoice(visibility)" in source
+    assert "data-create-privacy-choice={id}" in source
+    assert 'data-create-privacy-choice-desc="true"' in source
+    assert "privacySetupChoiceLabel" in source
+    assert "privacySetupChoiceDesc" in source
     assert "BusyBuildPreview" in source
     assert '<BusyBuildPreview activeIndex={busyStageIndex} compact={compactLayout} />' in source
     assert 'id: "guide-opening"' in source
@@ -82,12 +86,18 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
 
     assert '"create.privacy_intro_question": "Who can play this story? Pick explicitly before changing it."' in strings
     assert '"create.privacy_setup_desc": "Default is {value}. You can start writing now, or switch it to link-only or public here."' in strings
+    assert '"create.visibility_private_desc": "Only you can play this story."' in strings
+    assert '"create.visibility_unlisted_desc": "Send the link to friends' in strings
+    assert '"create.visibility_public_desc": "Anyone can find and play your story."' in strings
     assert '"create.privacy_recorded_reply": "I’ve recorded {value}.' in strings
 
     checkpoint_start = source.index('data-create-privacy-settings="true"')
     checkpoint_end = source.index('{briefBusy ? (', checkpoint_start)
     checkpoint_segment = source[checkpoint_start:checkpoint_end]
     assert 't("create.field_visibility")' in checkpoint_segment
+    assert 'data-create-privacy-choice={id}' in checkpoint_segment
+    assert 'data-create-privacy-choice-desc="true"' in checkpoint_segment
+    assert "style={cpStyles.privacySetupChoiceDesc}" in checkpoint_segment
     assert "BUDGET_OPTIONS.map" not in checkpoint_segment
     assert "DIFFICULTY_OPTIONS.map" not in checkpoint_segment
     assert "STORY_LANGUAGE_OPTIONS[uiLang].map" not in checkpoint_segment

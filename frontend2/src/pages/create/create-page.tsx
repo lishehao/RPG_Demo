@@ -763,8 +763,15 @@ export function CreatePage({
                         disabled={busy || briefBusy || guideBusy}
                         title={t(meta.descKey)}
                         aria-pressed={visibility === id}
+                        data-create-privacy-choice={id}
                       >
-                        {t(meta.labelKey)}
+                        <span style={cpStyles.privacySetupChoiceLabel}>{t(meta.labelKey)}</span>
+                        <span
+                          data-create-privacy-choice-desc="true"
+                          style={cpStyles.privacySetupChoiceDesc}
+                        >
+                          {t(meta.descKey)}
+                        </span>
                       </button>
                     )
                   })}
