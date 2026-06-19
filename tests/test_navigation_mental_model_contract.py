@@ -122,6 +122,19 @@ def test_world_owner_visibility_explains_current_reach() -> None:
     assert '"world.visibility_public_desc": "The story appears in the plaza so anyone can start a run."' in strings
 
 
+def test_world_advisor_preview_explains_playtime_use() -> None:
+    world = (ROOT / "frontend2/src/pages/world/world-detail-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert 'data-world-advisor-preview="true"' in world
+    assert 't("world.section_advisor")' in world
+    assert 't("world.advisor_hint")' in world
+    assert "advisorLabel" in world
+    assert "advisorHint" in world
+    assert '"world.advisor_hint": "进局后可以向 TA 要一次低风险读局建议。"' in strings
+    assert '"world.advisor_hint": "During play, ask them for a low-risk read before choosing."' in strings
+
+
 def test_home_story_entries_are_generated_playable_template_objects() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()

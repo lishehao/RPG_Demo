@@ -433,9 +433,13 @@ function StoryBriefingRail({
           })}
         </div>
 
-        <div style={tdStyles.advisorBlock}>
+        <div style={tdStyles.advisorBlock} data-world-advisor-preview="true">
           <img src={advisorAvatar} alt="" style={tdStyles.advisorAvatar} loading="lazy" />
-          <span style={tdStyles.advisorText}>{template.advisor_persona}</span>
+          <div style={tdStyles.advisorCopy}>
+            <span style={tdStyles.advisorLabel}>{t("world.section_advisor")}</span>
+            <span style={tdStyles.advisorText}>{template.advisor_persona}</span>
+            <span style={tdStyles.advisorHint}>{t("world.advisor_hint")}</span>
+          </div>
         </div>
 
         <div style={tdStyles.railDetailsGroup}>
@@ -933,6 +937,18 @@ const tdStyles: Record<string, CSSProperties> = {
     border: "1px solid var(--line)",
     flexShrink: 0,
   },
+  advisorCopy: {
+    display: "grid",
+    gap: 2,
+    minWidth: 0,
+  },
+  advisorLabel: {
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: "uppercase" as const,
+    color: "var(--accent)",
+    fontWeight: 700,
+  },
   advisorText: {
     display: "-webkit-box",
     WebkitLineClamp: 3,
@@ -941,6 +957,11 @@ const tdStyles: Record<string, CSSProperties> = {
     fontSize: 12.5,
     lineHeight: 1.5,
     color: "var(--text)",
+  },
+  advisorHint: {
+    fontSize: 11.5,
+    lineHeight: 1.4,
+    color: "var(--text-muted)",
   },
 
   actions: { marginTop: 40, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 },
