@@ -10,6 +10,38 @@ import {
   REVIEWER_DEMO_TITLE,
 } from "./portfolio-data"
 
+type LaunchPhase = "ready" | "auth" | "brief" | "runtime" | "opening"
+
+const REVIEWER_LAUNCH_STEPS: Array<{
+  phase: Exclude<LaunchPhase, "ready">
+  title: string
+  detail: string
+}> = [
+  {
+    phase: "auth",
+    title: "Reviewer session",
+    detail: "Signs into the evidence-enabled reviewer account when needed.",
+  },
+  {
+    phase: "brief",
+    title: "Story brief",
+    detail: "Builds the cast, role pressure, and narrative constraints from the locked seed.",
+  },
+  {
+    phase: "runtime",
+    title: "Playable runtime",
+    detail: "Creates the template, first scene, options, advisor context, and inspector data.",
+  },
+  {
+    phase: "opening",
+    title: "Evidence mode",
+    detail: "Opens the run with reviewer-only runtime evidence available beside play.",
+  },
+]
+
+const launchPhaseIndex = (phase: LaunchPhase) =>
+  REVIEWER_LAUNCH_STEPS.findIndex((step) => step.phase === phase)
+
 export function ReviewerPage({
   onBackHome,
   onOpenCreate,
@@ -24,6 +56,7 @@ export function ReviewerPage({
   const { setLang } = useLanguage()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [launchPhase, setLaunchPhase] = useState<LaunchPhase>("ready")
   const inflightRef = useRef(false)
 
   const handleStart = async () => {
@@ -31,16 +64,19 @@ export function ReviewerPage({
     inflightRef.current = true
     setBusy(true)
     setError(null)
+    setLaunchPhase(auth.isAnonymous ? "auth" : "brief")
     setLang("en")
     try {
       if (auth.isAnonymous) {
         await auth.login("portfolio_reviewer")
       }
+      setLaunchPhase("brief")
       const briefResponse = await api.createNarrativeStoryBrief({
         seed: REVIEWER_DEMO_SEED,
         language: "en",
         desired_tension_profile: "high_drama",
       })
+      setLaunchPhase("runtime")
       const response = await api.createNarrativeTemplate({
         seed: REVIEWER_DEMO_SEED,
         visibility: "unlisted",
@@ -49,13 +85,17 @@ export function ReviewerPage({
         language: "en",
         story_brief: briefResponse.brief,
       })
+      setLaunchPhase("opening")
       onSessionStarted(response.session.session_id)
     } catch {
       setError("Could not launch the reviewer demo from the curated brief. Please retry.")
       inflightRef.current = false
       setBusy(false)
+      setLaunchPhase("ready")
     }
   }
+
+  const activeLaunchIndex = busy ? launchPhaseIndex(launchPhase) : -1
 
   return (
     <div className="reviewer-page">
@@ -81,6 +121,7 @@ export function ReviewerPage({
               type="button"
               onClick={() => void handleStart()}
               disabled={busy || auth.loading}
+              data-reviewer-launch-cta={busy ? "starting" : "ready"}
             >
               {busy ? "Launching demo..." : "Start curated run"}
             </button>
@@ -88,6 +129,41 @@ export function ReviewerPage({
               Use normal author flow
             </button>
           </div>
+          <section
+            className="reviewer-launch-plan"
+            aria-label="Reviewer launch progress"
+            data-reviewer-launch-plan="true"
+            data-reviewer-launch-state={busy ? launchPhase : "ready"}
+          >
+            <div className="reviewer-launch-plan__head">
+              <span>{busy ? "Preparing reviewer run" : "What the start button prepares"}</span>
+              <strong>{busy && activeLaunchIndex >= 0 ? REVIEWER_LAUNCH_STEPS[activeLaunchIndex].title : "4 steps"}</strong>
+            </div>
+            <ol>
+              {REVIEWER_LAUNCH_STEPS.map((step, idx) => {
+                const state = !busy
+                  ? "waiting"
+                  : idx < activeLaunchIndex
+                    ? "done"
+                    : idx === activeLaunchIndex
+                      ? "active"
+                      : "waiting"
+                return (
+                  <li
+                    key={step.phase}
+                    data-reviewer-launch-step={step.phase}
+                    data-reviewer-launch-step-state={state}
+                  >
+                    <span>{String(idx + 1).padStart(2, "0")}</span>
+                    <div>
+                      <strong>{step.title}</strong>
+                      <p>{step.detail}</p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          </section>
           {error ? <div className="reviewer-error">{error}</div> : null}
         </motion.section>
 

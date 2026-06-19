@@ -19,6 +19,28 @@ def test_reviewer_launch_uses_story_brief_backed_template_path() -> None:
     assert "site maintainer" not in source
 
 
+def test_reviewer_launch_explains_async_progress_to_external_reviewers() -> None:
+    source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
+
+    assert "REVIEWER_LAUNCH_STEPS" in source
+    assert "Reviewer session" in source
+    assert "Story brief" in source
+    assert "Playable runtime" in source
+    assert "Evidence mode" in source
+    assert 'data-reviewer-launch-plan="true"' in source
+    assert 'data-reviewer-launch-state={busy ? launchPhase : "ready"}' in source
+    assert 'data-reviewer-launch-step={step.phase}' in source
+    assert 'data-reviewer-launch-step-state={state}' in source
+    assert 'data-reviewer-launch-cta={busy ? "starting" : "ready"}' in source
+    assert 'setLaunchPhase("brief")' in source
+    assert 'setLaunchPhase("runtime")' in source
+    assert 'setLaunchPhase("opening")' in source
+    assert ".reviewer-launch-plan" in theme
+    assert '.reviewer-launch-plan li[data-reviewer-launch-step-state="active"]' in theme
+    assert ".reviewer-launch-plan__head" in theme
+
+
 def test_reviewer_seed_is_concrete_enough_to_avoid_generic_scaffold_roles() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
     service = (ROOT / "rpg_backend/narrative/service.py").read_text()

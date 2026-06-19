@@ -851,6 +851,72 @@ kbd {
   border-radius: 0;
   font-size: 13px;
 }
+.reviewer-launch-plan {
+  margin-top: 20px;
+  width: min(100%, 760px);
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+.reviewer-launch-plan__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.reviewer-launch-plan__head span {
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.reviewer-launch-plan__head strong {
+  color: var(--accent);
+  font-size: 13px;
+}
+.reviewer-launch-plan ol {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.reviewer-launch-plan li {
+  min-height: 124px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px;
+}
+.reviewer-launch-plan li[data-reviewer-launch-step-state="active"] {
+  border-color: rgba(77, 205, 188, 0.72);
+  background: rgba(77, 205, 188, 0.1);
+  box-shadow: 0 0 0 1px rgba(77, 205, 188, 0.18) inset;
+}
+.reviewer-launch-plan li[data-reviewer-launch-step-state="done"] {
+  border-color: rgba(245, 200, 120, 0.42);
+  background: rgba(245, 200, 120, 0.08);
+}
+.reviewer-launch-plan li > span {
+  display: inline-flex;
+  margin-bottom: 10px;
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.reviewer-launch-plan li strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.25;
+}
+.reviewer-launch-plan li p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.42;
+}
 .reviewer-checklist {
   margin-top: 20px;
   padding-left: 0;
@@ -1369,6 +1435,17 @@ kbd {
   .reviewer-checklist {
     margin: 18px 18px 0;
     padding-top: 16px;
+  }
+  .reviewer-launch-plan ol {
+    grid-template-columns: 1fr;
+  }
+  .reviewer-launch-plan li {
+    min-height: 0;
+  }
+  .reviewer-launch-plan__head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
   }
   .advisor-fab {
     position: static !important;
