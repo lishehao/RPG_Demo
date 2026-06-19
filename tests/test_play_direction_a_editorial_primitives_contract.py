@@ -761,7 +761,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "gameplayForecastInline" in styles
     assert "gameplayForecastInlineLabel" in styles
     assert '"play.option_forecast_kicker": "Likely impact"' in strings
-    assert '"play.turn_guide_idle_detail": "Pick a move, or write your own."' in strings
+    assert '"play.turn_guide_idle_title": "Choose one move"' in strings
+    assert '"play.turn_guide_idle_detail": "Select a card first, then confirm it."' in strings
+    assert '"play.turn_guide_idle_title": "选择一个行动"' in strings
+    assert '"play.turn_guide_idle_detail": "先选中卡片，再确认提交。"' in strings
     assert '"play.action_open_free": "Write your own move"' in strings
     assert '"play.action_open_free_hint": "Say or do something else."' in strings
     assert '"play.action_open_free_title": "Open your own move input"' in strings

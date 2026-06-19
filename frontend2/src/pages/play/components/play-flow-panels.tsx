@@ -3522,7 +3522,7 @@ export function ActionArea({
   const actionStatusLabel =
     showPickedReflection
       ? `${t("play.resolve_title")}: ${resolvingMoveText || t("play.resolve_custom_move")}`
-      : `${turnGuide.title}. ${turnGuide.detail}`
+      : turnGuide.title
   const actionCommitmentSummary = useMemo<ActionCommitmentSummary | null>(() => {
     const motive = diaryDraft || undefined
     if (armedCardId && armedCardTargetName) {
