@@ -820,6 +820,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "aria-label={`${parsed.name} ${shiftCopy}`}" in play_page
     assert 'data-gameplay-impact-group={group.id}' in play_page
     assert 'data-gameplay-impact-group="next"' in play_page
+    assert "style={ppStyles.gameplayImpactNextGroup}" in play_page
+    assert "style={ppStyles.gameplayImpactNextGroupLabel}" in play_page
     assert 'data-gameplay-next-choice-signals="true"' in play_page
     assert 'data-gameplay-next-choice-signal="normal-play"' in play_page
     assert "nextChoiceSignals" in play_page
@@ -874,6 +876,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "gameplayRelationshipDeltaButtonFocused" in styles
     assert "gameplayRelationshipDeltaShift" in styles
     assert "gameplayImpactGroups" in styles
+    assert "gameplayImpactNextGroup" in styles
+    assert "gameplayImpactNextGroupLabel" in styles
     assert "outcomeReceiptHeader" in styles
     assert "outcomeReceiptHint" in styles
     outcome_hint_block = styles[styles.index("outcomeReceiptHint: {"):styles.index("outcomeReceiptInlineLabel: {")]

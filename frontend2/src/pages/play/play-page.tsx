@@ -553,11 +553,11 @@ function GameplayImpactSummary({
         ))}
         {nextChoiceSignals.length > 0 ? (
           <div
-            style={ppStyles.gameplayImpactGroup}
+            style={ppStyles.gameplayImpactNextGroup}
             data-gameplay-impact-group="next"
             data-gameplay-next-choice-signals="true"
           >
-            <span style={ppStyles.gameplayImpactGroupLabel}>{t("play.feedback_next_choice_label")}</span>
+            <span style={ppStyles.gameplayImpactNextGroupLabel}>{t("play.feedback_next_choice_label")}</span>
             <div style={ppStyles.gameplayImpactList}>
               {nextChoiceSignals.map((signal, index) => {
                 const targetSignal = "targetId" in signal && signal.targetId

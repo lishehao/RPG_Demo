@@ -2759,6 +2759,17 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 820,
     whiteSpace: "nowrap" as const,
   },
+  gameplayImpactNextGroup: {
+    minWidth: 0,
+    display: "grid",
+    gap: 5,
+  },
+  gameplayImpactNextGroupLabel: {
+    color: "rgba(232,218,205,0.58)",
+    fontSize: 10.2,
+    lineHeight: 1.25,
+    fontWeight: 820,
+  },
   gameplayImpactList: {
     minWidth: 0,
     display: "flex",
