@@ -47,6 +47,12 @@ const BUSY_STAGE_KEYS: StringKey[] = [
 ]
 export const BUSY_STAGE_COUNT = BUSY_STAGE_KEYS.length
 
+const BUSY_BUILD_PREVIEW: Array<{ labelKey: StringKey; detailKey: StringKey }> = [
+  { labelKey: "create.busy_preview_role", detailKey: "create.busy_preview_role_detail" },
+  { labelKey: "create.busy_preview_opening", detailKey: "create.busy_preview_opening_detail" },
+  { labelKey: "create.busy_preview_choices", detailKey: "create.busy_preview_choices_detail" },
+]
+
 export function BusyStages({ activeIndex, compact }: { activeIndex: number; compact: boolean }) {
   const t = useT()
   return (
@@ -74,6 +80,35 @@ export function BusyStages({ activeIndex, compact }: { activeIndex: number; comp
               {complete ? "✓" : index + 1}
             </span>
             <span style={busyStageStyles.stageText}>{t(key)}</span>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+export function BusyBuildPreview({ activeIndex, compact }: { activeIndex: number; compact: boolean }) {
+  const t = useT()
+  return (
+    <div
+      data-create-opening-build-preview="true"
+      style={{
+        ...cpStyles.busyPreviewGrid,
+        ...(compact ? cpStyles.busyPreviewGridCompact : null),
+      }}
+    >
+      {BUSY_BUILD_PREVIEW.map((item, index) => {
+        const active = index <= Math.min(activeIndex, BUSY_BUILD_PREVIEW.length - 1)
+        return (
+          <span
+            key={item.labelKey}
+            style={{
+              ...cpStyles.busyPreviewItem,
+              ...(active ? cpStyles.busyPreviewItemActive : null),
+            }}
+          >
+            <strong>{t(item.labelKey)}</strong>
+            <span>{t(item.detailKey)}</span>
           </span>
         )
       })}

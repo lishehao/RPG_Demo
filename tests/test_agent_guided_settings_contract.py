@@ -72,6 +72,8 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert "VISIBILITY_OPTION_IDS.map" in source
     assert "handleVisibilityChoice(id)" in source
     assert "handleVisibilityChoice(visibility)" in source
+    assert "BusyBuildPreview" in source
+    assert '<BusyBuildPreview activeIndex={busyStageIndex} compact={compactLayout} />' in source
     assert 'id: "guide-opening"' in source
     assert 't("create.guide_greeting")' in source
     assert 't("create.privacy_recorded_user"' in source
@@ -140,5 +142,30 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"create.brief_handoff_note_blocked": "Tighten the Brief first; once ready, I’ll build the first scene and playable choices."',
         '"create.brief_handoff_note_ready": "下一步会生成角色身份、第一段叙事和可选择行动，然后直接进入 Play。"',
         '"create.brief_handoff_note_blocked": "先补强 Brief；准备好后再生成第一幕和可玩选择。"',
+    ):
+        assert key in strings
+
+
+def test_opening_generation_wait_state_explains_playable_outputs() -> None:
+    panels_source = (ROOT / "frontend2/src/pages/create/components/create-flow-panels.tsx").read_text()
+    styles_source = (ROOT / "frontend2/src/pages/create/create-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert "export function BusyBuildPreview" in panels_source
+    assert 'data-create-opening-build-preview="true"' in panels_source
+    assert "BUSY_BUILD_PREVIEW" in panels_source
+    assert '"create.busy_preview_role"' in panels_source
+    assert '"create.busy_preview_opening"' in panels_source
+    assert '"create.busy_preview_choices"' in panels_source
+    assert "busyPreviewGridCompact" in styles_source
+    assert "busyPreviewItemActive" in styles_source
+
+    for key in (
+        '"create.busy_preview_role": "Player role"',
+        '"create.busy_preview_opening": "First scene"',
+        '"create.busy_preview_choices": "First moves"',
+        '"create.busy_preview_role": "玩家身份"',
+        '"create.busy_preview_opening": "第一幕"',
+        '"create.busy_preview_choices": "首轮行动"',
     ):
         assert key in strings

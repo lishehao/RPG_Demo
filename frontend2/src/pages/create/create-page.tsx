@@ -25,7 +25,7 @@ import {
 } from "../../shared/lib/story-guide-loop"
 import { takeCreateDraftHandoff } from "../../shared/lib/create-draft-handoff"
 
-import { BUSY_STAGE_COUNT, BusyStages, BusyTip, StoryBriefCard } from "./components/create-flow-panels"
+import { BUSY_STAGE_COUNT, BusyBuildPreview, BusyStages, BusyTip, StoryBriefCard } from "./components/create-flow-panels"
 import { BUDGET_OPTIONS, DIFFICULTY_OPTIONS, LONG_GENERATE_HANDOFF_MIN_MS, LONG_GENERATE_HANDOFF_THRESHOLD_MS, SEED_EXAMPLE_KEYS, STORY_BUTLER_AVATAR, STORY_LANGUAGE_OPTIONS, TENSION_PROFILE_OPTIONS, VISIBILITY_KEY_MAP, VISIBILITY_OPTION_IDS, briefKey, makeGuestHandle } from "./create-options"
 import { cpStyles } from "./create-styles"
 import type { GuideMessage, StoryShapeRead, TensionProfileChoice } from "./create-types"
@@ -1027,6 +1027,7 @@ export function CreatePage({
                   <span style={cpStyles.busySignalLine} aria-hidden />
                 </div>
                 <BusyStages activeIndex={busyStageIndex} compact={compactLayout} />
+                <BusyBuildPreview activeIndex={busyStageIndex} compact={compactLayout} />
                 <BusyTip />
               </motion.div>
             ) : null}

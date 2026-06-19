@@ -340,6 +340,12 @@ export const STRINGS_ZH = {
   "create.busy_tip_3": "在为你准备 3 张玩家身份卡——每张走向不同的故事…",
   "create.busy_tip_4": "在写下开场的第一个戏剧瞬间…",
   "create.busy_tip_5": "在校对开场是否兑现计划；如果没接住，会保留 Brief 让你重试…",
+  "create.busy_preview_role": "玩家身份",
+  "create.busy_preview_role_detail": "明确你是谁、目标是什么。",
+  "create.busy_preview_opening": "第一幕",
+  "create.busy_preview_opening_detail": "把冲突落成可读场面。",
+  "create.busy_preview_choices": "首轮行动",
+  "create.busy_preview_choices_detail": "准备能改变局面的选择。",
 
   // Login page
   "login.tag": "登录",
@@ -1243,6 +1249,12 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "create.busy_tip_3": "Drafting 3 player identity cards — each leads to a different story…",
   "create.busy_tip_4": "Writing the first dramatic moment of the opening…",
   "create.busy_tip_5": "Checking the opening against your plan; if it misses, the Brief stays saved for retry…",
+  "create.busy_preview_role": "Player role",
+  "create.busy_preview_role_detail": "Who you are, and what you want.",
+  "create.busy_preview_opening": "First scene",
+  "create.busy_preview_opening_detail": "Turning the conflict into a playable moment.",
+  "create.busy_preview_choices": "First moves",
+  "create.busy_preview_choices_detail": "Preparing choices that can change the situation.",
 
   "login.tag": "Sign in",
   "login.title": "What's your name?",
