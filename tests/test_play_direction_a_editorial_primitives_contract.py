@@ -1242,12 +1242,12 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "advisorSuggestionInstruction" in styles
     assert "advisorDraftHint" in styles
     assert '"play.advisor_title": "Ask for a second read"' in strings
-    assert '"play.advisor_empty_primer_title": "Ask for one read first"' in strings
+    assert '"play.advisor_empty_primer_title": "Pick a question first"' in strings
     assert '"play.advisor_empty_primer_body": "Your friend can flag risk, wording, and pushback; you still choose the move."' in strings
     assert '"play.advisor_suggestions_label": "Quick questions"' in strings
     assert '"play.advisor_suggestions_instruction": "Tap one to draft it, then edit before asking."' in strings
-    assert '"play.advisor_suggestion_apply_title": "Use suggested question: {question}"' in strings
-    assert '"play.advisor_suggestion_insert": "Use question"' in strings
+    assert '"play.advisor_suggestion_apply_title": "Draft suggested question: {question}"' in strings
+    assert '"play.advisor_suggestion_insert": "Draft this"' in strings
     assert '"play.advisor_title": "Your outsider friend"' not in strings
     assert '"play.advisor_draft_hint": "Suggested question inserted. Edit it, then ask."' in strings
     assert '"play.advisor_draft_hint": "已插入建议问题，可以改一句再问朋友。"' in strings
