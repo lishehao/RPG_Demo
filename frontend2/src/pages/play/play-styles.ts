@@ -3651,6 +3651,15 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 640,
     overflowWrap: "anywhere" as const,
   },
+  actorFocusCueInstruction: {
+    gridColumn: "1 / -1",
+    minWidth: 0,
+    color: "rgba(246,221,176,0.78)",
+    fontSize: 11,
+    lineHeight: 1.22,
+    fontWeight: 760,
+    overflowWrap: "anywhere" as const,
+  },
   actorFocusMatches: {
     gridColumn: "1 / -1",
     minWidth: 0,
@@ -3785,6 +3794,15 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontSize: 11.5,
     lineHeight: 1.25,
     fontWeight: 640,
+    overflowWrap: "anywhere" as const,
+  },
+  resourceFocusCueInstruction: {
+    gridColumn: "1 / -1",
+    minWidth: 0,
+    color: "rgba(220,252,228,0.80)",
+    fontSize: 11,
+    lineHeight: 1.22,
+    fontWeight: 760,
     overflowWrap: "anywhere" as const,
   },
   resourceFocusMatches: {

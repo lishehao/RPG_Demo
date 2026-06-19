@@ -4533,6 +4533,14 @@ export function ActionArea({
           <span style={ppStyles.actorFocusCueDetail}>
             {actorFocusDetail}
           </span>
+          {actorFocusMatchCount > 0 ? (
+            <span
+              style={ppStyles.actorFocusCueInstruction}
+              data-play-actor-focus-instruction="true"
+            >
+              {t("play.actor_focus_instruction")}
+            </span>
+          ) : null}
           {actorFocusMatchedMoves.length > 0 ? (
             <span
               style={ppStyles.actorFocusMatches}
@@ -4612,6 +4620,14 @@ export function ActionArea({
             </button>
           ) : null}
           <span style={ppStyles.resourceFocusCueDetail}>{resourceFocusDetail}</span>
+          {resourceFocusMatchCount > 0 ? (
+            <span
+              style={ppStyles.resourceFocusCueInstruction}
+              data-play-resource-focus-instruction="true"
+            >
+              {t("play.resource_focus_instruction")}
+            </span>
+          ) : null}
           {resourceFocusMatchedMoves.length > 0 ? (
             <span
               style={ppStyles.resourceFocusMatches}

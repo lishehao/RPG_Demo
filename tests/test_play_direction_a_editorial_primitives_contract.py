@@ -596,6 +596,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "target?.id === actorFocus.id" in panels
     assert "actorFocusMatchedMoves" in panels
     assert 'data-play-actor-focus-matches="true"' in panels
+    assert 'data-play-actor-focus-instruction="true"' in panels
     assert 'data-play-actor-focus-match-chip="true"' in panels
     assert "data-play-actor-focus-match-option-index={index}" in panels
     assert 'aria-label={t("play.actor_focus_select_match", { move: label })}' in panels
@@ -610,6 +611,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const resourceFocusOptionMatches = useMemo" in panels
     assert "isResourceFocusAction(resourceFocus.id, parsed.body, opt.hint, actionForecasts?.[index] ?? [])" in panels
     assert "resourceFocusMatchedMoves" in panels
+    assert 'data-play-resource-focus-instruction="true"' in panels
     assert "data-play-resource-focus-match-option-index={index}" in panels
     assert 'aria-label={t("play.resource_focus_select_match", { move: label })}' in panels
     assert "resourceFocusMatchedMoveLabels" not in panels
@@ -853,7 +855,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_active_none": "No preset move"' in strings
     assert '"play.actor_focus_match_detail_one": "1 current move makes this person react."' in strings
     assert '"play.actor_focus_match_detail_many": "{count} current moves make this person react."' in strings
-    assert '"play.actor_focus_matches_label": "Current choices"' in strings
+    assert '"play.actor_focus_instruction": "Choose a matching move, or write your own."' in strings
+    assert '"play.actor_focus_matches_label": "Matching moves"' in strings
     assert '"play.actor_focus_select_match": "Select move: {move}"' in strings
     assert '"play.actor_focus_no_match": "No current move names them; write your own move if you want to pull them in."' in strings
     assert '"play.actor_focus_clear": "Clear"' in strings
@@ -899,7 +902,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_pressure_match_detail_many": "{count} current moves can calm, raise, or redirect pressure."' in strings
     assert '"play.resource_focus_evidence_match_detail_one": "1 current move can turn a clue or proof into leverage."' in strings
     assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can turn clues or proof into leverage."' in strings
-    assert '"play.resource_focus_matches_label": "Current choices"' in strings
+    assert '"play.resource_focus_instruction": "Choose a matching move, or write your own."' in strings
+    assert '"play.resource_focus_matches_label": "Matching moves"' in strings
     assert '"play.resource_focus_select_match": "Select move: {move}"' in strings
     assert '"play.gameplay_decision_cost_label": "Costs"' in strings
     assert '"play.gameplay_decision_upside_label": "Opens"' in strings
