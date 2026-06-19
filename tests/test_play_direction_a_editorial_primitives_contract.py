@@ -1017,6 +1017,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_next_choice_label": "为什么出现这些行动"' in strings
     assert '"play.feedback_next_choice_changed_label": "新行动已打开"' in strings
     assert '"play.feedback_next_choice_changed_detail": "这些行动来自刚刚改变的人物、线索和压力。"' in strings
+    assert '"play.impact_wary": "starts watching you"' in strings
+    assert '"play.impact_broken": "turns against you"' in strings
+    assert '"play.impact_wary": "gets wary"' not in strings
     assert '"play.impact_focus_actor_title": "Show moves that test {name}"' in strings
     assert '"play.feedback_pending_receipt_label": "Move sent"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
