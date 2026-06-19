@@ -337,6 +337,12 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "The green-room badge turns a vague suspicion into a route Lena can act on." in fixture
     assert "Arthur and Marcus now have competing public stories the room can compare." in fixture
     assert 'data-gameplay-person-action="true"' in fixture
+    assert "shift?: string" in fixture
+    assert 'data-gameplay-person-shift="true"' in fixture
+    assert "Badge proof gives Lena a concrete route to manage." in fixture
+    assert "Arthur can now answer a public contradiction, not a vague suspicion." in fixture
+    assert "Marcus' timeline can be tested against the badge trail." in fixture
+    assert "Dana can compare proof-first moves instead of guessing." in fixture
     assert 'data-gameplay-people-usage-note="true"' in fixture
     assert "People you can involve" in fixture
     assert "Ask them to open paths, block pressure, or reveal clues." in fixture

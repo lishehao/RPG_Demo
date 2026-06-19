@@ -38,6 +38,7 @@ type PersonResource = {
   name: string
   role: string
   state: string
+  shift?: string
   action: string
   advice: string
   suggestedMove: string
@@ -135,6 +136,7 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     name: "Lena",
     role: "Stage manager",
     state: "Ready to route people through the control door.",
+    shift: "Badge proof gives Lena a concrete route to manage.",
     action: "Ask Lena how the badge changes the route.",
     advice: "Lena can turn the badge into a cleaner path instead of another public delay.",
     suggestedMove: "Show Lena the green-room badge",
@@ -145,6 +147,7 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     name: "Arthur",
     role: "Producer",
     state: "Watching Marcus' story harden in public.",
+    shift: "Arthur can now answer a public contradiction, not a vague suspicion.",
     action: "Ask Arthur to respond after Marcus speaks.",
     advice: "Arthur is useful now because Marcus has a public story he can contradict.",
     suggestedMove: "Let Arthur contradict Marcus",
@@ -155,6 +158,7 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     name: "Marcus",
     role: "Sponsor rep",
     state: "Trying to make the badge problem look routine.",
+    shift: "Marcus' timeline can be tested against the badge trail.",
     action: "Ask Marcus to repeat his timeline.",
     advice: "Marcus' version gives Arthur something to contradict, but it raises room pressure.",
     suggestedMove: "Let Arthur contradict Marcus",
@@ -165,6 +169,7 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     name: "Dana Vale",
     role: "Crisis confidant",
     state: "Weighs proof against the cost of using it.",
+    shift: "Dana can compare proof-first moves instead of guessing.",
     action: "Ask Dana which unlocked move is worth the risk.",
     advice: "Dana points out the tradeoff, but the decision still stays with you.",
     suggestedMove: "Choose the unlocked move whose cost you can defend.",
@@ -728,6 +733,11 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                       <strong style={styles.personName}>{person.name}</strong>
                       <span style={styles.personRole}>{person.role}</span>
                       <span style={styles.personState}>{person.state}</span>
+                      {person.shift ? (
+                        <span style={styles.personShift} data-gameplay-person-shift="true">
+                          {person.shift}
+                        </span>
+                      ) : null}
                     </span>
                     <button
                       type="button"
@@ -1244,6 +1254,11 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.faintIvory,
     fontSize: 11.5,
     lineHeight: 1.25,
+  },
+  personShift: {
+    color: "rgba(229,190,124,0.76)",
+    fontSize: 11,
+    lineHeight: 1.3,
   },
   personAction: {
     border: "1px solid rgba(229,190,124,0.18)",
