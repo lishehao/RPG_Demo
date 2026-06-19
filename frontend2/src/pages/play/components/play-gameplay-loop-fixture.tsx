@@ -43,7 +43,7 @@ const RESOLVED_TRACKS: Track[] = [
   { id: "time", label: "Time", value: "7 min", note: "One minute spent forcing the room to answer." },
   { id: "pressure", label: "Public pressure", value: "3 / 5", note: "The sponsor notices the challenge." },
   { id: "lena", label: "Lena trust", value: "2 / 5", note: "Lena sees a concrete path to help." },
-  { id: "evidence", label: "Evidence", value: "1 / 3", note: "A badge clue can now shape the next move." },
+  { id: "evidence", label: "Evidence", value: "1 / 3", note: "You can use the badge clue in the next move." },
 ]
 
 const PEOPLE = [
@@ -334,7 +334,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             >
               <div style={styles.sectionHeader}>
                 <span style={styles.kicker}>Choose a move</span>
-                <span style={styles.headerNote}>{unlockedClue ? "Badge clue has changed the action set." : "Compare likely impact before you commit."}</span>
+                <span style={styles.headerNote}>{unlockedClue ? "Badge clue opened new moves." : "Compare likely impact before you commit."}</span>
               </div>
               <div style={styles.actionGrid}>
                 {actions.map((action) => {

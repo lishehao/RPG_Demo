@@ -278,6 +278,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Watch these while choosing a move." in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert "Compare likely impact before you commit." in fixture
+    assert "Badge clue opened new moves." in fixture
+    assert "You can use the badge clue in the next move." in fixture
+    assert "Badge clue has changed the action set." not in fixture
     assert 'aria-label="Likely impact"' in fixture
     assert 'aria-label="Forecast"' not in fixture
     assert "Arthur must answer" in fixture
