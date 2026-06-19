@@ -912,10 +912,12 @@ function TemplateCard({
       data-story-card-kind="published-story"
       data-home-tile-span={span}
       data-home-tile-archetype={archetype}
+      data-home-tile-start-state={isStarting ? "starting" : "idle"}
       aria-label={`${displayView.title} · ${displayView.deck} · ${displayView.copy.primaryAction}`}
       style={{
         ...hpStyles.editorialTile,
         ...hpStyles.editorialTilePublished,
+        ...(isStarting ? hpStyles.editorialTileStarting : null),
         ...homeTileSpanStyle(span, compact),
       }}
       onClick={onClick}
@@ -933,6 +935,7 @@ function TemplateCard({
         span={span}
         compact={compact}
         view={displayView}
+        isStarting={isStarting}
       />
     </motion.button>
   )
@@ -943,13 +946,15 @@ function PublishedTileComposition({
   span,
   compact,
   view,
+  isStarting,
 }: {
   archetype: HomeTileArchetype
   span: HomeTileSpan
   compact: boolean
   view: HomeStoryObjectView
+  isStarting: boolean
 }) {
-  const standardBody = <HomeTileTextBody view={view} span={span} compact={compact} />
+  const standardBody = <HomeTileTextBody view={view} span={span} compact={compact} isStarting={isStarting} />
 
   if (archetype === "full_bleed_cinematic") {
     return (
@@ -970,10 +975,12 @@ function HomeTileTextBody({
   view,
   span,
   compact,
+  isStarting,
 }: {
   view: HomeStoryObjectView
   span: HomeTileSpan
   compact: boolean
+  isStarting: boolean
 }) {
   const tightTile = span === "notice-wide" || span === "dispatch"
   return (
@@ -987,7 +994,15 @@ function HomeTileTextBody({
       >
         {view.deck}
       </span>
-      <span style={hpStyles.editorialTileAction} data-home-tile-primary-action="true">
+      <span
+        style={{
+          ...hpStyles.editorialTileAction,
+          ...(isStarting ? hpStyles.editorialTileActionStarting : null),
+        }}
+        data-home-tile-primary-action="true"
+        data-home-tile-start-state={isStarting ? "starting" : "idle"}
+        aria-live="polite"
+      >
         {view.copy.primaryAction}
       </span>
     </span>
@@ -1537,6 +1552,13 @@ const hpStyles: Record<string, CSSProperties> = {
   editorialTilePublished: {
     borderTopColor: "rgba(212,168,83,0.58)",
   },
+  editorialTileStarting: {
+    cursor: "progress",
+    opacity: 0.86,
+    filter: "saturate(0.92)",
+    borderTopColor: "rgba(154,236,172,0.72)",
+    boxShadow: "inset 0 -1px 0 rgba(154,236,172,0.16), 0 0 0 1px rgba(154,236,172,0.08)",
+  },
   editorialTileImage: {
     position: "absolute" as const,
     inset: 0,
@@ -1604,6 +1626,10 @@ const hpStyles: Record<string, CSSProperties> = {
     lineHeight: 1.2,
     flexShrink: 0,
     whiteSpace: "nowrap",
+  },
+  editorialTileActionStarting: {
+    color: "rgba(184,245,196,0.94)",
+    borderBottom: "1px solid rgba(154,236,172,0.48)",
   },
   starterKicker: {
     color: "rgba(245,180,132,0.86)",

@@ -160,8 +160,10 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
     assert "onStartTemplate(item.template.template_id)" in mosaic
     assert 'data-story-card-kind="published-story"' in template
     assert 'data-home-tile-span={span}' in template
+    assert 'data-home-tile-start-state={isStarting ? "starting" : "idle"}' in template
     assert 't("home.card_action")' in helper
     assert "displayView.copy.primaryAction" in template
+    assert "editorialTileStarting" in template
     assert "displayView.copy.primaryAction}</TileCommand>" not in template
     assert "HomeTileTextBody" in template
     published_helper = helper[helper.index('kind === "published_story"') : helper.index('kind === "in_progress_run"')]
@@ -192,6 +194,8 @@ def test_home_story_tiles_render_low_information_body_with_clear_start_action() 
     assert "<TileTitle" in body
     assert "editorialTileDeck" in body
     assert 'data-home-tile-primary-action="true"' in body
+    assert 'data-home-tile-start-state={isStarting ? "starting" : "idle"}' in body
+    assert "editorialTileActionStarting" in body
     assert "{view.copy.primaryAction}" in body
     assert "<Truncated" not in body
     assert "lineClampStyle" not in body
