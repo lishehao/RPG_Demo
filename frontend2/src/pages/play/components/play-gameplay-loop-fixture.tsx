@@ -345,6 +345,13 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const unlockedClueAction = unlockedClue
     ? actions.find((action) => action.id === "show-badge") ?? null
     : null
+  const clueArmed = !!unlockedClueAction && selectedId === unlockedClueAction.id
+  const clueStatus = clueArmed ? "Ready on move" : unlockedClue ? "Discovered" : "Not found yet"
+  const clueBody = clueArmed
+    ? "This clue is attached to the selected move."
+    : unlockedClue
+      ? "Arthur has to explain why this access badge was missing."
+      : "A concrete clue will open a sharper next move."
   const isPending = phase === "pending"
   const actionHeaderTitle = motiveOpen
     ? "Add inner motive"
@@ -669,24 +676,26 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
               style={{
                 ...styles.clueCard,
                 ...(unlockedClue ? styles.clueCardUnlocked : styles.clueCardLocked),
+                ...(clueArmed ? styles.clueCardArmed : null),
               }}
               data-gameplay-clue-card={unlockedClue ? "green-room-badge" : "locked"}
+              data-gameplay-clue-armed={clueArmed ? "true" : undefined}
             >
-              <span style={styles.clueStatus}>{unlockedClue ? "Discovered" : "Not found yet"}</span>
+              <span style={styles.clueStatus}>{clueStatus}</span>
               <strong style={styles.clueTitle}>{unlockedClue ? "Green-room badge" : "Green-room clue"}</strong>
-              <span style={styles.clueBody}>
-                {unlockedClue
-                  ? "Arthur has to explain why this access badge was missing."
-                  : "A concrete clue will open a sharper next move."}
-              </span>
+              <span style={styles.clueBody}>{clueBody}</span>
               {unlockedClueAction ? (
                 <button
                   type="button"
-                  style={styles.clueUseButton}
+                  style={{
+                    ...styles.clueUseButton,
+                    ...(clueArmed ? styles.clueUseButtonActive : null),
+                  }}
                   data-gameplay-clue-use="green-room-badge"
+                  data-gameplay-clue-use-active={clueArmed ? "true" : undefined}
                   onClick={() => selectSuggestedAction(unlockedClueAction)}
                 >
-                  Use clue
+                  {clueArmed ? "Using clue" : "Use clue"}
                 </button>
               ) : null}
             </article>
@@ -1085,6 +1094,10 @@ const styles: Record<string, CSSProperties> = {
     background: "linear-gradient(145deg, rgba(61,45,21,0.54), rgba(11,12,12,0.78))",
     boxShadow: "0 14px 34px rgba(0,0,0,0.22)",
   },
+  clueCardArmed: {
+    border: "1px solid rgba(92,196,137,0.38)",
+    background: "linear-gradient(145deg, rgba(28,62,42,0.48), rgba(11,12,12,0.80))",
+  },
   clueStatus: {
     color: actionPalette.amberText,
     fontSize: 11,
@@ -1110,5 +1123,10 @@ const styles: Record<string, CSSProperties> = {
     padding: "7px 10px",
     fontWeight: 850,
     cursor: "pointer",
+  },
+  clueUseButtonActive: {
+    border: "1px solid rgba(92,196,137,0.44)",
+    background: "rgba(92,196,137,0.16)",
+    color: "rgba(206,248,222,0.96)",
   },
 }
