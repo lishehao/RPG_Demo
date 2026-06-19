@@ -1376,8 +1376,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.advisor_suggestion_apply_title": "Draft suggested question: {question}"' in strings
     assert '"play.advisor_suggestion_insert": "Draft this"' in strings
     assert '"play.advisor_title": "Your outsider friend"' not in strings
-    assert '"play.advisor_draft_hint": "Suggested question inserted. Edit it, then ask."' in strings
-    assert '"play.advisor_draft_hint": "已插入建议问题，可以改一句再问朋友。"' in strings
+    assert '"play.advisor_draft_hint": "Suggested question inserted. Edit it, then ask; your move stays unsubmitted."' in strings
+    assert '"play.advisor_draft_hint": "Suggested question inserted. Edit it, then ask."' not in strings
+    assert '"play.advisor_draft_hint": "已插入建议问题，可以改一句再问朋友；这不会提交你的行动。"' in strings
+    assert '"play.advisor_draft_hint": "已插入建议问题，可以改一句再问朋友。"' not in strings
     assert '"play.advisor_send": "Ask friend"' in strings
     assert '"play.advisor_send": "问朋友"' in strings
     assert '"play.move_receipt_title": "Your move"' in strings
