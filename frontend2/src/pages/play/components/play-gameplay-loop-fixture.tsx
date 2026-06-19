@@ -56,6 +56,34 @@ const RESOLVED_TRACKS: Track[] = [
   { id: "evidence", label: "Evidence", value: "1 / 3", note: "You can use the badge clue in the next move." },
 ]
 
+const LENA_HOLD_TRACKS: Track[] = [
+  { id: "time", label: "Time", value: "7 min", note: "Lena buys order, but the countdown keeps moving." },
+  { id: "pressure", label: "Public pressure", value: "1 / 5", note: "The room settles while Lena gives people a task." },
+  { id: "lena", label: "Lena trust", value: "2 / 5", note: "Lena trusts you more because the ask was specific." },
+  { id: "evidence", label: "Evidence", value: "0 / 3", note: "The room is calmer, but you still need proof." },
+]
+
+const MARCUS_STALL_TRACKS: Track[] = [
+  { id: "time", label: "Time", value: "9 min", note: "Marcus buys time with the sponsors." },
+  { id: "pressure", label: "Public pressure", value: "2 / 5", note: "Sponsor pressure moves away from the stage for now." },
+  { id: "lena", label: "Lena trust", value: "0 / 5", note: "Lena doubts why Marcus got the job." },
+  { id: "evidence", label: "Evidence", value: "0 / 3", note: "You opened space, but not proof." },
+]
+
+const SHOW_BADGE_TRACKS: Track[] = [
+  { id: "time", label: "Time", value: "6 min", note: "Using the badge spends another minute." },
+  { id: "pressure", label: "Public pressure", value: "3 / 5", note: "The room watches where the badge leads." },
+  { id: "lena", label: "Lena trust", value: "3 / 5", note: "Lena sees proof and commits to the next door." },
+  { id: "evidence", label: "Evidence", value: "2 / 3", note: "The badge clue becomes a path to the control door." },
+]
+
+const TRAP_ANSWER_TRACKS: Track[] = [
+  { id: "time", label: "Time", value: "6 min", note: "The contradiction takes time to surface." },
+  { id: "pressure", label: "Public pressure", value: "4 / 5", note: "The room tightens as two stories collide." },
+  { id: "lena", label: "Lena trust", value: "2 / 5", note: "Lena waits to see if the leverage lands." },
+  { id: "evidence", label: "Evidence", value: "1 / 3", note: "The badge remains live while Arthur and Marcus react." },
+]
+
 const INITIAL_PEOPLE: PersonResource[] = [
   {
     id: "lena",
@@ -218,6 +246,15 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
   },
 ]
 
+function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean): Track[] {
+  if (action.unlocksClue) return RESOLVED_TRACKS
+  if (action.id === "lena-hold") return LENA_HOLD_TRACKS
+  if (action.id === "marcus-stall") return MARCUS_STALL_TRACKS
+  if (action.id === "show-badge") return SHOW_BADGE_TRACKS
+  if (action.id === "trap-answer") return TRAP_ANSWER_TRACKS
+  return clueWasUnlocked ? RESOLVED_TRACKS : INITIAL_TRACKS
+}
+
 const toneStyle: Record<FixtureDelta["tone"], CSSProperties> = {
   gain: {
     border: "1px solid rgba(126, 204, 164, 0.28)",
@@ -297,12 +334,13 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
 
   useEffect(() => {
     if (!isPending || !committed) return
+    const clueWasUnlocked = unlockedClue
     const timer = window.setTimeout(() => {
       setResolvedDeltas(committed.action.resolved)
       if (committed.action.unlocksClue) {
         setUnlockedClue(true)
       }
-      setTracks(committed.action.unlocksClue ? RESOLVED_TRACKS : INITIAL_TRACKS)
+      setTracks(resolvedTracksForAction(committed.action, clueWasUnlocked))
       setPhase("resolved")
       setSelectedId(null)
       setMotiveOpen(false)
@@ -310,7 +348,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
       setConsultedPersonId(null)
     }, 780)
     return () => window.clearTimeout(timer)
-  }, [committed, isPending])
+  }, [committed, isPending, unlockedClue])
 
   const selectAction = (action: FixtureAction) => {
     if (isPending) return

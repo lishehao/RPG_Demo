@@ -284,6 +284,12 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Compare likely impact before you commit." not in fixture
     assert "Badge clue opened new moves." in fixture
     assert "You can use the badge clue in the next move." in fixture
+    assert "function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean): Track[]" in fixture
+    assert "return SHOW_BADGE_TRACKS" in fixture
+    assert "return TRAP_ANSWER_TRACKS" in fixture
+    assert "setTracks(resolvedTracksForAction(committed.action, clueWasUnlocked))" in fixture
+    assert "The badge clue becomes a path to the control door." in fixture
+    assert "The room tightens as two stories collide." in fixture
     assert "Badge clue has changed the action set." not in fixture
     assert 'aria-label="Likely impact"' in fixture
     assert 'aria-label="Forecast"' not in fixture
