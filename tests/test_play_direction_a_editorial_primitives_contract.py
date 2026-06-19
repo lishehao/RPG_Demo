@@ -819,6 +819,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_selected_named_detail": "Review this move. Submit it, or add inner motive."' in strings
     assert '"play.turn_guide_selected_detail": "先复核这一步，再提交或补一句真实动机。"' in strings
     assert '"play.action_submit": "Submit this move →"' in strings
+    assert '"play.leverage_resource_label": "Leverage card"' in strings
+    assert '"play.turn_guide_leverage_title": "Leverage ready: {target}"' in strings
+    assert "Trump card" not in strings
+    assert "trump card" not in strings
     assert "Not submitted yet" not in strings
     assert '"play.inner_motive_cta": "Add inner motive"' in strings
     assert '"play.inner_motive_button_hint": "Say what you secretly mean"' in strings
