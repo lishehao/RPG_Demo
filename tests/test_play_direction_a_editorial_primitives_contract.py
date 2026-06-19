@@ -869,6 +869,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.action_submit": "Submit this move →"' in strings
     assert '"play.action_submit": "提交这个行动 →"' in strings
     assert '"play.leverage_resource_label": "Leverage card"' in strings
+    assert '"play.leverage_summary_action": "Reveal against {target}"' in strings
+    assert '"play.leverage_summary_choose": "Choose a leverage card"' in strings
     assert '"play.turn_guide_leverage_title": "Leverage ready: {target}"' in strings
     assert "Trump card" not in strings
     assert "trump card" not in strings
@@ -966,6 +968,23 @@ def test_empty_trump_card_resource_stays_out_of_main_action_surface() -> None:
     assert "const showLeverageRail = leverageCards.length > 0 && !commitmentSurfaceOpen" in panels
     assert "roleHasNoLeverage) && !commitmentSurfaceOpen" not in panels
     assert "roleHasNoLeverage ||" not in panels
+
+
+def test_leverage_resource_reads_as_actionable_player_resource() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+
+    assert 'data-play-leverage-rail="true"' in panels
+    assert 'data-play-leverage-state={playableLeverageCards.length > 0 ? "playable" : "empty"}' in panels
+    assert 'data-play-leverage-summary="true"' in panels
+    assert 'data-play-leverage-summary-chips="true"' in panels
+    assert 'data-play-leverage-card="true"' in panels
+    assert 'data-play-leverage-reveal="true"' in panels
+    assert 'data-play-leverage-reveal-cta="true"' in panels
+    assert "leverageSummaryChips" in styles
+    assert "leverageSummaryChipLabel" in styles
+    assert "leverageSummaryChipValue" in styles
+    assert 'background: "linear-gradient(135deg, rgba(245,200,120,0.13)' in styles
 
 
 def test_ending_screen_prioritizes_result_text_before_illustration() -> None:

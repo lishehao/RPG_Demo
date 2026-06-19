@@ -2973,8 +2973,10 @@ export function ActionArea({
   const leverageSummaryText = armedCard
     ? t("play.leverage_summary_prepared", { target: armedCard.target_name })
     : hasSinglePlayableLeverage && primaryLeverageCard
-      ? primaryLeverageCard.target_name
-      : playableLeverageTargetText || t("play.leverage_summary_count", { count: playableLeverageCards.length })
+      ? t("play.leverage_summary_action", { target: primaryLeverageCard.target_name })
+      : playableLeverageTargetText
+        ? t("play.leverage_summary_choose")
+        : t("play.leverage_summary_count", { count: playableLeverageCards.length })
   const leverageSummaryMetaText = armedCard
     ? t("play.leverage_summary_meta_target", { target: armedCard.target_name })
     : hasSinglePlayableLeverage && primaryLeverageCard
@@ -2987,6 +2989,7 @@ export function ActionArea({
       : hasSinglePlayableLeverage
         ? t("play.leverage_summary_prepare")
         : t("play.leverage_expand")
+  const leverageSummaryChipTarget = primaryLeverageCard?.target_name ?? ""
   const spentLeverageTargets = spentLeverageCards.map((card) => card.target_name).join(" · ")
   const leverageEmptyMetaText = spentLeverageTargets
     ? t("play.leverage_empty_meta", { targets: spentLeverageTargets })
@@ -4185,6 +4188,9 @@ export function ActionArea({
       {showLeverageRail ? (
         <section
           id={ACTION_LEVERAGE_RAIL_ID}
+          data-play-leverage-rail="true"
+          data-play-leverage-state={playableLeverageCards.length > 0 ? "playable" : "empty"}
+          data-play-leverage-playable-count={playableLeverageCards.length}
           style={{
             ...ppStyles.leverageRail,
             ...(compactActionChrome ? ppStyles.leverageRailCompact : null),
@@ -4205,6 +4211,7 @@ export function ActionArea({
           ) : (
             <button
               type="button"
+              data-play-leverage-summary="true"
               style={{
                 ...ppStyles.leverageSummaryButton,
                 ...(showLeverageCards ? ppStyles.leverageSummaryButtonOpen : null),
@@ -4220,6 +4227,18 @@ export function ActionArea({
                 <span style={ppStyles.leverageSummaryEyebrow}>{t("play.leverage_resource_label")}</span>
                 <strong style={ppStyles.leverageSummaryText}>{leverageSummaryText}</strong>
                 <span style={ppStyles.leverageSummaryMeta} title={leverageSummaryMetaText}>{leverageSummaryMetaText}</span>
+                {primaryLeverageCard ? (
+                  <span style={ppStyles.leverageSummaryChips} data-play-leverage-summary-chips="true">
+                    <span style={ppStyles.leverageSummaryChip}>
+                      <span style={ppStyles.leverageSummaryChipLabel}>{t("play.leverage_summary_chip_target")}</span>
+                      <strong style={ppStyles.leverageSummaryChipValue}>{leverageSummaryChipTarget}</strong>
+                    </span>
+                    <span style={ppStyles.leverageSummaryChip}>
+                      <span style={ppStyles.leverageSummaryChipLabel}>{t("play.leverage_summary_chip_risk")}</span>
+                      <strong style={ppStyles.leverageSummaryChipValue}>{t("play.leverage_card_risk")}</strong>
+                    </span>
+                  </span>
+                ) : null}
               </span>
               <span
                 style={{
@@ -4245,6 +4264,9 @@ export function ActionArea({
                   <button
                     key={card.card_id}
                     type="button"
+                    data-play-leverage-card="true"
+                    data-play-leverage-card-state={isPrepared ? "prepared" : "available"}
+                    data-play-leverage-card-target={card.target_name}
                     style={{
                       ...ppStyles.leverageMiniCard,
                       ...(isPrepared ? ppStyles.leverageMiniCardArmed : null),
@@ -4446,6 +4468,8 @@ export function ActionArea({
       {armedCard ? (
           <section
             ref={setCommitFocusNode}
+            data-play-leverage-reveal="true"
+            data-play-leverage-reveal-target={armedCard.target_name}
             style={{
               ...ppStyles.leverageRevealPanel,
               ...(isRevealingLeverage ? ppStyles.leverageRevealPanelActive : null),
@@ -4501,6 +4525,7 @@ export function ActionArea({
               <div style={ppStyles.leverageRevealActions}>
                 <div style={{ ...ppStyles.commitPrimaryActions, ...ppStyles.inlineCommitPrimaryActions }}>
                   <button
+                    data-play-leverage-reveal-cta="true"
                     style={{
                       ...ppStyles.actionPrimaryLine,
                       ...(compactActionChrome ? ppStyles.actionPrimaryLineCompact : null),
