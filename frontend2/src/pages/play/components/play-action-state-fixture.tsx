@@ -253,6 +253,7 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
           turnsCompleted={turn}
           turnsRemaining={Math.max(1, 12 - turn)}
           turnBudget={12}
+          hasRecentImpact={!!outcome}
           showFreeInput={showFreeInput}
           freeInput={freeInput}
           setFreeInput={setFreeInput}

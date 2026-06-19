@@ -1435,6 +1435,7 @@ export function PlayPage({
               turnsCompleted={turnsCompleted}
               turnsRemaining={turnsRemaining}
               turnBudget={turnBudget}
+              hasRecentImpact={showGameplayImpactSummary}
               actorFocus={actorFocus}
               resourceFocus={focusedResourceId && focusedResourceTrack
                 ? { id: focusedResourceId, label: focusedResourceTrack.label }

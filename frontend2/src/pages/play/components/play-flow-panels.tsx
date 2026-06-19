@@ -2954,6 +2954,7 @@ export function ActionArea({
   turnsCompleted,
   turnsRemaining,
   turnBudget,
+  hasRecentImpact,
   actorFocus,
   resourceFocus,
   inventoryFocusItem,
@@ -2984,6 +2985,7 @@ export function ActionArea({
   turnsCompleted: number
   turnsRemaining: number
   turnBudget: number
+  hasRecentImpact?: boolean
   actorFocus?: { id: string; name: string } | null
   resourceFocus?: { id: GameplayResourceFocusId; label: string } | null
   inventoryFocusItem?: string | null
@@ -3575,10 +3577,14 @@ export function ActionArea({
                   tone: ppStyles.turnGuideEndgame,
                 }
               : {
-                  title: t("play.turn_guide_idle_title"),
-                  detail: playableLeverageCards.length > 0
-                    ? t("play.turn_guide_idle_detail_with_leverage")
-                    : t("play.turn_guide_idle_detail"),
+                  title: hasRecentImpact
+                    ? t("play.turn_guide_after_impact_title")
+                    : t("play.turn_guide_idle_title"),
+                  detail: hasRecentImpact
+                    ? t("play.turn_guide_after_impact_detail")
+                    : playableLeverageCards.length > 0
+                      ? t("play.turn_guide_idle_detail_with_leverage")
+                      : t("play.turn_guide_idle_detail"),
                   tone: null,
                 }
   const showActionTelemetry = !commitmentSurfaceOpen && !showPickedReflection && options.length === 0

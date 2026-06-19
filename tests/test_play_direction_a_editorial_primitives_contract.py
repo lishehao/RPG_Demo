@@ -260,6 +260,7 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
     assert "setTurn((value) => value + 1)" in fixture
     assert "showNextOptions ? NEXT_OPTIONS : FIRST_OPTIONS" in fixture
     assert "setShowNextOptions(true)" in fixture
+    assert "hasRecentImpact={!!outcome}" in fixture
     assert "turn % 2 === 0 ? FIRST_OPTIONS : NEXT_OPTIONS" not in fixture
     assert "type RehearsalOutcome" in fixture
     assert "rehearsalOutcomeForMove(submittedMove)" in fixture
@@ -968,6 +969,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
 
 
 def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
@@ -1083,11 +1085,18 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_idle_title": "Choose one move"' in strings
     assert '"play.turn_guide_idle_detail": "Read the goal and pressure above, then select a card to submit."' in strings
     assert '"play.turn_guide_idle_detail_with_leverage": "Read the goal and pressure; select a card, prepare leverage, or write your own."' in strings
+    assert '"play.turn_guide_after_impact_title": "Choose from what changed"' in strings
+    assert '"play.turn_guide_after_impact_detail": "These moves come from the people, clues, and pressure you just changed."' in strings
+    assert "hasRecentImpact?: boolean" in panels
+    assert "hasRecentImpact\n                    ? t(\"play.turn_guide_after_impact_title\")" in panels
+    assert "hasRecentImpact={showGameplayImpactSummary}" in play_page
     assert 'data-play-turn-guide-detail="true"' in panels
     assert '"play.action_status_ready": "Move controls ready."' in strings
     assert '"play.turn_guide_idle_title": "选择一个行动"' in strings
     assert '"play.turn_guide_idle_detail": "先看上方目标和压力，再选中卡片提交。"' in strings
     assert '"play.turn_guide_idle_detail_with_leverage": "先看目标和压力；选中卡片、准备反将牌，或自己写一句。"' in strings
+    assert '"play.turn_guide_after_impact_title": "根据变化选下一步"' in strings
+    assert '"play.turn_guide_after_impact_detail": "这些行动来自刚刚改变的人物、线索和压力。"' in strings
     assert '"play.option_shortcut_title": "Press {key} to select; then submit"' in strings
     assert '"play.option_shortcut_title": "按 {key} 选择；然后提交"' in strings
     assert '"play.selected_move_ready_label": "Ready to submit"' in strings
