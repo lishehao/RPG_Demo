@@ -360,7 +360,11 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "{committed?.action.title ?? \"Your last move\"}" in fixture
     assert "resolvedReceipt" in fixture
     assert "function nextActionBridgeForAction(action: FixtureAction | null): string" in fixture
+    assert "function nextActionBridgeLabelForAction(action: FixtureAction | null): string" in fixture
+    assert 'return "How to use this change"' in fixture
+    assert "action?.unlocksClue || action?.availableBecause" in fixture
     assert 'data-gameplay-next-actions-bridge="true"' in fixture
+    assert "{nextActionBridgeLabelForAction(committed?.action ?? null)}" in fixture
     assert "Why the next moves changed" in fixture
     assert "The badge clue changed the menu" in fixture
     assert "you can now use proof directly or turn it into public leverage" in fixture

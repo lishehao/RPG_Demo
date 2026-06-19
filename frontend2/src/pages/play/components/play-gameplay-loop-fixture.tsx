@@ -312,6 +312,11 @@ function nextActionBridgeForAction(action: FixtureAction | null): string {
   return "Read the changed pressure, then pick the next move that uses it."
 }
 
+function nextActionBridgeLabelForAction(action: FixtureAction | null): string {
+  if (action?.unlocksClue || action?.availableBecause) return "Why the next moves changed"
+  return "How to use this change"
+}
+
 function pendingReactionCopyForAction(action: FixtureAction): string {
   if (action.id === "lena-hold") {
     return "Lena steps toward the crowd and turns your ask into a visible task before the room scatters."
@@ -596,7 +601,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 ))}
               </div>
               <div style={styles.nextActionBridge} data-gameplay-next-actions-bridge="true">
-                <span style={styles.nextActionBridgeLabel}>Why the next moves changed</span>
+                <span style={styles.nextActionBridgeLabel}>{nextActionBridgeLabelForAction(committed?.action ?? null)}</span>
                 <strong style={styles.nextActionBridgeCopy}>
                   {nextActionBridgeForAction(committed?.action ?? null)}
                 </strong>
