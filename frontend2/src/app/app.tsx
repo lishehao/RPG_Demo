@@ -6,6 +6,7 @@ import { type AppRoute, useAppRoute } from "./routes"
 import { HomePage } from "../pages/home/home-page"
 import { CreatePage } from "../pages/create/create-page"
 import { PlayPage } from "../pages/play/play-page"
+import { PlayAdvisorFixture } from "../pages/play/components/play-advisor-fixture"
 import { PlayActionStateFixture } from "../pages/play/components/play-action-state-fixture"
 import { PlayEndingFixture } from "../pages/play/components/play-ending-fixture"
 import { PlayGameplayLoopFixture } from "../pages/play/components/play-gameplay-loop-fixture"
@@ -72,6 +73,8 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId })}
         />
       )
+    case "playAdvisorFixture":
+      return <PlayAdvisorFixture onBackHome={() => navigate({ name: "home" })} />
     case "playActionFixture":
       return <PlayActionStateFixture scenario={route.scenario} onBackHome={() => navigate({ name: "home" })} />
     case "playEndingFixture":
@@ -137,6 +140,7 @@ function routeKey(route: AppRoute): string {
     case "home": return "home"
     case "login": return "login"
     case "create": return "create"
+    case "playAdvisorFixture": return "playAdvisorFixture"
     case "playActionFixture": return route.scenario ? `playActionFixture:${route.scenario}` : "playActionFixture"
     case "playEndingFixture": return "playEndingFixture"
     case "playGameplayLoopFixture": return "playGameplayLoopFixture"

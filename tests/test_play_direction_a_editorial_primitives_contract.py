@@ -73,6 +73,10 @@ def test_advisor_panel_module_owns_fab_sidechat_and_player_hooks() -> None:
     assert "export function AdvisorFab" in advisor_panel
     assert "export function AdvisorSidechat" in advisor_panel
     assert "export function buildAdvisorSuggestions" in advisor_panel
+    assert "export type AdvisorSidechatApiClient" in advisor_panel
+    assert "apiClient?: AdvisorSidechatApiClient" in advisor_panel
+    assert "const defaultApi = useApi()" in advisor_panel
+    assert "const api = apiClient ?? defaultApi" in advisor_panel
     assert "getNarrativeAdvisorHistory" in advisor_panel
     assert "askNarrativeAdvisor" in advisor_panel
     assert 'data-play-advisor-empty-primer="true"' in advisor_panel
@@ -88,6 +92,40 @@ def test_advisor_panel_module_owns_fab_sidechat_and_player_hooks() -> None:
     assert 'data-play-advisor-draft-hint="true"' not in panels
     assert 'data-play-advisor-suggestion-instruction="true"' not in panels
     assert "components/advisor-panel.tsx" in readme
+
+
+def test_play_advisor_fixture_mounts_real_advisor_surface_without_backend() -> None:
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    fixture = (ROOT / "frontend2/src/pages/play/components/play-advisor-fixture.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert '| { name: "playAdvisorFixture" }' in routes
+    assert 'segments[1] === "play-advisor"' in routes
+    assert 'return "#/qa/play-advisor"' in routes
+    assert 'import { PlayAdvisorFixture } from "../pages/play/components/play-advisor-fixture"' in app
+    assert 'case "playAdvisorFixture"' in app
+    assert "<PlayAdvisorFixture" in app
+    assert 'data-play-advisor-fixture="true"' in fixture
+    assert 'data-play-advisor-fixture-state={advisorOpen ? "open" : "closed"}' in fixture
+    assert "AdvisorFab" in fixture
+    assert "AdvisorSidechat" in fixture
+    assert "type AdvisorSidechatApiClient" in fixture
+    assert "apiClient={localAdvisorApi}" in fixture
+    assert "createLocalAdvisorApi" in fixture
+    assert "getNarrativeAdvisorHistory" in fixture
+    assert "askNarrativeAdvisor" in fixture
+    assert "INITIAL_MESSAGES" in fixture
+    assert "ADVISOR_SUGGESTIONS" in fixture
+    assert "COMMITMENT_SUMMARY" in fixture
+    assert "oracle_used: request.oracle_mode === true" in fixture
+    assert "onOracleConsumed" in fixture
+    assert 'data-play-advisor-empty-primer="true"' not in fixture
+    assert 'data-play-advisor-draft-hint="true"' not in fixture
+    assert 'data-play-advisor-suggestion-instruction="true"' not in fixture
+    assert "advisorTranscriptLine" not in fixture
+    assert "components/play-advisor-fixture.tsx" in readme
+    assert "#/qa/play-advisor" in readme
 
 
 def test_scene_support_rail_uses_webtoon_portrait_images() -> None:

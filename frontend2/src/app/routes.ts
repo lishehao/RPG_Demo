@@ -4,6 +4,7 @@ export type AppRoute =
   | { name: "home" }
   | { name: "login"; next?: string }
   | { name: "create" }
+  | { name: "playAdvisorFixture" }
   | { name: "playActionFixture"; scenario?: "long-history" }
   | { name: "playEndingFixture" }
   | { name: "playGameplayLoopFixture" }
@@ -30,6 +31,7 @@ const ROUTE_DEPTH: Record<AppRoute["name"], number> = {
   replay: 1,
   portfolio: 1,
   reviewer: 1,
+  playAdvisorFixture: 1,
   playActionFixture: 1,
   playEndingFixture: 1,
   playGameplayLoopFixture: 1,
@@ -64,6 +66,7 @@ function parseRoute(hash: string): AppRoute {
     return { name: "create" }
   }
   if (segments[0] === "qa" && allowsLocalQaRoute()) {
+    if (segments[1] === "play-advisor") return { name: "playAdvisorFixture" }
     if (segments[1] === "play-action") {
       return {
         name: "playActionFixture",
@@ -108,6 +111,8 @@ export function buildHash(route: AppRoute): string {
     }
     case "create":
       return "#/create"
+    case "playAdvisorFixture":
+      return "#/qa/play-advisor"
     case "playActionFixture":
       if (route.scenario === "long-history") return "#/qa/play-action?scenario=long-history"
       return "#/qa/play-action"

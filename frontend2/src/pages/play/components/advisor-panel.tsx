@@ -5,6 +5,7 @@ import type {
   NarrativeStoryHistoryResponse,
   NarrativeStoryMessage,
 } from "../../../api/contracts"
+import type { FrontendApiClient } from "../../../api/client"
 import { useApi } from "../../../app/api-context"
 import { friendlyError } from "../../../shared/lib/friendly-error"
 import { useT } from "../../../shared/lib/i18n"
@@ -19,6 +20,11 @@ import {
 import { ppStyles } from "../play-styles"
 import type { ActionCommitmentSummary, LeverageCardView } from "../play-types"
 import { useCompactLayout } from "../hooks/use-compact-layout"
+
+export type AdvisorSidechatApiClient = Pick<
+  FrontendApiClient,
+  "getNarrativeAdvisorHistory" | "askNarrativeAdvisor"
+>
 
 export function buildAdvisorSuggestions({
   story,
@@ -127,6 +133,7 @@ export function AdvisorSidechat({
   isCommitmentActive,
   commitmentSummary,
   suggestions,
+  apiClient,
   onClose,
   onOracleConsumed,
 }: {
@@ -138,10 +145,12 @@ export function AdvisorSidechat({
   isCommitmentActive: boolean
   commitmentSummary: ActionCommitmentSummary | null
   suggestions: string[]
+  apiClient?: AdvisorSidechatApiClient
   onClose: () => void
   onOracleConsumed: (newBudget: number) => void
 }) {
-  const api = useApi()
+  const defaultApi = useApi()
+  const api = apiClient ?? defaultApi
   const t = useT()
   const [messages, setMessages] = useState<NarrativeAdvisorMessage[]>([])
   const [oracleOrds, setOracleOrds] = useState<Set<number>>(new Set())

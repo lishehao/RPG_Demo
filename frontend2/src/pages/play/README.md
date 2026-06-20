@@ -10,6 +10,8 @@
   - View/helper module for run context, stage header, story beats, action area, resolving rows, and local display helpers.
 - `components/advisor-panel.tsx`
   - Advisor surface module: floating advisor button, sidechat drawer, advisor suggestions, transcript rendering, deep-read confirmation, and advisor-specific player hooks.
+- `components/play-advisor-fixture.tsx`
+  - Local QA route fixture for `#/qa/play-advisor`. Mounts the real advisor FAB/sidechat with deterministic local advisor responses for browser evidence.
 - `components/ending-screen.tsx`
   - Ending payoff view, result-first action ordering, fallback recap, highlight reel, branch recap, and ending label display helpers.
 - `components/play-ending-fixture.tsx`
@@ -34,6 +36,7 @@
 - Normal players do not see provider/model/API/schema/debug/trace language.
 - Reviewer trace/evidence appears only in reviewer mode.
 - Ending payoff stays result-first and visible.
+- `#/qa/play-advisor` exercises the real advisor FAB/sidechat without backend or live generation.
 - `#/qa/play-ending` exercises the real ending payoff surface without backend or live generation.
 - Mobile 390px must have no horizontal overflow and action/retry controls must remain reachable.
 - Play is a story-world scene surface: Narrator/World, scene characters, and You. Story Butler is not the primary Play speaker; advisor behavior stays optional and secondary.
