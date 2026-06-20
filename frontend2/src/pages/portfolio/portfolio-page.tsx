@@ -78,7 +78,10 @@ export function PortfolioPage({
               consequences, reviewer evidence, and ending replay behind the video.
             </p>
             <div className="portfolio-hero__actions">
-              <button className="portfolio-action portfolio-action--primary" type="button" onClick={onOpenReviewer}>
+              <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">
+                Watch 75s demo
+              </a>
+              <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenReviewer}>
                 Launch reviewer route
               </button>
             </div>

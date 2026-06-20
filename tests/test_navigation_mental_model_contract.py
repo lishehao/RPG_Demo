@@ -63,6 +63,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Watch 75s demo" in portfolio
     assert "Launch reviewer run" in portfolio
     assert "Inspect evidence" in portfolio
+    assert '<a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL}' in portfolio
+    assert "Watch 75s demo" in portfolio[portfolio.index("portfolio-hero__actions") : portfolio.index('data-portfolio-review-order="true"')]
+    assert "portfolio-action portfolio-action--secondary" in portfolio
+    assert "Launch reviewer route" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
     assert 'data-portfolio-review-order="true"' in portfolio
     assert "data-portfolio-review-step={item.step}" in portfolio
     assert "If the preview does not play" in portfolio

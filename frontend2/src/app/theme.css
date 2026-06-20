@@ -668,7 +668,7 @@ kbd {
   display: grid;
   gap: 6px;
   width: min(100%, 760px);
-  margin: 0 0 24px;
+  margin: 0 0 18px;
   padding: 14px 0;
   border-top: 1px solid rgba(255,255,255,0.14);
   border-bottom: 1px solid rgba(255,255,255,0.10);
@@ -966,7 +966,7 @@ kbd {
   border-top: 1px solid rgba(255,255,255,0.12);
 }
 .reviewer-evidence-preview {
-  margin-top: 8px;
+  margin-top: 0;
   width: min(100%, 760px);
   padding: 14px 16px;
   border: 1px solid rgba(245, 200, 120, 0.18);
