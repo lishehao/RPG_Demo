@@ -150,6 +150,12 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "portfolio-grade AI product-system evidence" in readme
     assert "不是已经验证过的消费级游戏或大规模用户增长案例" in readme
     assert "真实用户需求、复玩、留存和自然分享没有被证明" in readme
+    assert "## Demo" in readme
+    assert "[观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)" in readme
+    assert "[打开 MP4 备份](./docs/demo-video/tiny-stories-admissions-demo-readme.mp4)" in readme
+    assert "[打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)" in readme
+    assert "视频用于快速理解玩家看到的 loop" in readme
+    assert "真正的申请材料证据仍然在 source、tests" in readme
     assert "## 申请 / 作品集审阅路径" in readme
     assert "`#/portfolio`" in readme
     assert "`#/reviewer`" in readme
