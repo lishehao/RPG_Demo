@@ -56,6 +56,25 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert ".reviewer-evidence-preview__head" in theme
 
 
+def test_reviewer_launch_keeps_full_seed_secondary_to_proof_preview() -> None:
+    source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
+
+    summary_idx = source.index('data-reviewer-seed-summary="true"')
+    actions_idx = source.index('className="reviewer-actions"')
+    evidence_idx = source.index('data-reviewer-evidence-preview="true"')
+    launch_idx = source.index('data-reviewer-launch-plan="true"')
+    details_idx = source.index('data-reviewer-seed-details="true"')
+
+    assert summary_idx < actions_idx < evidence_idx < launch_idx < details_idx
+    assert "Locked seed preview" in source
+    assert "Missing singer, live awards stream, sponsor pressure" in source
+    assert "Read locked seed" in source
+    assert "<details className=\"reviewer-seed-details\"" in source
+    assert ".reviewer-seed-summary" in theme
+    assert ".reviewer-seed-details summary" in theme
+
+
 def test_reviewer_seed_is_concrete_enough_to_avoid_generic_scaffold_roles() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
     service = (ROOT / "rpg_backend/narrative/service.py").read_text()

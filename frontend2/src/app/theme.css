@@ -664,6 +664,49 @@ kbd {
   border-radius: 0;
 }
 
+.reviewer-seed-summary {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 760px);
+  margin: 0 0 24px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(255,255,255,0.14);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.reviewer-seed-summary span {
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.reviewer-seed-summary strong {
+  color: var(--text);
+  font-family: var(--font-narrative);
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+.reviewer-seed-details {
+  width: min(100%, 760px);
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+}
+.reviewer-seed-details summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.reviewer-seed-details blockquote {
+  margin-top: 12px;
+  font-size: 16px;
+  color: rgba(244,239,230,0.82);
+}
+
 .portfolio-review-list {
   margin: 0;
   padding: 0;
@@ -923,7 +966,7 @@ kbd {
   border-top: 1px solid rgba(255,255,255,0.12);
 }
 .reviewer-evidence-preview {
-  margin-top: 16px;
+  margin-top: 8px;
   width: min(100%, 760px);
   padding: 14px 16px;
   border: 1px solid rgba(245, 200, 120, 0.18);

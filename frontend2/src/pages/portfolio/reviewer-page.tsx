@@ -129,7 +129,10 @@ export function ReviewerPage({
             a real session, keeps the Korean-webtoon visual language, and opens
             the play surface with a reviewer evidence summary.
           </p>
-          <blockquote>"{REVIEWER_DEMO_SEED}"</blockquote>
+          <div className="reviewer-seed-summary" data-reviewer-seed-summary="true">
+            <span>Locked seed preview</span>
+            <strong>Missing singer, live awards stream, sponsor pressure; no violence or blackmail.</strong>
+          </div>
           <div className="reviewer-actions">
             <button
               className="reviewer-action reviewer-action--primary"
@@ -197,6 +200,10 @@ export function ReviewerPage({
               })}
             </ol>
           </section>
+          <details className="reviewer-seed-details" data-reviewer-seed-details="true">
+            <summary>Read locked seed</summary>
+            <blockquote>"{REVIEWER_DEMO_SEED}"</blockquote>
+          </details>
           {error ? <div className="reviewer-error">{error}</div> : null}
         </motion.section>
 
