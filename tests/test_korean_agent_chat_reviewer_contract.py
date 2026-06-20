@@ -59,6 +59,9 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
+    assert "keeps the player-facing story UI intact" in source
+    assert "playable state and consequences" in source
+    assert "Korean-webtoon visual language" not in source
     assert "REVIEWER_EVIDENCE_CHECKS" in source
     assert "After launch, verify" in source
     assert "Playable state" in source

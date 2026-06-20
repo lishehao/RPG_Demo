@@ -129,8 +129,8 @@ export function ReviewerPage({
           <h1>{REVIEWER_DEMO_TITLE}</h1>
           <p>
             A locked English demo path designed for portfolio review. It starts
-            a real session, keeps the Korean-webtoon visual language, and opens
-            the play surface with a reviewer evidence summary.
+            a real session, keeps the player-facing story UI intact, and opens
+            a reviewer evidence summary for playable state and consequences.
           </p>
           <div className="reviewer-seed-summary" data-reviewer-seed-summary="true">
             <span>Locked seed preview</span>
