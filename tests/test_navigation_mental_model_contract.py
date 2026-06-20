@@ -124,6 +124,23 @@ def test_portfolio_inspector_uses_reviewer_verifiable_capability_labels() -> Non
         assert old_internal_label not in data
 
 
+def test_portfolio_loop_maps_each_state_to_visible_evidence() -> None:
+    data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
+    portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
+
+    for expected in (
+        "visible evidence: locked seed and generated opening",
+        "visible evidence: role panel, objective, assets",
+        "visible evidence: next moves, pulse, inventory",
+        "visible evidence: ending, highlights, replay link",
+        "artifact each state leaves behind",
+    ):
+        assert expected in data or expected in portfolio
+
+    assert "not just admire generated images" not in portfolio
+    assert "secret merger · awards livestream · ex with proof" not in data
+
+
 def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     header = (ROOT / "frontend2/src/shared/ui/header.tsx").read_text()
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()

@@ -78,25 +78,25 @@ export const INTERACTION_LOOP = [
   {
     eyebrow: "Seed",
     title: "A dense conflict starts the run",
-    body: "The reviewer does not browse a gallery first; they enter through a single high-pressure premise with public stakes and private evidence.",
-    artifact: "secret merger · awards livestream · ex with proof",
+    body: "The reviewer starts from one locked premise, so the generated setup can be checked against the same source every time.",
+    artifact: "visible evidence: locked seed and generated opening",
   },
   {
     eyebrow: "Role",
     title: "The player gets a position to defend",
-    body: "The generated role gives the player a public persona, private objective, trump cards, and items before the first turn.",
-    artifact: "identity · objective · leverage · assets",
+    body: "The generated role gives the player a public persona, private objective, leverage, and starting assets before the first turn.",
+    artifact: "visible evidence: role panel, objective, assets",
   },
   {
     eyebrow: "Turn",
     title: "Choices create visible consequences",
-    body: "Each move updates the story, relationship pulse, inventory and reviewer inspector without turning the play surface into a dashboard.",
-    artifact: "option / free text · pulse · inventory · advisor",
+    body: "Each move updates the story, relationship pulse, inventory, and reviewer evidence without turning the play surface into a dashboard.",
+    artifact: "visible evidence: next moves, pulse, inventory",
   },
   {
     eyebrow: "Ending",
     title: "The run becomes a replayable artifact",
-    body: "The ending compiler turns a live playthrough into a labeled result with highlights and alternate branches.",
-    artifact: "label · subtitle · highlights · branches",
+    body: "The ending screen turns the playthrough into a labeled result with highlights, alternate branches, share, and replay.",
+    artifact: "visible evidence: ending, highlights, replay link",
   },
 ] as const

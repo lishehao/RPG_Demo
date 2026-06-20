@@ -203,7 +203,7 @@ export function PortfolioPage({
             <h2>One reviewed path, four product states.</h2>
             <p>
               The portfolio read is strongest when the evaluator can follow the
-              product loop, not just admire generated images.
+              product loop and see the artifact each state leaves behind.
             </p>
           </div>
           <ol className="portfolio-loop__steps">
