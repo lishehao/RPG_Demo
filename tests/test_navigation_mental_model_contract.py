@@ -104,6 +104,7 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
 
 def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     landing = (ROOT / "docs/index.html").read_text()
+    app_index = (ROOT / "frontend2/index.html").read_text()
 
     assert "75s reviewer cut" in landing
     assert "Watch 75s demo" in landing
@@ -118,6 +119,10 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "system map, reviewer path, contracts, and tests" in landing
     assert ".evidence-boundary" in landing
     assert ".video-actions span:last-child" in landing
+    assert '<meta property="og:image" content="/og-share.jpg" />' in app_index
+    assert '<meta name="twitter:image" content="/og-share.jpg" />' in app_index
+    assert "product UI and reviewer evidence contact sheet" in app_index
+    assert 'og:image:alt" content="Tiny Stories — interactive drama in 12 turns"' not in app_index
 
 
 def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
