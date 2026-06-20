@@ -119,6 +119,7 @@ export function CreatePage({
   const seedTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
   const briefMessageRef = useRef<HTMLDivElement | null>(null)
+  const briefErrorRef = useRef<HTMLDivElement | null>(null)
   const transcriptEndRef = useRef<HTMLDivElement | null>(null)
   const guestHandleRef = useRef<string | null>(null)
   const autoBriefKeyRef = useRef<string | null>(null)
@@ -137,6 +138,8 @@ export function CreatePage({
   const activeBrief = activeBriefResponse?.brief ?? null
   const canGenerateFromBrief = Boolean(activeBriefResponse?.can_generate)
   const guideReadyToBrief = guideLoopState.status === "ready_to_brief" && canShapeStoryBrief(guideLoopState)
+  const canRetryBrief =
+    Boolean(briefError) && guideReadyToBrief && hasSeed && !busy && !briefBusy && !guideBusy
   const privacyIntroComplete = Boolean(privacyRecordedVisibility)
   const showSeedExamples = privacyIntroComplete && !hasSeed && !busy && !briefBusy && !guideBusy
   const selectedBudget = BUDGET_OPTIONS.find((o) => o.budget === turnBudget) ?? BUDGET_OPTIONS[1]
@@ -360,6 +363,14 @@ export function CreatePage({
     }, 40)
     return () => window.clearTimeout(id)
   }, [chatMessages.length, briefBusy])
+
+  useEffect(() => {
+    if (!briefError) return
+    const id = window.setTimeout(() => {
+      briefErrorRef.current?.scrollIntoView({ block: "center", behavior: "auto" })
+    }, 40)
+    return () => window.clearTimeout(id)
+  }, [briefError])
 
   const handleCreate = async () => {
     const trimmed = seed.trim()
@@ -1065,7 +1076,21 @@ export function CreatePage({
           ) : null}
 
           {error ? <div style={cpStyles.error}>{error}</div> : null}
-          {briefError ? <div style={cpStyles.error}>{briefError}</div> : null}
+          {briefError ? (
+            <div ref={briefErrorRef} style={cpStyles.briefErrorPanel} data-create-brief-error="true">
+              <span style={cpStyles.briefErrorText}>{briefError}</span>
+              <span style={cpStyles.briefErrorHint}>{t("create.brief_error_recovery_hint")}</span>
+              {canRetryBrief ? (
+                <button
+                  type="button"
+                  style={cpStyles.briefErrorAction}
+                  onClick={() => void handlePlanStory()}
+                >
+                  {t("create.brief_retry_cta")}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           <AnimatePresence>
             {busy ? (
