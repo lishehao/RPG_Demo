@@ -2239,6 +2239,11 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert '? "Next scene"' in fixture
     assert 'data-play-long-history-beat="true"' in fixture
     assert "data-play-long-history-beat-kind={parsedBeat.label.toLowerCase().replace(/\\s+/g, \"-\")}" in fixture
+    assert "const LONG_HISTORY_READING_ANCHOR = splitHistoryBeat(" in fixture
+    assert "HISTORY_BEATS[HISTORY_BEATS.length - 1]" in fixture
+    assert 'data-play-long-history-reading-anchor="true"' in fixture
+    assert "Story thread:" in fixture
+    assert "{LONG_HISTORY_READING_ANCHOR.body}" in fixture
     assert "longHistoryBeatLabel" in fixture
     assert "longHistoryBeatBody" in fixture
     assert "longHistoryBeatLabel" in styles

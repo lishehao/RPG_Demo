@@ -54,6 +54,10 @@ function splitHistoryBeat(beat: string): { label: string; body: string } {
   return { label: playerLabel, body: rest.join(":").trim() }
 }
 
+const LONG_HISTORY_READING_ANCHOR = splitHistoryBeat(
+  HISTORY_BEATS[HISTORY_BEATS.length - 1] ?? "Story: the latest scene is still active.",
+)
+
 type LongHistoryOutcome = {
   title: string
   summary: string
@@ -227,6 +231,15 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
             <span style={ppStyles.outcomeReceiptHeader}>
               <span style={ppStyles.outcomeReceiptKicker}>What changed</span>
               <span style={ppStyles.outcomeReceiptHint}>Use this before choosing the next move.</span>
+            </span>
+            <span
+              style={ppStyles.outcomeReceiptNextFocus}
+              data-play-long-history-reading-anchor="true"
+            >
+              <span style={ppStyles.outcomeReceiptItemLabel}>Story thread:</span>
+              <strong style={ppStyles.outcomeReceiptNextValue}>
+                {LONG_HISTORY_READING_ANCHOR.body}
+              </strong>
             </span>
             <strong
               style={{
