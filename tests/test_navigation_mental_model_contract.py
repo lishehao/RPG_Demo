@@ -100,6 +100,30 @@ def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
     assert "EN first" not in data
 
 
+def test_portfolio_inspector_uses_reviewer_verifiable_capability_labels() -> None:
+    data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
+
+    for expected in (
+        "Seed becomes setup",
+        "Role creates stakes",
+        "Choices change state",
+        "Advisor stays separate",
+        "Ending becomes replay",
+        "playable state, state change, and archived checks",
+    ):
+        assert expected in data
+
+    for old_internal_label in (
+        "Seed Router",
+        "Playable Role Model",
+        "Stateful Consequences",
+        "Advisor Channel",
+        "Ending Compiler",
+        "LLM-mediated",
+    ):
+        assert old_internal_label not in data
+
+
 def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     header = (ROOT / "frontend2/src/shared/ui/header.tsx").read_text()
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
