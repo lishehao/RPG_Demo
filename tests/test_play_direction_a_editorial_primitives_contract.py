@@ -696,6 +696,8 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert 'data-reviewer-proof-chip="state"' in runtime_inspector
     assert 'data-reviewer-proof-chip="checks"' in runtime_inspector
     assert "What this proves" in runtime_inspector
+    assert 'const reviewerCheckLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Checks boundary"' in runtime_inspector
+    assert "{reviewerCheckLabel}" in runtime_inspector
     assert "pending archive" in runtime_inspector
     assert "live state is available before judge archive" in runtime_inspector
     assert "getNarrativeLLMEvents" in client

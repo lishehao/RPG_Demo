@@ -75,6 +75,7 @@ export function RuntimeInspector({
   ])
   const score = evaluationScore(criteria)
   const hasArchivedJudgeEvidence = Boolean(latestStepJudge || latestContractJudge)
+  const reviewerCheckLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Checks boundary"
   const archivedCheckStatus = hasArchivedJudgeEvidence ? latestStatus : "pending archive"
   const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "pending"
   const reasonCategory = evaluationReasonCategory(latestStepJudge, latestContractJudge, llmEvents)
@@ -128,7 +129,7 @@ export function RuntimeInspector({
             <span style={ppStyles.reviewerProofDetail}>visible consequence on the latest beat</span>
           </div>
           <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="checks">
-            <span style={ppStyles.reviewerProofLabel}>Archived checks</span>
+            <span style={ppStyles.reviewerProofLabel}>{reviewerCheckLabel}</span>
             <strong style={ppStyles.reviewerProofValue}>{archivedCheckStatus}</strong>
             <span style={ppStyles.reviewerProofDetail}>
               {hasArchivedJudgeEvidence ? "step and contract evidence attached" : "live state is available before judge archive"}
