@@ -17,6 +17,7 @@ import type { ActionCommitmentSummary, LeverageCardView, PlayAdvanceAction } fro
 import { useCompactLayout } from "../hooks/use-compact-layout"
 import { parseOptionLabel } from "../play-option-label"
 import { ActionCollapsedForecast, ActionSelectedOptionDetail } from "./action-option-card"
+import { FreeActionContextBanner, FreeActionStarterRows, buildFreeActionStarterMoves } from "./free-action-prompts"
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
 
@@ -1410,77 +1411,7 @@ export function ActionArea({
       ? `${freeActionContextTargetName} — ${freeActionDraft}`
       : freeActionDraft
   const freeActionStarterMoves = !freeActionDraft
-    ? freeActionFocusContext
-      ? freeActionFocusContext.kind === "actor"
-        ? [
-            {
-              label: t("play.free_starter_actor_ask_label"),
-              text: t("play.free_starter_actor_ask_text", { name: freeActionFocusContext.label }),
-            },
-            {
-              label: t("play.free_starter_actor_pressure_label"),
-              text: t("play.free_starter_actor_pressure_text", { name: freeActionFocusContext.label }),
-            },
-          ]
-        : freeActionFocusContext.kind === "inventory"
-          ? [
-              {
-                label: t("play.free_starter_inventory_show_label"),
-                text: t("play.free_starter_inventory_show_text", { item: freeActionFocusContext.label }),
-              },
-              {
-                label: t("play.free_starter_inventory_ask_label"),
-                text: t("play.free_starter_inventory_ask_text", { item: freeActionFocusContext.label }),
-              },
-            ]
-          : freeActionFocusContext.kind === "resource"
-            ? freeActionFocusContext.id === "time"
-              ? [
-                  {
-                    label: t("play.free_starter_time_buy_label"),
-                    text: t("play.free_starter_time_buy_text"),
-                  },
-                  {
-                    label: t("play.free_starter_time_force_label"),
-                    text: t("play.free_starter_time_force_text"),
-                  },
-                ]
-              : freeActionFocusContext.id === "pressure"
-                ? [
-                    {
-                      label: t("play.free_starter_pressure_calm_label"),
-                      text: t("play.free_starter_pressure_calm_text"),
-                    },
-                    {
-                      label: t("play.free_starter_pressure_raise_label"),
-                      text: t("play.free_starter_pressure_raise_text"),
-                    },
-                  ]
-                : [
-                    {
-                      label: t("play.free_starter_evidence_show_label"),
-                      text: t("play.free_starter_evidence_show_text"),
-                    },
-                    {
-                      label: t("play.free_starter_evidence_trace_label"),
-                      text: t("play.free_starter_evidence_trace_text"),
-                    },
-                  ]
-          : []
-      : [
-          {
-            label: t("play.free_starter_general_ask_label"),
-            text: t("play.free_starter_general_ask_text"),
-          },
-          {
-            label: t("play.free_starter_general_pressure_label"),
-            text: t("play.free_starter_general_pressure_text"),
-          },
-          {
-            label: t("play.free_starter_general_time_label"),
-            text: t("play.free_starter_general_time_text"),
-          },
-        ]
+    ? buildFreeActionStarterMoves({ context: freeActionFocusContext, t })
     : []
   const freeComposerOpen = showFreeInput || options.length === 0
   const diaryContext = armedCard
@@ -2920,52 +2851,13 @@ export function ActionArea({
             style={ppStyles.freeInputBox}
           >
             {freeActionFocusContext ? (
-              <div
-                style={ppStyles.freeActionContext}
-                data-play-free-action-context="true"
-                data-play-free-action-context-kind={freeActionFocusContext.kind}
-                data-play-free-action-context-id={freeActionFocusContext.id}
-              >
-                <span style={ppStyles.freeActionContextLabel}>
-                  {freeActionFocusContext.kind === "actor"
-                    ? t("play.free_context_actor_label")
-                    : freeActionFocusContext.kind === "inventory"
-                      ? t("play.free_context_inventory_label")
-                      : t("play.free_context_resource_label")}
-                </span>
-                <strong style={ppStyles.freeActionContextName}>
-                  {freeActionFocusContext.label}
-                </strong>
-                <span style={ppStyles.freeActionContextDetail}>
-                  {freeActionFocusContext.detail}
-                </span>
-              </div>
+              <FreeActionContextBanner context={freeActionFocusContext} />
             ) : null}
-            {freeActionStarterMoves.length > 0 ? (
-              <div
-                style={ppStyles.freeActionStarters}
-                data-play-free-action-starters="true"
-                aria-label={t("play.free_starters_label")}
-              >
-                <span style={ppStyles.freeActionStartersLabel}>
-                  {t("play.free_starters_label")}
-                </span>
-                {freeActionStarterMoves.map((starter) => (
-                  <button
-                    key={starter.label}
-                    type="button"
-                    style={ppStyles.freeActionStarterButton}
-                    onClick={() => setFreeInput(starter.text)}
-                    disabled={actionControlsDisabled}
-                    data-play-free-action-starter="true"
-                    title={starter.text}
-                    aria-label={t("play.free_starter_apply_title", { move: starter.text })}
-                  >
-                    {starter.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            <FreeActionStarterRows
+              starters={freeActionStarterMoves}
+              disabled={actionControlsDisabled}
+              onUseStarter={setFreeInput}
+            />
             <textarea
               className="play-free-textarea"
               data-play-free-action-input="true"

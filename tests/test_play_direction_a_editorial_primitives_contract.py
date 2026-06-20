@@ -155,6 +155,33 @@ def test_action_option_card_module_owns_forecast_and_detail_display_hooks() -> N
     assert "components/action-option-card.tsx" in readme
 
 
+def test_free_action_prompts_module_owns_context_and_starter_display_hooks() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    free_prompts = (ROOT / "frontend2/src/pages/play/components/free-action-prompts.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./free-action-prompts"' in panels
+    assert "buildFreeActionStarterMoves" in panels
+    assert "FreeActionContextBanner" in panels
+    assert "FreeActionStarterRows" in panels
+    assert "export function buildFreeActionStarterMoves" in free_prompts
+    assert "export function FreeActionContextBanner" in free_prompts
+    assert "export function FreeActionStarterRows" in free_prompts
+    assert 'data-play-free-action-context="true"' in free_prompts
+    assert "data-play-free-action-context-kind={context.kind}" in free_prompts
+    assert "data-play-free-action-context-id={context.id}" in free_prompts
+    assert 'data-play-free-action-starters="true"' in free_prompts
+    assert 'data-play-free-action-starter="true"' in free_prompts
+    assert 'data-play-free-action-input="true"' not in free_prompts
+    assert 'data-play-free-action-submit="true"' not in free_prompts
+    assert "handleSubmitFreeWithReflect" not in free_prompts
+    assert "onSubmitFree" not in free_prompts
+    assert "setFreeInput" not in free_prompts
+    assert 'data-play-free-action-context="true"' not in panels
+    assert 'data-play-free-action-starters="true"' not in panels
+    assert "components/free-action-prompts.tsx" in readme
+
+
 def test_play_advisor_fixture_mounts_real_advisor_surface_without_backend() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
@@ -663,6 +690,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
     action_option = (ROOT / "frontend2/src/pages/play/components/action-option-card.tsx").read_text()
+    free_prompts = (ROOT / "frontend2/src/pages/play/components/free-action-prompts.tsx").read_text()
     envelope = (ROOT / "frontend2/src/pages/play/play-gameplay-envelope.ts").read_text()
     contracts = (ROOT / "frontend2/src/api/contracts.ts").read_text()
     backend_contracts = (ROOT / "rpg_backend/narrative/contracts.py").read_text()
@@ -890,24 +918,24 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "const freeActionFocusContext = actorFocus && actorFocusMatchCount === 0" in panels
     assert "inventoryFocusItem?: string | null" in panels
     assert "onClearInventoryFocus?: () => void" in panels
-    assert "play.free_context_inventory_label" in panels
+    assert "play.free_context_inventory_label" in free_prompts
     assert "play.free_context_inventory_detail" in panels
     assert "play.action_free_inventory_placeholder" in panels
     assert "play.action_open_free_inventory" in panels
     assert "const freeActionStarterMoves = !freeActionDraft" in panels
-    assert "freeActionFocusContext" in panels[panels.index("const freeActionStarterMoves = !freeActionDraft"):]
-    assert "freeActionFocusContext.kind === \"inventory\"" in panels
-    assert "freeActionFocusContext.kind === \"resource\"" in panels
-    assert "play.free_starter_inventory_show_label" in panels
-    assert "play.free_starter_inventory_ask_text" in panels
-    assert "play.free_starter_time_buy_text" in panels
-    assert "play.free_starter_pressure_raise_label" in panels
-    assert "play.free_starter_evidence_trace_text" in panels
-    assert "play.free_starter_general_ask_label" in panels
-    assert "play.free_starter_general_pressure_text" in panels
-    assert "play.free_starter_general_time_text" in panels
-    assert 'data-play-free-action-starters="true"' in panels
-    assert 'data-play-free-action-starter="true"' in panels
+    assert "buildFreeActionStarterMoves({ context: freeActionFocusContext, t })" in panels
+    assert 'context?.kind === "inventory"' in free_prompts
+    assert 'context?.kind === "resource"' in free_prompts
+    assert "play.free_starter_inventory_show_label" in free_prompts
+    assert "play.free_starter_inventory_ask_text" in free_prompts
+    assert "play.free_starter_time_buy_text" in free_prompts
+    assert "play.free_starter_pressure_raise_label" in free_prompts
+    assert "play.free_starter_evidence_trace_text" in free_prompts
+    assert "play.free_starter_general_ask_label" in free_prompts
+    assert "play.free_starter_general_pressure_text" in free_prompts
+    assert "play.free_starter_general_time_text" in free_prompts
+    assert 'data-play-free-action-starters="true"' in free_prompts
+    assert 'data-play-free-action-starter="true"' in free_prompts
     assert 'data-play-free-action-input="true"' in panels
     assert 'data-play-free-action-submit="true"' in panels
     assert "ppStyles.freeSubmitButton" in panels
@@ -921,10 +949,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "alternateActionButton" in styles
     assert "minHeight: 48" in styles[styles.index("alternateActionButton") : styles.index("alternateActionLabel")]
     assert 'borderRadius: 6' in styles[styles.index("alternateActionButton") : styles.index("alternateActionLabel")]
-    assert "setFreeInput(starter.text)" in panels
-    assert 'data-play-free-action-context="true"' in panels
-    assert "data-play-free-action-context-kind={freeActionFocusContext.kind}" in panels
-    assert "data-play-free-action-context-id={freeActionFocusContext.id}" in panels
+    assert "onUseStarter={setFreeInput}" in panels
+    assert "onUseStarter(starter.text)" in free_prompts
+    assert 'data-play-free-action-context="true"' in free_prompts
+    assert "data-play-free-action-context-kind={context.kind}" in free_prompts
+    assert "data-play-free-action-context-id={context.id}" in free_prompts
     assert "freeActionFocusContext?.placeholder ?? t(\"play.action_free_placeholder\")" in panels
     assert "freeActionFocusContext?.toggleText ?? t(\"play.action_open_free\")" in panels
     assert "freeActionFocusContext?.toggleHint ?? t(\"play.action_open_free_hint\")" in panels
