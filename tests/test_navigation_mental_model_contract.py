@@ -98,6 +98,24 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "game or broad adoption proof" in readme
 
 
+def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
+    landing = (ROOT / "docs/index.html").read_text()
+
+    assert "75s reviewer cut" in landing
+    assert "Watch 75s demo" in landing
+    assert "Open MP4 demo" in landing
+    assert "Source evidence" in landing
+    assert "docs/CURRENT_SYSTEM_MAP.md" in landing
+    assert "MP4 fallback" not in landing
+    assert "Muted preview is best-effort" not in landing
+    assert "portfolio-grade AI product-system evidence" in landing
+    assert "not a" in landing
+    assert "launched consumer game or broad adoption proof" in landing
+    assert "system map, reviewer path, contracts, and tests" in landing
+    assert ".evidence-boundary" in landing
+    assert ".video-actions span:last-child" in landing
+
+
 def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()

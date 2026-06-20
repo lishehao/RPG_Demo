@@ -196,6 +196,12 @@
         text-decoration: none;
       }
 
+      .video-actions span:last-child {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
       .fallback-video {
         border-top: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.025);
@@ -227,6 +233,15 @@
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
+      }
+
+      .evidence-boundary {
+        margin: 18px 0 0;
+        max-width: 880px;
+        border-left: 3px solid var(--gold);
+        padding: 12px 0 12px 16px;
+        color: var(--muted);
+        line-height: 1.65;
       }
 
       .card {
@@ -346,8 +361,30 @@
           justify-content: flex-start;
         }
 
+        .hero {
+          gap: 22px;
+          padding: 12px 0 36px;
+        }
+
         h1 {
-          font-size: 42px;
+          font-size: 36px;
+          line-height: 1;
+        }
+
+        .lede {
+          margin-top: 14px;
+          font-size: 15px;
+          line-height: 1.45;
+        }
+
+        .tag-row {
+          gap: 8px;
+          margin-top: 16px;
+        }
+
+        .tag {
+          padding: 7px 9px;
+          font-size: 12px;
         }
 
         .play-button {
@@ -357,6 +394,8 @@
         .video-actions {
           flex-direction: column;
           align-items: flex-start;
+          gap: 10px;
+          padding: 12px 14px;
         }
       }
     </style>
@@ -367,6 +406,7 @@
       <nav class="nav-links" aria-label="Project links">
         <a href="https://github.com/lishehao/RPG_Demo">GitHub</a>
         <a href="https://github.com/lishehao/RPG_Demo#architecture">Architecture</a>
+        <a href="https://github.com/lishehao/RPG_Demo/blob/main/docs/CURRENT_SYSTEM_MAP.md">System map</a>
         <a href="./demo-video/admissions-narration.txt">Narration</a>
       </nav>
     </header>
@@ -399,15 +439,16 @@
           ></iframe>
           <div class="video-actions">
             <span>
-              <span class="video-kicker">Admissions reviewer cut</span>
-              Muted preview is best-effort; open YouTube if playback is blocked.
+              <span class="video-kicker">75s reviewer cut</span>
+              Watch first, then inspect source evidence in the repository.
             </span>
             <span>
-              <a href="https://youtu.be/RRJ7uyjW_nA">Open on YouTube</a>
+              <a href="https://youtu.be/RRJ7uyjW_nA">Watch 75s demo</a>
+              <a href="https://github.com/lishehao/RPG_Demo/blob/main/docs/CURRENT_SYSTEM_MAP.md">Source evidence</a>
             </span>
           </div>
           <details class="fallback-video">
-            <summary>MP4 fallback</summary>
+            <summary>Open MP4 demo</summary>
             <video
               controls
               data-demo-video
@@ -448,6 +489,11 @@
             </p>
           </article>
         </div>
+        <p class="evidence-boundary">
+          Boundary: this is portfolio-grade AI product-system evidence, not a
+          launched consumer game or broad adoption proof. The source evidence
+          starts with the system map, reviewer path, contracts, and tests.
+        </p>
       </section>
 
       <section class="shell section" aria-labelledby="runtime-flow">
