@@ -20,6 +20,7 @@ type FixtureDelta = {
 type FixtureAction = {
   id: string
   number: number
+  intent: string
   title: string
   body: string
   forecast: FixtureDelta[]
@@ -181,6 +182,7 @@ const INITIAL_ACTIONS: FixtureAction[] = [
   {
     id: "lena-hold",
     number: 1,
+    intent: "Social",
     title: "Ask Lena to hold the crowd",
     body: "Give Lena a narrow job: keep the fans busy while you check the green-room path.",
     forecast: [
@@ -197,6 +199,7 @@ const INITIAL_ACTIONS: FixtureAction[] = [
   {
     id: "arthur-badge",
     number: 2,
+    intent: "Direct",
     title: "Pressure Arthur on the missing badge",
     body: "Name the green-room access gap and make Arthur answer before the room drifts.",
     forecast: [
@@ -214,6 +217,7 @@ const INITIAL_ACTIONS: FixtureAction[] = [
   {
     id: "marcus-stall",
     number: 3,
+    intent: "Stall",
     title: "Send Marcus to stall sponsors",
     body: "Move the sponsor pressure away from the stage while you find a cleaner opening.",
     forecast: [
@@ -233,6 +237,7 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
   {
     id: "show-badge",
     number: 1,
+    intent: "Inspect",
     title: "Show Lena the green-room badge",
     body: "Use the badge as proof and ask Lena to point you toward the last person with access.",
     availableBecause: "The green-room badge turns a vague suspicion into a route Lena can act on.",
@@ -249,6 +254,7 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
   {
     id: "trap-answer",
     number: 2,
+    intent: "Risky",
     title: "Let Marcus contradict Arthur",
     body: "Hold the badge back and make Arthur's sponsor story collide with Marcus' production timeline.",
     availableBecause: "Marcus and Arthur now have competing public stories the room can compare.",
@@ -684,11 +690,20 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                       role="button"
                       tabIndex={isPending ? -1 : 0}
                       aria-pressed={selected}
-                      aria-label={`Choose move ${action.number}: ${action.title}`}
+                      aria-label={`Choose ${action.intent.toLowerCase()} move ${action.number}: ${action.title}`}
                       onClick={() => selectAction(action)}
                       onKeyDown={(event) => handleActionCardKeyDown(event, action)}
                     >
-                      <span style={styles.actionMeta}>Move {action.number}</span>
+                      <span style={styles.actionMetaRow}>
+                        <span style={styles.actionMeta}>Move {action.number}</span>
+                        <span
+                          style={styles.actionIntentChip}
+                          data-gameplay-action-intent="true"
+                          title={`${action.intent} move`}
+                        >
+                          {action.intent}
+                        </span>
+                      </span>
                       <strong style={styles.actionTitle}>{action.title}</strong>
                       <p style={styles.actionBody}>{action.body}</p>
                       {action.availableBecause ? (
@@ -1123,6 +1138,26 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.amberText,
     fontSize: 11,
     fontWeight: 800,
+  },
+  actionMetaRow: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    flexWrap: "wrap",
+  },
+  actionIntentChip: {
+    maxWidth: "100%",
+    border: "1px solid rgba(229,190,124,0.18)",
+    borderRadius: 999,
+    padding: "3px 7px",
+    background: "rgba(229,190,124,0.07)",
+    color: actionPalette.mutedIvory,
+    fontSize: 10.5,
+    lineHeight: 1,
+    fontWeight: 820,
+    textTransform: "uppercase",
+    letterSpacing: 0,
   },
   actionTitle: {
     color: actionPalette.ivoryText,

@@ -890,7 +890,16 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'role="button"' in fixture
     assert "tabIndex={isPending ? -1 : 0}" in fixture
     assert "aria-pressed={selected}" in fixture
-    assert 'aria-label={`Choose move ${action.number}: ${action.title}`}' in fixture
+    assert 'aria-label={`Choose ${action.intent.toLowerCase()} move ${action.number}: ${action.title}`}' in fixture
+    assert "intent: string" in fixture
+    assert 'intent: "Social"' in fixture
+    assert 'intent: "Direct"' in fixture
+    assert 'intent: "Stall"' in fixture
+    assert 'intent: "Inspect"' in fixture
+    assert 'intent: "Risky"' in fixture
+    assert "actionMetaRow" in fixture
+    assert "actionIntentChip" in fixture
+    assert 'data-gameplay-action-intent="true"' in fixture
     assert 'onKeyDown={(event) => handleActionCardKeyDown(event, action)}' in fixture
     assert 'event.key !== "Enter" && event.key !== " "' in fixture
     assert 'data-gameplay-selected-submit-summary="true"' in fixture
