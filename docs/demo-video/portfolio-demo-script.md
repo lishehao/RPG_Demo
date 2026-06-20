@@ -20,17 +20,24 @@ The viewer should understand this in one pass:
 
 > I type one dramatic seed. The system turns it into a playable drama with characters, hidden goals, live state, choices, free input, an advisor, and a shareable ending.
 
-## Demo Story Seed
+## Demo Story Seed And Live Reviewer Seed
 
-Use one polished English seed throughout the video:
+The recorded trailer and the live reviewer route serve different review jobs:
+the trailer proves the product loop quickly, while `#/reviewer` gives a fresh
+locked run that can be inspected in the app.
+
+Use one polished English seed throughout the recorded video:
 
 > At my wedding, the groom asks me to sign away my shares before the ceremony starts.
 
-Backup seed if the live run needs stronger corporate stakes:
+Use the current live reviewer route seed for `#/portfolio` / `#/reviewer`
+captures and admissions screenshots:
 
-> Minutes before the awards livestream, my cofounder announces a secret merger that cuts me out.
+> Minutes before the awards livestream, Mira the anxious publicist, Producer Han, Rina the backup dancer witness, Eun Sol the fan-channel reporter, and Choi the sponsor director gather in the control room after singer Seo Mina disappears. Mira must decide what to reveal before sponsors and fans panic, with no violence and no blackmail.
 
-Preferred first seed because it matches the current wedding/manhwa keyframes and has immediate emotional clarity.
+Keep those two evidence paths labeled separately. The wedding seed matches the
+existing trailer keyframes; the Missing Singer Broadcast seed matches the live
+reviewer route and current portfolio page.
 
 ## Video Structure
 
@@ -337,6 +344,10 @@ Recommended product route:
 3. Use `Gauntlet mode` if the backend run is stable enough.
 4. Continue until at least one consequence is visible.
 5. If the live ending takes too long, use an existing completed session for the ending proof, but keep the seed/run visually consistent.
+
+For a reviewer-route capture rather than a create-flow trailer, start at
+`#/portfolio`, launch `#/reviewer`, and keep the Missing Singer Broadcast title
+and seed visible in the opening proof.
 
 Recommended motion in Remotion:
 

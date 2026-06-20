@@ -250,6 +250,28 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
         assert stale not in data
 
 
+def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> None:
+    script = (ROOT / "docs/demo-video/portfolio-demo-script.md").read_text()
+
+    assert "Demo Story Seed And Live Reviewer Seed" in script
+    assert "The recorded trailer and the live reviewer route serve different review jobs" in script
+    assert "Use one polished English seed throughout the recorded video" in script
+    assert "Use the current live reviewer route seed for `#/portfolio` / `#/reviewer`" in script
+    assert "At my wedding, the groom asks me to sign away my shares before the ceremony starts." in script
+    assert "singer Seo Mina disappears" in script
+    assert "no violence and no blackmail" in script
+    assert "the Missing Singer Broadcast seed matches the live" in script
+    assert "reviewer route and current portfolio page" in script
+    assert "`#/portfolio`, launch `#/reviewer`" in script
+
+    for stale in (
+        "my cofounder announces a secret merger",
+        "secret merger that cuts me out",
+        "Backup seed if the live run",
+    ):
+        assert stale not in script
+
+
 def test_portfolio_inspector_uses_reviewer_verifiable_capability_labels() -> None:
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
 
