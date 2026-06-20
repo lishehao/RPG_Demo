@@ -50,11 +50,19 @@ def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
 
     assert "REVIEWER_LAUNCH_ERROR" in source
+    assert "launchErrorRef" in source
     assert "The reviewer run did not open this time." in source
     assert "The locked seed is still here" in source
     assert "press Start curated run again" in source
     assert "use normal author flow" in source
     assert 'data-reviewer-launch-error="true"' in source
+    assert 'role="status"' in source
+    assert 'aria-live="polite"' in source
+    assert "if (!error) return" in source
+    assert "launchErrorRef.current" in source
+    assert "panel.scrollIntoView" in source
+    assert 'block: "center"' in source
+    assert 'prefers-reduced-motion: reduce' in source
     assert "Could not launch" not in source
     assert "server" not in source.lower()
     assert "backend" not in source.lower()

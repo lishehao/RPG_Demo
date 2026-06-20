@@ -77,6 +77,7 @@ export function ReviewerPage({
   const [launchPhase, setLaunchPhase] = useState<LaunchPhase>("ready")
   const inflightRef = useRef(false)
   const launchPlanRef = useRef<HTMLElement | null>(null)
+  const launchErrorRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (!busy || launchPhase === "ready") return
@@ -91,6 +92,20 @@ export function ReviewerPage({
     })
     return () => window.cancelAnimationFrame(frame)
   }, [busy, launchPhase])
+
+  useEffect(() => {
+    if (!error) return
+    const frame = window.requestAnimationFrame(() => {
+      const panel = launchErrorRef.current
+      if (!panel) return
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      panel.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "center",
+      })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [error])
 
   const handleStart = async () => {
     if (inflightRef.current || auth.loading) return
@@ -224,7 +239,13 @@ export function ReviewerPage({
             <blockquote>"{REVIEWER_DEMO_SEED}"</blockquote>
           </details>
           {error ? (
-            <div className="reviewer-error" data-reviewer-launch-error="true">
+            <div
+              className="reviewer-error"
+              data-reviewer-launch-error="true"
+              ref={launchErrorRef}
+              role="status"
+              aria-live="polite"
+            >
               {error}
             </div>
           ) : null}
