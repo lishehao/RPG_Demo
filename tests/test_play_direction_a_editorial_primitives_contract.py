@@ -1512,9 +1512,19 @@ def test_leverage_resource_reads_as_actionable_player_resource() -> None:
 
 def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    ending_module = (ROOT / "frontend2/src/pages/play/components/ending-screen.tsx").read_text()
+    option_label = (ROOT / "frontend2/src/pages/play/play-option-label.ts").read_text()
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
-    ending_screen = panels[panels.index("export function EndingScreen") : panels.index("function displayEndingLabel")]
+    ending_screen = ending_module[ending_module.index("export function EndingScreen") : ending_module.index("function displayEndingLabel")]
 
+    assert 'from "./components/ending-screen"' in play_page
+    assert 'from "./play-option-label"' in play_page
+    assert 'from "../play-option-label"' in panels
+    assert "export function parseOptionLabel" in option_label
+    assert "export function EndingScreen" not in panels
+    assert "buildFallbackEndingRecap" not in panels
+    assert "function displayEndingLabel" not in panels
     assert "Illustrated banner is secondary to the result text" in ending_screen
     assert 'data-play-ending-actions="true"' in ending_screen
     assert 'data-play-ending-next-step-label="true"' in ending_screen
@@ -1528,7 +1538,7 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert "const fallbackRecap = mergedHighlights.length === 0" in ending_screen
     assert 'data-play-ending-recap="fallback"' in ending_screen
     assert "buildFallbackEndingRecap(messages)" in ending_screen
-    assert "parseOptionLabel(message.content)" in panels
+    assert "parseOptionLabel(message.content)" in ending_module
     assert 'height: 150' in styles[styles.index("endingHero") : styles.index("endingSplashOverlay")]
     assert 'padding: "10px 0 28px"' in styles[styles.index("endingCardInner") : styles.index("endingLabelChip")]
     assert 'marginBottom: 22' in styles[styles.index("endingActions") : styles.index("endingActionsRow")]

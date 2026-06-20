@@ -7,7 +7,9 @@
 - `play-page.tsx`
   - Route/container orchestration: load story, advance turns, merge turn responses, fetch ending, wire advisor and share callbacks.
 - `components/play-flow-panels.tsx`
-  - View/helper module for run context, stage header, ending payoff, story beats, action area, resolving rows, advisor FAB/drawer, and local display helpers.
+  - View/helper module for run context, stage header, story beats, action area, resolving rows, advisor FAB/drawer, and local display helpers.
+- `components/ending-screen.tsx`
+  - Ending payoff view, result-first action ordering, fallback recap, highlight reel, branch recap, and ending label display helpers.
 - `components/runtime-inspector.tsx`
   - Reviewer-only evaluation drawer and trace/evidence helpers. This owns persisted agent/LLM evidence rendering; normal Play surfaces import it only behind reviewer gating.
 - `components/play-editorial-primitives.tsx`
@@ -16,6 +18,8 @@
   - Play page inline style map.
 - `play-types.ts`
   - Local Play types shared between the container and panel module.
+- `play-option-label.ts`
+  - Shared pure parser for intent-tagged option labels used by Play route summaries, story beats, action cards, and ending fallback recap.
 - `hooks/use-compact-layout.ts`
   - Play-specific compact layout media-query hook.
 
@@ -33,7 +37,6 @@
 
 `components/play-flow-panels.tsx` remains the next split target. Safe boundaries are:
 
-- `EndingScreen`.
 - `StoryBeat` plus beat receipt helpers.
 - `ActionArea` plus action choice/free-input/leverage rows.
 - `AdvisorFab` and `AdvisorSidechat`.
