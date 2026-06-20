@@ -925,6 +925,33 @@ export function PlayPage({
     }
   }, [story, story?.messages.length, story?.session.ending_label, story?.session.session_id])
 
+  useEffect(() => {
+    if (!ending) return
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const behavior: ScrollBehavior = prefersReducedMotion ? "auto" : "smooth"
+    let secondFrame = 0
+    const scrollToEnding = (scrollBehavior: ScrollBehavior) => {
+      const target = document.querySelector<HTMLElement>("[data-play-ending-screen='true']")
+      if (!target) return
+      const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
+      const root = document.scrollingElement ?? document.documentElement
+      const top = Math.max(0, target.getBoundingClientRect().top + root.scrollTop - headerHeight - 12)
+      root.scrollTo({ top, left: 0, behavior: scrollBehavior })
+    }
+    const firstFrame = window.requestAnimationFrame(() => {
+      scrollToEnding(behavior)
+      secondFrame = window.requestAnimationFrame(() => scrollToEnding("auto"))
+    })
+    const lateLayoutTimer = window.setTimeout(() => scrollToEnding("auto"), 220)
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      if (secondFrame) window.cancelAnimationFrame(secondFrame)
+      window.clearTimeout(lateLayoutTimer)
+    }
+  }, [ending])
+
   const handleAdvance = useCallback(
     async (
       action: PlayAdvanceAction,

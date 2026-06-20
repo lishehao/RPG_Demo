@@ -1697,18 +1697,25 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_pending_receipt_label": "Move sent"' in strings
     assert '"play.feedback_pending_reaction_label": "Room reacting"' in strings
     assert '"play.feedback_pending_update_label": "Next moves forming"' in strings
+    assert '"play.feedback_pending_finale_label": "Ending forming"' in strings
     assert '"play.feedback_pending_cue_people": "Reading people"' in strings
     assert '"play.feedback_pending_cue_target": "Reading {target}"' in strings
     assert '"play.feedback_pending_cue_state": "Checking clues and pressure"' in strings
     assert '"play.feedback_pending_cue_next": "Shaping next moves"' in strings
+    assert '"play.feedback_pending_cue_finale": "Shaping the ending"' in strings
     assert '"play.feedback_pending_cue_people": "观察人物反应"' in strings
     assert '"play.feedback_pending_cue_state": "检查线索和压力"' in strings
     assert '"play.feedback_pending_next_hint": "The next moves come from the people, clues, and pressure this move changes."' in strings
+    assert '"play.feedback_pending_finale_hint": "This final move is becoming the ending you will read next."' in strings
     assert '"play.feedback_pending_next_hint": "下一组行动会从刚刚被改变的人物、线索和压力里长出来。"' in strings
+    assert '"play.feedback_pending_finale_hint": "这最后一步正在变成你接下来读到的结局。"' in strings
     assert '"play.option_opened_by_change_label": "From last change"' in strings
     assert '"play.option_opened_by_change_label": "来自刚才变化"' in strings
     assert 'data-play-room-reacting-cues="true"' in panels
     assert 'data-play-room-reacting-cue="true"' in panels
+    assert '? t("play.feedback_pending_finale_label")' in panels
+    assert ': t("play.feedback_pending_update_label")' in panels
+    assert 'isFinalTurn ? t("play.feedback_pending_cue_finale") : t("play.feedback_pending_cue_next")' in panels
     assert 'data-play-option-opened-by-change="true"' in panels
     assert 'data-play-outcome-receipt="true"' in story_beat
     assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in story_beat
@@ -2122,6 +2129,7 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert "buildFallbackEndingRecap" not in panels
     assert "function displayEndingLabel" not in panels
     assert "Illustrated banner is secondary to the result text" in ending_screen
+    assert 'data-play-ending-screen="true"' in ending_screen
     assert 'data-play-ending-actions="true"' in ending_screen
     assert 'data-play-ending-next-step-label="true"' in ending_screen
     assert 'data-play-ending-next-step-hint="true"' in ending_screen
@@ -2135,6 +2143,10 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert 'data-play-ending-recap="fallback"' in ending_screen
     assert "buildFallbackEndingRecap(messages)" in ending_screen
     assert "parseOptionLabel(message.content)" in ending_module
+    assert 'document.querySelector<HTMLElement>("[data-play-ending-screen=\'true\']")' in play_page
+    assert "window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches" in play_page
+    assert "root.scrollTo({ top, left: 0, behavior: scrollBehavior })" in play_page
+    assert "window.setTimeout(() => scrollToEnding(\"auto\"), 220)" in play_page
     assert 'height: 150' in styles[styles.index("endingHero") : styles.index("endingSplashOverlay")]
     assert 'padding: "10px 0 28px"' in styles[styles.index("endingCardInner") : styles.index("endingLabelChip")]
     assert 'marginBottom: 22' in styles[styles.index("endingActions") : styles.index("endingActionsRow")]

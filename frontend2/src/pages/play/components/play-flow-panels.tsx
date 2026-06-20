@@ -415,12 +415,14 @@ function ResolvingTurnPanel({
   privateIntent,
   target,
   commitmentSignals = [],
+  isFinalTurn = false,
 }: {
   moveTag?: string
   moveText: string
   privateIntent?: string
   target?: string
   commitmentSignals?: ResolvingCommitmentSignal[]
+  isFinalTurn?: boolean
 }) {
   const t = useT()
   const reducedMotion = useReducedMotion()
@@ -440,12 +442,18 @@ function ResolvingTurnPanel({
   const feedbackSteps = [
     { id: "receipt", label: t("play.feedback_pending_receipt_label"), state: "done" },
     { id: "reaction", label: t("play.feedback_pending_reaction_label"), state: "active" },
-    { id: "update", label: t("play.feedback_pending_update_label"), state: "waiting" },
+    {
+      id: "update",
+      label: isFinalTurn
+        ? t("play.feedback_pending_finale_label")
+        : t("play.feedback_pending_update_label"),
+      state: "waiting",
+    },
   ] as const
   const reactionCues = [
     target ? t("play.feedback_pending_cue_target", { target }) : t("play.feedback_pending_cue_people"),
     t("play.feedback_pending_cue_state"),
-    t("play.feedback_pending_cue_next"),
+    isFinalTurn ? t("play.feedback_pending_cue_finale") : t("play.feedback_pending_cue_next"),
   ]
   const resolvingAriaLabel = [t("play.resolve_title"), moveMeta, moveCopy, resolveStatus, progressCopy]
     .filter(Boolean)
@@ -572,7 +580,9 @@ function ResolvingTurnPanel({
           </span>
         ))}
         <span style={ppStyles.feedbackPendingHint} data-play-feedback-timeline-hint="true">
-          {t("play.feedback_pending_next_hint")}
+          {isFinalTurn
+            ? t("play.feedback_pending_finale_hint")
+            : t("play.feedback_pending_next_hint")}
         </span>
       </div>
     </motion.div>
@@ -2545,6 +2555,7 @@ export function ActionArea({
             privateIntent={diaryDraft}
             target={resolvingTarget}
             commitmentSignals={resolvingCommitmentSignals}
+            isFinalTurn={isFinalTurn}
           />
         ) : null}
       </AnimatePresence>

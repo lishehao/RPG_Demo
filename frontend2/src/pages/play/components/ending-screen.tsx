@@ -185,6 +185,7 @@ export function EndingScreen({
   const tv = tierVisuals[tier]
   return (
     <motion.section
+      data-play-ending-screen="true"
       style={ppStyles.endingSection}
       initial={skipChoreography ? "animate" : "initial"}
       animate="animate"
