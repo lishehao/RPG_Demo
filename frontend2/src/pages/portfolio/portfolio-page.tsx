@@ -18,7 +18,7 @@ const PORTFOLIO_REVIEW_ORDER = [
   {
     step: "watch",
     title: "Watch 75s demo",
-    detail: "See the complete product loop before opening the live runtime.",
+    detail: "See the bounded product loop before opening the live reviewer path.",
   },
   {
     step: "launch",
@@ -29,6 +29,21 @@ const PORTFOLIO_REVIEW_ORDER = [
     step: "inspect",
     title: "Inspect evidence",
     detail: "Use reviewer mode to check state, advisor boundary, and ending logic.",
+  },
+] as const
+
+const PORTFOLIO_EVIDENCE_BOUNDARY = [
+  {
+    label: "Public artifact",
+    detail: "Video and written case study show the intended reviewer journey and product thesis.",
+  },
+  {
+    label: "Live reviewer path",
+    detail: "The local reviewer route lets evaluators inspect playable state, consequences, and evidence hooks.",
+  },
+  {
+    label: "Not claimed",
+    detail: "This is portfolio-grade runtime evidence, not proof of a launched consumer product or broad user adoption.",
   },
 ] as const
 
@@ -59,8 +74,8 @@ export function PortfolioPage({
             <h1>Tiny Stories is an inspectable AI narrative runtime.</h1>
             <p>
               Watch the 75-second admissions demo first. The live reviewer route
-              is a secondary inspection path for the runtime state, contracts,
-              advisor boundary, and ending compiler behind the video.
+              is a secondary inspection path for playable state, visible
+              consequences, reviewer evidence, and ending replay behind the video.
             </p>
             <div className="portfolio-hero__actions">
               <button className="portfolio-action portfolio-action--primary" type="button" onClick={onOpenReviewer}>
@@ -106,6 +121,25 @@ export function PortfolioPage({
               <span>{metric.label}</span>
             </div>
           ))}
+        </section>
+
+        <section
+          className="portfolio-section portfolio-evidence-boundary"
+          aria-label="Admissions evidence boundary"
+          data-portfolio-evidence-boundary="true"
+        >
+          <div className="portfolio-section__head">
+            <span className="portfolio-kicker">Evidence boundary</span>
+            <h2>What this page can fairly prove.</h2>
+          </div>
+          <div className="portfolio-evidence-boundary__grid">
+            {PORTFOLIO_EVIDENCE_BOUNDARY.map((item) => (
+              <article className="portfolio-evidence-boundary__item" key={item.label}>
+                <strong>{item.label}</strong>
+                <p>{item.detail}</p>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="portfolio-section portfolio-section--two">
@@ -197,12 +231,13 @@ export function PortfolioPage({
 
         <section className="portfolio-section portfolio-final">
           <span className="portfolio-kicker">Portfolio framing</span>
-          <h2>Not a prompt toy. A reliable AI product surface.</h2>
+          <h2>Not a prompt toy. A portfolio-grade AI runtime case study.</h2>
           <p>
             The strongest application story is that you can turn raw generation
             into a user-facing workflow: controlled entry, typed state,
             explainable progression, visual polish, and an artifact someone can
-            replay or evaluate.
+            replay or evaluate. The honest claim is product-system evidence, not
+            broad market validation.
           </p>
         </section>
       </main>

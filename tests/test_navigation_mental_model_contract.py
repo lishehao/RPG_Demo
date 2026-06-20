@@ -69,6 +69,22 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "grid-template-columns: 34px minmax(0, 1fr)" in theme
 
 
+def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
+    portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
+
+    assert "PORTFOLIO_EVIDENCE_BOUNDARY" in portfolio
+    assert 'data-portfolio-evidence-boundary="true"' in portfolio
+    assert "Public artifact" in portfolio
+    assert "Live reviewer path" in portfolio
+    assert "Not claimed" in portfolio
+    assert "not proof of a launched consumer product or broad user adoption" in portfolio
+    assert "product-system evidence, not" in portfolio
+    assert "reliable AI product surface" not in portfolio
+    assert ".portfolio-evidence-boundary" in theme
+    assert ".portfolio-evidence-boundary__grid" in theme
+
+
 def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     header = (ROOT / "frontend2/src/shared/ui/header.tsx").read_text()
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()

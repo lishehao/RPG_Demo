@@ -619,6 +619,38 @@ kbd {
   margin: 0;
 }
 
+.portfolio-evidence-boundary {
+  padding-top: 28px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.portfolio-evidence-boundary__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.portfolio-evidence-boundary__item {
+  min-width: 0;
+  padding-left: 14px;
+  border-left: 2px solid rgba(245, 200, 120, 0.34);
+}
+
+.portfolio-evidence-boundary__item strong {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.25;
+  margin-bottom: 7px;
+}
+
+.portfolio-evidence-boundary__item p {
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.58;
+  margin: 0;
+}
+
 .portfolio-seed,
 .reviewer-hero blockquote {
   margin: 26px 0 0;
@@ -1481,6 +1513,7 @@ kbd {
   .portfolio-proofbar,
   .portfolio-loop,
   .portfolio-case-grid,
+  .portfolio-evidence-boundary__grid,
   .reviewer-checklist {
     grid-template-columns: 1fr;
   }
