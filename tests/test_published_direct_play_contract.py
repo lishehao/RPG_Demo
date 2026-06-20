@@ -14,8 +14,11 @@ def test_home_published_template_cards_start_play_sessions_directly() -> None:
     assert "api.startNarrativeSession(templateId)" in published
     assert "onOpenPlay(response.session.session_id)" in published
     assert "startingTemplateRef.current" in published
+    assert 'setTemplateStartError(t("home.error_start_story"))' in published
+    assert "friendlyError(err, t(\"home.error_start_story\"))" not in published
     assert "onStartTemplate={handleStartPublishedTemplate}" in home
     assert "isStarting={startingTemplateId === tile.template.template_id}" in home
+    assert 'data-home-start-error="true"' in home
     assert "createNarrativeStoryBrief" not in published
     assert "createNarrativeTemplate" not in published
     home_route = app[app.index('case "home":') : app.index('case "login":')]
@@ -177,6 +180,13 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
     assert '"home.card_action": "Start episode →"' in strings
     assert '"home.card_action_hint": "Opens turn one immediately."' in strings
     assert '"home.card_action_hint": "直接进入第一回合。"' in strings
+    assert "The card is still here; press Start episode again" in strings
+    assert "故事卡还在" in strings
+    error_start_slice = strings[
+        strings.index('"home.error_start_story"') :
+        strings.index('"home.archive_count"', strings.index('"home.error_start_story"'))
+    ]
+    assert "Server hit a snag" not in error_start_slice
 
 
 def test_home_completed_memory_cards_explain_replay_destination() -> None:

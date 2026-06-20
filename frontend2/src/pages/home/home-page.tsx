@@ -15,7 +15,6 @@ import {
   getCoverByStoryId,
   getEmptyPlazaImage,
 } from "../../shared/lib/webtoon-assets"
-import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
 import {
   getSessionDisplayTitle,
@@ -278,8 +277,8 @@ export function HomePage({
     try {
       const response = await api.startNarrativeSession(templateId)
       onOpenPlay(response.session.session_id)
-    } catch (err) {
-      setTemplateStartError(friendlyError(err, t("home.error_start_story")))
+    } catch {
+      setTemplateStartError(t("home.error_start_story"))
     } finally {
       startingTemplateRef.current = null
       setStartingTemplateId(null)
@@ -434,7 +433,11 @@ export function HomePage({
             </div>
           )}
 
-          {templateStartError ? <div style={hpStyles.errorBox}>{templateStartError}</div> : null}
+          {templateStartError ? (
+            <div style={hpStyles.errorBox} data-home-start-error="true">
+              {templateStartError}
+            </div>
+          ) : null}
 
           {/* Cross-fade between plaza ↔ my-templates so switching feels
               like a sibling pivot, not a layout swap. mode="wait"
