@@ -7,7 +7,9 @@
 - `play-page.tsx`
   - Route/container orchestration: load story, advance turns, merge turn responses, fetch ending, wire advisor and share callbacks.
 - `components/play-flow-panels.tsx`
-  - View/helper module for run context, reviewer runtime inspector, stage header, ending payoff, story beats, action area, resolving rows, advisor FAB/drawer, and local display helpers.
+  - View/helper module for run context, stage header, ending payoff, story beats, action area, resolving rows, advisor FAB/drawer, and local display helpers.
+- `components/runtime-inspector.tsx`
+  - Reviewer-only evaluation drawer and trace/evidence helpers. This owns persisted agent/LLM evidence rendering; normal Play surfaces import it only behind reviewer gating.
 - `components/play-editorial-primitives.tsx`
   - Direction A Play primitive kit: `PlayShell`, `MoodPlate`, `StoryTimeline`, and `SceneSupportRail`. These primitives define the story-world mental model and should stay source-owned/local unless a future UI-kit migration is explicitly scoped.
 - `play-styles.ts`
@@ -29,9 +31,8 @@
 
 ## Future Split Notes
 
-`components/play-flow-panels.tsx` is intentionally the next split target. Safe boundaries are:
+`components/play-flow-panels.tsx` remains the next split target. Safe boundaries are:
 
-- `RuntimeInspector` and trace helpers.
 - `EndingScreen`.
 - `StoryBeat` plus beat receipt helpers.
 - `ActionArea` plus action choice/free-input/leverage rows.

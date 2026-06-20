@@ -60,7 +60,6 @@ import {
   AdvisorSidechat,
   EndingScreen,
   Header,
-  RuntimeInspector,
   RunContextPanel,
   StoryBeat,
   buildAdvisorSuggestions,
@@ -69,9 +68,9 @@ import {
   computeLiveInventory,
   findActionTarget,
   isResourceFocusAction,
-  latestAgentPlanFromEvents,
   parseOptionLabel,
 } from "./components/play-flow-panels"
+import { RuntimeInspector, latestAgentPlanFromEvents } from "./components/runtime-inspector"
 import { PlayActionJumpButton } from "./components/play-action-jump"
 import {
   isPlayActionAreaAwayFromViewport,
