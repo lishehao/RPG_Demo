@@ -41,6 +41,21 @@ def test_reviewer_launch_explains_async_progress_to_external_reviewers() -> None
     assert ".reviewer-launch-plan__head" in theme
 
 
+def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
+    source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
+
+    assert "REVIEWER_EVIDENCE_CHECKS" in source
+    assert "After launch, verify" in source
+    assert "Playable state" in source
+    assert "State changed" in source
+    assert "Archived checks" in source
+    assert 'data-reviewer-evidence-preview="true"' in source
+    assert "data-reviewer-evidence-preview-item={item.label}" in source
+    assert ".reviewer-evidence-preview" in theme
+    assert ".reviewer-evidence-preview__head" in theme
+
+
 def test_reviewer_seed_is_concrete_enough_to_avoid_generic_scaffold_roles() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
     service = (ROOT / "rpg_backend/narrative/service.py").read_text()

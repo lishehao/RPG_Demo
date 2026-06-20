@@ -39,6 +39,21 @@ const REVIEWER_LAUNCH_STEPS: Array<{
   },
 ]
 
+const REVIEWER_EVIDENCE_CHECKS = [
+  {
+    label: "Playable state",
+    detail: "The run opens with current next moves and turn budget, not a static transcript.",
+  },
+  {
+    label: "State changed",
+    detail: "The latest beat exposes relationship pulse and inventory consequences.",
+  },
+  {
+    label: "Archived checks",
+    detail: "Reviewer-only evidence separates live state from stored judge results.",
+  },
+] as const
+
 const launchPhaseIndex = (phase: LaunchPhase) =>
   REVIEWER_LAUNCH_STEPS.findIndex((step) => step.phase === phase)
 
@@ -112,7 +127,7 @@ export function ReviewerPage({
           <p>
             A locked English demo path designed for portfolio review. It starts
             a real session, keeps the Korean-webtoon visual language, and opens
-            the play surface with a live runtime inspector.
+            the play surface with a reviewer evidence summary.
           </p>
           <blockquote>"{REVIEWER_DEMO_SEED}"</blockquote>
           <div className="reviewer-actions">
@@ -129,6 +144,24 @@ export function ReviewerPage({
               Use normal author flow
             </button>
           </div>
+          <section
+            className="reviewer-evidence-preview"
+            aria-label="Evidence to verify after launch"
+            data-reviewer-evidence-preview="true"
+          >
+            <div className="reviewer-evidence-preview__head">
+              <span>After launch, verify</span>
+              <strong>3 proof points</strong>
+            </div>
+            <ol>
+              {REVIEWER_EVIDENCE_CHECKS.map((item) => (
+                <li key={item.label} data-reviewer-evidence-preview-item={item.label}>
+                  <strong>{item.label}</strong>
+                  <p>{item.detail}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
           <section
             className="reviewer-launch-plan"
             aria-label="Reviewer launch progress"
