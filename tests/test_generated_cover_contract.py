@@ -299,7 +299,7 @@ def test_play_segment_scene_expansion_assets_are_wired() -> None:
 
 def test_play_route_uses_segment_scene_resolver_for_narrator_beats() -> None:
     play_source = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
-    beat_source = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    beat_source = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
 
     assert "getSceneByPhase" in play_source
     assert "playSegmentPhaseForMessage" in play_source
@@ -308,8 +308,8 @@ def test_play_route_uses_segment_scene_resolver_for_narrator_beats() -> None:
     assert "story.template.cast" in play_source
     assert "getPeakCloseUp" not in play_source
     assert "const shouldShowSceneBanner = !!sceneUrl && (intensity === \"peak\" || isLatestNarrator)" in beat_source
-    assert "function SceneParallaxBanner({ sceneUrl }: { sceneUrl: string })" in beat_source
+    assert "function SceneParallaxBanner({ sceneUrl, compact }: { sceneUrl: string; compact?: boolean })" in beat_source
     assert 'window.matchMedia("(min-width: 721px) and (hover: hover) and (pointer: fine)")' in beat_source
     assert 'data-play-segment-parallax="true"' in beat_source
     assert 'data-play-segment-motion={motionEnabled ? "pointer" : "static"}' in beat_source
-    assert "<SceneParallaxBanner sceneUrl={sceneUrl} />" in beat_source
+    assert "<SceneParallaxBanner sceneUrl={sceneUrl} compact={shouldCompactSceneBanner} />" in beat_source

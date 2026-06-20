@@ -58,13 +58,12 @@ import {
   ActionArea,
   Header,
   RunContextPanel,
-  StoryBeat,
   buildFailedActionRecovery,
-  computeBeatIntensity,
   computeLiveInventory,
   findActionTarget,
   isResourceFocusAction,
 } from "./components/play-flow-panels"
+import { StoryBeat, computeBeatIntensity } from "./components/story-beat"
 import { AdvisorFab, AdvisorSidechat, buildAdvisorSuggestions } from "./components/advisor-panel"
 import { EndingScreen } from "./components/ending-screen"
 import { RuntimeInspector, latestAgentPlanFromEvents } from "./components/runtime-inspector"

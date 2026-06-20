@@ -7,7 +7,9 @@
 - `play-page.tsx`
   - Route/container orchestration: load story, advance turns, merge turn responses, fetch ending, wire advisor and share callbacks.
 - `components/play-flow-panels.tsx`
-  - View/helper module for run context, stage header, story beats, action area, resolving rows, and local display helpers.
+  - View/helper module for run context, stage header, action area, resolving rows, and action-side local display helpers.
+- `components/story-beat.tsx`
+  - Story beat display module: narrator/player beat rendering, latest-beat digest, outcome/intent receipts, leverage payoff, parallax scene banner, and beat intensity helper.
 - `components/advisor-panel.tsx`
   - Advisor surface module: floating advisor button, sidechat drawer, advisor suggestions, transcript rendering, deep-read confirmation, and advisor-specific player hooks.
 - `components/play-advisor-fixture.tsx`
@@ -45,7 +47,6 @@
 
 `components/play-flow-panels.tsx` remains the next split target. Safe boundaries are:
 
-- `StoryBeat` plus beat receipt helpers.
 - `ActionArea` plus action choice/free-input/leverage rows.
 
 Do not split those in the same patch as a behavior change. Keep source guards and browser smoke around action submission, payoff focus, reviewer gating, and mobile action visibility.

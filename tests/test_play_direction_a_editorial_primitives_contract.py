@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
-    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
@@ -29,9 +29,9 @@ def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     assert 'data-play-mood-state={isComplete ? "complete" : "active"}' in primitives
     assert 'data-play-primitive="StoryTimeline"' in primitives
     assert 'data-play-primitive="SceneSupportRail"' in primitives
-    assert 'data-play-story-beat="true"' in panels
-    assert 'data-play-story-beat-role="narrator"' in panels
-    assert 'data-play-story-beat-role="player"' in panels
+    assert 'data-play-story-beat="true"' in story_beat
+    assert 'data-play-story-beat-role="narrator"' in story_beat
+    assert 'data-play-story-beat-role="player"' in story_beat
     assert 'data-play-story-beat-stack="true"' in play_page
     assert "function CurrentScenePreview" in play_page
     assert 'data-play-current-scene-preview="true"' in play_page
@@ -92,6 +92,37 @@ def test_advisor_panel_module_owns_fab_sidechat_and_player_hooks() -> None:
     assert 'data-play-advisor-draft-hint="true"' not in panels
     assert 'data-play-advisor-suggestion-instruction="true"' not in panels
     assert "components/advisor-panel.tsx" in readme
+
+
+def test_story_beat_module_owns_receipts_digest_and_player_hooks() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./components/story-beat"' in play_page
+    assert "StoryBeat" in play_page
+    assert "computeBeatIntensity" in play_page
+    assert "export function StoryBeat" in story_beat
+    assert "export function computeBeatIntensity" in story_beat
+    assert 'data-play-story-beat="true"' in story_beat
+    assert 'data-play-story-beat-role="narrator"' in story_beat
+    assert 'data-play-story-beat-role="player"' in story_beat
+    assert 'data-play-outcome-receipt="true"' in story_beat
+    assert 'data-play-latest-beat-digest="true"' in story_beat
+    assert 'data-play-segment-parallax="true"' in story_beat
+    assert "buildOutcomeReceiptItems" in story_beat
+    assert "buildIntentReadReceipt" in story_beat
+    assert "LeveragePayoff" in story_beat
+    assert "from \"./play-flow-panels\"" not in story_beat
+    assert "from \"../components/play-flow-panels\"" not in story_beat
+    assert "export function StoryBeat" not in panels
+    assert "export function computeBeatIntensity" not in panels
+    assert 'data-play-story-beat="true"' not in panels
+    assert 'data-play-outcome-receipt="true"' not in panels
+    assert 'data-play-latest-beat-digest="true"' not in panels
+    assert "buildOutcomeReceiptItems" not in panels
+    assert "components/story-beat.tsx" in readme
 
 
 def test_play_advisor_fixture_mounts_real_advisor_surface_without_backend() -> None:
@@ -253,11 +284,13 @@ def test_normal_play_keeps_evaluation_terms_outside_default_surface() -> None:
 def test_finish_mode_normal_play_reduces_top_metadata_density() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
-    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    story_beat_module = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
 
     mood_plate = primitives[primitives.index("export function MoodPlate") : primitives.index("export function SceneSupportRail")]
     scene_rail = primitives[primitives.index("export function SceneSupportRail") : primitives.index("function PrimitiveSection")]
-    story_beat = panels[panels.index("export function StoryBeat") : panels.index("export function computeLiveInventory")]
+    story_beat = story_beat_module[
+        story_beat_module.index("export function StoryBeat") : story_beat_module.index("// Mirror of backend _stage_for")
+    ]
 
     assert "isComplete={isComplete}" in play_page
     assert "isComplete?: boolean" in mood_plate
@@ -274,7 +307,7 @@ def test_finish_mode_normal_play_reduces_top_metadata_density() -> None:
     assert "The latest beat is ready for your next move." not in mood_plate
     assert '<PrimitiveSection title="Progress">' not in scene_rail
     assert ".slice(0, 3)" in primitives[primitives.index("function sceneActors") : primitives.index("function playerPortraitForStory")]
-    assert "return items.slice(0, 3)" in panels
+    assert "return items.slice(0, 3)" in story_beat_module
     assert "impactPulses.slice(0, 3).map" in story_beat
     assert "pulseImpactReason" not in story_beat
 
@@ -598,6 +631,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
 def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
     envelope = (ROOT / "frontend2/src/pages/play/play-gameplay-envelope.ts").read_text()
     contracts = (ROOT / "frontend2/src/api/contracts.ts").read_text()
     backend_contracts = (ROOT / "rpg_backend/narrative/contracts.py").read_text()
@@ -1190,12 +1224,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-room-reacting-cues="true"' in panels
     assert 'data-play-room-reacting-cue="true"' in panels
     assert 'data-play-option-opened-by-change="true"' in panels
-    assert 'data-play-outcome-receipt="true"' in panels
-    assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in panels
-    assert 'data-play-outcome-receipt-item="true"' in panels
-    assert "data-play-outcome-receipt-tone={item.tone ?? \"neutral\"}" in panels
-    assert "const outcomeReceiptA11yItems" in panels
-    assert "aria-label={outcomeReceiptA11yLabel}" in panels
+    assert 'data-play-outcome-receipt="true"' in story_beat
+    assert 'data-play-outcome-receipt-mode={compact ? "compact" : "summary"}' in story_beat
+    assert 'data-play-outcome-receipt-item="true"' in story_beat
+    assert "data-play-outcome-receipt-tone={item.tone ?? \"neutral\"}" in story_beat
+    assert "const outcomeReceiptA11yItems" in story_beat
+    assert "aria-label={outcomeReceiptA11yLabel}" in story_beat
     assert "fetch(" not in envelope
     for forbidden in ("provider", "model", "schema", "token", "fallback", "debug"):
         assert forbidden not in envelope.casefold()
@@ -1653,11 +1687,13 @@ def test_play_ending_fixture_mounts_real_ending_screen() -> None:
 
 def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
-    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    story_beat_module = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
-    story_beat = panels[panels.index("export function StoryBeat") : panels.index("  // player move (echoed action)")]
+    story_beat = story_beat_module[
+        story_beat_module.index("export function StoryBeat") : story_beat_module.index("  // player move (echoed action)")
+    ]
 
     assert "const showGameplayImpactSummary =" in play_page
     assert "suppressLatestFeedbackDigest={" in play_page
@@ -1682,7 +1718,7 @@ def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> Non
     assert 'data-play-latest-beat-digest="true"' in story_beat
     assert "data-play-latest-beat-digest-pulse={pulse.npc_id}" in story_beat
     assert 'data-play-latest-beat-digest-options="true"' in story_beat
-    assert 'data-play-segment-banner-density={compact ? "compact" : "full"}' in panels
+    assert 'data-play-segment-banner-density={compact ? "compact" : "full"}' in story_beat_module
     assert "compact={shouldCompactSceneBanner}" in story_beat
     assert "narratorBeatActionable" in styles
     assert "beatSceneBannerCompact" in styles
@@ -1768,14 +1804,14 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
 
 def test_narrative_display_text_cleanup_is_shared_by_play_and_replay() -> None:
     cleanup = (ROOT / "frontend2/src/shared/lib/narrative-display-text.ts").read_text()
-    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
     replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
 
     assert "export function cleanNarrativeDisplayText(text: string): string" in cleanup
     assert 'replace(/([.!?])\\.+(?=\\s|[A-Z])/g, "$1")' in cleanup
     assert 'replace(/([!?])\\.(?=\\s|[A-Z])/g, "$1")' in cleanup
     assert 'replace(/([.!?])([A-Z][a-z])/g, "$1 $2")' in cleanup
-    assert 'import { cleanNarrativeDisplayText } from "../../../shared/lib/narrative-display-text"' in panels
-    assert "{cleanNarrativeDisplayText(message.content)}</div>" in panels
+    assert 'import { cleanNarrativeDisplayText } from "../../../shared/lib/narrative-display-text"' in story_beat
+    assert "{cleanNarrativeDisplayText(message.content)}</div>" in story_beat
     assert 'import { cleanNarrativeDisplayText } from "../../shared/lib/narrative-display-text"' in replay
     assert "{cleanNarrativeDisplayText(m.content)}" in replay
