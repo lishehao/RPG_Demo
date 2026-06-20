@@ -206,6 +206,31 @@ def test_leverage_summary_module_owns_summary_readout_display_hooks() -> None:
     assert "components/leverage-summary.tsx" in readme
 
 
+def test_selected_move_confirmation_module_owns_readout_display_hooks() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    confirmation = (ROOT / "frontend2/src/pages/play/components/selected-move-confirmation.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./selected-move-confirmation"' in panels
+    assert "SelectedMoveConfirmationReadout" in panels
+    assert "export function SelectedMoveConfirmationReadout" in confirmation
+    assert 'data-play-selected-move-submit-summary="true"' in confirmation
+    assert 't("play.selected_move_number", { index: moveNumber })' in confirmation
+    assert 't("play.selected_move_ready_label")' in confirmation
+    assert 't("play.selected_move_target_chip", { target: targetName })' in confirmation
+    assert 't("play.selected_move_room_chip")' in confirmation
+    assert "data-play-action-card-confirm=" not in confirmation
+    assert "data-play-primary-commit" not in confirmation
+    assert "data-play-inner-motive-primary" not in confirmation
+    assert "handleOptionCommit" not in confirmation
+    assert "setShowDiary" not in confirmation
+    assert "onPickOption" not in confirmation
+    assert "onSubmitFree" not in confirmation
+    assert "data-play-pending-reaction-panel" not in confirmation
+    assert 'data-play-selected-move-submit-summary="true"' not in panels
+    assert "components/selected-move-confirmation.tsx" in readme
+
+
 def test_play_leverage_fixture_mounts_real_action_area_without_backend() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
@@ -1354,6 +1379,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     action_option = (ROOT / "frontend2/src/pages/play/components/action-option-card.tsx").read_text()
+    confirmation = (ROOT / "frontend2/src/pages/play/components/selected-move-confirmation.tsx").read_text()
     advisor_panel = (ROOT / "frontend2/src/pages/play/components/advisor-panel.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
@@ -1387,7 +1413,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-card-detail-section="why-now"' in action_option
     assert 'data-play-action-card-confirm="true"' in panels
     assert 'data-play-action-card-confirm-panel="true"' in panels
-    assert 'data-play-selected-move-submit-summary="true"' in panels
+    assert 'data-play-selected-move-submit-summary="true"' in confirmation
     assert 'data-play-action-option-card="true"' in panels
     assert 'data-play-action-collapse-zone="true"' in panels
     assert 'data-play-inner-motive-primary="true"' in panels

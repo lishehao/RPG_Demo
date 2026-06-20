@@ -19,6 +19,7 @@ import { parseOptionLabel } from "../play-option-label"
 import { ActionCollapsedForecast, ActionSelectedOptionDetail } from "./action-option-card"
 import { FreeActionContextBanner, FreeActionStarterRows, buildFreeActionStarterMoves } from "./free-action-prompts"
 import { LeverageEmptySummary, LeverageSummaryButton } from "./leverage-summary"
+import { SelectedMoveConfirmationReadout } from "./selected-move-confirmation"
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
 
@@ -2041,27 +2042,11 @@ export function ActionArea({
                 ...(compactActionChrome ? ppStyles.optionCardPrimaryRowCompact : null),
               }}
             >
-              <span style={ppStyles.optionCardConfirmMeta}>
-                {t("play.selected_move_number", { index: selectedOptionIndex + 1 })}
-              </span>
-              <span
-                style={ppStyles.optionCardSubmitSummary}
-                data-play-selected-move-submit-summary="true"
-              >
-                <span style={ppStyles.optionCardSubmitSummaryHead}>
-                  <span style={ppStyles.optionCardSubmitSummaryLabel}>
-                    {t("play.selected_move_ready_label")}
-                  </span>
-                  <span style={ppStyles.optionCardSubmitSummaryTarget}>
-                    {selectedOptionTarget
-                      ? t("play.selected_move_target_chip", { target: selectedOptionTarget.name })
-                      : t("play.selected_move_room_chip")}
-                  </span>
-                </span>
-                <span style={ppStyles.optionCardSubmitSummaryText} title={selectedOptionSubmitSummary}>
-                  {selectedOptionSubmitSummary}
-                </span>
-              </span>
+              <SelectedMoveConfirmationReadout
+                moveNumber={selectedOptionIndex + 1}
+                targetName={selectedOptionTarget?.name ?? null}
+                summary={selectedOptionSubmitSummary}
+              />
               <div
                 style={{
                   ...ppStyles.optionCardPrimaryActionGrid,
