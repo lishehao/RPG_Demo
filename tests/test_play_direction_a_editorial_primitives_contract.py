@@ -869,6 +869,10 @@ def test_normal_runtime_impact_summary_keeps_player_facing_resolution_clarity() 
     assert 'data-gameplay-next-choice-bridge="normal-play"' in summary
     assert 'data-gameplay-next-choice-signals="true"' in summary
     assert 'data-gameplay-next-choice-signal-detail="true"' in summary
+    assert "const signalDetail = signal.detail?.trim()" in summary
+    assert '{signal.label}{signalDetail ? ": " : ""}' in summary
+    assert "title={signalDetail ?? signal.label}" in summary
+    assert "{signal.label}: </span>" not in summary
     assert 't("play.gameplay_forecast_detail_label")' in summary
     assert "forecastChoiceSignals" in summary
     assert "targetChoiceSignals" in summary
