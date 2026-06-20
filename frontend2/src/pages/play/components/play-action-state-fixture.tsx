@@ -44,6 +44,7 @@ function shortActionLabel(action: string): string {
 type RehearsalOutcome = {
   title: string
   summary: string
+  nextReason: string
   items: Array<{
     label: string
     value: string
@@ -57,6 +58,7 @@ function rehearsalOutcomeForMove(action: string): RehearsalOutcome {
     return {
       title: "Time bought",
       summary: "The countdown stops long enough for the next move to use a concrete clue.",
+      nextReason: "The room is stable now, so Reveal and Deflect are about spending that pause.",
       items: [
         { label: "Room", value: "producer holding", tone: "safe" },
         { label: "Clue", value: "badge can surface", tone: "gold" },
@@ -68,6 +70,7 @@ function rehearsalOutcomeForMove(action: string): RehearsalOutcome {
     return {
       title: "Pressure moved",
       summary: "The sponsor is now part of the room's attention instead of background noise.",
+      nextReason: "The sponsor is exposed, so the new choices either show proof or move pressure private.",
       items: [
         { label: "Pressure", value: "public answer forced", tone: "tense" },
         { label: "Trust", value: "producer watching", tone: "safe" },
@@ -79,6 +82,7 @@ function rehearsalOutcomeForMove(action: string): RehearsalOutcome {
     return {
       title: "Crowd steadied",
       summary: "The room stays playable, but the search now depends on proof instead of noise control.",
+      nextReason: "The crowd is held, so the next menu shifts toward evidence and risk control.",
       items: [
         { label: "Crowd", value: "panic contained", tone: "safe" },
         { label: "Evidence", value: "badge route clearer", tone: "gold" },
@@ -89,6 +93,7 @@ function rehearsalOutcomeForMove(action: string): RehearsalOutcome {
   return {
     title: "Custom move registered",
     summary: "The room accepted the move; the next choices are now shaped by that pressure.",
+    nextReason: "The next actions are built from the pressure your custom move created.",
     items: [
       { label: "Room", value: "attention shifted", tone: "safe" },
       { label: "Pressure", value: "new angle created", tone: "tense" },
@@ -204,8 +209,20 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
                 What changed
               </span>
               <span style={ppStyles.outcomeReceiptHint}>
-                Use this before choosing the next move.
+                Your last move changed the next action menu.
               </span>
+            </span>
+            <span style={ppStyles.outcomeReceiptPhrase} data-play-action-result-move="true">
+              <span style={ppStyles.outcomeReceiptItemLabel}>Your move:</span>
+              <strong
+                style={{
+                  ...ppStyles.outcomeReceiptValue,
+                  ...ppStyles.outcomeReceiptValueMobile,
+                }}
+                title={shortActionLabel(submittedMove)}
+              >
+                {shortActionLabel(submittedMove)}
+              </strong>
             </span>
             <strong
               style={{
@@ -240,6 +257,12 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
                   </strong>
                 </span>
               ))}
+            </span>
+            <span style={ppStyles.outcomeReceiptNextFocus} data-play-action-result-next-bridge="true">
+              <span style={ppStyles.outcomeReceiptItemLabel}>Next actions:</span>
+              <strong style={ppStyles.outcomeReceiptNextValue}>
+                {outcome.nextReason}
+              </strong>
             </span>
           </section>
         ) : null}

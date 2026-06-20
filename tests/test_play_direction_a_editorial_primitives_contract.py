@@ -802,8 +802,14 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
     assert "rehearsalOutcomeForMove(submittedMove)" in fixture
     assert "!outcome ? (" in fixture
     assert 'data-play-action-result-feedback="true"' in fixture
+    assert 'data-play-action-result-move="true"' in fixture
     assert 'data-play-action-result-item="true"' in fixture
-    assert "Use this before choosing the next move." in fixture
+    assert 'data-play-action-result-next-bridge="true"' in fixture
+    assert "Your last move changed the next action menu." in fixture
+    assert "The room is stable now, so Reveal and Deflect are about spending that pause." in fixture
+    assert "The sponsor is exposed, so the new choices either show proof or move pressure private." in fixture
+    assert "The crowd is held, so the next menu shifts toward evidence and risk control." in fixture
+    assert "Use this before choosing the next move." not in fixture
     assert "Result landed. The next action set is ready." not in fixture
     assert "data-play-action-state={actionState}" in panels
     assert 'aria-live="polite"' in panels
