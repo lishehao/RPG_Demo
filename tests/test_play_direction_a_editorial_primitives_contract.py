@@ -710,6 +710,10 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "reviewerEvidenceJump" in styles
     assert "reviewerProofStrip" in styles
     assert "reviewerProofGrid" in styles
+    assert "const hasArchivedReviewerChecks = latestAgentEvents.some" in play_page
+    assert 'event.event_type === "step_judge" || event.event_type === "contract_judge"' in play_page
+    assert '{hasArchivedReviewerChecks ? "archived checks" : "checks pending"}' in play_page
+    assert "runtime state / contract checks" not in play_page
     assert "Live state checks are attached below this play surface." in play_page
     assert "Jump to evidence" in play_page
 

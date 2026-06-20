@@ -1291,6 +1291,9 @@ export function PlayPage({
         t,
       })
     : null
+  const hasArchivedReviewerChecks = latestAgentEvents.some(
+    (event) => event.event_type === "step_judge" || event.event_type === "contract_judge",
+  )
   const scrollToReviewerEvidence = () => {
     if (typeof window === "undefined") return
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -1312,7 +1315,7 @@ export function PlayPage({
           Live state checks are attached below this play surface.
         </strong>
         <span style={ppStyles.reviewerEvidenceJumpMeta}>
-          {lastNarrator?.options.length ?? 0} current moves / runtime state / contract checks
+          {lastNarrator?.options.length ?? 0} current moves / runtime state / {hasArchivedReviewerChecks ? "archived checks" : "checks pending"}
         </span>
       </div>
       <button
