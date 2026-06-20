@@ -555,11 +555,11 @@ def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> No
     assert "lastNarrator?.inventory_delta ?? null" in gameplay_envelope
     assert "function shouldPreferBaseImpact" in gameplay_envelope
     assert "backendImpact.every(isHoldingImpactChip)" in gameplay_envelope
-    assert 'chip.label === "Next moves shifted"' in gameplay_envelope
-    next_moves_idx = gameplay_envelope.index('deltas.push({ label: "Next moves shifted", tone: "shift" })')
+    assert 'chip.label === "Action menu changed"' in gameplay_envelope
+    next_moves_idx = gameplay_envelope.index('deltas.push({ label: "Action menu changed", tone: "shift" })')
     holding_idx = gameplay_envelope.index("deltas.push({ label: `Holding:")
     assert next_moves_idx < holding_idx
-    backend_next_moves_idx = backend_service.index('_add_gameplay_chip(impact, "Next moves shifted", "shift")')
+    backend_next_moves_idx = backend_service.index('_add_gameplay_chip(impact, "Action menu changed", "shift")')
     backend_holding_idx = backend_service.index('_add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)')
     assert backend_next_moves_idx < backend_holding_idx
     assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in story_beat
