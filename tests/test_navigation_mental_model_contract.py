@@ -77,6 +77,27 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "grid-template-columns: 34px minmax(0, 1fr)" in theme
 
 
+def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
+    readme = (ROOT / "README.md").read_text()
+
+    assert "Watch 75s demo" in readme
+    assert "Open MP4 demo" in readme
+    assert "Inspect source evidence" in readme
+    assert "MP4 fallback" not in readme
+    assert "offline/fallback" not in readme
+    assert "## Reviewer Path" in readme
+    assert "Run locally and open `#/portfolio`" in readme
+    assert "Launch the reviewer route from the portfolio page" in readme
+    assert "Verify source evidence" in readme
+    assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
+    assert "[Case Study](./docs/CASE_STUDY.md)" in readme
+    assert "`tests/test_navigation_mental_model_contract.py`" in readme
+    assert "`tests/test_play_direction_a_editorial_primitives_contract.py`" in readme
+    assert "portfolio-grade AI product-system evidence" in readme
+    assert "It is not claimed as a launched consumer" in readme
+    assert "game or broad adoption proof" in readme
+
+
 def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()

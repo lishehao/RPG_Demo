@@ -49,15 +49,39 @@
 [![Watch the Tiny Stories demo](./docs/demo-video/admissions-trailer-contact.jpg)](https://youtu.be/RRJ7uyjW_nA)
 
 <p align="center">
-  <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch the YouTube demo</strong></a>
+  <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch 75s demo</strong></a>
   ·
-  <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">MP4 fallback</a>
+  <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">Open MP4 demo</a>
+  ·
+  <a href="./docs/CURRENT_SYSTEM_MAP.md">Inspect source evidence</a>
 </p>
 
-The unlisted YouTube cut is the primary reviewer watch path. The
-GitHub Pages demo keeps the same 720p compressed MP4 available as an
-offline/fallback path (~4.6 MB). Treat this as an admissions/portfolio
-artifact for the inspectable runtime, not a validated consumer launch.
+The unlisted YouTube cut is the primary reviewer watch path. The MP4 is
+the same 720p reviewer cut for environments where YouTube is blocked
+(~4.6 MB). Treat the video as orientation; the evidence lives in the
+source, tests, reviewer route, and system map.
+
+---
+
+## Reviewer Path
+
+Recommended order for an admissions or recruiting review:
+
+1. Watch the 75s demo to see the player-facing loop without reading the
+   repository first.
+2. Run locally and open `#/portfolio`; use it as the guided case-study
+   surface.
+3. Launch the reviewer route from the portfolio page and inspect the
+   locked-seed run, runtime evidence hooks, and replay/ending path.
+4. Verify source evidence in [Current System Map](./docs/CURRENT_SYSTEM_MAP.md),
+   [Case Study](./docs/CASE_STUDY.md),
+   `tests/test_navigation_mental_model_contract.py`, and
+   `tests/test_play_direction_a_editorial_primitives_contract.py`.
+
+Boundary: this is portfolio-grade AI product-system evidence: typed
+contracts, persistent sessions, reviewer instrumentation, deterministic
+QA routes, and a demo trailer. It is not claimed as a launched consumer
+game or broad adoption proof.
 
 ---
 
