@@ -691,6 +691,13 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "evaluationCriteria" in runtime_inspector
     assert "trajectoryEvidence" in runtime_inspector
     assert "NarrativeLLMCallEvent" in runtime_inspector
+    assert 'data-reviewer-proof-strip="true"' in runtime_inspector
+    assert 'data-reviewer-proof-chip="playable"' in runtime_inspector
+    assert 'data-reviewer-proof-chip="state"' in runtime_inspector
+    assert 'data-reviewer-proof-chip="checks"' in runtime_inspector
+    assert "What this proves" in runtime_inspector
+    assert "pending archive" in runtime_inspector
+    assert "live state is available before judge archive" in runtime_inspector
     assert "getNarrativeLLMEvents" in client
     assert "/narrative/sessions/:session_id/llm-events" in route_map
     assert 'data-reviewer-evidence-jump="true"' in play_page
@@ -701,6 +708,8 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "scrollToReviewerEvidence" in play_page
     assert "[data-reviewer-evidence='true']" in play_page
     assert "reviewerEvidenceJump" in styles
+    assert "reviewerProofStrip" in styles
+    assert "reviewerProofGrid" in styles
     assert "Live state checks are attached below this play surface." in play_page
     assert "Jump to evidence" in play_page
 

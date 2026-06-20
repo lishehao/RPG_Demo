@@ -74,8 +74,13 @@ export function RuntimeInspector({
     latestContractJudge?.status ?? "missing",
   ])
   const score = evaluationScore(criteria)
+  const hasArchivedJudgeEvidence = Boolean(latestStepJudge || latestContractJudge)
+  const archivedCheckStatus = hasArchivedJudgeEvidence ? latestStatus : "pending archive"
+  const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "pending"
   const reasonCategory = evaluationReasonCategory(latestStepJudge, latestContractJudge, llmEvents)
   const latestEvidence = evaluationObservedEvidence(latestStepJudge, latestContractJudge, lastNarrator)
+  const playableMoveCount = lastNarrator?.options.length ?? 0
+  const liveImpactSummary = agentImpactSummary(lastNarrator, "awaiting next narrator beat")
   const telemetryRows = llmEvents.slice(-8).reverse()
   const traceRows = agentPlan
     ? [
@@ -103,16 +108,44 @@ export function RuntimeInspector({
         <span style={ppStyles.runtimeInspectorKicker}>Reviewer only</span>
         <strong>Evaluation evidence</strong>
       </div>
+      <section
+        style={ppStyles.reviewerProofStrip}
+        aria-label="Reviewer proof summary"
+        data-reviewer-proof-strip="true"
+      >
+        <span style={ppStyles.reviewerProofTitle}>What this proves</span>
+        <div style={ppStyles.reviewerProofGrid}>
+          <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="playable">
+            <span style={ppStyles.reviewerProofLabel}>Playable state</span>
+            <strong style={ppStyles.reviewerProofValue}>
+              {playableMoveCount ? `${playableMoveCount} next moves` : "waiting for moves"}
+            </strong>
+            <span style={ppStyles.reviewerProofDetail}>{turnsRemaining} turns left</span>
+          </div>
+          <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="state">
+            <span style={ppStyles.reviewerProofLabel}>State changed</span>
+            <strong style={ppStyles.reviewerProofValue}>{liveImpactSummary}</strong>
+            <span style={ppStyles.reviewerProofDetail}>visible consequence on the latest beat</span>
+          </div>
+          <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="checks">
+            <span style={ppStyles.reviewerProofLabel}>Archived checks</span>
+            <strong style={ppStyles.reviewerProofValue}>{archivedCheckStatus}</strong>
+            <span style={ppStyles.reviewerProofDetail}>
+              {hasArchivedJudgeEvidence ? "step and contract evidence attached" : "live state is available before judge archive"}
+            </span>
+          </div>
+        </div>
+      </section>
       <div style={ppStyles.evaluationHero}>
         <div style={ppStyles.evaluationVerdictBlock}>
-          <span style={ppStyles.evaluationLabel}>Latest step</span>
-          <strong style={ppStyles.evaluationVerdict} data-evaluation-verdict={latestStatus}>
-            {latestStatus}
+          <span style={ppStyles.evaluationLabel}>Archived checks</span>
+          <strong style={ppStyles.evaluationVerdict} data-evaluation-verdict={hasArchivedJudgeEvidence ? latestStatus : "pending"}>
+            {archivedCheckStatus}
           </strong>
         </div>
         <div style={ppStyles.evaluationScoreBlock}>
           <span style={ppStyles.evaluationLabel}>Score</span>
-          <strong style={ppStyles.evaluationScore}>{score}/100</strong>
+          <strong style={ppStyles.evaluationScore}>{archivedScore}</strong>
         </div>
       </div>
       <div style={ppStyles.evaluationReasonRow}>
