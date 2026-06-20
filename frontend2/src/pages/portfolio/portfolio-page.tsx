@@ -164,10 +164,11 @@ export function PortfolioPage({
             <span className="portfolio-kicker">Curated reviewer path</span>
             <h2>{REVIEWER_DEMO_TITLE}</h2>
             <p className="portfolio-lede">
-              The demo seed is intentionally dense: public stakes, private
-              leverage, business betrayal, an ex with proof, and a live-stage
-              deadline. It gives the generator enough dramatic structure to
-              show the system at its strongest.
+              The demo seed is intentionally dense: live awards stakes, a
+              missing singer, sponsor pressure, witness and reporter tension,
+              and a publicist forced to decide what to reveal before panic
+              spreads. It gives the generator enough dramatic structure to show
+              the system at its strongest.
             </p>
             <blockquote className="portfolio-seed">"{REVIEWER_DEMO_SEED}"</blockquote>
           </div>

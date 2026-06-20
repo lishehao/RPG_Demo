@@ -223,6 +223,33 @@ def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
     assert "EN first" not in data
 
 
+def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
+    portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
+    reviewer = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
+    data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
+
+    assert 'REVIEWER_DEMO_TITLE = "The Missing Singer Broadcast"' in data
+    assert "awards livestream" in data
+    assert "singer Seo Mina disappears" in data
+    assert "sponsor director" in data
+    assert "no violence and no blackmail" in data
+    assert "Missing singer, live awards stream, sponsor pressure" in reviewer
+    assert "live awards stakes" in portfolio
+    assert "missing singer" in portfolio
+    assert "sponsor pressure" in portfolio
+    assert "witness and reporter tension" in portfolio
+
+    stale_seed_terms = (
+        "The Merger Betrayal",
+        "business betrayal",
+        "an ex with proof",
+        "secret merger",
+    )
+    for stale in stale_seed_terms:
+        assert stale not in portfolio
+        assert stale not in data
+
+
 def test_portfolio_inspector_uses_reviewer_verifiable_capability_labels() -> None:
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
 
