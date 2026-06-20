@@ -301,6 +301,23 @@ export function StoryBriefCard({
         </span>
       </div>
       <div style={cpStyles.briefBetaNote}>{t("create.brief_plan_note")}</div>
+      {canGenerate ? (
+        <div data-create-brief-review-summary="true" style={cpStyles.briefReviewSummary}>
+          <span style={cpStyles.briefReviewSummaryTitle}>{t("create.brief_review_summary_title")}</span>
+          <span style={cpStyles.briefReviewSummaryItem}>
+            <strong>{t("create.brief_review_summary_pressure")}</strong>
+            <span>{visiblePressure || brief.story_kernel}</span>
+          </span>
+          <span style={cpStyles.briefReviewSummaryItem}>
+            <strong>{t("create.brief_review_summary_seed")}</strong>
+            <span>{visibleRules}</span>
+          </span>
+          <span style={cpStyles.briefReviewSummaryItem}>
+            <strong>{t("create.brief_review_summary_next")}</strong>
+            <span>{t("create.brief_review_summary_next_value")}</span>
+          </span>
+        </div>
+      ) : null}
       <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
       <StoryShapeReadLedger shapeRead={shapeRead} compact={compact} inBrief />
       <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
