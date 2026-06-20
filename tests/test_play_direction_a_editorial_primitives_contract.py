@@ -231,6 +231,69 @@ def test_selected_move_confirmation_module_owns_readout_display_hooks() -> None:
     assert "components/selected-move-confirmation.tsx" in readme
 
 
+def test_remaining_action_area_behavior_chrome_stays_action_area_owned() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+    display_modules = [
+        (ROOT / "frontend2/src/pages/play/components/action-option-card.tsx").read_text(),
+        (ROOT / "frontend2/src/pages/play/components/free-action-prompts.tsx").read_text(),
+        (ROOT / "frontend2/src/pages/play/components/leverage-summary.tsx").read_text(),
+        (ROOT / "frontend2/src/pages/play/components/selected-move-confirmation.tsx").read_text(),
+    ]
+
+    assert "Keep the confirm button, motive button, diary preview/editor, free-input textarea" in readme
+    assert "pending/resolved ceremony ownership, and leverage reveal behavior inside `ActionArea`" in readme
+    assert "until a behavior-level redesign is explicitly scoped" in readme
+
+    action_area = panels[panels.index("export function ActionArea") :]
+    resolving_panel = panels[panels.index("function ResolvingTurnPanel") : panels.index("export function findActionTarget")]
+    assert 'data-play-pending-reaction-panel="true"' in resolving_panel
+    for required in (
+        "const handleOptionCommit =",
+        "const handleLeverageReveal =",
+        "const handleSubmitFreeWithReflect =",
+        "const renderDiaryAttachPreview =",
+        "const renderDiaryEditor =",
+        "const renderSelectedOptionConfirm =",
+        "<ResolvingTurnPanel",
+        "commitmentSignals={resolvingCommitmentSignals}",
+        'data-play-action-card-confirm="true"',
+        'data-play-primary-commit="true"',
+        'data-play-inner-motive-primary="true"',
+        'data-play-support-actions="true"',
+        'data-play-free-action-input="true"',
+        'data-play-free-action-submit="true"',
+        'data-play-leverage-reveal="true"',
+        'data-play-leverage-reveal-cta="true"',
+        "value={diary}",
+        "onChange={(e) => setDiary(e.target.value)}",
+        "value={freeInput}",
+        "onChange={(e) => setFreeInput(e.target.value)}",
+        "fitTextareaToContent(diaryTextareaRef.current)",
+        "fitTextareaToContent(freeTextareaRef.current)",
+    ):
+        assert required in action_area
+
+    for module in display_modules:
+        for forbidden in (
+            "handleOptionCommit",
+            "handleLeverageReveal",
+            "handleSubmitFreeWithReflect",
+            "ResolvingTurnPanel",
+            "renderDiaryAttachPreview",
+            "renderDiaryEditor",
+            "setShowDiary",
+            "setDiary",
+            "setFreeInput",
+            "data-play-primary-commit",
+            "data-play-inner-motive-primary",
+            "data-play-free-action-submit",
+            "data-play-leverage-reveal-cta",
+            "data-play-pending-reaction-panel",
+        ):
+            assert forbidden not in module
+
+
 def test_play_leverage_fixture_mounts_real_action_area_without_backend() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()

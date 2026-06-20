@@ -59,5 +59,6 @@
 `components/play-flow-panels.tsx` remains the next split target. Safe boundaries are:
 
 - Remaining `ActionArea` surfaces around leverage card rows and confirmation buttons/chrome, but only as separate display-only slices with action submission still owned by `ActionArea`.
+- Keep the confirm button, motive button, diary preview/editor, free-input textarea, pending/resolved ceremony ownership, and leverage reveal behavior inside `ActionArea` until a behavior-level redesign is explicitly scoped. These pieces coordinate callbacks, local text state, disabled/pending guards, focus, and submit routing rather than pure display.
 
 Do not split those in the same patch as a behavior change. Keep source guards and browser smoke around action submission, payoff focus, reviewer gating, and mobile action visibility.
