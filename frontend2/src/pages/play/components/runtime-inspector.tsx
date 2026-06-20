@@ -26,6 +26,7 @@ export function RuntimeInspector({
   lastNarrator,
   turnsRemaining,
   liveInventory,
+  effectiveLastInventoryDelta,
   agentPlan,
   agentEvents,
   llmEvents,
@@ -36,6 +37,7 @@ export function RuntimeInspector({
   lastNarrator: NarrativeStoryMessage | null
   turnsRemaining: number
   liveInventory: string[]
+  effectiveLastInventoryDelta?: NarrativeStoryMessage["inventory_delta"]
   agentPlan: NarrativeAgentPlan | null
   agentEvents: NarrativeAgentEvent[]
   llmEvents: NarrativeLLMCallEvent[]
@@ -67,6 +69,7 @@ export function RuntimeInspector({
     latestStepJudge,
     latestContractJudge,
     lastNarrator,
+    effectiveInventoryDelta: effectiveLastInventoryDelta,
   })
   const trajectory = trajectoryEvidence(agentEvents)
   const latestStatus = worstStatus([
@@ -81,9 +84,9 @@ export function RuntimeInspector({
   const reasonCategory = hasArchivedJudgeEvidence
     ? evaluationReasonCategory(latestStepJudge, latestContractJudge, llmEvents)
     : "not archived yet"
-  const latestEvidence = evaluationObservedEvidence(latestStepJudge, latestContractJudge, lastNarrator)
+  const latestEvidence = evaluationObservedEvidence(latestStepJudge, latestContractJudge, lastNarrator, effectiveLastInventoryDelta)
   const playableMoveCount = lastNarrator?.options.length ?? 0
-  const liveImpactSummary = agentImpactSummary(lastNarrator, "awaiting next narrator beat")
+  const liveImpactSummary = agentImpactSummary(lastNarrator, "awaiting next narrator beat", effectiveLastInventoryDelta)
   const telemetryRows = llmEvents.slice(-8).reverse()
   const traceRows = agentPlan
     ? [
@@ -93,7 +96,7 @@ export function RuntimeInspector({
         { label: "Twist", value: agentTwistSummary(agentPlan, "none") },
         { label: "Memory", value: agentMemorySummary(agentPlan) },
         { label: "Move", value: agentActionSummary(agentPlan, "none") },
-        { label: "Impact", value: agentImpactSummary(lastNarrator, "pending") },
+        { label: "Impact", value: agentImpactSummary(lastNarrator, "pending", effectiveLastInventoryDelta) },
       ]
     : []
 
@@ -319,11 +322,13 @@ function evaluationCriteria({
   latestStepJudge,
   latestContractJudge,
   lastNarrator,
+  effectiveInventoryDelta,
 }: {
   agentPlan: NarrativeAgentPlan | null
   latestStepJudge: NarrativeStepJudgeResult | null
   latestContractJudge: NarrativeContractJudgeResult | null
   lastNarrator: NarrativeStoryMessage | null
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"]
 }): EvaluationCriterion[] {
   const stepStatus = latestStepJudge?.status ?? "missing"
   const contractStatus = latestContractJudge?.status ?? "missing"
@@ -331,8 +336,8 @@ function evaluationCriteria({
   const contractCodes = new Set(latestContractJudge?.violations.map((v) => v.code) ?? [])
   const hasImpact = Boolean(
     (lastNarrator?.npc_pulse ?? []).some((pulse) => pulse.shift !== "steady") ||
-      (lastNarrator?.inventory_delta?.added.length ?? 0) > 0 ||
-      (lastNarrator?.inventory_delta?.removed.length ?? 0) > 0,
+      (effectiveInventoryDelta?.added.length ?? lastNarrator?.inventory_delta?.added.length ?? 0) > 0 ||
+      (effectiveInventoryDelta?.removed.length ?? lastNarrator?.inventory_delta?.removed.length ?? 0) > 0,
   )
   const optionsPlayable =
     contractCodes.has("options_count_invalid") || contractCodes.has("option_label_missing")
@@ -365,7 +370,7 @@ function evaluationCriteria({
     {
       criterion: "consequence follows move",
       status: consequenceStatus,
-      evidence: agentImpactSummary(lastNarrator, "no pulse or inventory delta observed"),
+      evidence: agentImpactSummary(lastNarrator, "no pulse or inventory delta observed", effectiveInventoryDelta),
       rationale: latestStepJudge?.summary ?? "Step Judge has not been archived yet.",
     },
     {
@@ -489,10 +494,11 @@ function evaluationObservedEvidence(
   step: NarrativeStepJudgeResult | null,
   contract: NarrativeContractJudgeResult | null,
   lastNarrator: NarrativeStoryMessage | null,
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"],
 ): string {
   const violationEvidence = firstViolationEvidence(step) || firstViolationEvidence(contract)
   if (violationEvidence) return violationEvidence
-  const impact = agentImpactSummary(lastNarrator, "")
+  const impact = agentImpactSummary(lastNarrator, "", effectiveInventoryDelta)
   if (impact) return impact
   return "Awaiting the next judged narrator turn."
 }
@@ -562,11 +568,15 @@ function agentActionSummary(plan: NarrativeAgentPlan, emptyLabel: string): strin
   return emptyLabel
 }
 
-function agentImpactSummary(message: NarrativeStoryMessage | null, pendingLabel: string): string {
+function agentImpactSummary(
+  message: NarrativeStoryMessage | null,
+  pendingLabel: string,
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"],
+): string {
   if (!message) return pendingLabel
   const pulseCount = message.npc_pulse?.length ?? 0
-  const added = message.inventory_delta?.added.length ?? 0
-  const removed = message.inventory_delta?.removed.length ?? 0
+  const added = effectiveInventoryDelta?.added.length ?? message.inventory_delta?.added.length ?? 0
+  const removed = effectiveInventoryDelta?.removed.length ?? message.inventory_delta?.removed.length ?? 0
   const delta = added || removed ? `inventory +${added}/-${removed}` : "inventory steady"
   return `pulse ${pulseCount} · ${delta}`
 }

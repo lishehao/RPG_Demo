@@ -222,6 +222,7 @@ function buildImpactDeltas(
   previousPlayerMessage: NarrativeStoryMessage | null,
   liveInventory: string[],
   castNameById: Record<string, string>,
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"],
 ): GameplayImpactDelta[] {
   const deltas: GameplayImpactDelta[] = []
 
@@ -235,7 +236,7 @@ function buildImpactDeltas(
     deltas.push({ label: `${name}: ${pulse.shift}`, tone })
   }
 
-  const inventoryDelta = narratorMessage?.inventory_delta
+  const inventoryDelta = effectiveInventoryDelta ?? narratorMessage?.inventory_delta
   for (const item of inventoryDelta?.added ?? []) {
     deltas.push({ label: `Evidence: ${compactLabel(item, 30)}`, tone: "unlock" })
   }
@@ -265,6 +266,7 @@ export function buildGameplayEnvelope({
   turnsRemaining,
   turnBudget,
   liveInventory,
+  effectiveInventoryDelta,
   leverageCards,
   castNameById,
   backendEnvelope,
@@ -276,6 +278,7 @@ export function buildGameplayEnvelope({
   turnsRemaining: number
   turnBudget: number
   liveInventory: string[]
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"]
   leverageCards: LeverageCardView[]
   castNameById: Record<string, string>
   backendEnvelope?: NarrativeGameplayEnvelope | null
@@ -311,7 +314,7 @@ export function buildGameplayEnvelope({
       },
     ],
     actionForecasts,
-    impact: buildImpactDeltas(lastNarrator, previousPlayerMessage, liveInventory, castNameById),
+    impact: buildImpactDeltas(lastNarrator, previousPlayerMessage, liveInventory, castNameById, effectiveInventoryDelta),
   }
 
   return normalizeBackendEnvelope(backendEnvelope, baseEnvelope) ?? baseEnvelope

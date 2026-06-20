@@ -520,16 +520,36 @@ def test_remaining_play_flow_panel_candidates_are_wait_boundaries() -> None:
 
 def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
-    helper = panels[panels.index("export function computeLiveInventory") : panels.index("// Mirror of backend _stage_for")]
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    gameplay_envelope = (ROOT / "frontend2/src/pages/play/play-gameplay-envelope.ts").read_text()
+    story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
+    runtime_inspector = (ROOT / "frontend2/src/pages/play/components/runtime-inspector.tsx").read_text()
+    progress_helper = panels[panels.index("function computeInventoryProgress") : panels.index("// Mirror of backend _stage_for")]
 
-    assert "const normalizeInventoryItem =" in helper
-    assert "const addInventoryItem =" in helper
-    assert "startingAssets.forEach(addInventoryItem)" in helper
-    assert "if (inv.some((existing) => normalizeInventoryItem(existing) === key)) return" in helper
-    assert "addInventoryItem(added)" in helper
-    assert "const key = normalizeInventoryItem(clean)" in helper
-    assert "const target = normalizeInventoryItem(removed)" in helper
-    assert "const item = normalizeInventoryItem(inv[i] ?? \"\")" in helper
+    assert "function computeInventoryProgress" in panels
+    assert "const normalizeInventoryItem =" in progress_helper
+    assert "const addInventoryItem =" in progress_helper
+    assert "startingAssets.forEach(addInventoryItem)" in progress_helper
+    assert "if (inv.some((existing) => normalizeInventoryItem(existing) === key)) return" in progress_helper
+    assert "addInventoryItem(added)" in progress_helper
+    assert "effectiveDeltasByOrd.set(msg.ord, effectiveDelta)" in progress_helper
+    assert "reason: msg.inventory_delta.reason" in progress_helper
+    assert "export function computeEffectiveInventoryDeltas" in panels
+    assert "computeEffectiveInventoryDeltas(" in play_page
+    assert "const effectiveLastInventoryDelta =" in play_page
+    assert "effectiveInventoryDelta: effectiveLastInventoryDelta" in play_page
+    assert "effectiveInventoryDelta={" in play_page
+    assert "effectiveLastInventoryDelta={effectiveLastInventoryDelta}" in play_page
+    assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in gameplay_envelope
+    assert "const inventoryDelta = effectiveInventoryDelta ?? narratorMessage?.inventory_delta" in gameplay_envelope
+    assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in story_beat
+    assert "const delta = effectiveInventoryDelta ?? message.inventory_delta" in story_beat
+    assert "effectiveLastInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in runtime_inspector
+    assert 'agentImpactSummary(lastNarrator, "awaiting next narrator beat", effectiveLastInventoryDelta)' in runtime_inspector
+    assert 'agentImpactSummary(lastNarrator, "no pulse or inventory delta observed", effectiveInventoryDelta)' in runtime_inspector
+    assert "const key = normalizeInventoryItem(clean)" in progress_helper
+    assert "const target = normalizeInventoryItem(item)" in progress_helper
+    assert "const current = normalizeInventoryItem(inv[i] ?? \"\")" in progress_helper
 
 
 def test_play_leverage_fixture_mounts_real_action_area_without_backend() -> None:

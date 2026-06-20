@@ -121,6 +121,7 @@ export function StoryBeat({
   castNameById,
   intensity = "calm",
   sceneUrl,
+  effectiveInventoryDelta,
   pickedHandle,
   pickedActionText,
   isLatestNarrator,
@@ -134,6 +135,7 @@ export function StoryBeat({
   castNameById?: Record<string, string>
   intensity?: "calm" | "rising" | "peak"
   sceneUrl?: string
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"]
   /** When this player message was an option pick, the option's
    *  readable label/tag. Used so players can remember exactly
    *  which action they committed. */
@@ -152,7 +154,7 @@ export function StoryBeat({
   if (message.role === "narrator") {
     const pulses = message.npc_pulse ?? []
     const impactPulses = pulses.filter((p) => p.shift !== "steady")
-    const delta = message.inventory_delta
+    const delta = effectiveInventoryDelta ?? message.inventory_delta
     const hasDelta = !!(delta && (delta.added.length > 0 || delta.removed.length > 0))
     const outcomeItems = buildOutcomeReceiptItems({
       pulses,

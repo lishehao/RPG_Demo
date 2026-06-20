@@ -58,6 +58,7 @@ import {
   ActionArea,
   Header,
   RunContextPanel,
+  computeEffectiveInventoryDeltas,
   computeLiveInventory,
   findActionTarget,
   isResourceFocusAction,
@@ -1171,6 +1172,10 @@ export function PlayPage({
     story.session.player_role?.starting_assets ?? [],
     story.messages,
   )
+  const effectiveInventoryDeltasByOrd = computeEffectiveInventoryDeltas(
+    story.session.player_role?.starting_assets ?? [],
+    story.messages,
+  )
   const playedLeverageIds = new Set(
     story.messages
       .map((m) => m.played_leverage?.card_id)
@@ -1196,6 +1201,9 @@ export function PlayPage({
     return previous?.role === "player" ? previous : null
   })()
   const impactSourceMove = impactSourceMoveText(previousPlayerForLastNarrator)
+  const effectiveLastInventoryDelta = lastNarrator
+    ? effectiveInventoryDeltasByOrd.get(lastNarrator.ord) ?? lastNarrator.inventory_delta ?? null
+    : null
   const gameplayEnvelope = buildGameplayEnvelope({
     story,
     lastNarrator,
@@ -1204,6 +1212,7 @@ export function PlayPage({
     turnsRemaining,
     turnBudget,
     liveInventory,
+    effectiveInventoryDelta: effectiveLastInventoryDelta,
     leverageCards,
     castNameById,
     backendEnvelope: story.gameplay_envelope ?? null,
@@ -1497,6 +1506,11 @@ export function PlayPage({
                         )
                       : undefined
                   }
+                  effectiveInventoryDelta={
+                    m.role === "narrator"
+                      ? effectiveInventoryDeltasByOrd.get(m.ord) ?? m.inventory_delta ?? undefined
+                      : undefined
+                  }
                   pickedHandle={pickedHandle}
                   pickedActionText={pickedActionText}
                   isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}
@@ -1643,6 +1657,7 @@ export function PlayPage({
                 lastNarrator={lastNarrator}
                 turnsRemaining={turnsRemaining}
                 liveInventory={liveInventory}
+                effectiveLastInventoryDelta={effectiveLastInventoryDelta}
                 agentPlan={latestAgentPlan}
                 agentEvents={latestAgentEvents}
                 llmEvents={llmEvents}

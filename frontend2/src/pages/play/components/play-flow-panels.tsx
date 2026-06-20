@@ -299,37 +299,67 @@ export function Header({
 }
 
 
+type EffectiveInventoryDelta = NonNullable<NarrativeStoryMessage["inventory_delta"]>
+
+function computeInventoryProgress(
+  startingAssets: string[],
+  messages: NarrativeStoryMessage[],
+): { inventory: string[]; effectiveDeltasByOrd: Map<number, EffectiveInventoryDelta> } {
+  const normalizeInventoryItem = (item: string) => item.replace(/\s+/g, " ").trim().toLowerCase()
+  const inv: string[] = []
+  const addInventoryItem = (item: string): string | null => {
+    const clean = item.replace(/\s+/g, " ").trim()
+    if (!clean) return null
+    const key = normalizeInventoryItem(clean)
+    if (inv.some((existing) => normalizeInventoryItem(existing) === key)) return null
+    inv.push(clean)
+    return clean
+  }
+  const removeInventoryItem = (item: string): string | null => {
+    const target = normalizeInventoryItem(item)
+    for (let i = 0; i < inv.length; i += 1) {
+      const current = normalizeInventoryItem(inv[i] ?? "")
+      if (current && (current.includes(target) || target.includes(current))) {
+        const [removed] = inv.splice(i, 1)
+        return removed ?? item.replace(/\s+/g, " ").trim()
+      }
+    }
+    return null
+  }
+  startingAssets.forEach(addInventoryItem)
+  const effectiveDeltasByOrd = new Map<number, EffectiveInventoryDelta>()
+  for (const msg of messages) {
+    if (msg.role !== "narrator" || !msg.inventory_delta) continue
+    const effectiveDelta: EffectiveInventoryDelta = {
+      added: [],
+      removed: [],
+      reason: msg.inventory_delta.reason,
+    }
+    for (const added of msg.inventory_delta.added) {
+      const effectiveAdded = addInventoryItem(added)
+      if (effectiveAdded) effectiveDelta.added.push(effectiveAdded)
+    }
+    for (const removed of msg.inventory_delta.removed) {
+      const effectiveRemoved = removeInventoryItem(removed)
+      if (effectiveRemoved) effectiveDelta.removed.push(effectiveRemoved)
+    }
+    effectiveDeltasByOrd.set(msg.ord, effectiveDelta)
+  }
+  return { inventory: inv, effectiveDeltasByOrd }
+}
+
 export function computeLiveInventory(
   startingAssets: string[],
   messages: NarrativeStoryMessage[],
 ): string[] {
-  const normalizeInventoryItem = (item: string) => item.replace(/\s+/g, " ").trim().toLowerCase()
-  const inv: string[] = []
-  const addInventoryItem = (item: string) => {
-    const clean = item.replace(/\s+/g, " ").trim()
-    if (!clean) return
-    const key = normalizeInventoryItem(clean)
-    if (inv.some((existing) => normalizeInventoryItem(existing) === key)) return
-    inv.push(clean)
-  }
-  startingAssets.forEach(addInventoryItem)
-  for (const msg of messages) {
-    if (msg.role !== "narrator" || !msg.inventory_delta) continue
-    for (const added of msg.inventory_delta.added) {
-      addInventoryItem(added)
-    }
-    for (const removed of msg.inventory_delta.removed) {
-      const target = normalizeInventoryItem(removed)
-      for (let i = 0; i < inv.length; i += 1) {
-        const item = normalizeInventoryItem(inv[i] ?? "")
-        if (item && (item.includes(target) || target.includes(item))) {
-          inv.splice(i, 1)
-          break
-        }
-      }
-    }
-  }
-  return inv
+  return computeInventoryProgress(startingAssets, messages).inventory
+}
+
+export function computeEffectiveInventoryDeltas(
+  startingAssets: string[],
+  messages: NarrativeStoryMessage[],
+): Map<number, EffectiveInventoryDelta> {
+  return computeInventoryProgress(startingAssets, messages).effectiveDeltasByOrd
 }
 
 // Mirror of backend _stage_for. Used to drive visual intensity and to
