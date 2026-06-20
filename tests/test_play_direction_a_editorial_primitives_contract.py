@@ -182,6 +182,30 @@ def test_free_action_prompts_module_owns_context_and_starter_display_hooks() -> 
     assert "components/free-action-prompts.tsx" in readme
 
 
+def test_leverage_summary_module_owns_summary_readout_display_hooks() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    leverage_summary = (ROOT / "frontend2/src/pages/play/components/leverage-summary.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./leverage-summary"' in panels
+    assert "LeverageEmptySummary" in panels
+    assert "LeverageSummaryButton" in panels
+    assert "export function LeverageEmptySummary" in leverage_summary
+    assert "export function LeverageSummaryButton" in leverage_summary
+    assert 'data-play-leverage-summary="true"' in leverage_summary
+    assert 'data-play-leverage-summary-chips="true"' in leverage_summary
+    assert 'data-play-leverage-card="true"' not in leverage_summary
+    assert 'data-play-leverage-reveal="true"' not in leverage_summary
+    assert 'data-play-leverage-reveal-cta="true"' not in leverage_summary
+    assert "handleLeverageReveal" not in leverage_summary
+    assert "renderDiaryAttachPreview" not in leverage_summary
+    assert "renderDiaryEditor" not in leverage_summary
+    assert "setArmedCardId" not in leverage_summary
+    assert 'data-play-leverage-summary="true"' not in panels
+    assert 'data-play-leverage-summary-chips="true"' not in panels
+    assert "components/leverage-summary.tsx" in readme
+
+
 def test_play_advisor_fixture_mounts_real_advisor_surface_without_backend() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
@@ -1660,12 +1684,13 @@ def test_empty_trump_card_resource_stays_out_of_main_action_surface() -> None:
 
 def test_leverage_resource_reads_as_actionable_player_resource() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    leverage_summary = (ROOT / "frontend2/src/pages/play/components/leverage-summary.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
 
     assert 'data-play-leverage-rail="true"' in panels
     assert 'data-play-leverage-state={playableLeverageCards.length > 0 ? "playable" : "empty"}' in panels
-    assert 'data-play-leverage-summary="true"' in panels
-    assert 'data-play-leverage-summary-chips="true"' in panels
+    assert 'data-play-leverage-summary="true"' in leverage_summary
+    assert 'data-play-leverage-summary-chips="true"' in leverage_summary
     assert 'data-play-leverage-card="true"' in panels
     assert 'data-play-leverage-reveal="true"' in panels
     assert 'data-play-leverage-reveal-cta="true"' in panels

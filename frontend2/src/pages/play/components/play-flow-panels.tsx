@@ -18,6 +18,7 @@ import { useCompactLayout } from "../hooks/use-compact-layout"
 import { parseOptionLabel } from "../play-option-label"
 import { ActionCollapsedForecast, ActionSelectedOptionDetail } from "./action-option-card"
 import { FreeActionContextBanner, FreeActionStarterRows, buildFreeActionStarterMoves } from "./free-action-prompts"
+import { LeverageEmptySummary, LeverageSummaryButton } from "./leverage-summary"
 
 const ACTION_LEVERAGE_RAIL_ID = "play-leverage-rail"
 
@@ -2194,57 +2195,23 @@ export function ActionArea({
           aria-label={t("play.leverage_rail_label")}
         >
           {playableLeverageCards.length === 0 ? (
-            <div style={ppStyles.leverageEmptySummary}>
-              <span style={ppStyles.leverageSummaryMain}>
-                <span style={ppStyles.leverageSummaryEyebrow}>{t("play.leverage_resource_label")}</span>
-                <strong style={ppStyles.leverageSummaryText}>{leverageEmptyTitle}</strong>
-                <span style={ppStyles.leverageSummaryMeta} title={leverageEmptyMetaText}>
-                  {leverageEmptyMetaText}
-                </span>
-              </span>
-              <span style={ppStyles.leverageEmptyBadge}>{leverageEmptyBadge}</span>
-            </div>
+            <LeverageEmptySummary
+              title={leverageEmptyTitle}
+              metaText={leverageEmptyMetaText}
+              badge={leverageEmptyBadge}
+            />
           ) : (
-            <button
-              type="button"
-              data-play-leverage-summary="true"
-              style={{
-                ...ppStyles.leverageSummaryButton,
-                ...(showLeverageCards ? ppStyles.leverageSummaryButtonOpen : null),
-                ...(compactActionChrome ? ppStyles.leverageSummaryButtonCompact : null),
-              }}
-              onClick={handleLeverageSummaryActivate}
+            <LeverageSummaryButton
+              text={leverageSummaryText}
+              metaText={leverageSummaryMetaText}
+              showChips={!!primaryLeverageCard}
+              chipTarget={leverageSummaryChipTarget}
+              toggleText={leverageSummaryToggleText}
+              expanded={showLeverageCards}
+              compact={compactActionChrome}
               disabled={actionControlsDisabled}
-              aria-expanded={showLeverageCards}
-              aria-keyshortcuts="T"
-              title={t("play.leverage_shortcut_title")}
-            >
-              <span style={ppStyles.leverageSummaryMain}>
-                <span style={ppStyles.leverageSummaryEyebrow}>{t("play.leverage_resource_label")}</span>
-                <strong style={ppStyles.leverageSummaryText}>{leverageSummaryText}</strong>
-                <span style={ppStyles.leverageSummaryMeta} title={leverageSummaryMetaText}>{leverageSummaryMetaText}</span>
-                {primaryLeverageCard ? (
-                  <span style={ppStyles.leverageSummaryChips} data-play-leverage-summary-chips="true">
-                    <span style={ppStyles.leverageSummaryChip}>
-                      <span style={ppStyles.leverageSummaryChipLabel}>{t("play.leverage_summary_chip_target")}</span>
-                      <strong style={ppStyles.leverageSummaryChipValue}>{leverageSummaryChipTarget}</strong>
-                    </span>
-                    <span style={ppStyles.leverageSummaryChip}>
-                      <span style={ppStyles.leverageSummaryChipLabel}>{t("play.leverage_summary_chip_risk")}</span>
-                      <strong style={ppStyles.leverageSummaryChipValue}>{t("play.leverage_card_risk")}</strong>
-                    </span>
-                  </span>
-                ) : null}
-              </span>
-              <span
-                style={{
-                  ...ppStyles.leverageSummaryToggle,
-                  ...(compactActionChrome ? ppStyles.leverageSummaryToggleCompact : null),
-                }}
-              >
-                {leverageSummaryToggleText}
-              </span>
-            </button>
+              onActivate={handleLeverageSummaryActivate}
+            />
           )}
           {showLeverageCardPicker ? (
             <div
