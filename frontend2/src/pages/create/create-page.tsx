@@ -482,7 +482,15 @@ export function CreatePage({
   }
 
   useEffect(() => {
-    if (!guideReadyToBrief || !hasSeed || activeBriefResponse || guideBusy || briefBusy || busy) return
+    if (
+      !guideReadyToBrief ||
+      !hasSeed ||
+      privacyPromptVisible ||
+      activeBriefResponse ||
+      guideBusy ||
+      briefBusy ||
+      busy
+    ) return
     if (autoBriefKeyRef.current === currentBriefKey) return
     autoBriefKeyRef.current = currentBriefKey
     void handlePlanStory()
@@ -494,6 +502,7 @@ export function CreatePage({
     guideBusy,
     guideReadyToBrief,
     hasSeed,
+    privacyPromptVisible,
   ])
 
   const handleApplyRevisionAction = (seedAppend: string) => {
