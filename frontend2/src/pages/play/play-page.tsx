@@ -1296,6 +1296,32 @@ export function PlayPage({
       behavior: prefersReducedMotion ? "auto" : "smooth",
     })
   }
+  const renderReviewerEvidenceJump = (placement: "opening" | "turn-feedback") => reviewerMode ? (
+    <section
+      style={ppStyles.reviewerEvidenceJump}
+      aria-label="Reviewer evidence shortcut"
+      data-reviewer-evidence-jump="true"
+      data-reviewer-evidence-jump-placement={placement}
+    >
+      <div style={ppStyles.reviewerEvidenceJumpCopy}>
+        <span style={ppStyles.reviewerEvidenceJumpKicker}>Reviewer evidence</span>
+        <strong style={ppStyles.reviewerEvidenceJumpTitle}>
+          Live state checks are attached below this play surface.
+        </strong>
+        <span style={ppStyles.reviewerEvidenceJumpMeta}>
+          {lastNarrator?.options.length ?? 0} current moves / runtime state / contract checks
+        </span>
+      </div>
+      <button
+        type="button"
+        style={ppStyles.reviewerEvidenceJumpButton}
+        onClick={scrollToReviewerEvidence}
+        data-reviewer-evidence-jump-button="true"
+      >
+        Jump to evidence
+      </button>
+    </section>
+  ) : null
 
   return (
     <div style={ppStyles.page}>
@@ -1334,31 +1360,7 @@ export function PlayPage({
             />
           ) : null}
 
-          {reviewerMode ? (
-            <section
-              style={ppStyles.reviewerEvidenceJump}
-              aria-label="Reviewer evidence shortcut"
-              data-reviewer-evidence-jump="true"
-            >
-              <div style={ppStyles.reviewerEvidenceJumpCopy}>
-                <span style={ppStyles.reviewerEvidenceJumpKicker}>Reviewer evidence</span>
-                <strong style={ppStyles.reviewerEvidenceJumpTitle}>
-                  Live state checks are attached below this play surface.
-                </strong>
-                <span style={ppStyles.reviewerEvidenceJumpMeta}>
-                  {lastNarrator?.options.length ?? 0} current moves / runtime state / contract checks
-                </span>
-              </div>
-              <button
-                type="button"
-                style={ppStyles.reviewerEvidenceJumpButton}
-                onClick={scrollToReviewerEvidence}
-                data-reviewer-evidence-jump-button="true"
-              >
-                Jump to evidence
-              </button>
-            </section>
-          ) : null}
+          {renderReviewerEvidenceJump("opening")}
 
           {/* Gauntlet-mode goals stay as a single reminder line instead of
               another nested panel in the story column. */}
@@ -1505,6 +1507,7 @@ export function PlayPage({
 
           {!isComplete && !busy && turnsCompleted > 0 ? (
             <div data-play-impact-summary-wrap="true">
+              {renderReviewerEvidenceJump("turn-feedback")}
               <GameplayImpactSummary
                 envelope={gameplayEnvelope}
                 castNameById={castNameById}

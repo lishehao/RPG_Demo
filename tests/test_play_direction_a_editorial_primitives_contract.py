@@ -694,6 +694,9 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "getNarrativeLLMEvents" in client
     assert "/narrative/sessions/:session_id/llm-events" in route_map
     assert 'data-reviewer-evidence-jump="true"' in play_page
+    assert 'data-reviewer-evidence-jump-placement={placement}' in play_page
+    assert 'renderReviewerEvidenceJump("opening")' in play_page
+    assert 'renderReviewerEvidenceJump("turn-feedback")' in play_page
     assert 'data-reviewer-evidence-jump-button="true"' in play_page
     assert "scrollToReviewerEvidence" in play_page
     assert "[data-reviewer-evidence='true']" in play_page
