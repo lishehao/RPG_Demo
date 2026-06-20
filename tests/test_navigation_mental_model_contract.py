@@ -140,6 +140,27 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "not required to run or review the demo" in system_map
 
 
+def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
+    readme = (ROOT / "README.zh.md").read_text()
+
+    assert "status-portfolio_case_study" in readme
+    assert "Status: Paused" not in readme
+    assert "status-paused" not in readme
+    assert "alpha / open-source preview" not in readme
+    assert "portfolio-grade AI product-system evidence" in readme
+    assert "不是已经验证过的消费级游戏或大规模用户增长案例" in readme
+    assert "真实用户需求、复玩、留存和自然分享没有被证明" in readme
+    assert "## 申请 / 作品集审阅路径" in readme
+    assert "`#/portfolio`" in readme
+    assert "`#/reviewer`" in readme
+    assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
+    assert "[Case Study](./docs/CASE_STUDY.md)" in readme
+    assert "portfolio case study / open-source preview" in readme
+    assert "consumer traction" in readme
+    assert "Play 容器 + StoryBeat / ActionArea / Advisor / Ending 等模块" in readme
+    assert "play-page.tsx (~2400 行,所有 turn UI 在这)" not in readme
+
+
 def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()

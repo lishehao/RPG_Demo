@@ -9,11 +9,13 @@
 </p>
 
 <p align="center">
-  3 张可选玩家身份 · NPC 之间互握把柄 · 15 种可分享结局 · MIT licensed
+  3 张可选玩家身份 · NPC 之间互握把柄 · 可分享结局 / replay · MIT licensed
 </p>
 
 <p align="center">
   <strong>中文</strong> · <a href="./README.md">English</a> ·
+  <a href="./docs/CURRENT_SYSTEM_MAP.md">Current System Map</a> ·
+  <a href="./docs/CASE_STUDY.md">Case Study</a> ·
   <a href="./docs/PROJECT_PAUSE_2026-05-09.zh.md">项目暂停 memo</a> ·
   <a href="./ARCHITECTURE.zh.md">Architecture deep-dive</a> ·
   <a href="./CONTRIBUTING.zh.md">Contributing</a> ·
@@ -25,18 +27,33 @@
   <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11+-blue.svg" />
   <img alt="React 19" src="https://img.shields.io/badge/react-19-61dafb.svg" />
-  <img alt="Status: Paused" src="https://img.shields.io/badge/status-paused-lightgrey.svg" />
+  <img alt="Status: portfolio case study" src="https://img.shields.io/badge/status-portfolio_case_study-6f42c1.svg" />
 </p>
 
 ---
 
 ## 项目状态
 
-本项目已于 2026-05-09 PDT 暂停.后续应把它视为一个 LLM 互动叙事工程案例,
-而不是正在推进的消费级产品.机制、prompt contract、runtime、评测和素材仍有复用价值,
-但真实用户需求、玩家 agency、复玩和分享闭环尚未被证明.
+当前请把 Tiny Stories 读作 **portfolio-grade AI product-system evidence**:
+它证明的是 typed contracts、持久化 session、可检查 reviewer path、移动端可用的
+play / replay / ending loop,不是已经验证过的消费级游戏或大规模用户增长案例.
 
-重启前先读 [项目暂停 memo](./docs/PROJECT_PAUSE_2026-05-09.zh.md).
+2026-05-09 的 [项目暂停 memo](./docs/PROJECT_PAUSE_2026-05-09.zh.md)
+仍然是重要边界:真实用户需求、复玩、留存和自然分享没有被证明.当前英文主路径以
+[README](./README.md)、[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)
+和 [Case Study](./docs/CASE_STUDY.md) 为准.
+
+## 申请 / 作品集审阅路径
+
+如果你是招生、推荐人或招聘 reviewer,推荐顺序是:
+
+1. 先看 75 秒 demo,理解玩家看到的 loop.
+2. 本地运行后打开 `#/portfolio`,看 guided case-study surface.
+3. 从 portfolio 进入 `#/reviewer`,检查 locked seed、runtime evidence hooks、
+   replay / ending path.
+4. 再读 [Current System Map](./docs/CURRENT_SYSTEM_MAP.md)、
+   [Case Study](./docs/CASE_STUDY.md) 和对应 tests,确认哪些 claim 有 source
+   evidence,哪些还只是下一步验证.
 
 ---
 
@@ -54,7 +71,9 @@ hook → pressure → reversal (强制翻转) → climax → pre_finale
    15 ending labels · 5 个关键时刻 highlight · 2-3 条"你没走过的路"
 ```
 
-**这是给做 LLM-driven 产品的人的 study showcase**,不是给终端用户的 SaaS.机制完整 + 文档详尽 + 可 fork.读懂这个 repo 你能拿到的:**结构化 prompt design + scheduler-driven LLM control + 跨层契约设计** 这一套实战 pattern.
+**这是给做 LLM-driven 产品的人的 portfolio case study**,不是给终端用户的 SaaS.
+机制完整 + 文档详尽 + 可 fork.读懂这个 repo 你能拿到的:**结构化 prompt design +
+scheduler-driven LLM control + 跨层契约设计** 这一套实战 pattern.
 
 ---
 
@@ -66,7 +85,9 @@ hook → pressure → reversal (强制翻转) → climax → pre_finale
 
 完局后给 5 张关键时刻 highlight reel + 2-3 张"你没走过的路" branch 卡片,可一键复制分享链接.
 
-> **Status:** alpha / open-source preview.机制层面成熟,**真人测试数据 0**.如果你 fork 跑起来玩了一局,反馈非常欢迎.
+> **Status:** portfolio case study / open-source preview.机制层面成熟,但
+> **真人测试数据仍不是已证明的 consumer traction**.如果你 fork 跑起来玩了一局,
+> 反馈非常欢迎.
 
 ---
 
@@ -148,7 +169,7 @@ rpg_backend/             FastAPI + Pydantic + SQLite,核心目录
 
 frontend2/               React 19 + TypeScript + Vite,主前端
   src/api/contracts.ts   后端契约的 TS 镜像
-  src/pages/play/        play-page.tsx (~2400 行,所有 turn UI 在这)
+  src/pages/play/        Play 容器 + StoryBeat / ActionArea / Advisor / Ending 等模块
   src/shared/ui/         StageProgressBar / LoadingShim / EmptyState
   src/shared/lib/        webtoon-assets, motion-presets
   public/webtoons/       AI-生成视觉素材 (10 shells / 20 avatars / 5 peaks / etc)
