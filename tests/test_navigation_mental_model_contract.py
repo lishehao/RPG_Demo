@@ -116,6 +116,30 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert ".video-actions span:last-child" in landing
 
 
+def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
+    case_study = (ROOT / "docs/CASE_STUDY.md").read_text()
+    system_map = (ROOT / "docs/CURRENT_SYSTEM_MAP.md").read_text()
+
+    assert "Read this as source evidence after the 75s demo and `#/portfolio` page" in case_study
+    assert "bounded 12-turn session" in case_study
+    assert "8-20 turn" not in case_study
+    assert "## Evidence To Inspect" in case_study
+    assert "`docs/CURRENT_SYSTEM_MAP.md`" in case_study
+    assert "`frontend2/src/pages/portfolio/`, `#/portfolio`, `#/reviewer`" in case_study
+    assert "`rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts`" in case_study
+    assert "`tests/test_navigation_mental_model_contract.py`, `tests/test_play_direction_a_editorial_primitives_contract.py`" in case_study
+    assert "portfolio-grade AI product-system evidence" in case_study
+    assert "not a validated consumer" in case_study
+    assert "broad adoption proof" in case_study
+
+    assert "source-evidence companion to the README, GitHub Pages demo" in system_map
+    assert "what path is current, what code backs it" in system_map
+    assert "provenance rather than the demo being claimed" in system_map
+    assert "current" in system_map
+    assert "portfolio-facing product path is intentionally narrow" in system_map
+    assert "not required to run or review the demo" in system_map
+
+
 def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()

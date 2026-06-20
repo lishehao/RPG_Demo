@@ -1,5 +1,9 @@
 # Tiny Stories Case Study
 
+Read this as source evidence after the 75s demo and `#/portfolio` page. It
+summarizes what the project proves for a reviewer, where that proof lives in
+the codebase, and what is still outside the claim.
+
 ## Problem
 
 Most LLM story demos stop at generated prose. Tiny Stories explores a more
@@ -11,11 +15,21 @@ inspectable runtime with state, roles, replay, and evaluation hooks?
 1. A player types one premise.
 2. The compiler turns it into cast, role cards, hidden goals, leverage, failure
    conditions, and an opening scene.
-3. The player runs a bounded 8-20 turn session with choices, free-form actions,
+3. The player runs a bounded 12-turn session with choices, free-form actions,
    advisor help, inventory shifts, and consequence tracking.
 4. The ending compiler turns the actual run history into a label, passage,
    highlights, alternate branches, and a shareable replay.
 5. A reviewer can open the inspector path to see the state machine behind the UI.
+
+## Evidence To Inspect
+
+| Reviewer question | Source evidence |
+| --- | --- |
+| Does the demo have a current product path rather than a pile of experiments? | `docs/CURRENT_SYSTEM_MAP.md` |
+| Does a reviewer get a guided proof surface? | `frontend2/src/pages/portfolio/`, `#/portfolio`, `#/reviewer` |
+| Is the runtime contract typed and inspectable? | `rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts` |
+| Do choices and consequences persist across turns? | `rpg_backend/narrative/repository.py`, `rpg_backend/narrative/service.py` |
+| Are the application claims guarded in source? | `tests/test_navigation_mental_model_contract.py`, `tests/test_play_direction_a_editorial_primitives_contract.py` |
 
 ## Why It Is More Than A Chatbot
 
@@ -42,7 +56,8 @@ inspectable runtime with state, roles, replay, and evaluation hooks?
 
 ## Current Limits
 
-This is a portfolio-grade AI product system, not a validated consumer game.
+This is portfolio-grade AI product-system evidence, not a validated consumer
+game or broad adoption proof.
 Repeat-play demand, organic sharing, and retention have not been proven. The
 next validation step is a small real-user playtest and the report template in
 `docs/playtest_report.md`.

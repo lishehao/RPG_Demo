@@ -1,5 +1,10 @@
 # Current System Map
 
+Read this as the source-evidence companion to the README, GitHub Pages demo,
+and `#/portfolio` case-study surface. It answers three reviewer questions:
+what path is current, what code backs it, and which older experiments are
+provenance rather than the demo being claimed.
+
 This repository contains multiple generations of the RPG demo. The current
 portfolio-facing product path is intentionally narrow:
 
@@ -47,7 +52,7 @@ tools/http_product_smoke.py        live HTTP smoke for /narrative/* routes
 | `rpg_backend/author/` | Legacy author-job flow for the older published-story library. Public deployments can disable it with `APP_PUBLIC_DEMO_AUTHORING_ENABLED=false`. |
 | `rpg_backend/play/` | Older published-story play runtime. Still covered by tests, but not the current portfolio path. |
 | `rpg_backend/author_v2/`, `rpg_backend/author_v3/`, `rpg_backend/play_v2/` | Iteration layers used to develop mechanics, compilers, and evaluation ideas. |
-| `specs/`, `stitch_handoff/`, `project/` | Design notes and handoff artifacts. Useful for provenance, not required to run the demo. |
+| `specs/`, `stitch_handoff/`, `project/` | Design notes and handoff artifacts. Useful for provenance, not required to run or review the demo. |
 
 ## Current Test Gate
 
