@@ -651,6 +651,45 @@ kbd {
   margin: 0;
 }
 
+.portfolio-source-evidence {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+}
+.portfolio-source-evidence span {
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.portfolio-source-evidence p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.58;
+}
+.portfolio-source-evidence div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.portfolio-source-evidence a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: rgba(255,226,172,0.96);
+  border-bottom: 1px solid rgba(245,200,120,0.42);
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.portfolio-source-evidence a:hover {
+  border-bottom-color: rgba(212,168,83,0.66);
+}
+
 .portfolio-seed,
 .reviewer-hero blockquote {
   margin: 26px 0 0;

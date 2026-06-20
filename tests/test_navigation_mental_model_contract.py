@@ -79,13 +79,21 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
 
 def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
+    data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
     assert "PORTFOLIO_EVIDENCE_BOUNDARY" in portfolio
     assert 'data-portfolio-evidence-boundary="true"' in portfolio
+    assert 'data-portfolio-source-evidence="true"' in portfolio
     assert "Public artifact" in portfolio
     assert "Live reviewer path" in portfolio
     assert "Not claimed" in portfolio
+    assert "Source evidence" in portfolio
+    assert "review code, docs, tests, and the narrow runtime path" in portfolio
+    assert "GitHub repo" in portfolio
+    assert "System map" in portfolio
+    assert 'PUBLIC_REPO_URL = "https://github.com/lishehao/RPG_Demo"' in data
+    assert 'SYSTEM_MAP_URL = "https://github.com/lishehao/RPG_Demo/blob/main/docs/CURRENT_SYSTEM_MAP.md"' in data
     assert "not proof of a launched consumer product or broad user adoption" in portfolio
     assert "product-system evidence, not" in portfolio
     assert "story generation" in portfolio
@@ -93,6 +101,7 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "reliable AI product surface" not in portfolio
     assert ".portfolio-evidence-boundary" in theme
     assert ".portfolio-evidence-boundary__grid" in theme
+    assert ".portfolio-source-evidence" in theme
 
 
 def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:

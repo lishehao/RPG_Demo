@@ -7,9 +7,11 @@ import {
   LOCAL_DEMO_MP4_URL,
   PIPELINE_STEPS,
   PORTFOLIO_METRICS,
+  PUBLIC_REPO_URL,
   REVIEWER_DEMO_ACTIONS,
   REVIEWER_DEMO_SEED,
   REVIEWER_DEMO_TITLE,
+  SYSTEM_MAP_URL,
   YOUTUBE_DEMO_EMBED_URL,
   YOUTUBE_DEMO_URL,
 } from "./portfolio-data"
@@ -142,6 +144,18 @@ export function PortfolioPage({
                 <p>{item.detail}</p>
               </article>
             ))}
+          </div>
+          <div
+            className="portfolio-source-evidence"
+            aria-label="Source evidence links"
+            data-portfolio-source-evidence="true"
+          >
+            <span>Source evidence</span>
+            <p>Open the repo and system map to review code, docs, tests, and the narrow runtime path behind this demo.</p>
+            <div>
+              <a href={PUBLIC_REPO_URL} target="_blank" rel="noreferrer">GitHub repo</a>
+              <a href={SYSTEM_MAP_URL} target="_blank" rel="noreferrer">System map</a>
+            </div>
           </div>
         </section>
 
