@@ -85,6 +85,8 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert '"home.hero_tagline": "Story Desk · Pick, resume, or write a run"' in strings
     assert '"home.hero_sub": "Choose a playable story, reopen saved runs, or write a new opening; each 15 min episode branches through role, pressure, and visible consequences."' in strings
     assert '"home.hero_bullet_2": "Each turn shows pressure, clues, and character state before you choose a move with tradeoffs."' in strings
+    assert 'setError(t("home.error_plaza"))' in home
+    assert '"home.error_plaza": "The story list did not open. You can still write a new story above, or come back in a moment."' in strings
 
     assert 't("header.login")' in header
     assert 't("header.account")' in header

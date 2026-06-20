@@ -293,9 +293,9 @@ export function HomePage({
         if (cancelled) return
         setPublicTemplates(dedupePublicTemplatesForPlaza(res.items))
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return
-        setError(friendlyError(err, t("home.error_plaza")))
+        setError(t("home.error_plaza"))
       })
     return () => {
       cancelled = true
