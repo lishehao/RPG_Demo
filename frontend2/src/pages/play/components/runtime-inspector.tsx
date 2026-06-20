@@ -139,7 +139,7 @@ export function RuntimeInspector({
       </section>
       <div style={ppStyles.evaluationHero}>
         <div style={ppStyles.evaluationVerdictBlock}>
-          <span style={ppStyles.evaluationLabel}>Archived checks</span>
+          <span style={ppStyles.evaluationLabel}>{reviewerCheckLabel}</span>
           <strong style={ppStyles.evaluationVerdict} data-evaluation-verdict={hasArchivedJudgeEvidence ? latestStatus : "pending"}>
             {archivedCheckStatus}
           </strong>
