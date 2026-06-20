@@ -1486,6 +1486,9 @@ export function PlayPage({
                   previousPlayerMessage = prev
                 }
               }
+              const effectiveInventoryDelta = m.role === "narrator"
+                ? effectiveInventoryDeltasByOrd.get(m.ord) ?? m.inventory_delta ?? undefined
+                : undefined
               return (
                 <StoryBeat
                   key={`${m.role}-${m.ord}`}
@@ -1494,7 +1497,7 @@ export function PlayPage({
                   castNameById={castNameById}
                   intensity={
                     m.role === "narrator"
-                      ? computeBeatIntensity(m, turnBudget)
+                      ? computeBeatIntensity(m, turnBudget, effectiveInventoryDelta)
                       : "calm"
                   }
                   sceneUrl={
@@ -1506,11 +1509,7 @@ export function PlayPage({
                         )
                       : undefined
                   }
-                  effectiveInventoryDelta={
-                    m.role === "narrator"
-                      ? effectiveInventoryDeltasByOrd.get(m.ord) ?? m.inventory_delta ?? undefined
-                      : undefined
-                  }
+                  effectiveInventoryDelta={effectiveInventoryDelta}
                   pickedHandle={pickedHandle}
                   pickedActionText={pickedActionText}
                   isLatestNarrator={m.role === "narrator" && m.ord === lastNarrator?.ord}

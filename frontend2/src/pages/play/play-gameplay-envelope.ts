@@ -248,11 +248,11 @@ function buildImpactDeltas(
     deltas.push({ label: "Leverage played", tone: "unlock" })
   }
 
-  if (deltas.length === 0 && liveInventory.length > 0) {
-    deltas.push({ label: `Holding: ${compactLabel(liveInventory[0], 30)}`, tone: "shift" })
-  }
   if (deltas.length === 0 && narratorMessage && narratorMessage.options.length > 0) {
     deltas.push({ label: "Next moves shifted", tone: "shift" })
+  }
+  if (deltas.length === 0 && liveInventory.length > 0) {
+    deltas.push({ label: `Holding: ${compactLabel(liveInventory[0], 30)}`, tone: "shift" })
   }
 
   return deltas.slice(0, 3)

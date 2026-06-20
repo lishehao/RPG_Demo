@@ -566,6 +566,7 @@ function stageForLocal(turnIndex: number, turnBudget: number): string {
 export function computeBeatIntensity(
   message: NarrativeStoryMessage,
   turnBudget: number,
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"],
 ): "calm" | "rising" | "peak" {
   if (message.role !== "narrator") return "calm"
   const turnIndex = Math.floor(message.ord / 2)
@@ -577,7 +578,7 @@ export function computeBeatIntensity(
   const hasColderOrWary = pulses.some(
     (p) => p.shift === "colder" || p.shift === "wary",
   )
-  const delta = message.inventory_delta
+  const delta = effectiveInventoryDelta ?? message.inventory_delta
   const hasDelta = !!(
     delta && (delta.added.length > 0 || delta.removed.length > 0)
   )

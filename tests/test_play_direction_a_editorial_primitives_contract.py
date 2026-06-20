@@ -537,13 +537,24 @@ def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> No
     assert "export function computeEffectiveInventoryDeltas" in panels
     assert "computeEffectiveInventoryDeltas(" in play_page
     assert "const effectiveLastInventoryDelta =" in play_page
+    assert "const effectiveInventoryDelta = m.role === \"narrator\"" in play_page
     assert "effectiveInventoryDelta: effectiveLastInventoryDelta" in play_page
     assert "effectiveInventoryDelta={" in play_page
+    assert "computeBeatIntensity(m, turnBudget, effectiveInventoryDelta)" in play_page
     assert "effectiveLastInventoryDelta={effectiveLastInventoryDelta}" in play_page
     assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in gameplay_envelope
     assert "const inventoryDelta = effectiveInventoryDelta ?? narratorMessage?.inventory_delta" in gameplay_envelope
+    next_moves_idx = gameplay_envelope.index('deltas.push({ label: "Next moves shifted", tone: "shift" })')
+    holding_idx = gameplay_envelope.index("deltas.push({ label: `Holding:")
+    assert next_moves_idx < holding_idx
     assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in story_beat
     assert "const delta = effectiveInventoryDelta ?? message.inventory_delta" in story_beat
+    assert "computeBeatIntensity(" in story_beat
+    assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in story_beat[
+        story_beat.index("export function computeBeatIntensity")
+        :
+        story_beat.index("): \"calm\" | \"rising\" | \"peak\"")
+    ]
     assert "effectiveLastInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in runtime_inspector
     assert 'agentImpactSummary(lastNarrator, "awaiting next narrator beat", effectiveLastInventoryDelta)' in runtime_inspector
     assert 'agentImpactSummary(lastNarrator, "no pulse or inventory delta observed", effectiveInventoryDelta)' in runtime_inspector
