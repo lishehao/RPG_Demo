@@ -518,6 +518,20 @@ def test_remaining_play_flow_panel_candidates_are_wait_boundaries() -> None:
     assert "onClearInventoryFocus" in action_area
 
 
+def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    helper = panels[panels.index("export function computeLiveInventory") : panels.index("// Mirror of backend _stage_for")]
+
+    assert "const normalizeInventoryItem =" in helper
+    assert "const addInventoryItem =" in helper
+    assert "startingAssets.forEach(addInventoryItem)" in helper
+    assert "if (inv.some((existing) => normalizeInventoryItem(existing) === key)) return" in helper
+    assert "addInventoryItem(added)" in helper
+    assert "const key = normalizeInventoryItem(clean)" in helper
+    assert "const target = normalizeInventoryItem(removed)" in helper
+    assert "const item = normalizeInventoryItem(inv[i] ?? \"\")" in helper
+
+
 def test_play_leverage_fixture_mounts_real_action_area_without_backend() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()

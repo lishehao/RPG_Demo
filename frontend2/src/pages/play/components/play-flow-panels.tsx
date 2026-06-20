@@ -303,16 +303,25 @@ export function computeLiveInventory(
   startingAssets: string[],
   messages: NarrativeStoryMessage[],
 ): string[] {
-  const inv: string[] = [...startingAssets]
+  const normalizeInventoryItem = (item: string) => item.replace(/\s+/g, " ").trim().toLowerCase()
+  const inv: string[] = []
+  const addInventoryItem = (item: string) => {
+    const clean = item.replace(/\s+/g, " ").trim()
+    if (!clean) return
+    const key = normalizeInventoryItem(clean)
+    if (inv.some((existing) => normalizeInventoryItem(existing) === key)) return
+    inv.push(clean)
+  }
+  startingAssets.forEach(addInventoryItem)
   for (const msg of messages) {
     if (msg.role !== "narrator" || !msg.inventory_delta) continue
     for (const added of msg.inventory_delta.added) {
-      inv.push(added)
+      addInventoryItem(added)
     }
     for (const removed of msg.inventory_delta.removed) {
-      const target = removed.toLowerCase()
+      const target = normalizeInventoryItem(removed)
       for (let i = 0; i < inv.length; i += 1) {
-        const item = inv[i]?.toLowerCase() ?? ""
+        const item = normalizeInventoryItem(inv[i] ?? "")
         if (item && (item.includes(target) || target.includes(item))) {
           inv.splice(i, 1)
           break
