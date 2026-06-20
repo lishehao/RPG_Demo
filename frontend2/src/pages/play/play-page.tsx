@@ -577,18 +577,24 @@ function GameplayImpactSummary({
                   ? signal as typeof signal & { targetId: string; targetName: string }
                   : null
                 const signalDetail = signal.detail?.trim()
+                const detailLabel = t("play.gameplay_forecast_detail_label")
+                const repeatsDetailLabel =
+                  Boolean(signalDetail) &&
+                  signal.label.trim().toLowerCase() === detailLabel.trim().toLowerCase()
                 const signalContent = (
                   <>
-                    <span style={ppStyles.gameplayNextChoiceChipLabel}>
-                      {signal.label}{signalDetail ? ": " : ""}
-                    </span>
+                    {!repeatsDetailLabel ? (
+                      <span style={ppStyles.gameplayNextChoiceChipLabel}>
+                        {signal.label}{signalDetail ? ": " : ""}
+                      </span>
+                    ) : null}
                     {signalDetail ? (
                       <span
                         style={ppStyles.gameplayNextChoiceChipDetail}
                         data-gameplay-next-choice-signal-detail="true"
                       >
                         <span style={ppStyles.gameplayNextChoiceChipReasonLabel}>
-                          {t("play.gameplay_forecast_detail_label")}:
+                          {detailLabel}:
                         </span>{" "}
                         {signalDetail}
                       </span>
