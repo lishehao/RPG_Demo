@@ -1552,6 +1552,36 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     ).read_text()
 
 
+def test_play_ending_fixture_mounts_real_ending_screen() -> None:
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    fixture = (ROOT / "frontend2/src/pages/play/components/play-ending-fixture.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert '| { name: "playEndingFixture" }' in routes
+    assert 'segments[1] === "play-ending"' in routes
+    assert 'return "#/qa/play-ending"' in routes
+    assert 'import { PlayEndingFixture } from "../pages/play/components/play-ending-fixture"' in app
+    assert 'case "playEndingFixture"' in app
+    assert "<PlayEndingFixture" in app
+    assert 'data-play-ending-fixture="true"' in fixture
+    assert 'data-play-ending-fixture-case="highlight"' in fixture
+    assert 'data-play-ending-fixture-case="recap"' in fixture
+    assert 'import { EndingScreen } from "./ending-screen"' in fixture
+    assert fixture.count("<EndingScreen") == 2
+    assert "const HIGHLIGHT_ENDING: NarrativeEnding" in fixture
+    assert "const RECAP_ENDING: NarrativeEnding" in fixture
+    assert "highlights: []" in fixture
+    assert "branches: [" in fixture
+    assert "new Set([4, 6])" in fixture
+    assert 'shareCopied={copiedCase === "highlight"}' in fixture
+    assert 'shareCopied={copiedCase === "recap"}' in fixture
+    assert 'data-play-ending-actions="true"' not in fixture
+    assert 'data-play-ending-illustration="true"' not in fixture
+    assert 'components/play-ending-fixture.tsx' in readme
+    assert "#/qa/play-ending" in readme
+
+
 def test_latest_narrator_beat_has_lightweight_digest_before_next_action() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()

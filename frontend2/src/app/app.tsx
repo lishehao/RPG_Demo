@@ -7,6 +7,7 @@ import { HomePage } from "../pages/home/home-page"
 import { CreatePage } from "../pages/create/create-page"
 import { PlayPage } from "../pages/play/play-page"
 import { PlayActionStateFixture } from "../pages/play/components/play-action-state-fixture"
+import { PlayEndingFixture } from "../pages/play/components/play-ending-fixture"
 import { PlayGameplayLoopFixture } from "../pages/play/components/play-gameplay-loop-fixture"
 import { PlayRetryFailureFixture } from "../pages/play/components/play-retry-recovery"
 import { AboutPage } from "../pages/about/about-page"
@@ -73,6 +74,8 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       )
     case "playActionFixture":
       return <PlayActionStateFixture scenario={route.scenario} onBackHome={() => navigate({ name: "home" })} />
+    case "playEndingFixture":
+      return <PlayEndingFixture onBackHome={() => navigate({ name: "home" })} />
     case "playGameplayLoopFixture":
       return <PlayGameplayLoopFixture onBackHome={() => navigate({ name: "home" })} />
     case "playRetryFixture":
@@ -135,6 +138,7 @@ function routeKey(route: AppRoute): string {
     case "login": return "login"
     case "create": return "create"
     case "playActionFixture": return route.scenario ? `playActionFixture:${route.scenario}` : "playActionFixture"
+    case "playEndingFixture": return "playEndingFixture"
     case "playGameplayLoopFixture": return "playGameplayLoopFixture"
     case "playRetryFixture": return "playRetryFixture"
     case "about": return "about"
