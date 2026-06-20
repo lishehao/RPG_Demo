@@ -85,6 +85,21 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert ".portfolio-evidence-boundary__grid" in theme
 
 
+def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
+    data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
+
+    assert "Locked seed" in data
+    assert "same premise for every reviewer run" in data
+    assert "12-turn cap" in data
+    assert "bounded episode budget visible in Play" in data
+    assert "3 proofs" in data
+    assert "playable state, state change, archived checks" in data
+    assert "Replay loop" in data
+    assert "ending can be shared or restarted" in data
+    assert "5 layers" not in data
+    assert "EN first" not in data
+
+
 def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     header = (ROOT / "frontend2/src/shared/ui/header.tsx").read_text()
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()

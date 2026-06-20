@@ -20,10 +20,10 @@ export const REVIEWER_DEMO_ACTIONS = [
 ] as const
 
 export const PORTFOLIO_METRICS = [
-  { value: "1 seed", label: "from prompt to playable runtime" },
-  { value: "12 turns", label: "bounded episode arc for demo reliability" },
-  { value: "5 layers", label: "seed, role, state, advisor, ending" },
-  { value: "EN first", label: "portfolio-facing path and UI copy" },
+  { value: "Locked seed", label: "same premise for every reviewer run" },
+  { value: "12-turn cap", label: "bounded episode budget visible in Play" },
+  { value: "3 proofs", label: "playable state, state change, archived checks" },
+  { value: "Replay loop", label: "ending can be shared or restarted" },
 ] as const
 
 export const PIPELINE_STEPS = [
