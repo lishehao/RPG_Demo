@@ -145,8 +145,11 @@ def test_action_option_card_module_owns_forecast_and_detail_display_hooks() -> N
     assert "export function ActionDecisionForecast" in action_option
     assert "export function ActionCollapsedForecast" in action_option
     assert "export function ActionSelectedOptionDetail" in action_option
+    assert "function forecastChipReadableText" in action_option
     assert 'data-gameplay-decision-forecast="true"' in action_option
+    assert 'data-gameplay-decision-forecast-readable-label={forecastReadableLabel}' in action_option
     assert 'data-gameplay-action-forecast-summary="true"' in action_option
+    assert 'data-gameplay-action-forecast-summary-readable-label={forecastReadableLabel}' in action_option
     assert 'data-play-action-card-detail="true"' in action_option
     assert 'data-play-action-card-detail-section="forecast"' in action_option
     assert 'data-play-action-card-detail-section="why-now"' in action_option
@@ -1522,6 +1525,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-forecast-detail="normal-play"' in action_option
     assert 'data-gameplay-forecast-reason-preview="normal-play"' in action_option
     assert 'data-gameplay-forecast-reason-text="normal-play"' in action_option
+    assert 'data-gameplay-action-forecast-summary-readable-label={forecastReadableLabel}' in action_option
+    assert 'data-gameplay-decision-forecast-readable-label={forecastReadableLabel}' in action_option
     assert 't("play.gameplay_forecast_detail_preview")' in action_option
     assert 'aria-label={`${t("play.gameplay_forecast_detail_label")}: ${reasonChip.detail}`}' in action_option
     assert "gameplayForecastInlineWithReason" in styles

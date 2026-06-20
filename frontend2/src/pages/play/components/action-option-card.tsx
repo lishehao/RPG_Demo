@@ -28,6 +28,10 @@ function forecastToneStyle(chip: GameplayActionForecast) {
   return {}
 }
 
+function forecastChipReadableText(chip: GameplayActionForecast) {
+  return chip.detail ? `${chip.label}: ${chip.detail}` : chip.label
+}
+
 function normalizeForecastEchoText(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9+\-\s]+/gi, " ").replace(/\s+/g, " ").trim()
 }
@@ -69,6 +73,12 @@ export function ActionDecisionForecast({
     { id: "upside" as const, chips: visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === "upside") },
     { id: "shift" as const, chips: visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === "shift") },
   ].filter((group) => group.chips.length > 0)
+  const forecastReadableLabel = [
+    t("play.gameplay_decision_forecast_label"),
+    ...groups.flatMap((group) =>
+      group.chips.map((chip) => `${labelForGroup(group.id)}: ${forecastChipReadableText(chip)}`),
+    ),
+  ].join(". ")
 
   return (
     <span
@@ -78,7 +88,8 @@ export function ActionDecisionForecast({
         ...(detail ? ppStyles.gameplayDecisionForecastDetail : null),
       }}
       data-gameplay-decision-forecast="true"
-      aria-label={t("play.gameplay_decision_forecast_label")}
+      data-gameplay-decision-forecast-readable-label={forecastReadableLabel}
+      aria-label={forecastReadableLabel}
     >
       <span style={ppStyles.gameplayDecisionForecastHeader}>
         {t("play.gameplay_decision_forecast_label")}
@@ -133,6 +144,11 @@ export function ActionCollapsedForecast({ chips }: { chips: GameplayActionForeca
   if (!chips.length) return null
   const reasonChip = chips.find((chip) => chip.detail)
   const visibleChips = chips.filter((chip) => !chip.detail).slice(0, 3)
+  const forecastReadableLabel = [
+    t("play.gameplay_decision_forecast_label"),
+    ...visibleChips.map(forecastChipReadableText),
+    ...(reasonChip?.detail ? [`${t("play.gameplay_forecast_detail_label")}: ${reasonChip.detail}`] : []),
+  ].join(". ")
   return (
     <span
       style={{
@@ -140,7 +156,8 @@ export function ActionCollapsedForecast({ chips }: { chips: GameplayActionForeca
         ...(reasonChip?.detail ? ppStyles.gameplayForecastInlineWithReason : null),
       }}
       data-gameplay-action-forecast-summary="true"
-      aria-label={t("play.gameplay_decision_forecast_label")}
+      data-gameplay-action-forecast-summary-readable-label={forecastReadableLabel}
+      aria-label={forecastReadableLabel}
     >
       <span style={ppStyles.gameplayForecastInlineChips}>
         <span style={ppStyles.gameplayForecastInlineLabel}>
