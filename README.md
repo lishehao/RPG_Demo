@@ -219,7 +219,7 @@ Each turn follows the same control pattern:
 | Persistence | `rpg_backend/narrative/repository.py` |
 | HTTP/session flow | `rpg_backend/narrative/service.py`, `rpg_backend/main.py` |
 | Auth, quota, migration safety | `rpg_backend/main.py`, `rpg_backend/quotas.py`, `rpg_backend/auth/storage.py`, `rpg_backend/library/storage.py` |
-| Play UI | `frontend2/src/pages/play/play-page.tsx` |
+| Play UI | `frontend2/src/pages/play/` (`play-page.tsx` plus StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules) |
 | Reviewer layer | `frontend2/src/pages/portfolio/` |
 | Programmatic demo | `remotion-demo/src/AdmissionsDemoTrailer.tsx` |
 

@@ -71,7 +71,7 @@ Core runtime boundaries:
 - Story Brief/entity hygiene: `rpg_backend/narrative/brief.py`.
 - Judge and reviewer evidence contracts: `rpg_backend/narrative/judges.py`,
   `rpg_backend/narrative/contracts.py`, and
-  `frontend2/src/pages/play/components/play-flow-panels.tsx`.
+  `frontend2/src/pages/play/components/runtime-inspector.tsx`.
 - Live evaluation harness:
   `tools/rpg_eval/tiny_stories_reliability_harness.py`.
 

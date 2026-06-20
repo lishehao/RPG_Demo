@@ -100,6 +100,8 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "portfolio-grade AI product-system evidence" in readme
     assert "It is not claimed as a launched consumer" in readme
     assert "game or broad adoption proof" in readme
+    assert "| Play UI | `frontend2/src/pages/play/`" in readme
+    assert "StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules" in readme
 
 
 def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
@@ -128,6 +130,7 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
 def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     case_study = (ROOT / "docs/CASE_STUDY.md").read_text()
     system_map = (ROOT / "docs/CURRENT_SYSTEM_MAP.md").read_text()
+    evidence_packet = (ROOT / "docs/tiny-stories-engineering-evidence-packet.md").read_text()
 
     assert "Read this as source evidence after the 75s demo and `#/portfolio` page" in case_study
     assert "bounded 12-turn session" in case_study
@@ -147,6 +150,13 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "current" in system_map
     assert "portfolio-facing product path is intentionally narrow" in system_map
     assert "not required to run or review the demo" in system_map
+
+    assert "`frontend2/src/pages/play/components/runtime-inspector.tsx`" in evidence_packet
+    evidence_contracts = evidence_packet[
+        evidence_packet.index("Judge and reviewer evidence contracts:")
+        : evidence_packet.index("- Live evaluation harness:")
+    ]
+    assert "play-flow-panels.tsx" not in evidence_contracts
 
 
 def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
