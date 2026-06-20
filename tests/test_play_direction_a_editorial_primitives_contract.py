@@ -125,6 +125,36 @@ def test_story_beat_module_owns_receipts_digest_and_player_hooks() -> None:
     assert "components/story-beat.tsx" in readme
 
 
+def test_action_option_card_module_owns_forecast_and_detail_display_hooks() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    action_option = (ROOT / "frontend2/src/pages/play/components/action-option-card.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./action-option-card"' in panels
+    assert "ActionCollapsedForecast" in panels
+    assert "ActionSelectedOptionDetail" in panels
+    assert "export function ActionDecisionForecast" in action_option
+    assert "export function ActionCollapsedForecast" in action_option
+    assert "export function ActionSelectedOptionDetail" in action_option
+    assert 'data-gameplay-decision-forecast="true"' in action_option
+    assert 'data-gameplay-action-forecast-summary="true"' in action_option
+    assert 'data-play-action-card-detail="true"' in action_option
+    assert 'data-play-action-card-detail-section="forecast"' in action_option
+    assert 'data-play-action-card-detail-section="why-now"' in action_option
+    assert 'data-play-action-card-detail-section="result"' in action_option
+    assert 'data-play-action-card-detail-section="intent"' in action_option
+    assert "function hintEchoesForecastChips" in action_option
+    assert "renderDecisionForecast" not in panels
+    assert "renderCollapsedForecast" not in panels
+    assert "renderSelectedOptionDetail" not in panels
+    assert 'data-gameplay-action-forecast-summary="true"' not in panels
+    assert 'data-play-action-card-detail="true"' not in panels
+    assert "handleOptionCommit" not in action_option
+    assert "onSubmitFree" not in action_option
+    assert "setShowDiary" not in action_option
+    assert "components/action-option-card.tsx" in readme
+
+
 def test_play_advisor_fixture_mounts_real_advisor_surface_without_backend() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
@@ -632,6 +662,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
+    action_option = (ROOT / "frontend2/src/pages/play/components/action-option-card.tsx").read_text()
     envelope = (ROOT / "frontend2/src/pages/play/play-gameplay-envelope.ts").read_text()
     contracts = (ROOT / "frontend2/src/api/contracts.ts").read_text()
     backend_contracts = (ROOT / "rpg_backend/narrative/contracts.py").read_text()
@@ -829,10 +860,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'aria-label={t("play.action_target_title", { name: actionTarget.name })}' in panels
     assert 't("play.action_target_label")' in panels
     assert 't("play.action_target_title", { name: actionTarget.name })' in panels
-    assert 'data-play-action-target-detail="true"' in panels
-    assert "data-play-action-target-detail-id={target.id}" in panels
-    assert 't("play.action_target_detail_label")' in panels
-    assert 't("play.action_target_detail_text", { name: target.name })' in panels
+    assert 'data-play-action-target-detail="true"' in action_option
+    assert "data-play-action-target-detail-id={target.id}" in action_option
+    assert 't("play.action_target_detail_label")' in action_option
+    assert 't("play.action_target_detail_text", { name: target.name })' in action_option
     assert "type ResolvingCommitmentSignal = {" in panels
     assert "const resolvingCommitmentSignals = useMemo<ResolvingCommitmentSignal[]>" in panels
     assert 'data-play-move-receipt-signals="true"' in panels
@@ -917,23 +948,23 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.actor_focus_cta_none": "Write own move"' in strings
     assert '"play.actor_focus_active_none": "Ready to write"' in strings
     assert '"play.actor_focus_custom_label": "Write {name} into a move"' in strings
-    assert "const visibleChips = chips.filter((chip) => !chip.detail)" in panels
-    assert "visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === \"cost\")" in panels
-    assert "{visibleChips.map((chip) => (" in panels
-    assert 'data-gameplay-forecast-detail-chip="normal-play"' not in panels
+    assert "const visibleChips = chips.filter((chip) => !chip.detail)" in action_option
+    assert "visibleChips.filter((chip) => decisionForecastGroupForChip(chip) === \"cost\")" in action_option
+    assert "{visibleChips.map((chip) => (" in action_option
+    assert 'data-gameplay-forecast-detail-chip="normal-play"' not in action_option
     assert "optionExpandedDetailBody" in styles
     assert "optionExpandedDetailChip" in styles
     assert "optionExpandedDetailHeader" in styles
-    assert 'data-play-action-card-detail-heading="true"' in panels
-    assert 't("play.action_decision_check_label")' in panels
-    assert panels.index('data-play-action-card-detail-section="forecast"') < panels.index('data-play-action-card-detail-section="result"')
-    assert panels.index('data-play-action-card-detail-section="why-now"') < panels.index('data-play-action-target-detail="true"')
-    assert panels.index('data-play-action-target-detail="true"') < panels.index('data-play-action-card-detail-section="intent"')
-    assert 'data-gameplay-forecast-detail="normal-play"' in panels
-    assert 'data-gameplay-forecast-reason-preview="normal-play"' in panels
-    assert 'data-gameplay-forecast-reason-text="normal-play"' in panels
-    assert 't("play.gameplay_forecast_detail_preview")' in panels
-    assert 'aria-label={`${t("play.gameplay_forecast_detail_label")}: ${reasonChip.detail}`}' in panels
+    assert 'data-play-action-card-detail-heading="true"' in action_option
+    assert 't("play.action_decision_check_label")' in action_option
+    assert action_option.index('data-play-action-card-detail-section="forecast"') < action_option.index('data-play-action-card-detail-section="result"')
+    assert action_option.index('data-play-action-card-detail-section="why-now"') < action_option.index('data-play-action-target-detail="true"')
+    assert action_option.index('data-play-action-target-detail="true"') < action_option.index('data-play-action-card-detail-section="intent"')
+    assert 'data-gameplay-forecast-detail="normal-play"' in action_option
+    assert 'data-gameplay-forecast-reason-preview="normal-play"' in action_option
+    assert 'data-gameplay-forecast-reason-text="normal-play"' in action_option
+    assert 't("play.gameplay_forecast_detail_preview")' in action_option
+    assert 'aria-label={`${t("play.gameplay_forecast_detail_label")}: ${reasonChip.detail}`}' in action_option
     assert "gameplayForecastInlineWithReason" in styles
     assert "gameplayForecastReasonPreview" in styles
     assert '"play.gameplay_forecast_detail_label": "Why now"' in strings
@@ -972,10 +1003,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-stakes-header="normal-play"' in play_page
     assert "data-gameplay-pressure-track={track.id}" in play_page
     assert 'data-gameplay-action-forecast="true"' in panels
-    assert 'data-gameplay-forecast-chip="normal-play"' in panels
-    assert 'data-gameplay-decision-forecast="true"' in panels
-    assert 'data-gameplay-decision-group={group.id}' in panels
-    assert 'type DecisionForecastGroup = "cost" | "upside" | "shift"' in panels
+    assert 'data-gameplay-forecast-chip="normal-play"' in action_option
+    assert 'data-gameplay-decision-forecast="true"' in action_option
+    assert 'data-gameplay-decision-group={group.id}' in action_option
+    assert 'type DecisionForecastGroup = "cost" | "upside" | "shift"' in action_option
     assert 'data-gameplay-impact-summary="true"' in play_page
     assert 'data-gameplay-impact-result-layer="true"' in play_page
     assert 'aria-label={t("play.feedback_result_layer_label")}' in play_page
@@ -1238,11 +1269,13 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
 def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    action_option = (ROOT / "frontend2/src/pages/play/components/action-option-card.tsx").read_text()
     advisor_panel = (ROOT / "frontend2/src/pages/play/components/advisor-panel.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    selected_confirm_start = panels.index("const renderSelectedOptionConfirm")
     selected_confirm = panels[
-        panels.index("const renderSelectedOptionConfirm") : panels.index("const renderSelectedOptionDetail")
+        selected_confirm_start : panels.index("\n\n  return (", selected_confirm_start)
     ]
     selected_confirm_styles = styles[
         styles.index("optionCardConfirmPanel") : styles.index("optionCardSecondaryRow")
@@ -1254,20 +1287,20 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-decision-tray="true"' not in panels
     assert 'data-play-action-card-expanded={isSelected ? "true" : undefined}' in panels
     assert 'data-play-action-card-select-cue="true"' in panels
-    assert 'data-play-action-card-detail="true"' in panels
+    assert 'data-play-action-card-detail="true"' in action_option
     assert 'data-play-action-card-title="true"' in panels
     assert 'data-play-action-card-body="true"' in panels
     assert "function optionTagGuide" in panels
     assert 'data-play-action-card-intent="true"' in panels
-    assert 'data-play-action-card-detail-section="intent"' in panels
-    assert 'data-play-action-intent-chip="true"' in panels
-    assert 'data-play-action-intent-detail="true"' in panels
+    assert 'data-play-action-card-detail-section="intent"' in action_option
+    assert 'data-play-action-intent-chip="true"' in action_option
+    assert 'data-play-action-intent-detail="true"' in action_option
     assert 'data-play-turn-guide="true"' in panels
     assert 'title={optionIntentGuide?.description}' in panels
     assert 'aria-label={optionIntentGuide?.description}' in panels
-    assert 'data-play-action-card-detail-section="result"' in panels
-    assert 'data-play-action-card-detail-section="forecast"' in panels
-    assert 'data-play-action-card-detail-section="why-now"' in panels
+    assert 'data-play-action-card-detail-section="result"' in action_option
+    assert 'data-play-action-card-detail-section="forecast"' in action_option
+    assert 'data-play-action-card-detail-section="why-now"' in action_option
     assert 'data-play-action-card-confirm="true"' in panels
     assert 'data-play-action-card-confirm-panel="true"' in panels
     assert 'data-play-selected-move-submit-summary="true"' in panels
@@ -1342,16 +1375,16 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "onOpenAdvisor" not in selected_confirm
     assert "option_change_cta" not in selected_confirm
     assert "optionForecasts.length && !isSelected" in panels
-    assert "renderCollapsedForecast(optionForecasts)" in panels
-    assert 'data-gameplay-action-forecast-summary="true"' in panels
+    assert "<ActionCollapsedForecast chips={optionForecasts} />" in panels
+    assert 'data-gameplay-action-forecast-summary="true"' in action_option
     assert "actionTarget && !isSelected" in panels
     option_expand_cue = styles[styles.index("optionExpandCue:") : styles.index("optionExpandCueActive:")]
     assert 'borderRadius: 5' in option_expand_cue
     assert 'background: "rgba(213,154,62,0.10)"' in option_expand_cue
     assert 'borderBottomStyle: "solid"' in option_expand_cue
-    assert "const hintEchoesForecastChips" in panels
-    assert "const showNarrativeResult = hint.trim().length > 0 && !hintEchoesForecastChips(hint, forecasts)" in panels
-    assert 'hint || t("play.preview_action_risk_default")' not in panels
+    assert "function hintEchoesForecastChips" in action_option
+    assert "const showNarrativeResult = hint.trim().length > 0 && !hintEchoesForecastChips(hint, forecasts)" in action_option
+    assert 'hint || t("play.preview_action_risk_default")' not in action_option
     assert "gameplayForecastInline" in styles
     assert "gameplayForecastInlineLabel" in styles
     assert '"play.option_forecast_kicker": "Likely impact"' in strings

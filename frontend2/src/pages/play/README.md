@@ -10,6 +10,8 @@
   - View/helper module for run context, stage header, action area, resolving rows, and action-side local display helpers.
 - `components/story-beat.tsx`
   - Story beat display module: narrator/player beat rendering, latest-beat digest, outcome/intent receipts, leverage payoff, parallax scene banner, and beat intensity helper.
+- `components/action-option-card.tsx`
+  - Action option display module: forecast chips, collapsed forecast summaries, and selected option detail/readout sections. `ActionArea` still owns selection state, confirmation, motive editing, and submission.
 - `components/advisor-panel.tsx`
   - Advisor surface module: floating advisor button, sidechat drawer, advisor suggestions, transcript rendering, deep-read confirmation, and advisor-specific player hooks.
 - `components/play-advisor-fixture.tsx`
@@ -47,6 +49,6 @@
 
 `components/play-flow-panels.tsx` remains the next split target. Safe boundaries are:
 
-- `ActionArea` plus action choice/free-input/leverage rows.
+- Remaining `ActionArea` surfaces around free-input, leverage rows, and confirmation chrome, but only as separate display-only slices with action submission still owned by `ActionArea`.
 
 Do not split those in the same patch as a behavior change. Keep source guards and browser smoke around action submission, payoff focus, reviewer gating, and mobile action visibility.
