@@ -2078,6 +2078,9 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "impactSummaryVisible" in play_page
     assert "&& !impactSummaryVisible" in play_page
     assert "const actionJumpDetail =" in play_page
+    assert "const actionJumpCompactDetail =" in play_page
+    assert 't("play.action_jump_detail_update_compact")' in play_page
+    assert 't("play.action_jump_detail_choose_compact")' in play_page
     assert "const handleActionJump = useCallback" in play_page
     assert "setShowActionJump(false)" in play_page
     assert "scrollToPlayImpactSummaryOrAction()" in play_page
@@ -2085,6 +2088,7 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "onClick={handleActionJump}" in play_page
     assert "stage={gameplayLoopStage}" in play_page
     assert "detail={actionJumpDetail}" in play_page
+    assert "compactDetail={actionJumpCompactDetail}" in play_page
     assert "useCompactLayout(\"(max-width: 680px)\")" in action_jump
     assert "compactDetail?: string" in action_jump
     assert "const detailCopy = compactJump ? compactDetail?.trim() : detail?.trim()" in action_jump

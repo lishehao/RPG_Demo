@@ -1234,6 +1234,12 @@ export function PlayPage({
       : gameplayLoopStage === "choose"
         ? t("play.action_jump_detail_choose")
         : t("play.action_jump_detail_default")
+  const actionJumpCompactDetail =
+    gameplayLoopStage === "update"
+      ? t("play.action_jump_detail_update_compact")
+      : gameplayLoopStage === "choose"
+        ? t("play.action_jump_detail_choose_compact")
+        : t("play.action_jump_detail_default")
   const focusedActorName = focusedActorId ? castNameById[focusedActorId] ?? focusedActorId : null
   const actorFocus = focusedActorId && focusedActorName
     ? { id: focusedActorId, name: focusedActorName }
@@ -1702,6 +1708,7 @@ export function PlayPage({
         {showActionJump ? (
           <PlayActionJumpButton
             detail={actionJumpDetail}
+            compactDetail={actionJumpCompactDetail}
             onClick={handleActionJump}
             stage={gameplayLoopStage}
           />
