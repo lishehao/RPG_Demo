@@ -210,6 +210,17 @@ def test_replay_preview_labels_why_highlights_matter() -> None:
     assert '"replay.preview_why_label": "Why it mattered"' in strings
 
 
+def test_replay_hero_preserves_player_role_context() -> None:
+    replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert "replay.player_role?.label" in replay
+    assert 't("replay.role_meta", { role: replay.player_role.label })' in replay
+    assert 'data-replay-hero-role="true"' in replay
+    assert '"replay.role_meta": "扮演 {role}"' in strings
+    assert '"replay.role_meta": "Played as {role}"' in strings
+
+
 def test_home_story_entries_are_generated_playable_template_objects() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()

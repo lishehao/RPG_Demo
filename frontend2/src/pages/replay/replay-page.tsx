@@ -125,6 +125,9 @@ export function ReplayPage({
     ? lang === "en" ? `"${replay.ending.subtitle}"` : `「${replay.ending.subtitle}」`
     : ""
   const castLine = replay.cast.map((c) => c.display_name).join(" · ")
+  const roleLine = replay.player_role?.label
+    ? t("replay.role_meta", { role: replay.player_role.label })
+    : null
   const hasPreviewHighlights = Boolean(replay.ending?.highlights && replay.ending.highlights.length > 0)
 
   return (
@@ -145,7 +148,9 @@ export function ReplayPage({
           {displaySummary ? <p style={rpStyles.heroSeed}>"{displaySummary}"</p> : null}
           <div style={rpStyles.heroMetaLine}>
             {castLine ? <span>{castLine}</span> : null}
-            {castLine ? <span style={rpStyles.heroMetaDot}>·</span> : null}
+            {castLine && roleLine ? <span style={rpStyles.heroMetaDot}>·</span> : null}
+            {roleLine ? <span data-replay-hero-role="true">{roleLine}</span> : null}
+            {castLine || roleLine ? <span style={rpStyles.heroMetaDot}>·</span> : null}
             <span>
               {replay.completed
                 ? t("replay.completed_meta")
