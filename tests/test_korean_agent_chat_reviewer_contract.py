@@ -33,6 +33,11 @@ def test_reviewer_launch_explains_async_progress_to_external_reviewers() -> None
     assert 'data-reviewer-launch-step={step.phase}' in source
     assert 'data-reviewer-launch-step-state={state}' in source
     assert 'data-reviewer-launch-cta={busy ? "starting" : "ready"}' in source
+    assert "launchPlanRef" in source
+    assert 'if (!busy || launchPhase === "ready") return' in source
+    assert "plan.scrollIntoView" in source
+    assert 'block: "start"' in source
+    assert 'prefers-reduced-motion: reduce' in source
     assert 'setLaunchPhase("brief")' in source
     assert 'setLaunchPhase("runtime")' in source
     assert 'setLaunchPhase("opening")' in source

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion } from "motion/react"
 import { useApi } from "../../app/api-context"
 import { useAuth } from "../../app/auth-context"
@@ -76,6 +76,21 @@ export function ReviewerPage({
   const [error, setError] = useState<string | null>(null)
   const [launchPhase, setLaunchPhase] = useState<LaunchPhase>("ready")
   const inflightRef = useRef(false)
+  const launchPlanRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!busy || launchPhase === "ready") return
+    const frame = window.requestAnimationFrame(() => {
+      const plan = launchPlanRef.current
+      if (!plan) return
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      plan.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start",
+      })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [busy, launchPhase])
 
   const handleStart = async () => {
     if (inflightRef.current || auth.loading) return
@@ -173,6 +188,7 @@ export function ReviewerPage({
             aria-label="Reviewer launch progress"
             data-reviewer-launch-plan="true"
             data-reviewer-launch-state={busy ? launchPhase : "ready"}
+            ref={launchPlanRef}
           >
             <div className="reviewer-launch-plan__head">
               <span>{busy ? "Preparing reviewer run" : "What the start button prepares"}</span>
