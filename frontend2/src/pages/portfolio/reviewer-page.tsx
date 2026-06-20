@@ -54,6 +54,9 @@ const REVIEWER_EVIDENCE_CHECKS = [
   },
 ] as const
 
+const REVIEWER_LAUNCH_ERROR =
+  "The reviewer run did not open this time. The locked seed is still here; press Start curated run again, or use normal author flow."
+
 const launchPhaseIndex = (phase: LaunchPhase) =>
   REVIEWER_LAUNCH_STEPS.findIndex((step) => step.phase === phase)
 
@@ -103,7 +106,7 @@ export function ReviewerPage({
       setLaunchPhase("opening")
       onSessionStarted(response.session.session_id)
     } catch {
-      setError("Could not launch the reviewer demo from the curated brief. Please retry.")
+      setError(REVIEWER_LAUNCH_ERROR)
       inflightRef.current = false
       setBusy(false)
       setLaunchPhase("ready")
@@ -204,7 +207,11 @@ export function ReviewerPage({
             <summary>Read locked seed</summary>
             <blockquote>"{REVIEWER_DEMO_SEED}"</blockquote>
           </details>
-          {error ? <div className="reviewer-error">{error}</div> : null}
+          {error ? (
+            <div className="reviewer-error" data-reviewer-launch-error="true">
+              {error}
+            </div>
+          ) : null}
         </motion.section>
 
         <ol className="reviewer-checklist" aria-label="Reviewer path">

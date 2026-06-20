@@ -41,6 +41,20 @@ def test_reviewer_launch_explains_async_progress_to_external_reviewers() -> None
     assert ".reviewer-launch-plan__head" in theme
 
 
+def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
+    source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
+
+    assert "REVIEWER_LAUNCH_ERROR" in source
+    assert "The reviewer run did not open this time." in source
+    assert "The locked seed is still here" in source
+    assert "press Start curated run again" in source
+    assert "use normal author flow" in source
+    assert 'data-reviewer-launch-error="true"' in source
+    assert "Could not launch" not in source
+    assert "server" not in source.lower()
+    assert "backend" not in source.lower()
+
+
 def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
