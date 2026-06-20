@@ -113,6 +113,7 @@ export function CreatePage({
   const [busyElapsedSeconds, setBusyElapsedSeconds] = useState(0)
   const [briefBusyElapsedSeconds, setBriefBusyElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [generationError, setGenerationError] = useState(false)
   const [briefError, setBriefError] = useState<string | null>(null)
   const [briefResponse, setBriefResponse] = useState<NarrativeStoryBriefAdvisorResponse | null>(null)
   const [briefResponseKey, setBriefResponseKey] = useState<string | null>(null)
@@ -120,6 +121,7 @@ export function CreatePage({
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
   const briefMessageRef = useRef<HTMLDivElement | null>(null)
   const briefErrorRef = useRef<HTMLDivElement | null>(null)
+  const generationErrorRef = useRef<HTMLDivElement | null>(null)
   const generationHandoffRef = useRef<HTMLDivElement | null>(null)
   const transcriptEndRef = useRef<HTMLDivElement | null>(null)
   const guestHandleRef = useRef<string | null>(null)
@@ -233,6 +235,7 @@ export function CreatePage({
     if (!auth.isAnonymous) return true
     if (auth.loading) {
       setError(t("create.error_guest_loading"))
+      setGenerationError(false)
       return false
     }
     if (!guestHandleRef.current) {
@@ -243,6 +246,7 @@ export function CreatePage({
       return true
     } catch (err) {
       setError(friendlyError(err, t("create.error_guest_failed")))
+      setGenerationError(false)
       return false
     }
   }
@@ -374,6 +378,14 @@ export function CreatePage({
   }, [briefError])
 
   useEffect(() => {
+    if (!generationError || !error || busy) return
+    const id = window.setTimeout(() => {
+      generationErrorRef.current?.scrollIntoView({ block: "center", behavior: "auto" })
+    }, 40)
+    return () => window.clearTimeout(id)
+  }, [busy, error, generationError])
+
+  useEffect(() => {
     if (!busy) return
     const id = window.setTimeout(() => {
       generationHandoffRef.current?.scrollIntoView({ block: "center", behavior: "auto" })
@@ -385,6 +397,7 @@ export function CreatePage({
     const trimmed = seed.trim()
     if (!trimmed) {
       setError(t("create.error_seed_required"))
+      setGenerationError(false)
       return
     }
     if (inflightRef.current) return
@@ -392,6 +405,7 @@ export function CreatePage({
     setBusy(true)
     setOpeningHandoffLabelKey(null)
     setError(null)
+    setGenerationError(false)
     try {
       const startedAt = Date.now()
       const authorReady = await ensureAuthorSession()
@@ -421,7 +435,13 @@ export function CreatePage({
       }
       onSessionStarted(response.session.session_id)
     } catch (err) {
-      setError(friendlyError(err, t("create.error_create_failed")))
+      if (canGenerateFromBrief) {
+        setError(t("create.generation_error_failed"))
+        setGenerationError(true)
+      } else {
+        setError(friendlyError(err, t("create.error_create_failed")))
+        setGenerationError(false)
+      }
       setBusy(false)
       inflightRef.current = false
     }
@@ -434,6 +454,7 @@ export function CreatePage({
     const trimmed = seed.trim()
     if (!trimmed) {
       setError(t("create.error_seed_required"))
+      setGenerationError(false)
       return
     }
     if (briefBusy || busy) return
@@ -461,6 +482,7 @@ export function CreatePage({
     setBriefBusy(true)
     setBriefError(null)
     setError(null)
+    setGenerationError(false)
     setGuideLoopState((current) => markStoryGuideAnalyzing(current, uiLang))
     try {
       const authorReady = await ensureAuthorSession()
@@ -550,6 +572,7 @@ export function CreatePage({
     const trimmed = rawText.trim()
     if (!trimmed) {
       setError(t("create.error_seed_required"))
+      setGenerationError(false)
       return
     }
     if (guideBusy || briefBusy || busy) return
@@ -561,6 +584,7 @@ export function CreatePage({
     setDraftTurn("")
     setPrivacySetupVisible(false)
     setError(null)
+    setGenerationError(false)
     setBriefResponse(null)
     setBriefResponseKey(null)
     setBriefError(null)
@@ -645,6 +669,7 @@ export function CreatePage({
     setBriefResponseKey(null)
     setBriefError(null)
     setError(null)
+    setGenerationError(false)
     setPrivacySetupVisible(false)
     setPrivacyPromptVisible(false)
     setPrivacyRecordedVisibility("private")
@@ -1093,7 +1118,20 @@ export function CreatePage({
             </>
           ) : null}
 
-          {error ? <div style={cpStyles.error}>{error}</div> : null}
+          {error ? (
+            generationError ? (
+              <div
+                ref={generationErrorRef}
+                style={cpStyles.briefErrorPanel}
+                data-create-generation-error="true"
+              >
+                <span style={cpStyles.briefErrorText}>{error}</span>
+                <span style={cpStyles.briefErrorHint}>{t("create.generation_error_recovery_hint")}</span>
+              </div>
+            ) : (
+              <div style={cpStyles.error}>{error}</div>
+            )
+          ) : null}
           {briefError ? (
             <div ref={briefErrorRef} style={cpStyles.briefErrorPanel} data-create-brief-error="true">
               <span style={cpStyles.briefErrorText}>{briefError}</span>
