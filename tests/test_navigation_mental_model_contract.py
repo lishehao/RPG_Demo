@@ -152,6 +152,15 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "not required to run or review the demo" in system_map
 
     assert "`frontend2/src/pages/play/components/runtime-inspector.tsx`" in evidence_packet
+    assert "These were local" in evidence_packet
+    assert "not public links shipped in this repository" in evidence_packet
+    assert "Current public/reviewable evidence" in evidence_packet
+    assert "`docs/CURRENT_SYSTEM_MAP.md`" in evidence_packet
+    assert "`docs/CASE_STUDY.md`" in evidence_packet
+    assert "`#/portfolio`" in evidence_packet
+    assert "`#/reviewer`" in evidence_packet
+    assert "/tmp/tiny-stories-opening-live-reliability" not in evidence_packet
+    assert "snapshot/story-brief-opening-live-reliability" not in evidence_packet
     evidence_contracts = evidence_packet[
         evidence_packet.index("Judge and reviewer evidence contracts:")
         : evidence_packet.index("- Live evaluation harness:")

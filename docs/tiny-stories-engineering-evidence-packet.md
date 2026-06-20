@@ -17,13 +17,12 @@ for the current reviewer path, start from the root README, `#/portfolio`,
 `#/reviewer`, and `docs/CURRENT_SYSTEM_MAP.md`.
 
 - Commit: `4382874 fix: keep opening live for eval gate`
-- Snapshot: `snapshot/story-brief-opening-live-reliability-2026-06-08`
-- Live acceptance summary:
-  `/tmp/tiny-stories-opening-live-reliability-2026-06-08/live-acceptance-summary-2.json`
-- Reviewer screenshot:
-  `/tmp/tiny-stories-opening-live-reliability-2026-06-08/reviewer-play-evaluation-inapp.png`
-- Normal player screenshot:
-  `/tmp/tiny-stories-opening-live-reliability-2026-06-08/normal-play-clean-inapp.png`
+- Historical artifact names: live acceptance summary, reviewer screenshot, and
+  normal-player screenshot from the 2026-06-08 live gate. These were local
+  run outputs, not public links shipped in this repository.
+- Current public/reviewable evidence: root README, `docs/CURRENT_SYSTEM_MAP.md`,
+  `docs/CASE_STUDY.md`, `#/portfolio`, `#/reviewer`, and the contract tests
+  listed below.
 
 No secret, model, key, or raw provider configuration is included here.
 
