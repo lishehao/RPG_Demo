@@ -107,9 +107,9 @@ export function PortfolioPage({
               allowFullScreen
             />
             <p>
-              Muted autoplay is best-effort. <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">Open on YouTube</a>
+              If the preview does not play, <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">open it on YouTube</a>
               <span aria-hidden="true"> · </span>
-              <a href={LOCAL_DEMO_MP4_URL}>MP4 fallback</a>
+              <a href={LOCAL_DEMO_MP4_URL}>open the MP4 demo</a>
             </p>
           </div>
         </motion.section>
@@ -233,7 +233,7 @@ export function PortfolioPage({
           <span className="portfolio-kicker">Portfolio framing</span>
           <h2>Not a prompt toy. A portfolio-grade AI runtime case study.</h2>
           <p>
-            The strongest application story is that you can turn raw generation
+            The strongest application story is that you can turn story generation
             into a user-facing workflow: controlled entry, typed state,
             explainable progression, visual polish, and an artifact someone can
             replay or evaluate. The honest claim is product-system evidence, not

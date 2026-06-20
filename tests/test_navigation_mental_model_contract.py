@@ -65,6 +65,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Inspect evidence" in portfolio
     assert 'data-portfolio-review-order="true"' in portfolio
     assert "data-portfolio-review-step={item.step}" in portfolio
+    assert "If the preview does not play" in portfolio
+    assert "open the MP4 demo" in portfolio
+    assert "Muted autoplay is best-effort" not in portfolio
+    assert "MP4 fallback" not in portfolio
     assert ".portfolio-review-order" in theme
     assert "grid-template-columns: 34px minmax(0, 1fr)" in theme
 
@@ -80,6 +84,8 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "Not claimed" in portfolio
     assert "not proof of a launched consumer product or broad user adoption" in portfolio
     assert "product-system evidence, not" in portfolio
+    assert "story generation" in portfolio
+    assert "raw generation" not in portfolio
     assert "reliable AI product surface" not in portfolio
     assert ".portfolio-evidence-boundary" in theme
     assert ".portfolio-evidence-boundary__grid" in theme
@@ -139,6 +145,30 @@ def test_portfolio_loop_maps_each_state_to_visible_evidence() -> None:
 
     assert "not just admire generated images" not in portfolio
     assert "secret merger · awards livestream · ex with proof" not in data
+
+
+def test_portfolio_case_study_points_are_evidence_oriented() -> None:
+    data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
+
+    for expected in (
+        "player role, state changes, and ending proof",
+        "designed product system",
+        "locked setup, playable role, visible state changes",
+        "advisor boundary, and replayable ending",
+        "product-system evidence",
+        "typed state, persistent sessions, reviewer evidence hooks",
+        "mobile-checked surfaces without claiming broad adoption",
+    ):
+        assert expected in data
+
+    for overclaim_or_weak_frame in (
+        "random text generator",
+        "Product Thesis",
+        "Engineering Angle",
+        "prompt novelty",
+        "fully validated consumer product",
+    ):
+        assert overclaim_or_weak_frame not in data
 
 
 def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:

@@ -62,15 +62,15 @@ export const PIPELINE_STEPS = [
 export const CASE_STUDY_POINTS = [
   {
     title: "Problem",
-    body: "Most AI story demos feel either like a chatbot or a random text generator. They do not make the player position, system state, or ending logic visible enough to feel designed.",
+    body: "Many AI story demos hide player role, state changes, and ending proof, so a reviewer cannot tell whether the result is a designed product system or just generated text.",
   },
   {
-    title: "Product Thesis",
-    body: "Tiny Stories treats generation as a bounded interactive runtime: one strong seed becomes a cast, a role, staged turns, advisor context, and a replayable ending.",
+    title: "Product Loop",
+    body: "Tiny Stories makes one seed travel through locked setup, playable role, visible state changes, advisor boundary, and replayable ending, so the player can follow what changed.",
   },
   {
-    title: "Engineering Angle",
-    body: "The useful portfolio signal is not prompt novelty. It is the product layer around generation: deterministic routing, typed contracts, state recovery, English localization, and verifiable demo flow.",
+    title: "Evidence Standard",
+    body: "The application signal is product-system evidence: typed state, persistent sessions, reviewer evidence hooks, recovery paths, and mobile-checked surfaces without claiming broad adoption.",
   },
 ] as const
 
