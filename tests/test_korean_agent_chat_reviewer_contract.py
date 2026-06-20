@@ -68,6 +68,29 @@ def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     assert "backend" not in source.lower()
 
 
+def test_reviewer_launch_enters_reviewer_mode_play_evidence_path() -> None:
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+
+    reviewer_case = app[app.index('case "reviewer":') : app.index('case "about":')]
+    assert "ReviewerPage" in reviewer_case
+    assert 'onSessionStarted={(sessionId) => navigate({ name: "play", sessionId, reviewer: true })}' in reviewer_case
+
+    play_build_hash = routes[routes.index('case "play":') : routes.index('case "replay":')]
+    assert "route.reviewer" in play_build_hash
+    assert '?reviewer=1' in play_build_hash
+
+    play_parse_route = routes[routes.index('if (segments[0] === "play"') : routes.index('if (segments[0] === "replay"')]
+    assert 'reviewer: params.get("reviewer") === "1"' in play_parse_route
+
+    assert "const canRequestAgentTrace = reviewerMode && auth.canViewAgentTrace" in play_page
+    assert 'data-reviewer-evidence-jump="true"' in play_page
+    assert 'data-reviewer-evidence-jump-button="true"' in play_page
+    assert "reviewerMode ? (" in play_page
+    assert "<RuntimeInspector" in play_page
+
+
 def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
