@@ -575,6 +575,22 @@ function GameplayImpactSummary({
                 const targetSignal = "targetId" in signal && signal.targetId
                   ? signal as typeof signal & { targetId: string; targetName: string }
                   : null
+                const signalContent = (
+                  <>
+                    <span style={ppStyles.gameplayNextChoiceChipLabel}>{signal.label}: </span>
+                    {signal.detail ? (
+                      <span
+                        style={ppStyles.gameplayNextChoiceChipDetail}
+                        data-gameplay-next-choice-signal-detail="true"
+                      >
+                        <span style={ppStyles.gameplayNextChoiceChipReasonLabel}>
+                          {t("play.gameplay_forecast_detail_label")}:
+                        </span>{" "}
+                        {signal.detail}
+                      </span>
+                    ) : null}
+                  </>
+                )
                 const signalStyle = {
                   ...ppStyles.gameplayDeltaChip,
                   ...ppStyles.gameplayNextChoiceChip,
@@ -599,7 +615,7 @@ function GameplayImpactSummary({
                       title={signal.detail ?? signal.label}
                       onClick={() => onFocusActor({ id: targetSignal.targetId, name: targetSignal.targetName })}
                     >
-                      {signal.label}
+                      {signalContent}
                     </button>
                   )
                 }
@@ -611,7 +627,7 @@ function GameplayImpactSummary({
                     data-gameplay-next-choice-target-id={targetSignal?.targetId}
                     title={signal.detail ?? signal.label}
                   >
-                    {signal.label}
+                    {signalContent}
                   </span>
                 )
               })}

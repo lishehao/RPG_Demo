@@ -848,6 +848,8 @@ def test_normal_runtime_impact_summary_keeps_player_facing_resolution_clarity() 
     assert 'data-gameplay-impact-group={group.id}' in summary
     assert 'data-gameplay-next-choice-bridge="normal-play"' in summary
     assert 'data-gameplay-next-choice-signals="true"' in summary
+    assert 'data-gameplay-next-choice-signal-detail="true"' in summary
+    assert 't("play.gameplay_forecast_detail_label")' in summary
     assert "forecastChoiceSignals" in summary
     assert "targetChoiceSignals" in summary
     assert 't("play.feedback_next_choice_changed_label")' in summary
@@ -1487,9 +1489,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-next-choice-bridge="normal-play"' in play_page
     assert 'aria-label={t("play.feedback_next_choice_label")}' in play_page
     assert 'data-gameplay-next-choice-signal="normal-play"' in play_page
+    assert 'data-gameplay-next-choice-signal-detail="true"' in play_page
     assert "nextChoiceSignals" in play_page
     assert 'data-gameplay-delta="normal-play"' in play_page
     assert "gameplayEnvelopePanel" in styles
+    assert "gameplayNextChoiceChipDetail" in styles
+    assert "gameplayNextChoiceChipReasonLabel" in styles
     assert "gameplayLoopPanel" in styles
     assert "gameplayLoopStepActive" in styles
     assert "gameplayLoopStepDone" in styles
