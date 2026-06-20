@@ -441,6 +441,74 @@ def test_remaining_action_area_behavior_chrome_stays_action_area_owned() -> None
             assert forbidden not in module
 
 
+def test_remaining_play_flow_panel_candidates_are_wait_boundaries() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    for phrase in (
+        "should not keep being split by default",
+        "Header progress/navigation stays with `Header`",
+        "Run inventory controls stay in `RunContextPanel`",
+        "Failed-action retry ownership stays in `play-page.tsx`",
+        "Resolving/pending ceremony stays in `play-flow-panels.tsx`",
+        "Option tag display helpers stay with `ActionArea`",
+        "Resource focus/action helpers stay with the play route and `ActionArea`",
+        "Backend/provider/live LLM paths stay outside these display modules",
+    ):
+        assert phrase in readme
+
+    header = panels[panels.index("export function Header") : panels.index("export function computeLiveInventory")]
+    run_context = panels[panels.index("export function RunContextPanel") : panels.index("// ---------------------------------------------------------------------------\n// Header")]
+    action_area = panels[panels.index("export function ActionArea") :]
+    resolving_panel = panels[panels.index("function ResolvingTurnPanel") : panels.index("export function findActionTarget")]
+
+    assert "onBackHome: () => void" in header
+    assert "onClick={onBackHome}" in header
+    assert "const showProgress =" in header
+    assert "width: `${pct}%`" in header
+    assert "coverUrl" in header
+
+    assert "onUseInventoryItem?: (item: string) => void" in run_context
+    assert "onClick={() => onUseInventoryItem(item)}" in run_context
+    assert 'data-play-run-inventory-use="true"' in run_context
+    assert 'data-play-run-inventory-item={item}' in run_context
+    assert 't("play.run_assets_use_title", { item })' in run_context
+
+    assert 'from "./components/failed-action-recovery"' in play_page
+    assert "lastFailedActionRef.current = action" in play_page
+    assert "lastFailedActionRef.current = null" in play_page
+    assert "PlayRetryRecoveryBanner" in play_page
+    assert "onRetry={lastFailedActionRef.current ? () =>" in play_page
+    assert "lastFailedActionRef" not in panels
+    assert "buildFailedActionRecovery" not in panels
+
+    assert "const [elapsedSeconds, setElapsedSeconds] = useState(0)" in resolving_panel
+    assert "window.setInterval" in resolving_panel
+    assert 'role="status"' in resolving_panel
+    assert 'aria-live="polite"' in resolving_panel
+    assert 'data-play-pending-reaction-panel="true"' in resolving_panel
+    assert 'data-play-feedback-timeline="true"' in resolving_panel
+    assert "commitmentSignals.map" in resolving_panel
+    assert "<ResolvingTurnPanel" in action_area
+
+    assert "function optionTagStyle" in panels
+    assert "function optionTagGuide" in panels
+    assert "optionTagGuide(parsed.tag, t)" in action_area
+    assert "...optionTagStyle(parsed.tag)" in action_area
+    assert "parseOptionLabel" in panels
+    assert "ActionSelectedOptionDetail" in action_area
+
+    assert "export function findActionTarget" in panels
+    assert "export function isResourceFocusAction" in panels
+    assert "function resourceFocusDetailText" in panels
+    assert "findActionTarget(parsed.body, opt.hint, castNameById, latestNpcPulses)" in action_area
+    assert "isResourceFocusAction(resourceFocus.id, parsed.body, opt.hint" in action_area
+    assert "resourceFocusDetailText(t, resourceFocus.id, resourceFocusMatchCount)" in action_area
+    assert "onClearResourceFocus" in action_area
+    assert "onClearInventoryFocus" in action_area
+
+
 def test_play_leverage_fixture_mounts_real_action_area_without_backend() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()

@@ -66,9 +66,15 @@
 
 ## Future Split Notes
 
-`components/play-flow-panels.tsx` remains the next split target. Safe boundaries are:
+`components/play-flow-panels.tsx` should not keep being split by default. After the passive readout/helper slices, the remaining local helpers and JSX are mostly behavior-adjacent wait boundaries:
 
-- Remaining `ActionArea` surfaces around leverage card rows and confirmation buttons/chrome, but only as separate display-only slices with action submission still owned by `ActionArea`.
+- Header progress/navigation stays with `Header` until navigation ownership is explicitly redesigned; the progress copy, responsive header, cover styling, and back-home callback are one chrome unit.
+- Run inventory controls stay in `RunContextPanel` because the item buttons own `onUseInventoryItem` wiring and the free-action focus affordance.
+- Failed-action retry ownership stays in `play-page.tsx`: failed action refs, error/retry state, recovery banner retry callback, and resubmission routing should not move back into panel chrome.
+- Resolving/pending ceremony stays in `play-flow-panels.tsx` until a behavior-level pending-state redesign is scoped; it owns elapsed-time state, live-region status, feedback timeline, and resolving commitment signals.
+- Option tag display helpers stay with `ActionArea` because their copy and color semantics are coupled to option cards, selection, confirmation, and action forecasting.
+- Resource focus/action helpers stay with the play route and `ActionArea` ownership boundary because they drive actor/resource/inventory focus, option matching, and action affordance copy.
 - Keep the confirm button, motive button, diary preview/editor, free-input textarea, pending/resolved ceremony ownership, and leverage reveal behavior inside `ActionArea` until a behavior-level redesign is explicitly scoped. These pieces coordinate callbacks, local text state, disabled/pending guards, focus, and submit routing rather than pure display.
+- Backend/provider/live LLM paths stay outside these display modules; normal Play chrome should remain player-safe and should not expose provider/model/API/schema/debug/trace language.
 
 Do not split those in the same patch as a behavior change. Keep source guards and browser smoke around action submission, payoff focus, reviewer gating, and mobile action visibility.
