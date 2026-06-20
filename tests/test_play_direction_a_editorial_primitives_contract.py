@@ -1941,6 +1941,8 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.diary_attach_empty_hint": "Say what you secretly mean."' in strings
     assert "Use inner motive" not in strings
     assert '"play.inner_motive_submit_cta": "Submit with motive"' in strings
+    assert '"play.diary_keep": "Back to move"' in strings
+    assert '"play.diary_keep": "返回行动"' in strings
     assert '"play.inner_motive_submit_cta": "带着动机提交"' in strings
     assert '"play.inner_motive_submit_disabled_hint": "Write a private motive first to submit with motive."' in strings
     assert '"play.inner_motive_submit_disabled_hint": "先写一句真实动机，才能带着动机提交。"' in strings
