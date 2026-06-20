@@ -524,6 +524,7 @@ def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> No
     gameplay_envelope = (ROOT / "frontend2/src/pages/play/play-gameplay-envelope.ts").read_text()
     story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
     runtime_inspector = (ROOT / "frontend2/src/pages/play/components/runtime-inspector.tsx").read_text()
+    backend_service = (ROOT / "rpg_backend/narrative/service.py").read_text()
     progress_helper = panels[panels.index("function computeInventoryProgress") : panels.index("// Mirror of backend _stage_for")]
 
     assert "function computeInventoryProgress" in panels
@@ -552,9 +553,15 @@ def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> No
     assert "stripStaleInventoryChips(raw.impact, rawInventoryDelta, effectiveInventoryDelta)" in gameplay_envelope
     assert "stripStaleInventoryChips(raw.opportunities, rawInventoryDelta, effectiveInventoryDelta)" in gameplay_envelope
     assert "lastNarrator?.inventory_delta ?? null" in gameplay_envelope
+    assert "function shouldPreferBaseImpact" in gameplay_envelope
+    assert "backendImpact.every(isHoldingImpactChip)" in gameplay_envelope
+    assert 'chip.label === "Next moves shifted"' in gameplay_envelope
     next_moves_idx = gameplay_envelope.index('deltas.push({ label: "Next moves shifted", tone: "shift" })')
     holding_idx = gameplay_envelope.index("deltas.push({ label: `Holding:")
     assert next_moves_idx < holding_idx
+    backend_next_moves_idx = backend_service.index('_add_gameplay_chip(impact, "Next moves shifted", "shift")')
+    backend_holding_idx = backend_service.index('_add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)')
+    assert backend_next_moves_idx < backend_holding_idx
     assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in story_beat
     assert "const delta = effectiveInventoryDelta ?? message.inventory_delta" in story_beat
     assert "computeBeatIntensity(" in story_beat

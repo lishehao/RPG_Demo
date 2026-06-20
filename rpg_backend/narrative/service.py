@@ -494,10 +494,10 @@ def _build_gameplay_envelope(
                     max_length=24,
                 ) or live_enriched
 
-    if not impact and current_inventory:
-        _add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)
     if not impact and last_narrator is not None and last_narrator.options:
         _add_gameplay_chip(impact, "Next moves shifted", "shift")
+    if not impact and current_inventory:
+        _add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)
 
     return GameplayEnvelope(
         source="live_enriched" if live_enriched else "backend",

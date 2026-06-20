@@ -165,6 +165,18 @@ function stripStaleInventoryChips(
   )
 }
 
+function isHoldingImpactChip(chip: GameplayImpactDelta): boolean {
+  return /^Holding:/i.test(chip.label)
+}
+
+function shouldPreferBaseImpact(backendImpact: GameplayImpactDelta[], baseImpact: GameplayImpactDelta[]): boolean {
+  if (backendImpact.length === 0) return false
+  return (
+    backendImpact.every(isHoldingImpactChip) &&
+    baseImpact.some((chip) => chip.label === "Next moves shifted")
+  )
+}
+
 function normalizeTrackList(
   tracks: NarrativeGameplayEnvelope["tracks"],
 ): GameplayPressureTrack[] {
@@ -194,6 +206,9 @@ function normalizeBackendEnvelope(
     stripStaleInventoryChips(raw.opportunities, rawInventoryDelta, effectiveInventoryDelta),
   )
   const mergedImpact = normalizeChipList([...impact, ...opportunities], 6)
+  const resolvedImpact = shouldPreferBaseImpact(mergedImpact, base.impact)
+    ? base.impact
+    : mergedImpact
   const hasBackendShape =
     Boolean(raw.objective && raw.objective.trim()) ||
     tracks.length > 0 ||
@@ -209,7 +224,7 @@ function normalizeBackendEnvelope(
     objective: raw.objective ? compactLabel(raw.objective, 92) : base.objective,
     tracks: tracks.length > 0 ? tracks : base.tracks,
     actionForecasts: normalizeChipRows(raw.action_forecasts, base.actionForecasts),
-    impact: mergedImpact.length > 0 ? mergedImpact.slice(0, 3) : base.impact,
+    impact: resolvedImpact.length > 0 ? resolvedImpact.slice(0, 3) : base.impact,
   }
 }
 
