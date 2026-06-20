@@ -206,6 +206,37 @@ def test_leverage_summary_module_owns_summary_readout_display_hooks() -> None:
     assert "components/leverage-summary.tsx" in readme
 
 
+def test_scene_read_strip_module_owns_passive_scene_read_display_hooks() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    scene_read = (ROOT / "frontend2/src/pages/play/components/scene-read-strip.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./scene-read-strip"' in panels
+    assert "buildSceneClocks" in panels
+    assert "SceneReadStrip" in panels
+    assert "export function buildSceneClocks" in scene_read
+    assert "export function SceneReadStrip" in scene_read
+    assert 'data-play-scene-read-strip="true"' in scene_read
+    assert 't("play.clock_time_label")' in scene_read
+    assert 't("play.clock_heat_label")' in scene_read
+    assert 't("play.clock_leverage_label")' in scene_read
+    assert "function pulseDeltaLabel" in scene_read
+    assert "function outcomePriority" in scene_read
+    assert 'data-play-scene-read-strip="true"' not in panels
+    assert "function pulseDeltaLabel" not in panels
+    assert "function outcomePriority" not in panels
+    assert "handleOptionCommit" not in scene_read
+    assert "handleLeverageReveal" not in scene_read
+    assert "handleSubmitFreeWithReflect" not in scene_read
+    assert "setShowDiary" not in scene_read
+    assert "setFreeInput" not in scene_read
+    assert "onPickOption" not in scene_read
+    assert "onSubmitFree" not in scene_read
+    assert "data-play-leverage-card=" not in scene_read
+    assert "data-play-leverage-reveal" not in scene_read
+    assert "components/scene-read-strip.tsx" in readme
+
+
 def test_selected_move_confirmation_module_owns_readout_display_hooks() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     confirmation = (ROOT / "frontend2/src/pages/play/components/selected-move-confirmation.tsx").read_text()

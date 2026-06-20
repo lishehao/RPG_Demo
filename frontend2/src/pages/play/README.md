@@ -16,6 +16,8 @@
   - Free-action prompt display module: context banner, deterministic starter-line copy, and starter-row hooks. `ActionArea` still owns free-input text, motive editing, and submission.
 - `components/leverage-summary.tsx`
   - Leverage summary readout module: empty summary, summary button, risk/target chips, and toggle label display. `ActionArea` still owns leverage card arming, reveal CTA, diary/motive editing, and submission.
+- `components/scene-read-strip.tsx`
+  - Passive scene-read strip module: clock readouts, social-heat summary, leverage exposure count, and top NPC pulse labels. `ActionArea` only supplies current values and owns no behavior here.
 - `components/selected-move-confirmation.tsx`
   - Selected move confirmation readout module: move number, ready label, target/room chip, and submit summary text. `ActionArea` still owns confirm buttons, motive editing, diary text, submission, and pending flow.
 - `components/advisor-panel.tsx`
