@@ -949,6 +949,11 @@ def test_normal_runtime_impact_summary_keeps_player_facing_resolution_clarity() 
     assert "signal.label.trim().toLowerCase() === detailLabel.trim().toLowerCase()" in summary
     assert "!repeatsDetailLabel ? (" in summary
     assert "{detailLabel}:" in summary
+    assert "const signalReadableText =" in summary
+    assert "const nextChoiceBridgeAccessibleLabel =" in summary
+    assert "data-gameplay-next-choice-bridge-readable-label={nextChoiceBridgeAccessibleLabel}" in summary
+    assert "aria-label={nextChoiceBridgeAccessibleLabel}" in summary
+    assert "data-gameplay-next-choice-signal-readable-label={readableSignalText}" in summary
     assert "title={signalDetail ?? signal.label}" in summary
     assert "{signal.label}: </span>" not in summary
     assert 't("play.gameplay_forecast_detail_label")' in summary
@@ -1589,9 +1594,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "style={ppStyles.gameplayImpactNextGroupLabel}" in play_page
     assert 'data-gameplay-next-choice-signals="true"' in play_page
     assert 'data-gameplay-next-choice-bridge="normal-play"' in play_page
-    assert 'aria-label={t("play.feedback_next_choice_label")}' in play_page
+    assert "data-gameplay-next-choice-bridge-readable-label={nextChoiceBridgeAccessibleLabel}" in play_page
+    assert "aria-label={nextChoiceBridgeAccessibleLabel}" in play_page
     assert 'data-gameplay-next-choice-signal="normal-play"' in play_page
     assert 'data-gameplay-next-choice-signal-detail="true"' in play_page
+    assert "data-gameplay-next-choice-signal-readable-label={readableSignalText}" in play_page
     assert "const repeatsDetailLabel =" in play_page
     assert "!repeatsDetailLabel ? (" in play_page
     assert "nextChoiceSignals" in play_page

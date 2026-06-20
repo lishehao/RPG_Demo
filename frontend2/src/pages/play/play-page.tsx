@@ -419,6 +419,21 @@ function GameplayImpactSummary({
       : targetChoiceSignals)
     .filter((chip, index, all) => all.findIndex((candidate) => candidate.label === chip.label) === index)
     .slice(0, 3)
+  const signalReadableText = (signal: (typeof nextChoiceSignals)[number]) => {
+    const signalDetail = signal.detail?.trim()
+    const detailLabel = t("play.gameplay_forecast_detail_label")
+    const repeatsDetailLabel =
+      Boolean(signalDetail) &&
+      signal.label.trim().toLowerCase() === detailLabel.trim().toLowerCase()
+    if (!signalDetail) return signal.label
+    return repeatsDetailLabel
+      ? `${detailLabel}: ${signalDetail}`
+      : `${signal.label}. ${detailLabel}: ${signalDetail}`
+  }
+  const nextChoiceBridgeAccessibleLabel = [
+    t("play.feedback_next_choice_label"),
+    ...nextChoiceSignals.map(signalReadableText),
+  ].join(". ")
   const impactGroups = [
     {
       id: "cost",
@@ -568,7 +583,8 @@ function GameplayImpactSummary({
             data-gameplay-impact-group="next"
             data-gameplay-next-choice-signals="true"
             data-gameplay-next-choice-bridge="normal-play"
-            aria-label={t("play.feedback_next_choice_label")}
+            data-gameplay-next-choice-bridge-readable-label={nextChoiceBridgeAccessibleLabel}
+            aria-label={nextChoiceBridgeAccessibleLabel}
           >
             <span style={ppStyles.gameplayImpactNextGroupLabel}>{t("play.feedback_next_choice_label")}</span>
             <div style={ppStyles.gameplayImpactList}>
@@ -581,6 +597,7 @@ function GameplayImpactSummary({
                 const repeatsDetailLabel =
                   Boolean(signalDetail) &&
                   signal.label.trim().toLowerCase() === detailLabel.trim().toLowerCase()
+                const readableSignalText = signalReadableText(signal)
                 const signalContent = (
                   <>
                     {!repeatsDetailLabel ? (
@@ -618,10 +635,11 @@ function GameplayImpactSummary({
                         ...ppStyles.gameplayNextChoiceTargetButton,
                       }}
                       data-gameplay-next-choice-signal="normal-play"
+                      data-gameplay-next-choice-signal-readable-label={readableSignalText}
                       data-gameplay-next-choice-target-focus="true"
                       data-gameplay-next-choice-target-id={targetSignal.targetId}
                       aria-pressed={focusedActorId === targetSignal.targetId}
-                      aria-label={`${signal.label}. ${t("play.impact_focus_actor_title", { name: targetSignal.targetName })}`}
+                      aria-label={`${readableSignalText}. ${t("play.impact_focus_actor_title", { name: targetSignal.targetName })}`}
                       title={signalDetail ?? signal.label}
                       onClick={() => onFocusActor({ id: targetSignal.targetId, name: targetSignal.targetName })}
                     >
@@ -634,7 +652,9 @@ function GameplayImpactSummary({
                     key={`${signal.label}-${index}`}
                     style={signalStyle}
                     data-gameplay-next-choice-signal="normal-play"
+                    data-gameplay-next-choice-signal-readable-label={readableSignalText}
                     data-gameplay-next-choice-target-id={targetSignal?.targetId}
+                    aria-label={readableSignalText}
                     title={signalDetail ?? signal.label}
                   >
                     {signalContent}
