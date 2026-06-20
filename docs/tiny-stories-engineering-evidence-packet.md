@@ -9,7 +9,12 @@ observability, and repeatable validation gates.
 
 Framing: Productized LLM / applied AI systems engineering, not HCI research.
 
-Latest evidence anchor:
+Historical live evidence anchor:
+
+This is a dated 2026-06-08 live-gate snapshot kept for admissions and
+recommender evidence. It is not a claim that the commit below is current HEAD;
+for the current reviewer path, start from the root README, `#/portfolio`,
+`#/reviewer`, and `docs/CURRENT_SYSTEM_MAP.md`.
 
 - Commit: `4382874 fix: keep opening live for eval gate`
 - Snapshot: `snapshot/story-brief-opening-live-reliability-2026-06-08`
@@ -193,7 +198,7 @@ failures, not to assert a universal benchmark.
 
 ## Trace Case Study
 
-Case: `Rigged Trophy Gala`, live-created in the latest passing gate.
+Case: `Rigged Trophy Gala`, live-created in the 2026-06-08 passing live gate.
 
 1. Brief
    - Input premise: awards gala, publicist, singer, sponsor, rigged trophy
@@ -235,8 +240,8 @@ Case: `Rigged Trophy Gala`, live-created in the latest passing gate.
   not a calibrated live trajectory judge.
 - Step/Contract scores are product evidence UI, not validated academic metrics.
 - Gold scenarios are a focused reliability protocol, not a broad benchmark.
-- Live provider latency remains variable. The latest opening passed in 13.1s,
-  but future provider variance still needs monitoring.
+- Live provider latency remains variable. The 2026-06-08 opening passed in
+  13.1s, but future provider variance still needs monitoring.
 - Reviewer evidence is intentionally gated; normal players do not see detailed
   telemetry.
 - Avatar matching uses a deterministic tag-vector semantic scorer and manifest,

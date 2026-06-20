@@ -2,7 +2,7 @@
   "schema_version": "tiny_stories_engineering_evidence_summary.v1",
   "project": "Tiny Stories",
   "framing": "Productized LLM / applied AI systems engineering, not HCI research.",
-  "latest_evidence_anchor": {
+  "historical_live_evidence_anchor": {
     "commit": "4382874 fix: keep opening live for eval gate",
     "snapshot": "snapshot/story-brief-opening-live-reliability-2026-06-08",
     "live_summary_path": "/tmp/tiny-stories-opening-live-reliability-2026-06-08/live-acceptance-summary-2.json",

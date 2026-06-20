@@ -245,6 +245,11 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
 
     assert "```mermaid" in packet
     assert "Productized LLM / applied AI systems engineering, not HCI research." in packet
+    assert "Historical live evidence anchor:" in packet
+    assert "It is not a claim that the commit below is current HEAD" in packet
+    assert "Latest evidence anchor:" not in packet
+    assert "latest_evidence_anchor" not in summary
+    assert "historical_live_evidence_anchor" in summary
     assert "4382874 fix: keep opening live for eval gate" in packet
     assert "snapshot/story-brief-opening-live-reliability-2026-06-08" in packet
     assert "| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |" in packet
