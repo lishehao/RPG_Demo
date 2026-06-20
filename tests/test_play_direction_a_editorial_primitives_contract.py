@@ -261,6 +261,38 @@ def test_run_context_objective_module_owns_passive_objective_display_hooks() -> 
     assert "components/run-context-objective.tsx" in readme
 
 
+def test_failed_action_recovery_module_owns_passive_retry_copy_helper() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    recovery_helper = (ROOT / "frontend2/src/pages/play/components/failed-action-recovery.ts").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./components/failed-action-recovery"' in play_page
+    assert "buildFailedActionRecovery({" in play_page
+    assert "export function buildFailedActionRecovery" in recovery_helper
+    assert "type { PlayRetryRecovery }" in recovery_helper
+    assert 't("play.recovery_kicker")' in recovery_helper
+    assert 't("play.recovery_chip_target", { target })' in recovery_helper
+    assert 't("play.recovery_chip_evidence"' in recovery_helper
+    assert 't("play.recovery_chip_move"' in recovery_helper
+    assert 't("play.recovery_chip_choice"' in recovery_helper
+    assert "buildFailedActionRecovery" not in panels
+    assert "type FailedActionRecovery" not in panels
+    assert "onRetry" not in recovery_helper
+    assert "setBusy" not in recovery_helper
+    assert "lastFailedActionRef" not in recovery_helper
+    assert "onUseInventoryItem" not in recovery_helper
+    assert "onBackHome" not in recovery_helper
+    assert "handleOptionCommit" not in recovery_helper
+    assert "handleLeverageReveal" not in recovery_helper
+    assert "setShowDiary" not in recovery_helper
+    assert "setFreeInput" not in recovery_helper
+    assert "fetch(" not in recovery_helper
+    for forbidden in ("provider", "model", "schema", "token"):
+        assert forbidden not in recovery_helper.casefold()
+    assert "components/failed-action-recovery.ts" in readme
+
+
 def test_selected_move_confirmation_module_owns_readout_display_hooks() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     confirmation = (ROOT / "frontend2/src/pages/play/components/selected-move-confirmation.tsx").read_text()

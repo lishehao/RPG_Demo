@@ -8,6 +8,8 @@
   - Route/container orchestration: load story, advance turns, merge turn responses, fetch ending, wire advisor and share callbacks.
 - `components/play-flow-panels.tsx`
   - View/helper module for run context, stage header, action area, resolving rows, and action-side local display helpers.
+- `components/failed-action-recovery.ts`
+  - Passive failed-action recovery copy helper: maps the last attempted action into retry-banner text/chips. `play-page.tsx` still owns retry state, failed action refs, and resubmission behavior.
 - `components/story-beat.tsx`
   - Story beat display module: narrator/player beat rendering, latest-beat digest, outcome/intent receipts, leverage payoff, parallax scene banner, and beat intensity helper.
 - `components/action-option-card.tsx`
