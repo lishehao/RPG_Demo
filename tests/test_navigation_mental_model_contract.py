@@ -338,9 +338,15 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     play_panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     world = (ROOT / "frontend2/src/pages/world/world-detail-page.tsx").read_text()
     replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert 't("play.back_home")' in play_panels
     assert 't("play.back_home_short")' in play_panels
+    assert '"play.back_home": "← Story Desk"' in strings
+    assert '"play.back_home_short": "← Story Desk"' in strings
+    assert '"play.back_home": "← 故事入口"' in strings
+    assert '"play.back_home_short": "← 故事入口"' in strings
+    assert '"play.back_home_short": "← Home"' not in strings
     assert 'createVariant="link" showBackButton' in world
     hero_start = world.index("{/* Hero:")
     main_start = world.index("<main", hero_start)

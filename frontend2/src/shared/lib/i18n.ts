@@ -430,8 +430,8 @@ export const STRINGS_ZH = {
   "play.branches_title": "你没走过的路",
 
   // Play page — page chrome / loading / errors
-  "play.back_home": "← 回到首页",
-  "play.back_home_short": "← 首页",
+  "play.back_home": "← 故事入口",
+  "play.back_home_short": "← 故事入口",
   "play.load_failed": "加载失败：{error}",
   "play.loading_story": "故事正在加载…",
   "play.busy_shim": "故事在续写中…",
@@ -1501,8 +1501,8 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.highlights_title": "5 pivotal moments",
   "play.branches_title": "Paths you didn't take",
 
-  "play.back_home": "← Back to home",
-  "play.back_home_short": "← Home",
+  "play.back_home": "← Story Desk",
+  "play.back_home_short": "← Story Desk",
   "play.load_failed": "Failed to load: {error}",
   "play.loading_story": "Loading the story…",
   "play.busy_shim": "Continuing the story…",
