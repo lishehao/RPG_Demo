@@ -77,8 +77,10 @@ export function RuntimeInspector({
   const hasArchivedJudgeEvidence = Boolean(latestStepJudge || latestContractJudge)
   const reviewerCheckLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Checks boundary"
   const archivedCheckStatus = hasArchivedJudgeEvidence ? latestStatus : "pending archive"
-  const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "pending"
-  const reasonCategory = evaluationReasonCategory(latestStepJudge, latestContractJudge, llmEvents)
+  const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "not archived yet"
+  const reasonCategory = hasArchivedJudgeEvidence
+    ? evaluationReasonCategory(latestStepJudge, latestContractJudge, llmEvents)
+    : "not archived yet"
   const latestEvidence = evaluationObservedEvidence(latestStepJudge, latestContractJudge, lastNarrator)
   const playableMoveCount = lastNarrator?.options.length ?? 0
   const liveImpactSummary = agentImpactSummary(lastNarrator, "awaiting next narrator beat")
@@ -109,6 +111,10 @@ export function RuntimeInspector({
         <span style={ppStyles.runtimeInspectorKicker}>Reviewer only</span>
         <strong>Evaluation evidence</strong>
       </div>
+      <p style={ppStyles.reviewerEvidencePrimer} data-reviewer-evidence-primer="true">
+        Start with the live proof chips. Score and reason rows are archived judge checks; on a fresh reviewer run,
+        they can stay unarchived while playable state is still inspectable.
+      </p>
       <section
         style={ppStyles.reviewerProofStrip}
         aria-label="Reviewer proof summary"

@@ -696,10 +696,16 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert 'data-reviewer-proof-chip="state"' in runtime_inspector
     assert 'data-reviewer-proof-chip="checks"' in runtime_inspector
     assert "What this proves" in runtime_inspector
+    assert 'data-reviewer-evidence-primer="true"' in runtime_inspector
+    assert "Start with the live proof chips." in runtime_inspector
+    assert "Score and reason rows are archived judge checks" in runtime_inspector
+    assert "they can stay unarchived while playable state is still inspectable" in runtime_inspector
     assert 'const reviewerCheckLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Checks boundary"' in runtime_inspector
     assert runtime_inspector.count("{reviewerCheckLabel}") >= 2
     assert '<span style={ppStyles.evaluationLabel}>Archived checks</span>' not in runtime_inspector
     assert "pending archive" in runtime_inspector
+    assert 'const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "not archived yet"' in runtime_inspector
+    assert "const reasonCategory = hasArchivedJudgeEvidence" in runtime_inspector
     assert "live state is available before judge archive" in runtime_inspector
     assert "getNarrativeLLMEvents" in client
     assert "/narrative/sessions/:session_id/llm-events" in route_map
@@ -711,6 +717,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "scrollToReviewerEvidence" in play_page
     assert "[data-reviewer-evidence='true']" in play_page
     assert "reviewerEvidenceJump" in styles
+    assert "reviewerEvidencePrimer" in styles
     assert "reviewerProofStrip" in styles
     assert "reviewerProofGrid" in styles
     assert "const hasArchivedReviewerChecks = latestAgentEvents.some" in play_page

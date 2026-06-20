@@ -795,6 +795,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     color: "var(--accent)",
     fontWeight: 700,
   },
+  reviewerEvidencePrimer: {
+    margin: "0 0 10px",
+    color: "rgba(244,239,230,0.66)",
+    fontSize: 12.5,
+    lineHeight: 1.45,
+    overflowWrap: "anywhere" as const,
+  },
   reviewerProofStrip: {
     margin: "0 0 12px",
     padding: "10px 0 12px",
