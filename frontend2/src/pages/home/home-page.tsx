@@ -165,7 +165,7 @@ export function getHomeTileCopy(
     return {
       typeLabel: t("home.published_label"),
       primaryAction: state?.isStarting ? t("home.card_starting") : t("home.card_action"),
-      actionHint: t("home.card_action_hint"),
+      actionHint: state?.isStarting ? t("home.card_starting_hint") : t("home.card_action_hint"),
       accentTone: "play",
       deckMode: "premise",
     }

@@ -165,7 +165,7 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
     assert 'data-home-tile-span={span}' in template
     assert 'data-home-tile-start-state={isStarting ? "starting" : "idle"}' in template
     assert 't("home.card_action")' in helper
-    assert 'actionHint: t("home.card_action_hint")' in helper
+    assert 'state?.isStarting ? t("home.card_starting_hint") : t("home.card_action_hint")' in helper
     assert 'data-home-tile-action-hint="true"' in template
     assert "displayView.copy.primaryAction" in template
     assert "view.copy.actionHint" in template
@@ -179,7 +179,9 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
     assert "Preset story" not in home
     assert '"home.card_action": "Start episode →"' in strings
     assert '"home.card_action_hint": "Opens turn one immediately."' in strings
+    assert '"home.card_starting_hint": "Opening the first scene and choices."' in strings
     assert '"home.card_action_hint": "直接进入第一回合。"' in strings
+    assert '"home.card_starting_hint": "正在打开第一幕和可选动作。"' in strings
     assert "The card is still here; press Start episode again" in strings
     assert "故事卡还在" in strings
     error_start_slice = strings[
