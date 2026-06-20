@@ -56,18 +56,16 @@ import {
 } from "./components/play-editorial-primitives"
 import {
   ActionArea,
-  AdvisorFab,
-  AdvisorSidechat,
   Header,
   RunContextPanel,
   StoryBeat,
-  buildAdvisorSuggestions,
   buildFailedActionRecovery,
   computeBeatIntensity,
   computeLiveInventory,
   findActionTarget,
   isResourceFocusAction,
 } from "./components/play-flow-panels"
+import { AdvisorFab, AdvisorSidechat, buildAdvisorSuggestions } from "./components/advisor-panel"
 import { EndingScreen } from "./components/ending-screen"
 import { RuntimeInspector, latestAgentPlanFromEvents } from "./components/runtime-inspector"
 import { parseOptionLabel } from "./play-option-label"

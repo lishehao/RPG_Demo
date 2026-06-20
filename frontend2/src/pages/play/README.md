@@ -7,7 +7,9 @@
 - `play-page.tsx`
   - Route/container orchestration: load story, advance turns, merge turn responses, fetch ending, wire advisor and share callbacks.
 - `components/play-flow-panels.tsx`
-  - View/helper module for run context, stage header, story beats, action area, resolving rows, advisor FAB/drawer, and local display helpers.
+  - View/helper module for run context, stage header, story beats, action area, resolving rows, and local display helpers.
+- `components/advisor-panel.tsx`
+  - Advisor surface module: floating advisor button, sidechat drawer, advisor suggestions, transcript rendering, deep-read confirmation, and advisor-specific player hooks.
 - `components/ending-screen.tsx`
   - Ending payoff view, result-first action ordering, fallback recap, highlight reel, branch recap, and ending label display helpers.
 - `components/play-ending-fixture.tsx`
@@ -42,6 +44,5 @@
 
 - `StoryBeat` plus beat receipt helpers.
 - `ActionArea` plus action choice/free-input/leverage rows.
-- `AdvisorFab` and `AdvisorSidechat`.
 
 Do not split those in the same patch as a behavior change. Keep source guards and browser smoke around action submission, payoff focus, reviewer gating, and mobile action visibility.

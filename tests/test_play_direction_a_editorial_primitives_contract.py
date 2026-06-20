@@ -60,6 +60,36 @@ def test_play_primitives_keep_story_world_mental_model() -> None:
     assert "Story Butler" not in primitives
 
 
+def test_advisor_panel_module_owns_fab_sidechat_and_player_hooks() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    advisor_panel = (ROOT / "frontend2/src/pages/play/components/advisor-panel.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./components/advisor-panel"' in play_page
+    assert "AdvisorFab" in play_page
+    assert "AdvisorSidechat" in play_page
+    assert "buildAdvisorSuggestions" in play_page
+    assert "export function AdvisorFab" in advisor_panel
+    assert "export function AdvisorSidechat" in advisor_panel
+    assert "export function buildAdvisorSuggestions" in advisor_panel
+    assert "getNarrativeAdvisorHistory" in advisor_panel
+    assert "askNarrativeAdvisor" in advisor_panel
+    assert 'data-play-advisor-empty-primer="true"' in advisor_panel
+    assert 'data-play-advisor-draft-hint="true"' in advisor_panel
+    assert 'data-play-advisor-suggestion-instruction="true"' in advisor_panel
+    assert "const [draftSuggestion, setDraftSuggestion] = useState<string | null>(null)" in advisor_panel
+    assert "setDraftSuggestion(suggestion)" in advisor_panel
+    assert "export function AdvisorFab" not in panels
+    assert "export function AdvisorSidechat" not in panels
+    assert "export function buildAdvisorSuggestions" not in panels
+    assert "NarrativeAdvisorMessage" not in panels
+    assert 'data-play-advisor-empty-primer="true"' not in panels
+    assert 'data-play-advisor-draft-hint="true"' not in panels
+    assert 'data-play-advisor-suggestion-instruction="true"' not in panels
+    assert "components/advisor-panel.tsx" in readme
+
+
 def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
     assets = (ROOT / "frontend2/src/shared/lib/webtoon-assets.ts").read_text()
@@ -1136,6 +1166,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
 def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    advisor_panel = (ROOT / "frontend2/src/pages/play/components/advisor-panel.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
     selected_confirm = panels[
@@ -1369,11 +1400,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.advisor_card_name": "Dana Vale"' in strings
     assert '"play.advisor_card_ask_detail": "Get a low-risk read; you still choose the move"' in strings
     assert '"play.advisor_card_ask_detail": "低风险读局；最后行动仍由你决定"' in strings
-    assert 'data-play-advisor-empty-primer="true"' in panels
-    assert "const [draftSuggestion, setDraftSuggestion] = useState<string | null>(null)" in panels
-    assert "setDraftSuggestion(suggestion)" in panels
-    assert 'data-play-advisor-draft-hint="true"' in panels
-    assert 'data-play-advisor-suggestion-instruction="true"' in panels
+    assert 'data-play-advisor-empty-primer="true"' in advisor_panel
+    assert "const [draftSuggestion, setDraftSuggestion] = useState<string | null>(null)" in advisor_panel
+    assert "setDraftSuggestion(suggestion)" in advisor_panel
+    assert 'data-play-advisor-draft-hint="true"' in advisor_panel
+    assert 'data-play-advisor-suggestion-instruction="true"' in advisor_panel
     assert "advisorEmptyPrimer" in styles
     assert "advisorEmptyPrimerTitle" in styles
     assert "advisorSuggestionInstruction" in styles
