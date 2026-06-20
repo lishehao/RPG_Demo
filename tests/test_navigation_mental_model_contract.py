@@ -347,11 +347,17 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     assert '"play.back_home": "← 故事入口"' in strings
     assert '"play.back_home_short": "← 故事入口"' in strings
     assert '"play.back_home_short": "← Home"' not in strings
+    assert '"world.crumb_back_home": "← Story Desk"' in strings
+    assert '"world.crumb_back_home": "← 故事入口"' in strings
     assert 'createVariant="link" showBackButton' in world
     hero_start = world.index("{/* Hero:")
     main_start = world.index("<main", hero_start)
     assert 't("world.crumb_back_home")' not in world[hero_start:main_start]
     assert 't("replay.crumb_back_home")' in replay
+    assert '"replay.crumb_back_home": "← Story Desk"' in strings
+    assert '"replay.crumb_back_home": "← 故事入口"' in strings
+    assert '"replay.crumb_back_home": "← Back home"' not in strings
+    assert '"replay.crumb_back_home": "← 回到首页"' not in strings
     assert 'data-replay-hero-fork-hint="true"' in replay
     assert 't("replay.cta_hint")' in replay
     assert "heroCtaHint" in replay
