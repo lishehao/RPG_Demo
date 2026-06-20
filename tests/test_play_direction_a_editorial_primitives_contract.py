@@ -677,6 +677,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     runtime_inspector = (ROOT / "frontend2/src/pages/play/components/runtime-inspector.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     route_map = (ROOT / "frontend2/src/api/route-map.ts").read_text()
     client = (ROOT / "frontend2/src/api/client.ts").read_text()
 
@@ -692,6 +693,13 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "NarrativeLLMCallEvent" in runtime_inspector
     assert "getNarrativeLLMEvents" in client
     assert "/narrative/sessions/:session_id/llm-events" in route_map
+    assert 'data-reviewer-evidence-jump="true"' in play_page
+    assert 'data-reviewer-evidence-jump-button="true"' in play_page
+    assert "scrollToReviewerEvidence" in play_page
+    assert "[data-reviewer-evidence='true']" in play_page
+    assert "reviewerEvidenceJump" in styles
+    assert "Live state checks are attached below this play surface." in play_page
+    assert "Jump to evidence" in play_page
 
 
 def test_normal_play_keeps_evaluation_terms_outside_default_surface() -> None:

@@ -1288,6 +1288,14 @@ export function PlayPage({
         t,
       })
     : null
+  const scrollToReviewerEvidence = () => {
+    if (typeof window === "undefined") return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    document.querySelector<HTMLElement>("[data-reviewer-evidence='true']")?.scrollIntoView({
+      block: "start",
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    })
+  }
 
   return (
     <div style={ppStyles.page}>
@@ -1324,6 +1332,32 @@ export function PlayPage({
               isComplete={isComplete}
               onUseInventoryItem={handleUseInventoryItem}
             />
+          ) : null}
+
+          {reviewerMode ? (
+            <section
+              style={ppStyles.reviewerEvidenceJump}
+              aria-label="Reviewer evidence shortcut"
+              data-reviewer-evidence-jump="true"
+            >
+              <div style={ppStyles.reviewerEvidenceJumpCopy}>
+                <span style={ppStyles.reviewerEvidenceJumpKicker}>Reviewer evidence</span>
+                <strong style={ppStyles.reviewerEvidenceJumpTitle}>
+                  Live state checks are attached below this play surface.
+                </strong>
+                <span style={ppStyles.reviewerEvidenceJumpMeta}>
+                  {lastNarrator?.options.length ?? 0} current moves / runtime state / contract checks
+                </span>
+              </div>
+              <button
+                type="button"
+                style={ppStyles.reviewerEvidenceJumpButton}
+                onClick={scrollToReviewerEvidence}
+                data-reviewer-evidence-jump-button="true"
+              >
+                Jump to evidence
+              </button>
+            </section>
           ) : null}
 
           {/* Gauntlet-mode goals stay as a single reminder line instead of
