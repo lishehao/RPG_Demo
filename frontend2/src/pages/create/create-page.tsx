@@ -120,6 +120,7 @@ export function CreatePage({
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
   const briefMessageRef = useRef<HTMLDivElement | null>(null)
   const briefErrorRef = useRef<HTMLDivElement | null>(null)
+  const generationHandoffRef = useRef<HTMLDivElement | null>(null)
   const transcriptEndRef = useRef<HTMLDivElement | null>(null)
   const guestHandleRef = useRef<string | null>(null)
   const autoBriefKeyRef = useRef<string | null>(null)
@@ -371,6 +372,14 @@ export function CreatePage({
     }, 40)
     return () => window.clearTimeout(id)
   }, [briefError])
+
+  useEffect(() => {
+    if (!busy) return
+    const id = window.setTimeout(() => {
+      generationHandoffRef.current?.scrollIntoView({ block: "center", behavior: "auto" })
+    }, 40)
+    return () => window.clearTimeout(id)
+  }, [busy])
 
   const handleCreate = async () => {
     const trimmed = seed.trim()
@@ -1104,6 +1113,8 @@ export function CreatePage({
           <AnimatePresence>
             {busy ? (
               <motion.div
+                ref={generationHandoffRef}
+                data-create-generation-handoff="true"
                 key="busy"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
