@@ -26,7 +26,7 @@ export const REVIEWER_DEMO_ACTIONS = [
 export const PORTFOLIO_METRICS = [
   { value: "Locked seed", label: "same premise for every reviewer run" },
   { value: "12-turn cap", label: "bounded episode budget visible in Play" },
-  { value: "3 proofs", label: "playable state, state change, archived checks" },
+  { value: "3 proofs", label: "playable state, state change, checks boundary" },
   { value: "Replay loop", label: "ending can be shared or restarted" },
 ] as const
 
@@ -47,7 +47,7 @@ export const PIPELINE_STEPS = [
     eyebrow: "03",
     title: "Choices change state",
     summary: "Every chosen option or free-form action appends a narrator beat and updates visible pulse, inventory, and next-move signals.",
-    proof: "The reviewer evidence summary exposes playable state, state change, and archived checks while the run is being played.",
+    proof: "The reviewer evidence summary exposes playable state, state change, and whether archived judge checks exist while the run is being played.",
   },
   {
     eyebrow: "04",

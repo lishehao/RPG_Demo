@@ -215,7 +215,8 @@ def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
     assert "12-turn cap" in data
     assert "bounded episode budget visible in Play" in data
     assert "3 proofs" in data
-    assert "playable state, state change, archived checks" in data
+    assert "playable state, state change, checks boundary" in data
+    assert "playable state, state change, archived checks" not in data
     assert "Replay loop" in data
     assert "ending can be shared or restarted" in data
     assert "5 layers" not in data
@@ -231,7 +232,7 @@ def test_portfolio_inspector_uses_reviewer_verifiable_capability_labels() -> Non
         "Choices change state",
         "Advisor stays separate",
         "Ending becomes replay",
-        "playable state, state change, and archived checks",
+        "playable state, state change, and whether archived judge checks exist",
     ):
         assert expected in data
 

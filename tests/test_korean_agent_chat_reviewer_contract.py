@@ -71,7 +71,10 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "After launch, verify" in source
     assert "Playable state" in source
     assert "State changed" in source
-    assert "Archived checks" in source
+    assert "Checks boundary" in source
+    assert "Live state is visible immediately" in source
+    assert "archived judge checks appear only after they exist" in source
+    assert "Archived checks" not in source
     assert 'data-reviewer-evidence-preview="true"' in source
     assert "data-reviewer-evidence-preview-item={item.label}" in source
     assert ".reviewer-evidence-preview" in theme

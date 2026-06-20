@@ -49,8 +49,8 @@ const REVIEWER_EVIDENCE_CHECKS = [
     detail: "The latest beat exposes relationship pulse and inventory consequences.",
   },
   {
-    label: "Archived checks",
-    detail: "Reviewer-only evidence separates live state from stored judge results.",
+    label: "Checks boundary",
+    detail: "Live state is visible immediately; archived judge checks appear only after they exist.",
   },
 ] as const
 
