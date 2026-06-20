@@ -544,6 +544,14 @@ def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> No
     assert "effectiveLastInventoryDelta={effectiveLastInventoryDelta}" in play_page
     assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in gameplay_envelope
     assert "const inventoryDelta = effectiveInventoryDelta ?? narratorMessage?.inventory_delta" in gameplay_envelope
+    assert "function stripStaleInventoryChips" in gameplay_envelope
+    assert "function isStaleInventoryChip" in gameplay_envelope
+    assert 'chipInventoryValue(label, "Evidence")' in gameplay_envelope
+    assert 'chipInventoryValue(label, "Clue")' in gameplay_envelope
+    assert 'chipInventoryValue(label, "Spent")' in gameplay_envelope
+    assert "stripStaleInventoryChips(raw.impact, rawInventoryDelta, effectiveInventoryDelta)" in gameplay_envelope
+    assert "stripStaleInventoryChips(raw.opportunities, rawInventoryDelta, effectiveInventoryDelta)" in gameplay_envelope
+    assert "lastNarrator?.inventory_delta ?? null" in gameplay_envelope
     next_moves_idx = gameplay_envelope.index('deltas.push({ label: "Next moves shifted", tone: "shift" })')
     holding_idx = gameplay_envelope.index("deltas.push({ label: `Holding:")
     assert next_moves_idx < holding_idx

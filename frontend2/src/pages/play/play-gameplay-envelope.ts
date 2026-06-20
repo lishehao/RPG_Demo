@@ -50,6 +50,10 @@ function compactLabel(value: string, max = 64): string {
   return `${oneLine.slice(0, Math.max(0, max - 1)).trim()}…`
 }
 
+function normalizeInventoryItem(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLowerCase()
+}
+
 function addUniqueChip(
   chips: GameplayActionForecast[],
   label: string,
@@ -101,6 +105,66 @@ function normalizeChipList(
   return normalized
 }
 
+function chipInventoryValue(label: string, prefix: "Evidence" | "Clue" | "Spent"): string | null {
+  const match = label.match(new RegExp(`^${prefix}:\\s*(.+)$`, "i"))
+  return match?.[1]?.replace(/…$/u, "").trim() || null
+}
+
+function inventoryChipMatchesItem(chipValue: string, item: string): boolean {
+  const normalizedChip = normalizeInventoryItem(chipValue)
+  const normalizedItem = normalizeInventoryItem(item)
+  if (!normalizedChip || !normalizedItem) return false
+  return (
+    normalizedChip === normalizedItem ||
+    normalizedItem.startsWith(normalizedChip) ||
+    normalizedChip.startsWith(normalizedItem)
+  )
+}
+
+function isStaleInventoryChip(
+  label: string,
+  rawInventoryDelta: NarrativeStoryMessage["inventory_delta"],
+  effectiveInventoryDelta: NarrativeStoryMessage["inventory_delta"],
+): boolean {
+  if (!rawInventoryDelta || !effectiveInventoryDelta) return false
+  const addedKeys = new Set(effectiveInventoryDelta.added.map(normalizeInventoryItem))
+  const removedKeys = new Set(effectiveInventoryDelta.removed.map(normalizeInventoryItem))
+  const staleAdded = rawInventoryDelta.added.filter(
+    (item) => !addedKeys.has(normalizeInventoryItem(item)),
+  )
+  const staleRemoved = rawInventoryDelta.removed.filter(
+    (item) => !removedKeys.has(normalizeInventoryItem(item)),
+  )
+
+  const evidenceValue = chipInventoryValue(label, "Evidence")
+  if (evidenceValue && staleAdded.some((item) => inventoryChipMatchesItem(evidenceValue, item))) {
+    return true
+  }
+
+  const clueValue = chipInventoryValue(label, "Clue")
+  if (clueValue && staleAdded.some((item) => inventoryChipMatchesItem(clueValue, item))) {
+    return true
+  }
+
+  const spentValue = chipInventoryValue(label, "Spent")
+  if (spentValue && staleRemoved.some((item) => inventoryChipMatchesItem(spentValue, item))) {
+    return true
+  }
+
+  return false
+}
+
+function stripStaleInventoryChips(
+  chips: NarrativeGameplayEnvelope["impact"],
+  rawInventoryDelta: NarrativeStoryMessage["inventory_delta"],
+  effectiveInventoryDelta: NarrativeStoryMessage["inventory_delta"],
+): NarrativeGameplayEnvelope["impact"] {
+  if (!rawInventoryDelta || !effectiveInventoryDelta) return chips
+  return (chips ?? []).filter(
+    (chip) => !isStaleInventoryChip(chip.label, rawInventoryDelta, effectiveInventoryDelta),
+  )
+}
+
 function normalizeTrackList(
   tracks: NarrativeGameplayEnvelope["tracks"],
 ): GameplayPressureTrack[] {
@@ -118,11 +182,17 @@ function normalizeTrackList(
 function normalizeBackendEnvelope(
   raw: NarrativeGameplayEnvelope | null | undefined,
   base: GameplayEnvelope,
+  rawInventoryDelta: NarrativeStoryMessage["inventory_delta"],
+  effectiveInventoryDelta: NarrativeStoryMessage["inventory_delta"],
 ): GameplayEnvelope | null {
   if (!raw || (raw.source !== "backend" && raw.source !== "live_enriched")) return null
   const tracks = normalizeTrackList(raw.tracks)
-  const impact = normalizeChipList(raw.impact)
-  const opportunities = normalizeChipList(raw.opportunities)
+  const impact = normalizeChipList(
+    stripStaleInventoryChips(raw.impact, rawInventoryDelta, effectiveInventoryDelta),
+  )
+  const opportunities = normalizeChipList(
+    stripStaleInventoryChips(raw.opportunities, rawInventoryDelta, effectiveInventoryDelta),
+  )
   const mergedImpact = normalizeChipList([...impact, ...opportunities], 6)
   const hasBackendShape =
     Boolean(raw.objective && raw.objective.trim()) ||
@@ -317,5 +387,10 @@ export function buildGameplayEnvelope({
     impact: buildImpactDeltas(lastNarrator, previousPlayerMessage, liveInventory, castNameById, effectiveInventoryDelta),
   }
 
-  return normalizeBackendEnvelope(backendEnvelope, baseEnvelope) ?? baseEnvelope
+  return normalizeBackendEnvelope(
+    backendEnvelope,
+    baseEnvelope,
+    lastNarrator?.inventory_delta ?? null,
+    effectiveInventoryDelta ?? null,
+  ) ?? baseEnvelope
 }
