@@ -819,6 +819,44 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
         assert forbidden not in fixture.casefold()
 
 
+def test_normal_runtime_impact_summary_keeps_player_facing_resolution_clarity() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    summary = play_page[
+        play_page.index("function GameplayImpactSummary") : play_page.index("type GameplayLoopStage")
+    ]
+    impact_strings = strings[
+        strings.index('"play.gameplay_impact_label": "What changed"') : strings.index(
+            '"play.gameplay_loop_label": "How turns work"',
+        )
+    ]
+
+    assert 'data-gameplay-impact-summary="true"' in summary
+    assert 'data-gameplay-impact-result-layer="true"' in summary
+    assert 'data-gameplay-impact-source-move="true"' in summary
+    assert 'data-gameplay-impact-spotlight="true"' in summary
+    assert 'data-gameplay-impact-group={group.id}' in summary
+    assert 'data-gameplay-next-choice-bridge="normal-play"' in summary
+    assert 'data-gameplay-next-choice-signals="true"' in summary
+    assert "forecastChoiceSignals" in summary
+    assert "targetChoiceSignals" in summary
+    assert 't("play.feedback_next_choice_changed_label")' in summary
+    assert 't("play.feedback_next_choice_changed_detail")' in summary
+    assert "sourceMoveText={impactSourceMove}" in play_page
+    assert "const impactSourceMove = impactSourceMoveText(previousPlayerForLastNarrator)" in play_page
+    assert '"play.gameplay_impact_label": "What changed"' in impact_strings
+    assert '"play.feedback_impact_hint": "Read the result first, then choose from what it opened."' in impact_strings
+    assert '"play.feedback_result_layer_label": "Result from your last move"' in impact_strings
+    assert '"play.feedback_source_move_label": "From your move"' in impact_strings
+    assert '"play.feedback_key_consequence_label": "Main result"' in impact_strings
+    assert '"play.feedback_next_choice_label": "Next moves opened by it"' in impact_strings
+    assert '"play.feedback_next_choice_changed_label": "Action menu changed"' in impact_strings
+    assert '"play.feedback_next_choice_changed_detail": "The people, clues, or pressure that changed now shape these choices."' in impact_strings
+    for forbidden in ("provider", "model", "schema", "token", "fallback", "debug", "trace", "raw"):
+        assert forbidden not in impact_strings.casefold()
+
+
 def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
