@@ -248,9 +248,11 @@ export function dedupePublicTemplatesForPlaza(
 export function HomePage({
   onOpenCreate,
   onOpenPlay,
+  onOpenReplay,
 }: {
   onOpenCreate: () => void
   onOpenPlay: (sessionId: string) => void
+  onOpenReplay: (sessionId: string) => void
 }) {
   const api = useApi()
   const auth = useAuth()
@@ -397,6 +399,7 @@ export function HomePage({
             sessions={mySessions}
             compact={compactHome}
             onOpenPlay={onOpenPlay}
+            onOpenReplay={onOpenReplay}
           />
         ) : null}
 
@@ -529,10 +532,12 @@ function MySessionsSection({
   sessions,
   compact,
   onOpenPlay,
+  onOpenReplay,
 }: {
   sessions: NarrativeSessionSummary[]
   compact: boolean
   onOpenPlay: (sessionId: string) => void
+  onOpenReplay: (sessionId: string) => void
 }) {
   const t = useT()
   // Split: in-progress (no ending) above, completed (has ending) below.
@@ -585,7 +590,7 @@ function MySessionsSection({
                 session={s}
                 index={idx}
                 archiveNumber={completed.length - idx}
-                onClick={() => onOpenPlay(s.session_id)}
+                onClick={() => onOpenReplay(s.session_id)}
               />
             ))}
           </div>
@@ -1444,6 +1449,8 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   sessionCard: {
     width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
     display: "block",
     textAlign: "left",
     padding: "10px 0",

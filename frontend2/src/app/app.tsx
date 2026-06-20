@@ -56,6 +56,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
         <HomePage
           onOpenCreate={() => navigate({ name: "create" })}
           onOpenPlay={(sessionId) => navigate({ name: "play", sessionId })}
+          onOpenReplay={(sessionId) => navigate({ name: "replay", sessionId })}
         />
       )
     case "login":

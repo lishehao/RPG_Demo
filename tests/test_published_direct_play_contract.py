@@ -181,11 +181,16 @@ def test_home_editorial_tiles_render_generated_playable_story_objects_only() -> 
 
 def test_home_completed_memory_cards_explain_replay_destination() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert 'data-home-completed-memory-hint="true"' in home
     assert 't("home.memory_hint")' in home
     assert "memoryHint" in home
+    assert "onOpenReplay: (sessionId: string) => void" in home
+    assert "onOpenReplay={onOpenReplay}" in home
+    assert "onClick={() => onOpenReplay(s.session_id)}" in home
+    assert 'onOpenReplay={(sessionId) => navigate({ name: "replay", sessionId })}' in app
     assert '"home.memory_action": "查看回放 →"' in strings
     assert '"home.memory_action": "View replay →"' in strings
     assert '"home.memory_hint": "打开高光和完整回放，复盘这一局怎么走到这里。"' in strings
@@ -199,6 +204,8 @@ def test_home_continue_spotlight_explains_preserved_run_state() -> None:
     assert 'data-home-resume-hint="true"' in home
     assert 't("home.resume_hint")' in home
     assert "resumeHint" in home
+    assert "onClick={() => onOpenPlay(primarySession.session_id)}" in home
+    assert "onClick={() => onOpenPlay(s.session_id)}" in home
     assert '"home.resume_hint": "会保留你的身份、物品、关系和上一回合局势。"' in strings
     assert '"home.resume_hint": "Keeps your role, items, relationships, and last-turn situation."' in strings
     assert '"home.run_action": "继续这一局 →"' in strings
