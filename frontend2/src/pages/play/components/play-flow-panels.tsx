@@ -21,6 +21,7 @@ import { FreeActionContextBanner, FreeActionStarterRows, buildFreeActionStarterM
 import { LeverageEmptySummary, LeverageSummaryButton } from "./leverage-summary"
 import { RunContextObjective } from "./run-context-objective"
 import { RunContextProgressMeter } from "./run-context-progress"
+import { stageDisplayName } from "./run-context-stage-label"
 import { SceneReadStrip, buildSceneClocks } from "./scene-read-strip"
 import { SelectedMoveConfirmationReadout } from "./selected-move-confirmation"
 
@@ -196,15 +197,6 @@ export function RunContextPanel({
       />
     </motion.section>
   )
-}
-
-function stageDisplayName(stage: string): string {
-  if (stage === "hook") return "Prelude"
-  if (stage === "pressure") return "Build"
-  if (stage === "reversal") return "Turn"
-  if (stage === "climax") return "Climax"
-  if (stage === "pre_finale" || stage === "pre_finale_open") return "Coda"
-  return stage.replace(/_/g, " ")
 }
 
 // ---------------------------------------------------------------------------

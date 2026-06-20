@@ -323,6 +323,36 @@ def test_run_context_progress_module_owns_passive_progress_readout() -> None:
     assert "components/run-context-progress.tsx" in readme
 
 
+def test_run_context_stage_label_module_owns_passive_fallback_stage_copy() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    stage_label = (ROOT / "frontend2/src/pages/play/components/run-context-stage-label.ts").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./run-context-stage-label"' in panels
+    assert "stageDisplayName(stageKey)" in panels
+    assert "function stageForLocal" in panels
+    assert "export function stageDisplayName" in stage_label
+    assert 'return "Prelude"' in stage_label
+    assert 'return "Coda"' in stage_label
+    assert 'return stage.replace(/_/g, " ")' in stage_label
+    assert "function stageDisplayName" not in panels
+    assert "stageForLocal" not in stage_label
+    assert "useT" not in stage_label
+    assert "ppStyles" not in stage_label
+    assert "onUseInventoryItem" not in stage_label
+    assert "onBackHome" not in stage_label
+    assert "onRetry" not in stage_label
+    assert "lastFailedActionRef" not in stage_label
+    assert "handleOptionCommit" not in stage_label
+    assert "handleLeverageReveal" not in stage_label
+    assert "setShowDiary" not in stage_label
+    assert "setFreeInput" not in stage_label
+    assert "fetch(" not in stage_label
+    for forbidden in ("provider", "model", "schema", "token"):
+        assert forbidden not in stage_label.casefold()
+    assert "components/run-context-stage-label.ts" in readme
+
+
 def test_selected_move_confirmation_module_owns_readout_display_hooks() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     confirmation = (ROOT / "frontend2/src/pages/play/components/selected-move-confirmation.tsx").read_text()

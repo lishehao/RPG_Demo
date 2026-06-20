@@ -22,6 +22,8 @@
   - Passive run-context objective readout: hidden objective and lens hint in compact/regular layouts. `RunContextPanel` still owns inventory item callbacks, status copy composition, and layout branching.
 - `components/run-context-progress.tsx`
   - Passive run-context progress meter: turn progressbar label, value, and fill width. `RunContextPanel` still owns inventory item callbacks, status copy composition, and layout branching.
+- `components/run-context-stage-label.ts`
+  - Passive stage fallback label helper for run-context status copy. `RunContextPanel` still owns stage calculation, translation lookup, status copy composition, inventory item callbacks, and layout branching.
 - `components/scene-read-strip.tsx`
   - Passive scene-read strip module: clock readouts, social-heat summary, leverage exposure count, and top NPC pulse labels. `ActionArea` only supplies current values and owns no behavior here.
 - `components/selected-move-confirmation.tsx`
