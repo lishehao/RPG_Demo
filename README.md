@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://lishehao.github.io/RPG_Demo/">
-    <img src="./docs/images/social-preview.jpg" alt="Tiny Stories - inspectable AI narrative runtime" width="100%" />
+    <img src="./docs/demo-video/admissions-trailer-contact.jpg" alt="Tiny Stories admissions demo contact sheet showing product UI and reviewer evidence" width="100%" />
   </a>
 </p>
 

@@ -1,7 +1,7 @@
 # Tiny Stories
 
 <p align="center">
-  <img src="./docs/images/hero.jpg" alt="Tiny Stories — interactive drama hero" width="100%" />
+  <img src="./docs/demo-video/admissions-trailer-contact.jpg" alt="Tiny Stories 招生 demo contact sheet：product UI and reviewer evidence" width="100%" />
 </p>
 
 <p align="center">

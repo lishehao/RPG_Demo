@@ -79,7 +79,11 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
 
 def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     readme = (ROOT / "README.md").read_text()
+    hero_block = readme.split("</p>", 1)[0]
 
+    assert "./docs/demo-video/admissions-trailer-contact.jpg" in hero_block
+    assert "product UI and reviewer evidence" in hero_block
+    assert "./docs/images/social-preview.jpg" not in hero_block
     assert "Watch 75s demo" in readme
     assert "Open MP4 demo" in readme
     assert "Inspect source evidence" in readme
@@ -142,7 +146,11 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
 
 def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     readme = (ROOT / "README.zh.md").read_text()
+    hero_block = readme.split("</p>", 1)[0]
 
+    assert "./docs/demo-video/admissions-trailer-contact.jpg" in hero_block
+    assert "product UI and reviewer evidence" in hero_block
+    assert "./docs/images/hero.jpg" not in hero_block
     assert "status-portfolio_case_study" in readme
     assert "Status: Paused" not in readme
     assert "status-paused" not in readme
