@@ -1418,6 +1418,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 900,
     flexShrink: 0,
   },
+  intentReadLaneLabel: {
+    flexShrink: 0,
+    color: "rgba(205,180,255,0.66)",
+    fontSize: 10.5,
+    lineHeight: 1.25,
+    fontWeight: 760,
+  },
   intentReadLaneValue: {
     minWidth: 0,
     color: "rgba(255,245,230,0.78)",

@@ -98,6 +98,8 @@ def test_story_beat_module_owns_receipts_digest_and_player_hooks() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
     readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
 
     assert 'from "./components/story-beat"' in play_page
@@ -109,10 +111,17 @@ def test_story_beat_module_owns_receipts_digest_and_player_hooks() -> None:
     assert 'data-play-story-beat-role="narrator"' in story_beat
     assert 'data-play-story-beat-role="player"' in story_beat
     assert 'data-play-outcome-receipt="true"' in story_beat
+    assert 'data-play-intent-read-receipt="true"' in story_beat
+    assert 'data-play-intent-read-lane={lane.id}' in story_beat
     assert 'data-play-latest-beat-digest="true"' in story_beat
     assert 'data-play-segment-parallax="true"' in story_beat
     assert "buildOutcomeReceiptItems" in story_beat
     assert "buildIntentReadReceipt" in story_beat
+    assert "intentReadLaneLabel" in styles
+    assert '"play.intent_read_label": "How the room read it"' in strings
+    assert '"play.intent_read_public_label": "Public move"' in strings
+    assert '"play.intent_read_private_label": "Private motive"' in strings
+    assert '"play.intent_read_reaction_label": "Reaction"' in strings
     assert "LeveragePayoff" in story_beat
     assert "from \"./play-flow-panels\"" not in story_beat
     assert "from \"../components/play-flow-panels\"" not in story_beat

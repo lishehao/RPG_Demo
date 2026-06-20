@@ -836,7 +836,23 @@ function buildOutcomeReceiptItems({
 
 function IntentReadReceipt({ read }: { read: IntentReadReceiptView }) {
   const t = useT()
-  const lanes = [read.publicMove, read.privateIntent, read.reaction].filter(Boolean)
+  const lanes = [
+    {
+      id: "public",
+      label: t("play.intent_read_public_label"),
+      value: read.publicMove,
+    },
+    {
+      id: "private",
+      label: t("play.intent_read_private_label"),
+      value: read.privateIntent,
+    },
+    {
+      id: "reaction",
+      label: t("play.intent_read_reaction_label"),
+      value: read.reaction,
+    },
+  ].filter((lane) => lane.value)
   return (
     <motion.div
       initial={{ opacity: 0, y: 6, scale: 0.99 }}
@@ -844,13 +860,20 @@ function IntentReadReceipt({ read }: { read: IntentReadReceiptView }) {
       transition={{ delay: 0.14, ...itemTransition }}
       style={ppStyles.intentReadReceipt}
       aria-label={t("play.intent_read_label")}
+      data-play-intent-read-receipt="true"
     >
       <span style={ppStyles.intentReadKicker}>{t("play.intent_read_label")}</span>
       <span style={ppStyles.intentReadSentence}>
         {lanes.map((lane, index) => (
-          <span key={`${index}:${lane}`} style={ppStyles.intentReadPhrase}>
+          <span
+            key={lane.id}
+            style={ppStyles.intentReadPhrase}
+            data-play-intent-read-lane={lane.id}
+          >
             {index > 0 ? <span style={ppStyles.intentReadDivider} aria-hidden>·</span> : null}
-            <strong style={ppStyles.intentReadLaneValue}>{lane}</strong>
+            <span style={ppStyles.intentReadLaneLabel}>{lane.label}:</span>
+            {" "}
+            <strong style={ppStyles.intentReadLaneValue}>{lane.value}</strong>
           </span>
         ))}
       </span>
