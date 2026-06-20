@@ -82,8 +82,8 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert "onClick={onOpenCreate}" in home
     assert 'data-home-hero-sub="true"' in home
     assert 't("home.hero_sub")' in home
-    assert '"home.hero_tagline": "Interactive drama · Goal, pressure, consequence"' in strings
-    assert '"home.hero_sub": "15 min a run · the same opening branches through role, pressure, and visible consequences."' in strings
+    assert '"home.hero_tagline": "Story Desk · Pick, resume, or write a run"' in strings
+    assert '"home.hero_sub": "Choose a playable story, reopen saved runs, or write a new opening; each 15 min episode branches through role, pressure, and visible consequences."' in strings
     assert '"home.hero_bullet_2": "Each turn shows pressure, clues, and character state before you choose a move with tradeoffs."' in strings
 
     assert 't("header.login")' in header

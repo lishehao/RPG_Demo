@@ -71,10 +71,10 @@ export const STRINGS_ZH = {
   "error.session_expired": "会话已过期,请重新登录.",
 
   // Home page
-  "home.hero_tagline": "互动短剧 · 目标、压力、后果",
+  "home.hero_tagline": "故事入口 · 选择、继续或创作一局",
   "home.hero_title_l1": "一句话起头,",
   "home.hero_title_l2": "这一集就会展开.",
-  "home.hero_sub": "15 分钟一局 · 同一个开场，不同身份、压力和选择会走向不同结局.",
+  "home.hero_sub": "选择可玩的故事，继续已保存的局，或写一个新开场；每局约 15 分钟，会因身份、压力和可见后果分支。",
   "home.hero_bullet_1": "写一个戏剧瞬间，系统搭起场景、人物、目标和第一段",
   "home.hero_bullet_2": "每回合先看压力、线索和人物状态，再选择有代价的行动",
   "home.hero_bullet_3": "右下角私聊\"局外人朋友\" — TA 不替你做决定,会陪你想清楚",
@@ -1129,10 +1129,10 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "error.network": "Network error. Check your connection.",
   "error.session_expired": "Session expired. Please sign in again.",
 
-  "home.hero_tagline": "Interactive drama · Goal, pressure, consequence",
+  "home.hero_tagline": "Story Desk · Pick, resume, or write a run",
   "home.hero_title_l1": "One sentence opens it.",
   "home.hero_title_l2": "The episode unfolds around you.",
-  "home.hero_sub": "15 min a run · the same opening branches through role, pressure, and visible consequences.",
+  "home.hero_sub": "Choose a playable story, reopen saved runs, or write a new opening; each 15 min episode branches through role, pressure, and visible consequences.",
   "home.hero_bullet_1": "Write a dramatic moment — the system builds scene, cast, goal, and opening passage.",
   "home.hero_bullet_2": "Each turn shows pressure, clues, and character state before you choose a move with tradeoffs.",
   "home.hero_bullet_3": "Side-chat your \"outsider friend\" — they won't decide for you, but they'll think it through with you.",
