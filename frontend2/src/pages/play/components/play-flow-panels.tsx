@@ -913,12 +913,27 @@ export function ActionArea({
     setShowDiary(false)
   }, [armedCardId, busy, options.length, selectedOptionIndex, setShowDiary, showFreeInput])
 
+  const actionSubmissionInFlight = pickedIndex !== null || submittedFree || isRevealingLeverage
+  const actionControlsDisabled = busy || actionSubmissionInFlight
+  const inlineActionDisabledStyle = actionControlsDisabled ? ppStyles.inlineActionDisabled : null
+  const showPickedReflection = actionSubmissionInFlight
+
   useEffect(() => {
-    if (busy) return
-    if (!commitmentSurfaceOpen) return
+    if (!showPickedReflection && busy) return
+    if (!showPickedReflection && !commitmentSurfaceOpen) return
     const frame = window.requestAnimationFrame(() => {
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       const behavior: ScrollBehavior = prefersReducedMotion ? "auto" : "smooth"
+      if (showPickedReflection && busy) {
+        const pendingPanel = document.querySelector<HTMLElement>("[data-play-pending-reaction-panel='true']")
+        if (pendingPanel) {
+          const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
+          const rect = pendingPanel.getBoundingClientRect()
+          const top = Math.max(0, window.scrollY + rect.top - headerHeight - 12)
+          window.scrollTo({ top, left: 0, behavior })
+          return
+        }
+      }
       const selectedMove = document.querySelector<HTMLElement>("[data-play-selected-move='true']")
       if (selectedMove) {
         const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
@@ -933,7 +948,7 @@ export function ActionArea({
       })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [busy, commitmentSurfaceOpen, selectedOptionIndex])
+  }, [busy, commitmentSurfaceOpen, selectedOptionIndex, showPickedReflection])
 
   useEffect(() => {
     if (armedCardId && !playableLeverageCards.some((card) => card.card_id === armedCardId)) {
@@ -1026,10 +1041,6 @@ export function ActionArea({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busy, options.length, selectedOptionIndex, armedCardId, isRevealingLeverage, showFreeInput, freeInput])
 
-  const actionSubmissionInFlight = pickedIndex !== null || submittedFree || isRevealingLeverage
-  const actionControlsDisabled = busy || actionSubmissionInFlight
-  const inlineActionDisabledStyle = actionControlsDisabled ? ppStyles.inlineActionDisabled : null
-  const showPickedReflection = actionSubmissionInFlight
   const isOptionCommitPending =
     showPickedReflection && pickedIndex !== null && selectedOptionIndex === pickedIndex
   const pickedOption = pickedIndex !== null ? options[pickedIndex] : null
