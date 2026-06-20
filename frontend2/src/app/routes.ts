@@ -8,6 +8,7 @@ export type AppRoute =
   | { name: "playActionFixture"; scenario?: "long-history" }
   | { name: "playEndingFixture" }
   | { name: "playGameplayLoopFixture" }
+  | { name: "playLeverageFixture" }
   | { name: "playRetryFixture" }
   | { name: "template"; templateId: string }
   | { name: "play"; sessionId: string; reviewer?: boolean }
@@ -35,6 +36,7 @@ const ROUTE_DEPTH: Record<AppRoute["name"], number> = {
   playActionFixture: 1,
   playEndingFixture: 1,
   playGameplayLoopFixture: 1,
+  playLeverageFixture: 1,
   playRetryFixture: 1,
   template: 1,
   play: 2,
@@ -75,6 +77,7 @@ function parseRoute(hash: string): AppRoute {
     }
     if (segments[1] === "play-ending") return { name: "playEndingFixture" }
     if (segments[1] === "play-gameplay-loop") return { name: "playGameplayLoopFixture" }
+    if (segments[1] === "play-leverage") return { name: "playLeverageFixture" }
     if (segments[1] === "play-retry") return { name: "playRetryFixture" }
   }
   if (segments[0] === "template" && segments[1]) {
@@ -120,6 +123,8 @@ export function buildHash(route: AppRoute): string {
       return "#/qa/play-ending"
     case "playGameplayLoopFixture":
       return "#/qa/play-gameplay-loop"
+    case "playLeverageFixture":
+      return "#/qa/play-leverage"
     case "playRetryFixture":
       return "#/qa/play-retry"
     case "template":

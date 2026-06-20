@@ -206,6 +206,37 @@ def test_leverage_summary_module_owns_summary_readout_display_hooks() -> None:
     assert "components/leverage-summary.tsx" in readme
 
 
+def test_play_leverage_fixture_mounts_real_action_area_without_backend() -> None:
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    fixture = (ROOT / "frontend2/src/pages/play/components/play-leverage-fixture.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert '| { name: "playLeverageFixture" }' in routes
+    assert 'segments[1] === "play-leverage"' in routes
+    assert 'return "#/qa/play-leverage"' in routes
+    assert 'import { PlayLeverageFixture } from "../pages/play/components/play-leverage-fixture"' in app
+    assert 'case "playLeverageFixture"' in app
+    assert "<PlayLeverageFixture" in app
+    assert 'data-play-leverage-fixture="true"' in fixture
+    assert "INITIAL_LEVERAGE_CARDS" in fixture
+    assert "<ActionArea" in fixture
+    assert "leverageCards={leverageCards}" in fixture
+    assert "onPlayLeverage={(card) => resolveLeverage(card)}" in fixture
+    assert "setLeverageCards((cards) =>" in fixture
+    assert 'data-play-leverage-fixture-result="true"' in fixture
+    assert 'data-play-leverage-summary="true"' not in fixture
+    assert 'data-play-leverage-card="true"' not in fixture
+    assert 'data-play-leverage-reveal="true"' not in fixture
+    assert "handleLeverageReveal" not in fixture
+    assert "getNarrative" not in fixture
+    assert "fetch(" not in fixture
+    assert "components/play-leverage-fixture.tsx" in readme
+    assert "#/qa/play-leverage" in readme
+    for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
+        assert forbidden not in fixture.casefold()
+
+
 def test_play_advisor_fixture_mounts_real_advisor_surface_without_backend() -> None:
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()

@@ -24,6 +24,8 @@
   - Ending payoff view, result-first action ordering, fallback recap, highlight reel, branch recap, and ending label display helpers.
 - `components/play-ending-fixture.tsx`
   - Local QA route fixture for `#/qa/play-ending`. Mounts the real `EndingScreen` with deterministic ending data for browser evidence.
+- `components/play-leverage-fixture.tsx`
+  - Local QA route fixture for `#/qa/play-leverage`. Mounts the real `ActionArea` with deterministic leverage cards so leverage summary, card arming, and reveal-panel visibility can be browser-smoked without backend or live generation.
 - `components/runtime-inspector.tsx`
   - Reviewer-only evaluation drawer and trace/evidence helpers. This owns persisted agent/LLM evidence rendering; normal Play surfaces import it only behind reviewer gating.
 - `components/play-editorial-primitives.tsx`
@@ -44,6 +46,7 @@
 - Normal players do not see provider/model/API/schema/debug/trace language.
 - Reviewer trace/evidence appears only in reviewer mode.
 - Ending payoff stays result-first and visible.
+- `#/qa/play-leverage` exercises the real leverage `ActionArea` surface without backend or live generation.
 - `#/qa/play-advisor` exercises the real advisor FAB/sidechat without backend or live generation.
 - `#/qa/play-ending` exercises the real ending payoff surface without backend or live generation.
 - Mobile 390px must have no horizontal overflow and action/retry controls must remain reachable.
