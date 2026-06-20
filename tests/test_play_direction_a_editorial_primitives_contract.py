@@ -237,6 +237,30 @@ def test_scene_read_strip_module_owns_passive_scene_read_display_hooks() -> None
     assert "components/scene-read-strip.tsx" in readme
 
 
+def test_run_context_objective_module_owns_passive_objective_display_hooks() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    objective = (ROOT / "frontend2/src/pages/play/components/run-context-objective.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./run-context-objective"' in panels
+    assert "RunContextObjective" in panels
+    assert "export function RunContextObjective" in objective
+    assert 'data-play-run-objective="true"' in objective
+    assert 'data-play-run-context-lens="true"' in objective
+    assert 't("play.run_context_lens_hint")' in objective
+    assert 'data-play-run-objective="true"' not in panels
+    assert 'data-play-run-context-lens="true"' not in panels
+    assert "onUseInventoryItem" not in objective
+    assert "data-play-run-inventory-use" not in objective
+    assert "data-play-run-inventory-item" not in objective
+    assert "onBackHome" not in objective
+    assert "handleOptionCommit" not in objective
+    assert "handleLeverageReveal" not in objective
+    assert "setShowDiary" not in objective
+    assert "setFreeInput" not in objective
+    assert "components/run-context-objective.tsx" in readme
+
+
 def test_selected_move_confirmation_module_owns_readout_display_hooks() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     confirmation = (ROOT / "frontend2/src/pages/play/components/selected-move-confirmation.tsx").read_text()
@@ -865,6 +889,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     story_beat = (ROOT / "frontend2/src/pages/play/components/story-beat.tsx").read_text()
     action_option = (ROOT / "frontend2/src/pages/play/components/action-option-card.tsx").read_text()
     free_prompts = (ROOT / "frontend2/src/pages/play/components/free-action-prompts.tsx").read_text()
+    run_context_objective = (ROOT / "frontend2/src/pages/play/components/run-context-objective.tsx").read_text()
     envelope = (ROOT / "frontend2/src/pages/play/play-gameplay-envelope.ts").read_text()
     contracts = (ROOT / "frontend2/src/api/contracts.ts").read_text()
     backend_contracts = (ROOT / "rpg_backend/narrative/contracts.py").read_text()
@@ -947,9 +972,9 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "resourceActionCounts={resourceActionCounts}" in play_page
     assert "onFocusResource={focusGameplayResource}" in play_page
     assert 'behavior: prefersReducedMotion ? "auto" : "smooth"' in play_page
-    assert 'data-play-run-context-lens="true"' in panels
-    assert 'data-play-run-objective="true"' in panels
-    assert 't("play.run_context_lens_hint")' in panels
+    assert 'data-play-run-context-lens="true"' in run_context_objective
+    assert 'data-play-run-objective="true"' in run_context_objective
+    assert 't("play.run_context_lens_hint")' in run_context_objective
     assert "runContextObjectiveHint" in styles
     assert '"play.run_context_lens_hint": "Use this goal as the lens for reading the scene."' in strings
     assert '"play.run_context_lens_hint": "用这个目标去读场景，再决定下一步。"' in strings

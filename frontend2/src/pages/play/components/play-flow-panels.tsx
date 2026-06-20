@@ -19,6 +19,7 @@ import { parseOptionLabel } from "../play-option-label"
 import { ActionCollapsedForecast, ActionSelectedOptionDetail } from "./action-option-card"
 import { FreeActionContextBanner, FreeActionStarterRows, buildFreeActionStarterMoves } from "./free-action-prompts"
 import { LeverageEmptySummary, LeverageSummaryButton } from "./leverage-summary"
+import { RunContextObjective } from "./run-context-objective"
 import { SceneReadStrip, buildSceneClocks } from "./scene-read-strip"
 import { SelectedMoveConfirmationReadout } from "./selected-move-confirmation"
 
@@ -248,16 +249,7 @@ export function RunContextPanel({
           </Truncated>
           <span style={ppStyles.runCompactMeta}>{runMetaText}</span>
         </div>
-        {role ? (
-          <div style={ppStyles.runCompactObjective} data-play-run-objective="true">
-            <strong style={ppStyles.runCompactObjectiveText}>
-              {role.hidden_objective}
-            </strong>
-            <span style={ppStyles.runContextObjectiveHint} data-play-run-context-lens="true">
-              {t("play.run_context_lens_hint")}
-            </span>
-          </div>
-        ) : null}
+        {role ? <RunContextObjective role={role} compact /> : null}
         {renderInventoryLine()}
         {renderRunProgress()}
       </motion.section>
@@ -283,14 +275,7 @@ export function RunContextPanel({
         </Truncated>
         <span style={ppStyles.runContextMeta}>{runMetaText}</span>
       </div>
-      {role ? (
-        <div style={ppStyles.runContextObjectiveLine} data-play-run-objective="true">
-          <strong style={ppStyles.runContextObjectiveText}>{role.hidden_objective}</strong>
-          <span style={ppStyles.runContextObjectiveHint} data-play-run-context-lens="true">
-            {t("play.run_context_lens_hint")}
-          </span>
-        </div>
-      ) : null}
+      {role ? <RunContextObjective role={role} /> : null}
       {renderInventoryLine()}
       {renderRunProgress()}
     </motion.section>
