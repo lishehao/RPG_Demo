@@ -293,6 +293,36 @@ def test_failed_action_recovery_module_owns_passive_retry_copy_helper() -> None:
     assert "components/failed-action-recovery.ts" in readme
 
 
+def test_run_context_progress_module_owns_passive_progress_readout() -> None:
+    panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    progress = (ROOT / "frontend2/src/pages/play/components/run-context-progress.tsx").read_text()
+    readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+
+    assert 'from "./run-context-progress"' in panels
+    assert "RunContextProgressMeter" in panels
+    assert "export function RunContextProgressMeter" in progress
+    assert 'role="progressbar"' in progress
+    assert 'data-play-run-progress="true"' in progress
+    assert 't("stage_bar.aria"' in progress
+    assert "runProgressTrack" in progress
+    assert "runProgressFill" in progress
+    assert 'role="progressbar"' not in panels
+    assert 'data-play-run-progress="true"' not in panels
+    assert "onUseInventoryItem" not in progress
+    assert "data-play-run-inventory-use" not in progress
+    assert "onBackHome" not in progress
+    assert "onRetry" not in progress
+    assert "lastFailedActionRef" not in progress
+    assert "handleOptionCommit" not in progress
+    assert "handleLeverageReveal" not in progress
+    assert "setShowDiary" not in progress
+    assert "setFreeInput" not in progress
+    assert "fetch(" not in progress
+    for forbidden in ("provider", "model", "schema", "token"):
+        assert forbidden not in progress.casefold()
+    assert "components/run-context-progress.tsx" in readme
+
+
 def test_selected_move_confirmation_module_owns_readout_display_hooks() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     confirmation = (ROOT / "frontend2/src/pages/play/components/selected-move-confirmation.tsx").read_text()

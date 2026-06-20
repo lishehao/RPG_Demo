@@ -20,6 +20,7 @@ import { ActionCollapsedForecast, ActionSelectedOptionDetail } from "./action-op
 import { FreeActionContextBanner, FreeActionStarterRows, buildFreeActionStarterMoves } from "./free-action-prompts"
 import { LeverageEmptySummary, LeverageSummaryButton } from "./leverage-summary"
 import { RunContextObjective } from "./run-context-objective"
+import { RunContextProgressMeter } from "./run-context-progress"
 import { SceneReadStrip, buildSceneClocks } from "./scene-read-strip"
 import { SelectedMoveConfirmationReadout } from "./selected-move-confirmation"
 
@@ -98,15 +99,6 @@ export function RunContextPanel({
     ? t("play.status_done")
     : t("play.status_turns_left", { count: turnsRemaining })
   const runMetaText = [stage, runStatusText, privateResourceText].filter(Boolean).join(" · ")
-  const runProgressLabel = t("stage_bar.aria", {
-    turn: turnsCompleted,
-    total: turnBudget,
-    stage,
-  })
-  const runProgressPercent = Math.max(
-    0,
-    Math.min(100, (turnsCompleted / Math.max(turnBudget, 1)) * 100),
-  )
   const visibleInventory = liveInventory.slice(0, 3)
   const hiddenInventoryCount = Math.max(0, liveInventory.length - visibleInventory.length)
   const renderInventoryLine = () =>
@@ -145,24 +137,6 @@ export function RunContextPanel({
         </span>
       </div>
     ) : null
-  const renderRunProgress = () =>
-    !isComplete ? (
-      <span
-        style={ppStyles.runProgressTrack}
-        role="progressbar"
-        aria-label={runProgressLabel}
-        aria-valuemin={0}
-        aria-valuemax={turnBudget}
-        aria-valuenow={turnsCompleted}
-      >
-        <span
-          style={{
-            ...ppStyles.runProgressFill,
-            width: `${runProgressPercent}%`,
-          }}
-        />
-      </span>
-    ) : null
 
   if (compactRunContext) {
     return (
@@ -183,7 +157,12 @@ export function RunContextPanel({
         </div>
         {role ? <RunContextObjective role={role} compact /> : null}
         {renderInventoryLine()}
-        {renderRunProgress()}
+        <RunContextProgressMeter
+          isComplete={isComplete}
+          turnsCompleted={turnsCompleted}
+          turnBudget={turnBudget}
+          stage={stage}
+        />
       </motion.section>
     )
   }
@@ -209,7 +188,12 @@ export function RunContextPanel({
       </div>
       {role ? <RunContextObjective role={role} /> : null}
       {renderInventoryLine()}
-      {renderRunProgress()}
+      <RunContextProgressMeter
+        isComplete={isComplete}
+        turnsCompleted={turnsCompleted}
+        turnBudget={turnBudget}
+        stage={stage}
+      />
     </motion.section>
   )
 }

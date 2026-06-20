@@ -19,7 +19,9 @@
 - `components/leverage-summary.tsx`
   - Leverage summary readout module: empty summary, summary button, risk/target chips, and toggle label display. `ActionArea` still owns leverage card arming, reveal CTA, diary/motive editing, and submission.
 - `components/run-context-objective.tsx`
-  - Passive run-context objective readout: hidden objective and lens hint in compact/regular layouts. `RunContextPanel` still owns inventory item callbacks, run progress math, and layout branching.
+  - Passive run-context objective readout: hidden objective and lens hint in compact/regular layouts. `RunContextPanel` still owns inventory item callbacks, status copy composition, and layout branching.
+- `components/run-context-progress.tsx`
+  - Passive run-context progress meter: turn progressbar label, value, and fill width. `RunContextPanel` still owns inventory item callbacks, status copy composition, and layout branching.
 - `components/scene-read-strip.tsx`
   - Passive scene-read strip module: clock readouts, social-heat summary, leverage exposure count, and top NPC pulse labels. `ActionArea` only supplies current values and owns no behavior here.
 - `components/selected-move-confirmation.tsx`
