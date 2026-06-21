@@ -2122,7 +2122,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-advisor-suggestion-instruction="true"' in advisor_panel
     assert 'data-play-advisor-error="true"' in advisor_panel
     assert "friendlyError" not in advisor_panel
-    assert 'setError(t("play.advisor_ask_failed"))' in advisor_panel
+    assert 'setError(t(oracle ? "play.oracle_ask_failed" : "play.advisor_ask_failed"))' in advisor_panel
     assert 'setError(t("play.advisor_history_failed"))' in advisor_panel
     assert "advisorEmptyPrimer" in styles
     assert "advisorEmptyPrimerTitle" in styles
@@ -2150,12 +2150,14 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.advisor_send": "问朋友"' in strings
     assert '"play.oracle_button": "Deep read"' in strings
     assert '"play.oracle_button_with_cost": "Deep read · spends 1 turn"' in strings
+    assert '"play.oracle_ask_failed": "Deep read did not come through. No turn was spent; your question stayed in the box."' in strings
     assert '"play.oracle_inline_summary": "Deep read spends 1 turn: {before} → {after} turns left"' in strings
     assert '"play.oracle_tip_active": "Spend 1 turn for a deeper read from your friend ({turns} turns left)"' in strings
     assert '"play.oracle_button": "Oracle read"' not in strings
     assert '"play.oracle_button_with_cost": "Oracle read · costs 1 turn"' not in strings
     assert '"play.oracle_button": "深度读局"' in strings
     assert '"play.oracle_button_with_cost": "深度读局 · 消耗 1 回合"' in strings
+    assert '"play.oracle_ask_failed": "深度读局没接上；没有消耗回合，问题还在输入框，可以改一句再试。"' in strings
     assert '"play.oracle_inline_summary": "深度读局会消耗 1 回合：{before} → {after} 回合"' in strings
     assert '"play.oracle_button": "看穿模式"' not in strings
     assert '"play.move_receipt_title": "Your move"' in strings

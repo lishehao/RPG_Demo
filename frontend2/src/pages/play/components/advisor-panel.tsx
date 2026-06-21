@@ -363,7 +363,7 @@ export function AdvisorSidechat({
         }
       }
     } catch {
-      setError(t("play.advisor_ask_failed"))
+      setError(t(oracle ? "play.oracle_ask_failed" : "play.advisor_ask_failed"))
       setDraft(question)
       setDraftSuggestion(null)
       setDraftFocusToken((token) => token + 1)
