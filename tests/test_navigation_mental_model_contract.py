@@ -111,6 +111,10 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "75s reviewer cut" in landing
     assert "Watch 75s demo" in landing
     assert "Open MP4 demo" in landing
+    assert "Reviewer path" in landing
+    assert "RPG_Demo#reviewer-path" in landing
+    assert "#/portfolio -> #/reviewer" in landing
+    assert "inspect the live evidence path" in landing
     assert "Source evidence" in landing
     assert "docs/CURRENT_SYSTEM_MAP.md" in landing
     assert "MP4 fallback" not in landing
