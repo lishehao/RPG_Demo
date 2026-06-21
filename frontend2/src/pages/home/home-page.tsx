@@ -434,8 +434,17 @@ export function HomePage({
           )}
 
           {templateStartError ? (
-            <div style={hpStyles.errorBox} data-home-start-error="true">
-              {templateStartError}
+            <div style={hpStyles.errorRecovery} data-home-start-error="true">
+              <div style={hpStyles.errorBox}>{templateStartError}</div>
+              <motion.button
+                type="button"
+                style={hpStyles.emptyAction}
+                whileTap={tapPress}
+                onClick={onOpenCreate}
+                data-home-start-error-create="true"
+              >
+                {t("home.cta_create")}
+              </motion.button>
             </div>
           ) : null}
 

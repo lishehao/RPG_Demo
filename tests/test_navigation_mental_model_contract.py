@@ -439,6 +439,7 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert 'data-home-empty-create="true"' in home
     assert 'data-home-empty-my-create="true"' in home
     assert 'data-home-plaza-error-create="true"' in home
+    assert 'data-home-start-error-create="true"' in home
     assert "hpStyles.errorRecovery" in home
     assert "hpStyles.emptyAction" in home
     assert 'height: "clamp(118px, 18vw, 180px)"' in home
@@ -453,6 +454,8 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert '"home.empty_my": "你还没有创建过故事."' not in strings
     assert '"home.error_plaza": "The story list did not open. You can still write a new story, or come back in a moment."' in strings
     assert '"home.error_plaza": "The story list did not open. You can still write a new story above, or come back in a moment."' not in strings
+    assert '"home.error_start_story": "This story did not open this time. The card is still here; press Start episode again, or write a new story."' in strings
+    assert '"home.error_start_story": "This story did not open this time. The card is still here; press Start episode again, or write a new story above."' not in strings
 
     assert 't("header.login")' in header
     assert 't("header.account")' in header
