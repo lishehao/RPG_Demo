@@ -264,6 +264,45 @@
         line-height: 1.55;
       }
 
+      .audience-model {
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .audience-model__lede {
+        max-width: 820px;
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.62;
+      }
+
+      .audience-model__grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .audience-model__item {
+        min-width: 0;
+        padding-left: 14px;
+        border-left: 2px solid rgba(127, 199, 194, 0.55);
+      }
+
+      .audience-model__item strong {
+        display: block;
+        color: var(--ink);
+        font-size: 15px;
+        margin-bottom: 7px;
+      }
+
+      .audience-model__item p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
       .flow {
         display: grid;
         grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -334,6 +373,7 @@
       @media (max-width: 900px) {
         .hero,
         .grid,
+        .audience-model__grid,
         .flow {
           grid-template-columns: 1fr;
         }
@@ -496,6 +536,29 @@
           launched consumer game or broad adoption proof. The source evidence
           starts with the system map, reviewer path, contracts, and tests.
         </p>
+      </section>
+
+      <section class="shell section audience-model" aria-labelledby="who-it-is-for">
+        <h2 id="who-it-is-for">Who this loop is for</h2>
+        <p class="audience-model__lede">
+          Tiny Stories is designed for story-first players who want a compact
+          mobile episode: read the scene, compare a few meaningful moves, act
+          once, then use the consequence to choose the next beat.
+        </p>
+        <div class="audience-model__grid">
+          <article class="audience-model__item">
+            <strong>Target player</strong>
+            <p>Someone who wants interactive drama, not a blank writing canvas or a dashboard.</p>
+          </article>
+          <article class="audience-model__item">
+            <strong>Content rhythm</strong>
+            <p>Short scene, clear pressure, one choice, visible consequence, next choice.</p>
+          </article>
+          <article class="audience-model__item">
+            <strong>UI promise</strong>
+            <p>Keep story context near decisions; keep reviewer evidence outside normal play.</p>
+          </article>
+        </div>
       </section>
 
       <section class="shell section" aria-labelledby="runtime-flow">

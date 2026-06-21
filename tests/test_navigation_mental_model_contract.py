@@ -122,7 +122,17 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "portfolio-grade AI product-system evidence" in landing
     assert "not a" in landing
     assert "launched consumer game or broad adoption proof" in landing
+    assert "Who this loop is for" in landing
+    assert "story-first players who want a compact" in landing
+    assert "read the scene, compare a few meaningful moves, act" in landing
+    assert "Target player" in landing
+    assert "Content rhythm" in landing
+    assert "UI promise" in landing
+    assert "not a blank writing canvas or a dashboard" in landing
+    assert "Keep story context near decisions" in landing
     assert "system map, reviewer path, contracts, and tests" in landing
+    assert ".audience-model" in landing
+    assert ".audience-model__grid" in landing
     assert ".evidence-boundary" in landing
     assert ".video-actions span:last-child" in landing
     assert '<meta property="og:image" content="/og-share.jpg" />' in app_index
