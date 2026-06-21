@@ -1161,7 +1161,18 @@ export function PlayPage({
       <div style={ppStyles.page}>
         <Header onBackHome={onBackHome} title="" />
         {error ? (
-          <div style={ppStyles.centerNote}>{t("play.load_failed", { error })}</div>
+          <div style={ppStyles.loadErrorCard} data-play-load-error="true">
+            <span style={ppStyles.loadErrorKicker}>{t("play.load_failed_title")}</span>
+            <span style={ppStyles.loadErrorDetail}>{t("play.load_failed_detail")}</span>
+            <button
+              type="button"
+              style={ppStyles.loadErrorAction}
+              onClick={onBackHome}
+              data-play-load-error-back="true"
+            >
+              {t("play.back_home")}
+            </button>
+          </div>
         ) : (
           <LoadingShim label={t("play.loading_story")} />
         )}

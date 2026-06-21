@@ -46,6 +46,25 @@ def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     assert story_timeline_block.index("<RunContextPanel") < story_timeline_block.index("<GameplayStatePanel")
 
 
+def test_play_initial_load_failure_is_story_desk_recoverable() -> None:
+    play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert 'data-play-load-error="true"' in play_page
+    assert 'data-play-load-error-back="true"' in play_page
+    assert 't("play.load_failed_title")' in play_page
+    assert 't("play.load_failed_detail")' in play_page
+    assert 'onClick={onBackHome}' in play_page
+    assert 't("play.load_failed", { error })' not in play_page
+    assert "loadErrorCard" in styles
+    assert "loadErrorAction" in styles
+    assert '"play.load_failed_title": "This run did not open"' in strings
+    assert '"play.load_failed_detail": "Return to Story Desk to reopen saved runs, choose another story, or write a new opening."' in strings
+    assert '"play.load_failed_title": "这一局暂时没有打开"' in strings
+    assert '"play.load_failed_detail": "回到故事入口，可以重新打开已保存的局、选别的故事，或写一个新开场。"' in strings
+
+
 def test_play_primitives_keep_story_world_mental_model() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
