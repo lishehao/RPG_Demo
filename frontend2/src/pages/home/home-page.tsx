@@ -466,6 +466,7 @@ export function HomePage({
                   error={null}
                   emptyText={t("home.empty_my")}
                   compact={compactHome}
+                  onOpenCreate={onOpenCreate}
                   onStartTemplate={handleStartPublishedTemplate}
                   startingTemplateId={startingTemplateId}
                 />
@@ -758,6 +759,7 @@ function TemplateGrid({
   error,
   emptyText,
   compact,
+  onOpenCreate,
   onStartTemplate,
   startingTemplateId,
   hideEmpty = false,
@@ -766,6 +768,7 @@ function TemplateGrid({
   error: string | null
   emptyText: string
   compact: boolean
+  onOpenCreate?: () => void
   onStartTemplate: (templateId: string) => void
   startingTemplateId: string | null
   hideEmpty?: boolean
@@ -794,6 +797,19 @@ function TemplateGrid({
           }}
         />
         <div style={hpStyles.emptyBody}>{emptyText}</div>
+        {onOpenCreate ? (
+          <div style={hpStyles.emptyActions}>
+            <motion.button
+              type="button"
+              style={hpStyles.emptyAction}
+              whileTap={tapPress}
+              onClick={onOpenCreate}
+              data-home-empty-my-create="true"
+            >
+              {t("home.cta_create")}
+            </motion.button>
+          </div>
+        ) : null}
       </motion.div>
     )
   }
