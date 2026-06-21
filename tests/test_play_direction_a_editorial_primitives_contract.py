@@ -2120,10 +2120,15 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "setDraftSuggestion(suggestion)" in advisor_panel
     assert 'data-play-advisor-draft-hint="true"' in advisor_panel
     assert 'data-play-advisor-suggestion-instruction="true"' in advisor_panel
+    assert 'data-play-advisor-error="true"' in advisor_panel
+    assert "friendlyError" not in advisor_panel
+    assert 'setError(t("play.advisor_ask_failed"))' in advisor_panel
+    assert 'setError(t("play.advisor_history_failed"))' in advisor_panel
     assert "advisorEmptyPrimer" in styles
     assert "advisorEmptyPrimerTitle" in styles
     assert "advisorSuggestionInstruction" in styles
     assert "advisorDraftHint" in styles
+    assert "advisorError" in styles
     assert '"play.advisor_title": "Ask for a second read"' in strings
     assert '"play.advisor_empty_primer_title": "Pick a question first"' in strings
     assert '"play.advisor_empty_primer_body": "Your friend can flag risk, wording, and pushback; you still choose the move."' in strings
@@ -2136,6 +2141,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.advisor_draft_hint": "Suggested question inserted. Edit it, then ask."' not in strings
     assert '"play.advisor_draft_hint": "已插入建议问题，可以改一句再问朋友；这不会提交你的行动。"' in strings
     assert '"play.advisor_draft_hint": "已插入建议问题，可以改一句再问朋友。"' not in strings
+    assert '"play.advisor_history_failed": "Prior advisor notes did not open; you can still ask a new question."' in strings
+    assert '"play.advisor_ask_failed": "Your friend did not answer that one. Your question stayed in the box; edit it or ask again."' in strings
+    assert "\"play.advisor_ask_failed\": \"Your friend didn't answer that one. Try again?\"" not in strings
+    assert '"play.advisor_history_failed": "之前的朋友旁批没打开；你仍然可以直接问新问题。"' in strings
+    assert '"play.advisor_ask_failed": "朋友这句没回上；问题还在输入框，可以改一句再问。"' in strings
     assert '"play.advisor_send": "Ask friend"' in strings
     assert '"play.advisor_send": "问朋友"' in strings
     assert '"play.oracle_button": "Deep read"' in strings

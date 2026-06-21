@@ -7,7 +7,6 @@ import type {
 } from "../../../api/contracts"
 import type { FrontendApiClient } from "../../../api/client"
 import { useApi } from "../../../app/api-context"
-import { friendlyError } from "../../../shared/lib/friendly-error"
 import { useT } from "../../../shared/lib/i18n"
 import {
   fadeTransition,
@@ -209,9 +208,9 @@ export function AdvisorSidechat({
         if (cancelled) return
         setMessages(res.messages)
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return
-        setError(friendlyError(err, t("play.advisor_history_failed")))
+        setError(t("play.advisor_history_failed"))
       })
     return () => {
       cancelled = true
@@ -363,8 +362,8 @@ export function AdvisorSidechat({
           onOracleConsumed(res.turn_budget_after)
         }
       }
-    } catch (err) {
-      setError(friendlyError(err, t("play.advisor_ask_failed")))
+    } catch {
+      setError(t("play.advisor_ask_failed"))
       setDraft(question)
       setDraftSuggestion(null)
       setDraftFocusToken((token) => token + 1)
@@ -614,7 +613,16 @@ export function AdvisorSidechat({
           {busy ? <TypingDots /> : null}
         </div>
 
-        {error ? <div style={ppStyles.advisorError}>{error}</div> : null}
+        {error ? (
+          <div
+            style={ppStyles.advisorError}
+            data-play-advisor-error="true"
+            role="status"
+            aria-live="polite"
+          >
+            {error}
+          </div>
+        ) : null}
 
         <div
           style={{
