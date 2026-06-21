@@ -456,6 +456,7 @@ export function HomePage({
                   error={error}
                   compact={compactHome}
                   lang={lang}
+                  onOpenCreate={onOpenCreate}
                   onStartTemplate={handleStartPublishedTemplate}
                   startingTemplateId={startingTemplateId}
                 />
@@ -836,6 +837,7 @@ function HomeEditorialMosaic({
   error,
   compact,
   lang,
+  onOpenCreate,
   onStartTemplate,
   startingTemplateId,
 }: {
@@ -843,6 +845,7 @@ function HomeEditorialMosaic({
   error: string | null
   compact: boolean
   lang: "zh" | "en"
+  onOpenCreate: () => void
   onStartTemplate: (templateId: string) => void
   startingTemplateId: string | null
 }) {
@@ -868,6 +871,17 @@ function HomeEditorialMosaic({
           }}
         />
         <div style={hpStyles.emptyBody}>{t("home.empty_plaza")}</div>
+        <div style={hpStyles.emptyActions}>
+          <motion.button
+            type="button"
+            style={hpStyles.emptyAction}
+            whileTap={tapPress}
+            onClick={onOpenCreate}
+            data-home-empty-create="true"
+          >
+            {t("home.cta_create")}
+          </motion.button>
+        </div>
       </motion.div>
     )
   }
@@ -2027,17 +2041,34 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   emptyHero: {
     width: "100%",
-    height: 180,
+    height: "clamp(118px, 18vw, 180px)",
     backgroundSize: "cover",
     backgroundPosition: "center",
   },
   emptyBody: {
-    padding: "20px 24px 28px",
+    padding: "20px 24px 12px",
     textAlign: "center",
     color: "var(--text-muted)",
     fontSize: 14,
     fontStyle: "italic",
     fontFamily: "var(--font-narrative)",
+  },
+  emptyActions: {
+    display: "flex",
+    justifyContent: "center",
+    padding: "0 24px 28px",
+  },
+  emptyAction: {
+    border: "1px solid rgba(244, 239, 230, 0.24)",
+    borderRadius: 8,
+    background: "rgba(244,239,230,0.09)",
+    color: "var(--text)",
+    cursor: "pointer",
+    font: "inherit",
+    fontSize: 13,
+    fontWeight: 750,
+    minHeight: 44,
+    padding: "0 16px",
   },
 
   footer: {
