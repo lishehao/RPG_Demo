@@ -263,6 +263,7 @@ export function HomePage({
   const [myTemplates, setMyTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
   const [myTemplatesError, setMyTemplatesError] = useState<string | null>(null)
   const [mySessions, setMySessions] = useState<NarrativeSessionSummary[] | null>(null)
+  const [mySessionsError, setMySessionsError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [templateStartError, setTemplateStartError] = useState<string | null>(null)
   const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null)
@@ -308,15 +309,18 @@ export function HomePage({
     if (auth.loading || auth.isAnonymous) return
     let cancelled = false
     setMyTemplatesError(null)
+    setMySessionsError(null)
     api
       .listMyNarrativeSessions()
       .then((res) => {
         if (cancelled) return
         setMySessions(res.items)
+        setMySessionsError(null)
       })
       .catch(() => {
         if (cancelled) return
         setMySessions([])
+        setMySessionsError(t("home.error_saved_runs"))
       })
     api
       .listMyNarrativeTemplates()
@@ -397,7 +401,22 @@ export function HomePage({
 
         {/* My sessions split into in-progress + completed groups. Only
             shown when signed in and at least one exists. */}
-        {!auth.isAnonymous && mySessions && mySessions.length > 0 ? (
+        {!auth.isAnonymous && mySessionsError ? (
+          <section style={hpStyles.resumeSection}>
+            <div style={hpStyles.errorRecovery} data-home-saved-runs-error="true">
+              <div style={hpStyles.errorBox}>{mySessionsError}</div>
+              <motion.button
+                type="button"
+                style={hpStyles.emptyAction}
+                whileTap={tapPress}
+                onClick={onOpenCreate}
+                data-home-saved-runs-error-create="true"
+              >
+                {t("home.cta_create")}
+              </motion.button>
+            </div>
+          </section>
+        ) : !auth.isAnonymous && mySessions && mySessions.length > 0 ? (
           <MySessionsSection
             sessions={mySessions}
             compact={compactHome}

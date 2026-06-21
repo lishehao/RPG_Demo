@@ -441,6 +441,8 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert 'data-home-plaza-error-create="true"' in home
     assert 'data-home-start-error-create="true"' in home
     assert 'data-home-my-stories-error-create="true"' in home
+    assert 'data-home-saved-runs-error-create="true"' in home
+    assert "setMySessionsError(t(\"home.error_saved_runs\"))" in home
     assert "setMyTemplatesError(t(\"home.error_my_stories\"))" in home
     assert "error={myTemplatesError}" in home
     assert "hpStyles.errorRecovery" in home
@@ -457,6 +459,8 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert '"home.empty_my": "你还没有创建过故事."' not in strings
     assert '"home.error_my_stories": "Your stories did not open this time. You can still write a new opening, or come back in a moment."' in strings
     assert '"home.error_my_stories": "你的故事暂时没有打开。可以先写一个新开场，或稍后回来继续看。"' in strings
+    assert '"home.error_saved_runs": "Saved runs did not open this time. You can still choose a story below, or write a new opening."' in strings
+    assert '"home.error_saved_runs": "已保存的局这次没有打开。下面仍可选故事，也可以先写一个新开场。"' in strings
     assert '"home.error_plaza": "The story list did not open. You can still write a new story, or come back in a moment."' in strings
     assert '"home.error_plaza": "The story list did not open. You can still write a new story above, or come back in a moment."' not in strings
     assert '"home.error_start_story": "This story did not open this time. The card is still here; press Start episode again, or write a new story."' in strings
