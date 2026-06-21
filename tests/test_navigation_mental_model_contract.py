@@ -436,6 +436,10 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert "home.cta_portfolio" not in home
     assert "home.cta_portfolio" not in strings
     assert 'setError(t("home.error_plaza"))' in home
+    assert '"home.empty_plaza": "No playable stories yet. Write a new opening above, or come back when the plaza has one."' in strings
+    assert '"home.empty_plaza": "No public stories yet. Write one for everyone to play?"' not in strings
+    assert '"home.empty_plaza": "还没有可玩的故事。先写一个新开场，或稍后回来继续选。"' in strings
+    assert '"home.empty_plaza": "还没有公开作品.写一个让所有人来玩?"' not in strings
     assert '"home.error_plaza": "The story list did not open. You can still write a new story above, or come back in a moment."' in strings
 
     assert 't("header.login")' in header
