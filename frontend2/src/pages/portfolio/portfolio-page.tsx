@@ -49,6 +49,24 @@ const PORTFOLIO_EVIDENCE_BOUNDARY = [
   },
 ] as const
 
+const PORTFOLIO_TARGET_USER_MODEL = [
+  {
+    label: "Target player",
+    detail:
+      "Story-first players who want a short interactive drama on mobile, not a blank writing tool or a systems dashboard.",
+  },
+  {
+    label: "Content rhythm",
+    detail:
+      "Read the current scene, compare a few meaningful moves, act once, then use the consequence to choose the next beat.",
+  },
+  {
+    label: "UI promise",
+    detail:
+      "Keep narrative context and decision context together; keep reviewer evidence separate from the normal player surface.",
+  },
+] as const
+
 export function PortfolioPage({
   onBackHome,
   onOpenCreate,
@@ -126,6 +144,30 @@ export function PortfolioPage({
               <span>{metric.label}</span>
             </div>
           ))}
+        </section>
+
+        <section
+          className="portfolio-section portfolio-target-user"
+          aria-label="Target player and content model"
+          data-portfolio-target-user-model="true"
+        >
+          <div className="portfolio-section__head">
+            <span className="portfolio-kicker">Target user</span>
+            <h2>Built for short, story-first play.</h2>
+            <p>
+              The product bet is not infinite AI fiction. It is a compact
+              episode where a player can understand the scene, make one strong
+              choice at a time, and see why the next choice opened.
+            </p>
+          </div>
+          <div className="portfolio-target-user__grid">
+            {PORTFOLIO_TARGET_USER_MODEL.map((item) => (
+              <article className="portfolio-target-user__item" key={item.label}>
+                <strong>{item.label}</strong>
+                <p>{item.detail}</p>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section

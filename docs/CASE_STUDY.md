@@ -21,6 +21,21 @@ inspectable runtime with state, roles, replay, and evaluation hooks?
    highlights, alternate branches, and a shareable replay.
 5. A reviewer can open the inspector path to see the state machine behind the UI.
 
+## Target Player And Content Model
+
+Tiny Stories is aimed at story-first players who want a short interactive drama,
+especially on mobile, rather than a blank writing tool, a conventional RPG
+inventory screen, or a systems dashboard. The intended consumption rhythm is:
+read the current scene, compare a few meaningful moves, act once, see what
+changed, and use that consequence to choose the next beat.
+
+That audience assumption drives the UI standard: keep narrative context and
+decision context close together, make the "why now" reason visible when a move
+opens, keep private motive drafting attached to the selected move, and keep
+reviewer evidence separate from the normal player surface. The application claim
+is product judgment around a narrow player loop, not proof that the project has
+validated retention or broad demand.
+
 ## Evidence To Inspect
 
 | Reviewer question | Source evidence |

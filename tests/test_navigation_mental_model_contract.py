@@ -208,6 +208,15 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
+    assert "PORTFOLIO_TARGET_USER_MODEL" in portfolio
+    assert 'data-portfolio-target-user-model="true"' in portfolio
+    assert "Target player" in portfolio
+    assert "Story-first players who want a short interactive drama on mobile" in portfolio
+    assert "Content rhythm" in portfolio
+    assert "Read the current scene, compare a few meaningful moves" in portfolio
+    assert "UI promise" in portfolio
+    assert "Keep narrative context and decision context together" in portfolio
+    assert "reviewer evidence separate from the normal player surface" in portfolio
     assert "PORTFOLIO_EVIDENCE_BOUNDARY" in portfolio
     assert 'data-portfolio-evidence-boundary="true"' in portfolio
     assert 'data-portfolio-source-evidence="true"' in portfolio
@@ -225,9 +234,29 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "story generation" in portfolio
     assert "raw generation" not in portfolio
     assert "reliable AI product surface" not in portfolio
+    assert ".portfolio-target-user" in theme
+    assert ".portfolio-target-user__grid" in theme
+    assert ".portfolio-target-user__item" in theme
+    assert ".portfolio-target-user__grid" in theme[theme.index("@media (max-width: 720px)") :]
     assert ".portfolio-evidence-boundary" in theme
     assert ".portfolio-evidence-boundary__grid" in theme
     assert ".portfolio-source-evidence" in theme
+
+
+def test_case_study_states_target_player_and_content_model() -> None:
+    case_study = (ROOT / "docs/CASE_STUDY.md").read_text()
+
+    assert "## Target Player And Content Model" in case_study
+    assert "story-first players who want a short interactive drama" in case_study
+    assert "especially on mobile" in case_study
+    assert "blank writing tool" in case_study
+    assert "read the current scene, compare a few meaningful moves, act once" in case_study
+    assert "use that consequence to choose the next beat" in case_study
+    assert "make the \"why now\" reason visible" in case_study
+    assert "private motive drafting attached to the selected move" in case_study
+    assert "reviewer evidence separate from the normal player surface" in case_study
+    assert "not proof" in case_study
+    assert "validated retention or broad demand" in case_study
 
 
 def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
