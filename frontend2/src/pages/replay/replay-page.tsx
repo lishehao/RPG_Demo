@@ -1,7 +1,6 @@
 import { type CSSProperties, useEffect, useState } from "react"
 import type { NarrativePublicReplayResponse } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
-import { friendlyError } from "../../shared/lib/friendly-error"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
 import { cleanNarrativeDisplayText } from "../../shared/lib/narrative-display-text"
 import { LoadingShim } from "../../shared/ui/loading-shim"
@@ -68,9 +67,9 @@ export function ReplayPage({
         if (cancelled) return
         setReplay(r)
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return
-        setError(friendlyError(err, t("replay.error_load_failed")))
+        setError(t("replay.error_load_failed"))
       })
     return () => {
       cancelled = true
@@ -81,19 +80,22 @@ export function ReplayPage({
     return (
       <div style={rpStyles.page}>
         {error ? (
-          <EmptyState
-            title={t("replay.error_title")}
-            hint={error}
-            action={
-              <button
-                style={rpStyles.primaryAction}
-                type="button"
-                onClick={onBackHome}
-              >
-                {t("replay.error_back_plaza")}
-              </button>
-            }
-          />
+          <div data-replay-error="true">
+            <EmptyState
+              title={t("replay.error_title")}
+              hint={t("replay.error_detail")}
+              action={
+                <button
+                  style={rpStyles.primaryAction}
+                  type="button"
+                  onClick={onBackHome}
+                  data-replay-error-back="true"
+                >
+                  {t("replay.error_back_plaza")}
+                </button>
+              }
+            />
+          </div>
         ) : (
           <LoadingShim label={t("replay.loading_label")} />
         )}

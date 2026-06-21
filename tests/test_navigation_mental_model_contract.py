@@ -517,6 +517,16 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     assert '"replay.crumb_back_home": "← 故事入口"' in strings
     assert '"replay.crumb_back_home": "← Back home"' not in strings
     assert '"replay.crumb_back_home": "← 回到首页"' not in strings
+    assert 'data-replay-error="true"' in replay
+    assert 'data-replay-error-back="true"' in replay
+    assert 't("replay.error_detail")' in replay
+    assert "hint={error}" not in replay
+    assert "friendlyError" not in replay
+    assert '"replay.error_detail": "This shared memory may be private, deleted, or temporarily unavailable. Return to Story Desk to find saved runs, choose another story, or write a new opening."' in strings
+    assert '"replay.error_back_plaza": "Story Desk"' in strings
+    assert '"replay.error_back_plaza": "Back to plaza"' not in strings
+    assert '"replay.error_detail": "这条回放可能已变为私有、被删除，或暂时没有打开。回到故事入口后，可以找已保存的局、选别的故事，或写一个新开场。"' in strings
+    assert '"replay.error_back_plaza": "故事入口"' in strings
     assert 'data-replay-hero-fork-hint="true"' in replay
     assert 't("replay.cta_hint")' in replay
     assert "heroCtaHint" in replay
