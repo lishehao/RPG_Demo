@@ -53,6 +53,13 @@ function truncateRecoveryText(value: string, max = 64): string {
   return `${clean.slice(0, max - 3).trim()}...`
 }
 
+function joinReadableLabelParts(parts: Array<string | null | undefined>): string {
+  return parts
+    .map((part) => part?.replace(/\s+/g, " ").trim().replace(/[.!?。！？]+$/, "") ?? "")
+    .filter(Boolean)
+    .join(". ")
+}
+
 export function RunContextPanel({
   story,
   turnsCompleted,
@@ -1471,6 +1478,14 @@ export function ActionArea({
     selectedOptionSubmitForecasts.length > 0
       ? selectedOptionSubmitForecasts.slice(0, 2).map((chip) => chip.label).join(" · ")
       : selectedOptionHint || selectedOptionForecasts.find((chip) => chip.detail)?.detail || t("play.selected_move_ready_detail")
+  const selectedOptionConfirmReadableLabel = joinReadableLabelParts([
+    t("play.selected_move_aria"),
+    selectedOptionBody,
+    selectedOptionTarget
+      ? t("play.selected_move_target_chip", { target: selectedOptionTarget.name })
+      : t("play.selected_move_room_chip"),
+    selectedOptionSubmitSummary,
+  ])
   const actionState =
     showPickedReflection
       ? "pending"
@@ -1825,7 +1840,8 @@ export function ActionArea({
           ...(reducedMotion ? ppStyles.reducedMotionTransition : null),
         }}
         data-play-action-card-confirm-panel="true"
-        aria-label={t("play.selected_move_aria")}
+        data-play-action-card-confirm-readable-label={selectedOptionConfirmReadableLabel}
+        aria-label={selectedOptionConfirmReadableLabel}
         initial={reducedMotion ? false : { opacity: 0, y: -6 }}
         animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}

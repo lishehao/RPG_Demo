@@ -378,6 +378,14 @@ def test_selected_move_confirmation_module_owns_readout_display_hooks() -> None:
     assert 't("play.selected_move_ready_label")' in confirmation
     assert 't("play.selected_move_target_chip", { target: targetName })' in confirmation
     assert 't("play.selected_move_room_chip")' in confirmation
+    assert "selectedOptionConfirmReadableLabel" in panels
+    assert "function joinReadableLabelParts" in panels
+    assert '.replace(/[.!?。！？]+$/, "")' in panels
+    assert "selectedOptionBody" in panels
+    assert "selectedOptionSubmitSummary" in panels
+    assert 'data-play-action-card-confirm-readable-label={selectedOptionConfirmReadableLabel}' in panels
+    assert "aria-label={selectedOptionConfirmReadableLabel}" in panels
+    assert "selectedOptionConfirmReadableLabel" not in confirmation
     assert "data-play-action-card-confirm=" not in confirmation
     assert "data-play-primary-commit" not in confirmation
     assert "data-play-inner-motive-primary" not in confirmation
@@ -1882,6 +1890,7 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-action-card-detail-section="why-now"' in action_option
     assert 'data-play-action-card-confirm="true"' in panels
     assert 'data-play-action-card-confirm-panel="true"' in panels
+    assert 'data-play-action-card-confirm-readable-label={selectedOptionConfirmReadableLabel}' in panels
     assert 'data-play-selected-move-submit-summary="true"' in confirmation
     assert 'data-play-action-option-card="true"' in panels
     assert 'data-play-action-collapse-zone="true"' in panels
