@@ -71,15 +71,16 @@ def test_public_evidence_preflight_fails_when_deployed_page_is_stale() -> None:
         behind_count=0,
         changed_paths=(),
         public_page_url="https://lishehao.github.io/RPG_Demo/",
-        public_page_missing_markers=("Reviewer path", "#/portfolio -> #/reviewer"),
+        public_page_missing_markers=("Reviewer path", "#/portfolio -> #/reviewer", "Who this loop is for"),
     )
 
     output = format_status(status)
 
     assert status_exit_code(status) == 1
-    assert "Deployed page https://lishehao.github.io/RPG_Demo/ is missing current reviewer-path markers" in output
+    assert "Deployed page https://lishehao.github.io/RPG_Demo/ is missing current portfolio evidence markers" in output
     assert "- Reviewer path" in output
     assert "- #/portfolio -> #/reviewer" in output
+    assert "- Who this loop is for" in output
     assert "GitHub Pages may still be stale" in output
 
 
@@ -120,4 +121,7 @@ def test_public_page_markers_cover_current_reviewer_path_language() -> None:
         "#/portfolio -> #/reviewer",
         "Source evidence",
         "portfolio-grade AI product-system evidence",
+        "Who this loop is for",
+        "story-first players who want a compact",
+        "not a blank writing canvas or a dashboard",
     )

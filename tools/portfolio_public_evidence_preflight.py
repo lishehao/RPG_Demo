@@ -17,6 +17,9 @@ PUBLIC_PAGE_MARKERS = (
     "#/portfolio -> #/reviewer",
     "Source evidence",
     "portfolio-grade AI product-system evidence",
+    "Who this loop is for",
+    "story-first players who want a compact",
+    "not a blank writing canvas or a dashboard",
 )
 
 EVIDENCE_SENSITIVE_PREFIXES = (
@@ -146,7 +149,7 @@ def format_status(status: PublicEvidenceStatus) -> str:
             "Do not treat GitHub Pages as verified application evidence yet."
         )
     if status.public_page_missing_markers:
-        lines.append(f"Deployed page {status.public_page_url} is missing current reviewer-path markers:")
+        lines.append(f"Deployed page {status.public_page_url} is missing current portfolio evidence markers:")
         lines.extend(f"- {marker}" for marker in status.public_page_missing_markers)
         lines.append("GitHub Pages may still be stale or not deployed from the intended branch.")
 
