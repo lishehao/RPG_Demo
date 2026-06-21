@@ -261,6 +261,7 @@ export function HomePage({
   const [tab, setTab] = useState<Tab>("plaza")
   const [publicTemplates, setPublicTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
   const [myTemplates, setMyTemplates] = useState<NarrativeTemplateSummary[] | null>(null)
+  const [myTemplatesError, setMyTemplatesError] = useState<string | null>(null)
   const [mySessions, setMySessions] = useState<NarrativeSessionSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [templateStartError, setTemplateStartError] = useState<string | null>(null)
@@ -306,6 +307,7 @@ export function HomePage({
   useEffect(() => {
     if (auth.loading || auth.isAnonymous) return
     let cancelled = false
+    setMyTemplatesError(null)
     api
       .listMyNarrativeSessions()
       .then((res) => {
@@ -321,10 +323,12 @@ export function HomePage({
       .then((res) => {
         if (cancelled) return
         setMyTemplates(res.items)
+        setMyTemplatesError(null)
       })
       .catch(() => {
         if (cancelled) return
         setMyTemplates([])
+        setMyTemplatesError(t("home.error_my_stories"))
       })
     return () => {
       cancelled = true
@@ -472,7 +476,7 @@ export function HomePage({
               ) : (
                 <TemplateGrid
                   templates={myTemplates}
-                  error={null}
+                  error={myTemplatesError}
                   emptyText={t("home.empty_my")}
                   compact={compactHome}
                   onOpenCreate={onOpenCreate}
@@ -785,7 +789,22 @@ function TemplateGrid({
   const t = useT()
   const { lang } = useLanguage()
   if (error) {
-    return <div style={hpStyles.errorBox}>{error}</div>
+    return (
+      <div style={hpStyles.errorRecovery} data-home-my-stories-error="true">
+        <div style={hpStyles.errorBox}>{error}</div>
+        {onOpenCreate ? (
+          <motion.button
+            type="button"
+            style={hpStyles.emptyAction}
+            whileTap={tapPress}
+            onClick={onOpenCreate}
+            data-home-my-stories-error-create="true"
+          >
+            {t("home.cta_create")}
+          </motion.button>
+        ) : null}
+      </div>
+    )
   }
   if (!templates) {
     return <LoadingShim variant="inline" />
