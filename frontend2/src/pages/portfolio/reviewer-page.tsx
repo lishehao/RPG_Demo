@@ -55,7 +55,10 @@ const REVIEWER_EVIDENCE_CHECKS = [
 ] as const
 
 const REVIEWER_LAUNCH_ERROR =
-  "The reviewer run did not open this time. The locked seed is still here; press Start curated run again, or use normal author flow."
+  "The reviewer run did not open this time."
+
+const REVIEWER_LAUNCH_RECOVERY =
+  "The locked seed and evidence checklist are still here. Retry the curated run, use normal author flow, or return to Story Desk."
 
 const launchPhaseIndex = (phase: LaunchPhase) =>
   REVIEWER_LAUNCH_STEPS.findIndex((step) => step.phase === phase)
@@ -246,7 +249,37 @@ export function ReviewerPage({
               role="status"
               aria-live="polite"
             >
-              {error}
+              <strong>{error}</strong>
+              <p>{REVIEWER_LAUNCH_RECOVERY}</p>
+              <div className="reviewer-error__actions" data-reviewer-launch-error-actions="true">
+                <button
+                  className="reviewer-error__action reviewer-error__action--primary"
+                  type="button"
+                  onClick={() => void handleStart()}
+                  disabled={busy || auth.loading}
+                  data-reviewer-launch-error-retry="true"
+                >
+                  Retry curated run
+                </button>
+                <button
+                  className="reviewer-error__action"
+                  type="button"
+                  onClick={onOpenCreate}
+                  disabled={busy}
+                  data-reviewer-launch-error-create="true"
+                >
+                  Use normal author flow
+                </button>
+                <button
+                  className="reviewer-error__action"
+                  type="button"
+                  onClick={onBackHome}
+                  disabled={busy}
+                  data-reviewer-launch-error-home="true"
+                >
+                  Story Desk
+                </button>
+              </div>
             </div>
           ) : null}
         </motion.section>
