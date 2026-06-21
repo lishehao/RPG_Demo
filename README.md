@@ -85,6 +85,21 @@ game or broad adoption proof.
 
 ---
 
+## Target Player And Content Model
+
+Tiny Stories is built for story-first players who want a compact mobile
+episode, not a blank writing canvas, infinite fiction feed, or systems
+dashboard. The intended rhythm is simple: read the current scene, compare a few
+meaningful moves, act once, see what changed, then use that consequence to pick
+the next beat.
+
+That target user model explains the UI choices: normal Play keeps story context
+near decision context; selected moves preserve the "why now" reason; inner
+motive drafting stays attached to the chosen move; and reviewer evidence stays
+outside the normal player surface.
+
+---
+
 ## What This Is
 
 Tiny Stories asks a narrow product question:

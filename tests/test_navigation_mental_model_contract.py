@@ -93,6 +93,14 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "Run locally and open `#/portfolio`" in readme
     assert "Launch the reviewer route from the portfolio page" in readme
     assert "Verify source evidence" in readme
+    assert "## Target Player And Content Model" in readme
+    assert "story-first players who want a compact mobile" in readme
+    assert "not a blank writing canvas, infinite fiction feed, or systems" in readme
+    assert "read the current scene, compare a few" in readme
+    assert "selected moves preserve the \"why now\" reason" in readme
+    assert "inner" in readme and "motive drafting stays attached to the chosen move" in readme
+    assert "reviewer evidence stays" in readme
+    assert "outside the normal player surface" in readme
     assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
     assert "[Case Study](./docs/CASE_STUDY.md)" in readme
     assert "`tests/test_navigation_mental_model_contract.py`" in readme
@@ -205,6 +213,15 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "## 申请 / 作品集审阅路径" in readme
     assert "`#/portfolio`" in readme
     assert "`#/reviewer`" in readme
+    assert "## 目标玩家 / 内容消费模型" in readme
+    assert "短篇互动剧情的 story-first player" in readme
+    assert "不是空白写作工具用户、无限小说流用户或系统 dashboard 用户" in readme
+    assert "先读当前场景,比较少量但有意义的选择" in readme
+    assert "普通 Play 页面要把剧情上下文和决策上下文放近" in readme
+    assert "inner motive 要贴在已选 move 上" in readme
+    assert "reviewer" in readme and "普通玩家界面之外" in readme
+    assert "可复制分享的结局标签" in readme
+    assert "可发朋友圈" not in readme
     assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
     assert "[Case Study](./docs/CASE_STUDY.md)" in readme
     assert "portfolio case study / open-source preview" in readme
