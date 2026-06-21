@@ -76,7 +76,6 @@ export const STRINGS_ZH = {
   "home.hero_title_l2": "这一集就会展开.",
   "home.hero_sub": "选择可玩的故事，继续已保存的局，或写一个新开场；每局约 15 分钟，会因身份、压力和可见后果分支。",
   "home.cta_create": "写一个新故事 →",
-  "home.cta_portfolio": "查看 Portfolio 案例",
   "home.tab_plaza": "广场",
   "home.tab_my": "我创建的",
   "home.section_in_progress": "继续未完成的故事",
@@ -1147,7 +1146,6 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "home.hero_title_l2": "The episode unfolds around you.",
   "home.hero_sub": "Choose a playable story, reopen saved runs, or write a new opening; each 15 min episode branches through role, pressure, and visible consequences.",
   "home.cta_create": "Write a new story →",
-  "home.cta_portfolio": "View portfolio case study",
 
   // === world detail page ===
   "world.error_template_missing": "This story isn't around anymore.",

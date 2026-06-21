@@ -433,6 +433,8 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert '"home.hero_sub": "Choose a playable story, reopen saved runs, or write a new opening; each 15 min episode branches through role, pressure, and visible consequences."' in strings
     assert "home.hero_bullet_" not in home
     assert "home.hero_bullet_" not in strings
+    assert "home.cta_portfolio" not in home
+    assert "home.cta_portfolio" not in strings
     assert 'setError(t("home.error_plaza"))' in home
     assert '"home.error_plaza": "The story list did not open. You can still write a new story above, or come back in a moment."' in strings
 
