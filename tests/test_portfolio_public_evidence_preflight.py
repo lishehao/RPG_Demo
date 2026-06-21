@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tools.portfolio_public_evidence_preflight import (
+    PUBLIC_PAGE_MARKERS,
     PublicEvidenceStatus,
     evidence_sensitive_paths,
     format_status,
@@ -61,6 +62,27 @@ def test_public_evidence_preflight_passes_only_when_synced() -> None:
     assert "public reviewers will not see" not in output
 
 
+def test_public_evidence_preflight_fails_when_deployed_page_is_stale() -> None:
+    status = PublicEvidenceStatus(
+        head="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        remote_ref="origin/main",
+        remote_head="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        ahead_count=0,
+        behind_count=0,
+        changed_paths=(),
+        public_page_url="https://lishehao.github.io/RPG_Demo/",
+        public_page_missing_markers=("Reviewer path", "#/portfolio -> #/reviewer"),
+    )
+
+    output = format_status(status)
+
+    assert status_exit_code(status) == 1
+    assert "Deployed page https://lishehao.github.io/RPG_Demo/ is missing current reviewer-path markers" in output
+    assert "- Reviewer path" in output
+    assert "- #/portfolio -> #/reviewer" in output
+    assert "GitHub Pages may still be stale" in output
+
+
 def test_public_evidence_preflight_is_documented_for_application_links() -> None:
     readme = (ROOT / "README.md").read_text()
 
@@ -69,6 +91,7 @@ def test_public_evidence_preflight_is_documented_for_application_links() -> None
     assert "links. It should report" in readme
     assert "local `HEAD` matches `origin/main`" in readme
     assert "GitHub and GitHub Pages reviewers" in readme
+    assert "live GitHub Pages marker check" in readme
 
 
 def test_evidence_sensitive_path_filter_covers_portfolio_and_play_surfaces() -> None:
@@ -87,4 +110,14 @@ def test_evidence_sensitive_path_filter_covers_portfolio_and_play_surfaces() -> 
         "frontend2/src/pages/play/components/play-flow-panels.tsx",
         "frontend2/src/pages/portfolio/portfolio-page.tsx",
         "rpg_backend/narrative/service.py",
+    )
+
+
+def test_public_page_markers_cover_current_reviewer_path_language() -> None:
+    assert PUBLIC_PAGE_MARKERS == (
+        "75s reviewer cut",
+        "Reviewer path",
+        "#/portfolio -> #/reviewer",
+        "Source evidence",
+        "portfolio-grade AI product-system evidence",
     )

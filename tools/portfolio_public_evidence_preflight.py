@@ -5,9 +5,19 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PUBLIC_PAGE_URL = "https://lishehao.github.io/RPG_Demo/"
+PUBLIC_PAGE_MARKERS = (
+    "75s reviewer cut",
+    "Reviewer path",
+    "#/portfolio -> #/reviewer",
+    "Source evidence",
+    "portfolio-grade AI product-system evidence",
+)
 
 EVIDENCE_SENSITIVE_PREFIXES = (
     "README.md",
@@ -30,6 +40,9 @@ class PublicEvidenceStatus:
     ahead_count: int
     behind_count: int
     changed_paths: tuple[str, ...]
+    public_page_url: str | None = None
+    public_page_missing_markers: tuple[str, ...] = ()
+    public_page_error: str | None = None
 
 
 def _run_git(args: list[str]) -> str:
@@ -51,7 +64,25 @@ def evidence_sensitive_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
     )
 
 
-def collect_status(remote: str, branch: str, *, skip_fetch: bool = False) -> PublicEvidenceStatus:
+def public_page_marker_status(url: str, *, timeout_seconds: float = 20.0) -> tuple[tuple[str, ...], str | None]:
+    request = Request(url, headers={"User-Agent": "TinyStoriesPortfolioPreflight/1.0"})
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:
+            charset = response.headers.get_content_charset() or "utf-8"
+            body = response.read().decode(charset, errors="replace")
+    except (OSError, URLError) as exc:
+        return (), f"{type(exc).__name__}: {exc}"
+    missing = tuple(marker for marker in PUBLIC_PAGE_MARKERS if marker not in body)
+    return missing, None
+
+
+def collect_status(
+    remote: str,
+    branch: str,
+    *,
+    skip_fetch: bool = False,
+    public_page_url: str | None = DEFAULT_PUBLIC_PAGE_URL,
+) -> PublicEvidenceStatus:
     remote_ref = f"{remote}/{branch}"
     if not skip_fetch:
         _run_git(["fetch", remote, branch, "--prune"])
@@ -61,6 +92,10 @@ def collect_status(remote: str, branch: str, *, skip_fetch: bool = False) -> Pub
     behind_count = int(_run_git(["rev-list", "--count", f"HEAD..{remote_ref}"]) or "0")
     changed_raw = _run_git(["diff", "--name-only", f"{remote_ref}..HEAD"])
     changed_paths = tuple(path for path in changed_raw.splitlines() if path)
+    public_page_missing_markers: tuple[str, ...] = ()
+    public_page_error: str | None = None
+    if public_page_url:
+        public_page_missing_markers, public_page_error = public_page_marker_status(public_page_url)
     return PublicEvidenceStatus(
         head=head,
         remote_ref=remote_ref,
@@ -68,11 +103,18 @@ def collect_status(remote: str, branch: str, *, skip_fetch: bool = False) -> Pub
         ahead_count=ahead_count,
         behind_count=behind_count,
         changed_paths=changed_paths,
+        public_page_url=public_page_url,
+        public_page_missing_markers=public_page_missing_markers,
+        public_page_error=public_page_error,
     )
 
 
 def status_exit_code(status: PublicEvidenceStatus) -> int:
-    return 0 if status.ahead_count == 0 and status.behind_count == 0 else 1
+    if status.ahead_count != 0 or status.behind_count != 0:
+        return 1
+    if status.public_page_error or status.public_page_missing_markers:
+        return 1
+    return 0
 
 
 def format_status(status: PublicEvidenceStatus) -> str:
@@ -98,6 +140,15 @@ def format_status(status: PublicEvidenceStatus) -> str:
             f"Local branch is {status.behind_count} commit(s) behind {status.remote_ref}; "
             "refresh or reconcile before using this checkout as application evidence."
         )
+    if status.public_page_error:
+        lines.append(
+            f"Could not verify deployed page {status.public_page_url}: {status.public_page_error}. "
+            "Do not treat GitHub Pages as verified application evidence yet."
+        )
+    if status.public_page_missing_markers:
+        lines.append(f"Deployed page {status.public_page_url} is missing current reviewer-path markers:")
+        lines.extend(f"- {marker}" for marker in status.public_page_missing_markers)
+        lines.append("GitHub Pages may still be stale or not deployed from the intended branch.")
 
     sensitive = evidence_sensitive_paths(status.changed_paths)
     if sensitive:
@@ -122,12 +173,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Use the existing remote-tracking ref without fetching. Useful for offline checks.",
     )
+    parser.add_argument("--public-page-url", default=DEFAULT_PUBLIC_PAGE_URL)
+    parser.add_argument(
+        "--skip-public-page",
+        action="store_true",
+        help="Skip the live GitHub Pages marker check. Use only when offline.",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    status = collect_status(args.remote, args.branch, skip_fetch=args.skip_fetch)
+    status = collect_status(
+        args.remote,
+        args.branch,
+        skip_fetch=args.skip_fetch,
+        public_page_url=None if args.skip_public_page else args.public_page_url,
+    )
     print(format_status(status))
     return status_exit_code(status)
 
