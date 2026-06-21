@@ -1219,7 +1219,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "home.more_in_progress": "Other unfinished stories",
   "home.empty_plaza": "No playable stories yet. Write a new opening to start your own episode, or come back when the plaza has one.",
   "home.empty_my": "No stories of your own yet. Write a new opening to start one here.",
-  "home.error_plaza": "The story list did not open. You can still write a new story above, or come back in a moment.",
+  "home.error_plaza": "The story list did not open. You can still write a new story, or come back in a moment.",
   "home.error_start_story": "This story did not open this time. The card is still here; press Start episode again, or write a new story above.",
   "home.archive_count": "{n} runs finished",
   "home.session_completed_meta": "Finished",

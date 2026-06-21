@@ -867,7 +867,20 @@ function HomeEditorialMosaic({
 }) {
   const t = useT()
   if (error) {
-    return <div style={hpStyles.errorBox}>{error}</div>
+    return (
+      <div style={hpStyles.errorRecovery} data-home-plaza-error="true">
+        <div style={hpStyles.errorBox}>{error}</div>
+        <motion.button
+          type="button"
+          style={hpStyles.emptyAction}
+          whileTap={tapPress}
+          onClick={onOpenCreate}
+          data-home-plaza-error-create="true"
+        >
+          {t("home.cta_create")}
+        </motion.button>
+      </div>
+    )
   }
   if (!templates) {
     return <LoadingShim variant="inline" />
@@ -2037,6 +2050,13 @@ const hpStyles: Record<string, CSSProperties> = {
     borderRadius: 0,
     color: "var(--warn)",
     fontSize: 14,
+  },
+  errorRecovery: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: "8px 0 18px",
   },
   loading: { padding: 40, textAlign: "center", color: "var(--text-faint)", fontSize: 14 },
   empty: {
