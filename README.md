@@ -293,6 +293,7 @@ Useful checks:
 
 ```bash
 python tools/narrative_release_gate.py --mode fake
+python tools/portfolio_public_evidence_preflight.py
 pytest -q
 
 cd frontend2
@@ -303,6 +304,11 @@ cd ../remotion-demo
 npm run check
 npm run render:admissions
 ```
+
+Run the public-evidence preflight before sending application or recruiting
+links. It should report that local `HEAD` matches `origin/main`; if it reports
+local commits ahead of the public branch, GitHub and GitHub Pages reviewers
+will not see the current portfolio/reviewer/play evidence yet.
 
 For a configured live backend, the HTTP smoke follows the same current
 `/narrative/*` product path. Local authoring-enabled runs can create a
