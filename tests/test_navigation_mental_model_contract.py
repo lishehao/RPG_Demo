@@ -59,6 +59,14 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
+    hero_copy = portfolio[portfolio.index("<h1>Tiny Stories") : portfolio.index('className="portfolio-hero__actions"')]
+
+    assert "short," in hero_copy
+    assert "story-first mobile episode" in hero_copy
+    assert "players read a scene" in hero_copy
+    assert "compare a" in hero_copy and "few meaningful moves" in hero_copy
+    assert "act once" in hero_copy
+    assert "follow the consequence" in hero_copy
     assert "PORTFOLIO_REVIEW_ORDER" in portfolio
     assert "Watch 75s demo" in portfolio
     assert "Launch reviewer run" in portfolio

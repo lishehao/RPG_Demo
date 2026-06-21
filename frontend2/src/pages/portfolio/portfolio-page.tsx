@@ -93,9 +93,10 @@ export function PortfolioPage({
             <span className="ts-tag">Portfolio Case Study</span>
             <h1>Tiny Stories is an inspectable AI narrative runtime.</h1>
             <p>
-              Watch the 75-second admissions demo first. The live reviewer route
-              is a secondary inspection path for playable state, visible
-              consequences, reviewer evidence, and ending replay behind the video.
+              Watch the 75-second admissions demo first: it shows a short,
+              story-first mobile episode where players read a scene, compare a
+              few meaningful moves, act once, and follow the consequence. The
+              live reviewer route is the inspection path behind that loop.
             </p>
             <div className="portfolio-hero__actions">
               <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">
