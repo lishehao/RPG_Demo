@@ -34,6 +34,13 @@ const PORTFOLIO_REVIEW_ORDER = [
     title: "Inspect evidence",
     detail: "Use reviewer mode to check state, advisor boundary, and ending logic.",
   },
+  {
+    step: "replay",
+    title: "Verify replay artifact",
+    detail: "Local build only: inspect a completed memory with highlights, Full read, advisor side-chat, and same-opening fork framing.",
+    localHref: "#/qa/replay",
+    localLabel: "Open local replay fixture",
+  },
 ] as const
 
 const PORTFOLIO_EVIDENCE_BOUNDARY = [
@@ -78,6 +85,11 @@ const PORTFOLIO_PUBLIC_EVIDENCE_GATE = {
   command: "python3 tools/portfolio_public_evidence_preflight.py",
 } as const
 
+function canOpenLocalQaRoute() {
+  const host = window.location.hostname
+  return host === "localhost" || host === "127.0.0.1" || host === "::1"
+}
+
 export function PortfolioPage({
   onBackHome,
   onOpenCreate,
@@ -89,6 +101,7 @@ export function PortfolioPage({
 }) {
   const [activeStep, setActiveStep] = useState(0)
   const step = PIPELINE_STEPS[activeStep]
+  const localQaAvailable = canOpenLocalQaRoute()
 
   return (
     <div className="portfolio-page">
@@ -168,6 +181,18 @@ export function PortfolioPage({
                   <div>
                     <strong>{item.title}</strong>
                     <p>{item.detail}</p>
+                    {"localHref" in item ? (
+                      localQaAvailable ? (
+                        <a
+                          href={item.localHref}
+                          data-portfolio-review-local-evidence={item.step}
+                        >
+                          {item.localLabel}
+                        </a>
+                      ) : (
+                        <code data-portfolio-review-local-evidence={item.step}>{item.localHref}</code>
+                      )
+                    ) : null}
                   </div>
                 </li>
               ))}

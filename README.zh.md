@@ -68,7 +68,9 @@ template 或 Story Desk 变化被截断输出藏掉.直到目标分支 push、�
 2. 本地运行后打开 `#/portfolio`,看 guided case-study surface.
 3. 从 portfolio 进入 `#/reviewer`,检查 locked seed、runtime evidence hooks、
    replay / ending path.
-4. 再读 [Current System Map](./docs/CURRENT_SYSTEM_MAP.md)、
+4. 如果需要稳定检查 completed-run replay artifact,本地打开 `#/qa/replay`;
+   这只是 local QA evidence,不要当作公开链接证据.
+5. 再读 [Current System Map](./docs/CURRENT_SYSTEM_MAP.md)、
    [Case Study](./docs/CASE_STUDY.md)、
    [Engineering Evidence Packet](./docs/tiny-stories-engineering-evidence-packet.md)
    和对应 tests,确认哪些 claim 有 source evidence,哪些还只是下一步验证.

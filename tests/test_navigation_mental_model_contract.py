@@ -105,6 +105,14 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Open Reviewer path" in portfolio
     assert "Use #/portfolio -> #/reviewer" in portfolio
     assert "Inspect evidence" in portfolio
+    assert "Verify replay artifact" in portfolio
+    assert "Local build only: inspect a completed memory" in portfolio
+    assert 'localHref: "#/qa/replay"' in portfolio
+    assert "Open local replay fixture" in portfolio
+    assert "canOpenLocalQaRoute" in portfolio
+    assert 'data-portfolio-review-local-evidence={item.step}' in portfolio
+    assert ".portfolio-review-order a" in theme
+    assert ".portfolio-review-order code" in theme
     assert '<a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL}' in portfolio
     assert "Watch 75s reviewer cut" in portfolio[portfolio.index("portfolio-hero__actions") : portfolio.index('data-portfolio-review-order="true"')]
     assert "portfolio-action portfolio-action--secondary" in portfolio
@@ -163,6 +171,8 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "## Reviewer Path" in readme
     assert "Run locally and open `#/portfolio`" in readme
     assert "Launch the reviewer route from the portfolio page" in readme
+    assert "open `#/qa/replay`" in readme
+    assert "deterministic evidence" in readme
     assert "Verify source evidence" in readme
     assert "## Target Player And Content Model" in readme
     assert "story-first players who want a compact mobile" in readme
@@ -185,6 +195,8 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "If it fails, use the demo video for orientation" in reviewer_path
     assert "`#/portfolio`" in reviewer_path
     assert "`#/reviewer`" in reviewer_path
+    assert "`#/qa/replay`" in reviewer_path
+    assert "local QA routes such as `#/qa/replay`" in reviewer_path
     assert "local-only evidence" in reviewer_path
     assert "pushed, deployed, and rechecked" in reviewer_path
     assert "python3 tools/narrative_release_gate.py --mode fake" in readme
@@ -337,6 +349,9 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "## 申请 / 作品集审阅路径" in readme
     assert "`#/portfolio`" in readme
     assert "`#/reviewer`" in readme
+    assert "`#/qa/replay`" in readme
+    assert "local QA evidence" in readme
+    assert "不要当作公开链接证据" in readme
     assert "## 目标玩家 / 内容消费模型" in readme
     assert "短篇互动剧情的 story-first player" in readme
     assert "不是空白写作工具用户、无限小说流用户或系统 dashboard 用户" in readme

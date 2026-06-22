@@ -552,6 +552,28 @@ kbd {
   font-size: 12.5px;
   line-height: 1.45;
 }
+.portfolio-review-order a,
+.portfolio-review-order code {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 8px;
+  color: rgba(255,226,172,0.9);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.portfolio-review-order a {
+  text-decoration: none;
+  border-bottom: 1px solid rgba(245,200,120,0.36);
+}
+.portfolio-review-order a:hover {
+  border-bottom-color: rgba(245,200,120,0.72);
+}
+.portfolio-review-order code {
+  font-family: inherit;
+  color: rgba(244,239,230,0.66);
+}
 
 .portfolio-public-evidence-gate {
   display: grid;
