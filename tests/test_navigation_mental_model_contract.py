@@ -231,9 +231,15 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "Inspect source evidence" in readme
     assert "MP4 fallback" not in readme
     assert "offline/fallback" not in readme
+    assert "An inspectable AI story game, not another story chatbot." in readme
+    assert "An inspectable AI narrative runtime" not in readme
+    assert "<strong>State-shaped</strong>" in readme
+    assert "<strong>Runtime-driven</strong>" not in readme
     assert "## Reviewer Path" in readme
     assert "Run locally and open `#/portfolio`" in readme
     assert "Launch the reviewer route from the portfolio page" in readme
+    assert "state/consequence evidence hooks" in readme
+    assert "runtime evidence hooks" not in readme
     assert "open `#/qa/replay`" in readme
     assert "deterministic evidence" in readme
     assert "Verify source evidence" in readme
@@ -277,6 +283,10 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "python -m tools.rpg_eval" not in readme
     assert "## Engineering Evidence" in readme
     assert "## Engineering Proof" not in readme
+    assert "designed game loop" in readme
+    assert "designed game runtime" not in readme
+    assert "product system around it" in readme
+    assert "runtime around it" not in readme
     assert "| Play UI | `frontend2/src/pages/play/`" in readme
     assert "StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules" in readme
 
@@ -357,14 +367,22 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "what the project proves" not in case_study
     assert "bounded 12-turn session" in case_study
     assert "8-20 turn" not in case_study
+    assert "playable, inspectable story system" in case_study
+    assert "playable, inspectable runtime" not in case_study
+    assert "evidence path to see the state machine" in case_study
+    assert "inspector path to see the state machine" not in case_study
     assert "## Evidence To Inspect" in case_study
     assert "`docs/CURRENT_SYSTEM_MAP.md`" in case_study
     assert "`frontend2/src/pages/portfolio/`, `#/portfolio`, `#/reviewer`" in case_study
     assert "guided evidence surface" in case_study
     assert "guided proof surface" not in case_study
+    assert "Is the play contract typed and inspectable?" in case_study
+    assert "Is the runtime contract typed and inspectable?" not in case_study
     assert "`rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts`" in case_study
     assert "`tests/test_navigation_mental_model_contract.py`, `tests/test_play_direction_a_editorial_primitives_contract.py`" in case_study
     assert "portfolio-grade AI product-system evidence" in case_study
+    assert "inspect state and consequence decisions quickly" in case_study
+    assert "inspect runtime decisions quickly" not in case_study
     assert "not a validated consumer" in case_study
     assert "broad adoption proof" in case_study
 

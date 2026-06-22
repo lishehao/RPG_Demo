@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>An inspectable AI narrative runtime, not another story chatbot.</strong>
+  <strong>An inspectable AI story game, not another story chatbot.</strong>
 </p>
 
 <p align="center">
@@ -38,7 +38,7 @@
 <table>
   <tr>
     <td><strong>Player-facing</strong><br/>A seed becomes a short interactive drama with role cards, choices, free-form action, advisor help, and a compiled ending.</td>
-    <td><strong>Runtime-driven</strong><br/>Deterministic schedulers shape pressure, state, inventory, and consequences before each LLM call.</td>
+    <td><strong>State-shaped</strong><br/>Deterministic schedulers shape pressure, state, inventory, and consequences before each LLM call.</td>
     <td><strong>Reviewable</strong><br/>Portfolio and reviewer routes expose the contracts, state, and boundaries behind the polished demo.</td>
   </tr>
 </table>
@@ -73,7 +73,7 @@ Recommended order for an admissions or recruiting review:
 2. Run locally and open `#/portfolio`; use it as the guided case-study
    surface.
 3. Launch the reviewer route from the portfolio page and inspect the
-   locked-seed run, runtime evidence hooks, and replay/ending path.
+   locked-seed run, state/consequence evidence hooks, and replay/ending path.
    The four checks to keep consistent are playable state, one-move
    consequence, evidence limits, and replay artifact.
 4. In a local build, open `#/qa/home-start` when you need deterministic
@@ -118,7 +118,7 @@ outside the normal player surface.
 
 Tiny Stories asks a narrow product question:
 
-> Can an LLM story generator feel like a designed game runtime instead
+> Can an LLM story generator feel like a designed game loop instead
 > of a chatbot?
 
 The answer here is a constrained full-stack system:
@@ -133,7 +133,7 @@ seed
 ```
 
 The project is best read as an AI product engineering case study. The
-LLM writes prose, but the interesting work is the runtime around it:
+LLM writes prose, but the interesting work is the product system around it:
 typed contracts, deterministic schedulers, persisted state, visible
 inspection surfaces, and a final artifact generated from the path
 actually played.

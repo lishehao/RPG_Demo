@@ -6,9 +6,9 @@ codebase, and what is still outside the claim.
 
 ## Problem
 
-Most LLM story demos stop at generated prose. Tiny Stories explores a more
-product-shaped question: can open-ended generation become a playable,
-inspectable runtime with state, roles, replay, and evaluation hooks?
+Most LLM story demos stop at generated prose. Tiny Stories explores a
+product-shaped question: can open-ended generation become a playable, inspectable story system
+with state, roles, replay, and evaluation hooks?
 
 ## Product Loop
 
@@ -19,7 +19,7 @@ inspectable runtime with state, roles, replay, and evaluation hooks?
    advisor help, inventory shifts, and consequence tracking.
 4. The ending compiler turns the actual run history into a label, passage,
    highlights, alternate branches, and a shareable replay.
-5. A reviewer can open the inspector path to see the state machine behind the UI.
+5. A reviewer can open the evidence path to see the state machine behind the UI.
 
 ## Target Player And Content Model
 
@@ -42,7 +42,7 @@ validated retention or broad demand.
 | --- | --- |
 | Does the demo have a current product path rather than a pile of experiments? | `docs/CURRENT_SYSTEM_MAP.md` |
 | Does a reviewer get a guided evidence surface? | `frontend2/src/pages/portfolio/`, `#/portfolio`, `#/reviewer` |
-| Is the runtime contract typed and inspectable? | `rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts` |
+| Is the play contract typed and inspectable? | `rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts` |
 | Do choices and consequences persist across turns? | `rpg_backend/narrative/repository.py`, `rpg_backend/narrative/service.py` |
 | Are the application claims guarded in source? | `tests/test_navigation_mental_model_contract.py`, `tests/test_play_direction_a_editorial_primitives_contract.py` |
 
@@ -55,7 +55,7 @@ validated retention or broad demand.
 | Deterministic turn scaffolding | The model writes inside a paced game frame. | `rpg_backend/narrative/engine.py` |
 | Advisor side-channel | Help is contextual but cannot silently alter story state. | `ask_advisor`, advisor message table |
 | Replay and fork CTA | A finished run becomes shareable and replayable. | `PublicReplayResponse.template_id` |
-| Reviewer mode | Admissions/recruiting reviewers can inspect runtime decisions quickly. | `frontend2/src/pages/portfolio/` |
+| Reviewer mode | Admissions/recruiting reviewers can inspect state and consequence decisions quickly. | `frontend2/src/pages/portfolio/` |
 
 ## Safety And Operations
 
