@@ -842,9 +842,12 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert runtime_inspector.count("{reviewerEvidenceLimitLabel}") >= 2
     assert 'data-reviewer-archive-details="true"' in runtime_inspector
     assert 'data-reviewer-archive-scope-note="true"' in runtime_inspector
+    assert 'data-reviewer-archive-scope-summary="true"' in runtime_inspector
+    assert "Local reviewer evidence, not a public benchmark" in runtime_inspector
     assert "Use this as local reviewer evidence" in runtime_inspector
     assert "It is not a public benchmark" in runtime_inspector
     assert "repo/demo preflight" in runtime_inspector
+    assert "reviewerArchiveScopeSummary" in styles
     assert "reviewerArchiveScopeNote" in styles
     assert 'open={hasArchivedJudgeEvidence}' not in runtime_inspector
     assert "Archived evaluation available" in runtime_inspector
@@ -874,7 +877,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "reviewerProofGrid" in styles
     assert "reviewerArchiveDetails" in styles
     assert "reviewerArchiveSummary" in styles
-    assert '[data-reviewer-archive-details="true"]:not([open]) > :not(summary)' in theme
+    assert '[data-reviewer-archive-details="true"]:not([open]) > :not(summary, [data-reviewer-archive-scope-summary="true"])' in theme
     assert "display: none !important" in theme
     assert "playReviewerEvidenceFixture" in routes
     assert "#/qa/play-reviewer-evidence" in routes

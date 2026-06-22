@@ -937,6 +937,13 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontSize: 12.5,
     lineHeight: 1.3,
   },
+  reviewerArchiveScopeSummary: {
+    margin: "8px 0 0",
+    color: "rgba(244,239,230,0.62)",
+    fontSize: 11.5,
+    lineHeight: 1.4,
+    overflowWrap: "anywhere" as const,
+  },
   reviewerArchiveScopeNote: {
     marginTop: 10,
     padding: "9px 10px",

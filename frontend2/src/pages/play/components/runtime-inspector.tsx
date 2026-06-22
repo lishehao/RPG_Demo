@@ -165,6 +165,9 @@ export function RuntimeInspector({
             {hasArchivedJudgeEvidence ? `${archivedScore} · ${archivedCheckStatus}` : "live evidence is enough for this view"}
           </strong>
         </summary>
+        <p style={ppStyles.reviewerArchiveScopeSummary} data-reviewer-archive-scope-summary="true">
+          Local reviewer evidence, not a public benchmark. Pair with repo/demo preflight before citing.
+        </p>
         <div style={ppStyles.reviewerArchiveScopeNote} data-reviewer-archive-scope-note="true">
           <strong>Archive scope</strong>
           <span>
