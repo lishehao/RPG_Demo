@@ -1468,6 +1468,11 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"May reveal proof"' not in envelope
     assert '"Read the room"' in envelope
     assert '"Use leverage"' in envelope
+    assert "function turnsLeftTrackValue" in envelope
+    assert '"1 turn left"' in envelope
+    assert "`${count} turns left`" in envelope
+    assert 'value: turnsLeftTrackValue(turnsRemaining)' in envelope
+    assert 'value: `${Math.max(0, turnsRemaining)}/${Math.max(1, turnBudget)}`' not in envelope
     assert '"Evidence lead"' not in envelope
     assert '"Room read"' not in envelope
     assert '"May reveal evidence"' in backend_service

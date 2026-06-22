@@ -287,6 +287,11 @@ function personTrackFromPulses(pulses: NarrativeNPCPulse[], castNameById: Record
   return { id: "people", label: "People", value: "watching", tone: "shift" }
 }
 
+function turnsLeftTrackValue(turnsRemaining: number): string {
+  const count = Math.max(0, turnsRemaining)
+  return count === 1 ? "1 turn left" : `${count} turns left`
+}
+
 function objectiveForStory(story: NarrativeStoryHistoryResponse): Pick<GameplayEnvelope, "objective" | "objectiveSource"> {
   const firstGoal = story.template.player_goals?.[0]?.goal
   if (firstGoal) {
@@ -386,7 +391,7 @@ export function buildGameplayEnvelope({
       {
         id: "time",
         label: "Time",
-        value: `${Math.max(0, turnsRemaining)}/${Math.max(1, turnBudget)}`,
+        value: turnsLeftTrackValue(turnsRemaining),
         tone: turnsRemaining <= 2 && turnsCompleted > 0 ? "cost" : "shift",
       },
       pressureLabelFromPulses(pulses),
