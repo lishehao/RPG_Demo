@@ -676,6 +676,20 @@ kbd {
   line-height: 1.45;
 }
 
+.portfolio-video-card__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 10px;
+  margin-top: 6px;
+}
+
+.portfolio-video-card__links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .portfolio-video-card {
   position: relative;
   display: block;

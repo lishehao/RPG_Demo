@@ -179,11 +179,24 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "YOUTUBE_DEMO_EMBED_URL" not in portfolio
     assert "Start with the reviewer cut" in portfolio
     assert "Open MP4 backup" in portfolio
+    assert 'data-portfolio-video-links="true"' in portfolio
+    assert 'data-portfolio-video-link="youtube"' in portfolio
+    assert 'data-portfolio-video-link="mp4"' in portfolio
     assert "Muted autoplay is best-effort" not in portfolio
     assert "MP4 fallback" not in portfolio
     assert ".portfolio-hero__review" in theme
     assert ".portfolio-review-order" in theme
     assert ".portfolio-video-card" in theme
+    assert ".portfolio-video-card__links" in theme
+    assert ".portfolio-video-card__links a" in theme
+    video_link_style = theme[
+        theme.index(".portfolio-video-card__links a {") : theme.index(
+            "}", theme.index(".portfolio-video-card__links a {")
+        )
+    ]
+    assert "min-height: 44px" in video_link_style
+    assert "display: inline-flex" in video_link_style
+    assert "align-items: center" in video_link_style
     assert ".portfolio-video-card__badge" in theme
     assert "grid-template-columns: 34px minmax(0, 1fr)" in theme
 

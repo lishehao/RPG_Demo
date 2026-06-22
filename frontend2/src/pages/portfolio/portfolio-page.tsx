@@ -184,9 +184,11 @@ export function PortfolioPage({
               Start with the reviewer cut, then use the checked Reviewer path to
               inspect state and consequences.
               <br />
-              <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">Open on YouTube</a>
-              <span aria-hidden="true"> · </span>
-              <a href={LOCAL_DEMO_MP4_URL}>Open MP4 backup</a>
+              <span className="portfolio-video-card__links" data-portfolio-video-links="true">
+                <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer" data-portfolio-video-link="youtube">Open on YouTube</a>
+                <span aria-hidden="true">·</span>
+                <a href={LOCAL_DEMO_MP4_URL} data-portfolio-video-link="mp4">Open MP4 backup</a>
+              </span>
             </p>
           </div>
           <div className="portfolio-hero__review" data-portfolio-hero-review-frame="true">
