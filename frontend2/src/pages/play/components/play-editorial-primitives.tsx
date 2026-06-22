@@ -89,7 +89,12 @@ export function MoodPlate({
   isComplete?: boolean
 }) {
   const imageUrl = sceneUrl || coverUrl
-  const progress = `Turn ${turnsCompleted} of ${turnBudget}`
+  const safeTurnBudget = Math.max(turnBudget, 1)
+  const turnsPlayed = Math.max(0, Math.min(turnsCompleted, safeTurnBudget))
+  const progress =
+    turnsPlayed <= 0
+      ? `${safeTurnBudget} turns to play`
+      : `${turnsPlayed}/${safeTurnBudget} turns played`
   const stage = isComplete
     ? "Complete"
     : turnsRemaining <= 2

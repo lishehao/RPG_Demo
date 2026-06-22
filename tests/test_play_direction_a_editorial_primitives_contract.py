@@ -995,6 +995,9 @@ def test_finish_mode_normal_play_reduces_top_metadata_density() -> None:
     assert "story.template.seed" not in mood_plate
     assert "First shot is live" in mood_plate
     assert "The room is waiting." in mood_plate
+    assert "turns to play" in mood_plate
+    assert "turns played" in mood_plate
+    assert "Turn ${turnsCompleted} of ${turnBudget}" not in mood_plate
     assert "The latest beat is ready for your next move." not in mood_plate
     assert '<PrimitiveSection title="Progress">' not in scene_rail
     assert ".slice(0, 3)" in primitives[primitives.index("function sceneActors") : primitives.index("function playerPortraitForStory")]
