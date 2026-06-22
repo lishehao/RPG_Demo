@@ -133,7 +133,7 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "follow the consequence" in hero_copy
     assert "75s reviewer cut" in hero_copy
     assert "Reviewer path" in portfolio
-    assert "#/reviewer" in portfolio
+    assert "open the reviewer run" in portfolio
     assert "portfolio-grade AI" in portfolio
     assert "product-system evidence, not a launched consumer adoption" in portfolio
     assert "claim" in portfolio
@@ -147,8 +147,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert 'aria-label="Portfolio proof points"' not in portfolio
     assert "PORTFOLIO_REVIEW_ORDER" in portfolio
     assert "Watch 75s reviewer cut" in portfolio
-    assert "Open Reviewer path" in portfolio
-    assert "Use #/portfolio -> #/reviewer" in portfolio
+    assert "See the bounded product loop before opening the reviewer run." in portfolio
+    assert "opening the live reviewer path" not in portfolio
+    assert "Open reviewer run" in portfolio
+    assert "Use the Portfolio page to open the locked reviewer run" in portfolio
     assert "Verify Story Desk start" in portfolio
     assert "Local build only: open a populated Story Desk card" in portfolio
     assert 'localHref: "#/qa/home-start"' in portfolio
@@ -170,14 +172,16 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert '<a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL}' in portfolio
     assert "Watch 75s reviewer cut" in portfolio[portfolio.index("portfolio-hero__actions") : portfolio.index('data-portfolio-review-order="true"')]
     assert "portfolio-action portfolio-action--secondary" in portfolio
-    assert "Launch reviewer route" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
+    assert "Open reviewer run" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
+    assert "Launch reviewer route" not in portfolio
     assert 'data-portfolio-hero-evidence-note="true"' in portfolio
     note_idx = portfolio.index('data-portfolio-hero-evidence-note="true"')
     actions_idx = portfolio.index('className="portfolio-hero__actions"')
     assert note_idx < actions_idx
     hero_note = portfolio[portfolio.index('data-portfolio-hero-evidence-note="true"') : portfolio.index('className="portfolio-hero__video"')]
     assert "Use the reviewer cut for orientation only" in hero_note
-    assert "do not cite the current local route as public evidence until preflight passes" in hero_note
+    assert "do not cite this local build as public evidence until the public-link check passes" in hero_note
+    assert "current local route" not in hero_note
     assert ".portfolio-hero__evidence-note" in theme
     assert 'data-portfolio-review-order="true"' in portfolio
     assert "data-portfolio-review-step={item.step}" in portfolio
@@ -571,16 +575,16 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "public-main" in portfolio
     assert "may lag the current local build" in portfolio
     assert "Public repo and Pages links can lag this local build" in portfolio
-    assert "In the checked build, the Reviewer route lets evaluators inspect" in portfolio
-    assert "If preflight fails, use the reviewer cut for orientation only" in portfolio
+    assert "In the checked build, the reviewer run lets evaluators inspect" in portfolio
+    assert "If the public-link check fails, use the reviewer cut for orientation only" in portfolio
     assert "Before relying on" in portfolio
     assert "public links" in portfolio
-    assert "run the public-evidence preflight" in portfolio
+    assert "run the public-evidence check" in portfolio
     assert "python3 tools/portfolio_public_evidence_preflight.py" in portfolio
     assert "do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay" in portfolio
-    assert "routes as public evidence until the intended branch is pushed, deployed, rechecked, and the preflight passes" in portfolio
+    assert "surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes" in portfolio
     assert "use the reviewer cut for orientation only" in portfolio
-    assert "do not cite the" in portfolio and "current local route as public evidence until preflight passes" in portfolio
+    assert "do not cite this local build as public evidence until the public-link check passes" in portfolio
     assert "label this Portfolio" not in portfolio
     assert "local route as local-only evidence" not in portfolio
     assert "GitHub repo" in portfolio
@@ -673,8 +677,8 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "reviewer-only evidence summary beside the normal story UI" in reviewer
     assert 'data-reviewer-local-evidence-note="true"' in reviewer
     assert "Public evidence boundary: inspect the current local build here" in reviewer
-    assert "application links, cite this route only after Portfolio preflight" in reviewer
-    assert "passes; otherwise use the reviewer cut" in reviewer
+    assert "application links, cite this reviewer run only after the public-link" in reviewer
+    assert "check passes; otherwise use the reviewer cut" in reviewer
     local_note_idx = reviewer.index('data-reviewer-local-evidence-note="true"')
     launch_cta_idx = reviewer.index('data-reviewer-launch-cta={busy ? "starting" : "ready"}')
     proof_strip_idx = reviewer.index('data-reviewer-hero-proof-strip="true"')

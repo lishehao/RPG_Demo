@@ -69,7 +69,7 @@ const REVIEWER_HERO_PROOF_POINTS = [
   },
   {
     label: "Evidence boundary",
-    detail: "Reviewer evidence stays beside Play and should be cited only after preflight.",
+    detail: "Reviewer evidence stays beside Play and should be cited only after the public-link check passes.",
   },
 ] as const
 
@@ -198,8 +198,8 @@ export function ReviewerPage({
           </p>
           <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
             Public evidence boundary: inspect the current local build here. For
-            application links, cite this route only after Portfolio preflight
-            passes; otherwise use the reviewer cut.
+            application links, cite this reviewer run only after the public-link
+            check passes; otherwise use the reviewer cut.
           </p>
           <div className="reviewer-actions">
             <button

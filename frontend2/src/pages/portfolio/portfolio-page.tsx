@@ -23,12 +23,12 @@ const PORTFOLIO_REVIEW_ORDER = [
   {
     step: "watch",
     title: "Watch 75s reviewer cut",
-    detail: "See the bounded product loop before opening the live reviewer path.",
+    detail: "See the bounded product loop before opening the reviewer run.",
   },
   {
     step: "launch",
-    title: "Open Reviewer path",
-    detail: "Use #/portfolio -> #/reviewer to verify the locked seed and generated play surface.",
+    title: "Open reviewer run",
+    detail: "Use the Portfolio page to open the locked reviewer run and verify the generated play surface.",
   },
   {
     step: "story-desk-start",
@@ -60,7 +60,7 @@ const PORTFOLIO_EVIDENCE_BOUNDARY = [
   },
   {
     label: "Checked reviewer path",
-    detail: "In the checked build, the Reviewer route lets evaluators inspect playable state, consequences, and evidence hooks.",
+    detail: "In the checked build, the reviewer run lets evaluators inspect playable state, consequences, and evidence hooks.",
   },
   {
     label: "Not claimed",
@@ -75,7 +75,7 @@ const PORTFOLIO_REVIEW_LENS = [
   },
   {
     label: "Reviewer path",
-    detail: "Watch the 75s cut, launch #/reviewer, then inspect state and consequence evidence.",
+    detail: "Watch the 75s cut, open the reviewer run, then inspect state and consequence evidence.",
   },
   {
     label: "Claim boundary",
@@ -104,9 +104,9 @@ const PORTFOLIO_TARGET_USER_MODEL = [
 const PORTFOLIO_PUBLIC_EVIDENCE_GATE = {
   label: "Public evidence gate",
   summary:
-    "Public repo and Pages links can lag this local build. If preflight fails, use the reviewer cut for orientation only.",
+    "Public repo and Pages links can lag this local build. If the public-link check fails, use the reviewer cut for orientation only.",
   detail:
-    "Before sending a public GitHub Pages or repository link, run the public-evidence preflight. If it fails, do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay routes as public evidence until the intended branch is pushed, deployed, rechecked, and the preflight passes.",
+    "Before sending a public GitHub Pages or repository link, run the public-evidence check. If it fails, do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes.",
   command: "python3 tools/portfolio_public_evidence_preflight.py",
 } as const
 
@@ -165,14 +165,14 @@ export function PortfolioPage({
               ))}
             </ul>
             <p className="portfolio-hero__evidence-note" data-portfolio-hero-evidence-note="true">
-              Use the reviewer cut for orientation only; do not cite the current local route as public evidence until preflight passes.
+              Use the reviewer cut for orientation only; do not cite this local build as public evidence until the public-link check passes.
             </p>
             <div className="portfolio-hero__actions">
               <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">
                 Watch 75s reviewer cut
               </a>
               <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenReviewer}>
-                Launch reviewer route
+                Open reviewer run
               </button>
             </div>
           </div>
@@ -188,7 +188,7 @@ export function PortfolioPage({
               <span className="portfolio-video-card__badge">75s reviewer cut</span>
             </a>
             <p>
-              Start with the reviewer cut, then use the checked Reviewer path to
+              Start with the reviewer cut, then use the checked reviewer run to
               inspect state and consequences.
               <br />
               <span className="portfolio-video-card__links" data-portfolio-video-links="true">
@@ -302,9 +302,9 @@ export function PortfolioPage({
               Open the repo and system map to review code, docs, tests, and the
               narrow product path behind this demo. These are public-main
               references and may lag the current local build. Before relying on
-              public links, run the public-evidence preflight; if it fails,
+              public links, run the public-evidence check; if it fails,
               use the reviewer cut for orientation only and do not cite the
-              current local route as public evidence until preflight passes.
+              current local build as public evidence until the check passes.
             </p>
             <div>
               <a href={PUBLIC_REPO_URL} target="_blank" rel="noreferrer">GitHub repo</a>
