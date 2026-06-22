@@ -12,6 +12,9 @@ export const PUBLIC_REPO_URL = "https://github.com/lishehao/RPG_Demo"
 
 export const SYSTEM_MAP_URL = "https://github.com/lishehao/RPG_Demo/blob/main/docs/CURRENT_SYSTEM_MAP.md"
 
+export const EVIDENCE_PACKET_URL =
+  "https://github.com/lishehao/RPG_Demo/blob/main/docs/tiny-stories-engineering-evidence-packet.md"
+
 export const REVIEWER_DEMO_SEED =
   "Minutes before the awards livestream, Mira the anxious publicist, Producer Han, Rina the backup dancer witness, Eun Sol the fan-channel reporter, and Choi the sponsor director gather in the control room after singer Seo Mina disappears. Mira must decide what to reveal before sponsors and fans panic, with no violence and no blackmail."
 

@@ -3,6 +3,7 @@ import { motion } from "motion/react"
 import { Header } from "../../shared/ui/header"
 import {
   CASE_STUDY_POINTS,
+  EVIDENCE_PACKET_URL,
   INTERACTION_LOOP,
   LOCAL_DEMO_MP4_URL,
   PIPELINE_STEPS,
@@ -198,6 +199,7 @@ export function PortfolioPage({
             <div>
               <a href={PUBLIC_REPO_URL} target="_blank" rel="noreferrer">GitHub repo</a>
               <a href={SYSTEM_MAP_URL} target="_blank" rel="noreferrer">System map</a>
+              <a href={EVIDENCE_PACKET_URL} target="_blank" rel="noreferrer">Evidence packet</a>
             </div>
           </div>
         </section>
