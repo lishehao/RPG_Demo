@@ -300,7 +300,7 @@ export function PortfolioPage({
             <span>Source evidence</span>
             <p>
               Open the repo and system map to review code, docs, tests, and the
-              narrow runtime path behind this demo. These are public-main
+              narrow product path behind this demo. These are public-main
               references and may lag the current local build. Before relying on
               public links, run the public-evidence preflight; if it fails,
               use the reviewer cut for orientation only and do not cite the
@@ -336,7 +336,7 @@ export function PortfolioPage({
 
         <section className="portfolio-section">
           <div className="portfolio-section__head">
-            <span className="portfolio-kicker">System Inspector</span>
+            <span className="portfolio-kicker">Evidence map</span>
             <h2>What the evaluator should notice</h2>
           </div>
           <div className="portfolio-inspector">
@@ -404,7 +404,7 @@ export function PortfolioPage({
 
         <section className="portfolio-section portfolio-final">
           <span className="portfolio-kicker">Portfolio framing</span>
-          <h2>Not a prompt toy. A portfolio-grade AI runtime case study.</h2>
+          <h2>Not a prompt toy. A portfolio-grade AI product-system case study.</h2>
           <p>
             The strongest application story is that you can turn story generation
             into a user-facing workflow: controlled entry, typed state,

@@ -29,7 +29,7 @@ const REVIEWER_LAUNCH_STEPS: Array<{
   },
   {
     phase: "runtime",
-    title: "Playable runtime",
+    title: "Playable run",
     detail: "Creates the first scene, choices, advisor context, and evidence summary reviewers inspect beside play.",
   },
   {

@@ -506,7 +506,7 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "Not claimed" in portfolio
     assert "Source evidence" in portfolio
     assert "review code, docs, tests, and the" in portfolio
-    assert "narrow runtime path behind this demo" in portfolio
+    assert "narrow product path behind this demo" in portfolio
     assert "public-main" in portfolio
     assert "may lag the current local build" in portfolio
     assert "Public repo and Pages links can lag this local build" in portfolio
@@ -530,6 +530,10 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "EVIDENCE_PACKET_URL" in data
     assert "https://github.com/lishehao/RPG_Demo/blob/main/docs/tiny-stories-engineering-evidence-packet.md" in data
     assert "portfolio-grade AI product-system evidence" in portfolio
+    assert "Evidence map" in portfolio
+    assert "System Inspector" not in portfolio
+    assert "portfolio-grade AI product-system case study" in portfolio
+    assert "portfolio-grade AI runtime case study" not in portfolio
     assert "not proof of a launched consumer product or broad user adoption" in portfolio
     assert "product-system evidence, not" in portfolio
     assert "story generation" in portfolio
