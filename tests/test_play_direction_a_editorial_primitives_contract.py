@@ -601,7 +601,8 @@ def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> No
         story_beat.index("): \"calm\" | \"rising\" | \"peak\"")
     ]
     assert "effectiveLastInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in runtime_inspector
-    assert 'agentImpactSummary(lastNarrator, "awaiting next narrator beat", effectiveLastInventoryDelta)' in runtime_inspector
+    assert 'reviewerLiveImpactSummary(' in runtime_inspector
+    assert '"awaiting next story beat"' in runtime_inspector
     assert 'agentImpactSummary(lastNarrator, "no pulse or inventory delta observed", effectiveInventoryDelta)' in runtime_inspector
     assert "const key = normalizeInventoryItem(clean)" in progress_helper
     assert "const target = normalizeInventoryItem(item)" in progress_helper
@@ -793,6 +794,10 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "Start with the live proof chips." in runtime_inspector
     assert "Archived scoring stays collapsed under the proof summary" in runtime_inspector
     assert "playability first" in runtime_inspector
+    assert "const liveImpactSummary = reviewerLiveImpactSummary" in runtime_inspector
+    assert "function reviewerLiveImpactSummary" in runtime_inspector
+    assert "character reaction" in runtime_inspector
+    assert "story item gained" in runtime_inspector
     assert 'const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"' in runtime_inspector
     assert runtime_inspector.count("{reviewerProofLimitLabel}") >= 2
     assert 'data-reviewer-archive-details="true"' in runtime_inspector

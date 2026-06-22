@@ -86,7 +86,11 @@ export function RuntimeInspector({
     : "not archived yet"
   const latestEvidence = evaluationObservedEvidence(latestStepJudge, latestContractJudge, lastNarrator, effectiveLastInventoryDelta)
   const playableMoveCount = lastNarrator?.options.length ?? 0
-  const liveImpactSummary = agentImpactSummary(lastNarrator, "awaiting next narrator beat", effectiveLastInventoryDelta)
+  const liveImpactSummary = reviewerLiveImpactSummary(
+    lastNarrator,
+    "awaiting next story beat",
+    effectiveLastInventoryDelta,
+  )
   const telemetryRows = llmEvents.slice(-8).reverse()
   const traceRows = agentPlan
     ? [
@@ -590,6 +594,27 @@ function agentImpactSummary(
   const removed = effectiveInventoryDelta?.removed.length ?? message.inventory_delta?.removed.length ?? 0
   const delta = added || removed ? `inventory +${added}/-${removed}` : "inventory steady"
   return `pulse ${pulseCount} · ${delta}`
+}
+
+function reviewerLiveImpactSummary(
+  message: NarrativeStoryMessage | null,
+  pendingLabel: string,
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"],
+): string {
+  if (!message) return pendingLabel
+  const reactionCount = (message.npc_pulse ?? []).filter((pulse) => pulse.shift !== "steady").length
+  const added = effectiveInventoryDelta?.added.length ?? message.inventory_delta?.added.length ?? 0
+  const removed = effectiveInventoryDelta?.removed.length ?? message.inventory_delta?.removed.length ?? 0
+  const parts: string[] = []
+
+  if (reactionCount === 1) parts.push("1 character reaction")
+  if (reactionCount > 1) parts.push(`${reactionCount} character reactions`)
+  if (added === 1) parts.push("1 story item gained")
+  if (added > 1) parts.push(`${added} story items gained`)
+  if (removed === 1) parts.push("1 story item spent")
+  if (removed > 1) parts.push(`${removed} story items spent`)
+
+  return parts.length ? parts.join(" · ") : "latest beat keeps state stable"
 }
 
 function displayRuntimeEndingLabel(label: string, lang: ReturnType<typeof useLanguage>["lang"]): string {
