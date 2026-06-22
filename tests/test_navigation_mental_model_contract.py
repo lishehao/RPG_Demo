@@ -216,10 +216,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert ".portfolio-hero {\n    min-height: auto;\n    grid-template-columns: 1fr;\n    gap: 18px;" in mobile_portfolio
     assert ".portfolio-hero h1 {\n    margin: 10px 0 0;" in mobile_portfolio
     assert ".portfolio-hero__content {\n    display: contents;" in mobile_portfolio
-    assert ".portfolio-hero__evidence-note {\n    order: 4;" in mobile_portfolio
+    assert ".portfolio-hero__lens {\n    order: 4;" in mobile_portfolio
     assert ".portfolio-hero__actions {\n    order: 5;" in mobile_portfolio
-    assert ".portfolio-hero__video {\n    order: 6;" in mobile_portfolio
-    assert ".portfolio-hero__lens {\n    order: 7;" in mobile_portfolio
+    assert ".portfolio-hero__evidence-note {\n    order: 6;" in mobile_portfolio
+    assert ".portfolio-hero__video {\n    order: 7;" in mobile_portfolio
     video_link_style = theme[
         theme.index(".portfolio-video-card__links a {") : theme.index(
             "}", theme.index(".portfolio-video-card__links a {")
@@ -622,7 +622,12 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert ".portfolio-target-user" in theme
     assert ".portfolio-target-user__grid" in theme
     assert ".portfolio-target-user__item" in theme
-    assert ".portfolio-target-user__grid" in theme[theme.index("@media (max-width: 720px)") :]
+    mobile_theme = theme[theme.index("@media (max-width: 720px)") :]
+    assert ".portfolio-target-user__grid" in mobile_theme
+    assert ".portfolio-hero__lens {\n    order: 4;" in mobile_theme
+    assert ".portfolio-hero__actions {\n    order: 5;" in mobile_theme
+    assert ".portfolio-hero__evidence-note {\n    order: 6;" in mobile_theme
+    assert ".portfolio-hero__video {\n    order: 7;" in mobile_theme
     assert ".portfolio-evidence-boundary" in theme
     assert ".portfolio-evidence-boundary__grid" in theme
     assert ".portfolio-source-evidence" in theme
