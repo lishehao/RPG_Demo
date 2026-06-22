@@ -64,7 +64,7 @@ source, tests, reviewer run, and system map.
 
 ---
 
-## Reviewer Path
+## Reviewer Run
 
 Recommended order for an admissions or recruiting review:
 

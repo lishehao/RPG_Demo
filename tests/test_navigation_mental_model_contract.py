@@ -256,7 +256,8 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "An inspectable AI narrative runtime" not in readme
     assert "<strong>State-shaped</strong>" in readme
     assert "<strong>Runtime-driven</strong>" not in readme
-    assert "## Reviewer Path" in readme
+    assert "## Reviewer Run" in readme
+    assert "## Reviewer Path" not in readme
     assert "Run locally and open `#/portfolio`" in readme
     assert "Open the reviewer run from the portfolio page" in readme
     assert "Launch the reviewer route from the portfolio page" not in readme
@@ -280,7 +281,7 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "portfolio-grade AI product-system evidence" in readme
     assert "It is not claimed as a launched consumer" in readme
     assert "game or broad adoption proof" in readme
-    reviewer_path = readme[readme.index("## Reviewer Path") : readme.index("## Target Player And Content Model")]
+    reviewer_path = readme[readme.index("## Reviewer Run") : readme.index("## Target Player And Content Model")]
     assert "Evidence visibility gate" in reviewer_path
     assert "before sending a public GitHub Pages or repository" in reviewer_path
     assert "run the public-link check" in reviewer_path
@@ -326,7 +327,8 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "Watch 75s demo" in landing
     assert "Open MP4 demo" in landing
     assert "Reviewer run guide" in landing
-    assert "RPG_Demo#reviewer-path" in landing
+    assert "RPG_Demo#reviewer-run" in landing
+    assert "RPG_Demo#reviewer-path" not in landing
     assert "open the reviewer run locally" in landing
     assert "#/portfolio -> #/reviewer" not in landing
     assert "inspect the checked evidence path" in landing
