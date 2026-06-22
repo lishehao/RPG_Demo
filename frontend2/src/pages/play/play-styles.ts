@@ -451,7 +451,11 @@ export const ppStyles: Record<string, CSSProperties> = {
     fontWeight: 650,
   },
   runInventoryItemButton: {
-    padding: "2px 7px",
+    minHeight: 44,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 12px",
     borderTopWidth: 1,
     borderTopStyle: "solid",
     borderTopColor: "rgba(245,200,120,0.22)",

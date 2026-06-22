@@ -1446,6 +1446,13 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 't("play.run_assets_use_title", { item })' in panels
     assert "runInventoryHint" in styles
     assert "runInventoryItemButton" in styles
+    run_inventory_button = styles[
+        styles.index("runInventoryItemButton: {"):
+        styles.index("runInventoryDivider: {")
+    ]
+    assert "minHeight: 44" in run_inventory_button
+    assert 'display: "inline-flex"' in run_inventory_button
+    assert 'alignItems: "center"' in run_inventory_button
     assert "runContextObjectiveText" in styles
     assert 'fontSize: 16' in styles
     assert "runRoleTitle" in styles
