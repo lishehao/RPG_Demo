@@ -86,6 +86,7 @@ export function RuntimeInspector({
     : "not archived yet"
   const latestEvidence = evaluationObservedEvidence(latestStepJudge, latestContractJudge, lastNarrator, effectiveLastInventoryDelta)
   const playableMoveCount = lastNarrator?.options.length ?? 0
+  const hasLiveStateChange = reviewerHasLiveStateChange(lastNarrator, effectiveLastInventoryDelta)
   const liveImpactSummary = reviewerLiveImpactSummary(
     lastNarrator,
     "awaiting next story beat",
@@ -137,9 +138,13 @@ export function RuntimeInspector({
             <span style={ppStyles.reviewerProofDetail}>{turnsRemaining} turns left</span>
           </div>
           <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="state">
-            <span style={ppStyles.reviewerProofLabel}>State changed</span>
-            <strong style={ppStyles.reviewerProofValue}>{liveImpactSummary}</strong>
-            <span style={ppStyles.reviewerProofDetail}>visible consequence on the latest beat</span>
+            <span style={ppStyles.reviewerProofLabel}>{hasLiveStateChange ? "State changed" : "Change to verify"}</span>
+            <strong style={ppStyles.reviewerProofValue}>
+              {hasLiveStateChange ? liveImpactSummary : "waiting for first move"}
+            </strong>
+            <span style={ppStyles.reviewerProofDetail}>
+              {hasLiveStateChange ? "visible consequence on the latest beat" : "play one move to verify consequences"}
+            </span>
           </div>
           <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="checks">
             <span style={ppStyles.reviewerProofLabel}>{reviewerProofLimitLabel}</span>
@@ -615,6 +620,17 @@ function reviewerLiveImpactSummary(
   if (removed > 1) parts.push(`${removed} story items spent`)
 
   return parts.length ? parts.join(" · ") : "latest beat keeps state stable"
+}
+
+function reviewerHasLiveStateChange(
+  message: NarrativeStoryMessage | null,
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"],
+): boolean {
+  if (!message) return false
+  const hasReaction = (message.npc_pulse ?? []).some((pulse) => pulse.shift !== "steady")
+  const added = effectiveInventoryDelta?.added.length ?? message.inventory_delta?.added.length ?? 0
+  const removed = effectiveInventoryDelta?.removed.length ?? message.inventory_delta?.removed.length ?? 0
+  return hasReaction || added > 0 || removed > 0
 }
 
 function displayRuntimeEndingLabel(label: string, lang: ReturnType<typeof useLanguage>["lang"]): string {

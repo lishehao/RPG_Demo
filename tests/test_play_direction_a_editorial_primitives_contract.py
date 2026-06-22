@@ -795,7 +795,12 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "Archived scoring stays collapsed under the proof summary" in runtime_inspector
     assert "playability first" in runtime_inspector
     assert "const liveImpactSummary = reviewerLiveImpactSummary" in runtime_inspector
+    assert "const hasLiveStateChange = reviewerHasLiveStateChange" in runtime_inspector
     assert "function reviewerLiveImpactSummary" in runtime_inspector
+    assert "function reviewerHasLiveStateChange" in runtime_inspector
+    assert "Change to verify" in runtime_inspector
+    assert "waiting for first move" in runtime_inspector
+    assert "play one move to verify consequences" in runtime_inspector
     assert "character reaction" in runtime_inspector
     assert "story item gained" in runtime_inspector
     assert 'const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"' in runtime_inspector
@@ -840,10 +845,13 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "Proof limits" not in reviewer_fixture
     assert "const hasArchivedReviewerChecks = latestAgentEvents.some" in play_page
     assert 'event.event_type === "step_judge" || event.event_type === "contract_judge"' in play_page
-    assert '{hasArchivedReviewerChecks ? "archived proof" : "proof limits"}' in play_page
+    assert "const hasReviewerVisibleConsequence = reviewerHasLiveStateChange(lastNarrator, effectiveLastInventoryDelta)" in play_page
+    assert '{hasReviewerVisibleConsequence ? "visible consequence" : "first consequence after a move"}' in play_page
+    assert '{hasArchivedReviewerChecks ? "archived proof attached" : "proof limits shown"}' in play_page
     assert "runtime state / contract checks" not in play_page
-    assert "Proof summary is attached below this play surface." in play_page
-    assert "Jump to evidence" in play_page
+    assert "Story UI stays playable; proof stays separate." in play_page
+    assert "View proof summary" in play_page
+    assert "Proof summary is attached below this play surface." not in play_page
 
 
 def test_normal_play_keeps_evaluation_terms_outside_default_surface() -> None:

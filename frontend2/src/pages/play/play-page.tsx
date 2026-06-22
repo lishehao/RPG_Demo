@@ -94,6 +94,17 @@ function leveragePlayInput(card: LeverageCardView, language: NarrativeStoryHisto
   return `I reveal the leverage I hold over ${card.target_name}: ${card.leverage}`
 }
 
+function reviewerHasLiveStateChange(
+  message: NarrativeStoryMessage | null,
+  effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"] | null,
+): boolean {
+  if (!message) return false
+  const hasReaction = (message.npc_pulse ?? []).some((pulse) => pulse.shift !== "steady")
+  const added = effectiveInventoryDelta?.added.length ?? message.inventory_delta?.added.length ?? 0
+  const removed = effectiveInventoryDelta?.removed.length ?? message.inventory_delta?.removed.length ?? 0
+  return hasReaction || added > 0 || removed > 0
+}
+
 function playSegmentPhaseForMessage(
   message: NarrativeStoryMessage,
   turnBudget: number,
@@ -1346,6 +1357,7 @@ export function PlayPage({
   const hasArchivedReviewerChecks = latestAgentEvents.some(
     (event) => event.event_type === "step_judge" || event.event_type === "contract_judge",
   )
+  const hasReviewerVisibleConsequence = reviewerHasLiveStateChange(lastNarrator, effectiveLastInventoryDelta)
   const scrollToReviewerEvidence = () => {
     if (typeof window === "undefined") return
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -1364,10 +1376,10 @@ export function PlayPage({
       <div style={ppStyles.reviewerEvidenceJumpCopy}>
         <span style={ppStyles.reviewerEvidenceJumpKicker}>Reviewer evidence</span>
         <strong style={ppStyles.reviewerEvidenceJumpTitle}>
-          Proof summary is attached below this play surface.
+          Story UI stays playable; proof stays separate.
         </strong>
         <span style={ppStyles.reviewerEvidenceJumpMeta}>
-          {lastNarrator?.options.length ?? 0} current moves / live state / {hasArchivedReviewerChecks ? "archived proof" : "proof limits"}
+          {lastNarrator?.options.length ?? 0} current moves / {hasReviewerVisibleConsequence ? "visible consequence" : "first consequence after a move"} / {hasArchivedReviewerChecks ? "archived proof attached" : "proof limits shown"}
         </span>
       </div>
       <button
@@ -1376,7 +1388,7 @@ export function PlayPage({
         onClick={scrollToReviewerEvidence}
         data-reviewer-evidence-jump-button="true"
       >
-        Jump to evidence
+        View proof summary
       </button>
     </section>
   ) : null
