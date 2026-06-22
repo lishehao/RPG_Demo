@@ -236,9 +236,11 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "python3 tools/portfolio_public_evidence_preflight.py" in landing
     assert "local commits ahead of public main" in landing
     assert "missing Pages" in landing
-    assert "Portfolio, Reviewer, Story Desk, Create, Play, and" in landing
-    assert "Replay as local-only evidence" in landing
-    assert "deployed" in landing and "rechecked" in landing
+    assert "use the demo video for orientation only" in landing
+    assert "Do not cite the" in landing
+    assert "current Portfolio, Reviewer, Story Desk, Create, Play, or Replay" in landing
+    assert "routes as public evidence" in landing
+    assert "deployed" in landing and "rechecked" in landing and "preflight passes" in landing
     assert ".audience-model" in landing
     assert ".audience-model__grid" in landing
     assert ".evidence-boundary" in landing

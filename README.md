@@ -331,10 +331,13 @@ Run the public-evidence preflight before sending application or recruiting
 links. It should report that local `HEAD` matches `origin/main`; if it reports
 local commits ahead of the public branch, GitHub and GitHub Pages reviewers
 will not see the current Story Desk, template detail, portfolio/reviewer, or
-play evidence yet. It also summarizes the affected reviewer surfaces before
-the path list, so large local branches do not hide a template or Story Desk
-change in truncated output. It also runs a live GitHub Pages marker check, so
-rerun it after pushing and waiting for the public page to update.
+play evidence yet. In that state, use the demo video for orientation only; do
+not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or
+Replay routes as public evidence until the preflight passes. It also summarizes
+the affected reviewer surfaces before the path list, so large local branches do
+not hide a template or Story Desk change in truncated output. It also runs a
+live GitHub Pages marker check, so rerun it after pushing and waiting for the
+public page to update.
 
 For a configured live backend, the HTTP smoke follows the same current
 `/narrative/*` product path. Local authoring-enabled runs can create a

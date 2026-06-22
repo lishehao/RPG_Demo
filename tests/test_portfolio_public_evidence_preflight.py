@@ -122,6 +122,9 @@ def test_public_evidence_preflight_is_documented_for_application_links() -> None
     assert "local `HEAD` matches `origin/main`" in readme
     assert "GitHub and GitHub Pages reviewers" in readme
     assert "Story Desk, template detail, portfolio/reviewer, or" in readme
+    assert "use the demo video for orientation only" in readme
+    assert "not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or" in readme
+    assert "Replay routes as public evidence until the preflight passes" in readme
     assert "affected reviewer surfaces" in readme
     assert "live GitHub Pages marker check" in readme
 
