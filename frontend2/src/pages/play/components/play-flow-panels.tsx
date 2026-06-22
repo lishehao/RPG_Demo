@@ -445,7 +445,7 @@ function optionTagGuide(tag: string, t: ReturnType<typeof useT>): string {
     return t("play.option_intent_ally")
   }
   if (
-    ["hold", "cover", "deflect", "distract", "stall", "calm", "wait", "watch", "yield"].includes(normalized) ||
+    ["stabilize", "hold", "cover", "deflect", "distract", "stall", "calm", "wait", "watch", "yield"].includes(normalized) ||
     ["稳住", "掩护", "转移", "拖延", "观望", "妥协"].includes(tag)
   ) {
     return t("play.option_intent_stabilize")

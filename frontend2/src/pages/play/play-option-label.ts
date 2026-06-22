@@ -4,7 +4,7 @@
 // as plain text, giving players a visual scan-tag for what the choice
 // means before reading the full action.
 export function parseOptionLabel(label: string): { tag: string | null; body: string } {
-  const m = label.match(/^\s*[\[【]([^\]】]{1,8})[\]】]\s*(.*)$/)
+  const m = label.match(/^\s*[\[【]([^\]】]{1,16})[\]】]\s*(.*)$/)
   if (m) {
     return { tag: m[1].trim(), body: (m[2] ?? "").trim() }
   }

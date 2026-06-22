@@ -597,6 +597,7 @@ def test_remaining_play_flow_panel_candidates_are_wait_boundaries() -> None:
     assert "optionTagGuide(parsed.tag, t)" in action_area
     assert "...optionTagStyle(parsed.tag)" in action_area
     assert "parseOptionLabel" in panels
+    assert '["stabilize", "hold", "cover", "deflect", "distract", "stall", "calm", "wait", "watch", "yield"]' in panels
     assert "ActionSelectedOptionDetail" in action_area
 
     assert "export function findActionTarget" in panels
@@ -2570,6 +2571,7 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert 'from "./play-option-label"' in play_page
     assert 'from "../play-option-label"' in panels
     assert "export function parseOptionLabel" in option_label
+    assert "{1,16}" in option_label
     assert "export function EndingScreen" not in panels
     assert "buildFallbackEndingRecap" not in panels
     assert "function displayEndingLabel" not in panels
