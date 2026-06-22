@@ -56,10 +56,12 @@ def test_korean_agent_chat_slot_loop_blocks_small_cast_object_only_before_brief(
     assert "no public pressure" in source
     assert "wedding ring" in source
     assert "object-only thread" in source
-    assert "This story needs a third active pressure or public consequence" in source
-    assert "这个故事需要至少第三方在场压力或公开后果" in source
+    assert "This story needs a third active pressure or public consequence before I shape the story plan" in source
+    assert "这个故事需要至少第三方在场压力或公开后果，才能变成可玩的故事计划" in source
     assert "This beta needs" not in source
     assert "这个 beta 需要" not in source
+    assert "before I shape a Story Brief" not in source
+    assert "可玩的 Story Brief" not in source
     assert "canShapeBrief: false" in source
 
     unsupported_guard = source.index("detectsUnsupportedSmallCastDirection(text)")
@@ -119,3 +121,14 @@ def test_create_page_keeps_long_generate_handoff_visible_before_navigation() -> 
     assert "create.building_handoff_ready_long" in strings
     assert "create.building_handoff_recovered" in strings
     assert "Opening tightened from the plan. Entering the scene..." in strings
+
+
+def test_story_butler_ready_copy_uses_story_plan_language() -> None:
+    source = (ROOT / "frontend2/src/shared/lib/story-guide-loop.ts").read_text()
+
+    assert "That is enough to shape the final story plan." in source
+    assert "The direction is clear enough. I can shape the final story plan now" in source
+    assert "信息够了。要我整理最终故事计划吗？" in source
+    assert "方向已经够清楚了。我可以把它整理成最终故事计划" in source
+    assert "final Story Brief" not in source
+    assert "最终 Story Brief" not in source

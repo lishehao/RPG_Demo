@@ -622,8 +622,8 @@ export function advanceStoryGuideLoop(
       status: "needs_field",
       reply:
         lang === "zh"
-          ? "我看到的是两人、低冲突、物件线索。这个故事需要至少第三方在场压力或公开后果，才能变成可玩的 Story Brief。加一个旁观者、阵营或必须当场选择的压力。"
-          : "I’m reading this as two people, low conflict, and an object-only thread. This story needs a third active pressure or public consequence before I shape a Story Brief. Add one watcher, faction, or decision that must be handled in the room.",
+          ? "我看到的是两人、低冲突、物件线索。这个故事需要至少第三方在场压力或公开后果，才能变成可玩的故事计划。加一个旁观者、阵营或必须当场选择的压力。"
+          : "I’m reading this as two people, low conflict, and an object-only thread. This story needs a third active pressure or public consequence before I shape the story plan. Add one watcher, faction, or decision that must be handled in the room.",
       acceptedText: true,
       blocked: false,
       canShapeBrief: false,
@@ -867,8 +867,8 @@ function findNextMissing(state: StoryGuideLoopState): StoryGuideSlotId | null {
 function nextQuestionFor(slot: StoryGuideSlotId | null, lang: Lang): string {
   if (!slot) {
     return lang === "zh"
-      ? "信息够了。要我整理最终 Story Brief 吗？"
-      : "That is enough to shape the final Story Brief."
+      ? "信息够了。要我整理最终故事计划吗？"
+      : "That is enough to shape the final story plan."
   }
   const zh: Record<StoryGuideSlotId, string> = {
     player_role: "你希望玩家在这一幕里是谁？给我一句身份就够了。",
@@ -954,8 +954,8 @@ function selfRoleReply(slot: StoryGuideSlotId | null, lang: Lang): string {
 
 function readyReply(lang: Lang): string {
   return lang === "zh"
-    ? "方向已经够清楚了。我可以把它整理成最终 Story Brief；你也可以继续补一句规则或纠正。"
-    : "The direction is clear enough. I can shape the final Story Brief now, or you can add one more rule or correction."
+    ? "方向已经够清楚了。我可以把它整理成最终故事计划；你也可以继续补一句规则或纠正。"
+    : "The direction is clear enough. I can shape the final story plan now, or you can add one more rule or correction."
 }
 
 function isTinyNonStoryInput(text: string): boolean {
