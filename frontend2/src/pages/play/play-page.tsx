@@ -14,6 +14,7 @@ import type {
   NarrativeStoryHistoryResponse,
   NarrativeStoryMessage,
 } from "../../api/contracts"
+import type { FrontendApiClient } from "../../api/client"
 import { useApi } from "../../app/api-context"
 import { useAuth } from "../../app/auth-context"
 import { LoadingShim } from "../../shared/ui/loading-shim"
@@ -86,6 +87,14 @@ import {
 function leverageCardId(roleId: string | undefined, lev: NarrativePlayerLeverageOverNPC, index: number): string {
   return `lev:${roleId || "role"}:${lev.npc_id}:${index}`
 }
+
+type PlayPageApiClient = Pick<
+  FrontendApiClient,
+  | "getNarrativeStory"
+  | "getNarrativeLLMEvents"
+  | "advanceNarrativeTurn"
+  | "getNarrativeSessionEnding"
+>
 
 function leveragePlayInput(card: LeverageCardView, language: NarrativeStoryHistoryResponse["template"]["language"]): string {
   if (language === "zh") {
@@ -820,12 +829,15 @@ export function PlayPage({
   sessionId,
   reviewerMode = false,
   onBackHome,
+  apiClient,
 }: {
   sessionId: string
   reviewerMode?: boolean
   onBackHome: () => void
+  apiClient?: PlayPageApiClient
 }) {
-  const api = useApi()
+  const defaultApi = useApi()
+  const api = apiClient ?? defaultApi
   const auth = useAuth()
   const t = useT()
   const [story, setStory] = useState<NarrativeStoryHistoryResponse | null>(null)

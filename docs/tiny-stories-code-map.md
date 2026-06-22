@@ -32,7 +32,7 @@ This map documents the current Tiny Stories Korean webtoon demo candidate. It is
 - `frontend2/src/pages/replay/`
   - Result-first public replay and Story Desk return loop.
   - Replay can offer a completion CTA near the coda; page-level escape navigation still belongs in the route/header area.
-  - `#/qa/replay` mounts the real ReplayPage with deterministic completed-run data for browser evidence without backend or live generation.
+  - `#/qa/replay` mounts the real ReplayPage with deterministic completed-run data for browser evidence without backend or live generation; its same-opening restart path stays on real TemplateDetailPage / PlayPage components with fixture APIs.
 - `frontend2/src/pages/world/`
   - Published template detail / role pick / direct Play entry.
   - Do not re-run Story Brief shaping for an already generated playable template.

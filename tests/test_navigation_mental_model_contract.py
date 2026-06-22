@@ -872,6 +872,8 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
     replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
     fixture = (ROOT / "frontend2/src/pages/replay/replay-fixture.tsx").read_text()
+    world = (ROOT / "frontend2/src/pages/world/world-detail-page.tsx").read_text()
+    play = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     frontend_readme = (ROOT / "frontend2/src/README.md").read_text()
     code_map = (ROOT / "docs/tiny-stories-code-map.md").read_text()
 
@@ -879,6 +881,20 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "const defaultApi = useApi()" in replay
     assert "const api = apiClient ?? defaultApi" in replay
     assert 'data-replay-page="true"' in replay
+
+    assert 'apiClient?: TemplateDetailApiClient' in world
+    assert 'type TemplateDetailApiClient = Pick<' in world
+    assert '"getNarrativeTemplate"' in world
+    assert '"startNarrativeSession"' in world
+    assert "const defaultApi = useApi()" in world
+    assert "const api = apiClient ?? defaultApi" in world
+
+    assert 'apiClient?: PlayPageApiClient' in play
+    assert 'type PlayPageApiClient = Pick<' in play
+    assert '"getNarrativeStory"' in play
+    assert '"advanceNarrativeTurn"' in play
+    assert "const defaultApi = useApi()" in play
+    assert "const api = apiClient ?? defaultApi" in play
 
     assert '| { name: "replayFixture" }' in routes
     assert "replayFixture: 1" in routes
@@ -892,16 +908,31 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "onOpenTemplate={(templateId) => navigate({ name: \"template\", templateId })}" in app
 
     assert 'import { ReplayPage } from "./replay-page"' in fixture
+    assert 'import { TemplateDetailPage } from "../world/world-detail-page"' in fixture
+    assert 'import { PlayPage } from "../play/play-page"' in fixture
     assert "QA_REPLAY" in fixture
+    assert "QA_REPLAY_TEMPLATE" in fixture
+    assert "QA_REPLAY_OPENING" in fixture
     assert 'data-replay-fixture="true"' in fixture
     assert "apiClient={qaReplayApi}" in fixture
+    assert "apiClient={qaTemplateApi}" in fixture
+    assert "apiClient={qaPlayApi}" in fixture
+    assert "handleOpenTemplate" in fixture
+    assert 'setFixtureView("template")' in fixture
+    assert 'setFixtureView("play")' in fixture
     assert "<ReplayPage" in fixture
+    assert "<TemplateDetailPage" in fixture
+    assert "<PlayPage" in fixture
     assert 'data-replay-view-mode-hint="true"' not in fixture
     assert 'data-replay-preview-why="true"' not in fixture
+    assert 'data-world-role-launch-read="true"' not in fixture
+    assert 'data-play-action-option-card="true"' not in fixture
     assert 't("replay.cta_hint")' not in fixture
 
     assert "`#/qa/replay` fixture" in frontend_readme
+    assert "chain must stay locally runnable without backend data" in frontend_readme
     assert "`#/qa/replay` mounts the real ReplayPage" in code_map
+    assert "same-opening restart path stays on real TemplateDetailPage / PlayPage components" in code_map
 
 
 def test_home_story_entries_are_generated_playable_template_objects() -> None:

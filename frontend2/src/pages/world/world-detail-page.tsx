@@ -6,6 +6,7 @@ import type {
   NarrativeTemplateSummary,
   NarrativeTemplateVisibility,
 } from "../../api/contracts"
+import type { FrontendApiClient } from "../../api/client"
 import { useApi } from "../../app/api-context"
 import { Header } from "../../shared/ui/header"
 import { friendlyError } from "../../shared/lib/friendly-error"
@@ -25,19 +26,29 @@ import {
 } from "../../shared/lib/webtoon-assets"
 
 type TemplateErrorContext = "load" | "start" | "visibility" | null
+type TemplateDetailApiClient = Pick<
+  FrontendApiClient,
+  | "getNarrativeTemplate"
+  | "getNarrativeEndingDistribution"
+  | "startNarrativeSession"
+  | "updateNarrativeTemplateVisibility"
+>
 
 export function TemplateDetailPage({
   templateId,
   onBackHome,
   onOpenCreate,
   onSessionStarted,
+  apiClient,
 }: {
   templateId: string
   onBackHome: () => void
   onOpenCreate: () => void
   onSessionStarted: (sessionId: string) => void
+  apiClient?: TemplateDetailApiClient
 }) {
-  const api = useApi()
+  const defaultApi = useApi()
+  const api = apiClient ?? defaultApi
   const t = useT()
   const { lang } = useLanguage()
   const compactLayout = useCompactLayout()
