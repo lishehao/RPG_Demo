@@ -495,7 +495,7 @@ def _build_gameplay_envelope(
                 ) or live_enriched
 
     if not impact and last_narrator is not None and last_narrator.options:
-        _add_gameplay_chip(impact, "Action menu changed", "shift")
+        _add_gameplay_chip(impact, "New choices opened", "shift")
     if not impact and current_inventory:
         _add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)
 

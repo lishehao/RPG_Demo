@@ -173,7 +173,7 @@ function shouldPreferBaseImpact(backendImpact: GameplayImpactDelta[], baseImpact
   if (backendImpact.length === 0) return false
   return (
     backendImpact.every(isHoldingImpactChip) &&
-    baseImpact.some((chip) => chip.label === "Action menu changed")
+    baseImpact.some((chip) => chip.label === "New choices opened")
   )
 }
 
@@ -334,7 +334,7 @@ function buildImpactDeltas(
   }
 
   if (deltas.length === 0 && narratorMessage && narratorMessage.options.length > 0) {
-    deltas.push({ label: "Action menu changed", tone: "shift" })
+    deltas.push({ label: "New choices opened", tone: "shift" })
   }
   if (deltas.length === 0 && liveInventory.length > 0) {
     deltas.push({ label: `Holding: ${compactLabel(liveInventory[0], 30)}`, tone: "shift" })

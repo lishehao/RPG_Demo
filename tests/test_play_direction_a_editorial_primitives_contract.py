@@ -638,11 +638,13 @@ def test_live_inventory_dedupes_repeated_starting_assets_and_delta_items() -> No
     assert "lastNarrator?.inventory_delta ?? null" in gameplay_envelope
     assert "function shouldPreferBaseImpact" in gameplay_envelope
     assert "backendImpact.every(isHoldingImpactChip)" in gameplay_envelope
-    assert 'chip.label === "Action menu changed"' in gameplay_envelope
-    next_moves_idx = gameplay_envelope.index('deltas.push({ label: "Action menu changed", tone: "shift" })')
+    assert 'chip.label === "New choices opened"' in gameplay_envelope
+    assert 'chip.label === "Action menu changed"' not in gameplay_envelope
+    next_moves_idx = gameplay_envelope.index('deltas.push({ label: "New choices opened", tone: "shift" })')
     holding_idx = gameplay_envelope.index("deltas.push({ label: `Holding:")
     assert next_moves_idx < holding_idx
-    backend_next_moves_idx = backend_service.index('_add_gameplay_chip(impact, "Action menu changed", "shift")')
+    backend_next_moves_idx = backend_service.index('_add_gameplay_chip(impact, "New choices opened", "shift")')
+    assert '_add_gameplay_chip(impact, "Action menu changed", "shift")' not in backend_service
     backend_holding_idx = backend_service.index('_add_gameplay_chip(impact, f"Holding: {current_inventory[0]}", "shift", max_length=44)')
     assert backend_next_moves_idx < backend_holding_idx
     assert "effectiveInventoryDelta?: NarrativeStoryMessage[\"inventory_delta\"]" in story_beat
@@ -1137,7 +1139,8 @@ def test_normal_runtime_impact_summary_keeps_player_facing_resolution_clarity() 
     assert '"play.feedback_source_move_label": "From your move"' in impact_strings
     assert '"play.feedback_key_consequence_label": "Main result"' in impact_strings
     assert '"play.feedback_next_choice_label": "Next moves this opens"' in impact_strings
-    assert '"play.feedback_next_choice_changed_label": "Action menu changed"' in impact_strings
+    assert '"play.feedback_next_choice_changed_label": "New choices opened"' in impact_strings
+    assert '"play.feedback_next_choice_changed_label": "Action menu changed"' not in impact_strings
     assert '"play.feedback_next_choice_changed_detail": "The people, clues, or pressure that changed now shape these choices."' in impact_strings
     for forbidden in ("provider", "model", "schema", "token", "fallback", "debug", "trace", "raw"):
         assert forbidden not in impact_strings.casefold()
@@ -2031,7 +2034,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_result_layer_label": "Result from your last move"' in strings
     assert '"play.feedback_key_consequence_label": "Main result"' in strings
     assert '"play.feedback_next_choice_label": "Next moves this opens"' in strings
-    assert '"play.feedback_next_choice_changed_label": "Action menu changed"' in strings
+    assert '"play.feedback_next_choice_changed_label": "New choices opened"' in strings
+    assert '"play.feedback_next_choice_changed_label": "Action menu changed"' not in strings
     assert '"play.feedback_next_choice_changed_detail": "The people, clues, or pressure that changed now shape these choices."' in strings
     assert "Why these moves are here" not in strings
     assert "New moves opened" not in strings
@@ -2041,7 +2045,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.feedback_key_consequence_label": "主要结果"' in strings
     assert '"play.outcome_next_hint": "用它决定下一步"' in strings
     assert '"play.feedback_next_choice_label": "这次结果打开的下一步"' in strings
-    assert '"play.feedback_next_choice_changed_label": "行动菜单已变化"' in strings
+    assert '"play.feedback_next_choice_changed_label": "新选择已打开"' in strings
+    assert '"play.feedback_next_choice_changed_label": "行动菜单已变化"' not in strings
     assert '"play.feedback_next_choice_changed_detail": "刚变化的人物、线索或压力正在影响这些选择。"' in strings
     assert '"play.impact_wary": "starts watching you"' in strings
     assert '"play.impact_broken": "turns against you"' in strings
