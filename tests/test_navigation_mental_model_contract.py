@@ -754,6 +754,13 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
 def test_create_entry_guest_path_explains_temporary_pen_name() -> None:
     login = (ROOT / "frontend2/src/pages/auth/login-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    back_link_style = login[login.index("backLink: {") : login.index("brandLink:", login.index("backLink: {"))]
+    brand_link_style = login[login.index("brandLink: {") : login.index("main:", login.index("brandLink: {"))]
+    quick_start_style = login[
+        login.index("quickStartButton: {") : login.index("quickStartButtonCompact:", login.index("quickStartButton: {"))
+    ]
+    custom_name_style = login[login.index("customNameToggle: {") : login.index("orLine:", login.index("customNameToggle: {"))]
+    submit_style = login[login.index("submitAction: {") : login.index("note:", login.index("submitAction: {"))]
 
     assert "CREATE_GUEST_PLAN_KEYS" in login
     assert 'isCreateEntry ? t("login.tag_create") : t("login.tag")' in login
@@ -774,6 +781,13 @@ def test_create_entry_guest_path_explains_temporary_pen_name() -> None:
     assert '"login.note": "这是本地 Demo 笔名,没有密码、没有邮箱;用来保存你在这个设备上的故事和游玩记录."' in strings
     assert "Real auth coming next month" not in strings
     assert "下个月会改成正式登录" not in strings
+    for style in (back_link_style, brand_link_style, custom_name_style, submit_style):
+        assert "minHeight: 44" in style
+        assert 'display: "inline-flex"' in style
+        assert 'alignItems: "center"' in style
+    assert "minWidth: 44" in submit_style
+    assert "minHeight: 54" in quick_start_style
+    assert 'alignItems: "center"' in quick_start_style
 
 
 def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
