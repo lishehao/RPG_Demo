@@ -276,11 +276,12 @@
 
 旁白英文：
 
-`This project helped me think about LLM products as systems: structured generation, state transitions, user agency, and evaluation. My next step is to make the runtime more measurable: latency, failure recovery, and quality benchmarks across many seeds.`
+`This project helped me think about LLM products as systems: structured generation, state transitions, user agency, and evaluation. The next validation step is a small real-user playtest: can story-first players understand the scene, choose with confidence, read the consequence, and want to replay or share the result?`
 
 设计意图：
 
-招生评审喜欢看到成熟的反思。不要只说“我做完了”，要说“我知道下一层工程问题是什么”。
+招生评审喜欢看到成熟的反思。不要只说“我做完了”，也不要把本地 QA 当成用户验证；
+要说清楚下一层证据是目标用户是否真的理解剧情、愿意选择、能读懂反馈并产生复玩/分享意愿。
 
 ## 最终视频结构压缩版
 

@@ -866,6 +866,12 @@ def test_chinese_admissions_demo_script_matches_current_product_flow() -> None:
     assert "Advisor boundary + reviewer evidence" in script
     assert "不要把它伪装成普通玩家 UI" in script
     assert "reviewer evidence panel" in script
+    assert "The next validation step is a small real-user playtest" in script
+    assert "story-first players understand the scene" in script
+    assert "choose with confidence" in script
+    assert "read the consequence" in script
+    assert "want to replay or share the result" in script
+    assert "不要把本地 QA 当成用户验证" in script
 
     for stale in (
         "韩漫互动游戏宣传片",
@@ -886,6 +892,8 @@ def test_chinese_admissions_demo_script_matches_current_product_flow() -> None:
         "runtime inspector",
         "NPC mood / pulse",
         "busy generation",
+        "quality benchmarks across many seeds",
+        "make the runtime more measurable: latency",
     ):
         assert stale not in script
 
