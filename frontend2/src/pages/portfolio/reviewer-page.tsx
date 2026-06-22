@@ -198,20 +198,6 @@ export function ReviewerPage({
               Write your own story
             </button>
           </div>
-          <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
-            Local evidence note: inspect the current local build here. For
-            application links, cite this route only after Portfolio preflight
-            passes; otherwise use the reviewer cut.
-          </p>
-          {localQaAvailable ? (
-            <a
-              className="reviewer-local-evidence-link"
-              href="#/qa/play-reviewer-evidence"
-              data-reviewer-local-evidence-fixture-link="true"
-            >
-              Open local evidence fixture
-            </a>
-          ) : null}
           <section
             className="reviewer-evidence-preview"
             aria-label="Evidence to verify after launch"
@@ -230,6 +216,20 @@ export function ReviewerPage({
               ))}
             </ol>
           </section>
+          <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
+            Local evidence note: inspect the current local build here. For
+            application links, cite this route only after Portfolio preflight
+            passes; otherwise use the reviewer cut.
+          </p>
+          {localQaAvailable ? (
+            <a
+              className="reviewer-local-evidence-link"
+              href="#/qa/play-reviewer-evidence"
+              data-reviewer-local-evidence-fixture-link="true"
+            >
+              Open local evidence fixture
+            </a>
+          ) : null}
           <section
             className="reviewer-launch-plan"
             aria-label="Reviewer launch progress"

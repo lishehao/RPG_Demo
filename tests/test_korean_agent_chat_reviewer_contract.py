@@ -135,6 +135,12 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
+    actions_idx = source.index('className="reviewer-actions"')
+    evidence_idx = source.index('data-reviewer-evidence-preview="true"')
+    local_note_idx = source.index('data-reviewer-local-evidence-note="true"')
+    launch_idx = source.index('data-reviewer-launch-plan="true"')
+
+    assert actions_idx < evidence_idx < local_note_idx < launch_idx
     assert "keeps the player-facing story UI intact" in source
     assert "playable state and consequences" in source
     assert "Korean-webtoon visual language" not in source
