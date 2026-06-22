@@ -1370,6 +1370,11 @@ export function PlayPage({
     (event) => event.event_type === "step_judge" || event.event_type === "contract_judge",
   )
   const hasReviewerVisibleConsequence = reviewerHasLiveStateChange(lastNarrator, effectiveLastInventoryDelta)
+  const reviewerConsequenceState = turnsCompleted > 0
+    ? hasReviewerVisibleConsequence
+      ? "visible consequence"
+      : "consequence pending"
+    : "playable setup only"
   const scrollToReviewerEvidence = () => {
     if (typeof window === "undefined") return
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -1391,7 +1396,7 @@ export function PlayPage({
           Story UI stays playable; evidence stays separate.
         </strong>
         <span style={ppStyles.reviewerEvidenceJumpMeta}>
-          {lastNarrator?.options.length ?? 0} current moves / {hasReviewerVisibleConsequence ? "visible consequence" : "first consequence after a move"} / {hasArchivedReviewerChecks ? "archived checks attached" : "evidence limits shown"}
+          {lastNarrator?.options.length ?? 0} current moves / {reviewerConsequenceState} / {hasArchivedReviewerChecks ? "archived checks attached" : "evidence limits shown"}
         </span>
       </div>
       <button

@@ -131,7 +131,11 @@ def test_reviewer_launch_enters_reviewer_mode_play_evidence_path() -> None:
     assert 'data-reviewer-evidence-jump="true"' in play_page
     assert 'data-reviewer-evidence-jump-button="true"' in play_page
     assert "Story UI stays playable; evidence stays separate." in play_page
-    assert "first consequence after a move" in play_page
+    assert "const reviewerConsequenceState = turnsCompleted > 0" in play_page
+    assert "playable setup only" in play_page
+    assert "visible consequence" in play_page
+    assert "consequence pending" in play_page
+    assert "first consequence after a move" not in play_page
     assert "View evidence summary" in play_page
     assert "reviewerMode ? (" in play_page
     assert "<RuntimeInspector" in play_page

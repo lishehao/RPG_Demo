@@ -863,12 +863,18 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "Archived scoring stays collapsed under the evidence summary" in runtime_inspector
     assert "checks playability first" in runtime_inspector
     assert "const liveImpactSummary = reviewerLiveImpactSummary" in runtime_inspector
+    assert "const hasSubmittedMove = story.session.turn_count > 0" in runtime_inspector
     assert "const hasLiveStateChange = reviewerHasLiveStateChange" in runtime_inspector
+    assert "const hasLiveConsequence = hasSubmittedMove && hasLiveStateChange" in runtime_inspector
     assert "function reviewerLiveImpactSummary" in runtime_inspector
     assert "function reviewerHasLiveStateChange" in runtime_inspector
+    assert "Setup visible" in runtime_inspector
+    assert "first move not submitted yet" in runtime_inspector
     assert "Change to verify" in runtime_inspector
-    assert "waiting for first move" in runtime_inspector
+    assert "waiting for consequence" in runtime_inspector
     assert "play one move to verify consequences" in runtime_inspector
+    assert "Opening setup is visible; consequence evidence starts after the first submitted move." in runtime_inspector
+    assert "hasSubmittedMove = true" in runtime_inspector
     assert "character reaction" in runtime_inspector
     assert "story item gained" in runtime_inspector
     assert 'const reviewerEvidenceLimitLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Evidence limits"' in runtime_inspector
@@ -955,7 +961,12 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "const hasArchivedReviewerChecks = latestAgentEvents.some" in play_page
     assert 'event.event_type === "step_judge" || event.event_type === "contract_judge"' in play_page
     assert "const hasReviewerVisibleConsequence = reviewerHasLiveStateChange(lastNarrator, effectiveLastInventoryDelta)" in play_page
-    assert '{hasReviewerVisibleConsequence ? "visible consequence" : "first consequence after a move"}' in play_page
+    assert "const reviewerConsequenceState = turnsCompleted > 0" in play_page
+    assert ': "playable setup only"' in play_page
+    assert '? "visible consequence"' in play_page
+    assert ': "consequence pending"' in play_page
+    assert "{reviewerConsequenceState}" in play_page
+    assert "first consequence after a move" not in play_page
     assert '{hasArchivedReviewerChecks ? "archived checks attached" : "evidence limits shown"}' in play_page
     assert "runtime state / contract checks" not in play_page
     assert "Story UI stays playable; evidence stays separate." in play_page

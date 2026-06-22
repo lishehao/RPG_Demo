@@ -84,9 +84,17 @@ export function RuntimeInspector({
   const reasonCategory = hasArchivedJudgeEvidence
     ? evaluationReasonCategory(latestStepJudge, latestContractJudge, llmEvents)
     : "not archived yet"
-  const latestEvidence = evaluationObservedEvidence(latestStepJudge, latestContractJudge, lastNarrator, effectiveLastInventoryDelta)
   const playableMoveCount = lastNarrator?.options.length ?? 0
+  const hasSubmittedMove = story.session.turn_count > 0
+  const latestEvidence = evaluationObservedEvidence(
+    latestStepJudge,
+    latestContractJudge,
+    lastNarrator,
+    effectiveLastInventoryDelta,
+    hasSubmittedMove,
+  )
   const hasLiveStateChange = reviewerHasLiveStateChange(lastNarrator, effectiveLastInventoryDelta)
+  const hasLiveConsequence = hasSubmittedMove && hasLiveStateChange
   const liveImpactSummary = reviewerLiveImpactSummary(
     lastNarrator,
     "awaiting next story beat",
@@ -138,12 +146,22 @@ export function RuntimeInspector({
             <span style={ppStyles.reviewerProofDetail}>{turnsRemaining} turns left</span>
           </div>
           <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="state">
-            <span style={ppStyles.reviewerProofLabel}>{hasLiveStateChange ? "State changed" : "Change to verify"}</span>
+            <span style={ppStyles.reviewerProofLabel}>
+              {hasSubmittedMove ? (hasLiveConsequence ? "State changed" : "Change to verify") : "Setup visible"}
+            </span>
             <strong style={ppStyles.reviewerProofValue}>
-              {hasLiveStateChange ? liveImpactSummary : "waiting for first move"}
+              {hasSubmittedMove
+                ? hasLiveConsequence
+                  ? liveImpactSummary
+                  : "waiting for consequence"
+                : "first move not submitted yet"}
             </strong>
             <span style={ppStyles.reviewerProofDetail}>
-              {hasLiveStateChange ? "visible consequence on the latest beat" : "play one move to verify consequences"}
+              {hasSubmittedMove
+                ? hasLiveConsequence
+                  ? "visible consequence on the latest beat"
+                  : "latest beat keeps state stable"
+                : "play one move to verify consequences"}
             </span>
           </div>
           <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="checks">
@@ -525,9 +543,11 @@ function evaluationObservedEvidence(
   contract: NarrativeContractJudgeResult | null,
   lastNarrator: NarrativeStoryMessage | null,
   effectiveInventoryDelta?: NarrativeStoryMessage["inventory_delta"],
+  hasSubmittedMove = true,
 ): string {
   const violationEvidence = firstViolationEvidence(step) || firstViolationEvidence(contract)
   if (violationEvidence) return violationEvidence
+  if (!hasSubmittedMove) return "Opening setup is visible; consequence evidence starts after the first submitted move."
   const impact = agentImpactSummary(lastNarrator, "", effectiveInventoryDelta)
   if (impact) return impact
   return "Awaiting the next judged narrator turn."
