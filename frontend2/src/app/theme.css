@@ -1900,7 +1900,7 @@ kbd {
   .portfolio-hero {
     min-height: auto;
     grid-template-columns: 1fr;
-    gap: 26px;
+    gap: 18px;
     padding: 30px 0 34px;
   }
   .portfolio-hero__review {
@@ -1912,11 +1912,42 @@ kbd {
     padding: 48px 24px;
   }
   .portfolio-hero__content {
+    display: contents;
     padding: 0;
+  }
+  .portfolio-hero .ts-tag {
+    order: 1;
+  }
+  .portfolio-hero h1 {
+    order: 2;
+  }
+  .portfolio-hero__content > p:not(.portfolio-hero__evidence-note) {
+    order: 3;
+    margin: 0;
+  }
+  .portfolio-hero__actions {
+    order: 4;
+  }
+  .portfolio-hero__video {
+    order: 5;
+  }
+  .portfolio-hero__lens {
+    order: 6;
+    margin: 0;
+  }
+  .portfolio-hero__evidence-note {
+    order: 7;
+    margin-top: 0;
+  }
+  .portfolio-hero__review {
+    order: 8;
   }
   .portfolio-hero h1,
   .reviewer-hero h1 {
     font-size: 38px;
+  }
+  .portfolio-hero h1 {
+    margin: 10px 0 0;
   }
   .portfolio-hero p,
   .reviewer-hero p {
