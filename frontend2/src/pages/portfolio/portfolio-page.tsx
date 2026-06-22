@@ -35,21 +35,21 @@ const PORTFOLIO_REVIEW_ORDER = [
     title: "Verify Story Desk start",
     detail: "Local build only: open a populated Story Desk card and confirm it lands in a readable first turn.",
     localHref: "#/qa/home-start",
-    localLabel: "Open local Story Desk start fixture",
+    localLabel: "Open local Story Desk start check",
   },
   {
     step: "inspect",
     title: "Inspect evidence",
     detail: "Use reviewer mode to check state, advisor boundary, and ending logic.",
     localHref: "#/qa/play-reviewer-evidence",
-    localLabel: "Open local evidence fixture",
+    localLabel: "Open local evidence check",
   },
   {
     step: "replay",
     title: "Verify replay artifact",
     detail: "Local build only: inspect a completed memory with highlights, Full read, advisor side-chat, and same-opening fork framing.",
     localHref: "#/qa/replay",
-    localLabel: "Open local replay fixture",
+    localLabel: "Open local replay check",
   },
 ] as const
 

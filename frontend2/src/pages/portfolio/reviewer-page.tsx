@@ -255,7 +255,7 @@ export function ReviewerPage({
               href="#/qa/play-reviewer-evidence"
               data-reviewer-local-evidence-fixture-link="true"
             >
-              Open local evidence fixture
+              Open local evidence check
             </a>
           ) : null}
           <section
@@ -333,7 +333,7 @@ export function ReviewerPage({
                     href="#/qa/play-reviewer-evidence"
                     data-reviewer-launch-error-local-proof="true"
                   >
-                    Open local evidence fixture
+                    Open local evidence check
                   </a>
                 ) : null}
                 <button

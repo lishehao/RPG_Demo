@@ -843,6 +843,10 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert 'data-reviewer-proof-chip="playable"' in runtime_inspector
     assert 'data-reviewer-proof-chip="state"' in runtime_inspector
     assert 'data-reviewer-proof-chip="checks"' in runtime_inspector
+    assert 'aria-label="Reviewer evidence check"' in reviewer_fixture
+    assert "Local reviewer evidence check" in reviewer_fixture
+    assert "Reviewer evidence fixture" not in reviewer_fixture
+    assert "Local reviewer evidence fixture" not in reviewer_fixture
     assert "What this checks" in runtime_inspector
     assert 'data-reviewer-evidence-primer="true"' in runtime_inspector
     assert "Start with the live evidence checks." in runtime_inspector
@@ -913,7 +917,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "data-play-reviewer-evidence-fixture=\"true\"" in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-intro="true"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case-map="true"' in reviewer_fixture
-    assert "Local reviewer evidence fixture" in reviewer_fixture
+    assert "Local reviewer evidence check" in reviewer_fixture
     assert "Evidence drawer for application review." in reviewer_fixture
     assert "Fresh live evidence appears first; archived checks appear second." in reviewer_fixture
     assert "application review evidence" in reviewer_fixture

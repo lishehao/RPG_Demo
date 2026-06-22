@@ -148,14 +148,17 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Verify Story Desk start" in portfolio
     assert "Local build only: open a populated Story Desk card" in portfolio
     assert 'localHref: "#/qa/home-start"' in portfolio
-    assert "Open local Story Desk start fixture" in portfolio
+    assert "Open local Story Desk start check" in portfolio
+    assert "Open local Story Desk start fixture" not in portfolio
     assert "Inspect evidence" in portfolio
     assert 'localHref: "#/qa/play-reviewer-evidence"' in portfolio
-    assert "Open local evidence fixture" in portfolio
+    assert "Open local evidence check" in portfolio
+    assert "Open local evidence fixture" not in portfolio
     assert "Verify replay artifact" in portfolio
     assert "Local build only: inspect a completed memory" in portfolio
     assert 'localHref: "#/qa/replay"' in portfolio
-    assert "Open local replay fixture" in portfolio
+    assert "Open local replay check" in portfolio
+    assert "Open local replay fixture" not in portfolio
     assert "canOpenLocalQaRoute" in portfolio
     assert 'data-portfolio-review-local-evidence={item.step}' in portfolio
     assert ".portfolio-review-order a" in theme
@@ -611,7 +614,8 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "canOpenLocalQaRoute" in reviewer
     assert 'data-reviewer-local-evidence-fixture-link="true"' in reviewer
     assert 'data-reviewer-launch-error-local-proof="true"' in reviewer
-    assert "Open local evidence fixture" in reviewer
+    assert "Open local evidence check" in reviewer
+    assert "Open local evidence fixture" not in reviewer
     assert "evidence-enabled reviewer account" not in reviewer
     assert "inspector data" not in reviewer
     assert "Evidence limits" in reviewer

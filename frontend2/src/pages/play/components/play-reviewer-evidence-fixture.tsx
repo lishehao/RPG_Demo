@@ -246,10 +246,10 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
           display: "grid",
           gap: 16,
         }}
-        aria-label="Reviewer evidence fixture"
+        aria-label="Reviewer evidence check"
       >
         <div style={INTRO_STYLE} data-play-reviewer-evidence-fixture-intro="true">
-          <span style={INTRO_KICKER_STYLE}>Local reviewer evidence fixture</span>
+          <span style={INTRO_KICKER_STYLE}>Local reviewer evidence check</span>
           <strong style={INTRO_TITLE_STYLE}>Evidence drawer for application review.</strong>
           <p style={INTRO_COPY_STYLE}>
             Fresh live evidence appears first; archived checks appear second. Use this for application review evidence;
