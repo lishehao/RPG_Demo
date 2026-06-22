@@ -864,6 +864,14 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     assert 'display: "inline-flex"' in replay_primary_action
     assert 'alignItems: "center"' in replay_primary_action
     assert "minHeight: 44" in replay_primary_action
+    for style_name in ("crumb", "viewModeAction", "readModeAction", "ctaTextButton", "ctaTextButtonMuted"):
+        style_start = replay.index(f"{style_name}: {{")
+        style_end = replay.index("},", style_start)
+        style_block = replay[style_start:style_end]
+        assert 'display: "inline-flex"' in style_block
+        assert 'alignItems: "center"' in style_block
+        assert "minHeight: 44" in style_block
+        assert "minWidth: 44" in style_block
     assert '"replay.error_detail": "This shared memory may be private, deleted, or temporarily unavailable. Return to Story Desk to find saved runs, choose another story, or write a new opening."' in strings
     assert '"replay.error_back_plaza": "Story Desk"' in strings
     assert '"replay.error_back_plaza": "Back to plaza"' not in strings
