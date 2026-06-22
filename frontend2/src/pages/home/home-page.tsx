@@ -509,12 +509,13 @@ export function HomePage({
           </AnimatePresence>
         </section>
 
-        <footer style={hpStyles.footer}>
+        <footer style={hpStyles.footer} data-home-footer="true">
           <span style={hpStyles.footerBrand}>Tiny Stories</span>
           <span style={hpStyles.footerSep}>·</span>
           <a
             href="#/about"
             style={hpStyles.footerLink}
+            data-home-footer-link="about"
             onClick={(e) => {
               e.preventDefault()
               window.location.hash = "#/about"
@@ -526,6 +527,7 @@ export function HomePage({
           <a
             href="#/portfolio"
             style={hpStyles.footerLink}
+            data-home-footer-link="portfolio"
             onClick={(e) => {
               e.preventDefault()
               window.location.hash = "#/portfolio"
@@ -537,6 +539,7 @@ export function HomePage({
           <a
             href={SOURCE_REPO_URL}
             style={hpStyles.footerLink}
+            data-home-footer-link="source"
             target="_blank"
             rel="noreferrer"
           >
@@ -2169,10 +2172,16 @@ const hpStyles: Record<string, CSSProperties> = {
     justifyContent: "center",
     gap: 8,
     alignItems: "center",
+    flexWrap: "wrap",
   },
   footerBrand: { fontFamily: "var(--font-narrative)", color: "var(--text-muted)" },
   footerSep: { color: "var(--line-strong)" },
   footerLink: {
+    minWidth: 44,
+    minHeight: 44,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     color: "var(--text-muted)",
     textDecoration: "none",
     cursor: "pointer",

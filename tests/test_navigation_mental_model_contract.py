@@ -702,6 +702,16 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert "home.hero_bullet_" not in strings
     assert "home.cta_portfolio" not in home
     assert "home.cta_portfolio" not in strings
+    assert 'data-home-footer="true"' in home
+    assert 'data-home-footer-link="portfolio"' in home
+    assert 'data-home-footer-link="source"' in home
+    footer_style = home[home.index("footer: {") : home.index("footerBrand:", home.index("footer: {"))]
+    footer_link_style = home[home.index("footerLink: {") : home.index("},", home.index("footerLink: {"))]
+    assert 'flexWrap: "wrap"' in footer_style
+    assert "minHeight: 44" in footer_link_style
+    assert "minWidth: 44" in footer_link_style
+    assert 'display: "inline-flex"' in footer_link_style
+    assert 'alignItems: "center"' in footer_link_style
     assert "onOpenCreate={onOpenCreate}" in home
     assert 'data-home-empty-create="true"' in home
     assert "SOURCE_REPO_URL" in home
