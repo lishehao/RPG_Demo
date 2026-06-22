@@ -192,6 +192,11 @@ export function ReviewerPage({
               Write your own story
             </button>
           </div>
+          <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
+            Local evidence note: inspect the current local build here. For
+            application links, cite this route only after Portfolio preflight
+            passes; otherwise use the reviewer cut.
+          </p>
           <section
             className="reviewer-evidence-preview"
             aria-label="Evidence to verify after launch"

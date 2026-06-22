@@ -487,6 +487,10 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "Prepares a temporary reviewer session when the demo needs one" in reviewer
     assert "proof summary reviewers inspect beside play" in reviewer
     assert "reviewer-only proof summary beside the normal story UI" in reviewer
+    assert 'data-reviewer-local-evidence-note="true"' in reviewer
+    assert "Local evidence note: inspect the current local build here" in reviewer
+    assert "application links, cite this route only after Portfolio preflight" in reviewer
+    assert "passes; otherwise use the reviewer cut" in reviewer
     assert "evidence-enabled reviewer account" not in reviewer
     assert "inspector data" not in reviewer
     assert "Proof limits" in reviewer

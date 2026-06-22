@@ -1196,6 +1196,13 @@ kbd {
   background: rgba(245, 200, 120, 0.16);
   color: var(--accent);
 }
+.reviewer-local-evidence-note {
+  margin: 12px 0 0;
+  max-width: 620px;
+  color: rgba(244,239,230,0.62);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
 .reviewer-launch-plan {
   margin-top: 20px;
   width: min(100%, 760px);
