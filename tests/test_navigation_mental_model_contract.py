@@ -553,6 +553,15 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     assert '"play.back_home_short": "← Home"' not in strings
     assert '"world.crumb_back_home": "← Story Desk"' in strings
     assert '"world.crumb_back_home": "← 故事入口"' in strings
+    assert 'data-world-template-error="true"' in world
+    assert 'data-world-template-error-back="true"' in world
+    assert 'hint={t("world.empty_detail")}' in world
+    assert "hint={error}" not in world
+    assert '"world.empty_detail": "This story may be private, deleted, or temporarily unavailable. Return to Story Desk to find saved runs, choose another story, or write a new opening."' in strings
+    assert '"world.empty_back": "Story Desk"' in strings
+    assert '"world.empty_back": "Back to plaza"' not in strings
+    assert '"world.empty_detail": "这个故事可能已变为私有、被删除，或暂时没有打开。回到故事入口后，可以找已保存的局、选别的故事，或写一个新开场。"' in strings
+    assert '"world.empty_back": "故事入口"' in strings
     assert 'createVariant="link" showBackButton' in world
     hero_start = world.index("{/* Hero:")
     main_start = world.index("<main", hero_start)

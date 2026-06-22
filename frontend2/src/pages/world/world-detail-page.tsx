@@ -115,19 +115,22 @@ export function TemplateDetailPage({
       <div style={tdStyles.page}>
         <Header onHome={onBackHome} onCreate={onOpenCreate} createVariant="link" showBackButton />
         {error ? (
-          <EmptyState
-            title={t("world.empty_title")}
-            hint={error}
-            action={
-              <button
-                style={tdStyles.emptyAction}
-                type="button"
-                onClick={onBackHome}
-              >
-                {t("world.empty_back")}
-              </button>
-            }
-          />
+          <div data-world-template-error="true">
+            <EmptyState
+              title={t("world.empty_title")}
+              hint={t("world.empty_detail")}
+              action={
+                <button
+                  style={tdStyles.emptyAction}
+                  type="button"
+                  onClick={onBackHome}
+                  data-world-template-error-back="true"
+                >
+                  {t("world.empty_back")}
+                </button>
+              }
+            />
+          </div>
         ) : (
           <LoadingShim label={t("world.loading")} />
         )}
