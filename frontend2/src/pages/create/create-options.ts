@@ -112,19 +112,19 @@ export const DIFFICULTY_OPTIONS: DifficultyOptionMeta[] = [
 ]
 
 // Story-language options — controls the locale of generated narration
-// and NPC dialogue. Immutable per template once created.
+// and character dialogue. Immutable per template once created.
 export const STORY_LANGUAGE_OPTIONS: Record<Lang, Array<{
   id: NarrativeTemplateLanguage
   label: string
   desc: string
 }>> = {
   zh: [
-    { id: "zh", label: "中文", desc: "NPC 对白和叙述都用简体中文" },
-    { id: "en", label: "英文", desc: "Narration and NPC dialogue in English" },
+    { id: "zh", label: "中文", desc: "人物对白和叙述都用简体中文" },
+    { id: "en", label: "英文", desc: "Narration and character dialogue in English" },
   ],
   en: [
-    { id: "zh", label: "Chinese", desc: "Narration and NPC dialogue in Simplified Chinese" },
-    { id: "en", label: "English", desc: "Narration and NPC dialogue in English" },
+    { id: "zh", label: "Chinese", desc: "Narration and character dialogue in Simplified Chinese" },
+    { id: "en", label: "English", desc: "Narration and character dialogue in English" },
   ],
 }
 

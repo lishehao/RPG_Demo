@@ -180,8 +180,8 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"create.mode_gauntlet": "High stakes (can end early)"',
         '"create.difficulty_story_desc": "Plays to a complete ending; red lines will not cut the run short."',
         '"create.difficulty_gauntlet_label": "High-stakes mode"',
-        '"create.difficulty_gauntlet_tagline": "NPCs push back"',
-        '"create.difficulty_gauntlet_desc": "NPCs have agendas and leverage. Cross red lines and the run can end early; stabilize the room to reach a win or compromise."',
+        '"create.difficulty_gauntlet_tagline": "Characters push back"',
+        '"create.difficulty_gauntlet_desc": "Characters have agendas and leverage. Cross red lines and the run can end early; stabilize the room to reach a win or compromise."',
         '"world.section_failure": "Red lines · can end this run early"',
         '"world.failure_hint": "Crossing one can push the run into a collapse ending. Skim these before you start so you know which moves carry real risk."',
         '"create.tension_auto_desc": "Infer the profile from the seed."',
@@ -194,8 +194,8 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"create.mode_gauntlet": "高压(可能提前结束)"',
         '"create.difficulty_story_desc": "会走到完整结局；红线不会让这一局提前结束。"',
         '"create.difficulty_gauntlet_label": "高压模式"',
-        '"create.difficulty_gauntlet_tagline": "NPC 会主动施压"',
-        '"create.difficulty_gauntlet_desc": "NPC 各有目标和把柄。越过红线会提前收束成崩盘结局；稳住局面则可能走向胜利或妥协。"',
+        '"create.difficulty_gauntlet_tagline": "人物会主动施压"',
+        '"create.difficulty_gauntlet_desc": "人物各有目标和把柄。越过红线会提前收束成崩盘结局；稳住局面则可能走向胜利或妥协。"',
         '"world.section_failure": "红线 · 可能让这一局提前结束"',
         '"world.failure_hint": "越过任意一条都可能把这一局推向崩盘结局。开始前先看一眼，玩的时候才知道哪些动作风险最高。"',
         '"create.tension_auto_desc": "根据种子自动判断张力类型"',
@@ -226,6 +226,8 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         "Ready for Play",
         "进入 Play",
         "可进入 Play",
+        "NPCs push back",
+        "NPC 会主动施压",
     ):
         assert stale not in strings
 
