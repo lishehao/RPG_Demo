@@ -11,8 +11,9 @@
 </p>
 
 <p align="center">
-  Type one premise. Tiny Stories compiles roles, hidden objectives, leverage,
-  state, advisor context, and a playable 12-turn ending path.
+  Type one premise. Tiny Stories compiles a short, story-first mobile episode:
+  read a scene, compare a few meaningful moves, act once, then follow visible
+  consequences through a playable 12-turn ending path.
 </p>
 
 <p align="center">

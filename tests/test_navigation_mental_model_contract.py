@@ -92,6 +92,13 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "./docs/demo-video/admissions-trailer-contact.jpg" in hero_block
     assert "product UI and reviewer evidence" in hero_block
     assert "./docs/images/social-preview.jpg" not in hero_block
+    readme_top = readme[:readme.index("<table>")]
+    assert "short, story-first mobile episode" in readme_top
+    assert "read a scene" in readme_top
+    assert "compare a few meaningful moves" in readme_top
+    assert "act once" in readme_top
+    assert "follow visible" in readme_top
+    assert "playable 12-turn ending path" in readme_top
     assert "Watch 75s demo" in readme
     assert "Open MP4 demo" in readme
     assert "Inspect source evidence" in readme
