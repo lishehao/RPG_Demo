@@ -787,6 +787,12 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     assert 'data-world-template-error-back="true"' in world
     assert 'hint={t("world.empty_detail")}' in world
     assert "hint={error}" not in world
+    world_empty_action_start = world.index("emptyAction: {")
+    world_empty_action_end = world.index("startAction:", world_empty_action_start)
+    world_empty_action = world[world_empty_action_start:world_empty_action_end]
+    assert 'display: "inline-flex"' in world_empty_action
+    assert 'alignItems: "center"' in world_empty_action
+    assert "minHeight: 44" in world_empty_action
     assert '"world.empty_detail": "This story may be private, deleted, or temporarily unavailable. Return to Story Desk to find saved runs, choose another story, or write a new opening."' in strings
     assert '"world.empty_back": "Story Desk"' in strings
     assert '"world.empty_back": "Back to plaza"' not in strings
@@ -806,6 +812,12 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
     assert 't("replay.error_detail")' in replay
     assert "hint={error}" not in replay
     assert "friendlyError" not in replay
+    replay_primary_action_start = replay.index("primaryAction: {")
+    replay_primary_action_end = replay.index("main:", replay_primary_action_start)
+    replay_primary_action = replay[replay_primary_action_start:replay_primary_action_end]
+    assert 'display: "inline-flex"' in replay_primary_action
+    assert 'alignItems: "center"' in replay_primary_action
+    assert "minHeight: 44" in replay_primary_action
     assert '"replay.error_detail": "This shared memory may be private, deleted, or temporarily unavailable. Return to Story Desk to find saved runs, choose another story, or write a new opening."' in strings
     assert '"replay.error_back_plaza": "Story Desk"' in strings
     assert '"replay.error_back_plaza": "Back to plaza"' not in strings

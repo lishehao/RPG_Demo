@@ -597,7 +597,10 @@ const rpStyles: Record<string, CSSProperties> = {
     lineHeight: 1.4,
   },
   primaryAction: {
+    display: "inline-flex",
+    alignItems: "center",
     width: "fit-content",
+    minHeight: 44,
     padding: "5px 0 6px",
     background: "transparent",
     border: "none",

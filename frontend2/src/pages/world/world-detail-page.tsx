@@ -1056,8 +1056,10 @@ const tdStyles: Record<string, CSSProperties> = {
 
   actions: { marginTop: 40, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 },
   emptyAction: {
+    display: "inline-flex",
+    alignItems: "center",
     width: "fit-content",
-    minHeight: 32,
+    minHeight: 44,
     padding: "4px 0",
     border: "none",
     borderBottom: "1px solid rgba(245,200,120,0.34)",
