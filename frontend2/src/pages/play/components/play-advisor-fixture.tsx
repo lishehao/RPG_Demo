@@ -130,7 +130,7 @@ export function PlayAdvisorFixture({ onBackHome }: { onBackHome: () => void }) {
           gap: 14,
           color: "rgba(255,248,232,0.92)",
         }}
-        aria-label="Advisor rehearsal"
+        aria-label="Advisor help panel"
       >
         <span style={ppStyles.runKicker}>Second read available</span>
         <h1

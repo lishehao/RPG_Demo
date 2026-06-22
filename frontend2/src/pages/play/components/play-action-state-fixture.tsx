@@ -124,7 +124,7 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
   const [freeInput, setFreeInput] = useState("")
   const [diary, setDiary] = useState("")
   const [showDiary, setShowDiary] = useState(false)
-  const [status, setStatus] = useState("Action surface rehearsal.")
+  const [status, setStatus] = useState("Choose a move, then watch the room respond.")
   const [commitmentSummary, setCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [submittedMove, setSubmittedMove] = useState("")
   const [outcome, setOutcome] = useState<RehearsalOutcome | null>(null)
@@ -151,7 +151,7 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
     if (busy) return
     setSubmittedMove(label)
     setOutcome(null)
-    setStatus(`Move held: ${shortActionLabel(label)}`)
+    setStatus(`Move sent: ${shortActionLabel(label)}`)
     setBusy(true)
   }
 
@@ -178,7 +178,7 @@ function PlayActionStateFixtureBase({ onBackHome }: { onBackHome: () => void }) 
           display: "grid",
           gap: 12,
         }}
-        aria-label="Play action rehearsal"
+        aria-label="Play action choices"
       >
         {!outcome ? (
           <p

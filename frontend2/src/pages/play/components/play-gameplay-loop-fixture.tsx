@@ -655,7 +655,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
 
       <section
         style={styles.shell}
-        aria-label="Gameplay loop rehearsal"
+        aria-label="Gameplay choices"
         data-gameplay-layout-priority="action-first"
       >
         <div style={styles.mainColumn}>

@@ -59,7 +59,7 @@ export function PlayLeverageFixture({ onBackHome }: { onBackHome: () => void }) 
   const [freeInput, setFreeInput] = useState("")
   const [diary, setDiary] = useState("")
   const [showDiary, setShowDiary] = useState(false)
-  const [status, setStatus] = useState("Leverage surface rehearsal.")
+  const [status, setStatus] = useState("Prepare a card, then reveal it when the room is ready.")
   const [commitmentSummary, setCommitmentSummary] = useState<ActionCommitmentSummary | null>(null)
   const [leverageCards, setLeverageCards] = useState<LeverageCardView[]>(cloneLeverageCards)
   const [playedCard, setPlayedCard] = useState<LeverageCardView | null>(null)
@@ -97,7 +97,7 @@ export function PlayLeverageFixture({ onBackHome }: { onBackHome: () => void }) 
     if (busy) return
     setPlayedCard(card)
     setOutcome(null)
-    setStatus(`Revealing leverage against ${card.target_name}.`)
+    setStatus(`Revealing the card against ${card.target_name}.`)
     setBusy(true)
   }
 
@@ -106,7 +106,7 @@ export function PlayLeverageFixture({ onBackHome }: { onBackHome: () => void }) 
     setLeverageCards(cloneLeverageCards())
     setPlayedCard(null)
     setOutcome(null)
-    setStatus("Leverage surface rehearsal.")
+    setStatus("Prepare a card, then reveal it when the room is ready.")
     setTurn((value) => value + 1)
   }
 
@@ -135,7 +135,7 @@ export function PlayLeverageFixture({ onBackHome }: { onBackHome: () => void }) 
           display: "grid",
           gap: 12,
         }}
-        aria-label="Leverage rehearsal"
+        aria-label="Leverage card choices"
       >
         <p
           style={{ margin: 0, color: "rgba(255,245,230,0.76)", lineHeight: 1.5 }}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import type { NarrativeStoryOption } from "../../../api/contracts"
 import { useT } from "../../../shared/lib/i18n"
+import { parseOptionLabel } from "../play-option-label"
 import { ppStyles } from "../play-styles"
 import { ActionArea } from "./play-flow-panels"
 import { PlayActionJumpButton } from "./play-action-jump"
@@ -112,6 +113,10 @@ function updateLongHistoryJump(setShowActionJump: (show: boolean) => void) {
   setShowActionJump(actionArea ? isPlayActionAreaAwayFromViewport(actionArea) : false)
 }
 
+function longHistoryActionBody(label: string): string {
+  return parseOptionLabel(label).body || label
+}
+
 export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void }) {
   const t = useT()
   const [turn, setTurn] = useState(0)
@@ -121,7 +126,7 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
   const [freeInput, setFreeInput] = useState("")
   const [diary, setDiary] = useState("")
   const [showDiary, setShowDiary] = useState(false)
-  const [status, setStatus] = useState("The current move is below a long transcript.")
+  const [status, setStatus] = useState("Read the story thread, then choose the next move below.")
   const [submittedMove, setSubmittedMove] = useState("")
   const [outcome, setOutcome] = useState<LongHistoryOutcome | null>(null)
   const options = useMemo(() => LONG_HISTORY_OPTIONS, [])
@@ -150,7 +155,7 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
     if (busy) return
     setSubmittedMove(label)
     setOutcome(null)
-    setStatus(`Move held: ${label}`)
+    setStatus(`Move sent: ${longHistoryActionBody(label)}`)
     setBusy(true)
   }
 
@@ -191,10 +196,10 @@ export function PlayLongHistoryFixture({ onBackHome }: { onBackHome: () => void 
           display: "grid",
           gap: 14,
         }}
-        aria-label="Long-history action rehearsal"
+        aria-label="Long story move choices"
       >
         <p style={{ margin: 0, color: "rgba(255,245,230,0.74)", lineHeight: 1.5 }}>
-          {outcome ? "Result ready below." : status}
+          {outcome ? "Result ready. Use it to choose the next move." : status}
         </p>
         <div style={{ display: "grid", gap: 12 }}>
           {HISTORY_BEATS.map((beat, index) => {

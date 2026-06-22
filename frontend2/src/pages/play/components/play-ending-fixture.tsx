@@ -143,7 +143,7 @@ export function PlayEndingFixture({ onBackHome }: { onBackHome: () => void }) {
           display: "grid",
           gap: 28,
         }}
-        aria-label="Ending rehearsal"
+        aria-label="Ending recap"
       >
         <div data-play-ending-fixture-case="highlight">
           <EndingScreen

@@ -686,6 +686,10 @@ def test_play_leverage_fixture_mounts_real_action_area_without_backend() -> None
     assert 'case "playLeverageFixture"' in app
     assert "<PlayLeverageFixture" in app
     assert 'data-play-leverage-fixture="true"' in fixture
+    assert "Prepare a card, then reveal it when the room is ready." in fixture
+    assert 'aria-label="Leverage card choices"' in fixture
+    assert "Leverage surface rehearsal." not in fixture
+    assert "Leverage rehearsal" not in fixture
     assert "INITIAL_LEVERAGE_CARDS" in fixture
     assert "<ActionArea" in fixture
     assert "leverageCards={leverageCards}" in fixture
@@ -718,6 +722,8 @@ def test_play_advisor_fixture_mounts_real_advisor_surface_without_backend() -> N
     assert "<PlayAdvisorFixture" in app
     assert 'data-play-advisor-fixture="true"' in fixture
     assert 'data-play-advisor-fixture-state={advisorOpen ? "open" : "closed"}' in fixture
+    assert 'aria-label="Advisor help panel"' in fixture
+    assert "Advisor rehearsal" not in fixture
     assert "AdvisorFab" in fixture
     assert "AdvisorSidechat" in fixture
     assert "type AdvisorSidechatApiClient" in fixture
@@ -1087,7 +1093,10 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
     assert 'case "playActionFixture"' in app
     assert "PlayActionStateFixture" in app
     assert 'data-play-action-fixture="true"' in fixture
-    assert "Action surface rehearsal." in fixture
+    assert "Choose a move, then watch the room respond." in fixture
+    assert 'aria-label="Play action choices"' in fixture
+    assert "Action surface rehearsal." not in fixture
+    assert "Play action rehearsal" not in fixture
     assert "Choose a move, confirm it" not in fixture
     assert "<ActionArea" in fixture
     assert "setBusy(true)" in fixture
@@ -1182,6 +1191,8 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'case "playGameplayLoopFixture"' in app
     assert "PlayGameplayLoopFixture" in app
     assert 'data-gameplay-loop-fixture="true"' in fixture
+    assert 'aria-label="Gameplay choices"' in fixture
+    assert "Gameplay loop rehearsal" not in fixture
     assert 'data-gameplay-layout-priority="action-first"' in fixture
     assert 'data-gameplay-objective="true"' in fixture
     assert "Your goal" in fixture
@@ -2620,6 +2631,8 @@ def test_play_ending_fixture_mounts_real_ending_screen() -> None:
     assert 'case "playEndingFixture"' in app
     assert "<PlayEndingFixture" in app
     assert 'data-play-ending-fixture="true"' in fixture
+    assert 'aria-label="Ending recap"' in fixture
+    assert "Ending rehearsal" not in fixture
     assert 'data-play-ending-fixture-case="highlight"' in fixture
     assert 'data-play-ending-fixture-case="recap"' in fixture
     assert 'import { EndingScreen } from "./ending-screen"' in fixture
@@ -2704,6 +2717,12 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert 'scenario === "long-history"' in action_state
     assert "PlayLongHistoryFixture" in action_state
     assert 'data-play-long-history-fixture="true"' in fixture
+    assert "Read the story thread, then choose the next move below." in fixture
+    assert "Result ready. Use it to choose the next move." in fixture
+    assert 'aria-label="Long story move choices"' in fixture
+    assert "The current move is below a long transcript." not in fixture
+    assert "Long-history action rehearsal" not in fixture
+    assert "parseOptionLabel(label).body || label" in fixture
     assert "type LongHistoryOutcome" in fixture
     assert "function splitHistoryBeat(beat: string): { label: string; body: string }" in fixture
     assert 'return { label: "You chose", body: beat.replace(/^You chose\\s+/, "") }' in fixture
