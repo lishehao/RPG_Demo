@@ -4,6 +4,7 @@ import type {
   NarrativeSessionSummary,
   NarrativeTemplateSummary,
 } from "../../api/contracts"
+import type { FrontendApiClient } from "../../api/client"
 import { useApi } from "../../app/api-context"
 import { useAuth } from "../../app/auth-context"
 import { Header } from "../../shared/ui/header"
@@ -26,6 +27,14 @@ import { itemTransition, itemVariants, tapPress, transitions } from "../../share
 const SOURCE_REPO_URL = "https://github.com/lishehao/RPG_Demo"
 
 type Tab = "plaza" | "my-templates"
+
+type HomePageApiClient = Pick<
+  FrontendApiClient,
+  | "listPublicNarrativeTemplates"
+  | "startNarrativeSession"
+  | "listMyNarrativeTemplates"
+  | "listMyNarrativeSessions"
+>
 
 type HomeStoryObjectKind =
   | "published_story"
@@ -250,12 +259,15 @@ export function HomePage({
   onOpenCreate,
   onOpenPlay,
   onOpenReplay,
+  apiClient,
 }: {
   onOpenCreate: () => void
   onOpenPlay: (sessionId: string) => void
   onOpenReplay: (sessionId: string) => void
+  apiClient?: HomePageApiClient
 }) {
-  const api = useApi()
+  const defaultApi = useApi()
+  const api = apiClient ?? defaultApi
   const auth = useAuth()
   const t = useT()
   const { lang } = useLanguage()

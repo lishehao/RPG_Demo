@@ -4,6 +4,7 @@ import { AuthProvider } from "./auth-context"
 import { LanguageProvider } from "../shared/lib/i18n"
 import { type AppRoute, useAppRoute } from "./routes"
 import { HomePage } from "../pages/home/home-page"
+import { HomeStartFixture } from "../pages/home/home-start-fixture"
 import { CreatePage } from "../pages/create/create-page"
 import { PlayPage } from "../pages/play/play-page"
 import { PlayAdvisorFixture } from "../pages/play/components/play-advisor-fixture"
@@ -77,6 +78,8 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId })}
         />
       )
+    case "homeStartFixture":
+      return <HomeStartFixture onBackHome={() => navigate({ name: "home" })} />
     case "playAdvisorFixture":
       return <PlayAdvisorFixture onBackHome={() => navigate({ name: "home" })} />
     case "playActionFixture":
@@ -156,6 +159,7 @@ function routeKey(route: AppRoute): string {
     case "home": return "home"
     case "login": return "login"
     case "create": return "create"
+    case "homeStartFixture": return "homeStartFixture"
     case "playAdvisorFixture": return "playAdvisorFixture"
     case "playActionFixture": return route.scenario ? `playActionFixture:${route.scenario}` : "playActionFixture"
     case "playEndingFixture": return "playEndingFixture"

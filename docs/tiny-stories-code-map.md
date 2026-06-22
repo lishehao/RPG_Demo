@@ -20,6 +20,7 @@ This map documents the current Tiny Stories Korean webtoon demo candidate. It is
   - Korean webtoon home/library.
   - Published playable cards start or resume Play directly.
   - Starter premise doors route to Create/Agent Chat and must not look like published games.
+  - `#/qa/home-start` mounts the real HomePage with a deterministic populated Story Desk card and starts the real PlayPage first-turn surface without backend data.
 - `frontend2/src/pages/create/`
   - Korean Agent Chat creation loop.
   - Owns Story Butler transcript UI, prompt starters, Story Brief-as-message, Generate handoff, and explicit visibility row.

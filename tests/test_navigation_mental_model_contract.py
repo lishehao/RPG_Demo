@@ -1089,7 +1089,12 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
 
 def test_home_story_entries_are_generated_playable_template_objects() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
+    fixture = (ROOT / "frontend2/src/pages/home/home-start-fixture.tsx").read_text()
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    frontend_readme = (ROOT / "frontend2/src/README.md").read_text()
+    code_map = (ROOT / "docs/tiny-stories-code-map.md").read_text()
 
     template_start = home.index("function TemplateCard")
     template = home[template_start:home.index("function visibilityLabel")]
@@ -1102,6 +1107,10 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert "handleStartCuratedStory" not in home
     assert "api.createNarrativeStoryBrief" not in home
     assert "api.createNarrativeTemplate" not in home
+    assert "type HomePageApiClient = Pick<" in home
+    assert "apiClient?: HomePageApiClient" in home
+    assert "const defaultApi = useApi()" in home
+    assert "const api = apiClient ?? defaultApi" in home
     assert "listPublicNarrativeTemplates" in home
     assert "api.startNarrativeSession(templateId)" in home
     assert "saveCreateDraftHandoff" not in template
@@ -1112,3 +1121,21 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert 'data-home-tile-text-body="title-deck-action"' in home
     assert "Story Butler" not in template
     assert '"home.card_action": "Start episode →"' in strings
+
+    assert '| { name: "homeStartFixture" }' in routes
+    assert 'if (segments[1] === "home-start") return { name: "homeStartFixture" }' in routes
+    assert 'return "#/qa/home-start"' in routes
+    assert "import { HomeStartFixture }" in app
+    assert 'case "homeStartFixture":' in app
+    assert "<HomeStartFixture" in app
+
+    assert "import { HomePage } from \"./home-page\"" in fixture
+    assert "import { PlayPage } from \"../play/play-page\"" in fixture
+    assert 'data-home-start-fixture="true"' in fixture
+    assert "listPublicNarrativeTemplates: async () => ({ items: [QA_HOME_TEMPLATE] })" in fixture
+    assert "startNarrativeSession: async" in fixture
+    assert 'setView("play")' in fixture
+    assert 'data-story-card-kind="published-story"' not in fixture
+    assert 'data-play-action-option-card="true"' not in fixture
+    assert "`#/qa/home-start` populated-card-to-first-turn fixture" in frontend_readme
+    assert "`#/qa/home-start` mounts the real HomePage" in code_map
