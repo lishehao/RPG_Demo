@@ -40,37 +40,37 @@ function readLang(): Lang {
 }
 
 const STATUS_FALLBACKS_ZH: Record<number, string> = {
-  400: "这条请求被服务端拒绝了——可能是输入太敏感或不合规。",
+  400: "这次没有通过，可能是输入太敏感或不合规。",
   401: "登录已过期，请刷新页面重新登录。",
   403: "你看不了这一项——可能是别人的私有内容。",
   404: "这条记录不存在了，可能已经被删除。",
-  409: "状态对不上——可能在另一处已经做了变化，刷新一下试试。",
+  409: "局面和页面不同步了——可能在另一处已经做了变化，刷新一下试试。",
   422: "输入有问题，看看是不是哪一项填错了。",
   429: "请求太密了，喘口气再来一次。",
-  500: "服务端出了点问题，再试一次或者一会再来。",
-  502: "AI 后端连不上，再试一次。",
-  503: "服务暂时维护中，过几分钟再来。",
-  504: "服务端响应太慢超时了，再试一次。",
+  500: "这次没有接上，再试一次或者一会再来。",
+  502: "故事线路暂时没接上，再试一次。",
+  503: "故事线路暂时很忙，过几分钟再来。",
+  504: "房间响应太久了，再试一次。",
 }
 
 const STATUS_FALLBACKS_EN: Record<number, string> = {
-  400: "The server rejected this request — your input may be too sensitive or invalid.",
+  400: "This did not go through. Your input may be too sensitive or invalid.",
   401: "Session expired. Please refresh and sign in again.",
   403: "You can't access this — it may be private to someone else.",
   404: "This record no longer exists. It may have been deleted.",
-  409: "State conflict — something changed elsewhere. Try refreshing.",
+  409: "The run and page are out of sync. Something changed elsewhere; try refreshing.",
   422: "Something in your input isn't right. Check the fields.",
   429: "Too many requests in a short time. Take a breath and try again.",
-  500: "Server hit a snag. Try again, or come back in a moment.",
-  502: "Can't reach the AI backend. Try again.",
-  503: "Service is briefly under maintenance. Back in a few minutes.",
-  504: "Server response timed out. Try again.",
+  500: "This did not land. Try again, or come back in a moment.",
+  502: "The story line did not connect. Try again.",
+  503: "The story line is briefly busy. Back in a few minutes.",
+  504: "The room took too long to answer. Try again.",
 }
 
 const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
-  llm_invalid_json: "模型返回的故事格式坏了。可以重试，或先用 Brief 简化实体/约束再生成。",
-  llm_provider_failed: "AI 服务暂时不在线，稍等再试。",
-  llm_invalid_response: "AI 回了个空白，再试一次。",
+  llm_invalid_json: "故事返回得不完整。可以重试，或先用 Brief 简化人物和约束再生成。",
+  llm_provider_failed: "故事线路暂时不在线，稍等再试。",
+  llm_invalid_response: "故事这次回了空白，再试一次。",
   turn_invalid: "故事一时接不上你那一步——换个动作或稍等再试。",
   session_complete: "这一局已经走完了——回首页看你的结局。",
   session_forbidden: "这是别人的局，没法直接打开。",
@@ -82,17 +82,17 @@ const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
   no_opening: "故事还没开始呢——重新进入。",
   no_narrator: "上一段叙述丢了，刷新一下试试。",
   turn_already_advanced: "这一段已经走过了，刷新一下接着玩。",
-  llm_unavailable: "AI 服务还没配置，请联系站点维护人。",
-  opening_invalid: "模型返回的开场数据没法用。可以重试，或生成一个更简单、约束更少的开场。",
+  llm_unavailable: "这个版本暂时不能续写故事，稍后再试。",
+  opening_invalid: "开场草稿没搭起来。可以重试，或生成一个更简单、约束更少的开场。",
   opening_prompt_shape_mismatch: "这个开头还不太适合当前运行时。试试 3 个以上人物、一个公开冲突、一个秘密/争夺物，再加一点时间压力。",
   opening_brief_consistency_failed: "第一版开场没有足够贴住 Brief。Brief 还保留着；请重新搭建一个更紧的开场，或先改一条设定。",
   advisor_invalid: "顾问没说出有效的话，再问一次。",
 }
 
 const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
-  llm_invalid_json: "The model returned malformed story data. Try again, or simplify the Brief before generating.",
-  llm_provider_failed: "AI service is briefly offline. Try again shortly.",
-  llm_invalid_response: "The AI returned a blank. Try again.",
+  llm_invalid_json: "The story came back incomplete. Try again, or simplify the Brief before generating.",
+  llm_provider_failed: "The story line is briefly offline. Try again shortly.",
+  llm_invalid_response: "The story came back blank. Try again.",
   turn_invalid: "The story can't pick up from that move — try a different action, or wait and retry.",
   session_complete: "This run is already finished — go back home to see your ending.",
   session_forbidden: "That's someone else's run; you can't open it directly.",
@@ -104,8 +104,8 @@ const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
   no_opening: "The story hasn't started yet — go back in.",
   no_narrator: "Lost the previous narration. Try a refresh.",
   turn_already_advanced: "This turn already moved forward. Refresh to continue.",
-  llm_unavailable: "AI service isn't configured. Contact the site maintainer.",
-  opening_invalid: "The model returned unusable opening data. Try again, or generate a simpler opening with fewer constraints.",
+  llm_unavailable: "This build cannot continue the story right now. Try again later.",
+  opening_invalid: "The opening draft did not come together. Try again, or generate a simpler opening with fewer constraints.",
   opening_prompt_shape_mismatch: "This premise does not fit the current runtime yet. Try 3+ people, one public conflict, one secret or contested object, and time pressure.",
   opening_brief_consistency_failed: "The first draft did not honor the Brief strongly enough. The Brief is still saved; build a tighter opening or revise the plan.",
   advisor_invalid: "The advisor didn't say anything usable. Ask again.",
@@ -146,6 +146,24 @@ const NETWORK_PATTERNS = [
   "ERR_NETWORK",
   "ERR_NAME_NOT_RESOLVED",
   "Load failed",
+]
+
+const TECHNICAL_MESSAGE_PATTERNS = [
+  /\bapi\b/i,
+  /\bbackend\b/i,
+  /\bendpoint\b/i,
+  /\bhttp\b/i,
+  /\bjson\b/i,
+  /\bllm\b/i,
+  /\bmodel\b/i,
+  /\bprovider\b/i,
+  /\bschema\b/i,
+  /\bstack\b/i,
+  /\bstatus\s*code\b/i,
+  /\btoken\b/i,
+  /\btraceback\b/i,
+  /\b(get|post|put|patch|delete)\s+\//i,
+  /\/narrative\//i,
 ]
 
 type LiveErrorKind =
@@ -206,6 +224,14 @@ function classifyLiveError(err: ApiErrorLike): LiveErrorKind | null {
   return null
 }
 
+function isLikelyUserFacingMessage(message: string, lang: Lang): boolean {
+  const trimmed = message.trim()
+  if (!trimmed) return false
+  if (TECHNICAL_MESSAGE_PATTERNS.some((pattern) => pattern.test(trimmed))) return false
+  const hasChinese = /[一-龥]/.test(trimmed)
+  return lang === "zh" ? hasChinese : !hasChinese
+}
+
 export function friendlyError(err: unknown, fallback?: string): string {
   const lang = readLang()
   const statusMap = lang === "en" ? STATUS_FALLBACKS_EN : STATUS_FALLBACKS_ZH
@@ -240,19 +266,18 @@ export function friendlyError(err: unknown, fallback?: string): string {
       return statusMap[e.statusCode]
     }
 
-    // If the API gave us a sentence in the user's locale already (backend
-    // sometimes returns user-facing strings), trust it. We can't reliably
-    // detect language from a short sentence, so we accept any non-empty
-    // string and let it through.
-    if (message && /[一-龥]/.test(message) && lang === "zh") {
+    // If the API gave us a sentence in the user's locale already, trust it
+    // only when it does not look like a raw runtime or transport error.
+    if (isLikelyUserFacingMessage(message, lang) && lang === "zh") {
       return message
     }
-    if (message && lang === "en" && !/[一-龥]/.test(message)) {
+    if (isLikelyUserFacingMessage(message, lang) && lang === "en") {
       return message
     }
   }
 
   if (err instanceof Error && err.message) {
+    if (!isLikelyUserFacingMessage(err.message, lang)) return fallback ?? genericMsg
     return fallback ?? `${genericPrefix}${err.message}`
   }
 

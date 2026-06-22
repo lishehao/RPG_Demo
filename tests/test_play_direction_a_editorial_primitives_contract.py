@@ -71,6 +71,33 @@ def test_play_initial_load_failure_is_story_desk_recoverable() -> None:
     assert '"play.load_failed_detail": "回到故事入口，可以重新打开已保存的局、选别的故事，或写一个新开场。"' in strings
 
 
+def test_shared_friendly_error_copy_hides_runtime_implementation_terms() -> None:
+    source = (ROOT / "frontend2/src/shared/lib/friendly-error.ts").read_text()
+
+    assert "TECHNICAL_MESSAGE_PATTERNS" in source
+    assert "isLikelyUserFacingMessage" in source
+    assert "return fallback ?? genericMsg" in source
+    assert "The story line did not connect. Try again." in source
+    assert "故事线路暂时没接上，再试一次。" in source
+    assert "The story came back incomplete. Try again, or simplify the Brief before generating." in source
+    assert "故事返回得不完整。可以重试，或先用 Brief 简化人物和约束再生成。" in source
+    for old_copy in (
+        "Can't reach the AI backend",
+        "The model returned malformed story data",
+        "AI service is briefly offline",
+        "The AI returned a blank",
+        "AI service isn't configured",
+        "The model returned unusable opening data",
+        "AI 后端连不上",
+        "模型返回的故事格式坏了",
+        "AI 服务暂时不在线",
+        "AI 回了个空白",
+        "AI 服务还没配置",
+        "模型返回的开场数据没法用",
+    ):
+        assert old_copy not in source
+
+
 def test_play_primitives_keep_story_world_mental_model() -> None:
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
