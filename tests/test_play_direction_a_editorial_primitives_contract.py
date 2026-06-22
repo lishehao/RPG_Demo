@@ -1162,7 +1162,8 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-motive-frame="true"' in fixture
     assert "Public move" in fixture
     assert "Private motive" in fixture
-    assert "NPCs only see the move; this tells the story what you are trying to achieve." in fixture
+    assert "Other characters only see the move; this tells the story what you are trying to achieve." in fixture
+    assert "NPCs only see the move; this tells the story what you are trying to achieve." not in fixture
     assert "motiveFrame" in fixture
     assert 'data-gameplay-selected-review={selectedAction ? "true" : undefined}' in fixture
     assert 'data-gameplay-action-card="true"' in fixture
@@ -2253,11 +2254,11 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.turn_guide_inner_motive_title": "Add private motive"' in strings
     assert (
         '"play.turn_guide_inner_motive_detail": '
-        '"Write what you privately want. NPCs will not hear it; submit with motive or go back."' in strings
+        '"Write what you privately want. Other characters will not hear it; submit with motive or go back."' in strings
     )
     assert '"play.turn_guide_selected_detail": "先复核这一步，再提交或补一句真实动机。"' in strings
     assert '"play.turn_guide_inner_motive_title": "补内心动机"' in strings
-    assert '"play.turn_guide_inner_motive_detail": "写下你私下想达成什么；NPC 不会听见。可以带着动机提交或返回行动。"' in strings
+    assert '"play.turn_guide_inner_motive_detail": "写下你私下想达成什么；故事里的其他人不会听见。可以带着动机提交或返回行动。"' in strings
     assert 'const optionMotiveNeedsText = context === "option" && !diary.trim()' in panels
     assert 'data-play-inner-motive-disabled-reason="true"' in panels
     assert "inner_motive_submit_disabled_hint" in panels
@@ -2292,12 +2293,24 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.diary_public_move_label": "公开行动"' in strings
     assert '"play.diary_private_motive_label": "Private motive"' in strings
     assert '"play.diary_private_motive_label": "真实意图"' in strings
-    assert '"play.private_intent_hint": "What you secretly mean; NPCs do not hear it"' in strings
+    assert '"play.outcome_npc_label": "Characters"' in strings
+    assert '"play.outcome_npc_label": "人物"' in strings
+    assert '"play.private_intent_hint": "What you secretly mean; other characters do not hear it"' in strings
     assert '"play.diary_label_hint": "What you secretly mean; others do not hear it."' in strings
     assert '"play.diary_writing_hint": "Write the goal, suspicion, or person you are protecting; do not repeat the public move."' in strings
     assert '"play.diary_writing_hint": "写目标、怀疑或你要保护的人；不要重复公开行动。"' in strings
     assert '"play.diary_attach_empty": "Add inner motive"' in strings
     assert '"play.diary_attach_empty": "补内心动机"' in strings
+    for stale_copy in (
+        "NPCs only see the move; this tells the story what you are trying to achieve.",
+        "Write what you privately want. NPCs will not hear it",
+        "What you secretly mean; NPCs do not hear it",
+        "NPC 不会听见",
+        "NPC 只会看到公开行动",
+        '"play.outcome_npc_label": "NPCs"',
+        "'oracle' mode",
+    ):
+        assert stale_copy not in strings
     assert '"play.diary_attach_empty_hint": "Say what you secretly mean."' in strings
     assert "Use inner motive" not in strings
     assert '"play.inner_motive_submit_cta": "Submit with motive"' in strings

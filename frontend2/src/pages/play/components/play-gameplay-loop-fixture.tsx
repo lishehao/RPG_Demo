@@ -864,7 +864,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                                 <span style={styles.motiveFrameRow}>
                                   <span style={styles.motiveFrameLabel}>Private motive</span>
                                   <span style={styles.motiveFrameText}>
-                                    NPCs only see the move; this tells the story what you are trying to achieve.
+                                    Other characters only see the move; this tells the story what you are trying to achieve.
                                   </span>
                                 </span>
                               </div>
