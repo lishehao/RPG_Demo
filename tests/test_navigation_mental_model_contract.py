@@ -172,6 +172,9 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "portfolio-action portfolio-action--secondary" in portfolio
     assert "Launch reviewer route" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
     assert 'data-portfolio-hero-evidence-note="true"' in portfolio
+    note_idx = portfolio.index('data-portfolio-hero-evidence-note="true"')
+    actions_idx = portfolio.index('className="portfolio-hero__actions"')
+    assert note_idx < actions_idx
     hero_note = portfolio[portfolio.index('data-portfolio-hero-evidence-note="true"') : portfolio.index('className="portfolio-hero__video"')]
     assert "Use the reviewer cut for orientation only" in hero_note
     assert "do not cite the current local route as public evidence until preflight passes" in hero_note

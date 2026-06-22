@@ -164,6 +164,9 @@ export function PortfolioPage({
                 </li>
               ))}
             </ul>
+            <p className="portfolio-hero__evidence-note" data-portfolio-hero-evidence-note="true">
+              Use the reviewer cut for orientation only; do not cite the current local route as public evidence until preflight passes.
+            </p>
             <div className="portfolio-hero__actions">
               <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">
                 Watch 75s reviewer cut
@@ -172,9 +175,6 @@ export function PortfolioPage({
                 Launch reviewer route
               </button>
             </div>
-            <p className="portfolio-hero__evidence-note" data-portfolio-hero-evidence-note="true">
-              Use the reviewer cut for orientation only; do not cite the current local route as public evidence until preflight passes.
-            </p>
           </div>
           <div className="portfolio-hero__video" aria-label="Tiny Stories reviewer cut preview">
             <a
