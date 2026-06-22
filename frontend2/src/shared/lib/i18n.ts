@@ -118,7 +118,7 @@ export const STRINGS_ZH = {
   "home.relative_days": "{n} 天前",
   "home.footer_about": "关于 / 隐私",
   "home.footer_portfolio": "Portfolio 案例",
-  "home.footer_contact": "联系我们",
+  "home.footer_source": "源码",
 
   // Create page
   "create.title": "写一个故事",
@@ -1266,7 +1266,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "home.relative_days": "{n}d ago",
   "home.footer_about": "About / Privacy",
   "home.footer_portfolio": "Portfolio case study",
-  "home.footer_contact": "Contact",
+  "home.footer_source": "Source",
 
   "create.title": "Write a story",
   "create.seed_label": "Story seed",

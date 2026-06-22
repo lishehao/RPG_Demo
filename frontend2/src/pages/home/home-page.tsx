@@ -23,6 +23,8 @@ import {
 } from "../../shared/lib/localized-story-metadata"
 import { itemTransition, itemVariants, tapPress, transitions } from "../../shared/lib/motion-presets"
 
+const SOURCE_REPO_URL = "https://github.com/lishehao/RPG_Demo"
+
 type Tab = "plaza" | "my-templates"
 
 type HomeStoryObjectKind =
@@ -533,10 +535,12 @@ export function HomePage({
           </a>
           <span style={hpStyles.footerSep}>·</span>
           <a
-            href="mailto:hello@tinystories.app"
+            href={SOURCE_REPO_URL}
             style={hpStyles.footerLink}
+            target="_blank"
+            rel="noreferrer"
           >
-            {t("home.footer_contact")}
+            {t("home.footer_source")}
           </a>
         </footer>
       </main>

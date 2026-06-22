@@ -588,6 +588,14 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert "home.cta_portfolio" not in strings
     assert "onOpenCreate={onOpenCreate}" in home
     assert 'data-home-empty-create="true"' in home
+    assert "SOURCE_REPO_URL" in home
+    assert "https://github.com/lishehao/RPG_Demo" in home
+    assert 't("home.footer_source")' in home
+    assert "mailto:hello@tinystories.app" not in home
+    assert "home.footer_contact" not in home
+    assert "home.footer_contact" not in strings
+    assert '"home.footer_source": "Source"' in strings
+    assert '"home.footer_source": "源码"' in strings
     assert 'data-home-empty-my-create="true"' in home
     assert 'data-home-plaza-error-create="true"' in home
     assert 'data-home-start-error-create="true"' in home
