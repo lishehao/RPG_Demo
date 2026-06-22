@@ -373,6 +373,10 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "Do not cite the" in landing
     assert "current Portfolio, Reviewer, Story Desk, Create, Play, or Replay" in landing
     assert "surfaces as public evidence" in landing
+    assert "Repeat play, natural" in landing
+    assert "sharing, and target-player comprehension are still unproven" in landing
+    assert "small real-user playtest" in landing
+    assert "docs/playtest_report.md" in landing
     assert "routes as public evidence" not in landing
     assert "deployed" in landing and "rechecked" in landing and "public-link check passes" in landing
     assert ".proof-checks" in landing
