@@ -41,7 +41,7 @@
 - `components/runtime-inspector.tsx`
   - Reviewer-only evaluation drawer and trace/evidence helpers. This owns persisted agent/LLM evidence rendering; normal Play surfaces import it only behind reviewer gating.
 - `components/play-reviewer-evidence-fixture.tsx`
-  - Local QA route fixture for `#/qa/play-reviewer-evidence`. Mounts the real `RuntimeInspector` with deterministic fresh-run and archived-proof evidence so proof-limit hierarchy can be browser-smoked without backend or live generation.
+  - Local QA route fixture for `#/qa/play-reviewer-evidence`. Mounts the real `RuntimeInspector` with deterministic fresh-run and archived-proof evidence, plus a local-proof boundary note so application evidence is not mistaken for a public benchmark.
 - `components/play-editorial-primitives.tsx`
   - Direction A Play primitive kit: `PlayShell`, `MoodPlate`, `StoryTimeline`, and `SceneSupportRail`. These primitives define the story-world mental model and should stay source-owned/local unless a future UI-kit migration is explicitly scoped.
 - `play-styles.ts`
@@ -63,7 +63,7 @@
 - `#/qa/play-leverage` exercises the real leverage `ActionArea` surface without backend or live generation.
 - `#/qa/play-advisor` exercises the real advisor FAB/sidechat without backend or live generation.
 - `#/qa/play-ending` exercises the real ending payoff surface without backend or live generation.
-- `#/qa/play-reviewer-evidence` exercises the real reviewer evidence drawer without backend or live generation, including fresh and archived-proof cases.
+- `#/qa/play-reviewer-evidence` exercises the real reviewer evidence drawer without backend or live generation, including fresh and archived-proof cases. The page starts with a local-proof fixture note and points public claims back to repo/demo preflight.
 - Mobile 390px must have no horizontal overflow and action/retry controls must remain reachable.
 - Play is a story-world scene surface: Narrator/World, scene characters, and You. Story Butler is not the primary Play speaker; advisor behavior stays optional and secondary.
 

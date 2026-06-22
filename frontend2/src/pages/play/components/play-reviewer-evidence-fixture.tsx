@@ -160,6 +160,66 @@ const CASE_LABEL_STYLE = {
   textTransform: "uppercase",
 } as const
 
+const INTRO_STYLE = {
+  display: "grid",
+  gap: 8,
+  padding: "14px",
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  borderRadius: 18,
+  background: "rgba(255, 255, 255, 0.08)",
+  boxShadow: "0 18px 50px rgba(3, 7, 18, 0.24)",
+} as const
+
+const INTRO_KICKER_STYLE = {
+  color: "rgba(255, 255, 255, 0.68)",
+  fontSize: 11,
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+} as const
+
+const INTRO_TITLE_STYLE = {
+  color: "#fff",
+  fontSize: 17,
+  fontWeight: 900,
+  letterSpacing: 0,
+  lineHeight: 1.18,
+} as const
+
+const INTRO_COPY_STYLE = {
+  margin: 0,
+  color: "rgba(255, 255, 255, 0.76)",
+  fontSize: 12,
+  lineHeight: 1.45,
+} as const
+
+const CASE_MAP_STYLE = {
+  display: "grid",
+  gap: 8,
+  gridTemplateColumns: "repeat(auto-fit, minmax(126px, 1fr))",
+} as const
+
+const CASE_MAP_ITEM_STYLE = {
+  display: "grid",
+  gap: 3,
+  padding: "8px 10px",
+  border: "1px solid rgba(255, 255, 255, 0.12)",
+  borderRadius: 12,
+  background: "rgba(3, 7, 18, 0.2)",
+} as const
+
+const CASE_MAP_LABEL_STYLE = {
+  color: "#fff",
+  fontSize: 12,
+  fontWeight: 900,
+} as const
+
+const CASE_MAP_NOTE_STYLE = {
+  color: "rgba(255, 255, 255, 0.68)",
+  fontSize: 11,
+  lineHeight: 1.35,
+} as const
+
 export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => void }) {
   const t = useT()
 
@@ -188,6 +248,24 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
         }}
         aria-label="Reviewer evidence fixture"
       >
+        <div style={INTRO_STYLE} data-play-reviewer-evidence-fixture-intro="true">
+          <span style={INTRO_KICKER_STYLE}>Local reviewer proof fixture</span>
+          <strong style={INTRO_TITLE_STYLE}>Proof drawer for application review.</strong>
+          <p style={INTRO_COPY_STYLE}>
+            Fresh live proof appears first; archived checks appear second. Use this for application review evidence;
+            cite public claims only after repo/demo preflight passes.
+          </p>
+          <div style={CASE_MAP_STYLE} data-play-reviewer-evidence-fixture-case-map="true">
+            <span style={CASE_MAP_ITEM_STYLE}>
+              <strong style={CASE_MAP_LABEL_STYLE}>1. Fresh proof limit</strong>
+              <span style={CASE_MAP_NOTE_STYLE}>Playable state, visible consequence, no archive overclaim.</span>
+            </span>
+            <span style={CASE_MAP_ITEM_STYLE}>
+              <strong style={CASE_MAP_LABEL_STYLE}>2. Archived proof attached</strong>
+              <span style={CASE_MAP_NOTE_STYLE}>Stored checks only when proof is attached.</span>
+            </span>
+          </div>
+        </div>
         <div data-play-reviewer-evidence-fixture-case="fresh">
           <div
             data-play-reviewer-evidence-case-label="true"

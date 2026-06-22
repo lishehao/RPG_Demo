@@ -846,6 +846,15 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "#/qa/play-reviewer-evidence" in routes
     assert "PlayReviewerEvidenceFixture" in app
     assert "data-play-reviewer-evidence-fixture=\"true\"" in reviewer_fixture
+    assert 'data-play-reviewer-evidence-fixture-intro="true"' in reviewer_fixture
+    assert 'data-play-reviewer-evidence-fixture-case-map="true"' in reviewer_fixture
+    assert "Local reviewer proof fixture" in reviewer_fixture
+    assert "Proof drawer for application review." in reviewer_fixture
+    assert "Fresh live proof appears first; archived checks appear second." in reviewer_fixture
+    assert "application review evidence" in reviewer_fixture
+    assert "cite public claims only after repo/demo preflight passes" in reviewer_fixture
+    assert "Playable state, visible consequence, no archive overclaim." in reviewer_fixture
+    assert "Stored checks only when proof is attached." in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case="fresh"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case="archived"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-case-label="true"' in reviewer_fixture
