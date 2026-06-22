@@ -196,7 +196,7 @@ const INTRO_COPY_STYLE = {
 const CASE_MAP_STYLE = {
   display: "grid",
   gap: 8,
-  gridTemplateColumns: "repeat(auto-fit, minmax(126px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
 } as const
 
 const CASE_MAP_ITEM_STYLE = {
