@@ -1125,6 +1125,18 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert "displayView.copy.primaryAction" in template
     assert "view.copy.typeLabel" not in template
     assert 'data-home-tile-text-body="title-deck-action"' in home
+    assert "minHeight: 300" in home
+    assert "fontSize: 44" in home
+    assert "section: { marginTop: 24 }" in home
+    assert "heroCompact: {" in home
+    assert "minHeight: 344" in home
+    assert "heroTitleCompact: {" in home
+    assert "fontSize: 30" in home
+    assert "heroSubCompact: {" in home
+    assert "maxWidth: 312" in home
+    assert "sectionCompact: { marginTop: 10 }" in home
+    assert "plazaHeaderCompact" in home
+    assert "compactHome ? hpStyles.plazaHeaderCompact : null" in home
     assert "Story Butler" not in template
     assert '"home.card_action": "Start episode →"' in strings
 

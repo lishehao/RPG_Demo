@@ -465,7 +465,7 @@ export function HomePage({
               </button>
             </div>
           ) : (
-            <div style={hpStyles.plazaHeader}>
+            <div style={{ ...hpStyles.plazaHeader, ...(compactHome ? hpStyles.plazaHeaderCompact : null) }}>
               <span style={hpStyles.plazaLabel}>{t("home.tab_plaza")}</span>
             </div>
           )}
@@ -1313,7 +1313,7 @@ const hpStyles: Record<string, CSSProperties> = {
 
   hero: {
     position: "relative",
-    minHeight: 360,
+    minHeight: 300,
     padding: 0,
     borderRadius: 0,
     overflow: "hidden",
@@ -1326,13 +1326,13 @@ const hpStyles: Record<string, CSSProperties> = {
     backgroundSize: "cover",
     backgroundPosition: "center 30%",
     color: "white",
-    marginBottom: 22,
+    marginBottom: 16,
     display: "flex",
     alignItems: "center",
   },
   heroCompact: {
-    minHeight: 392,
-    marginBottom: 16,
+    minHeight: 344,
+    marginBottom: 10,
     backgroundImage: `linear-gradient(90deg, rgba(12,12,16,0.94) 0%, rgba(12,12,16,0.62) 48%, rgba(12,12,16,0.16) 100%), linear-gradient(180deg, rgba(12,12,16,0.04) 0%, rgba(12,12,16,0.38) 72%, var(--bg) 100%), url(${PAGE_BG.splash})`,
     backgroundPosition: "center 33%",
     alignItems: "flex-end",
@@ -1340,11 +1340,11 @@ const hpStyles: Record<string, CSSProperties> = {
   heroInner: {
     width: "100%",
     maxWidth: 640,
-    padding: "58px 56px 64px",
+    padding: "40px 48px 42px",
     textAlign: "left" as const,
   },
   heroInnerCompact: {
-    padding: "42px 28px 34px",
+    padding: "30px 28px 28px",
     maxWidth: 420,
   },
   heroTagline: {
@@ -1353,7 +1353,7 @@ const hpStyles: Record<string, CSSProperties> = {
     letterSpacing: 0,
     textTransform: "none" as const,
     color: "var(--accent)",
-    marginBottom: 18,
+    marginBottom: 14,
     fontWeight: 650,
   },
   heroTaglineCompact: {
@@ -1365,32 +1365,32 @@ const hpStyles: Record<string, CSSProperties> = {
   },
   heroTitle: {
     fontFamily: "var(--font-narrative)",
-    fontSize: 52,
+    fontSize: 44,
     lineHeight: 1.08,
     fontWeight: 400,
-    margin: "0 0 18px",
+    margin: "0 0 12px",
     color: "white",
     textShadow: "0 2px 28px rgba(0,0,0,0.55)",
     letterSpacing: 0,
   },
   heroTitleCompact: {
-    fontSize: 36,
-    lineHeight: 1.03,
-    margin: "0 0 14px",
+    fontSize: 30,
+    lineHeight: 1.08,
+    margin: "0 0 10px",
   },
   heroSub: {
-    fontSize: 16,
-    lineHeight: 1.65,
+    fontSize: 15,
+    lineHeight: 1.55,
     color: "rgba(244,239,230,0.82)",
     maxWidth: 540,
-    margin: "0 0 24px",
+    margin: "0 0 16px",
     fontWeight: 400,
   },
   heroSubCompact: {
-    fontSize: 14.5,
-    lineHeight: 1.5,
-    margin: "0 0 18px",
-    maxWidth: 280,
+    fontSize: 13.5,
+    lineHeight: 1.42,
+    margin: "0 0 14px",
+    maxWidth: 312,
   },
   heroActions: {
     display: "flex",
@@ -1433,8 +1433,8 @@ const hpStyles: Record<string, CSSProperties> = {
     cursor: "pointer",
   },
 
-  section: { marginTop: 34 },
-  sectionCompact: { marginTop: 18 },
+  section: { marginTop: 24 },
+  sectionCompact: { marginTop: 10 },
   sectionHeader: { marginBottom: 20 },
   sectionTitle: {
     fontFamily: "var(--font-narrative)",
@@ -1443,9 +1443,12 @@ const hpStyles: Record<string, CSSProperties> = {
     margin: 0,
   },
   plazaHeader: {
-    marginBottom: 26,
+    marginBottom: 20,
     paddingBottom: 0,
     borderBottom: "none",
+  },
+  plazaHeaderCompact: {
+    marginBottom: 16,
   },
   plazaLabel: {
     display: "inline-block",
