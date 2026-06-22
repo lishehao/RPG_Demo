@@ -1171,11 +1171,13 @@ def test_world_role_launch_explains_first_turn_reading() -> None:
     assert 't("world.role_launch_read_opening")' in world
     assert '"world.role_launch_read_title": "第一回合这样读"' in strings
     assert '"world.role_launch_read_goal": "先看暗线目标：它决定你为什么要选这一步。"' in strings
-    assert '"world.role_launch_read_resources": "你带着 {cards} 张反将牌、{items} 件物品；普通选择不够时再亮出来。"' in strings
+    assert '"world.role_launch_read_resources": "你带着 {cards} 张反将牌、{items} 件物品；卡可亮出，物品可写进自定义行动。"' in strings
     assert '"world.role_launch_read_opening": "开场相同，但房间会按这个身份的压力回应你。"' in strings
     assert '"world.role_launch_read_title": "How to read turn one"' in strings
     assert '"world.role_launch_read_goal": "Read the private goal first; it explains why one move matters."' in strings
-    assert '"world.role_launch_read_resources": "You bring {cards} leverage cards and {items} items; reveal them when normal moves are not enough."' in strings
+    assert '"world.role_launch_read_resources": "You bring {cards} leverage cards and {items} items; reveal cards, and mention items in your own move."' in strings
+    assert "reveal them when normal moves are not enough" not in strings
+    assert "普通选择不够时再亮出来" not in strings
     assert '"world.role_launch_read_opening": "The opening is the same, but the room reacts to this identity\'s pressure."' in strings
 
 
