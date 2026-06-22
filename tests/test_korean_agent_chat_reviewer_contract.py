@@ -148,7 +148,7 @@ def test_reviewer_launch_previews_runtime_evidence_points() -> None:
     evidence_idx = source.index('data-reviewer-evidence-preview="true"')
     launch_idx = source.index('data-reviewer-launch-plan="true"')
 
-    assert hero_proof_idx < seed_summary_idx < local_note_idx < actions_idx < evidence_idx < launch_idx
+    assert local_note_idx < actions_idx < hero_proof_idx < evidence_idx < seed_summary_idx < launch_idx
     assert "REVIEWER_HERO_PROOF_POINTS" in source
     assert "Real run" in source
     assert "Launch creates a playable session from the locked seed, not a static mockup." in source
@@ -157,7 +157,7 @@ def test_reviewer_launch_previews_runtime_evidence_points() -> None:
     assert "Evidence boundary" in source
     assert "Reviewer evidence stays beside Play and should be cited only after preflight." in source
     assert "data-reviewer-hero-proof-item={item.label}" in source
-    assert local_note_idx < actions_idx < evidence_idx < launch_idx
+    assert local_note_idx < actions_idx < hero_proof_idx < evidence_idx < launch_idx
     assert "Public evidence boundary: inspect the current local build here" in source
     assert "application links, cite this route only after Portfolio preflight" in source
     assert "keeps the player-facing story UI intact" in source
@@ -207,11 +207,12 @@ def test_reviewer_launch_keeps_full_seed_secondary_to_proof_preview() -> None:
     summary_idx = source.index('data-reviewer-seed-summary="true"')
     local_note_idx = source.index('data-reviewer-local-evidence-note="true"')
     actions_idx = source.index('className="reviewer-actions"')
+    proof_idx = source.index('data-reviewer-hero-proof-strip="true"')
     evidence_idx = source.index('data-reviewer-evidence-preview="true"')
     launch_idx = source.index('data-reviewer-launch-plan="true"')
     details_idx = source.index('data-reviewer-seed-details="true"')
 
-    assert summary_idx < local_note_idx < actions_idx < evidence_idx < launch_idx < details_idx
+    assert local_note_idx < actions_idx < proof_idx < evidence_idx < summary_idx < launch_idx < details_idx
     assert "Locked seed preview" in source
     assert "Missing singer, live awards stream, sponsor pressure" in source
     assert "Read locked seed" in source

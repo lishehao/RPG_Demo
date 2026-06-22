@@ -667,7 +667,13 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "passes; otherwise use the reviewer cut" in reviewer
     local_note_idx = reviewer.index('data-reviewer-local-evidence-note="true"')
     launch_cta_idx = reviewer.index('data-reviewer-launch-cta={busy ? "starting" : "ready"}')
+    proof_strip_idx = reviewer.index('data-reviewer-hero-proof-strip="true"')
+    seed_summary_idx = reviewer.index('data-reviewer-seed-summary="true"')
     assert local_note_idx < launch_cta_idx
+    assert launch_cta_idx < proof_strip_idx
+    assert proof_strip_idx < seed_summary_idx
+    assert reviewer.count('data-reviewer-hero-proof-strip="true"') == 1
+    assert reviewer.count('data-reviewer-seed-summary="true"') == 1
     assert "canOpenLocalQaRoute" in reviewer
     assert 'data-reviewer-local-evidence-fixture-link="true"' in reviewer
     assert 'data-reviewer-launch-error-local-proof="true"' in reviewer

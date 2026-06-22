@@ -196,22 +196,6 @@ export function ReviewerPage({
             a reviewer evidence summary for playable state and the first
             consequence after a move.
           </p>
-          <ul
-            className="reviewer-hero-proof"
-            aria-label="Reviewer evidence path"
-            data-reviewer-hero-proof-strip="true"
-          >
-            {REVIEWER_HERO_PROOF_POINTS.map((item) => (
-              <li key={item.label} data-reviewer-hero-proof-item={item.label}>
-                <strong>{item.label}</strong>
-                <span>{item.detail}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="reviewer-seed-summary" data-reviewer-seed-summary="true">
-            <span>Locked seed preview</span>
-            <strong>Missing singer, live awards stream, sponsor pressure; no violence or blackmail.</strong>
-          </div>
           <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
             Public evidence boundary: inspect the current local build here. For
             application links, cite this route only after Portfolio preflight
@@ -231,6 +215,18 @@ export function ReviewerPage({
               Write your own story
             </button>
           </div>
+          <ul
+            className="reviewer-hero-proof"
+            aria-label="Reviewer evidence path"
+            data-reviewer-hero-proof-strip="true"
+          >
+            {REVIEWER_HERO_PROOF_POINTS.map((item) => (
+              <li key={item.label} data-reviewer-hero-proof-item={item.label}>
+                <strong>{item.label}</strong>
+                <span>{item.detail}</span>
+              </li>
+            ))}
+          </ul>
           <section
             className="reviewer-evidence-preview"
             aria-label="Evidence to verify after launch"
@@ -258,6 +254,10 @@ export function ReviewerPage({
               Open local evidence check
             </a>
           ) : null}
+          <div className="reviewer-seed-summary" data-reviewer-seed-summary="true">
+            <span>Locked seed preview</span>
+            <strong>Missing singer, live awards stream, sponsor pressure; no violence or blackmail.</strong>
+          </div>
           <section
             className="reviewer-launch-plan"
             aria-label="Reviewer launch progress"
