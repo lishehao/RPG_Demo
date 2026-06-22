@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>An inspectable AI story game, not another story chatbot.</strong>
+  <strong>An inspectable AI interactive story, not another story chatbot.</strong>
 </p>
 
 <p align="center">

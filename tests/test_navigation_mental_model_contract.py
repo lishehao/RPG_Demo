@@ -234,7 +234,8 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "Inspect source evidence" in readme
     assert "MP4 fallback" not in readme
     assert "offline/fallback" not in readme
-    assert "An inspectable AI story game, not another story chatbot." in readme
+    assert "An inspectable AI interactive story, not another story chatbot." in readme
+    assert "An inspectable AI story game, not another story chatbot." not in readme
     assert "An inspectable AI narrative runtime" not in readme
     assert "<strong>State-shaped</strong>" in readme
     assert "<strong>Runtime-driven</strong>" not in readme
@@ -460,6 +461,8 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "目标分支 push、部署并重新检查通过" in readme
     assert "## 申请 / 作品集审阅路径" in readme
     assert "一个可检查的 AI 互动短剧" in readme
+    assert "An inspectable AI interactive story" in readme
+    assert "An inspectable AI story game" not in readme
     assert "LLM 驱动的 12 回合互动博弈剧引擎" not in readme
     assert "`#/portfolio`" in readme
     assert "`#/reviewer`" in readme

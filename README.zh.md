@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>一个可检查的 AI 互动短剧 · An inspectable AI story game</strong>
+  <strong>一个可检查的 AI 互动短剧 · An inspectable AI interactive story</strong>
 </p>
 
 <p align="center">
