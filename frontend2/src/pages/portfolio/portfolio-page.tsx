@@ -97,7 +97,9 @@ export function PortfolioPage({
               Watch the 75-second admissions demo first: it shows a short,
               story-first mobile episode where players read a scene, compare a
               few meaningful moves, act once, and follow the consequence. The
-              live reviewer route is the inspection path behind that loop.
+              live reviewer route is the inspection path behind that loop. Read
+              it as product-system evidence, not a launched consumer adoption
+              claim.
             </p>
             <div className="portfolio-hero__actions">
               <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">

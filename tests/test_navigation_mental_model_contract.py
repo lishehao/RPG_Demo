@@ -67,6 +67,8 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "compare a" in hero_copy and "few meaningful moves" in hero_copy
     assert "act once" in hero_copy
     assert "follow the consequence" in hero_copy
+    assert "product-system evidence, not a launched consumer adoption" in hero_copy
+    assert "claim" in hero_copy
     assert "PORTFOLIO_REVIEW_ORDER" in portfolio
     assert "Watch 75s demo" in portfolio
     assert "Launch reviewer run" in portfolio
