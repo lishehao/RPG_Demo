@@ -1224,7 +1224,7 @@ kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 14px;
   border: 1px solid rgba(255,255,255,0.14);
   border-radius: 999px;

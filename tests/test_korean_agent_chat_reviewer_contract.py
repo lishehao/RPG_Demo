@@ -74,6 +74,7 @@ def test_portfolio_page_normalizes_application_entry_to_english() -> None:
 
 def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
     assert "REVIEWER_LAUNCH_ERROR" in source
     assert "REVIEWER_LAUNCH_RECOVERY" in source
@@ -102,6 +103,10 @@ def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     assert "Could not launch" not in source
     assert "server" not in source.lower()
     assert "backend" not in source.lower()
+    error_action_start = theme.index(".reviewer-error__action {")
+    error_action_end = theme.index(".reviewer-error__action--primary", error_action_start)
+    error_action_styles = theme[error_action_start:error_action_end]
+    assert "min-height: 44px" in error_action_styles
 
 
 def test_reviewer_launch_enters_reviewer_mode_play_evidence_path() -> None:
