@@ -319,6 +319,8 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "[Case Study](./docs/CASE_STUDY.md)" in readme
     assert "[Engineering Evidence Packet](./docs/tiny-stories-engineering-evidence-packet.md)" in readme
     assert "portfolio case study / open-source preview" in readme
+    assert "机制链路完整" in readme
+    assert "机制层面成熟" not in readme
     assert "consumer traction" in readme
     assert "Play 容器 + StoryBeat / ActionArea / Advisor / Ending 等模块" in readme
     assert "play-page.tsx (~2400 行,所有 turn UI 在这)" not in readme

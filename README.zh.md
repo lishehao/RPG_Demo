@@ -116,7 +116,7 @@ scheduler-driven LLM control + 跨层契约设计** 这一套实战 pattern.
 
 完局后给 5 张关键时刻 highlight reel + 2-3 张"你没走过的路" branch 卡片,可一键复制分享链接.
 
-> **Status:** portfolio case study / open-source preview.机制层面成熟,但
+> **Status:** portfolio case study / open-source preview.机制链路完整,但
 > **真人测试数据仍不是已证明的 consumer traction**.如果你 fork 跑起来玩了一局,
 > 反馈非常欢迎.
 
