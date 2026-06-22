@@ -203,6 +203,7 @@ def test_free_action_prompts_module_owns_context_and_starter_display_hooks() -> 
     assert "data-play-free-action-context-id={context.id}" in free_prompts
     assert 'data-play-free-action-starters="true"' in free_prompts
     assert 'data-play-free-action-starter="true"' in free_prompts
+    assert 'data-play-free-action-starter-preview="true"' in free_prompts
     assert 'data-play-free-action-input="true"' not in free_prompts
     assert 'data-play-free-action-submit="true"' not in free_prompts
     assert "handleSubmitFreeWithReflect" not in free_prompts
@@ -1740,6 +1741,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "freeActionContextDetail" in styles
     assert "freeActionStarters" in styles
     assert "freeActionStarterButton" in styles
+    assert "freeActionStarterLabelText" in styles
+    assert "freeActionStarterPreview" in styles
     assert "optionBtnResourceFocusMatch" in styles
     assert "gameplayNextChoiceChip" in styles
     assert "optionBtnActorFocusMatch" in styles

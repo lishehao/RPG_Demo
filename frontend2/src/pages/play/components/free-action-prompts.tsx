@@ -161,7 +161,15 @@ export function FreeActionStarterRows({
           title={starter.text}
           aria-label={t("play.free_starter_apply_title", { move: starter.text })}
         >
-          {starter.label}
+          <span style={ppStyles.freeActionStarterLabelText}>
+            {starter.label}
+          </span>
+          <span
+            style={ppStyles.freeActionStarterPreview}
+            data-play-free-action-starter-preview="true"
+          >
+            {starter.text}
+          </span>
         </button>
       ))}
     </div>
