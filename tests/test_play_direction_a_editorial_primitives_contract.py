@@ -1950,10 +1950,12 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_loop_kicker": "This turn"' in strings
     assert '"play.gameplay_loop_read_label": "Read the room"' in strings
     assert '"play.gameplay_loop_choose_label": "Choose a move"' in strings
-    assert '"play.gameplay_loop_choose_detail": "Costs, openings, target"' in strings
+    assert '"play.gameplay_loop_choose_detail": "Cost, opportunity, target"' in strings
+    assert '"play.gameplay_loop_choose_detail": "Costs, openings, target"' not in strings
     assert '"play.gameplay_loop_choose_detail": "代价、机会、目标"' in strings
     assert '"play.gameplay_loop_react_label": "Watch reaction"' in strings
-    assert '"play.gameplay_loop_update_label": "Use changes"' in strings
+    assert '"play.gameplay_loop_update_label": "Use what changed"' in strings
+    assert '"play.gameplay_loop_update_label": "Use changes"' not in strings
     assert '"play.gameplay_objective_label": "Your goal"' in strings
     assert '"play.gameplay_objective_label": "你的目标"' in strings
     assert '"play.gameplay_tracks_label": "What is at stake"' in strings
