@@ -770,6 +770,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     runtime_inspector = (ROOT / "frontend2/src/pages/play/components/runtime-inspector.tsx").read_text()
     reviewer_fixture = (ROOT / "frontend2/src/pages/play/components/play-reviewer-evidence-fixture.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     route_map = (ROOT / "frontend2/src/api/route-map.ts").read_text()
@@ -833,6 +834,8 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "reviewerProofGrid" in styles
     assert "reviewerArchiveDetails" in styles
     assert "reviewerArchiveSummary" in styles
+    assert '[data-reviewer-archive-details="true"]:not([open]) > :not(summary)' in theme
+    assert "display: none !important" in theme
     assert "playReviewerEvidenceFixture" in routes
     assert "#/qa/play-reviewer-evidence" in routes
     assert "PlayReviewerEvidenceFixture" in app

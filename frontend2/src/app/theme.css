@@ -677,6 +677,10 @@ kbd {
   line-height: 1.45;
 }
 
+[data-reviewer-archive-details="true"]:not([open]) > :not(summary) {
+  display: none !important;
+}
+
 .portfolio-section {
   margin-top: 72px;
 }
