@@ -130,11 +130,14 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "Use normal author flow" not in source
     assert "REVIEWER_EVIDENCE_CHECKS" in source
     assert "After launch, verify" in source
+    assert "4 proof points" in source
     assert "Playable state" in source
     assert "Consequence after one move" in source
     assert "Play one move, then verify character reactions and story-item consequences" in source
     assert "Proof limits" in source
     assert "The opening proves playable setup; consequence proof waits until the run produces it" in source
+    assert "Replay artifact" in source
+    assert "A completed run should become highlights, Full read, and same-opening restart evidence." in source
     assert "Live state is visible immediately" not in source
     assert "State changed" not in source
     assert "relationship pulse and inventory consequences" not in source
@@ -143,6 +146,7 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "data-reviewer-evidence-preview-item={item.label}" in source
     assert ".reviewer-evidence-preview" in theme
     assert ".reviewer-evidence-preview__head" in theme
+    assert "grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))" in theme
 
 
 def test_reviewer_launch_keeps_full_seed_secondary_to_proof_preview() -> None:
@@ -181,8 +185,11 @@ def test_portfolio_hero_surfaces_public_evidence_gate_before_proofbar() -> None:
     assert "Public repo and Pages links can lag this local build" in source
     assert "How to verify public links" in source
     assert "python3 tools/portfolio_public_evidence_preflight.py" in source
-    assert "label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only" in source
-    assert "until the intended branch is pushed, deployed, and rechecked" in source
+    assert "do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay" in source
+    assert "until the intended branch is pushed, deployed, rechecked, and the preflight passes" in source
+    assert "Verify replay artifact" in source
+    assert "Local build only: inspect a completed memory" in source
+    assert 'localHref: "#/qa/replay"' in source
     assert "public reviewers will not see" not in source
     assert ".portfolio-public-evidence-gate" in theme
     assert ".portfolio-public-evidence-gate details" in theme

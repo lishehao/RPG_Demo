@@ -492,6 +492,8 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "Proof limits" in reviewer
     assert "Consequence after one move" in reviewer
     assert "The opening proves playable setup; consequence proof waits until the run produces it" in reviewer
+    assert "Replay artifact" in reviewer
+    assert "A completed run should become highlights, Full read, and same-opening restart evidence." in reviewer
     assert "Live state is visible immediately" not in reviewer
     assert "Checks boundary" not in reviewer
     assert "archived judge checks" not in reviewer

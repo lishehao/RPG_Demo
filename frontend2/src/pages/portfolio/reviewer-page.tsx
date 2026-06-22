@@ -52,6 +52,10 @@ const REVIEWER_EVIDENCE_CHECKS = [
     label: "Proof limits",
     detail: "The opening proves playable setup; consequence proof waits until the run produces it.",
   },
+  {
+    label: "Replay artifact",
+    detail: "A completed run should become highlights, Full read, and same-opening restart evidence.",
+  },
 ] as const
 
 const REVIEWER_LAUNCH_ERROR =
@@ -195,7 +199,7 @@ export function ReviewerPage({
           >
             <div className="reviewer-evidence-preview__head">
               <span>After launch, verify</span>
-              <strong>3 proof points</strong>
+              <strong>4 proof points</strong>
             </div>
             <ol>
               {REVIEWER_EVIDENCE_CHECKS.map((item) => (
