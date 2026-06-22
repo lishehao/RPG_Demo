@@ -29,6 +29,13 @@ def test_reviewer_launch_explains_async_progress_to_external_reviewers() -> None
     assert "Playable run" in source
     assert "Playable runtime" not in source
     assert "Evidence mode" in source
+    assert "ctaLabel" in source
+    assert "Preparing reviewer session..." in source
+    assert "Shaping story brief..." in source
+    assert "Creating playable run..." in source
+    assert "Opening evidence mode..." in source
+    assert 'activeLaunchStep ? activeLaunchStep.ctaLabel : "Start reviewer run"' in source
+    assert "Launching demo..." not in source
     assert 'data-reviewer-launch-plan="true"' in source
     assert 'data-reviewer-launch-state={busy ? launchPhase : "ready"}' in source
     assert 'data-reviewer-launch-step={step.phase}' in source

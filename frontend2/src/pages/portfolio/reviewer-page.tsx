@@ -16,26 +16,31 @@ const REVIEWER_LAUNCH_STEPS: Array<{
   phase: Exclude<LaunchPhase, "ready">
   title: string
   detail: string
+  ctaLabel: string
 }> = [
   {
     phase: "auth",
     title: "Reviewer session",
     detail: "Prepares a temporary reviewer session when the demo needs one.",
+    ctaLabel: "Preparing reviewer session...",
   },
   {
     phase: "brief",
     title: "Story brief",
     detail: "Builds the cast, role pressure, and narrative constraints from the locked seed.",
+    ctaLabel: "Shaping story brief...",
   },
   {
     phase: "runtime",
     title: "Playable run",
     detail: "Creates the first scene, choices, advisor context, and evidence summary reviewers inspect beside play.",
+    ctaLabel: "Creating playable run...",
   },
   {
     phase: "opening",
     title: "Evidence mode",
     detail: "Opens the run with reviewer-only evidence summary beside the normal story UI.",
+    ctaLabel: "Opening evidence mode...",
   },
 ]
 
@@ -177,6 +182,7 @@ export function ReviewerPage({
   }
 
   const activeLaunchIndex = busy ? launchPhaseIndex(launchPhase) : -1
+  const activeLaunchStep = activeLaunchIndex >= 0 ? REVIEWER_LAUNCH_STEPS[activeLaunchIndex] : null
 
   return (
     <div className="reviewer-page">
@@ -208,7 +214,7 @@ export function ReviewerPage({
               disabled={busy || auth.loading}
               data-reviewer-launch-cta={busy ? "starting" : "ready"}
             >
-              {busy ? "Launching demo..." : "Start reviewer run"}
+              {busy && activeLaunchStep ? activeLaunchStep.ctaLabel : "Start reviewer run"}
             </button>
             <button className="reviewer-action reviewer-action--secondary" type="button" onClick={onOpenCreate} disabled={busy}>
               Write your own story
@@ -266,7 +272,7 @@ export function ReviewerPage({
           >
             <div className="reviewer-launch-plan__head">
               <span>{busy ? "Preparing reviewer run" : "What the start button prepares"}</span>
-              <strong>{busy && activeLaunchIndex >= 0 ? REVIEWER_LAUNCH_STEPS[activeLaunchIndex].title : "4 steps"}</strong>
+              <strong>{busy && activeLaunchStep ? activeLaunchStep.title : "4 steps"}</strong>
             </div>
             <ol>
               {REVIEWER_LAUNCH_STEPS.map((step, idx) => {
