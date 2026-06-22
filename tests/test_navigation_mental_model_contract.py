@@ -224,7 +224,7 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "Reviewer path" in landing
     assert "RPG_Demo#reviewer-path" in landing
     assert "#/portfolio -> #/reviewer" in landing
-    assert "inspect the live evidence path" in landing
+    assert "inspect the checked evidence path" in landing
     assert "Source evidence" in landing
     assert "What reviewers can inspect" in landing
     assert "What the demo proves" not in landing
@@ -403,7 +403,9 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert 'data-portfolio-evidence-boundary="true"' in portfolio
     assert 'data-portfolio-source-evidence="true"' in portfolio
     assert "Public artifact" in portfolio
-    assert "Live reviewer path" in portfolio
+    assert "Checked reviewer path" in portfolio
+    assert "Live reviewer path" not in portfolio
+    assert "live Reviewer path" not in portfolio
     assert "Not claimed" in portfolio
     assert "Source evidence" in portfolio
     assert "review code, docs, tests, and the" in portfolio
@@ -411,6 +413,7 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "public-main" in portfolio
     assert "may lag the current local build" in portfolio
     assert "Public repo and Pages links can lag this local build" in portfolio
+    assert "In the checked build, the Reviewer route lets evaluators inspect" in portfolio
     assert "If preflight fails, use the reviewer cut for orientation only" in portfolio
     assert "Before relying on" in portfolio
     assert "public links" in portfolio

@@ -51,8 +51,8 @@ const PORTFOLIO_EVIDENCE_BOUNDARY = [
     detail: "Video and written case study show the intended reviewer journey and product thesis.",
   },
   {
-    label: "Live reviewer path",
-    detail: "The local reviewer route lets evaluators inspect playable state, consequences, and evidence hooks.",
+    label: "Checked reviewer path",
+    detail: "In the checked build, the Reviewer route lets evaluators inspect playable state, consequences, and evidence hooks.",
   },
   {
     label: "Not claimed",
@@ -150,7 +150,7 @@ export function PortfolioPage({
               <span className="portfolio-video-card__badge">75s reviewer cut</span>
             </a>
             <p>
-              Start with the reviewer cut, then use the live Reviewer path to
+              Start with the reviewer cut, then use the checked Reviewer path to
               inspect state and consequences.
               <br />
               <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">Open on YouTube</a>
