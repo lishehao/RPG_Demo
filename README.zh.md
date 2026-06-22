@@ -95,31 +95,41 @@ evidence 则必须留在普通玩家界面之外.
 
 ## TL;DR
 
-你写一句故事开头.AI 给你搭一个**完整的 12 回合博弈剧** — 几个有秘密的 NPC、彼此手里捏着把柄的政治网络、几张可选的玩家身份卡(每张走出不同故事).你 15 分钟玩完一局,拿到一个**可复制分享的结局标签**,看自己没走过的另外 2 条路.
+你写一句故事开头.Tiny Stories 会把它整理成一个可玩的短篇互动剧:
+角色身份、目标/资产、当前场景、少量有意义的选择、一次行动后的后果,
+以及**可复制分享的结局标签** / replay artifact.
 
-> 这不是聊天 bot,不是无穷模拟,是一个**有结构、有结局、可分享**的短剧引擎.
+> 这不是聊天 bot,不是无穷模拟,是一个**有结构、有结局、可检查证据边界**的短剧引擎.
 
 ```
-hook → pressure → reversal (强制翻转) → climax → pre_finale
+seed → Story Brief → role + scene + choices
    ↓ each turn ↓
-   你的选择 + NPC 主动出招 + inventory 累积 + 可选 advisor oracle
-   ↓ end ↓
-   15 ending labels · 5 个关键时刻 highlight · 2-3 条"你没走过的路"
+   读场景 → 选/写一次行动 → 看后果 → 带着后果进入下一步
+   ↓ ending ↓
+   ending + highlights/replay + reviewer 可检查证据边界
 ```
 
 **这是给做 LLM-driven 产品的人的 portfolio case study**,不是给终端用户的 SaaS.
-机制完整 + 文档详尽 + 可 fork.读懂这个 repo 你能拿到的:**结构化 prompt design +
-scheduler-driven LLM control + 跨层契约设计** 这一套实战 pattern.
+申请材料价值不在于声称已经有 consumer traction,而在于可运行的 player loop、
+typed contracts、持久化 session、reviewer evidence 和 replay artifact 能互相对上.
+读懂这个 repo 你能拿到的:结构化 prompt design、scheduler-driven LLM control
+和跨层契约设计这一套实战 pattern.
 
 ---
 
 ## 它是什么
 
-你写一句故事的开头(豪门年夜饭 / 颁奖礼上的爆料 / 婚礼前夜的电话…),AI 给你搭一个完整的 12 回合短剧框架:3-5 个有自己 hidden_objective 和把柄的 NPC、一张 NPC 之间相互捏着把柄的政治网络、3-5 张玩家身份卡(不同 hidden_objective + leverage + 起始物品).
+你写一句故事的开头(豪门年夜饭 / 颁奖礼上的爆料 / 婚礼前夜的电话…),
+系统先整理 Story Brief,再生成可选身份、目标/资产、当前场景和首轮选择.
 
-你选一张身份卡进入,12 回合内每回合做选择 + 写自由动作 + 可选写内心独白.系统会用 9 层机制实时编织故事:NPC 主动出招 / 玩家选择因果回响 / 物件累积 / advisor oracle 用 1 回合换情报 / reversal 强制翻转 / 结局分 victory / compromised / collapsed 三档 + 15 种 label.
+你选一个身份进入后,每回合先读场景,再从少量选择、自由行动或内心动机里
+提交一个动作,随后看到后果和下一步菜单.后端把角色目标、leverage/inventory、
+NPC 压力、行动后果和 ending/replay 串起来;前端把这些机制翻译成移动端可读的
+scene → choice → consequence → replay flow.
 
-完局后给 5 张关键时刻 highlight reel + 2-3 张"你没走过的路" branch 卡片,可一键复制分享链接.
+完局后生成结局、highlight/replay 和 branch 信息,可以复制分享链接或回到
+同一个 opening 重新开局.具体机制和数量边界放在下面的架构章节里,不把它们当作
+已经验证过的消费级增长证据.
 
 > **Status:** portfolio case study / open-source preview.机制链路完整,但
 > **真人测试数据仍不是已证明的 consumer traction**.如果你 fork 跑起来玩了一局,

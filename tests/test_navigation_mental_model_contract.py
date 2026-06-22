@@ -444,8 +444,24 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "普通 Play 页面要把剧情上下文和决策上下文放近" in readme
     assert "inner motive 要贴在已选 move 上" in readme
     assert "reviewer" in readme and "普通玩家界面之外" in readme
+    assert "Tiny Stories 会把它整理成一个可玩的短篇互动剧" in readme
+    assert "一次行动后的后果" in readme
+    assert "可检查证据边界" in readme
+    assert "ending + highlights/replay + reviewer 可检查证据边界" in readme
+    assert "申请材料价值不在于声称已经有 consumer traction" in readme
+    assert "可运行的 player loop" in readme
+    assert "typed contracts、持久化 session、reviewer evidence 和 replay artifact 能互相对上" in readme
+    assert "系统先整理 Story Brief" in readme
+    assert "scene → choice → consequence → replay flow" in readme
+    assert "具体机制和数量边界放在下面的架构章节里" in readme
     assert "可复制分享的结局标签" in readme
     assert "可发朋友圈" not in readme
+    top_sections = readme[: readme.index("## 60 秒 Quickstart")]
+    assert "9 层机制" not in top_sections
+    assert "15 ending labels" not in top_sections
+    assert "15 种 label" not in top_sections
+    assert "3-5 张玩家身份卡" not in top_sections
+    assert "2-3 张\"你没走过的路\"" not in top_sections
     assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
     assert "[Case Study](./docs/CASE_STUDY.md)" in readme
     assert "[Engineering Evidence Packet](./docs/tiny-stories-engineering-evidence-packet.md)" in readme
