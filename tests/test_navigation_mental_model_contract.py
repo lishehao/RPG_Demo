@@ -132,7 +132,7 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "act once" in hero_copy
     assert "follow the consequence" in hero_copy
     assert "75s reviewer cut" in hero_copy
-    assert "Reviewer path" in portfolio
+    assert "Reviewer run" in portfolio
     assert "open the reviewer run" in portfolio
     assert "portfolio-grade AI" in portfolio
     assert "product-system evidence, not a launched consumer adoption" in portfolio
@@ -418,11 +418,11 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "not a validated consumer" in case_study
     assert "broad adoption proof" in case_study
 
-    assert "source-evidence companion to the README, demo video, and reviewer path" in system_map_flat
+    assert "source-evidence companion to the README, demo video, and reviewer run" in system_map_flat
     assert "Public visibility boundary: before citing GitHub Pages, `#/portfolio`, or" in system_map
     assert "python3 tools/portfolio_public_evidence_preflight.py" in system_map
     assert "local verification targets and demo-video orientation" in system_map_flat
-    assert "what path is current, what code backs it" in system_map_flat
+    assert "what run is current, what code backs it" in system_map_flat
     assert "provenance rather than the demo being claimed" in system_map_flat
     assert "current" in system_map
     assert "portfolio-facing product path is intentionally narrow" in system_map
@@ -439,7 +439,7 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "`#/portfolio`" in evidence_packet
     assert "`#/reviewer`" in evidence_packet
     assert "Treat these as public" in evidence_packet
-    assert "evidence only after the public visibility preflight passes" in evidence_packet
+    assert "evidence only after the public-link check passes" in evidence_packet
     assert "Public visibility check" in evidence_packet
     assert "python3 tools/portfolio_public_evidence_preflight.py" in evidence_packet
     assert "local `HEAD` is ahead of `origin/main`" in evidence_packet
@@ -575,7 +575,9 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert 'data-portfolio-evidence-boundary="true"' in portfolio
     assert 'data-portfolio-source-evidence="true"' in portfolio
     assert "Public artifact" in portfolio
-    assert "Checked reviewer path" in portfolio
+    assert "Checked reviewer run" in portfolio
+    assert "Reviewer run" in portfolio
+    assert "Reviewer path" not in portfolio
     assert "Live reviewer path" not in portfolio
     assert "live Reviewer path" not in portfolio
     assert "Not claimed" in portfolio
@@ -589,9 +591,9 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "If the public-link check fails, use the reviewer cut for orientation only" in portfolio
     assert "Before relying on" in portfolio
     assert "public links" in portfolio
-    assert "run the public-evidence check" in portfolio
+    assert "run the public-link check" in portfolio
     assert "python3 tools/portfolio_public_evidence_preflight.py" in portfolio
-    assert "do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay" in portfolio
+    assert "do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay" in portfolio
     assert "surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes" in portfolio
     assert "use the reviewer cut for orientation only" in portfolio
     assert "do not cite this local build as public evidence until the public-link check passes" in portfolio
@@ -681,7 +683,9 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "evidence summary reviewers inspect beside play" in reviewer
     assert "playable state and the first" in reviewer
     assert "consequence after a move" in reviewer
-    assert 'aria-label="Reviewer evidence path"' in reviewer
+    assert 'aria-label="Reviewer run evidence"' in reviewer
+    assert 'aria-label="Reviewer run"' in reviewer
+    assert 'aria-label="Reviewer path"' not in reviewer
     assert "Reviewer proof path" not in reviewer
     assert "playable state and consequences" not in reviewer
     assert "reviewer-only evidence summary beside the normal story UI" in reviewer

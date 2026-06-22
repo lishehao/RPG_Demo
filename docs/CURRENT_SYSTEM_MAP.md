@@ -1,13 +1,13 @@
 # Current System Map
 
 Read this as the source-evidence companion to the README, demo video, and
-reviewer path. It answers three reviewer questions: what path is current, what
+reviewer run. It answers three reviewer questions: what run is current, what
 code backs it, and which older experiments are provenance rather than the demo
 being claimed.
 
 Public visibility boundary: before citing GitHub Pages, `#/portfolio`, or
 `#/reviewer` as application evidence, run
-`python3 tools/portfolio_public_evidence_preflight.py`. If the preflight fails,
+`python3 tools/portfolio_public_evidence_preflight.py`. If the public-link check fails,
 use those surfaces as local verification targets and demo-video orientation
 only until the intended branch is pushed, deployed, and rechecked.
 

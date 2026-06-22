@@ -41,7 +41,7 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     output = format_status(status)
 
     assert status_exit_code(status) == 1
-    assert "Portfolio public evidence preflight: FAIL" in output
+    assert "Portfolio public-link check: FAIL" in output
     assert "371 commit(s) ahead of origin/main" in output
     assert "public reviewers will not see those local changes" in output
     assert "Evidence-sensitive reviewer surfaces not yet public" in output
@@ -52,7 +52,7 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     assert "- Create flow" in output
     assert "- Play loop / action feedback" in output
     assert "- Replay / shared memory" in output
-    assert "- Portfolio / reviewer route" in output
+    assert "- Portfolio / reviewer run" in output
     assert "- Narrative backend" in output
     assert "- Contract tests" in output
     assert "Evidence-sensitive local changes not yet public" in output
@@ -66,7 +66,9 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     assert "push the intended branch" in output
     assert "python3 tools/portfolio_public_evidence_preflight.py" in output
     assert "Application wording: use the demo video for orientation only" in output
-    assert "do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay routes as public evidence" in output
+    assert "do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence" in output
+    assert "Reviewer path" not in output
+    assert "routes as public evidence" not in output
     assert "label the listed surfaces as local-only application evidence" in output
 
 
@@ -83,7 +85,7 @@ def test_public_evidence_preflight_passes_only_when_synced() -> None:
     output = format_status(status)
 
     assert status_exit_code(status) == 0
-    assert "Portfolio public evidence preflight: PASS" in output
+    assert "Portfolio public-link check: PASS" in output
     assert "matches origin/main" in output
     assert "public reviewers will not see" not in output
 
@@ -97,15 +99,15 @@ def test_public_evidence_preflight_fails_when_deployed_page_is_stale() -> None:
         behind_count=0,
         changed_paths=(),
         public_page_url="https://lishehao.github.io/RPG_Demo/",
-        public_page_missing_markers=("Reviewer path", "#/portfolio -> #/reviewer", "Who this loop is for"),
+        public_page_missing_markers=("Reviewer run guide", "open the reviewer run locally", "Who this loop is for"),
     )
 
     output = format_status(status)
 
     assert status_exit_code(status) == 1
     assert "Deployed page https://lishehao.github.io/RPG_Demo/ is missing current portfolio evidence markers" in output
-    assert "- Reviewer path" in output
-    assert "- #/portfolio -> #/reviewer" in output
+    assert "- Reviewer run guide" in output
+    assert "- open the reviewer run locally" in output
     assert "- Who this loop is for" in output
     assert "GitHub Pages may still be stale" in output
     assert "python3 tools/portfolio_public_evidence_preflight.py" in output
@@ -123,14 +125,16 @@ def test_public_evidence_preflight_is_documented_for_application_links() -> None
     assert "before sending a public GitHub Pages or repository" in readme
     assert "If it fails, use the demo video for orientation" in readme
     assert "`#/portfolio`,\n`#/reviewer`, local QA routes such as `#/qa/home-start` and `#/qa/replay`,\nStory Desk, Create, Play, and Replay as local-only evidence" in readme
-    assert "before sending application or recruiting" in readme
-    assert "links. It should report" in readme
+    assert "before sending application or recruiting links:" in readme
+    assert "It should report that\nlocal `HEAD` matches `origin/main`" in readme
     assert "local `HEAD` matches `origin/main`" in readme
     assert "GitHub and GitHub Pages reviewers" in readme
     assert "Story Desk, template detail, portfolio/reviewer, or" in readme
     assert "use the demo video for orientation only" in readme
-    assert "not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or" in readme
-    assert "Replay routes as public evidence until the preflight passes" in readme
+    assert "not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or" in readme
+    assert "Replay surfaces as public evidence until the public-link check passes" in readme
+    assert "Reviewer path" not in readme
+    assert "routes as public evidence" not in readme
     assert "affected reviewer surfaces" in readme
     assert "live GitHub Pages marker check" in readme
 
@@ -185,7 +189,7 @@ def test_evidence_sensitive_surface_summary_keeps_hidden_paths_legible() -> None
         "Create flow",
         "Play loop / action feedback",
         "Replay / shared memory",
-        "Portfolio / reviewer route",
+        "Portfolio / reviewer run",
         "Narrative backend",
         "Contract tests",
     )
@@ -194,8 +198,8 @@ def test_evidence_sensitive_surface_summary_keeps_hidden_paths_legible() -> None
 def test_public_page_markers_cover_current_reviewer_path_language() -> None:
     assert PUBLIC_PAGE_MARKERS == (
         "75s reviewer cut",
-        "Reviewer path",
-        "#/portfolio -> #/reviewer",
+        "Reviewer run guide",
+        "open the reviewer run locally",
         "Source evidence",
         "What reviewers can inspect",
         "portfolio-grade AI product-system evidence",

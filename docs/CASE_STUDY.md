@@ -6,7 +6,7 @@ outside the claim.
 
 Public visibility boundary: cite `#/portfolio`, `#/reviewer`, Story Desk,
 Create, Play, and Replay as public application evidence only after
-`python3 tools/portfolio_public_evidence_preflight.py` passes. If it fails,
+`python3 tools/portfolio_public_evidence_preflight.py` passes. If the public-link check fails,
 those routes are local verification targets and demo-video context, not public
 proof.
 

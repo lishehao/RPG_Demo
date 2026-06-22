@@ -59,7 +59,7 @@ const PORTFOLIO_EVIDENCE_BOUNDARY = [
     detail: "Video and written case study show the intended reviewer journey and product thesis.",
   },
   {
-    label: "Checked reviewer path",
+    label: "Checked reviewer run",
     detail: "In the checked build, the reviewer run lets evaluators inspect playable state, consequences, and evidence hooks.",
   },
   {
@@ -74,7 +74,7 @@ const PORTFOLIO_REVIEW_LENS = [
     detail: "Read a scene, compare a few meaningful moves, act once, then follow the consequence.",
   },
   {
-    label: "Reviewer path",
+    label: "Reviewer run",
     detail: "Watch the 75s cut, open the reviewer run, then inspect state and consequence evidence.",
   },
   {
@@ -102,11 +102,11 @@ const PORTFOLIO_TARGET_USER_MODEL = [
 ] as const
 
 const PORTFOLIO_PUBLIC_EVIDENCE_GATE = {
-  label: "Public evidence gate",
+  label: "Public-link check",
   summary:
     "Public repo and Pages links can lag this local build. If the public-link check fails, use the reviewer cut for orientation only.",
   detail:
-    "Before sending a public GitHub Pages or repository link, run the public-evidence check. If it fails, do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes.",
+    "Before sending a public GitHub Pages or repository link, run the public-link check. If it fails, do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes.",
   command: "python3 tools/portfolio_public_evidence_preflight.py",
 } as const
 
@@ -302,7 +302,7 @@ export function PortfolioPage({
               Open the repo and system map to review code, docs, tests, and the
               narrow product path behind this demo. These are public-main
               references and may lag the current local build. Before relying on
-              public links, run the public-evidence check; if it fails,
+              public links, run the public-link check; if it fails,
               use the reviewer cut for orientation only and do not cite the
               current local build as public evidence until the check passes.
             </p>
@@ -316,7 +316,7 @@ export function PortfolioPage({
 
         <section className="portfolio-section portfolio-section--two">
           <div>
-            <span className="portfolio-kicker">Curated reviewer path</span>
+            <span className="portfolio-kicker">Curated reviewer run</span>
             <h2>{REVIEWER_DEMO_TITLE}</h2>
             <p className="portfolio-lede">
               The demo seed is intentionally dense: live awards stakes, a

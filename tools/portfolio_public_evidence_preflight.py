@@ -13,8 +13,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PUBLIC_PAGE_URL = "https://lishehao.github.io/RPG_Demo/"
 PUBLIC_PAGE_MARKERS = (
     "75s reviewer cut",
-    "Reviewer path",
-    "#/portfolio -> #/reviewer",
+    "Reviewer run guide",
+    "open the reviewer run locally",
     "Source evidence",
     "What reviewers can inspect",
     "portfolio-grade AI product-system evidence",
@@ -46,7 +46,7 @@ EVIDENCE_SURFACE_PREFIXES = (
     ("Create flow", ("frontend2/src/pages/create/",)),
     ("Play loop / action feedback", ("frontend2/src/pages/play/",)),
     ("Replay / shared memory", ("frontend2/src/pages/replay/",)),
-    ("Portfolio / reviewer route", ("frontend2/src/pages/portfolio/",)),
+    ("Portfolio / reviewer run", ("frontend2/src/pages/portfolio/",)),
     ("Narrative backend", ("rpg_backend/narrative/",)),
     ("Contract tests", ("tests/",)),
 )
@@ -152,13 +152,13 @@ def status_exit_code(status: PublicEvidenceStatus) -> int:
 def format_status(status: PublicEvidenceStatus) -> str:
     if status_exit_code(status) == 0:
         return (
-            "Portfolio public evidence preflight: PASS\n"
+            "Portfolio public-link check: PASS\n"
             f"Local HEAD matches {status.remote_ref} at {status.head[:7]}.\n"
             "Public GitHub and GitHub Pages reviewers should see the same committed source evidence."
         )
 
     lines = [
-        "Portfolio public evidence preflight: FAIL",
+        "Portfolio public-link check: FAIL",
         f"Local HEAD: {status.head[:7]}",
         f"{status.remote_ref}: {status.remote_head[:7]}",
     ]
@@ -200,10 +200,10 @@ def format_status(status: PublicEvidenceStatus) -> str:
     )
     lines.append(
         "Application wording: use the demo video for orientation only; do not cite the current "
-        "Portfolio, Reviewer path, Story Desk, Create, Play, or Replay routes as public evidence "
-        "until this preflight passes."
+        "Portfolio, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence "
+        "until this public-link check passes."
     )
-    lines.append("Until this preflight passes, label the listed surfaces as local-only application evidence.")
+    lines.append("Until this public-link check passes, label the listed surfaces as local-only application evidence.")
     return "\n".join(lines)
 
 

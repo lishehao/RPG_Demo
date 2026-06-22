@@ -341,7 +341,7 @@ local `HEAD` matches `origin/main`; if it reports
 local commits ahead of the public branch, GitHub and GitHub Pages reviewers
 will not see the current Story Desk, template detail, portfolio/reviewer, or
 play evidence yet. In that state, use the demo video for orientation only; do
-not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or
+not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or
 Replay surfaces as public evidence until the public-link check passes. It also summarizes
 the affected reviewer surfaces before the path list, so large local branches do
 not hide a template or Story Desk change in truncated output. It also runs a

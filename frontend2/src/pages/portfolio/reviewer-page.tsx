@@ -217,7 +217,7 @@ export function ReviewerPage({
           </div>
           <ul
             className="reviewer-hero-proof"
-            aria-label="Reviewer evidence path"
+            aria-label="Reviewer run evidence"
             data-reviewer-hero-proof-strip="true"
           >
             {REVIEWER_HERO_PROOF_POINTS.map((item) => (
@@ -359,7 +359,7 @@ export function ReviewerPage({
           ) : null}
         </motion.section>
 
-        <ol className="reviewer-checklist" aria-label="Reviewer path">
+        <ol className="reviewer-checklist" aria-label="Reviewer run">
           {REVIEWER_DEMO_ACTIONS.map((item, idx) => (
             <li key={item}>
               <span>{String(idx + 1).padStart(2, "0")}</span>

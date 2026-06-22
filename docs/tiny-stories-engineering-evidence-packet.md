@@ -13,7 +13,7 @@ Historical live evidence anchor:
 
 This is a dated 2026-06-08 live-gate snapshot kept for admissions and
 recommender evidence. It is not a claim that the commit below is current HEAD;
-for the current reviewer path, first check public visibility. If the preflight
+for the current reviewer run, first check public visibility. If the public-link check
 passes, start from the root README, `#/portfolio`, `#/reviewer`, and
 `docs/CURRENT_SYSTEM_MAP.md`. If it fails, those routes remain local
 verification targets and demo-video context, not public proof.
@@ -25,16 +25,16 @@ verification targets and demo-video context, not public proof.
 - Current source/local-reviewable evidence: root README,
   `docs/CURRENT_SYSTEM_MAP.md`, `docs/CASE_STUDY.md`, `#/portfolio`,
   `#/reviewer`, and the contract tests listed below. Treat these as public
-  evidence only after the public visibility preflight passes.
+  evidence only after the public-link check passes.
 
-Current reviewer path boundary:
+Current reviewer run boundary:
 
 - Public application wording should cite only source, video, and deployed pages
   that a reviewer can actually open.
 - `#/portfolio`, `#/reviewer`, Story Desk, Create, Play, Replay, and local QA
   routes are local verification evidence until the intended branch is pushed,
   deployed, and rechecked.
-- If the preflight fails, describe those surfaces as local evidence or demo
+- If the public-link check fails, describe those surfaces as local evidence or demo
   orientation; do not present them as externally reviewable proof.
 
 Public visibility check:
