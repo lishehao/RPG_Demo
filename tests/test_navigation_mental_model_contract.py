@@ -139,6 +139,8 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Player loop" in portfolio
     assert "Claim boundary" in portfolio
     assert ".portfolio-hero__lens" in theme
+    assert 'aria-label="Portfolio evidence points"' in portfolio
+    assert 'aria-label="Portfolio proof points"' not in portfolio
     assert "PORTFOLIO_REVIEW_ORDER" in portfolio
     assert "Watch 75s reviewer cut" in portfolio
     assert "Open Reviewer path" in portfolio
@@ -270,6 +272,8 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "\npytest -q" not in readme
     assert "python tools/" not in readme
     assert "python -m tools.rpg_eval" not in readme
+    assert "## Engineering Evidence" in readme
+    assert "## Engineering Proof" not in readme
     assert "| Play UI | `frontend2/src/pages/play/`" in readme
     assert "StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules" in readme
 

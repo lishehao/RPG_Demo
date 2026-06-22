@@ -242,7 +242,7 @@ export function PortfolioPage({
           </div>
         </motion.section>
 
-        <section className="portfolio-proofbar" aria-label="Portfolio proof points">
+        <section className="portfolio-proofbar" aria-label="Portfolio evidence points">
           {PORTFOLIO_METRICS.map((metric) => (
             <div className="portfolio-proofbar__item" key={metric.value}>
               <strong>{metric.value}</strong>
