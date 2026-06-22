@@ -1,8 +1,14 @@
 # Tiny Stories Case Study
 
-Read this as source evidence after the 75s demo and `#/portfolio` page. It
-summarizes what reviewers can inspect, where that evidence lives in the
-codebase, and what is still outside the claim.
+Read this as source evidence after the 75s demo. It summarizes what reviewers
+can inspect, where that evidence lives in the codebase, and what is still
+outside the claim.
+
+Public visibility boundary: cite `#/portfolio`, `#/reviewer`, Story Desk,
+Create, Play, and Replay as public application evidence only after
+`python3 tools/portfolio_public_evidence_preflight.py` passes. If it fails,
+those routes are local verification targets and demo-video context, not public
+proof.
 
 ## Problem
 

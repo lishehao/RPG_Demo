@@ -376,10 +376,14 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     case_study = (ROOT / "docs/CASE_STUDY.md").read_text()
     system_map = (ROOT / "docs/CURRENT_SYSTEM_MAP.md").read_text()
     evidence_packet = (ROOT / "docs/tiny-stories-engineering-evidence-packet.md").read_text()
+    case_study_flat = " ".join(case_study.split())
+    system_map_flat = " ".join(system_map.split())
 
-    assert "Read this as source evidence after the 75s demo and `#/portfolio` page" in case_study
-    assert "what reviewers can inspect" in case_study
-    assert "where that evidence lives" in case_study
+    assert "Read this as source evidence after the 75s demo" in case_study_flat
+    assert "Public visibility boundary: cite `#/portfolio`, `#/reviewer`, Story Desk" in case_study
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in case_study
+    assert "local verification targets and demo-video context, not public" in case_study_flat
+    assert "what reviewers can inspect, where that evidence lives" in case_study_flat
     assert "what the project proves" not in case_study
     assert "bounded 12-turn session" in case_study
     assert "8-20 turn" not in case_study
@@ -402,9 +406,12 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "not a validated consumer" in case_study
     assert "broad adoption proof" in case_study
 
-    assert "source-evidence companion to the README, GitHub Pages demo" in system_map
-    assert "what path is current, what code backs it" in system_map
-    assert "provenance rather than the demo being claimed" in system_map
+    assert "source-evidence companion to the README, demo video, and reviewer path" in system_map_flat
+    assert "Public visibility boundary: before citing GitHub Pages, `#/portfolio`, or" in system_map
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in system_map
+    assert "local verification targets and demo-video orientation" in system_map_flat
+    assert "what path is current, what code backs it" in system_map_flat
+    assert "provenance rather than the demo being claimed" in system_map_flat
     assert "current" in system_map
     assert "portfolio-facing product path is intentionally narrow" in system_map
     assert "not required to run or review the demo" in system_map
