@@ -1060,6 +1060,17 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-layout-priority="action-first"' in fixture
     assert 'data-gameplay-objective="true"' in fixture
     assert "Your goal" in fixture
+    assert 'data-gameplay-scene-anchor="true"' in fixture
+    assert "Scene now" in fixture
+    assert "Backstage, the countdown keeps rolling" in fixture
+    assert "Arthur smiles for the sponsor cameras" in fixture
+    assert "Lena watches the green-room door" in fixture
+    assert "sceneAnchor" in fixture
+    assert "sceneAnchorText" in fixture
+    assert "window.innerWidth > 640" in fixture
+    assert 'document.querySelector<HTMLElement>(\'[data-gameplay-selected-action="true"]\')' in fixture
+    assert "selectedCard.scrollIntoView" in fixture
+    assert 'block: "end"' in fixture
     assert 'data-gameplay-stakes-header="true"' in fixture
     assert "What is at stake" in fixture
     assert "Each move trades time, pressure, trust, or proof." in fixture

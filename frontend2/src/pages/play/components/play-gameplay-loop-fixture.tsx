@@ -548,6 +548,20 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     return () => window.clearTimeout(timer)
   }, [committed, phase])
 
+  useEffect(() => {
+    if (!selectedId || isPending || window.innerWidth > 640) return
+    const selectedCard = document.querySelector<HTMLElement>('[data-gameplay-selected-action="true"]')
+    if (!selectedCard) return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const timer = window.setTimeout(() => {
+      selectedCard.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "end",
+      })
+    }, 40)
+    return () => window.clearTimeout(timer)
+  }, [isPending, motiveOpen, selectedId])
+
   const selectAction = (action: FixtureAction) => {
     if (isPending) return
     setSelectedId((current) => (current === action.id ? current : action.id))
@@ -606,6 +620,13 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             <h1 style={styles.title}>Find the singer before the countdown ends</h1>
             <p style={styles.bodyCopy}>
               The awards livestream is still running. Every move should buy time, expose proof, or move a person into position.
+            </p>
+          </section>
+
+          <section style={styles.sceneAnchor} data-gameplay-scene-anchor="true">
+            <span style={styles.sceneAnchorLabel}>Scene now</span>
+            <p style={styles.sceneAnchorText}>
+              Backstage, the countdown keeps rolling. Arthur smiles for the sponsor cameras while Lena watches the green-room door. Change the room before panic reaches the livestream.
             </p>
           </section>
 
@@ -1109,6 +1130,26 @@ const styles: Record<string, CSSProperties> = {
     color: actionPalette.mutedIvory,
     lineHeight: 1.55,
     maxWidth: 720,
+  },
+  sceneAnchor: {
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.045)",
+    padding: "11px 13px",
+    borderRadius: 8,
+    display: "grid",
+    gap: 5,
+  },
+  sceneAnchorLabel: {
+    color: "rgba(255,226,172,0.9)",
+    fontSize: 11,
+    fontWeight: 820,
+    letterSpacing: 0,
+  },
+  sceneAnchorText: {
+    margin: 0,
+    color: "rgba(244,239,230,0.84)",
+    lineHeight: 1.42,
+    fontSize: 13.5,
   },
   trackGrid: {
     display: "grid",
