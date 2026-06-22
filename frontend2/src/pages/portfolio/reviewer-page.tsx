@@ -58,7 +58,7 @@ const REVIEWER_LAUNCH_ERROR =
   "The reviewer run did not open this time."
 
 const REVIEWER_LAUNCH_RECOVERY =
-  "The locked seed and evidence checklist are still here. Retry the curated run, use normal author flow, or return to Story Desk."
+  "The locked seed and evidence checklist are still here. Retry the curated run, review the Portfolio evidence page, use normal author flow, or return to Story Desk."
 
 const launchPhaseIndex = (phase: LaunchPhase) =>
   REVIEWER_LAUNCH_STEPS.findIndex((step) => step.phase === phase)
@@ -66,10 +66,12 @@ const launchPhaseIndex = (phase: LaunchPhase) =>
 export function ReviewerPage({
   onBackHome,
   onOpenCreate,
+  onOpenPortfolio,
   onSessionStarted,
 }: {
   onBackHome: () => void
   onOpenCreate: () => void
+  onOpenPortfolio: () => void
   onSessionStarted: (sessionId: string) => void
 }) {
   const api = useApi()
@@ -263,6 +265,15 @@ export function ReviewerPage({
                   data-reviewer-launch-error-retry="true"
                 >
                   Retry curated run
+                </button>
+                <button
+                  className="reviewer-error__action"
+                  type="button"
+                  onClick={onOpenPortfolio}
+                  disabled={busy}
+                  data-reviewer-launch-error-portfolio="true"
+                >
+                  Review portfolio evidence
                 </button>
                 <button
                   className="reviewer-error__action"

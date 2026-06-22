@@ -128,6 +128,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
         <ReviewerPage
           onBackHome={() => navigate({ name: "home" })}
           onOpenCreate={() => navigate({ name: "create" })}
+          onOpenPortfolio={() => navigate({ name: "portfolio" })}
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId, reviewer: true })}
         />
       )
