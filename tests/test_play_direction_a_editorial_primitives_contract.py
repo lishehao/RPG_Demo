@@ -807,6 +807,11 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert 'const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"' in runtime_inspector
     assert runtime_inspector.count("{reviewerProofLimitLabel}") >= 2
     assert 'data-reviewer-archive-details="true"' in runtime_inspector
+    assert 'data-reviewer-archive-scope-note="true"' in runtime_inspector
+    assert "Use this as local reviewer evidence" in runtime_inspector
+    assert "It is not a public benchmark" in runtime_inspector
+    assert "repo/demo preflight" in runtime_inspector
+    assert "reviewerArchiveScopeNote" in styles
     assert 'open={hasArchivedJudgeEvidence}' not in runtime_inspector
     assert "Archived evaluation available" in runtime_inspector
     assert '`${archivedScore} · ${archivedCheckStatus}`' in runtime_inspector

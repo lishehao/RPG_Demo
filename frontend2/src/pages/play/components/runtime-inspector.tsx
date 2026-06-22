@@ -165,6 +165,13 @@ export function RuntimeInspector({
             {hasArchivedJudgeEvidence ? `${archivedScore} · ${archivedCheckStatus}` : "live proof is enough for this view"}
           </strong>
         </summary>
+        <div style={ppStyles.reviewerArchiveScopeNote} data-reviewer-archive-scope-note="true">
+          <strong>Archive scope</strong>
+          <span>
+            Use this as local reviewer evidence: it verifies playable state, consequences, and contract checks for this run.
+            It is not a public benchmark; pair it with repo/demo preflight before citing it.
+          </span>
+        </div>
         <div style={ppStyles.evaluationHero}>
           <div style={ppStyles.evaluationVerdictBlock}>
             <span style={ppStyles.evaluationLabel}>{reviewerProofLimitLabel}</span>
