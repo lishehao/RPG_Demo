@@ -45,6 +45,15 @@ def test_shared_header_supports_explicit_back_for_secondary_pages() -> None:
     assert ".topbar-back" in theme
     assert ".topbar--with-back .brand { display: none; }" in theme
     assert ".topbar--with-back .brand strong" not in theme
+    mobile_topbar_start = theme.index("  .topbar {\n    min-height: 54px;")
+    mobile_topbar_end = theme.index("  .topbar-actions > .btn", mobile_topbar_start)
+    mobile_topbar = theme[mobile_topbar_start:mobile_topbar_end]
+    assert "padding: 5px 18px" in mobile_topbar
+    assert ".topbar-back { flex: 0 0 auto; min-height: 44px; height: auto;" in mobile_topbar
+    assert "min-height: 44px" in mobile_topbar[mobile_topbar.index(".topbar-login-link") :]
+    assert "min-height: 44px" in mobile_topbar[mobile_topbar.index(".topbar-lang {") :]
+    assert "min-height: 44px" in mobile_topbar[mobile_topbar.index(".topbar-lang__pill") :]
+    assert "min-width: 44px" in mobile_topbar[mobile_topbar.index(".topbar-lang__pill") :]
     assert "showBackButton" in about
     assert "showBackButton" in portfolio
     assert "showBackButton" in reviewer

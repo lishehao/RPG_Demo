@@ -1752,12 +1752,12 @@ kbd {
   }
   .topbar {
     min-height: 54px;
-    padding: 12px 18px;
+    padding: 5px 18px;
     flex-wrap: nowrap;
     gap: 12px;
   }
   .topbar-left { gap: 10px; flex: 1 1 auto; min-width: 0; }
-  .topbar-back { flex: 0 0 auto; font-size: 12.5px; padding-bottom: 4px; }
+  .topbar-back { flex: 0 0 auto; min-height: 44px; height: auto; font-size: 12.5px; padding-bottom: 0; }
   .brand { flex: 0 1 auto; min-width: 0; }
   .brand strong { font-size: 15px; white-space: nowrap; }
   .topbar--with-back .brand { display: none; }
@@ -1771,12 +1771,23 @@ kbd {
   .topbar-link { display: none; }
   .topbar-login-link {
     display: inline-flex;
+    min-height: 44px;
     padding-left: 10px;
+    padding-bottom: 0;
   }
   .topbar-lang {
     flex-shrink: 0;
+    min-height: 44px;
     gap: 8px;
     border-bottom-color: transparent;
+  }
+  .topbar-lang__pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding-bottom: 0;
   }
   .topbar-actions > .btn {
     height: auto;
