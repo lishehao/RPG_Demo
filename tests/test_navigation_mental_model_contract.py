@@ -55,6 +55,31 @@ def test_shared_header_supports_explicit_back_for_secondary_pages() -> None:
     assert '"action.back_home": "← 故事入口"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
 
+def test_about_page_matches_portfolio_case_study_boundaries() -> None:
+    about = (ROOT / "frontend2/src/pages/about/about-page.tsx").read_text()
+
+    assert 'data-about-page="true"' in about
+    assert "data-about-section={section.id}" in about
+    assert "portfolio case study" in about
+    assert "application evidence" in about
+    assert "not as a launched consumer service" in about
+    assert "local-only evidence" in about
+    assert "Do not put real secrets" in about
+    assert "playable state, visible change, and proof limits" in about
+    assert "作品集/申请材料证据" in about
+    assert "不是已经上线的" in about
+    assert "不要在故事 seed" in about
+    assert "commercial launch" not in about
+    assert "hello@tinystories.app" not in about
+    assert "Aliyun" not in about
+    assert "Qwen" not in about
+    assert "DeepSeek" not in about
+    assert "provider" not in about
+    assert "sell your data" not in about
+    assert "出售你的数据" not in about
+    assert "legal review" not in about
+
+
 def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()

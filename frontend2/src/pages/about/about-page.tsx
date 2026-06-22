@@ -3,20 +3,9 @@ import { Header } from "../../shared/ui/header"
 import { useLanguage } from "../../shared/lib/i18n"
 
 /**
- * Minimal "About / Terms / Privacy" stub. Single page covering:
- *   - what this product is
- *   - what we store / don't share
- *   - how to report broken / inappropriate content
- *   - contact
- *
- * Pre-launch this is enough to satisfy a basic legal floor and
- * give users somewhere to link from a footer. Replace with a real
- * legal review before any commercial launch.
- *
- * Content is bilingual: zh and en branches render entirely separate
- * paragraph blocks rather than translating field-by-field, because
- * the prose flow matters and word-level translation produces a
- * stilted page.
+ * Bilingual project/about page for the portfolio demo. This is not a legal
+ * terms page; it keeps the player-facing loop, local evidence boundary, and
+ * AI-content limits aligned with the README/reviewer path.
  */
 export function AboutPage({
   onBackHome,
@@ -30,10 +19,10 @@ export function AboutPage({
   return (
     <div style={apStyles.page}>
       <Header onHome={onBackHome} onCreate={onOpenCreate} showBackButton />
-      <main style={apStyles.main}>
+      <main style={apStyles.main} data-about-page="true">
         <h1 style={apStyles.title}>{content.title}</h1>
         {content.sections.map((section, i) => (
-          <section style={apStyles.section} key={i}>
+          <section style={apStyles.section} key={i} data-about-section={section.id}>
             <h2 style={apStyles.h2}>{section.heading}</h2>
             {section.body}
           </section>
@@ -45,7 +34,7 @@ export function AboutPage({
 
 type AboutContent = {
   title: string
-  sections: ReadonlyArray<{ heading: string; body: ReactNode }>
+  sections: ReadonlyArray<{ id: string; heading: string; body: ReactNode }>
 }
 
 const apStyles: Record<string, CSSProperties> = {
@@ -85,73 +74,73 @@ const aboutContentZh: AboutContent = {
   title: "关于 Tiny Stories",
   sections: [
     {
+      id: "what-this-is",
       heading: "这是什么",
       body: (
         <>
           <p style={apStyles.p}>
-            一个由 AI 实时生成的互动短剧产品.你写下一个戏剧瞬间,AI
-            为你搭起人物、场景、第一段叙述;你通过选择和自由输入推进剧情;
-            12 回合左右走到一个有标签的结局,可以分享给朋友看,也可以邀请
-            朋友玩同一个开场.
+            Tiny Stories 是一个 portfolio case study 里的互动短剧 demo.
+            你写下一个戏剧瞬间,系统把它变成角色、目标、开场场景和少量可选行动;
+            你读场景、比较选择、行动一次,再根据可见后果进入下一回合.
           </p>
           <p style={apStyles.p}>
-            所有故事都是 LLM 实时生成的 — 意味着每一局都不一样,也意味着
-            偶尔可能出现不连贯、不合理或不符合你预期的内容.这是它有趣的
-            地方,也是它当前的局限.
+            它的目标不是无穷小说流或聊天机器人,而是一个短篇、可结束、可回放的
+            AI narrative runtime.当前请把它读作作品集/申请材料证据,不是已经上线的
+            消费级服务.
           </p>
         </>
       ),
     },
     {
-      heading: "我们存什么",
+      id: "data-boundary",
+      heading: "数据和本地边界",
       body: (
         <>
           <ul style={apStyles.ul}>
-            <li>你的用户名(仅用于登录与展示)</li>
-            <li>你创建的故事模板和你玩的局(包括叙述、选择、顾问对话)</li>
-            <li>你的故事是公开还是私有,由你自己决定</li>
+            <li>本地运行会保存故事模板、游玩 session、选择、顾问对话和 replay.</li>
+            <li>公开/私有/凭链接的可见性用于 demo 路径,不是已发布的商业账户系统.</li>
+            <li>不要在故事 seed、自由输入或 inner motive 里写真实秘密、账号、密钥或私人身份信息.</li>
           </ul>
           <p style={apStyles.p}>
-            <strong>不会做:</strong>
-            出售你的数据、把你的故事训练成第三方的模型、把你设为私有的故事公开.
-            公开模板的访问者能看到你的玩法回放(这是产品核心机制);
-            如果你不希望被看到,把模板设为"只有我"或"凭链接".
+            申请材料里可验证的是工程 loop: typed contracts、持久化状态、reviewer evidence、
+            recovery path 和移动端 UI.如果 public preflight 失败,请把当前 `#/portfolio`、
+            `#/reviewer`、Create、Play 和 Replay 都标成 local-only evidence.
           </p>
         </>
       ),
     },
     {
+      id: "content-boundary",
       heading: "内容与边界",
       body: (
         <>
           <p style={apStyles.p}>
-            我们使用第三方 AI 服务(阿里云 Qwen / DeepSeek 等),它们有自己
-            的内容审查机制.某些种子或玩法可能被服务端拒绝 — 这通常表现为
-            顾问回复 "踩到红线" 或者故事接不上某个动作.请尝试换个角度.
+            故事内容由 AI 生成,可能出现不连贯、不合逻辑或与你预期不同的情节.
+            这正是项目需要可见状态、回合边界、replay 和 reviewer proof 的原因:
+            让人能检查系统如何处理不确定性.
           </p>
           <p style={apStyles.p}>
             <strong>请不要:</strong>
             生成涉及未成年人的不当内容、教唆暴力或自残、造谣针对真实人物的
-            内容.我们保留删除任何违反公序良俗或法律的故事的权利.
-          </p>
-          <p style={apStyles.p}>
-            发现问题内容?给我们发邮件:{" "}
-            <a href="mailto:hello@tinystories.app" style={apStyles.link}>
-              hello@tinystories.app
-            </a>
+            内容,或把真实敏感信息放进剧情.
           </p>
         </>
       ),
     },
     {
-      heading: "免责",
+      id: "review-path",
+      heading: "怎么审阅这个项目",
       body: (
-        <p style={apStyles.p}>
-          这是一个 AI 生成内容的产品.所有故事、角色、对话都是虚构的.
-          如果某个情节恰好与现实人物或事件相似,那是 LLM 训练数据的副作用,
-          不代表本产品的立场.剧情中的选择、顾问的建议都不是任何形式的
-          生活/法律/情感建议 — 它们是戏剧的一部分.
-        </p>
+        <>
+          <p style={apStyles.p}>
+            推荐顺序:先看 75 秒 demo,再本地打开 `#/portfolio`,从那里启动
+            `#/reviewer`,最后对照 README、Current System Map、Case Study 和测试.
+          </p>
+          <p style={apStyles.p}>
+            普通玩家界面应该只显示剧情和选择;reviewer evidence 应该留在专门路径里,
+            用来证明 playable state、visible change 和 proof limits.
+          </p>
+        </>
       ),
     },
   ],
@@ -161,84 +150,86 @@ const aboutContentEn: AboutContent = {
   title: "About Tiny Stories",
   sections: [
     {
+      id: "what-this-is",
       heading: "What this is",
       body: (
         <>
           <p style={apStyles.p}>
-            An interactive short-drama product powered by real-time AI
-            generation. You write a dramatic moment, the AI builds the
-            cast, the scene and the opening passage. You drive the plot
-            via choices and free-form actions. Around 12 turns later
-            you reach a labeled ending you can share with friends, or
-            invite them to play the same opening.
+            Tiny Stories is an interactive short-drama demo inside a
+            portfolio case study. You write a dramatic moment; the
+            system turns it into roles, goals, an opening scene, and a
+            small set of playable moves. You read the scene, compare
+            choices, act once, then use the visible consequence to pick
+            the next beat.
           </p>
           <p style={apStyles.p}>
-            Every run is generated live by an LLM — every session is
-            different, and occasionally the output may be incoherent,
-            implausible or different from what you expected. That's the
-            charm and the current limitation.
+            The goal is not an infinite fiction feed or a chat bot. It
+            is a compact AI narrative runtime with a bounded episode,
+            visible state, ending, and replay. Read it as portfolio and
+            application evidence, not as a launched consumer service.
           </p>
         </>
       ),
     },
     {
-      heading: "What we store",
+      id: "data-boundary",
+      heading: "Data and local boundary",
       body: (
         <>
           <ul style={apStyles.ul}>
-            <li>Your username (for sign-in and display only).</li>
-            <li>The story templates you create and the sessions you play (narration, choices, advisor messages).</li>
-            <li>Whether each story is public or private — your call.</li>
+            <li>Local runs store story templates, play sessions, choices, advisor messages, and replays.</li>
+            <li>Public, private, and link-only visibility support the demo path; they are not proof of a shipped account system.</li>
+            <li>Do not put real secrets, credentials, keys, or private identity details into seeds, free actions, or inner motives.</li>
           </ul>
           <p style={apStyles.p}>
-            <strong>What we don't do:</strong> sell your data, train
-            third-party models on your stories, or make a private
-            story public. Visitors to a public template can replay
-            your run (that's the core social mechanic). If you don't
-            want that, set the template to "private" or "link only."
+            The application evidence is the engineered loop: typed
+            contracts, persistent state, reviewer evidence, recovery
+            paths, and mobile UI. If the public preflight fails, treat
+            `#/portfolio`, `#/reviewer`, Create, Play, and Replay as
+            local-only evidence until the intended branch is deployed.
           </p>
         </>
       ),
     },
     {
+      id: "content-boundary",
       heading: "Content boundaries",
       body: (
         <>
           <p style={apStyles.p}>
-            We use third-party AI services (Aliyun Qwen / DeepSeek
-            and similar) which apply their own content moderation.
-            Some seeds or actions may be rejected at the provider —
-            you'll usually see this as the advisor replying "off-limits"
-            or the story not advancing on a given action. Try a
-            different angle.
+            Story content is generated by AI and can be inconsistent,
+            implausible, or different from what you expected. That is
+            why the project keeps state, turn boundaries, replay, and
+            reviewer proof visible: the system should be inspectable
+            when generation is uncertain.
           </p>
           <p style={apStyles.p}>
             <strong>Please don't:</strong> generate inappropriate
             content involving minors, incite violence or self-harm,
-            or post defamatory content about real people. We reserve
-            the right to remove any story that violates community
-            norms or applicable law.
-          </p>
-          <p style={apStyles.p}>
-            See something concerning? Email us at{" "}
-            <a href="mailto:hello@tinystories.app" style={apStyles.link}>
-              hello@tinystories.app
-            </a>
+            post defamatory content about real people, or place real
+            sensitive information into the story.
           </p>
         </>
       ),
     },
     {
-      heading: "Disclaimer",
+      id: "review-path",
+      heading: "How to review it",
       body: (
-        <p style={apStyles.p}>
-          This product generates AI content. All stories, characters,
-          and dialogue are fictional. Any resemblance to real people
-          or events is an artifact of LLM training data, not an
-          endorsement by us. In-story choices and advisor suggestions
-          are NOT life, legal or emotional advice — they're part of
-          the drama.
-        </p>
+        <>
+          <p style={apStyles.p}>
+            Recommended path: watch the 75-second demo, run locally,
+            open `#/portfolio`, launch `#/reviewer`, then compare the
+            result with the README, Current System Map, Case Study, and
+            contract tests.
+          </p>
+          <p style={apStyles.p}>
+            Normal players should see story and decisions. Reviewer
+            evidence stays on the dedicated inspection path so it can
+            prove playable state, visible change, and proof limits
+            without turning Play into a dashboard.
+          </p>
+        </>
       ),
     },
   ],
