@@ -791,12 +791,14 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "What this proves" in runtime_inspector
     assert 'data-reviewer-evidence-primer="true"' in runtime_inspector
     assert "Start with the live proof chips." in runtime_inspector
-    assert "Scored rows appear only when an archived evaluation result exists" in runtime_inspector
-    assert "reviewer run can still prove live play state" in runtime_inspector
+    assert "Archived scoring stays collapsed under the proof summary" in runtime_inspector
+    assert "playability first" in runtime_inspector
     assert 'const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"' in runtime_inspector
     assert runtime_inspector.count("{reviewerProofLimitLabel}") >= 2
     assert 'data-reviewer-archive-details="true"' in runtime_inspector
-    assert 'open={hasArchivedJudgeEvidence}' in runtime_inspector
+    assert 'open={hasArchivedJudgeEvidence}' not in runtime_inspector
+    assert "Archived evaluation available" in runtime_inspector
+    assert '`${archivedScore} · ${archivedCheckStatus}`' in runtime_inspector
     assert "Archived evaluation not available yet" in runtime_inspector
     assert "live proof is enough for this view" in runtime_inspector
     assert "Checks boundary" not in runtime_inspector
@@ -825,6 +827,9 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "#/qa/play-reviewer-evidence" in routes
     assert "PlayReviewerEvidenceFixture" in app
     assert "data-play-reviewer-evidence-fixture=\"true\"" in reviewer_fixture
+    assert 'data-play-reviewer-evidence-fixture-case="fresh"' in reviewer_fixture
+    assert 'data-play-reviewer-evidence-fixture-case="archived"' in reviewer_fixture
+    assert "ARCHIVED_AGENT_EVENTS" in reviewer_fixture
     assert "<RuntimeInspector" in reviewer_fixture
     assert "data-reviewer-proof-strip" not in reviewer_fixture
     assert "Proof limits" not in reviewer_fixture

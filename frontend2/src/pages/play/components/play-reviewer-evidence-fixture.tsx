@@ -1,4 +1,4 @@
-import type { NarrativeStoryHistoryResponse, NarrativeStoryMessage } from "../../../api/contracts"
+import type { NarrativeAgentEvent, NarrativeStoryHistoryResponse, NarrativeStoryMessage } from "../../../api/contracts"
 import { useT } from "../../../shared/lib/i18n"
 import { ppStyles } from "../play-styles"
 import { RuntimeInspector } from "./runtime-inspector"
@@ -118,6 +118,39 @@ const REVIEWER_STORY: NarrativeStoryHistoryResponse = {
   },
 }
 
+const ARCHIVED_AGENT_EVENTS: NarrativeAgentEvent[] = [
+  {
+    event_index: 1,
+    ord: 2,
+    event_type: "step_judge",
+    created_at: "2026-06-22T00:00:01.000Z",
+    payload: {
+      schema_version: "step_judge.v1",
+      source: "deterministic_v1",
+      turn_index: 2,
+      narrator_ord: 2,
+      status: "pass",
+      violations: [],
+      summary: "Latest beat keeps player-facing consequence, inventory change, and next moves visible.",
+    },
+  },
+  {
+    event_index: 2,
+    ord: 2,
+    event_type: "contract_judge",
+    created_at: "2026-06-22T00:00:02.000Z",
+    payload: {
+      schema_version: "contract_judge.v1",
+      source: "deterministic_v1",
+      turn_index: 2,
+      narrator_ord: 2,
+      status: "pass",
+      violations: [],
+      summary: "Archived contract proof exists, but the reviewer surface should still start from live evidence.",
+    },
+  },
+]
+
 export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => void }) {
   const t = useT()
 
@@ -146,18 +179,34 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
         }}
         aria-label="Reviewer evidence fixture"
       >
-        <RuntimeInspector
-          story={REVIEWER_STORY}
-          ending={null}
-          lastNarrator={REVIEWER_LAST_NARRATOR}
-          turnsRemaining={10}
-          liveInventory={["Copied timestamp", "Green-room badge"]}
-          effectiveLastInventoryDelta={REVIEWER_LAST_NARRATOR.inventory_delta}
-          agentPlan={null}
-          agentEvents={[]}
-          llmEvents={[]}
-          agentTraceAccessGranted={false}
-        />
+        <div data-play-reviewer-evidence-fixture-case="fresh">
+          <RuntimeInspector
+            story={REVIEWER_STORY}
+            ending={null}
+            lastNarrator={REVIEWER_LAST_NARRATOR}
+            turnsRemaining={10}
+            liveInventory={["Copied timestamp", "Green-room badge"]}
+            effectiveLastInventoryDelta={REVIEWER_LAST_NARRATOR.inventory_delta}
+            agentPlan={null}
+            agentEvents={[]}
+            llmEvents={[]}
+            agentTraceAccessGranted={false}
+          />
+        </div>
+        <div data-play-reviewer-evidence-fixture-case="archived">
+          <RuntimeInspector
+            story={REVIEWER_STORY}
+            ending={null}
+            lastNarrator={REVIEWER_LAST_NARRATOR}
+            turnsRemaining={10}
+            liveInventory={["Copied timestamp", "Green-room badge"]}
+            effectiveLastInventoryDelta={REVIEWER_LAST_NARRATOR.inventory_delta}
+            agentPlan={null}
+            agentEvents={ARCHIVED_AGENT_EVENTS}
+            llmEvents={[]}
+            agentTraceAccessGranted={true}
+          />
+        </div>
       </section>
     </main>
   )

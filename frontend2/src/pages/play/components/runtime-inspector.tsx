@@ -115,8 +115,8 @@ export function RuntimeInspector({
         <strong>Evaluation evidence</strong>
       </div>
       <p style={ppStyles.reviewerEvidencePrimer} data-reviewer-evidence-primer="true">
-        Start with the live proof chips. Scored rows appear only when an archived evaluation result exists; a fresh
-        reviewer run can still prove live play state before that archive is available.
+        Start with the live proof chips. Archived scoring stays collapsed under the proof summary, so this view proves
+        playability first and still lets reviewers inspect the deeper record.
       </p>
       <section
         style={ppStyles.reviewerProofStrip}
@@ -149,11 +149,12 @@ export function RuntimeInspector({
       <details
         style={ppStyles.reviewerArchiveDetails}
         data-reviewer-archive-details="true"
-        open={hasArchivedJudgeEvidence}
       >
         <summary style={ppStyles.reviewerArchiveSummary} data-reviewer-archive-summary="true">
-          <span>{hasArchivedJudgeEvidence ? "Archived evaluation details" : "Archived evaluation not available yet"}</span>
-          <strong>{hasArchivedJudgeEvidence ? archivedScore : "live proof is enough for this view"}</strong>
+          <span>{hasArchivedJudgeEvidence ? "Archived evaluation available" : "Archived evaluation not available yet"}</span>
+          <strong>
+            {hasArchivedJudgeEvidence ? `${archivedScore} · ${archivedCheckStatus}` : "live proof is enough for this view"}
+          </strong>
         </summary>
         <div style={ppStyles.evaluationHero}>
           <div style={ppStyles.evaluationVerdictBlock}>
