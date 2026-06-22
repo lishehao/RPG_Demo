@@ -255,6 +255,9 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "`#/reviewer`" in reviewer_path
     assert "`#/qa/home-start`" in reviewer_path
     assert "`#/qa/replay`" in reviewer_path
+    assert "four checks to keep consistent" in reviewer_path
+    assert "playable state, one-move" in reviewer_path
+    assert "consequence, evidence limits, and replay artifact" in reviewer_path
     assert "local QA routes such as `#/qa/home-start` and `#/qa/replay`" in reviewer_path
     assert "local-only evidence" in reviewer_path
     assert "pushed, deployed, and rechecked" in reviewer_path
@@ -430,6 +433,8 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "`#/reviewer`" in readme
     assert "`#/qa/home-start`" in readme
     assert "`#/qa/replay`" in readme
+    assert "四个检查点要保持一致" in readme
+    assert "可游玩状态、一次行动后的后果、证据边界、回放 artifact" in readme
     assert "local QA evidence" in readme
     assert "不要当作公开链接证据" in readme
     assert "## 目标玩家 / 内容消费模型" in readme

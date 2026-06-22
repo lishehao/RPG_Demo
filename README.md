@@ -74,6 +74,8 @@ Recommended order for an admissions or recruiting review:
    surface.
 3. Launch the reviewer route from the portfolio page and inspect the
    locked-seed run, runtime evidence hooks, and replay/ending path.
+   The four checks to keep consistent are playable state, one-move
+   consequence, evidence limits, and replay artifact.
 4. In a local build, open `#/qa/home-start` when you need deterministic
    evidence that a populated Story Desk card lands in a readable first turn.
 5. In a local build, open `#/qa/replay` when you need deterministic evidence

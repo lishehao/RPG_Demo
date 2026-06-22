@@ -68,6 +68,7 @@ template 或 Story Desk 变化被截断输出藏掉.直到目标分支 push、�
 2. 本地运行后打开 `#/portfolio`,看 guided case-study surface.
 3. 从 portfolio 进入 `#/reviewer`,检查 locked seed、runtime evidence hooks、
    replay / ending path.
+   四个检查点要保持一致:可游玩状态、一次行动后的后果、证据边界、回放 artifact.
 4. 如果需要稳定检查 Story Desk populated card 到首回合的入口体验,本地打开
    `#/qa/home-start`;这只是 local QA evidence,不要当作公开链接证据.
 5. 如果需要稳定检查 completed-run replay artifact,本地打开 `#/qa/replay`;
