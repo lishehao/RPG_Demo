@@ -135,6 +135,13 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "docs/CURRENT_SYSTEM_MAP.md" in landing
     assert "MP4 fallback" not in landing
     assert "Muted preview is best-effort" not in landing
+    hero_copy = landing[landing.index("<h1>One seed") : landing.index('<div class="tag-row"')]
+    assert "short, story-first mobile episode" in hero_copy
+    assert "players read one scene" in hero_copy
+    assert "compare a few meaningful moves" in hero_copy
+    assert "act once" in hero_copy
+    assert "follow the visible" in hero_copy
+    assert "reviewer path then exposes" in hero_copy
     assert "portfolio-grade AI product-system evidence" in landing
     assert "not a" in landing
     assert "launched consumer game or broad adoption proof" in landing
