@@ -115,11 +115,19 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert 'data-portfolio-public-evidence-gate-summary="true"' in gate_before_order
     assert 'data-portfolio-public-evidence-gate-details="true"' in gate_before_order
     assert "How to verify public links" in gate_before_order
-    assert "If the preview does not play" in portfolio
-    assert "open the MP4 demo" in portfolio
+    assert "PORTFOLIO_REVIEWER_CUT_POSTER" in portfolio
+    assert "/portfolio/admissions-trailer-contact.jpg" in portfolio
+    assert (ROOT / "frontend2/public/portfolio/admissions-trailer-contact.jpg").exists()
+    assert "portfolio-video-card" in portfolio
+    assert "<iframe" not in portfolio
+    assert "YOUTUBE_DEMO_EMBED_URL" not in portfolio
+    assert "Start with the reviewer cut" in portfolio
+    assert "Open MP4 backup" in portfolio
     assert "Muted autoplay is best-effort" not in portfolio
     assert "MP4 fallback" not in portfolio
     assert ".portfolio-review-order" in theme
+    assert ".portfolio-video-card" in theme
+    assert ".portfolio-video-card__badge" in theme
     assert "grid-template-columns: 34px minmax(0, 1fr)" in theme
 
 

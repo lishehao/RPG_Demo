@@ -13,9 +13,10 @@ import {
   REVIEWER_DEMO_SEED,
   REVIEWER_DEMO_TITLE,
   SYSTEM_MAP_URL,
-  YOUTUBE_DEMO_EMBED_URL,
   YOUTUBE_DEMO_URL,
 } from "./portfolio-data"
+
+const PORTFOLIO_REVIEWER_CUT_POSTER = "/portfolio/admissions-trailer-contact.jpg"
 
 const PORTFOLIO_REVIEW_ORDER = [
   {
@@ -147,18 +148,24 @@ export function PortfolioPage({
               ))}
             </ol>
           </div>
-          <div className="portfolio-hero__video" aria-label="Tiny Stories YouTube demo preview">
-            <iframe
-              src={YOUTUBE_DEMO_EMBED_URL}
-              title="Tiny Stories: Inspectable AI Narrative Runtime Demo"
-              allow="autoplay; encrypted-media; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
+          <div className="portfolio-hero__video" aria-label="Tiny Stories reviewer cut preview">
+            <a
+              className="portfolio-video-card"
+              href={YOUTUBE_DEMO_URL}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open the 75 second Tiny Stories reviewer cut"
+            >
+              <img src={PORTFOLIO_REVIEWER_CUT_POSTER} alt="Tiny Stories reviewer cut contact sheet" />
+              <span className="portfolio-video-card__badge">75s reviewer cut</span>
+            </a>
             <p>
-              If the preview does not play, <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">open it on YouTube</a>
+              Start with the reviewer cut, then use the live Reviewer path to
+              inspect state and consequences.
+              <br />
+              <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">Open on YouTube</a>
               <span aria-hidden="true"> · </span>
-              <a href={LOCAL_DEMO_MP4_URL}>open the MP4 demo</a>
+              <a href={LOCAL_DEMO_MP4_URL}>Open MP4 backup</a>
             </p>
           </div>
         </motion.section>

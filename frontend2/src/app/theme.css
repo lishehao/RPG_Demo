@@ -583,14 +583,6 @@ kbd {
   box-shadow: 0 36px 100px rgba(0,0,0,0.48);
 }
 
-.portfolio-hero__video iframe {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border: 0;
-  background: #000;
-}
-
 .portfolio-hero__video p {
   margin: 0;
   padding: 12px 14px;
@@ -598,6 +590,47 @@ kbd {
   border-top: 1px solid rgba(255,255,255,0.10);
   font-size: 12.5px;
   line-height: 1.45;
+}
+
+.portfolio-video-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  color: #fff;
+}
+
+.portfolio-video-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portfolio-video-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.42));
+  pointer-events: none;
+}
+
+.portfolio-video-card__badge {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 1;
+  max-width: calc(100% - 28px);
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(5,5,6,0.72);
+  color: rgba(255,238,196,0.96);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .portfolio-proofbar {
