@@ -748,6 +748,8 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
     script = (ROOT / "docs/demo-video/portfolio-demo-script.md").read_text()
 
     assert "Demo Story Seed And Reviewer Run Seed" in script
+    assert "shows Tiny Stories as a real playable system" in script
+    assert "the trailer shows the product loop quickly" in script
     assert "The recorded trailer and the reviewer run serve different review jobs" in script
     assert "Use one polished English seed throughout the recorded video" in script
     assert "Use the current reviewer run seed for the Portfolio and Reviewer pages" in script
@@ -762,6 +764,9 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
     assert "Story Brief is ready" in script
     assert "click `Generate and enter story`" in script
     assert "Building opening scene..." in script
+    assert "Private objective" in script
+    assert "Leverage cards / assets" in script
+    assert "The player gets a role, a private objective, and usable cards." in script
     assert "Move sent`, `Room reacting`, and `Next moves forming`" in script
     assert "Open `Write your own move`" in script
     assert "Open `Add inner motive`" in script
@@ -798,6 +803,11 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
         "LLM interactive drama engine",
         "150 webtoon assets",
         "High-stakes mode",
+        "proves Tiny Stories",
+        "the trailer proves",
+        "Secret objective",
+        "Trump cards / inventory",
+        "role, an objective, and private leverage",
     ):
         assert stale not in script
 

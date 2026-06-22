@@ -2,7 +2,7 @@
 
 ## Goal
 
-Create a portfolio-ready demo video that proves Tiny Stories is a real playable system, not only a concept trailer.
+Create a portfolio-ready demo video that shows Tiny Stories as a real playable system, not only a concept trailer.
 
 The final video should mix three layers:
 
@@ -23,7 +23,7 @@ The viewer should understand this in one pass:
 ## Demo Story Seed And Reviewer Run Seed
 
 The recorded trailer and the reviewer run serve different review jobs:
-the trailer proves the product loop quickly, while `#/reviewer` gives a fresh
+the trailer shows the product loop quickly, while `#/reviewer` gives a fresh
 locked run that can be inspected in the app.
 
 Use one polished English seed throughout the recorded video:
@@ -111,18 +111,18 @@ Show:
 - Stage progress bar
 - "This run, you are..."
 - Player role banner
-- Secret objective
-- Trump cards / inventory
+- Private objective
+- Leverage cards / assets
 
 Motion treatment:
 Use crop pans:
 1. Cast strip
 2. Role banner
-3. Secret objective
-4. Inventory / leverage
+3. Private objective
+4. Leverage cards / assets
 
 On-screen text:
-The player gets a role, an objective, and private leverage.
+The player gets a role, a private objective, and usable cards.
 
 Voiceover:
 You are not just reading. You enter the scene as someone with a motive and cards to play.
