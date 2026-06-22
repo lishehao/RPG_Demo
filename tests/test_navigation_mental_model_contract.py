@@ -92,14 +92,19 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "compare a" in hero_copy and "few meaningful moves" in hero_copy
     assert "act once" in hero_copy
     assert "follow the consequence" in hero_copy
+    assert "75s reviewer cut" in hero_copy
+    assert "Reviewer path" in hero_copy
+    assert "#/portfolio -&gt; #/reviewer" in hero_copy
+    assert "portfolio-grade AI" in hero_copy
     assert "product-system evidence, not a launched consumer adoption" in hero_copy
     assert "claim" in hero_copy
     assert "PORTFOLIO_REVIEW_ORDER" in portfolio
-    assert "Watch 75s demo" in portfolio
-    assert "Launch reviewer run" in portfolio
+    assert "Watch 75s reviewer cut" in portfolio
+    assert "Open Reviewer path" in portfolio
+    assert "Use #/portfolio -> #/reviewer" in portfolio
     assert "Inspect evidence" in portfolio
     assert '<a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL}' in portfolio
-    assert "Watch 75s demo" in portfolio[portfolio.index("portfolio-hero__actions") : portfolio.index('data-portfolio-review-order="true"')]
+    assert "Watch 75s reviewer cut" in portfolio[portfolio.index("portfolio-hero__actions") : portfolio.index('data-portfolio-review-order="true"')]
     assert "portfolio-action portfolio-action--secondary" in portfolio
     assert "Launch reviewer route" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
     assert 'data-portfolio-review-order="true"' in portfolio
@@ -325,8 +330,10 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
 
     assert "PORTFOLIO_TARGET_USER_MODEL" in portfolio
     assert 'data-portfolio-target-user-model="true"' in portfolio
+    assert "Who this loop is for" in portfolio
     assert "Target player" in portfolio
-    assert "Story-first players who want a short interactive drama on mobile" in portfolio
+    assert "story-first players who want a compact mobile drama" in portfolio
+    assert "not a blank writing canvas or a dashboard" in portfolio
     assert "Content rhythm" in portfolio
     assert "Read the current scene, compare a few meaningful moves" in portfolio
     assert "UI promise" in portfolio
@@ -351,6 +358,7 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert 'SYSTEM_MAP_URL = "https://github.com/lishehao/RPG_Demo/blob/main/docs/CURRENT_SYSTEM_MAP.md"' in data
     assert "EVIDENCE_PACKET_URL" in data
     assert "https://github.com/lishehao/RPG_Demo/blob/main/docs/tiny-stories-engineering-evidence-packet.md" in data
+    assert "portfolio-grade AI product-system evidence" in portfolio
     assert "not proof of a launched consumer product or broad user adoption" in portfolio
     assert "product-system evidence, not" in portfolio
     assert "story generation" in portfolio

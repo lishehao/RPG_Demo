@@ -20,13 +20,13 @@ import {
 const PORTFOLIO_REVIEW_ORDER = [
   {
     step: "watch",
-    title: "Watch 75s demo",
+    title: "Watch 75s reviewer cut",
     detail: "See the bounded product loop before opening the live reviewer path.",
   },
   {
     step: "launch",
-    title: "Launch reviewer run",
-    detail: "Start the locked seed and verify the generated play surface yourself.",
+    title: "Open Reviewer path",
+    detail: "Use #/portfolio -> #/reviewer to verify the locked seed and generated play surface.",
   },
   {
     step: "inspect",
@@ -46,7 +46,7 @@ const PORTFOLIO_EVIDENCE_BOUNDARY = [
   },
   {
     label: "Not claimed",
-    detail: "This is portfolio-grade runtime evidence, not proof of a launched consumer product or broad user adoption.",
+    detail: "This is portfolio-grade AI product-system evidence, not proof of a launched consumer product or broad user adoption.",
   },
 ] as const
 
@@ -54,7 +54,7 @@ const PORTFOLIO_TARGET_USER_MODEL = [
   {
     label: "Target player",
     detail:
-      "Story-first players who want a short interactive drama on mobile, not a blank writing tool or a systems dashboard.",
+      "For story-first players who want a compact mobile drama, not a blank writing canvas or a dashboard.",
   },
   {
     label: "Content rhythm",
@@ -94,16 +94,16 @@ export function PortfolioPage({
             <span className="ts-tag">Portfolio Case Study</span>
             <h1>Tiny Stories is an inspectable AI narrative runtime.</h1>
             <p>
-              Watch the 75-second admissions demo first: it shows a short,
+              Watch the 75s reviewer cut first: it shows a short,
               story-first mobile episode where players read a scene, compare a
               few meaningful moves, act once, and follow the consequence. The
-              live reviewer route is the inspection path behind that loop. Read
-              it as product-system evidence, not a launched consumer adoption
-              claim.
+              Reviewer path (#/portfolio -&gt; #/reviewer) is the inspection
+              path behind that loop. Read it as portfolio-grade AI
+              product-system evidence, not a launched consumer adoption claim.
             </p>
             <div className="portfolio-hero__actions">
               <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">
-                Watch 75s demo
+                Watch 75s reviewer cut
               </a>
               <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenReviewer}>
                 Launch reviewer route
@@ -157,7 +157,7 @@ export function PortfolioPage({
         >
           <div className="portfolio-section__head">
             <span className="portfolio-kicker">Target user</span>
-            <h2>Built for short, story-first play.</h2>
+            <h2>Who this loop is for.</h2>
             <p>
               The product bet is not infinite AI fiction. It is a compact
               episode where a player can understand the scene, make one strong
