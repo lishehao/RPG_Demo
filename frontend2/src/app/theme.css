@@ -995,6 +995,8 @@ kbd {
   display: grid;
   grid-template-columns: 34px 1fr;
   gap: 12px;
+  min-height: 44px;
+  align-items: center;
   text-align: left;
   padding: 0;
   color: var(--text-muted);

@@ -637,6 +637,19 @@ def test_portfolio_loop_maps_each_state_to_visible_evidence() -> None:
     assert "secret merger · awards livestream · ex with proof" not in data
 
 
+def test_portfolio_inspector_tabs_keep_mobile_touch_targets() -> None:
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
+
+    tab_rule = theme[
+        theme.index(".portfolio-inspector__tabs button {") : theme.index(
+            ".portfolio-inspector__tabs button span {"
+        )
+    ]
+
+    assert "min-height: 44px;" in tab_rule
+    assert "align-items: center;" in tab_rule
+
+
 def test_portfolio_case_study_points_are_evidence_oriented() -> None:
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
 
