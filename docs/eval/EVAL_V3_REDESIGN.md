@@ -231,13 +231,13 @@ oracle:
 The canonical new suite is the runtime mode:
 
 ```bash
-python -m tools.rpg_eval.runner --runtime --output-dir artifacts/eval_v3/runtime
+python3 -m tools.rpg_eval.runner --runtime --output-dir artifacts/eval_v3/runtime
 ```
 
 For local regression, use a bounded deterministic slice:
 
 ```bash
-python -m tools.rpg_eval.runner \
+python3 -m tools.rpg_eval.runner \
   --runtime \
   --case-limit 1 \
   --policy-limit 3 \
@@ -261,7 +261,7 @@ module; if the question is product readiness, add it as a v3 gate or event.
 The first useful milestone is intentionally narrow:
 
 ```bash
-python -m tools.rpg_eval.runner --dry-run --output-dir artifacts/eval_v3/dry_run
+python3 -m tools.rpg_eval.runner --dry-run --output-dir artifacts/eval_v3/dry_run
 ```
 
 It must write `run_manifest.json`, `cases.json`, `case_summary.json`, and

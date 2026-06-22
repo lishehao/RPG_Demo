@@ -59,8 +59,8 @@ tools/http_product_smoke.py        live HTTP smoke for /narrative/* routes
 The default release gate is deterministic and does not spend LLM tokens:
 
 ```bash
-python tools/narrative_release_gate.py --mode fake
-python -m pytest -q
+python3 tools/narrative_release_gate.py --mode fake
+python3 -m pytest -q
 ```
 
 `tools/narrative_release_gate.py` exercises the current core directly:

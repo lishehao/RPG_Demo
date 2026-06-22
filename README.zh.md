@@ -128,7 +128,7 @@ scheduler-driven LLM control + 跨层契约设计** 这一套实战 pattern.
 
 ```bash
 # 1. 后端依赖
-pip install -e ".[dev]"
+python3 -m pip install -e ".[dev]"
 
 # 2. 配置 LLM endpoint
 cp .env.example .env
@@ -243,7 +243,7 @@ LLM endpoint 是唯一必填项 — 任何 OpenAI-compatible API 都能跑,包�
 
 ```bash
 # 后端类型检查 + 单测
-pytest -q
+python3 -m pytest -q
 
 # 前端类型 + 生产构建
 cd frontend2

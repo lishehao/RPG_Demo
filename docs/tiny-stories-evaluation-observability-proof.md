@@ -12,7 +12,7 @@ The main acceptance command is live-backed. It drives the product API path end
 to end against a running backend with Live Pro configured:
 
 ```bash
-python -m tools.rpg_eval.tiny_stories_reliability_harness \
+python3 -m tools.rpg_eval.tiny_stories_reliability_harness \
   --mode live_acceptance \
   --base-url http://127.0.0.1:8350 \
   --runtime-db "$APP_RUNTIME_STATE_DB_PATH" \
@@ -72,7 +72,7 @@ It covers seven release-relevant cases:
 The repeatable command is:
 
 ```bash
-python -m tools.rpg_eval.tiny_stories_reliability_harness \
+python3 -m tools.rpg_eval.tiny_stories_reliability_harness \
   --mode protocol_contract \
   --output artifacts/eval_tiny_stories/reliability_protocol_summary.json
 ```

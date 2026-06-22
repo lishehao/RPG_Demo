@@ -261,7 +261,7 @@ and LLM result files.
 CI-safe gold-set smoke, no live backend and no external LLM judge:
 
 ```bash
-python -m tools.rpg_eval.narrative_llm_judge \
+python3 -m tools.rpg_eval.narrative_llm_judge \
   --gold-set tools/rpg_eval/gold_sets/narrative_agent_smoke.json \
   --mode fixture \
   --llm-judge fake \
@@ -272,7 +272,7 @@ Live DeepSeek-backed gold-set run against an existing session. This is the real
 evaluation path when the backend is running and live LLM cost is approved:
 
 ```bash
-python -m tools.rpg_eval.narrative_llm_judge \
+python3 -m tools.rpg_eval.narrative_llm_judge \
   --gold-set <live_gold_set.json> \
   --mode live \
   --llm-judge live \
@@ -287,7 +287,7 @@ reviewer/demo evaluation path and may call the configured narrative runtime LLM
 when turns advance:
 
 ```bash
-python -m tools.rpg_eval.narrative_mock_user \
+python3 -m tools.rpg_eval.narrative_mock_user \
   --mode live \
   --base-url http://127.0.0.1:8000 \
   --session <session_id> \
@@ -301,7 +301,7 @@ python -m tools.rpg_eval.narrative_mock_user \
 CI/test dry-run, no live backend and no LLM key:
 
 ```bash
-python -m tools.rpg_eval.narrative_mock_user \
+python3 -m tools.rpg_eval.narrative_mock_user \
   --mode fixture \
   --policy leverage_seeker \
   --leverage-policy opportunistic \

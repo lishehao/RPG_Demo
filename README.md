@@ -268,10 +268,10 @@ and ops reliability.
 Start here:
 
 - [Eval v3 redesign](./docs/eval/EVAL_V3_REDESIGN.md)
-- `python -m tools.rpg_eval.runner --dry-run --output-dir artifacts/eval_v3/dry_run`
+- `python3 -m tools.rpg_eval.runner --dry-run --output-dir artifacts/eval_v3/dry_run`
 - [Narrative mock-user agent chain](./docs/eval/MOCK_USER_AGENT_CHAIN.md)
-- `python -m tools.rpg_eval.narrative_mock_user --mode live --base-url http://127.0.0.1:8000 --session <session_id> --output artifacts/mock_user_episode.jsonl`
-- `python -m tools.rpg_eval.narrative_llm_judge --gold-set tools/rpg_eval/gold_sets/narrative_agent_smoke.json --mode fixture --llm-judge fake --output artifacts/narrative_llm_judge_report.json`
+- `python3 -m tools.rpg_eval.narrative_mock_user --mode live --base-url http://127.0.0.1:8000 --session <session_id> --output artifacts/mock_user_episode.jsonl`
+- `python3 -m tools.rpg_eval.narrative_llm_judge --gold-set tools/rpg_eval/gold_sets/narrative_agent_smoke.json --mode fixture --llm-judge fake --output artifacts/narrative_llm_judge_report.json`
 
 ---
 
@@ -284,7 +284,7 @@ Requirements:
 - A DeepSeek V4 Flash chat/completions endpoint
 
 ```bash
-pip install -e ".[dev]"
+python3 -m pip install -e ".[dev]"
 cp .env.example .env
 # Fill:
 #   APP_RESPONSES_PLAY_BASE_URL=https://api.deepseek.com
@@ -308,9 +308,9 @@ Open `http://127.0.0.1:8001`. For the curated portfolio path, open
 Useful checks:
 
 ```bash
-python tools/narrative_release_gate.py --mode fake
+python3 tools/narrative_release_gate.py --mode fake
 python3 tools/portfolio_public_evidence_preflight.py
-pytest -q
+python3 -m pytest -q
 
 cd frontend2
 npm run check
@@ -336,8 +336,8 @@ template; production authoring-off runs should read and play an already seeded
 public template:
 
 ```bash
-python tools/http_product_smoke.py --base-url http://127.0.0.1:8000
-python tools/http_product_smoke.py --base-url http://127.0.0.1:8000 --use-first-public-template
+python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000
+python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000 --use-first-public-template
 ```
 
 ---

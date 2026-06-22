@@ -123,6 +123,15 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "portfolio-grade AI product-system evidence" in readme
     assert "It is not claimed as a launched consumer" in readme
     assert "game or broad adoption proof" in readme
+    assert "python3 tools/narrative_release_gate.py --mode fake" in readme
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
+    assert "python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000" in readme
+    assert "python3 -m pip install -e" in readme
+    assert "python3 -m pytest -q" in readme
+    assert "\npip install -e" not in readme
+    assert "\npytest -q" not in readme
+    assert "python tools/" not in readme
+    assert "python -m tools.rpg_eval" not in readme
     assert "| Play UI | `frontend2/src/pages/play/`" in readme
     assert "StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules" in readme
 
@@ -194,6 +203,8 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "current" in system_map
     assert "portfolio-facing product path is intentionally narrow" in system_map
     assert "not required to run or review the demo" in system_map
+    assert "python3 tools/narrative_release_gate.py --mode fake" in system_map
+    assert "python3 -m pytest -q" in system_map
 
     assert "`frontend2/src/pages/play/components/runtime-inspector.tsx`" in evidence_packet
     assert "These were local" in evidence_packet
