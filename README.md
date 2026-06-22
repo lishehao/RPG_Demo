@@ -39,7 +39,7 @@
   <tr>
     <td><strong>Player-facing</strong><br/>A seed becomes a short interactive drama with role cards, choices, free-form action, advisor help, and a compiled ending.</td>
     <td><strong>State-shaped</strong><br/>Deterministic schedulers shape pressure, state, inventory, and consequences before each LLM call.</td>
-    <td><strong>Reviewable</strong><br/>Portfolio and reviewer routes expose the contracts, state, and boundaries behind the polished demo.</td>
+    <td><strong>Reviewable</strong><br/>Portfolio and the reviewer run expose the contracts, state, and boundaries behind the polished demo.</td>
   </tr>
 </table>
 
@@ -60,7 +60,7 @@
 The unlisted YouTube cut is the primary reviewer watch path. The MP4 is
 the same 720p reviewer cut for environments where YouTube is blocked
 (~4.6 MB). Treat the video as orientation; the evidence lives in the
-source, tests, reviewer route, and system map.
+source, tests, reviewer run, and system map.
 
 ---
 
@@ -72,7 +72,7 @@ Recommended order for an admissions or recruiting review:
    repository first.
 2. Run locally and open `#/portfolio`; use it as the guided case-study
    surface.
-3. Launch the reviewer route from the portfolio page and inspect the
+3. Open the reviewer run from the portfolio page and inspect the
    locked-seed run, state/consequence evidence hooks, and replay/ending path.
    The four checks to keep consistent are playable state, one-move
    consequence, evidence limits, and replay artifact.
@@ -91,7 +91,8 @@ QA routes, and a demo trailer. It is not claimed as a launched consumer
 game or broad adoption proof.
 
 Evidence visibility gate: before sending a public GitHub Pages or repository
-link as admissions evidence, run `python3 tools/portfolio_public_evidence_preflight.py`.
+link as admissions evidence, run the public-link check:
+`python3 tools/portfolio_public_evidence_preflight.py`.
 If it fails, use the demo video for orientation and label `#/portfolio`,
 `#/reviewer`, local QA routes such as `#/qa/home-start` and `#/qa/replay`,
 Story Desk, Create, Play, and Replay as local-only evidence until the intended
@@ -167,7 +168,7 @@ flowchart TB
 
     subgraph Product["React product surface"]
         HOME["Seed input"]
-        REVIEW["Reviewer path<br/>#/portfolio + #/reviewer"]
+        REVIEW["Reviewer run<br/>Portfolio + Reviewer"]
         PLAY["Play UI<br/>role, stage, options, free-form action"]
         INSPECT["Runtime inspector"]
     end
@@ -334,13 +335,14 @@ npm run check
 npm run render:admissions
 ```
 
-Run the public-evidence preflight before sending application or recruiting
-links. It should report that local `HEAD` matches `origin/main`; if it reports
+Run the public-link check before sending application or recruiting links:
+`python3 tools/portfolio_public_evidence_preflight.py`. It should report that
+local `HEAD` matches `origin/main`; if it reports
 local commits ahead of the public branch, GitHub and GitHub Pages reviewers
 will not see the current Story Desk, template detail, portfolio/reviewer, or
 play evidence yet. In that state, use the demo video for orientation only; do
 not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or
-Replay routes as public evidence until the preflight passes. It also summarizes
+Replay surfaces as public evidence until the public-link check passes. It also summarizes
 the affected reviewer surfaces before the path list, so large local branches do
 not hide a template or Story Desk change in truncated output. It also runs a
 live GitHub Pages marker check, so rerun it after pushing and waiting for the
@@ -363,7 +365,7 @@ python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000 --use-first
 Tiny Stories is not positioned as a validated consumer product. Demand,
 repeat play, and sharing loops remain unproven; see the
 [pause memo](./docs/PROJECT_PAUSE_2026-05-09.md). What is complete is
-the portfolio artifact: a playable full-stack loop, reviewer path,
+the portfolio artifact: a playable full-stack loop, reviewer run,
 runtime inspector, generated visual system, Remotion demo, and
 architecture documentation.
 

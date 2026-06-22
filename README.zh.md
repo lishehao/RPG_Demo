@@ -47,12 +47,12 @@
 
 - [观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)
 - [打开 MP4 备份](./docs/demo-video/tiny-stories-admissions-demo-readme.mp4)
-- [preflight 通过后再打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)
+- [公开链接检查通过后再打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)
 
 视频用于快速理解玩家看到的 loop;真正的申请材料证据仍然在 source、tests、
 `#/portfolio`、`#/reviewer`、system map 和 engineering evidence packet 里.
 
-如果要把公开链接发给招生、推荐人或招聘 reviewer,先运行
+如果要把公开链接发给招生、推荐人或招聘 reviewer,先运行公开链接检查:
 `python3 tools/portfolio_public_evidence_preflight.py`.如果它提示本地 `HEAD`
 领先 `origin/main`,或 GitHub Pages 缺少当前 marker,这些证据只能算
 local-only.这包括 Story Desk、template detail、portfolio/reviewer 和 play
@@ -66,7 +66,7 @@ template 或 Story Desk 变化被截断输出藏掉.直到目标分支 push、�
 
 1. 先看 75 秒 demo,理解玩家看到的 loop.
 2. 本地运行后打开 `#/portfolio`,看 guided case-study surface.
-3. 从 portfolio 进入 `#/reviewer`,检查 locked seed、状态/后果证据钩子、
+3. 从 portfolio 打开 reviewer run (`#/reviewer`),检查 locked seed、状态/后果证据钩子、
    replay / ending path.
    四个检查点要保持一致:可游玩状态、一次行动后的后果、证据边界、回放作品.
 4. 如果需要稳定检查 Story Desk populated card 到首回合的入口体验,本地打开

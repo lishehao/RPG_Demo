@@ -257,7 +257,8 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "<strong>Runtime-driven</strong>" not in readme
     assert "## Reviewer Path" in readme
     assert "Run locally and open `#/portfolio`" in readme
-    assert "Launch the reviewer route from the portfolio page" in readme
+    assert "Open the reviewer run from the portfolio page" in readme
+    assert "Launch the reviewer route from the portfolio page" not in readme
     assert "state/consequence evidence hooks" in readme
     assert "runtime evidence hooks" not in readme
     assert "open `#/qa/replay`" in readme
@@ -281,6 +282,7 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     reviewer_path = readme[readme.index("## Reviewer Path") : readme.index("## Target Player And Content Model")]
     assert "Evidence visibility gate" in reviewer_path
     assert "before sending a public GitHub Pages or repository" in reviewer_path
+    assert "run the public-link check" in reviewer_path
     assert "If it fails, use the demo video for orientation" in reviewer_path
     assert "`#/portfolio`" in reviewer_path
     assert "`#/reviewer`" in reviewer_path
@@ -292,6 +294,10 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "local QA routes such as `#/qa/home-start` and `#/qa/replay`" in reviewer_path
     assert "local-only evidence" in reviewer_path
     assert "pushed, deployed, and rechecked" in reviewer_path
+    assert "Reviewer run<br/>Portfolio + Reviewer" in readme
+    assert "Reviewer path<br/>#/portfolio + #/reviewer" not in readme
+    assert "Replay surfaces as public evidence until the public-link check passes" in readme
+    assert "Replay routes as public evidence until the preflight passes" not in readme
     assert "python3 tools/narrative_release_gate.py --mode fake" in readme
     assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
     assert "python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000" in readme
@@ -475,11 +481,12 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "## Demo" in readme
     assert "[观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)" in readme
     assert "[打开 MP4 备份](./docs/demo-video/tiny-stories-admissions-demo-readme.mp4)" in readme
-    assert "[preflight 通过后再打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)" in readme
+    assert "[公开链接检查通过后再打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)" in readme
     assert "视频用于快速理解玩家看到的 loop" in readme
     assert "真正的申请材料证据仍然在 source、tests" in readme
     assert "engineering evidence packet" in readme
     assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
+    assert "先运行公开链接检查" in readme
     assert "本地 `HEAD`" in readme
     assert "GitHub Pages 缺少当前 marker" in readme
     assert "local-only" in readme
@@ -490,6 +497,7 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "An inspectable AI story game" not in readme
     assert "LLM 驱动的 12 回合互动博弈剧引擎" not in readme
     assert "`#/portfolio`" in readme
+    assert "从 portfolio 打开 reviewer run (`#/reviewer`)" in readme
     assert "`#/reviewer`" in readme
     assert "`#/qa/home-start`" in readme
     assert "`#/qa/replay`" in readme
@@ -732,16 +740,16 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
 def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> None:
     script = (ROOT / "docs/demo-video/portfolio-demo-script.md").read_text()
 
-    assert "Demo Story Seed And Live Reviewer Seed" in script
-    assert "The recorded trailer and the live reviewer route serve different review jobs" in script
+    assert "Demo Story Seed And Reviewer Run Seed" in script
+    assert "The recorded trailer and the reviewer run serve different review jobs" in script
     assert "Use one polished English seed throughout the recorded video" in script
-    assert "Use the current live reviewer route seed for `#/portfolio` / `#/reviewer`" in script
+    assert "Use the current reviewer run seed for the Portfolio and Reviewer pages" in script
     assert "At my wedding, the groom asks me to sign away my shares before the ceremony starts." in script
     assert "singer Seo Mina disappears" in script
     assert "no violence and no blackmail" in script
-    assert "the Missing Singer Broadcast seed matches the live" in script
-    assert "reviewer route and current portfolio page" in script
-    assert "`#/portfolio`, launch `#/reviewer`" in script
+    assert "the Missing Singer Broadcast seed matches the" in script
+    assert "reviewer run and current portfolio page" in script
+    assert "`#/portfolio`, open the reviewer run" in script
     assert "clear product evidence" in script
     assert "Portfolio evidence:" in script
     assert "### 1:18-1:28 - Ending Evidence" in script
