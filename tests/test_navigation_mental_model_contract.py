@@ -527,6 +527,8 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
     assert "PORTFOLIO_TARGET_USER_MODEL" in portfolio
+    assert "Tiny Stories is an inspectable AI interactive story." in portfolio
+    assert "Tiny Stories is an inspectable AI narrative runtime." not in portfolio
     assert 'data-portfolio-target-user-model="true"' in portfolio
     assert "Who this loop is for" in portfolio
     assert "Target player" in portfolio

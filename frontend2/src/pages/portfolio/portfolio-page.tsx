@@ -145,7 +145,7 @@ export function PortfolioPage({
         >
           <div className="portfolio-hero__content">
             <span className="ts-tag">Portfolio Case Study</span>
-            <h1>Tiny Stories is an inspectable AI narrative runtime.</h1>
+            <h1>Tiny Stories is an inspectable AI interactive story.</h1>
             <p>
               Watch the 75s reviewer cut first. Tiny Stories is a short,
               story-first mobile episode where players read a scene, compare a
