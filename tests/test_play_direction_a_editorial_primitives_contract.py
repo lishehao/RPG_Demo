@@ -839,6 +839,11 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "data-play-reviewer-evidence-fixture=\"true\"" in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case="fresh"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case="archived"' in reviewer_fixture
+    assert 'data-play-reviewer-evidence-case-label="true"' in reviewer_fixture
+    assert 'data-play-reviewer-evidence-case-label-kind="fresh"' in reviewer_fixture
+    assert 'data-play-reviewer-evidence-case-label-kind="archived"' in reviewer_fixture
+    assert "Fresh proof limit - live evidence only" in reviewer_fixture
+    assert "Archived proof attached - checks available" in reviewer_fixture
     assert "ARCHIVED_AGENT_EVENTS" in reviewer_fixture
     assert "<RuntimeInspector" in reviewer_fixture
     assert "data-reviewer-proof-strip" not in reviewer_fixture

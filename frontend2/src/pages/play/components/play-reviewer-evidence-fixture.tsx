@@ -151,6 +151,15 @@ const ARCHIVED_AGENT_EVENTS: NarrativeAgentEvent[] = [
   },
 ]
 
+const CASE_LABEL_STYLE = {
+  marginBottom: 8,
+  color: "rgba(255, 255, 255, 0.74)",
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+} as const
+
 export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => void }) {
   const t = useT()
 
@@ -180,6 +189,13 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
         aria-label="Reviewer evidence fixture"
       >
         <div data-play-reviewer-evidence-fixture-case="fresh">
+          <div
+            data-play-reviewer-evidence-case-label="true"
+            data-play-reviewer-evidence-case-label-kind="fresh"
+            style={CASE_LABEL_STYLE}
+          >
+            Fresh proof limit - live evidence only
+          </div>
           <RuntimeInspector
             story={REVIEWER_STORY}
             ending={null}
@@ -194,6 +210,13 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
           />
         </div>
         <div data-play-reviewer-evidence-fixture-case="archived">
+          <div
+            data-play-reviewer-evidence-case-label="true"
+            data-play-reviewer-evidence-case-label-kind="archived"
+            style={CASE_LABEL_STYLE}
+          >
+            Archived proof attached - checks available
+          </div>
           <RuntimeInspector
             story={REVIEWER_STORY}
             ending={null}
