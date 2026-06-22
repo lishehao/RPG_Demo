@@ -791,11 +791,11 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert 'data-reviewer-proof-chip="playable"' in runtime_inspector
     assert 'data-reviewer-proof-chip="state"' in runtime_inspector
     assert 'data-reviewer-proof-chip="checks"' in runtime_inspector
-    assert "What this proves" in runtime_inspector
+    assert "What this checks" in runtime_inspector
     assert 'data-reviewer-evidence-primer="true"' in runtime_inspector
-    assert "Start with the live proof chips." in runtime_inspector
-    assert "Archived scoring stays collapsed under the proof summary" in runtime_inspector
-    assert "playability first" in runtime_inspector
+    assert "Start with the live evidence checks." in runtime_inspector
+    assert "Archived scoring stays collapsed under the evidence summary" in runtime_inspector
+    assert "checks playability first" in runtime_inspector
     assert "const liveImpactSummary = reviewerLiveImpactSummary" in runtime_inspector
     assert "const hasLiveStateChange = reviewerHasLiveStateChange" in runtime_inspector
     assert "function reviewerLiveImpactSummary" in runtime_inspector
@@ -805,8 +805,8 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "play one move to verify consequences" in runtime_inspector
     assert "character reaction" in runtime_inspector
     assert "story item gained" in runtime_inspector
-    assert 'const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"' in runtime_inspector
-    assert runtime_inspector.count("{reviewerProofLimitLabel}") >= 2
+    assert 'const reviewerEvidenceLimitLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Evidence limits"' in runtime_inspector
+    assert runtime_inspector.count("{reviewerEvidenceLimitLabel}") >= 2
     assert 'data-reviewer-archive-details="true"' in runtime_inspector
     assert 'data-reviewer-archive-scope-note="true"' in runtime_inspector
     assert "Use this as local reviewer evidence" in runtime_inspector
@@ -817,7 +817,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "Archived evaluation available" in runtime_inspector
     assert '`${archivedScore} · ${archivedCheckStatus}`' in runtime_inspector
     assert "Archived evaluation not available yet" in runtime_inspector
-    assert "live proof is enough for this view" in runtime_inspector
+    assert "live evidence is enough for this view" in runtime_inspector
     assert "Checks boundary" not in runtime_inspector
     assert "archived judge checks" not in runtime_inspector
     assert '<span style={ppStyles.evaluationLabel}>Archived checks</span>' not in runtime_inspector
@@ -825,6 +825,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert 'const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "not archived yet"' in runtime_inspector
     assert "const reasonCategory = hasArchivedJudgeEvidence" in runtime_inspector
     assert "live state visible; archive not claimed yet" in runtime_inspector
+    assert "step and contract checks attached" in runtime_inspector
     assert "getNarrativeLLMEvents" in client
     assert "/narrative/sessions/:session_id/llm-events" in route_map
     assert 'data-reviewer-evidence-jump="true"' in play_page
@@ -848,20 +849,20 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "data-play-reviewer-evidence-fixture=\"true\"" in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-intro="true"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case-map="true"' in reviewer_fixture
-    assert "Local reviewer proof fixture" in reviewer_fixture
-    assert "Proof drawer for application review." in reviewer_fixture
-    assert "Fresh live proof appears first; archived checks appear second." in reviewer_fixture
+    assert "Local reviewer evidence fixture" in reviewer_fixture
+    assert "Evidence drawer for application review." in reviewer_fixture
+    assert "Fresh live evidence appears first; archived checks appear second." in reviewer_fixture
     assert "application review evidence" in reviewer_fixture
     assert "cite public claims only after repo/demo preflight passes" in reviewer_fixture
     assert "Playable state, visible consequence, no archive overclaim." in reviewer_fixture
-    assert "Stored checks only when proof is attached." in reviewer_fixture
+    assert "Stored checks appear only when archived evidence is attached." in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case="fresh"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case="archived"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-case-label="true"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-case-label-kind="fresh"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-case-label-kind="archived"' in reviewer_fixture
-    assert "Fresh proof limit - live evidence only" in reviewer_fixture
-    assert "Archived proof attached - checks available" in reviewer_fixture
+    assert "Fresh evidence limit - live evidence only" in reviewer_fixture
+    assert "Archived checks attached - checks available" in reviewer_fixture
     assert "ARCHIVED_AGENT_EVENTS" in reviewer_fixture
     assert "<RuntimeInspector" in reviewer_fixture
     assert "data-reviewer-proof-strip" not in reviewer_fixture
@@ -870,10 +871,10 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert 'event.event_type === "step_judge" || event.event_type === "contract_judge"' in play_page
     assert "const hasReviewerVisibleConsequence = reviewerHasLiveStateChange(lastNarrator, effectiveLastInventoryDelta)" in play_page
     assert '{hasReviewerVisibleConsequence ? "visible consequence" : "first consequence after a move"}' in play_page
-    assert '{hasArchivedReviewerChecks ? "archived proof attached" : "proof limits shown"}' in play_page
+    assert '{hasArchivedReviewerChecks ? "archived checks attached" : "evidence limits shown"}' in play_page
     assert "runtime state / contract checks" not in play_page
-    assert "Story UI stays playable; proof stays separate." in play_page
-    assert "View proof summary" in play_page
+    assert "Story UI stays playable; evidence stays separate." in play_page
+    assert "View evidence summary" in play_page
     assert "Proof summary is attached below this play surface." not in play_page
 
 

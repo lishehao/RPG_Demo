@@ -249,20 +249,20 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
         aria-label="Reviewer evidence fixture"
       >
         <div style={INTRO_STYLE} data-play-reviewer-evidence-fixture-intro="true">
-          <span style={INTRO_KICKER_STYLE}>Local reviewer proof fixture</span>
-          <strong style={INTRO_TITLE_STYLE}>Proof drawer for application review.</strong>
+          <span style={INTRO_KICKER_STYLE}>Local reviewer evidence fixture</span>
+          <strong style={INTRO_TITLE_STYLE}>Evidence drawer for application review.</strong>
           <p style={INTRO_COPY_STYLE}>
-            Fresh live proof appears first; archived checks appear second. Use this for application review evidence;
+            Fresh live evidence appears first; archived checks appear second. Use this for application review evidence;
             cite public claims only after repo/demo preflight passes.
           </p>
           <div style={CASE_MAP_STYLE} data-play-reviewer-evidence-fixture-case-map="true">
             <span style={CASE_MAP_ITEM_STYLE}>
-              <strong style={CASE_MAP_LABEL_STYLE}>1. Fresh proof limit</strong>
+              <strong style={CASE_MAP_LABEL_STYLE}>1. Fresh evidence limit</strong>
               <span style={CASE_MAP_NOTE_STYLE}>Playable state, visible consequence, no archive overclaim.</span>
             </span>
             <span style={CASE_MAP_ITEM_STYLE}>
-              <strong style={CASE_MAP_LABEL_STYLE}>2. Archived proof attached</strong>
-              <span style={CASE_MAP_NOTE_STYLE}>Stored checks only when proof is attached.</span>
+              <strong style={CASE_MAP_LABEL_STYLE}>2. Archived checks attached</strong>
+              <span style={CASE_MAP_NOTE_STYLE}>Stored checks appear only when archived evidence is attached.</span>
             </span>
           </div>
         </div>
@@ -272,7 +272,7 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
             data-play-reviewer-evidence-case-label-kind="fresh"
             style={CASE_LABEL_STYLE}
           >
-            Fresh proof limit - live evidence only
+            Fresh evidence limit - live evidence only
           </div>
           <RuntimeInspector
             story={REVIEWER_STORY}
@@ -293,7 +293,7 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
             data-play-reviewer-evidence-case-label-kind="archived"
             style={CASE_LABEL_STYLE}
           >
-            Archived proof attached - checks available
+            Archived checks attached - checks available
           </div>
           <RuntimeInspector
             story={REVIEWER_STORY}

@@ -1388,10 +1388,10 @@ export function PlayPage({
       <div style={ppStyles.reviewerEvidenceJumpCopy}>
         <span style={ppStyles.reviewerEvidenceJumpKicker}>Reviewer evidence</span>
         <strong style={ppStyles.reviewerEvidenceJumpTitle}>
-          Story UI stays playable; proof stays separate.
+          Story UI stays playable; evidence stays separate.
         </strong>
         <span style={ppStyles.reviewerEvidenceJumpMeta}>
-          {lastNarrator?.options.length ?? 0} current moves / {hasReviewerVisibleConsequence ? "visible consequence" : "first consequence after a move"} / {hasArchivedReviewerChecks ? "archived proof attached" : "proof limits shown"}
+          {lastNarrator?.options.length ?? 0} current moves / {hasReviewerVisibleConsequence ? "visible consequence" : "first consequence after a move"} / {hasArchivedReviewerChecks ? "archived checks attached" : "evidence limits shown"}
         </span>
       </div>
       <button
@@ -1400,7 +1400,7 @@ export function PlayPage({
         onClick={scrollToReviewerEvidence}
         data-reviewer-evidence-jump-button="true"
       >
-        View proof summary
+        View evidence summary
       </button>
     </section>
   ) : null

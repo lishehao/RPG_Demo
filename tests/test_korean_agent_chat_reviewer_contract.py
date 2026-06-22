@@ -110,9 +110,9 @@ def test_reviewer_launch_enters_reviewer_mode_play_evidence_path() -> None:
     assert "const canRequestAgentTrace = reviewerMode && auth.canViewAgentTrace" in play_page
     assert 'data-reviewer-evidence-jump="true"' in play_page
     assert 'data-reviewer-evidence-jump-button="true"' in play_page
-    assert "Story UI stays playable; proof stays separate." in play_page
+    assert "Story UI stays playable; evidence stays separate." in play_page
     assert "first consequence after a move" in play_page
-    assert "View proof summary" in play_page
+    assert "View evidence summary" in play_page
     assert "reviewerMode ? (" in play_page
     assert "<RuntimeInspector" in play_page
 

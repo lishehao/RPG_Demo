@@ -78,7 +78,7 @@ export function RuntimeInspector({
   ])
   const score = evaluationScore(criteria)
   const hasArchivedJudgeEvidence = Boolean(latestStepJudge || latestContractJudge)
-  const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"
+  const reviewerEvidenceLimitLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Evidence limits"
   const archivedCheckStatus = hasArchivedJudgeEvidence ? latestStatus : "not available yet"
   const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "not archived yet"
   const reasonCategory = hasArchivedJudgeEvidence
@@ -120,15 +120,15 @@ export function RuntimeInspector({
         <strong>Evaluation evidence</strong>
       </div>
       <p style={ppStyles.reviewerEvidencePrimer} data-reviewer-evidence-primer="true">
-        Start with the live proof chips. Archived scoring stays collapsed under the proof summary, so this view proves
-        playability first and still lets reviewers inspect the deeper record.
+        Start with the live evidence checks. Archived scoring stays collapsed under the evidence summary, so this view
+        checks playability first and still lets reviewers inspect the deeper record.
       </p>
       <section
         style={ppStyles.reviewerProofStrip}
-        aria-label="Reviewer proof summary"
+        aria-label="Reviewer evidence summary"
         data-reviewer-proof-strip="true"
       >
-        <span style={ppStyles.reviewerProofTitle}>What this proves</span>
+        <span style={ppStyles.reviewerProofTitle}>What this checks</span>
         <div style={ppStyles.reviewerProofGrid}>
           <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="playable">
             <span style={ppStyles.reviewerProofLabel}>Playable state</span>
@@ -147,10 +147,10 @@ export function RuntimeInspector({
             </span>
           </div>
           <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="checks">
-            <span style={ppStyles.reviewerProofLabel}>{reviewerProofLimitLabel}</span>
+            <span style={ppStyles.reviewerProofLabel}>{reviewerEvidenceLimitLabel}</span>
             <strong style={ppStyles.reviewerProofValue}>{archivedCheckStatus}</strong>
             <span style={ppStyles.reviewerProofDetail}>
-              {hasArchivedJudgeEvidence ? "step and contract proof attached" : "live state visible; archive not claimed yet"}
+              {hasArchivedJudgeEvidence ? "step and contract checks attached" : "live state visible; archive not claimed yet"}
             </span>
           </div>
         </div>
@@ -162,7 +162,7 @@ export function RuntimeInspector({
         <summary style={ppStyles.reviewerArchiveSummary} data-reviewer-archive-summary="true">
           <span>{hasArchivedJudgeEvidence ? "Archived evaluation available" : "Archived evaluation not available yet"}</span>
           <strong>
-            {hasArchivedJudgeEvidence ? `${archivedScore} · ${archivedCheckStatus}` : "live proof is enough for this view"}
+            {hasArchivedJudgeEvidence ? `${archivedScore} · ${archivedCheckStatus}` : "live evidence is enough for this view"}
           </strong>
         </summary>
         <div style={ppStyles.reviewerArchiveScopeNote} data-reviewer-archive-scope-note="true">
@@ -174,7 +174,7 @@ export function RuntimeInspector({
         </div>
         <div style={ppStyles.evaluationHero}>
           <div style={ppStyles.evaluationVerdictBlock}>
-            <span style={ppStyles.evaluationLabel}>{reviewerProofLimitLabel}</span>
+            <span style={ppStyles.evaluationLabel}>{reviewerEvidenceLimitLabel}</span>
             <strong style={ppStyles.evaluationVerdict} data-evaluation-verdict={hasArchivedJudgeEvidence ? latestStatus : "pending"}>
               {archivedCheckStatus}
             </strong>
