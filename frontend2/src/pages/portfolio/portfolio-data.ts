@@ -50,7 +50,7 @@ export const PIPELINE_STEPS = [
     eyebrow: "03",
     title: "Choices change state",
     summary: "Every chosen option or free-form action appends a narrator beat and updates visible pulse, inventory, and next-move signals.",
-    proof: "The reviewer evidence summary exposes playable state, state change, and whether archived judge checks exist while the run is being played.",
+    proof: "The reviewer evidence summary shows playable state, visible change after a move, and the proof limits for that run while it is being played.",
   },
   {
     eyebrow: "04",
