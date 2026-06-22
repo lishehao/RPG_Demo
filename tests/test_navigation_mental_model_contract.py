@@ -763,7 +763,9 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert 'data-home-hero-sub="true"' in home
     assert 't("home.hero_sub")' in home
     assert '"home.hero_tagline": "Story Desk · Pick, resume, or write a run"' in strings
-    assert '"home.hero_sub": "Choose a playable story, reopen saved runs, or write a new opening; each 15 min episode branches through role, pressure, and visible consequences."' in strings
+    assert '"home.hero_sub": "Choose a playable story, reopen saved runs, or write a new opening; each compact episode branches through role, pressure, and visible consequences."' in strings
+    assert "each 15 min episode" not in strings
+    assert "每局约 15 分钟" not in strings
     assert "home.hero_bullet_" not in home
     assert "home.hero_bullet_" not in strings
     assert "home.cta_portfolio" not in home
