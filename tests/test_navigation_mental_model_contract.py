@@ -66,8 +66,8 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
     assert "not as a launched consumer service" in about
     assert "local-only evidence" in about
     assert "Do not put real secrets" in about
-    assert "playable state, visible change after a move, and proof limits" in about
-    assert "playable state、一次行动后的 visible change 和 proof limits" in about
+    assert "playable state, visible change after a move, and evidence limits" in about
+    assert "playable state、一次行动后的 visible change 和 evidence limits" in about
     assert "作品集/申请材料证据" in about
     assert "不是已经上线的" in about
     assert "不要在故事 seed" in about
@@ -106,7 +106,7 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Use #/portfolio -> #/reviewer" in portfolio
     assert "Inspect evidence" in portfolio
     assert 'localHref: "#/qa/play-reviewer-evidence"' in portfolio
-    assert "Open local proof fixture" in portfolio
+    assert "Open local evidence fixture" in portfolio
     assert "Verify replay artifact" in portfolio
     assert "Local build only: inspect a completed memory" in portfolio
     assert 'localHref: "#/qa/replay"' in portfolio
@@ -465,11 +465,11 @@ def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
     assert "same premise for every reviewer run" in data
     assert "12-turn cap" in data
     assert "bounded episode budget visible in Play" in data
-    assert "3 proofs" in data
-    assert "playable state, change after a move, proof limits" in data
+    assert "3 checks" in data
+    assert "playable state, change after a move, evidence limits" in data
     assert "playable state, state change, checks boundary" not in data
     assert "playable state, state change, archived checks" not in data
-    assert "playable state, visible change after a move, and the proof limits" in data
+    assert "playable state, visible change after a move, and the evidence limits" in data
     assert "whether archived judge checks exist" not in data
     assert "Replay loop" in data
     assert "ending can be shared or restarted" in data
@@ -489,8 +489,8 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "no violence and no blackmail" in data
     assert "Missing singer, live awards stream, sponsor pressure" in reviewer
     assert "Prepares a temporary reviewer session when the demo needs one" in reviewer
-    assert "proof summary reviewers inspect beside play" in reviewer
-    assert "reviewer-only proof summary beside the normal story UI" in reviewer
+    assert "evidence summary reviewers inspect beside play" in reviewer
+    assert "reviewer-only evidence summary beside the normal story UI" in reviewer
     assert 'data-reviewer-local-evidence-note="true"' in reviewer
     assert "Local evidence note: inspect the current local build here" in reviewer
     assert "application links, cite this route only after Portfolio preflight" in reviewer
@@ -498,12 +498,12 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "canOpenLocalQaRoute" in reviewer
     assert 'data-reviewer-local-evidence-fixture-link="true"' in reviewer
     assert 'data-reviewer-launch-error-local-proof="true"' in reviewer
-    assert "Open local proof fixture" in reviewer
+    assert "Open local evidence fixture" in reviewer
     assert "evidence-enabled reviewer account" not in reviewer
     assert "inspector data" not in reviewer
-    assert "Proof limits" in reviewer
+    assert "Evidence limits" in reviewer
     assert "Consequence after one move" in reviewer
-    assert "The opening proves playable setup; consequence proof waits until the run produces it" in reviewer
+    assert "The opening shows playable setup; consequence evidence waits until the run produces it" in reviewer
     assert "Replay artifact" in reviewer
     assert "A completed run should become highlights, Full read, and same-opening restart evidence." in reviewer
     assert "Live state is visible immediately" not in reviewer
@@ -564,7 +564,7 @@ def test_portfolio_inspector_uses_reviewer_verifiable_capability_labels() -> Non
         "Choices change state",
         "Advisor stays separate",
         "Ending becomes replay",
-        "playable state, visible change after a move, and the proof limits",
+        "playable state, visible change after a move, and the evidence limits",
     ):
         assert expected in data
 
@@ -603,7 +603,7 @@ def test_portfolio_case_study_points_are_evidence_oriented() -> None:
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
 
     for expected in (
-        "player role, state changes, and ending proof",
+        "player role, state changes, and ending evidence",
         "designed product system",
         "locked setup, playable role, visible state changes",
         "advisor boundary, and replayable ending",

@@ -26,7 +26,7 @@ export const REVIEWER_DEMO_ACTIONS = [
 export const PORTFOLIO_METRICS = [
   { value: "Locked seed", label: "same premise for every reviewer run" },
   { value: "12-turn cap", label: "bounded episode budget visible in Play" },
-  { value: "3 proofs", label: "playable state, change after a move, proof limits" },
+  { value: "3 checks", label: "playable state, change after a move, evidence limits" },
   { value: "Replay loop", label: "ending can be shared or restarted" },
 ] as const
 
@@ -47,7 +47,7 @@ export const PIPELINE_STEPS = [
     eyebrow: "03",
     title: "Choices change state",
     summary: "Every chosen option or free-form action appends a narrator beat and updates visible character reactions, story items, and next-move signals.",
-    proof: "The reviewer evidence summary shows playable state, visible change after a move, and the proof limits for that run while it is being played.",
+    proof: "The reviewer evidence summary shows playable state, visible change after a move, and the evidence limits for that run while it is being played.",
   },
   {
     eyebrow: "04",
@@ -66,7 +66,7 @@ export const PIPELINE_STEPS = [
 export const CASE_STUDY_POINTS = [
   {
     title: "Problem",
-    body: "Many AI story demos hide player role, state changes, and ending proof, so a reviewer cannot tell whether the result is a designed product system or just generated text.",
+    body: "Many AI story demos hide player role, state changes, and ending evidence, so a reviewer cannot tell whether the result is a designed product system or just generated text.",
   },
   {
     title: "Product Loop",

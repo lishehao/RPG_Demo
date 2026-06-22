@@ -130,12 +130,12 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "Use normal author flow" not in source
     assert "REVIEWER_EVIDENCE_CHECKS" in source
     assert "After launch, verify" in source
-    assert "4 proof points" in source
+    assert "4 evidence checks" in source
     assert "Playable state" in source
     assert "Consequence after one move" in source
     assert "Play one move, then verify character reactions and story-item consequences" in source
-    assert "Proof limits" in source
-    assert "The opening proves playable setup; consequence proof waits until the run produces it" in source
+    assert "Evidence limits" in source
+    assert "The opening shows playable setup; consequence evidence waits until the run produces it" in source
     assert "Replay artifact" in source
     assert "A completed run should become highlights, Full read, and same-opening restart evidence." in source
     assert "Live state is visible immediately" not in source

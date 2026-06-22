@@ -30,12 +30,12 @@ const REVIEWER_LAUNCH_STEPS: Array<{
   {
     phase: "runtime",
     title: "Playable runtime",
-    detail: "Creates the first scene, choices, advisor context, and proof summary reviewers inspect beside play.",
+    detail: "Creates the first scene, choices, advisor context, and evidence summary reviewers inspect beside play.",
   },
   {
     phase: "opening",
     title: "Evidence mode",
-    detail: "Opens the run with reviewer-only proof summary beside the normal story UI.",
+    detail: "Opens the run with reviewer-only evidence summary beside the normal story UI.",
   },
 ]
 
@@ -49,8 +49,8 @@ const REVIEWER_EVIDENCE_CHECKS = [
     detail: "Play one move, then verify character reactions and story-item consequences.",
   },
   {
-    label: "Proof limits",
-    detail: "The opening proves playable setup; consequence proof waits until the run produces it.",
+    label: "Evidence limits",
+    detail: "The opening shows playable setup; consequence evidence waits until the run produces it.",
   },
   {
     label: "Replay artifact",
@@ -209,7 +209,7 @@ export function ReviewerPage({
               href="#/qa/play-reviewer-evidence"
               data-reviewer-local-evidence-fixture-link="true"
             >
-              Open local proof fixture
+              Open local evidence fixture
             </a>
           ) : null}
           <section
@@ -219,7 +219,7 @@ export function ReviewerPage({
           >
             <div className="reviewer-evidence-preview__head">
               <span>After launch, verify</span>
-              <strong>4 proof points</strong>
+              <strong>4 evidence checks</strong>
             </div>
             <ol>
               {REVIEWER_EVIDENCE_CHECKS.map((item) => (
@@ -305,7 +305,7 @@ export function ReviewerPage({
                     href="#/qa/play-reviewer-evidence"
                     data-reviewer-launch-error-local-proof="true"
                   >
-                    Open local proof fixture
+                    Open local evidence fixture
                   </a>
                 ) : null}
                 <button
