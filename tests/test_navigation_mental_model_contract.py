@@ -659,11 +659,23 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
     assert "the Missing Singer Broadcast seed matches the live" in script
     assert "reviewer route and current portfolio page" in script
     assert "`#/portfolio`, launch `#/reviewer`" in script
+    assert "clear product evidence" in script
+    assert "Portfolio evidence:" in script
+    assert "### 1:18-1:28 - Ending Evidence" in script
+    assert "Small evidence line:" in script
+    assert "ending evidence" in script
+    assert "opening evidence" in script
 
     for stale in (
         "my cofounder announces a secret merger",
         "secret merger that cuts me out",
         "Backup seed if the live run",
+        "clear product proof",
+        "Portfolio proof:",
+        "### 1:18-1:28 - Ending Proof",
+        "Small proof line:",
+        "ending proof",
+        "opening proof",
     ):
         assert stale not in script
 

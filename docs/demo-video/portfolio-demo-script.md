@@ -12,7 +12,7 @@ The final video should mix three layers:
 
 Target length: 75-90 seconds.
 
-Tone: dark Korean webtoon drama, clear product proof, fast but readable.
+Tone: dark Korean webtoon drama, clear product evidence, fast but readable.
 
 ## Core Narrative
 
@@ -79,7 +79,7 @@ One sentence in. A full run comes out.
 Voiceover:
 The demo starts from real user input, not a prewritten story.
 
-Portfolio proof:
+Portfolio evidence:
 This shot must be genuine browser capture.
 
 ### 0:14-0:21 - Generation Feedback
@@ -240,7 +240,7 @@ Input -> state -> consequence -> next choice.
 Voiceover:
 The loop is simple: act, receive consequence, read the state, choose again.
 
-### 1:18-1:28 - Ending Proof
+### 1:18-1:28 - Ending Evidence
 
 Visual:
 Actual ending screen capture.
@@ -274,7 +274,7 @@ On-screen text:
 Tiny Stories
 LLM interactive drama engine
 
-Small proof line:
+Small evidence line:
 Seed generation - playable turns - advisor context - ending compiler - 150 webtoon assets
 
 Voiceover:
@@ -343,11 +343,11 @@ Recommended product route:
 2. Create the wedding seed.
 3. Use `High-stakes mode` if the backend run is stable enough.
 4. Continue until at least one consequence is visible.
-5. If the live ending takes too long, use an existing completed session for the ending proof, but keep the seed/run visually consistent.
+5. If the live ending takes too long, use an existing completed session for the ending evidence, but keep the seed/run visually consistent.
 
 For a reviewer-route capture rather than a create-flow trailer, start at
 `#/portfolio`, launch `#/reviewer`, and keep the Missing Singer Broadcast title
-and seed visible in the opening proof.
+and seed visible in the opening evidence.
 
 Recommended motion in Remotion:
 
