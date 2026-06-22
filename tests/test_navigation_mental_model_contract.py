@@ -219,6 +219,12 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "./docs/demo-video/admissions-trailer-contact.jpg" in hero_block
     assert "product UI and reviewer evidence" in hero_block
     assert "./docs/images/hero.jpg" not in hero_block
+    readme_top = readme[:readme.index("## 项目状态")]
+    assert "移动端短篇互动剧情" in readme_top
+    assert "先读场景" in readme_top
+    assert "比较少量选择" in readme_top
+    assert "行动一次" in readme_top
+    assert "跟随后果" in readme_top
     assert "status-portfolio_case_study" in readme
     assert "Status: Paused" not in readme
     assert "status-paused" not in readme

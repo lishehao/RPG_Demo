@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  3 张可选玩家身份 · NPC 之间互握把柄 · 可分享结局 / replay · MIT licensed
+  移动端短篇互动剧情:先读场景 · 比较少量选择 · 行动一次 · 跟随后果 · 可分享结局 / replay
 </p>
 
 <p align="center">
