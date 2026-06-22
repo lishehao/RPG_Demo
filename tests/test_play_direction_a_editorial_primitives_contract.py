@@ -1103,6 +1103,12 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "No new path" in fixture
     assert "Compare likely impact before you submit." in fixture
     assert "Compare likely impact before you commit." not in fixture
+    assert "LENA_HOLD_ACTIONS" in fixture
+    assert 'if (phase === "resolved" && committed?.action.id === "lena-hold") return LENA_HOLD_ACTIONS' in fixture
+    assert "Lena is holding the crowd, so Arthur has to answer before the room breaks again." in fixture
+    assert "Send Lena to check the green-room path" in fixture
+    assert "The crowd is stable enough for Lena to move instead of firefighting." in fixture
+    assert "Lena uses the calmer room to test the green-room route and turns suspicion into a badge clue." in fixture
     assert "Badge clue opened new moves." in fixture
     assert 'label: "Uses badge clue"' in fixture
     assert 'label: "Use badge clue"' not in fixture
@@ -1268,7 +1274,8 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "setPhase(\"resolved\")" in fixture
     assert "setUnlockedClue(true)" in fixture
     assert "setConsultedPersonId(null)" in fixture
-    assert "unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS" in fixture
+    assert "if (unlockedClue) return UNLOCKED_ACTIONS" in fixture
+    assert "return INITIAL_ACTIONS" in fixture
     assert "fetch(" not in fixture
     assert "episodeGoal" in prd
     assert "pressure" in prd

@@ -233,6 +233,38 @@ const INITIAL_ACTIONS: FixtureAction[] = [
   },
 ]
 
+const LENA_HOLD_ACTIONS: FixtureAction[] = [
+  {
+    ...INITIAL_ACTIONS[1],
+    number: 1,
+    availableBecause: "Lena is holding the crowd, so Arthur has to answer before the room breaks again.",
+  },
+  {
+    id: "lena-check-path",
+    number: 2,
+    intent: "Inspect",
+    title: "Send Lena to check the green-room path",
+    body: "Use the calmer room to move Lena toward the access route without drawing the sponsor's cameras.",
+    availableBecause: "The crowd is stable enough for Lena to move instead of firefighting.",
+    forecast: [
+      { id: "time-cost", label: "Time -1", tone: "cost" },
+      { id: "badge-route", label: "Badge route tested", tone: "unlock" },
+      { id: "lena-trust", label: "Lena trust +1", tone: "gain" },
+    ],
+    resolved: [
+      { id: "time-spent", label: "Time -1", tone: "cost" },
+      { id: "badge-found", label: "Green-room badge discovered", tone: "unlock" },
+      { id: "lena-commits", label: "Lena commits to route", tone: "gain" },
+    ],
+    unlocksClue: true,
+  },
+  {
+    ...INITIAL_ACTIONS[2],
+    number: 3,
+    availableBecause: "With the crowd calmer, Marcus can stall sponsors without Lena losing control.",
+  },
+]
+
 const UNLOCKED_ACTIONS: FixtureAction[] = [
   {
     id: "show-badge",
@@ -286,6 +318,9 @@ function resolvedSummaryForAction(action: FixtureAction | null): string {
   if (action.id === "arthur-badge") {
     return "Arthur is publicly tied to the missing badge, and the badge clue opens sharper moves."
   }
+  if (action.id === "lena-check-path") {
+    return "Lena uses the calmer room to test the green-room route and turns suspicion into a badge clue."
+  }
   if (action.id === "marcus-stall") {
     return "Marcus buys breathing room, but Lena notices the sponsor pressure is steering the night."
   }
@@ -305,6 +340,9 @@ function nextActionBridgeForAction(action: FixtureAction | null): string {
   }
   if (action.id === "arthur-badge") {
     return "The badge clue changed the menu: you can now use proof directly or turn it into public leverage."
+  }
+  if (action.id === "lena-check-path") {
+    return "Lena found the badge route; the next move can use that proof instead of guessing."
   }
   if (action.id === "marcus-stall") {
     return "Marcus bought time, but the next move needs proof before Lena loses more trust."
@@ -329,6 +367,9 @@ function pendingReactionCopyForAction(action: FixtureAction): string {
   }
   if (action.id === "arthur-badge") {
     return "Arthur stiffens as the badge gap becomes public; the room waits to see whether he can explain it."
+  }
+  if (action.id === "lena-check-path") {
+    return "Lena moves through the calmer room and checks the green-room path before Arthur can redirect attention."
   }
   if (action.id === "marcus-stall") {
     return "Marcus moves toward the sponsor cluster, buying quiet while Lena notices who you trusted with time."
@@ -425,7 +466,11 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const [consultedPersonId, setConsultedPersonId] = useState<string | null>(null)
   const actionAreaRef = useRef<HTMLElement | null>(null)
   const resolvedPanelRef = useRef<HTMLElement | null>(null)
-  const actions = useMemo(() => (unlockedClue ? UNLOCKED_ACTIONS : INITIAL_ACTIONS), [unlockedClue])
+  const actions = useMemo(() => {
+    if (unlockedClue) return UNLOCKED_ACTIONS
+    if (phase === "resolved" && committed?.action.id === "lena-hold") return LENA_HOLD_ACTIONS
+    return INITIAL_ACTIONS
+  }, [committed?.action.id, phase, unlockedClue])
   const people = useMemo(() => (unlockedClue ? UNLOCKED_PEOPLE : INITIAL_PEOPLE), [unlockedClue])
   const selectedAction = actions.find((action) => action.id === selectedId) ?? null
   const consultedPerson = people.find((person) => person.id === consultedPersonId) ?? null
