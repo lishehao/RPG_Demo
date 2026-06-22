@@ -47,7 +47,7 @@ play / replay / ending loop,不是已经验证过的消费级游戏或大规模�
 
 - [观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)
 - [打开 MP4 备份](./docs/demo-video/tiny-stories-admissions-demo-readme.mp4)
-- [打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)
+- [preflight 通过后再打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)
 
 视频用于快速理解玩家看到的 loop;真正的申请材料证据仍然在 source、tests、
 `#/portfolio`、`#/reviewer`、system map 和 engineering evidence packet 里.

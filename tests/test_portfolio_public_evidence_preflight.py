@@ -114,7 +114,10 @@ def test_public_evidence_preflight_fails_when_deployed_page_is_stale() -> None:
 
 def test_public_evidence_preflight_is_documented_for_application_links() -> None:
     readme = (ROOT / "README.md").read_text()
+    hero_block = readme.split("</p>", 1)[0]
 
+    assert '<a href="https://youtu.be/RRJ7uyjW_nA">' in hero_block
+    assert '<a href="https://lishehao.github.io/RPG_Demo/">' not in hero_block
     assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
     assert "Evidence visibility gate" in readme
     assert "before sending a public GitHub Pages or repository" in readme

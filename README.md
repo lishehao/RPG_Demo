@@ -1,7 +1,7 @@
 # Tiny Stories
 
 <p align="center">
-  <a href="https://lishehao.github.io/RPG_Demo/">
+  <a href="https://youtu.be/RRJ7uyjW_nA">
     <img src="./docs/demo-video/admissions-trailer-contact.jpg" alt="Tiny Stories admissions demo contact sheet showing product UI and reviewer evidence" width="100%" />
   </a>
 </p>
