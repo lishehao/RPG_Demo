@@ -896,6 +896,11 @@ def test_world_role_launch_has_ready_and_starting_feedback() -> None:
     assert 't("world.role_start_error_detail")' in world
     assert "roleLaunchPanelStarting" in world
     assert "roleLaunchButtonStarting" in world
+    role_launch_button = world[
+        world.index("roleLaunchButton: {"):
+        world.index("roleLaunchButtonStarting: {")
+    ]
+    assert "minHeight: 44" in role_launch_button
     assert "roleLaunchRecovery" in world
     assert "cursor: \"progress\"" in world
     assert '"world.role_start_error_title": "The story did not open this time"' in strings

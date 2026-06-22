@@ -1662,8 +1662,17 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-free-action-submit="true"' in panels
     assert "ppStyles.freeSubmitButton" in panels
     assert "freeSubmitButton" in styles
-    assert "minHeight: 42" in styles[styles.index("freeSubmitButton") : styles.index("freeSubmitButtonDisabled")]
+    assert "minHeight: 44" in styles[styles.index("freeSubmitButton") : styles.index("freeSubmitButtonDisabled")]
     assert "actionPalette.primaryBackground" in styles[styles.index("freeSubmitButton") : styles.index("freeSubmitButtonDisabled")]
+    commit_text_button = styles[styles.index("commitTextButton: {") : styles.index("advisorInlineAction: {")]
+    assert "minHeight: 44" in commit_text_button
+    assert "minWidth: 44" in commit_text_button
+    diary_attach_preview = styles[
+        styles.index("diaryAttachPreview: {"):
+        styles.index("diaryAttachPreviewFilled: {")
+    ]
+    assert "minHeight: 44" in diary_attach_preview
+    assert "minWidth: 44" in diary_attach_preview
     assert "const freeActionToggleShownInFocusCue =" in panels
     assert "const showAlternateFreeActionToggle = showFreeActionToggle && !freeActionToggleShownInFocusCue" in panels
     assert "{showAlternateFreeActionToggle ? (" in panels

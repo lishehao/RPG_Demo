@@ -1436,9 +1436,9 @@ const tdStyles: Record<string, CSSProperties> = {
   roleLaunchButton: {
     alignSelf: "flex-start",
     width: "fit-content",
-    minHeight: 34,
+    minHeight: 44,
     minWidth: 0,
-    padding: "4px 0",
+    padding: "0 12px",
     border: "none",
     borderBottom: "1px solid rgba(245,200,120,0.34)",
     borderRadius: 0,

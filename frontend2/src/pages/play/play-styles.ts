@@ -3730,8 +3730,9 @@ export const ppStyles: Record<string, CSSProperties> = {
   },
   commitTextButton: {
     height: "auto",
-    minHeight: 26,
-    padding: "2px 0",
+    minHeight: 44,
+    minWidth: 44,
+    padding: "0 8px",
     borderTopWidth: 0,
     borderTopStyle: "none",
     borderRightWidth: 0,
@@ -4534,8 +4535,9 @@ export const ppStyles: Record<string, CSSProperties> = {
   diaryAttachPreview: {
     width: "fit-content",
     maxWidth: "100%",
-    minHeight: 26,
-    padding: 0,
+    minHeight: 44,
+    minWidth: 44,
+    padding: "0 8px",
     borderTopWidth: 0,
     borderTopStyle: "none",
     borderRightWidth: 0,
@@ -4562,7 +4564,7 @@ export const ppStyles: Record<string, CSSProperties> = {
     width: "fit-content",
     display: "inline-flex",
     gridTemplateColumns: "none",
-    alignItems: "baseline",
+    alignItems: "center",
     gap: 0,
   },
   diaryAttachEmptyCopy: {
@@ -5359,7 +5361,7 @@ export const ppStyles: Record<string, CSSProperties> = {
     flexWrap: "wrap" as const,
   },
   freeSubmitButton: {
-    minHeight: 42,
+    minHeight: 44,
     padding: "9px 14px 10px",
     borderTopWidth: 1,
     borderTopStyle: "solid",
