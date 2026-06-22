@@ -176,14 +176,20 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"create.setting_story_language": "Story language"',
         '"create.setting_tone": "Tone"',
         '"create.budget_medium_desc": "A full episode, complete arc."',
-        '"create.difficulty_story_desc": "You can\'t really lose. The story always lands on a complete ending."',
+        '"create.difficulty_story_desc": "No early game-over; the story will land on a complete ending."',
+        '"create.difficulty_gauntlet_label": "High-stakes mode"',
+        '"create.difficulty_gauntlet_tagline": "NPCs push back"',
+        '"create.difficulty_gauntlet_desc": "NPCs have agendas and leverage. Cross red lines and the run can end early; stabilize the room to reach a win or compromise."',
         '"create.tension_auto_desc": "Infer the profile from the seed."',
         '"create.setting_run_length": "时长"',
         '"create.setting_pressure_mode": "压力模式"',
         '"create.setting_story_language": "故事语言"',
         '"create.setting_tone": "语气"',
         '"create.budget_medium_desc": "一集短剧，起承转合完整"',
-        '"create.difficulty_story_desc": "你不会真正失败，故事一定会走到一个完整结局。"',
+        '"create.difficulty_story_desc": "不会提前出局；故事会走到一个完整结局。"',
+        '"create.difficulty_gauntlet_label": "高压模式"',
+        '"create.difficulty_gauntlet_tagline": "NPC 会主动施压"',
+        '"create.difficulty_gauntlet_desc": "NPC 各有目标和把柄。越过红线会提前收束成崩盘结局；稳住局面则可能走向胜利或妥协。"',
         '"create.tension_auto_desc": "根据种子自动判断张力类型"',
         '"create.brief_handoff_note_ready": "Next, I’ll generate role cards, the opening passage, and playable choices, then send you into Play."',
         '"create.brief_handoff_note_blocked": "Tighten the Brief first; once ready, I’ll build the first scene and playable choices."',
@@ -193,6 +199,17 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"create.brief_play_plan_label": "可进入 Play"',
     ):
         assert key in strings
+    for stale in (
+        "Story (no failure state)",
+        "Gauntlet (can trigger a collapsed ending)",
+        "You can't really lose",
+        "crash by turn 5",
+        "故事(无失败)",
+        "博弈(可触发 collapse 结局)",
+        "你不会真正失败",
+        "第 5 回合就翻车",
+    ):
+        assert stale not in strings
 
 
 def test_story_brief_revision_actions_explain_click_effect() -> None:
