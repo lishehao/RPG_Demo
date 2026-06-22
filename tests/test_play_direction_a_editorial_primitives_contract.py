@@ -1237,6 +1237,10 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "const consultedSuggestedAction = consultedPerson" in fixture
     assert "const adviceArmed = !!consultedSuggestedAction && selectedId === consultedSuggestedAction.id" in fixture
     assert "const actionAreaRef = useRef<HTMLElement | null>(null)" in fixture
+    assert "const personAdviceRef = useRef<HTMLElement | null>(null)" in fixture
+    assert "if (!consultedPersonId || window.innerWidth > 640) return" in fixture
+    assert 'panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "end" })' in fixture
+    assert 'ref={personAdviceRef}' in fixture
     assert "const selectSuggestedAction = (action: FixtureAction)" in fixture
     assert 'actionAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })' in fixture
     assert 'data-gameplay-person-advice-select="true"' in fixture

@@ -466,6 +466,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const [consultedPersonId, setConsultedPersonId] = useState<string | null>(null)
   const actionAreaRef = useRef<HTMLElement | null>(null)
   const pendingPanelRef = useRef<HTMLElement | null>(null)
+  const personAdviceRef = useRef<HTMLElement | null>(null)
   const resolvedPanelRef = useRef<HTMLElement | null>(null)
   const actions = useMemo(() => {
     if (unlockedClue) return UNLOCKED_ACTIONS
@@ -548,6 +549,17 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     }, 40)
     return () => window.clearTimeout(timer)
   }, [committed, phase])
+
+  useEffect(() => {
+    if (!consultedPersonId || window.innerWidth > 640) return
+    const panel = personAdviceRef.current
+    if (!panel) return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const timer = window.setTimeout(() => {
+      panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "end" })
+    }, 40)
+    return () => window.clearTimeout(timer)
+  }, [consultedPersonId])
 
   useEffect(() => {
     if (phase !== "resolved" || !committed) return
@@ -989,6 +1001,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             </div>
             {consultedPerson ? (
               <article
+                ref={personAdviceRef}
                 style={{
                   ...styles.personAdvice,
                   ...(adviceArmed ? styles.personAdviceArmed : null),
