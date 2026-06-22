@@ -25,6 +25,7 @@ PUBLIC_PAGE_MARKERS = (
 EVIDENCE_SENSITIVE_PREFIXES = (
     "README.md",
     "README.zh.md",
+    "artifacts/portfolio/",
     "docs/",
     "frontend2/src/pages/home/",
     "frontend2/src/pages/world/",
@@ -38,6 +39,7 @@ EVIDENCE_SENSITIVE_PREFIXES = (
 
 EVIDENCE_SURFACE_PREFIXES = (
     ("README / public docs", ("README.md", "README.zh.md", "docs/")),
+    ("Portfolio evidence artifacts", ("artifacts/portfolio/",)),
     ("Story Desk / saved runs", ("frontend2/src/pages/home/",)),
     ("Template detail / start-own-run", ("frontend2/src/pages/world/",)),
     ("Create flow", ("frontend2/src/pages/create/",)),

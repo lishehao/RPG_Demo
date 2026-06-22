@@ -24,6 +24,7 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
         behind_count=0,
         changed_paths=(
             "README.md",
+            "artifacts/portfolio/tiny-stories-engineering-evidence-summary.json",
             "docs/index.html",
             "frontend2/src/pages/create/create-page.tsx",
             "frontend2/src/pages/home/home-page.tsx",
@@ -45,6 +46,7 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     assert "public reviewers will not see those local changes" in output
     assert "Evidence-sensitive reviewer surfaces not yet public" in output
     assert "- README / public docs" in output
+    assert "- Portfolio evidence artifacts" in output
     assert "- Story Desk / saved runs" in output
     assert "- Template detail / start-own-run" in output
     assert "- Create flow" in output
@@ -55,6 +57,7 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     assert "- Contract tests" in output
     assert "Evidence-sensitive local changes not yet public" in output
     assert "- README.md" in output
+    assert "- artifacts/portfolio/tiny-stories-engineering-evidence-summary.json" in output
     assert "- docs/index.html" in output
     assert "- frontend2/src/pages/home/home-page.tsx" in output
     assert "- frontend2/src/pages/world/world-detail-page.tsx" in output
@@ -133,6 +136,7 @@ def test_evidence_sensitive_path_filter_covers_portfolio_and_play_surfaces() -> 
     paths = evidence_sensitive_paths(
         (
             "docs/CURRENT_SYSTEM_MAP.md",
+            "artifacts/portfolio/tiny-stories-engineering-evidence-summary.json",
             "frontend2/src/pages/home/home-page.tsx",
             "frontend2/src/pages/world/world-detail-page.tsx",
             "frontend2/src/pages/play/components/play-flow-panels.tsx",
@@ -144,6 +148,7 @@ def test_evidence_sensitive_path_filter_covers_portfolio_and_play_surfaces() -> 
 
     assert paths == (
         "docs/CURRENT_SYSTEM_MAP.md",
+        "artifacts/portfolio/tiny-stories-engineering-evidence-summary.json",
         "frontend2/src/pages/home/home-page.tsx",
         "frontend2/src/pages/world/world-detail-page.tsx",
         "frontend2/src/pages/play/components/play-flow-panels.tsx",
@@ -156,6 +161,7 @@ def test_evidence_sensitive_surface_summary_keeps_hidden_paths_legible() -> None
     surfaces = evidence_sensitive_surfaces(
         (
             "README.zh.md",
+            "artifacts/portfolio/tiny-stories-engineering-evidence-summary.json",
             "frontend2/src/pages/home/home-page.tsx",
             "frontend2/src/pages/world/world-detail-page.tsx",
             "frontend2/src/pages/create/create-page.tsx",
@@ -170,6 +176,7 @@ def test_evidence_sensitive_surface_summary_keeps_hidden_paths_legible() -> None
 
     assert surfaces == (
         "README / public docs",
+        "Portfolio evidence artifacts",
         "Story Desk / saved runs",
         "Template detail / start-own-run",
         "Create flow",
