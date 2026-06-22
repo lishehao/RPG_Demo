@@ -147,6 +147,7 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert ".reviewer-evidence-preview" in theme
     assert ".reviewer-evidence-preview__head" in theme
     assert "grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))" in theme
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in theme
 
 
 def test_reviewer_launch_keeps_full_seed_secondary_to_proof_preview() -> None:

@@ -1837,13 +1837,28 @@ kbd {
     margin: 18px 18px 0;
     padding-top: 16px;
   }
+  .reviewer-evidence-preview {
+    padding: 12px 12px;
+  }
   .reviewer-evidence-preview ol {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
   .reviewer-evidence-preview__head {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
+    align-items: baseline;
+    flex-direction: row;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .reviewer-evidence-preview li {
+    padding-left: 8px;
+  }
+  .reviewer-evidence-preview li strong {
+    font-size: 12px;
+  }
+  .reviewer-evidence-preview li p {
+    font-size: 11.5px;
+    line-height: 1.35;
   }
   .reviewer-launch-plan ol {
     grid-template-columns: 1fr;
