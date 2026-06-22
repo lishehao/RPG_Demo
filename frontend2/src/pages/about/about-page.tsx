@@ -79,13 +79,13 @@ const aboutContentZh: AboutContent = {
       body: (
         <>
           <p style={apStyles.p}>
-            Tiny Stories 是一个 portfolio case study 里的互动短剧 demo.
-            你写下一个戏剧瞬间,系统把它变成角色、目标、开场场景和少量可选行动;
-            你读场景、比较选择、行动一次,再根据可见后果进入下一回合.
+            Tiny Stories 是作品集案例里的互动短剧演示。你写下一个戏剧瞬间,
+            系统把它变成角色、目标、开场场景和少量可选行动; 你读场景、
+            比较选择、行动一次,再根据可见后果进入下一回合.
           </p>
           <p style={apStyles.p}>
             它的目标不是无穷小说流或聊天机器人,而是一个短篇、可结束、可回放的
-            AI narrative runtime.当前请把它读作作品集/申请材料证据,不是已经上线的
+            AI 叙事运行系统。当前请把它读作作品集/申请材料证据,不是已经上线的
             消费级服务.
           </p>
         </>
@@ -97,14 +97,14 @@ const aboutContentZh: AboutContent = {
       body: (
         <>
           <ul style={apStyles.ul}>
-            <li>本地运行会保存故事模板、游玩 session、选择、顾问对话和 replay.</li>
+            <li>本地运行会保存故事模板、游玩记录、选择、顾问对话和回放。</li>
             <li>公开/私有/凭链接的可见性用于 demo 路径,不是已发布的商业账户系统.</li>
-            <li>不要在故事 seed、自由输入或 inner motive 里写真实秘密、账号、密钥或私人身份信息.</li>
+            <li>不要在开场设定、自由输入或私下动机里写真实秘密、账号、密钥或私人身份信息。</li>
           </ul>
           <p style={apStyles.p}>
-            申请材料里可验证的是工程 loop: typed contracts、持久化状态、reviewer evidence、
-            recovery path 和移动端 UI.如果 public preflight 失败,请把当前 `#/portfolio`、
-            `#/reviewer`、Create、Play 和 Replay 都标成 local-only evidence.
+            申请材料里可验证的是工程闭环: 类型化数据约束、持久化状态、评审证据、
+            失败恢复路径和移动端 UI。如果公开证据预检失败,请把当前 `#/portfolio`、
+            `#/reviewer`、Create、Play 和 Replay 都标成本地证据.
           </p>
         </>
       ),
@@ -116,7 +116,7 @@ const aboutContentZh: AboutContent = {
         <>
           <p style={apStyles.p}>
             故事内容由 AI 生成,可能出现不连贯、不合逻辑或与你预期不同的情节.
-            这正是项目需要可见状态、回合边界、replay 和 reviewer evidence 的原因:
+            这正是项目需要可见状态、回合边界、回放和评审证据的原因:
             让人能检查系统如何处理不确定性.
           </p>
           <p style={apStyles.p}>
@@ -134,11 +134,11 @@ const aboutContentZh: AboutContent = {
         <>
           <p style={apStyles.p}>
             推荐顺序:先看 75 秒 demo,再本地打开 `#/portfolio`,从那里启动
-            `#/reviewer`,最后对照 README、Current System Map、Case Study 和测试.
+            `#/reviewer`,最后对照 README、系统地图、案例文档和测试.
           </p>
           <p style={apStyles.p}>
-            普通玩家界面应该只显示剧情和选择;reviewer evidence 应该留在专门路径里,
-            用来检查 playable state、一次行动后的 visible change 和 evidence limits.
+            普通玩家界面应该只显示剧情和选择;评审证据应该留在专门路径里,
+            用来检查可游玩状态、一次行动后的可见变化和证据边界.
           </p>
         </>
       ),

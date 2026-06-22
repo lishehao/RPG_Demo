@@ -67,10 +67,32 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
     assert "local-only evidence" in about
     assert "Do not put real secrets" in about
     assert "playable state, visible change after a move, and evidence limits" in about
-    assert "playable state、一次行动后的 visible change 和 evidence limits" in about
     assert "作品集/申请材料证据" in about
     assert "不是已经上线的" in about
-    assert "不要在故事 seed" in about
+    assert "作品集案例里的互动短剧演示" in about
+    assert "AI 叙事运行系统" in about
+    assert "类型化数据约束、持久化状态、评审证据" in about
+    assert "公开证据预检失败" in about
+    assert "标成本地证据" in about
+    assert "不要在开场设定、自由输入或私下动机里写真实秘密" in about
+    assert "可游玩状态、一次行动后的可见变化和证据边界" in about
+    chinese_block = about[about.index("const aboutContentZh") : about.index("const aboutContentEn")]
+    for stale in (
+        "portfolio case study",
+        "AI narrative runtime",
+        "typed contracts",
+        "reviewer evidence",
+        "recovery path",
+        "local-only evidence",
+        "playable state",
+        "visible change",
+        "evidence limits",
+        "Current System Map",
+        "Case Study",
+        "inner motive",
+        "story seed",
+    ):
+        assert stale not in chinese_block
     assert "commercial launch" not in about
     assert "hello@tinystories.app" not in about
     assert "Aliyun" not in about
