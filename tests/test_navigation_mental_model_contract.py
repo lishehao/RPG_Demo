@@ -226,6 +226,8 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "#/portfolio -> #/reviewer" in landing
     assert "inspect the live evidence path" in landing
     assert "Source evidence" in landing
+    assert "What reviewers can inspect" in landing
+    assert "What the demo proves" not in landing
     assert "docs/CURRENT_SYSTEM_MAP.md" in landing
     assert "MP4 fallback" not in landing
     assert "Muted preview is best-effort" not in landing
@@ -272,11 +274,16 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     evidence_packet = (ROOT / "docs/tiny-stories-engineering-evidence-packet.md").read_text()
 
     assert "Read this as source evidence after the 75s demo and `#/portfolio` page" in case_study
+    assert "what reviewers can inspect" in case_study
+    assert "where that evidence lives" in case_study
+    assert "what the project proves" not in case_study
     assert "bounded 12-turn session" in case_study
     assert "8-20 turn" not in case_study
     assert "## Evidence To Inspect" in case_study
     assert "`docs/CURRENT_SYSTEM_MAP.md`" in case_study
     assert "`frontend2/src/pages/portfolio/`, `#/portfolio`, `#/reviewer`" in case_study
+    assert "guided evidence surface" in case_study
+    assert "guided proof surface" not in case_study
     assert "`rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts`" in case_study
     assert "`tests/test_navigation_mental_model_contract.py`, `tests/test_play_direction_a_editorial_primitives_contract.py`" in case_study
     assert "portfolio-grade AI product-system evidence" in case_study

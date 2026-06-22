@@ -1,8 +1,8 @@
 # Tiny Stories Case Study
 
 Read this as source evidence after the 75s demo and `#/portfolio` page. It
-summarizes what the project proves for a reviewer, where that proof lives in
-the codebase, and what is still outside the claim.
+summarizes what reviewers can inspect, where that evidence lives in the
+codebase, and what is still outside the claim.
 
 ## Problem
 
@@ -41,7 +41,7 @@ validated retention or broad demand.
 | Reviewer question | Source evidence |
 | --- | --- |
 | Does the demo have a current product path rather than a pile of experiments? | `docs/CURRENT_SYSTEM_MAP.md` |
-| Does a reviewer get a guided proof surface? | `frontend2/src/pages/portfolio/`, `#/portfolio`, `#/reviewer` |
+| Does a reviewer get a guided evidence surface? | `frontend2/src/pages/portfolio/`, `#/portfolio`, `#/reviewer` |
 | Is the runtime contract typed and inspectable? | `rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts` |
 | Do choices and consequences persist across turns? | `rpg_backend/narrative/repository.py`, `rpg_backend/narrative/service.py` |
 | Are the application claims guarded in source? | `tests/test_navigation_mental_model_contract.py`, `tests/test_play_direction_a_editorial_primitives_contract.py` |

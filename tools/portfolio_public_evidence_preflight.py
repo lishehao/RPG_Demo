@@ -16,6 +16,7 @@ PUBLIC_PAGE_MARKERS = (
     "Reviewer path",
     "#/portfolio -> #/reviewer",
     "Source evidence",
+    "What reviewers can inspect",
     "portfolio-grade AI product-system evidence",
     "Who this loop is for",
     "story-first players who want a compact",

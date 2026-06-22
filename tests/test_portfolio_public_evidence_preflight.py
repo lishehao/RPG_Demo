@@ -194,6 +194,7 @@ def test_public_page_markers_cover_current_reviewer_path_language() -> None:
         "Reviewer path",
         "#/portfolio -> #/reviewer",
         "Source evidence",
+        "What reviewers can inspect",
         "portfolio-grade AI product-system evidence",
         "Who this loop is for",
         "story-first players who want a compact",
