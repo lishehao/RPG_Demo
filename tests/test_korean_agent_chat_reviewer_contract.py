@@ -172,12 +172,16 @@ def test_portfolio_hero_surfaces_public_evidence_gate_before_proofbar() -> None:
 
     assert actions_idx < gate_idx < review_order_idx < proofbar_idx < source_evidence_idx
     assert "PORTFOLIO_PUBLIC_EVIDENCE_GATE" in source
-    assert "Before sending a public GitHub Pages or repository link, run python3 tools/portfolio_public_evidence_preflight.py" in source
-    assert "public repo and Pages links may lag this local build" in source
+    assert 'data-portfolio-public-evidence-gate-summary="true"' in source
+    assert 'data-portfolio-public-evidence-gate-details="true"' in source
+    assert "Public repo and Pages links can lag this local build" in source
+    assert "How to verify public links" in source
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in source
     assert "label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only" in source
     assert "until the intended branch is pushed, deployed, and rechecked" in source
     assert "public reviewers will not see" not in source
     assert ".portfolio-public-evidence-gate" in theme
+    assert ".portfolio-public-evidence-gate details" in theme
 
 
 def test_reviewer_seed_is_concrete_enough_to_avoid_generic_scaffold_roles() -> None:

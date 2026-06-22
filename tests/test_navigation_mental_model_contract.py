@@ -111,6 +111,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Launch reviewer route" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
     assert 'data-portfolio-review-order="true"' in portfolio
     assert "data-portfolio-review-step={item.step}" in portfolio
+    gate_before_order = portfolio[portfolio.index('data-portfolio-public-evidence-gate="true"') : portfolio.index('data-portfolio-review-order="true"')]
+    assert 'data-portfolio-public-evidence-gate-summary="true"' in gate_before_order
+    assert 'data-portfolio-public-evidence-gate-details="true"' in gate_before_order
+    assert "How to verify public links" in gate_before_order
     assert "If the preview does not play" in portfolio
     assert "open the MP4 demo" in portfolio
     assert "Muted autoplay is best-effort" not in portfolio
@@ -360,9 +364,12 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "narrow runtime path behind this demo" in portfolio
     assert "public-main" in portfolio
     assert "may lag the current local build" in portfolio
+    assert "Public repo and Pages links can lag this local build" in portfolio
+    assert "Verify them before citing the demo as public evidence" in portfolio
     assert "Before relying on" in portfolio
     assert "public links" in portfolio
     assert "run the public-evidence preflight" in portfolio
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in portfolio
     assert "treat the" in portfolio and "local route as local-only evidence" in portfolio
     assert "GitHub repo" in portfolio
     assert "System map" in portfolio
@@ -384,6 +391,9 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert ".portfolio-evidence-boundary" in theme
     assert ".portfolio-evidence-boundary__grid" in theme
     assert ".portfolio-source-evidence" in theme
+    assert ".portfolio-public-evidence-gate details" in theme
+    assert ".portfolio-public-evidence-gate summary" in theme
+    assert ".portfolio-public-evidence-gate code" in theme
 
 
 def test_case_study_states_target_player_and_content_model() -> None:

@@ -70,8 +70,11 @@ const PORTFOLIO_TARGET_USER_MODEL = [
 
 const PORTFOLIO_PUBLIC_EVIDENCE_GATE = {
   label: "Public evidence gate",
+  summary:
+    "Public repo and Pages links can lag this local build. Verify them before citing the demo as public evidence.",
   detail:
-    "Before sending a public GitHub Pages or repository link, run python3 tools/portfolio_public_evidence_preflight.py. If it fails, public repo and Pages links may lag this local build; label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only until the intended branch is pushed, deployed, and rechecked.",
+    "Before sending a public GitHub Pages or repository link, run the public-evidence preflight. If it fails, label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only until the intended branch is pushed, deployed, and rechecked.",
+  command: "python3 tools/portfolio_public_evidence_preflight.py",
 } as const
 
 export function PortfolioPage({
@@ -121,7 +124,12 @@ export function PortfolioPage({
               data-portfolio-public-evidence-gate="true"
             >
               <strong>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.label}</strong>
-              <p>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.detail}</p>
+              <p data-portfolio-public-evidence-gate-summary="true">{PORTFOLIO_PUBLIC_EVIDENCE_GATE.summary}</p>
+              <details data-portfolio-public-evidence-gate-details="true">
+                <summary>How to verify public links</summary>
+                <p>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.detail}</p>
+                <code>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.command}</code>
+              </details>
             </aside>
             <ol
               className="portfolio-review-order"
