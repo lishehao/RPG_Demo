@@ -203,6 +203,13 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "`docs/CASE_STUDY.md`" in evidence_packet
     assert "`#/portfolio`" in evidence_packet
     assert "`#/reviewer`" in evidence_packet
+    assert "Public visibility check" in evidence_packet
+    assert "python tools/portfolio_public_evidence_preflight.py" in evidence_packet
+    assert "local `HEAD` is ahead of `origin/main`" in evidence_packet
+    assert "GitHub Pages is missing" in evidence_packet
+    assert "current markers" in evidence_packet
+    assert "treat the evidence as local-only" in evidence_packet
+    assert "pushed, deployed, and rechecked" in evidence_packet
     assert "/tmp/tiny-stories-opening-live-reliability" not in evidence_packet
     assert "snapshot/story-brief-opening-live-reliability" not in evidence_packet
     evidence_contracts = evidence_packet[

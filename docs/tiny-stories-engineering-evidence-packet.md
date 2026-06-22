@@ -24,6 +24,14 @@ for the current reviewer path, start from the root README, `#/portfolio`,
   `docs/CASE_STUDY.md`, `#/portfolio`, `#/reviewer`, and the contract tests
   listed below.
 
+Public visibility check:
+
+Before sending this packet as admissions or recruiting evidence, run
+`python tools/portfolio_public_evidence_preflight.py`. If it reports that
+local `HEAD` is ahead of `origin/main`, or that GitHub Pages is missing
+current markers, treat the evidence as local-only until the intended branch is
+pushed, deployed, and rechecked.
+
 No secret, model, key, or raw provider configuration is included here.
 
 ## System Overview
