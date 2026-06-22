@@ -506,11 +506,13 @@ def test_portfolio_loop_maps_each_state_to_visible_evidence() -> None:
     for expected in (
         "visible evidence: locked seed and generated opening",
         "visible evidence: role panel, objective, assets",
-        "visible evidence: next moves, pulse, inventory",
+        "visible evidence: next moves, character reactions, story items",
         "visible evidence: ending, highlights, replay link",
         "artifact each state leaves behind",
     ):
         assert expected in data or expected in portfolio
+
+    assert "visible evidence: next moves, pulse, inventory" not in data
 
     assert "not just admire generated images" not in portfolio
     assert "secret merger · awards livestream · ex with proof" not in data

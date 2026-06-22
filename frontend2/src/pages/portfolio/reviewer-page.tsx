@@ -46,7 +46,7 @@ const REVIEWER_EVIDENCE_CHECKS = [
   },
   {
     label: "State changed",
-    detail: "The latest beat exposes relationship pulse and inventory consequences.",
+    detail: "The latest beat exposes character reactions and story-item consequences.",
   },
   {
     label: "Proof limits",

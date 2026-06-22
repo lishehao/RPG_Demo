@@ -49,7 +49,7 @@ export const PIPELINE_STEPS = [
   {
     eyebrow: "03",
     title: "Choices change state",
-    summary: "Every chosen option or free-form action appends a narrator beat and updates visible pulse, inventory, and next-move signals.",
+    summary: "Every chosen option or free-form action appends a narrator beat and updates visible character reactions, story items, and next-move signals.",
     proof: "The reviewer evidence summary shows playable state, visible change after a move, and the proof limits for that run while it is being played.",
   },
   {
@@ -97,8 +97,8 @@ export const INTERACTION_LOOP = [
   {
     eyebrow: "Turn",
     title: "Choices create visible consequences",
-    body: "Each move updates the story, relationship pulse, inventory, and reviewer evidence without turning the play surface into a dashboard.",
-    artifact: "visible evidence: next moves, pulse, inventory",
+    body: "Each move updates the story, character reactions, story items, and reviewer evidence without turning the play surface into a dashboard.",
+    artifact: "visible evidence: next moves, character reactions, story items",
   },
   {
     eyebrow: "Ending",
