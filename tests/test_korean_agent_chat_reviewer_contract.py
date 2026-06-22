@@ -161,15 +161,16 @@ def test_reviewer_launch_previews_runtime_evidence_points() -> None:
     assert "One-move consequence" in source
     assert "Take one move and inspect how the room, assets, and next choices change." in source
     assert "Evidence boundary" in source
-    assert "Reviewer evidence stays beside Play and should be cited only after preflight." in source
+    assert "Reviewer evidence stays beside Play and should be cited only after the public-link check passes." in source
     assert "data-reviewer-hero-proof-item={item.label}" in source
     assert local_note_idx < actions_idx < hero_proof_idx < evidence_idx < launch_idx
     assert "Public evidence boundary: inspect the current local build here" in source
-    assert "application links, cite this route only after Portfolio preflight" in source
+    assert "application links, cite this reviewer run only after the public-link" in source
     assert "keeps the player-facing story UI intact" in source
     assert "playable state and the first" in source
     assert "consequence after a move" in source
-    assert 'aria-label="Reviewer evidence path"' in source
+    assert 'aria-label="Reviewer run evidence"' in source
+    assert 'aria-label="Reviewer evidence path"' not in source
     assert "Reviewer proof path" not in source
     assert "playable state and consequences" not in source
     assert "Korean-webtoon visual language" not in source
@@ -244,8 +245,10 @@ def test_portfolio_hero_surfaces_public_evidence_gate_before_proofbar() -> None:
     assert "Public repo and Pages links can lag this local build" in source
     assert "How to verify public links" in source
     assert "python3 tools/portfolio_public_evidence_preflight.py" in source
-    assert "do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay" in source
-    assert "until the intended branch is pushed, deployed, rechecked, and the preflight passes" in source
+    assert "do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay" in source
+    assert "until the intended branch is pushed, deployed, rechecked, and the check passes" in source
+    assert "Reviewer path" not in source
+    assert "Portfolio preflight" not in source
     assert "Verify replay artifact" in source
     assert "Local build only: inspect a completed memory" in source
     assert 'localHref: "#/qa/replay"' in source

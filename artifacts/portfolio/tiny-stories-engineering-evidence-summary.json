@@ -14,9 +14,9 @@
   },
   "evidence_visibility": {
     "artifact_scope": "Local admissions/recommender evidence summary, not a public deployment proof by itself.",
-    "public_use_gate": "Run python3 tools/portfolio_public_evidence_preflight.py before citing current local routes or artifacts as public evidence.",
+    "public_use_gate": "Run the public-link check with python3 tools/portfolio_public_evidence_preflight.py before citing current local surfaces or artifacts as public evidence.",
     "current_public_claim_boundary": "Treat #/portfolio, #/reviewer, local QA routes, Story Desk, Create, Play, Replay, and artifacts/portfolio as local-only until the intended branch is pushed, deployed, and rechecked.",
-    "application_claim_rule": "Do not ask public reviewers to start from #/portfolio or #/reviewer unless the preflight passes. If it fails, use those routes only as local verification targets and demo-video context.",
+    "application_claim_rule": "Do not ask public reviewers to start from #/portfolio or #/reviewer unless the public-link check passes. If it fails, use those surfaces only as local verification targets and demo-video context.",
     "historical_anchor_boundary": "The 2026-06-08 live-gate files were local run outputs kept for provenance, not public links."
   },
   "live_gate": {

@@ -5,7 +5,7 @@ import { useLanguage } from "../../shared/lib/i18n"
 /**
  * Bilingual project/about page for the portfolio demo. This is not a legal
  * terms page; it keeps the player-facing loop, local evidence boundary, and
- * AI-content limits aligned with the README/reviewer path.
+ * AI-content limits aligned with the README/reviewer run.
  */
 export function AboutPage({
   onBackHome,
@@ -103,7 +103,7 @@ const aboutContentZh: AboutContent = {
           </ul>
           <p style={apStyles.p}>
             申请材料里可验证的是工程闭环: 类型化数据约束、持久化状态、评审证据、
-            失败恢复路径和移动端 UI。如果公开证据预检失败,请把当前 `#/portfolio`、
+            失败恢复路径和移动端 UI。如果公开链接检查失败,请把当前 `#/portfolio`、
             `#/reviewer`、Create、Play 和 Replay 都标成本地证据.
           </p>
         </>
@@ -184,7 +184,7 @@ const aboutContentEn: AboutContent = {
           <p style={apStyles.p}>
             The application evidence is the engineered loop: typed
             contracts, persistent state, reviewer evidence, recovery
-            paths, and mobile UI. If the public preflight fails, treat
+            paths, and mobile UI. If the public-link check fails, treat
             `#/portfolio`, `#/reviewer`, Create, Play, and Replay as
             local-only evidence until the intended branch is deployed.
           </p>

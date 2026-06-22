@@ -247,10 +247,10 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert "Productized LLM / applied AI systems engineering, not HCI research." in packet
     assert "Historical live evidence anchor:" in packet
     assert "It is not a claim that the commit below is current HEAD" in packet
-    assert "for the current reviewer path, first check public visibility" in packet
+    assert "for the current reviewer run, first check public visibility" in packet
     assert "those routes remain local" in packet
     assert "verification targets and demo-video context, not public proof" in packet
-    assert "Current reviewer path boundary:" in packet
+    assert "Current reviewer run boundary:" in packet
     assert "Public application wording should cite only source, video, and deployed pages" in packet
     assert "`#/portfolio`, `#/reviewer`, Story Desk, Create, Play, Replay, and local QA" in packet
     assert "do not present them as externally reviewable proof" in packet
@@ -270,9 +270,11 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
 
     visibility = summary["evidence_visibility"]
     assert "not a public deployment proof by itself" in visibility["artifact_scope"]
+    assert "public-link check" in visibility["public_use_gate"]
     assert "portfolio_public_evidence_preflight.py" in visibility["public_use_gate"]
     assert "artifacts/portfolio as local-only" in visibility["current_public_claim_boundary"]
     assert "Do not ask public reviewers to start from #/portfolio or #/reviewer" in visibility["application_claim_rule"]
+    assert "unless the public-link check passes" in visibility["application_claim_rule"]
     assert "local verification targets and demo-video context" in visibility["application_claim_rule"]
     assert "not public links" in visibility["historical_anchor_boundary"]
 

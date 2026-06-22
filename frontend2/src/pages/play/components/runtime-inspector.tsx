@@ -184,13 +184,13 @@ export function RuntimeInspector({
           </strong>
         </summary>
         <p style={ppStyles.reviewerArchiveScopeSummary} data-reviewer-archive-scope-summary="true">
-          Local reviewer evidence, not a public benchmark. Pair with repo/demo preflight before citing.
+          Local reviewer evidence, not a public benchmark. Pair with the public-link check before citing.
         </p>
         <div style={ppStyles.reviewerArchiveScopeNote} data-reviewer-archive-scope-note="true">
           <strong>Archive scope</strong>
           <span>
             Use this as local reviewer evidence: it verifies playable state, consequences, and contract checks for this run.
-            It is not a public benchmark; pair it with repo/demo preflight before citing it.
+            It is not a public benchmark; pair it with the public-link check before citing it.
           </span>
         </div>
         <div style={ppStyles.evaluationHero}>

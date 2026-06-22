@@ -87,7 +87,8 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
     assert "compact AI story game" not in about
     assert "compact AI narrative runtime" not in about
     assert "类型化数据约束、持久化状态、评审证据" in about
-    assert "公开证据预检失败" in about
+    assert "公开链接检查失败" in about
+    assert "公开证据预检失败" not in about
     assert "标成本地证据" in about
     assert "不要在开场设定、自由输入或私下动机里写真实秘密" in about
     assert "可游玩状态、一次行动后的可见变化和证据边界" in about

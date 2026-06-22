@@ -897,7 +897,8 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "hidden-info drift avoided" in runtime_inspector
     assert "invalid story shape" in runtime_inspector
     assert "invalid runtime shape" not in runtime_inspector
-    assert "repo/demo preflight" in runtime_inspector
+    assert "public-link check" in runtime_inspector
+    assert "repo/demo preflight" not in runtime_inspector
     assert "reviewerArchiveScopeSummary" in styles
     assert "reviewerArchiveScopeNote" in styles
     assert 'open={hasArchivedJudgeEvidence}' not in runtime_inspector
@@ -951,7 +952,8 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "Evidence drawer for application review." in reviewer_fixture
     assert "Fresh live evidence appears first; archived checks appear second." in reviewer_fixture
     assert "application review evidence" in reviewer_fixture
-    assert "cite public claims only after repo/demo preflight passes" in reviewer_fixture
+    assert "cite public claims only after the public-link check passes" in reviewer_fixture
+    assert "repo/demo preflight" not in reviewer_fixture
     assert "Playable state, visible consequence, no archive overclaim." in reviewer_fixture
     assert "Stored checks appear only when archived evidence is attached." in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case="fresh"' in reviewer_fixture

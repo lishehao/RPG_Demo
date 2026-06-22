@@ -63,7 +63,7 @@
 - `#/qa/play-leverage` exercises the real leverage `ActionArea` surface without backend or live generation.
 - `#/qa/play-advisor` exercises the real advisor FAB/sidechat without backend or live generation.
 - `#/qa/play-ending` exercises the real ending payoff surface without backend or live generation.
-- `#/qa/play-reviewer-evidence` exercises the real reviewer evidence drawer without backend or live generation, including fresh and archived-proof cases. The page starts with a local-proof fixture note and points public claims back to repo/demo preflight.
+- `#/qa/play-reviewer-evidence` exercises the real reviewer evidence drawer without backend or live generation, including fresh and archived-proof cases. The page starts with a local-proof fixture note and points public claims back to the public-link check.
 - Mobile 390px must have no horizontal overflow and action/retry controls must remain reachable.
 - Play is a story-world scene surface: Narrator/World, scene characters, and You. Story Butler is not the primary Play speaker; advisor behavior stays optional and secondary.
 

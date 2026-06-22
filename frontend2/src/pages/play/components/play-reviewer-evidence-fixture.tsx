@@ -253,7 +253,7 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
           <strong style={INTRO_TITLE_STYLE}>Evidence drawer for application review.</strong>
           <p style={INTRO_COPY_STYLE}>
             Fresh live evidence appears first; archived checks appear second. Use this for application review evidence;
-            cite public claims only after repo/demo preflight passes.
+            cite public claims only after the public-link check passes.
           </p>
           <div style={CASE_MAP_STYLE} data-play-reviewer-evidence-fixture-case-map="true">
             <span style={CASE_MAP_ITEM_STYLE}>
