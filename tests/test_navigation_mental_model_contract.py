@@ -143,6 +143,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Watch 75s reviewer cut" in portfolio
     assert "Open Reviewer path" in portfolio
     assert "Use #/portfolio -> #/reviewer" in portfolio
+    assert "Verify Story Desk start" in portfolio
+    assert "Local build only: open a populated Story Desk card" in portfolio
+    assert 'localHref: "#/qa/home-start"' in portfolio
+    assert "Open local Story Desk start fixture" in portfolio
     assert "Inspect evidence" in portfolio
     assert 'localHref: "#/qa/play-reviewer-evidence"' in portfolio
     assert "Open local evidence fixture" in portfolio
@@ -249,8 +253,9 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "If it fails, use the demo video for orientation" in reviewer_path
     assert "`#/portfolio`" in reviewer_path
     assert "`#/reviewer`" in reviewer_path
+    assert "`#/qa/home-start`" in reviewer_path
     assert "`#/qa/replay`" in reviewer_path
-    assert "local QA routes such as `#/qa/replay`" in reviewer_path
+    assert "local QA routes such as `#/qa/home-start` and `#/qa/replay`" in reviewer_path
     assert "local-only evidence" in reviewer_path
     assert "pushed, deployed, and rechecked" in reviewer_path
     assert "python3 tools/narrative_release_gate.py --mode fake" in readme
@@ -412,6 +417,7 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "## 申请 / 作品集审阅路径" in readme
     assert "`#/portfolio`" in readme
     assert "`#/reviewer`" in readme
+    assert "`#/qa/home-start`" in readme
     assert "`#/qa/replay`" in readme
     assert "local QA evidence" in readme
     assert "不要当作公开链接证据" in readme

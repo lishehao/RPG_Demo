@@ -74,9 +74,11 @@ Recommended order for an admissions or recruiting review:
    surface.
 3. Launch the reviewer route from the portfolio page and inspect the
    locked-seed run, runtime evidence hooks, and replay/ending path.
-4. In a local build, open `#/qa/replay` when you need deterministic evidence
+4. In a local build, open `#/qa/home-start` when you need deterministic
+   evidence that a populated Story Desk card lands in a readable first turn.
+5. In a local build, open `#/qa/replay` when you need deterministic evidence
    of the completed-run replay artifact without backend or live generation.
-5. Verify source evidence in [Current System Map](./docs/CURRENT_SYSTEM_MAP.md),
+6. Verify source evidence in [Current System Map](./docs/CURRENT_SYSTEM_MAP.md),
    [Case Study](./docs/CASE_STUDY.md),
    `tests/test_navigation_mental_model_contract.py`, and
    `tests/test_play_direction_a_editorial_primitives_contract.py`.
@@ -89,8 +91,9 @@ game or broad adoption proof.
 Evidence visibility gate: before sending a public GitHub Pages or repository
 link as admissions evidence, run `python3 tools/portfolio_public_evidence_preflight.py`.
 If it fails, use the demo video for orientation and label `#/portfolio`,
-`#/reviewer`, local QA routes such as `#/qa/replay`, Story Desk, Create, Play,
-and Replay as local-only evidence until the intended branch is pushed, deployed, and rechecked.
+`#/reviewer`, local QA routes such as `#/qa/home-start` and `#/qa/replay`,
+Story Desk, Create, Play, and Replay as local-only evidence until the intended
+branch is pushed, deployed, and rechecked.
 
 ---
 

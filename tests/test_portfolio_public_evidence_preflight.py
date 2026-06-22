@@ -122,7 +122,7 @@ def test_public_evidence_preflight_is_documented_for_application_links() -> None
     assert "Evidence visibility gate" in readme
     assert "before sending a public GitHub Pages or repository" in readme
     assert "If it fails, use the demo video for orientation" in readme
-    assert "`#/portfolio`,\n`#/reviewer`, local QA routes such as `#/qa/replay`, Story Desk, Create, Play,\nand Replay as local-only evidence" in readme
+    assert "`#/portfolio`,\n`#/reviewer`, local QA routes such as `#/qa/home-start` and `#/qa/replay`,\nStory Desk, Create, Play, and Replay as local-only evidence" in readme
     assert "before sending application or recruiting" in readme
     assert "links. It should report" in readme
     assert "local `HEAD` matches `origin/main`" in readme
