@@ -146,126 +146,136 @@ export function RuntimeInspector({
           </div>
         </div>
       </section>
-      <div style={ppStyles.evaluationHero}>
-        <div style={ppStyles.evaluationVerdictBlock}>
-          <span style={ppStyles.evaluationLabel}>{reviewerProofLimitLabel}</span>
-          <strong style={ppStyles.evaluationVerdict} data-evaluation-verdict={hasArchivedJudgeEvidence ? latestStatus : "pending"}>
-            {archivedCheckStatus}
-          </strong>
-        </div>
-        <div style={ppStyles.evaluationScoreBlock}>
-          <span style={ppStyles.evaluationLabel}>Score</span>
-          <strong style={ppStyles.evaluationScore}>{archivedScore}</strong>
-        </div>
-      </div>
-      <div style={ppStyles.evaluationReasonRow}>
-        <span style={ppStyles.runtimeInspectorRowLabel}>Reason category</span>
-        <strong style={ppStyles.agentTraceValue}>{reasonCategory}</strong>
-      </div>
-      <div style={ppStyles.evaluationEvidenceQuote}>{latestEvidence}</div>
-
-      <section style={ppStyles.evaluationSection}>
-        <span style={ppStyles.evaluationSectionTitle}>Score points</span>
-        <div style={ppStyles.evaluationCriteriaGrid}>
-          {criteria.map((row) => (
-            <div
-              key={row.criterion}
-              style={ppStyles.evaluationCriterionRow}
-              data-evaluation-criterion={row.criterion}
-              data-evaluation-status={row.status}
-            >
-              <div style={ppStyles.evaluationCriterionTopline}>
-                <strong>{row.criterion}</strong>
-                <span style={ppStyles.evaluationStatus}>{row.status}</span>
-              </div>
-              <span style={ppStyles.evaluationCriterionEvidence}>{row.evidence}</span>
-              <span style={ppStyles.evaluationCriterionRationale}>{row.rationale}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section style={ppStyles.evaluationSection}>
-        <span style={ppStyles.evaluationSectionTitle}>Trajectory</span>
-        <div style={ppStyles.trajectoryTrack} data-evaluation-trajectory="true">
-          {trajectory.turns.length ? trajectory.turns.map((turn) => (
-            <span
-              key={turn.ord}
-              title={turn.label}
-              style={{
-                ...ppStyles.trajectoryDot,
-                ...(turn.status === "pass"
-                  ? ppStyles.trajectoryDotPass
-                  : turn.status === "warn"
-                    ? ppStyles.trajectoryDotWarn
-                    : turn.status === "fail"
-                      ? ppStyles.trajectoryDotFail
-                      : ppStyles.trajectoryDotMissing),
-              }}
-              data-trajectory-status={turn.status}
-            >
-              {turn.turn}
-            </span>
-          )) : (
-            <span style={ppStyles.agentTraceEmpty}>
-              {agentTraceAccessGranted ? "No judged turns yet." : "Reviewer access not granted."}
-            </span>
-          )}
+      <details
+        style={ppStyles.reviewerArchiveDetails}
+        data-reviewer-archive-details="true"
+        open={hasArchivedJudgeEvidence}
+      >
+        <summary style={ppStyles.reviewerArchiveSummary} data-reviewer-archive-summary="true">
+          <span>{hasArchivedJudgeEvidence ? "Archived evaluation details" : "Archived evaluation not available yet"}</span>
+          <strong>{hasArchivedJudgeEvidence ? archivedScore : "live proof is enough for this view"}</strong>
+        </summary>
+        <div style={ppStyles.evaluationHero}>
+          <div style={ppStyles.evaluationVerdictBlock}>
+            <span style={ppStyles.evaluationLabel}>{reviewerProofLimitLabel}</span>
+            <strong style={ppStyles.evaluationVerdict} data-evaluation-verdict={hasArchivedJudgeEvidence ? latestStatus : "pending"}>
+              {archivedCheckStatus}
+            </strong>
+          </div>
+          <div style={ppStyles.evaluationScoreBlock}>
+            <span style={ppStyles.evaluationLabel}>Score</span>
+            <strong style={ppStyles.evaluationScore}>{archivedScore}</strong>
+          </div>
         </div>
         <div style={ppStyles.evaluationReasonRow}>
-          <span style={ppStyles.runtimeInspectorRowLabel}>Trajectory trend</span>
-          <strong style={ppStyles.agentTraceValue}>{trajectory.summary}</strong>
+          <span style={ppStyles.runtimeInspectorRowLabel}>Reason category</span>
+          <strong style={ppStyles.agentTraceValue}>{reasonCategory}</strong>
         </div>
-      </section>
+        <div style={ppStyles.evaluationEvidenceQuote}>{latestEvidence}</div>
 
-      <section style={ppStyles.evaluationSection}>
-        <span style={ppStyles.evaluationSectionTitle}>Telemetry</span>
-        {telemetryRows.length ? (
-          <div style={ppStyles.telemetryList}>
-            {telemetryRows.map((event) => (
+        <section style={ppStyles.evaluationSection}>
+          <span style={ppStyles.evaluationSectionTitle}>Score points</span>
+          <div style={ppStyles.evaluationCriteriaGrid}>
+            {criteria.map((row) => (
               <div
-                key={event.event_id}
-                style={ppStyles.telemetryRow}
-                data-telemetry-operation={event.operation}
+                key={row.criterion}
+                style={ppStyles.evaluationCriterionRow}
+                data-evaluation-criterion={row.criterion}
+                data-evaluation-status={row.status}
               >
-                <strong style={ppStyles.telemetryOperation}>{shortOperation(event.operation)}</strong>
-                <span style={ppStyles.telemetryMeta}>
-                  {event.source_label} · {event.status} · {event.latency_ms ?? event.operation_latency_ms ?? "?"}ms
-                </span>
-                <span style={ppStyles.telemetryTokens}>
-                  in {tokenValue(event.input_tokens)} · cache {tokenValue(event.cached_input_tokens)} · out {tokenValue(event.output_tokens)} · total {tokenValue(event.total_tokens)}
-                </span>
-                {event.retry_count || event.repair_count || event.fallback_reason ? (
-                  <span style={ppStyles.telemetryMeta}>
-                    retry {event.retry_count} · repair {event.repair_count}
-                    {event.fallback_reason ? ` · ${event.fallback_reason}` : ""}
-                  </span>
-                ) : null}
+                <div style={ppStyles.evaluationCriterionTopline}>
+                  <strong>{row.criterion}</strong>
+                  <span style={ppStyles.evaluationStatus}>{row.status}</span>
+                </div>
+                <span style={ppStyles.evaluationCriterionEvidence}>{row.evidence}</span>
+                <span style={ppStyles.evaluationCriterionRationale}>{row.rationale}</span>
               </div>
             ))}
           </div>
-        ) : (
-          <span style={ppStyles.agentTraceEmpty}>
-            {agentTraceAccessGranted ? "No LLM call events for this session yet." : "Reviewer access not granted."}
-          </span>
-        )}
-      </section>
+        </section>
 
-      {traceRows.length ? (
-        <details style={ppStyles.agentTraceDetails}>
-          <summary style={ppStyles.runtimeInspectorDetailsSummary}>
-            Agent trace summary
-          </summary>
-          <div style={ppStyles.agentTraceGrid}>
-            {traceRows.map((row) => (
-              <div style={ppStyles.agentTraceRow} key={row.label}>
-                <span style={ppStyles.runtimeInspectorRowLabel}>{row.label}</span>
-                <strong style={ppStyles.agentTraceValue} title={row.value}>{row.value}</strong>
-              </div>
-            ))}
+        <section style={ppStyles.evaluationSection}>
+          <span style={ppStyles.evaluationSectionTitle}>Trajectory</span>
+          <div style={ppStyles.trajectoryTrack} data-evaluation-trajectory="true">
+            {trajectory.turns.length ? trajectory.turns.map((turn) => (
+              <span
+                key={turn.ord}
+                title={turn.label}
+                style={{
+                  ...ppStyles.trajectoryDot,
+                  ...(turn.status === "pass"
+                    ? ppStyles.trajectoryDotPass
+                    : turn.status === "warn"
+                      ? ppStyles.trajectoryDotWarn
+                      : turn.status === "fail"
+                        ? ppStyles.trajectoryDotFail
+                        : ppStyles.trajectoryDotMissing),
+                }}
+                data-trajectory-status={turn.status}
+              >
+                {turn.turn}
+              </span>
+            )) : (
+              <span style={ppStyles.agentTraceEmpty}>
+                {agentTraceAccessGranted ? "No judged turns yet." : "Reviewer access not granted."}
+              </span>
+            )}
           </div>
-        </details>
-      ) : null}
+          <div style={ppStyles.evaluationReasonRow}>
+            <span style={ppStyles.runtimeInspectorRowLabel}>Trajectory trend</span>
+            <strong style={ppStyles.agentTraceValue}>{trajectory.summary}</strong>
+          </div>
+        </section>
+
+        <section style={ppStyles.evaluationSection}>
+          <span style={ppStyles.evaluationSectionTitle}>Telemetry</span>
+          {telemetryRows.length ? (
+            <div style={ppStyles.telemetryList}>
+              {telemetryRows.map((event) => (
+                <div
+                  key={event.event_id}
+                  style={ppStyles.telemetryRow}
+                  data-telemetry-operation={event.operation}
+                >
+                  <strong style={ppStyles.telemetryOperation}>{shortOperation(event.operation)}</strong>
+                  <span style={ppStyles.telemetryMeta}>
+                    {event.source_label} · {event.status} · {event.latency_ms ?? event.operation_latency_ms ?? "?"}ms
+                  </span>
+                  <span style={ppStyles.telemetryTokens}>
+                    in {tokenValue(event.input_tokens)} · cache {tokenValue(event.cached_input_tokens)} · out {tokenValue(event.output_tokens)} · total {tokenValue(event.total_tokens)}
+                  </span>
+                  {event.retry_count || event.repair_count || event.fallback_reason ? (
+                    <span style={ppStyles.telemetryMeta}>
+                      retry {event.retry_count} · repair {event.repair_count}
+                      {event.fallback_reason ? ` · ${event.fallback_reason}` : ""}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span style={ppStyles.agentTraceEmpty}>
+              {agentTraceAccessGranted ? "No LLM call events for this session yet." : "Reviewer access not granted."}
+            </span>
+          )}
+        </section>
+
+        {traceRows.length ? (
+          <details style={ppStyles.agentTraceDetails}>
+            <summary style={ppStyles.runtimeInspectorDetailsSummary}>
+              Agent trace summary
+            </summary>
+            <div style={ppStyles.agentTraceGrid}>
+              {traceRows.map((row) => (
+                <div style={ppStyles.agentTraceRow} key={row.label}>
+                  <span style={ppStyles.runtimeInspectorRowLabel}>{row.label}</span>
+                  <strong style={ppStyles.agentTraceValue} title={row.value}>{row.value}</strong>
+                </div>
+              ))}
+            </div>
+          </details>
+        ) : null}
+      </details>
 
       <div style={ppStyles.evaluationFooter}>
         Session {story.session.turn_count}/{story.session.turn_budget} · {inventoryState} · ending {endingLabel} · {turnsRemaining} left

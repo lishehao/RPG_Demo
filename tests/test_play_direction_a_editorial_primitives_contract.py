@@ -795,6 +795,10 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "reviewer run can still prove live play state" in runtime_inspector
     assert 'const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"' in runtime_inspector
     assert runtime_inspector.count("{reviewerProofLimitLabel}") >= 2
+    assert 'data-reviewer-archive-details="true"' in runtime_inspector
+    assert 'open={hasArchivedJudgeEvidence}' in runtime_inspector
+    assert "Archived evaluation not available yet" in runtime_inspector
+    assert "live proof is enough for this view" in runtime_inspector
     assert "Checks boundary" not in runtime_inspector
     assert "archived judge checks" not in runtime_inspector
     assert '<span style={ppStyles.evaluationLabel}>Archived checks</span>' not in runtime_inspector
@@ -815,6 +819,8 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "reviewerEvidencePrimer" in styles
     assert "reviewerProofStrip" in styles
     assert "reviewerProofGrid" in styles
+    assert "reviewerArchiveDetails" in styles
+    assert "reviewerArchiveSummary" in styles
     assert "playReviewerEvidenceFixture" in routes
     assert "#/qa/play-reviewer-evidence" in routes
     assert "PlayReviewerEvidenceFixture" in app
