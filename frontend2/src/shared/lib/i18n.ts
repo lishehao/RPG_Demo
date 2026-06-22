@@ -2157,7 +2157,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "stage_bar.pressure": "Build",
   "stage_bar.reversal": "Turn",
   "stage_bar.climax": "Climax",
-  "stage_bar.pre_finale": "Coda",
+  "stage_bar.pre_finale": "Final stretch",
   "stage_bar.aria": "Turn {turn} of {total}, current stage: {stage}",
 
   // === replay page ===

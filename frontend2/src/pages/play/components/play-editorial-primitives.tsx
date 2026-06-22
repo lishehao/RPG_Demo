@@ -90,7 +90,13 @@ export function MoodPlate({
 }) {
   const imageUrl = sceneUrl || coverUrl
   const progress = `Turn ${turnsCompleted} of ${turnBudget}`
-  const stage = isComplete ? "Complete" : turnsRemaining <= 2 ? "Coda" : turnsCompleted <= 0 ? "Opening" : "In motion"
+  const stage = isComplete
+    ? "Complete"
+    : turnsRemaining <= 2
+      ? "Final stretch"
+      : turnsCompleted <= 0
+        ? "Opening"
+        : "In motion"
   const context = isComplete
     ? "This run is finished. Review the ending, then replay or share it."
     : turnsCompleted <= 0

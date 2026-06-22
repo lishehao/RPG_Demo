@@ -3,6 +3,6 @@ export function stageDisplayName(stage: string): string {
   if (stage === "pressure") return "Build"
   if (stage === "reversal") return "Turn"
   if (stage === "climax") return "Climax"
-  if (stage === "pre_finale" || stage === "pre_finale_open") return "Coda"
+  if (stage === "pre_finale" || stage === "pre_finale_open") return "Final stretch"
   return stage.replace(/_/g, " ")
 }

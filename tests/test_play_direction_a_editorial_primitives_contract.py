@@ -409,15 +409,23 @@ def test_run_context_progress_module_owns_passive_progress_readout() -> None:
 
 def test_run_context_stage_label_module_owns_passive_fallback_stage_copy() -> None:
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
+    primitives = (ROOT / "frontend2/src/pages/play/components/play-editorial-primitives.tsx").read_text()
     stage_label = (ROOT / "frontend2/src/pages/play/components/run-context-stage-label.ts").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
     readme = (ROOT / "frontend2/src/pages/play/README.md").read_text()
+    mood_plate = primitives[primitives.index("export function MoodPlate") : primitives.index("export function SceneSupportRail")]
 
     assert 'from "./run-context-stage-label"' in panels
     assert "stageDisplayName(stageKey)" in panels
     assert "function stageForLocal" in panels
     assert "export function stageDisplayName" in stage_label
     assert 'return "Prelude"' in stage_label
-    assert 'return "Coda"' in stage_label
+    assert 'return "Final stretch"' in stage_label
+    assert 'return "Coda"' not in stage_label
+    assert '"stage_bar.pre_finale": "Final stretch"' in strings
+    assert '"stage_bar.pre_finale": "Coda"' not in strings
+    assert '"Final stretch"' in mood_plate
+    assert '"Coda"' not in mood_plate
     assert 'return stage.replace(/_/g, " ")' in stage_label
     assert "function stageDisplayName" not in panels
     assert "stageForLocal" not in stage_label
