@@ -1688,6 +1688,12 @@ export function ActionArea({
         : context === "leverage"
           ? armedCardLeverage || (armedCardTargetName ? t("play.leverage_confirm_title", { target: armedCardTargetName }) : "")
           : freeInput.trim()
+    const diarySubmitLabel =
+      context === "leverage"
+        ? t("play.leverage_confirm_cta")
+        : context === "option" || (context === "free" && diaryDraft)
+          ? t("play.inner_motive_submit_cta")
+          : t("play.action_submit")
 
     return showDiary && diaryContext === context ? (
       <div
@@ -1790,11 +1796,7 @@ export function ActionArea({
             }
             type="button"
           >
-            {context === "leverage"
-              ? t("play.leverage_confirm_cta")
-              : context === "option"
-                ? t("play.inner_motive_submit_cta")
-                : t("play.action_submit")}
+            {diarySubmitLabel}
           </button>
           <button
             onClick={() => setShowDiary(false)}

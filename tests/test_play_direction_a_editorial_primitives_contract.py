@@ -2146,6 +2146,9 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'const optionMotiveNeedsText = context === "option" && !diary.trim()' in panels
     assert 'data-play-inner-motive-disabled-reason="true"' in panels
     assert "inner_motive_submit_disabled_hint" in panels
+    assert "const diarySubmitLabel =" in panels
+    assert 'context === "option" || (context === "free" && diaryDraft)' in panels
+    assert "{diarySubmitLabel}" in panels
     assert "diaryDisabledReason" in styles
     assert 'isWritingOptionDiary\n      ? t("play.turn_guide_inner_motive_title")' in panels
     assert 'isWritingOptionDiary\n      ? t("play.turn_guide_inner_motive_detail")' in panels
