@@ -46,6 +46,18 @@ def test_reviewer_launch_explains_async_progress_to_external_reviewers() -> None
     assert ".reviewer-launch-plan__head" in theme
 
 
+def test_reviewer_page_normalizes_direct_entry_to_english() -> None:
+    source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
+
+    mount_language_idx = source.index('useEffect(() => {\n    setLang("en")')
+    handle_start_idx = source.index("const handleStart = async")
+
+    assert mount_language_idx < handle_start_idx
+    assert '}, [setLang])' in source[mount_language_idx:handle_start_idx]
+    assert 'setLang("en")' in source[source.index("const handleStart = async") :]
+    assert "A locked English demo path designed for portfolio review" in source
+
+
 def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
 
@@ -109,9 +121,9 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "After launch, verify" in source
     assert "Playable state" in source
     assert "State changed" in source
-    assert "Checks boundary" in source
+    assert "Proof limits" in source
     assert "Live state is visible immediately" in source
-    assert "archived judge checks appear only after they exist" in source
+    assert "proof that is not available yet is left out instead of overclaimed" in source
     assert "Archived checks" not in source
     assert 'data-reviewer-evidence-preview="true"' in source
     assert "data-reviewer-evidence-preview-item={item.label}" in source

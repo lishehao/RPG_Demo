@@ -83,6 +83,10 @@ export function ReviewerPage({
   const launchErrorRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
+    setLang("en")
+  }, [setLang])
+
+  useEffect(() => {
     if (!busy || launchPhase === "ready") return
     const frame = window.requestAnimationFrame(() => {
       const plan = launchPlanRef.current
