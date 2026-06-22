@@ -70,6 +70,8 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
 
     assert 'data-about-page="true"' in about
     assert "data-about-section={section.id}" in about
+    assert 'title: "About / Privacy"' in about
+    assert 'title: "关于 / 隐私"' in about
     assert "portfolio case study" in about
     assert "application evidence" in about
     assert "not as a launched consumer service" in about

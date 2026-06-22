@@ -71,7 +71,7 @@ const apStyles: Record<string, CSSProperties> = {
 }
 
 const aboutContentZh: AboutContent = {
-  title: "关于 Tiny Stories",
+  title: "关于 / 隐私",
   sections: [
     {
       id: "what-this-is",
@@ -147,7 +147,7 @@ const aboutContentZh: AboutContent = {
 }
 
 const aboutContentEn: AboutContent = {
-  title: "About Tiny Stories",
+  title: "About / Privacy",
   sections: [
     {
       id: "what-this-is",
