@@ -12,7 +12,7 @@ The final video should mix three layers:
 
 Target length: 75-90 seconds.
 
-Tone: dark Korean webtoon drama, clear product evidence, fast but readable.
+Tone: story-first social drama, real product evidence, fast but readable.
 
 ## Core Narrative
 
@@ -62,13 +62,9 @@ Actual product capture. Open Tiny Stories create page. Cursor enters the seed:
 
 `At my wedding, the groom asks me to sign away my shares before the ceremony starts.`
 
-Then select:
-- Length: Medium
-- Difficulty: High-stakes mode
-- Story language: English
-- Visibility: Just me
-
-Click `Start this story`.
+Click `Send opening`. If the visibility prompt appears, choose `Just me` for
+the capture. When the Story Brief is ready, show the compact review summary and
+click `Generate and enter story`.
 
 Motion treatment:
 Use a slight zoom crop on the textarea while typing. Add keystroke sound or small cursor pulse if audio is added later.
@@ -86,11 +82,11 @@ This shot must be genuine browser capture.
 
 Visual:
 Actual product capture of the busy card:
-- AI is building the story...
-- Picking characters
-- Wiring NPC leverage
-- Drafting player identity cards
-- Writing the first dramatic moment
+- Building opening scene...
+- Player role
+- First scene
+- First moves
+- The accepted Story Brief remains visible above the handoff
 
 Intercut:
 AI-generated story-engine keyframe for 1.5 seconds between UI beats.
@@ -103,7 +99,7 @@ Cut between UI progress and cinematic board imagery. Use quick label callouts:
 - Opening scene
 
 Voiceover:
-While it loads, the system builds more than prose: cast, goals, leverage, state, and the first playable scene.
+While it loads, the system builds more than prose: a player role, a goal, a first scene, and choices the viewer can actually press.
 
 ### 0:21-0:32 - Role And Board Are Real
 
@@ -145,8 +141,8 @@ Click an option with strategic posture, ideally something like:
 If the generated live options differ, choose the option that best shows agency and consequence.
 
 Motion treatment:
-Pause on options for readability. After click, show selected option dimming/locking, then loading state:
-`Continuing the story...`
+Pause on options for readability. After click, show the selected move and pending receipt:
+`Move sent`, `Room reacting`, and `Next moves forming`.
 
 Intercut:
 AI-generated choice keyframe for a quick 0.8s flash.
@@ -160,16 +156,16 @@ Every turn gives a tactical choice. The system remembers what you picked and wri
 ### 0:44-0:56 - Free-Form Action
 
 Visual:
-Actual play page. Open `+ Write your own action`.
+Actual play page. Open `Write your own move`.
 
 Type:
 `I smile, ask the lawyer to read the contract clause aloud, and secretly record his answer.`
 
-Optional inner monologue:
-Open `+ Add an inner monologue` and type:
+Optional inner motive:
+Open `Add inner motive` and type:
 `If he hesitates, I know the witness was coached.`
 
-Submit with `Do that`.
+Submit with `Submit with motive`.
 
 Motion treatment:
 Keep this section dynamic:
@@ -194,19 +190,19 @@ Type to advisor:
 
 Show advisor response.
 
-Then show runtime/state drawer or visible feedback:
-- NPC mood
+Then show visible state feedback or, in reviewer mode only, the reviewer evidence panel:
+- character reaction
 - turns left
 - inventory changed
 - stage progress
 - newly acquired item if available
 
-If using reviewer mode, briefly show `Reviewer runtime inspector`.
+If using reviewer mode, briefly show reviewer evidence as a separate layer, not as normal player UI.
 
 Motion treatment:
 Split-screen for 2 seconds:
 Left: live play page.
-Right: cropped advisor panel or runtime inspector.
+Right: cropped advisor panel or reviewer evidence.
 
 Intercut:
 AI-generated evidence/reveal keyframe as transition.
@@ -268,14 +264,14 @@ At the end, the run becomes shareable: what happened, why it mattered, and what 
 Visual:
 Clean final composition:
 Left: product UI montage grid.
-Right: cinematic manhwa still.
+Right: cinematic story still.
 
 On-screen text:
 Tiny Stories
-LLM interactive drama engine
+Playable AI story loop
 
 Small evidence line:
-Seed generation - playable turns - advisor context - ending compiler - 150 webtoon assets
+Seed -> Story Brief -> playable turns -> advisor boundary -> replayable ending
 
 Voiceover:
 Tiny Stories is my experiment in turning generative storytelling into a playable, stateful product experience.
@@ -286,7 +282,7 @@ Required product capture:
 
 1. Home or create page entry.
 2. Typing seed into textarea.
-3. Create options: Medium, High-stakes, English, Just me.
+3. Story Brief review plus `Generate and enter story`.
 4. Busy generation feedback.
 5. Play page after session starts.
 6. Cast strip and player role banner.
@@ -340,10 +336,11 @@ Recommended capture size:
 Recommended product route:
 
 1. Start at `#/create`.
-2. Create the wedding seed.
-3. Use `High-stakes mode` if the backend run is stable enough.
-4. Continue until at least one consequence is visible.
-5. If the live ending takes too long, use an existing completed session for the ending evidence, but keep the seed/run visually consistent.
+2. Send the wedding seed with `Send opening`.
+3. Choose visibility if prompted.
+4. Review the Story Brief and click `Generate and enter story`.
+5. Continue until at least one consequence is visible.
+6. If the live ending takes too long, use an existing completed session for the ending evidence, but keep the seed/run visually consistent.
 
 For a reviewer-run capture rather than a create-flow trailer, start at
 `#/portfolio`, open the reviewer run, and keep the Missing Singer Broadcast title

@@ -757,7 +757,18 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
     assert "the Missing Singer Broadcast seed matches the" in script
     assert "reviewer run and current portfolio page" in script
     assert "`#/portfolio`, open the reviewer run" in script
-    assert "clear product evidence" in script
+    assert "story-first social drama, real product evidence" in script
+    assert "Click `Send opening`" in script
+    assert "Story Brief is ready" in script
+    assert "click `Generate and enter story`" in script
+    assert "Building opening scene..." in script
+    assert "Move sent`, `Room reacting`, and `Next moves forming`" in script
+    assert "Open `Write your own move`" in script
+    assert "Open `Add inner motive`" in script
+    assert "Submit with `Submit with motive`" in script
+    assert "reviewer evidence as a separate layer, not as normal player UI" in script
+    assert "Playable AI story loop" in script
+    assert "Seed -> Story Brief -> playable turns -> advisor boundary -> replayable ending" in script
     assert "Portfolio evidence:" in script
     assert "### 1:18-1:28 - Ending Evidence" in script
     assert "Small evidence line:" in script
@@ -774,6 +785,19 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
         "Small proof line:",
         "ending proof",
         "opening proof",
+        "dark Korean webtoon drama",
+        "Start this story",
+        "AI is building the story",
+        "Wiring NPC leverage",
+        "Continuing the story",
+        "Write your own action",
+        "Add an inner monologue",
+        "Do that",
+        "runtime/state drawer",
+        "cinematic manhwa still",
+        "LLM interactive drama engine",
+        "150 webtoon assets",
+        "High-stakes mode",
     ):
         assert stale not in script
 
