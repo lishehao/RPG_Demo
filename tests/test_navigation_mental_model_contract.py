@@ -111,6 +111,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Launch reviewer route" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
     assert 'data-portfolio-review-order="true"' in portfolio
     assert "data-portfolio-review-step={item.step}" in portfolio
+    video_idx = portfolio.index('className="portfolio-hero__video"')
+    gate_idx = portfolio.index('data-portfolio-public-evidence-gate="true"')
+    assert portfolio.index('className="portfolio-hero__actions"') < video_idx < gate_idx
+    assert 'data-portfolio-hero-review-frame="true"' in portfolio
     gate_before_order = portfolio[portfolio.index('data-portfolio-public-evidence-gate="true"') : portfolio.index('data-portfolio-review-order="true"')]
     assert 'data-portfolio-public-evidence-gate-summary="true"' in gate_before_order
     assert 'data-portfolio-public-evidence-gate-details="true"' in gate_before_order
@@ -125,6 +129,7 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Open MP4 backup" in portfolio
     assert "Muted autoplay is best-effort" not in portfolio
     assert "MP4 fallback" not in portfolio
+    assert ".portfolio-hero__review" in theme
     assert ".portfolio-review-order" in theme
     assert ".portfolio-video-card" in theme
     assert ".portfolio-video-card__badge" in theme
@@ -399,6 +404,8 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert ".portfolio-evidence-boundary" in theme
     assert ".portfolio-evidence-boundary__grid" in theme
     assert ".portfolio-source-evidence" in theme
+    assert 'data-portfolio-hero-review-frame="true"' in portfolio
+    assert portfolio.index('className="portfolio-hero__video"') < portfolio.index('data-portfolio-public-evidence-gate="true"')
     assert ".portfolio-public-evidence-gate details" in theme
     assert ".portfolio-public-evidence-gate summary" in theme
     assert ".portfolio-public-evidence-gate code" in theme

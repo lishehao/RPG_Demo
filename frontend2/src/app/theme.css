@@ -427,6 +427,23 @@ kbd {
   width: min(640px, 100%);
   padding: 0;
 }
+
+.portfolio-hero__review {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(420px, 1.12fr);
+  gap: 42px;
+  align-items: start;
+}
+
+.portfolio-hero__review .portfolio-public-evidence-gate {
+  margin-top: 0;
+}
+
+.portfolio-hero__review .portfolio-review-order {
+  margin: 0;
+}
+
 .portfolio-hero .ts-tag,
 .reviewer-hero .ts-tag {
   padding: 0;
@@ -1721,6 +1738,10 @@ kbd {
     grid-template-columns: 1fr;
     gap: 26px;
     padding: 30px 0 34px;
+  }
+  .portfolio-hero__review {
+    grid-template-columns: 1fr;
+    gap: 18px;
   }
   .portfolio-hero__content,
   .reviewer-hero {
