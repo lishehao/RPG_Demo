@@ -36,6 +36,18 @@ EVIDENCE_SENSITIVE_PREFIXES = (
     "tests/",
 )
 
+EVIDENCE_SURFACE_PREFIXES = (
+    ("README / public docs", ("README.md", "README.zh.md", "docs/")),
+    ("Story Desk / saved runs", ("frontend2/src/pages/home/",)),
+    ("Template detail / start-own-run", ("frontend2/src/pages/world/",)),
+    ("Create flow", ("frontend2/src/pages/create/",)),
+    ("Play loop / action feedback", ("frontend2/src/pages/play/",)),
+    ("Replay / shared memory", ("frontend2/src/pages/replay/",)),
+    ("Portfolio / reviewer route", ("frontend2/src/pages/portfolio/",)),
+    ("Narrative backend", ("rpg_backend/narrative/",)),
+    ("Contract tests", ("tests/",)),
+)
+
 
 @dataclass(frozen=True)
 class PublicEvidenceStatus:
@@ -67,6 +79,18 @@ def evidence_sensitive_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
         for path in paths
         if any(path == prefix.rstrip("/") or path.startswith(prefix) for prefix in EVIDENCE_SENSITIVE_PREFIXES)
     )
+
+
+def evidence_sensitive_surfaces(paths: tuple[str, ...]) -> tuple[str, ...]:
+    matched: list[str] = []
+    for label, prefixes in EVIDENCE_SURFACE_PREFIXES:
+        if any(
+            path == prefix.rstrip("/") or path.startswith(prefix)
+            for path in paths
+            for prefix in prefixes
+        ):
+            matched.append(label)
+    return tuple(matched)
 
 
 def public_page_marker_status(url: str, *, timeout_seconds: float = 20.0) -> tuple[tuple[str, ...], str | None]:
@@ -157,6 +181,10 @@ def format_status(status: PublicEvidenceStatus) -> str:
 
     sensitive = evidence_sensitive_paths(status.changed_paths)
     if sensitive:
+        surfaces = evidence_sensitive_surfaces(status.changed_paths)
+        if surfaces:
+            lines.append("Evidence-sensitive reviewer surfaces not yet public:")
+            lines.extend(f"- {surface}" for surface in surfaces)
         lines.append("Evidence-sensitive local changes not yet public:")
         lines.extend(f"- {path}" for path in sensitive[:24])
         if len(sensitive) > 24:

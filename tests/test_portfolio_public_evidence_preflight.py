@@ -6,6 +6,7 @@ from tools.portfolio_public_evidence_preflight import (
     PUBLIC_PAGE_MARKERS,
     PublicEvidenceStatus,
     evidence_sensitive_paths,
+    evidence_sensitive_surfaces,
     format_status,
     status_exit_code,
 )
@@ -24,10 +25,14 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
         changed_paths=(
             "README.md",
             "docs/index.html",
+            "frontend2/src/pages/create/create-page.tsx",
             "frontend2/src/pages/home/home-page.tsx",
             "frontend2/src/pages/world/world-detail-page.tsx",
             "frontend2/src/pages/portfolio/reviewer-page.tsx",
             "frontend2/src/pages/play/components/play-flow-panels.tsx",
+            "frontend2/src/pages/replay/replay-page.tsx",
+            "rpg_backend/narrative/service.py",
+            "tests/test_navigation_mental_model_contract.py",
             "tools/internal_note.txt",
         ),
     )
@@ -38,6 +43,16 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     assert "Portfolio public evidence preflight: FAIL" in output
     assert "371 commit(s) ahead of origin/main" in output
     assert "public reviewers will not see those local changes" in output
+    assert "Evidence-sensitive reviewer surfaces not yet public" in output
+    assert "- README / public docs" in output
+    assert "- Story Desk / saved runs" in output
+    assert "- Template detail / start-own-run" in output
+    assert "- Create flow" in output
+    assert "- Play loop / action feedback" in output
+    assert "- Replay / shared memory" in output
+    assert "- Portfolio / reviewer route" in output
+    assert "- Narrative backend" in output
+    assert "- Contract tests" in output
     assert "Evidence-sensitive local changes not yet public" in output
     assert "- README.md" in output
     assert "- docs/index.html" in output
@@ -96,6 +111,8 @@ def test_public_evidence_preflight_is_documented_for_application_links() -> None
     assert "links. It should report" in readme
     assert "local `HEAD` matches `origin/main`" in readme
     assert "GitHub and GitHub Pages reviewers" in readme
+    assert "Story Desk, template detail, portfolio/reviewer, or" in readme
+    assert "affected reviewer surfaces" in readme
     assert "live GitHub Pages marker check" in readme
 
 
@@ -119,6 +136,35 @@ def test_evidence_sensitive_path_filter_covers_portfolio_and_play_surfaces() -> 
         "frontend2/src/pages/play/components/play-flow-panels.tsx",
         "frontend2/src/pages/portfolio/portfolio-page.tsx",
         "rpg_backend/narrative/service.py",
+    )
+
+
+def test_evidence_sensitive_surface_summary_keeps_hidden_paths_legible() -> None:
+    surfaces = evidence_sensitive_surfaces(
+        (
+            "README.zh.md",
+            "frontend2/src/pages/home/home-page.tsx",
+            "frontend2/src/pages/world/world-detail-page.tsx",
+            "frontend2/src/pages/create/create-page.tsx",
+            "frontend2/src/pages/play/play-page.tsx",
+            "frontend2/src/pages/replay/replay-page.tsx",
+            "frontend2/src/pages/portfolio/portfolio-page.tsx",
+            "rpg_backend/narrative/service.py",
+            "tests/test_navigation_mental_model_contract.py",
+            "scratch/local.txt",
+        )
+    )
+
+    assert surfaces == (
+        "README / public docs",
+        "Story Desk / saved runs",
+        "Template detail / start-own-run",
+        "Create flow",
+        "Play loop / action feedback",
+        "Replay / shared memory",
+        "Portfolio / reviewer route",
+        "Narrative backend",
+        "Contract tests",
     )
 
 
