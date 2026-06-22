@@ -251,7 +251,10 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert "latest_evidence_anchor" not in summary
     assert "historical_live_evidence_anchor" in summary
     assert "4382874 fix: keep opening live for eval gate" in packet
-    assert "snapshot/story-brief-opening-live-reliability-2026-06-08" in packet
+    assert (
+        summary["historical_live_evidence_anchor"]["snapshot"]
+        == "snapshot/story-brief-opening-live-reliability-2026-06-08"
+    )
     assert "| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |" in packet
     assert "Step Judge" in packet
     assert "Contract Judge" in packet

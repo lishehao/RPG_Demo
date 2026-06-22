@@ -84,6 +84,12 @@ contracts, persistent sessions, reviewer instrumentation, deterministic
 QA routes, and a demo trailer. It is not claimed as a launched consumer
 game or broad adoption proof.
 
+Evidence visibility gate: before sending a public GitHub Pages or repository
+link as admissions evidence, run `python3 tools/portfolio_public_evidence_preflight.py`.
+If it fails, use the demo video for orientation and label `#/portfolio`,
+`#/reviewer`, Story Desk, Create, Play, and Replay as local-only evidence until
+the intended branch is pushed, deployed, and rechecked.
+
 ---
 
 ## Target Player And Content Model

@@ -125,6 +125,14 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "portfolio-grade AI product-system evidence" in readme
     assert "It is not claimed as a launched consumer" in readme
     assert "game or broad adoption proof" in readme
+    reviewer_path = readme[readme.index("## Reviewer Path") : readme.index("## Target Player And Content Model")]
+    assert "Evidence visibility gate" in reviewer_path
+    assert "before sending a public GitHub Pages or repository" in reviewer_path
+    assert "If it fails, use the demo video for orientation" in reviewer_path
+    assert "`#/portfolio`" in reviewer_path
+    assert "`#/reviewer`" in reviewer_path
+    assert "local-only evidence" in reviewer_path
+    assert "pushed, deployed, and rechecked" in reviewer_path
     assert "python3 tools/narrative_release_gate.py --mode fake" in readme
     assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
     assert "python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000" in readme

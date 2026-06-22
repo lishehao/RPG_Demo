@@ -110,6 +110,10 @@ def test_public_evidence_preflight_is_documented_for_application_links() -> None
     readme = (ROOT / "README.md").read_text()
 
     assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
+    assert "Evidence visibility gate" in readme
+    assert "before sending a public GitHub Pages or repository" in readme
+    assert "If it fails, use the demo video for orientation" in readme
+    assert "`#/portfolio`,\n`#/reviewer`, Story Desk, Create, Play, and Replay as local-only evidence" in readme
     assert "before sending application or recruiting" in readme
     assert "links. It should report" in readme
     assert "local `HEAD` matches `origin/main`" in readme
