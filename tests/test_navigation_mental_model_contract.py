@@ -621,6 +621,10 @@ def test_create_entry_guest_path_explains_temporary_pen_name() -> None:
     assert '"login.guest_plan_editor": "进入故事编辑器，不需要邮箱或密码。"' in strings
     assert '"login.guest_plan_saved": "这次创作和之后的游玩会挂在这个笔名下。"' in strings
     assert '"login.guest_plan_custom": "想认真命名时，也可以改成自己的笔名。"' in strings
+    assert '"login.note": "Local demo pen name only — no password, no email; it saves stories and runs on this device."' in strings
+    assert '"login.note": "这是本地 Demo 笔名,没有密码、没有邮箱;用来保存你在这个设备上的故事和游玩记录."' in strings
+    assert "Real auth coming next month" not in strings
+    assert "下个月会改成正式登录" not in strings
 
 
 def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:

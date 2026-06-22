@@ -411,7 +411,7 @@ export const STRINGS_ZH = {
   "login.custom_label": "我想自定义笔名",
   "login.error_username_format": "用户名 2-20 字符,只能用字母、数字、下划线.",
   "login.error_generic": "登录失败,请稍后再试.",
-  "login.note": "这是测试期,没有密码、没有邮箱.下个月会改成正式登录.",
+  "login.note": "这是本地 Demo 笔名,没有密码、没有邮箱;用来保存你在这个设备上的故事和游玩记录.",
   "login.note_create": "只是一个本地 Demo 笔名,方便保存你创建的故事.",
 
   // Play page — shared / generic
@@ -1490,7 +1490,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "login.custom_label": "Choose my own pen name",
   "login.error_username_format": "Handle must be 2-20 chars, letters / numbers / underscore.",
   "login.error_generic": "Sign-in failed. Please try again.",
-  "login.note": "Testing phase — no password, no email. Real auth coming next month.",
+  "login.note": "Local demo pen name only — no password, no email; it saves stories and runs on this device.",
   "login.note_create": "Just a local demo pen name so your created story can be saved.",
 
   "play.identity_framing_prefix": "This run, you are —",
