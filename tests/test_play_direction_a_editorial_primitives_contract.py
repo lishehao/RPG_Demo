@@ -89,8 +89,10 @@ def test_shared_friendly_error_copy_hides_runtime_implementation_terms() -> None
     assert "return fallback ?? genericMsg" in source
     assert "The story line did not connect. Try again." in source
     assert "故事线路暂时没接上，再试一次。" in source
-    assert "The story came back incomplete. Try again, or simplify the Brief before generating." in source
-    assert "故事返回得不完整。可以重试，或先用 Brief 简化人物和约束再生成。" in source
+    assert "The story came back incomplete. Try again, or simplify the plan before generating." in source
+    assert "故事返回得不完整。可以重试，或先用计划简化人物和约束再生成。" in source
+    assert "This premise does not fit the current story shape yet." in source
+    assert "这个开头还不太适合当前故事形状。" in source
     for old_copy in (
         "Can't reach the AI backend",
         "The model returned malformed story data",
@@ -104,6 +106,13 @@ def test_shared_friendly_error_copy_hides_runtime_implementation_terms() -> None
         "AI 回了个空白",
         "AI 服务还没配置",
         "模型返回的开场数据没法用",
+        "simplify the Brief",
+        "先用 Brief",
+        "current runtime",
+        "当前运行时",
+        "honor the Brief",
+        "贴住 Brief",
+        "cannot enter play yet",
     ):
         assert old_copy not in source
 
@@ -2293,14 +2302,24 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.diary_public_move_label": "公开行动"' in strings
     assert '"play.diary_private_motive_label": "Private motive"' in strings
     assert '"play.diary_private_motive_label": "真实意图"' in strings
+    assert '"world.network_hint": "Characters hold dirt on each other.' in strings
+    assert '"world.network_hint": "整局戏里人物之间相互捏着把柄。' in strings
+    assert '"play.hint_oracle": "Your friend is normally just chatting. Spend 1 turn for a deep read' in strings
+    assert '"play.hint_oracle": "顾问平时只是陪你聊。用 1 回合请 TA 深度读局' in strings
     assert '"play.outcome_npc_label": "Characters"' in strings
     assert '"play.outcome_npc_label": "人物"' in strings
+    assert '"play.preview_action_risk_default": "Characters react from their current stance"' in strings
+    assert '"play.preview_action_risk_default": "人物会按当前立场反应"' in strings
+    assert '"play.turn_guide_free_detail": "Other characters will hear and react to this line or move."' in strings
+    assert '"play.turn_guide_free_detail": "故事里的其他人会听见并回应这句话或动作。"' in strings
     assert '"play.private_intent_hint": "What you secretly mean; other characters do not hear it"' in strings
     assert '"play.diary_label_hint": "What you secretly mean; others do not hear it."' in strings
     assert '"play.diary_writing_hint": "Write the goal, suspicion, or person you are protecting; do not repeat the public move."' in strings
     assert '"play.diary_writing_hint": "写目标、怀疑或你要保护的人；不要重复公开行动。"' in strings
     assert '"play.diary_attach_empty": "Add inner motive"' in strings
     assert '"play.diary_attach_empty": "补内心动机"' in strings
+    assert '"play.diary_private_motive_detail": "Steers what you want to achieve; other characters only see the public move."' in strings
+    assert '"play.diary_private_motive_detail": "只影响你想达成的方向；故事里的其他人只会看到公开行动。"' in strings
     for stale_copy in (
         "NPCs only see the move; this tells the story what you are trying to achieve.",
         "Write what you privately want. NPCs will not hear it",

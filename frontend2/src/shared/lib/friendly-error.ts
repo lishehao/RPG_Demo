@@ -68,7 +68,7 @@ const STATUS_FALLBACKS_EN: Record<number, string> = {
 }
 
 const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
-  llm_invalid_json: "故事返回得不完整。可以重试，或先用 Brief 简化人物和约束再生成。",
+  llm_invalid_json: "故事返回得不完整。可以重试，或先用计划简化人物和约束再生成。",
   llm_provider_failed: "故事线路暂时不在线，稍等再试。",
   llm_invalid_response: "故事这次回了空白，再试一次。",
   turn_invalid: "故事一时接不上你那一步——换个动作或稍等再试。",
@@ -84,13 +84,13 @@ const ERROR_CODE_FALLBACKS_ZH: Record<string, string> = {
   turn_already_advanced: "这一段已经走过了，刷新一下接着玩。",
   llm_unavailable: "这个版本暂时不能续写故事，稍后再试。",
   opening_invalid: "开场草稿没搭起来。可以重试，或生成一个更简单、约束更少的开场。",
-  opening_prompt_shape_mismatch: "这个开头还不太适合当前运行时。试试 3 个以上人物、一个公开冲突、一个秘密/争夺物，再加一点时间压力。",
-  opening_brief_consistency_failed: "第一版开场没有足够贴住 Brief。Brief 还保留着；请重新搭建一个更紧的开场，或先改一条设定。",
+  opening_prompt_shape_mismatch: "这个开头还不太适合当前故事形状。试试 3 个以上人物、一个公开冲突、一个秘密/争夺物，再加一点时间压力。",
+  opening_brief_consistency_failed: "第一版开场没有足够贴住计划。计划还保留着；请重新搭建一个更紧的开场，或先改一条设定。",
   advisor_invalid: "顾问没说出有效的话，再问一次。",
 }
 
 const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
-  llm_invalid_json: "The story came back incomplete. Try again, or simplify the Brief before generating.",
+  llm_invalid_json: "The story came back incomplete. Try again, or simplify the plan before generating.",
   llm_provider_failed: "The story line is briefly offline. Try again shortly.",
   llm_invalid_response: "The story came back blank. Try again.",
   turn_invalid: "The story can't pick up from that move — try a different action, or wait and retry.",
@@ -106,8 +106,8 @@ const ERROR_CODE_FALLBACKS_EN: Record<string, string> = {
   turn_already_advanced: "This turn already moved forward. Refresh to continue.",
   llm_unavailable: "This build cannot continue the story right now. Try again later.",
   opening_invalid: "The opening draft did not come together. Try again, or generate a simpler opening with fewer constraints.",
-  opening_prompt_shape_mismatch: "This premise does not fit the current runtime yet. Try 3+ people, one public conflict, one secret or contested object, and time pressure.",
-  opening_brief_consistency_failed: "The first draft did not honor the Brief strongly enough. The Brief is still saved; build a tighter opening or revise the plan.",
+  opening_prompt_shape_mismatch: "This premise does not fit the current story shape yet. Try 3+ people, one public conflict, one secret or contested object, and time pressure.",
+  opening_brief_consistency_failed: "The first draft did not honor the plan strongly enough. The plan is still saved; build a tighter opening or revise the plan.",
   advisor_invalid: "The advisor didn't say anything usable. Ask again.",
 }
 
@@ -127,7 +127,7 @@ const LIVE_ERROR_COPY_EN: Record<LiveErrorKind, string> = {
   timeout: "The room took too long to answer. No turn was spent; your draft or move is still held.",
   rate_limited: "The line is busy. Your draft or move is still held; try again in a moment.",
   invalid_response: "The scene came back incomplete. Your draft or move is still ready.",
-  safety_redirect: "That direction cannot enter play yet. Shift it toward a safer short-scene pressure point.",
+  safety_redirect: "That direction cannot enter the story yet. Shift it toward a safer short-scene pressure point.",
   provider_unavailable: "The live story line did not answer. Your draft or move is still here; retry in a moment.",
   network: NETWORK_FALLBACK_EN,
 }
