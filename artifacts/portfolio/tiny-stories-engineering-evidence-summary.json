@@ -5,9 +5,18 @@
   "historical_live_evidence_anchor": {
     "commit": "4382874 fix: keep opening live for eval gate",
     "snapshot": "snapshot/story-brief-opening-live-reliability-2026-06-08",
+    "visibility": "local_historical",
+    "public_link": false,
+    "note": "The paths below are local run-output names retained for provenance; they are not public reviewer links shipped in this repository.",
     "live_summary_path": "/tmp/tiny-stories-opening-live-reliability-2026-06-08/live-acceptance-summary-2.json",
     "reviewer_screenshot_path": "/tmp/tiny-stories-opening-live-reliability-2026-06-08/reviewer-play-evaluation-inapp.png",
     "normal_player_screenshot_path": "/tmp/tiny-stories-opening-live-reliability-2026-06-08/normal-play-clean-inapp.png"
+  },
+  "evidence_visibility": {
+    "artifact_scope": "Local admissions/recommender evidence summary, not a public deployment proof by itself.",
+    "public_use_gate": "Run python3 tools/portfolio_public_evidence_preflight.py before citing current local routes or artifacts as public evidence.",
+    "current_public_claim_boundary": "Treat #/portfolio, #/reviewer, local QA routes, Story Desk, Create, Play, Replay, and artifacts/portfolio as local-only until the intended branch is pushed, deployed, and rechecked.",
+    "historical_anchor_boundary": "The 2026-06-08 live-gate files were local run outputs kept for provenance, not public links."
   },
   "live_gate": {
     "status": "pass",
@@ -89,6 +98,7 @@
     "Do not call deterministic trajectory packaging a full live trajectory judge.",
     "Do not call tag-vector avatar ranking neural embeddings or a vector database.",
     "Do not claim research contribution, SOTA, general story robustness, or consumer-scale adoption.",
+    "Do not present /tmp historical artifact paths as public links or current deployed evidence.",
     "Clearly distinguish live acceptance from fixture/protocol checks."
   ]
 }

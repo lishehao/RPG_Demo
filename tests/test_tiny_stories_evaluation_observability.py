@@ -255,6 +255,18 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
         summary["historical_live_evidence_anchor"]["snapshot"]
         == "snapshot/story-brief-opening-live-reliability-2026-06-08"
     )
+    historical_anchor = summary["historical_live_evidence_anchor"]
+    assert historical_anchor["visibility"] == "local_historical"
+    assert historical_anchor["public_link"] is False
+    assert "local run-output names retained for provenance" in historical_anchor["note"]
+    assert "not public reviewer links" in historical_anchor["note"]
+
+    visibility = summary["evidence_visibility"]
+    assert "not a public deployment proof by itself" in visibility["artifact_scope"]
+    assert "portfolio_public_evidence_preflight.py" in visibility["public_use_gate"]
+    assert "artifacts/portfolio as local-only" in visibility["current_public_claim_boundary"]
+    assert "not public links" in visibility["historical_anchor_boundary"]
+
     assert "| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |" in packet
     assert "Step Judge" in packet
     assert "Contract Judge" in packet
@@ -272,3 +284,4 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert operations["narrative.opening"]["total_tokens"] == 3462
     assert any("full live trajectory judge" in item for item in summary["guardrails"])
     assert any("neural embeddings" in item for item in summary["guardrails"])
+    assert any("/tmp historical artifact paths" in item for item in summary["guardrails"])
