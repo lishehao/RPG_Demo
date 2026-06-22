@@ -58,7 +58,7 @@ const REVIEWER_LAUNCH_ERROR =
   "The reviewer run did not open this time."
 
 const REVIEWER_LAUNCH_RECOVERY =
-  "The locked seed and evidence checklist are still here. Retry the curated run, review the Portfolio evidence page, use normal author flow, or return to Story Desk."
+  "The locked seed and evidence checklist are still here. Retry the reviewer run, review the Portfolio evidence page, write your own story, or return to Story Desk."
 
 const launchPhaseIndex = (phase: LaunchPhase) =>
   REVIEWER_LAUNCH_STEPS.findIndex((step) => step.phase === phase)
@@ -182,10 +182,10 @@ export function ReviewerPage({
               disabled={busy || auth.loading}
               data-reviewer-launch-cta={busy ? "starting" : "ready"}
             >
-              {busy ? "Launching demo..." : "Start curated run"}
+              {busy ? "Launching demo..." : "Start reviewer run"}
             </button>
             <button className="reviewer-action reviewer-action--secondary" type="button" onClick={onOpenCreate} disabled={busy}>
-              Use normal author flow
+              Write your own story
             </button>
           </div>
           <section
@@ -264,7 +264,7 @@ export function ReviewerPage({
                   disabled={busy || auth.loading}
                   data-reviewer-launch-error-retry="true"
                 >
-                  Retry curated run
+                  Retry reviewer run
                 </button>
                 <button
                   className="reviewer-error__action"
@@ -282,7 +282,7 @@ export function ReviewerPage({
                   disabled={busy}
                   data-reviewer-launch-error-create="true"
                 >
-                  Use normal author flow
+                  Write your own story
                 </button>
                 <button
                   className="reviewer-error__action"

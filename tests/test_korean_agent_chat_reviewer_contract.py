@@ -66,9 +66,9 @@ def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     assert "launchErrorRef" in source
     assert "The reviewer run did not open this time." in source
     assert "The locked seed and evidence checklist are still here" in source
-    assert "Retry the curated run" in source
+    assert "Retry the reviewer run" in source
     assert "review the Portfolio evidence page" in source
-    assert "use normal author flow" in source
+    assert "write your own story" in source
     assert "return to Story Desk" in source
     assert 'data-reviewer-launch-error="true"' in source
     assert 'data-reviewer-launch-error-actions="true"' in source
@@ -76,7 +76,7 @@ def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     assert 'data-reviewer-launch-error-portfolio="true"' in source
     assert 'data-reviewer-launch-error-create="true"' in source
     assert 'data-reviewer-launch-error-home="true"' in source
-    assert "Retry curated run" in source
+    assert "Retry reviewer run" in source
     assert "Review portfolio evidence" in source
     assert 'role="status"' in source
     assert 'aria-live="polite"' in source
@@ -124,6 +124,10 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "keeps the player-facing story UI intact" in source
     assert "playable state and consequences" in source
     assert "Korean-webtoon visual language" not in source
+    assert "Start reviewer run" in source
+    assert "Write your own story" in source
+    assert "Start curated run" not in source
+    assert "Use normal author flow" not in source
     assert "REVIEWER_EVIDENCE_CHECKS" in source
     assert "After launch, verify" in source
     assert "Playable state" in source
