@@ -1,7 +1,6 @@
 import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion, useAnimationControls } from "motion/react"
 import { useAuth } from "../../app/auth-context"
-import { friendlyError } from "../../shared/lib/friendly-error"
 import { useT } from "../../shared/lib/i18n"
 import { itemTransition } from "../../shared/lib/motion-presets"
 import { PAGE_BG } from "../../shared/lib/webtoon-assets"
@@ -65,8 +64,8 @@ export function LoginPage({
     try {
       await auth.login(trimmed)
       onLoggedIn(next)
-    } catch (err) {
-      setError(friendlyError(err, t("login.error_generic")))
+    } catch {
+      setError(t("login.error_generic"))
       setSubmitting(false)
     }
   }

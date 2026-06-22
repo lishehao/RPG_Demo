@@ -412,7 +412,7 @@ export const STRINGS_ZH = {
   "login.guest_plan_custom": "想认真命名时，也可以改成自己的笔名。",
   "login.custom_label": "我想自定义笔名",
   "login.error_username_format": "用户名 2-20 字符,只能用字母、数字、下划线.",
-  "login.error_generic": "登录失败,请稍后再试.",
+  "login.error_generic": "这次没有进入。笔名还在这里；可以重试，或回 Story Desk。",
   "login.note": "这是本地 Demo 笔名,没有密码、没有邮箱;用来保存你在这个设备上的故事和游玩记录.",
   "login.note_create": "只是一个本地 Demo 笔名,方便保存你创建的故事.",
 
@@ -1494,7 +1494,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "login.guest_plan_custom": "You can still choose your own pen name when it matters.",
   "login.custom_label": "Choose my own pen name",
   "login.error_username_format": "Handle must be 2-20 chars, letters / numbers / underscore.",
-  "login.error_generic": "Sign-in failed. Please try again.",
+  "login.error_generic": "This pen name did not open. It is still here; retry, or go back to Story Desk.",
   "login.note": "Local demo pen name only — no password, no email; it saves stories and runs on this device.",
   "login.note_create": "Just a local demo pen name so your created story can be saved.",
 

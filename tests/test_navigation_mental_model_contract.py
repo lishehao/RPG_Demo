@@ -804,6 +804,8 @@ def test_create_entry_guest_path_explains_temporary_pen_name() -> None:
     assert '"login.guest_plan_custom": "想认真命名时，也可以改成自己的笔名。"' in strings
     assert '"login.note": "Local demo pen name only — no password, no email; it saves stories and runs on this device."' in strings
     assert '"login.note": "这是本地 Demo 笔名,没有密码、没有邮箱;用来保存你在这个设备上的故事和游玩记录."' in strings
+    assert '"login.error_generic": "This pen name did not open. It is still here; retry, or go back to Story Desk."' in strings
+    assert '"login.error_generic": "这次没有进入。笔名还在这里；可以重试，或回 Story Desk。"' in strings
     assert "Real auth coming next month" not in strings
     assert "下个月会改成正式登录" not in strings
     for style in (back_link_style, brand_link_style, custom_name_style, submit_style):
