@@ -136,6 +136,8 @@ def test_reviewer_launch_enters_reviewer_mode_play_evidence_path() -> None:
     assert "visible consequence" in play_page
     assert "consequence pending" in play_page
     assert "first consequence after a move" not in play_page
+    assert 'turnsCompleted === 0 ? renderReviewerEvidenceJump("opening") : null' in play_page
+    assert 'renderReviewerEvidenceJump("turn-feedback")' in play_page
     assert "View evidence summary" in play_page
     assert "reviewerMode ? (" in play_page
     assert "<RuntimeInspector" in play_page

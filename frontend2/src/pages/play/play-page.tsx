@@ -1447,7 +1447,7 @@ export function PlayPage({
             />
           ) : null}
 
-          {renderReviewerEvidenceJump("opening")}
+          {turnsCompleted === 0 ? renderReviewerEvidenceJump("opening") : null}
 
           {/* High-stakes goals stay as a single reminder line instead of
               another nested panel in the story column. */}
