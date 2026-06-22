@@ -164,8 +164,10 @@ def test_reviewer_launch_previews_runtime_evidence_points() -> None:
     assert "Reviewer evidence stays beside Play and should be cited only after the public-link check passes." in source
     assert "data-reviewer-hero-proof-item={item.label}" in source
     assert local_note_idx < actions_idx < hero_proof_idx < evidence_idx < launch_idx
-    assert "Public evidence boundary: inspect the current local build here" in source
-    assert "application links, cite this reviewer run only after the public-link" in source
+    assert "Public evidence boundary: local build only until the public-link" in source
+    assert "check passes; otherwise use the reviewer cut" in source
+    assert "inspect the current local build here" not in source
+    assert "application links, cite this reviewer run" not in source
     assert "keeps the player-facing story UI intact" in source
     assert "playable state and the first" in source
     assert "consequence after a move" in source

@@ -701,9 +701,10 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "playable state and consequences" not in reviewer
     assert "reviewer-only evidence summary beside the normal story UI" in reviewer
     assert 'data-reviewer-local-evidence-note="true"' in reviewer
-    assert "Public evidence boundary: inspect the current local build here" in reviewer
-    assert "application links, cite this reviewer run only after the public-link" in reviewer
+    assert "Public evidence boundary: local build only until the public-link" in reviewer
     assert "check passes; otherwise use the reviewer cut" in reviewer
+    assert "inspect the current local build here" not in reviewer
+    assert "application links, cite this reviewer run" not in reviewer
     local_note_idx = reviewer.index('data-reviewer-local-evidence-note="true"')
     launch_cta_idx = reviewer.index('data-reviewer-launch-cta={busy ? "starting" : "ready"}')
     proof_strip_idx = reviewer.index('data-reviewer-hero-proof-strip="true"')

@@ -197,8 +197,7 @@ export function ReviewerPage({
             consequence after a move.
           </p>
           <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
-            Public evidence boundary: inspect the current local build here. For
-            application links, cite this reviewer run only after the public-link
+            Public evidence boundary: local build only until the public-link
             check passes; otherwise use the reviewer cut.
           </p>
           <div className="reviewer-actions">
