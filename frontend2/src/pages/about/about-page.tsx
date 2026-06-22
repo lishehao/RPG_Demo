@@ -164,7 +164,7 @@ const aboutContentEn: AboutContent = {
           </p>
           <p style={apStyles.p}>
             The goal is not an infinite fiction feed or a chat bot. It
-            is a compact AI story game with a bounded episode,
+            is a compact AI interactive story with a bounded episode,
             visible state, ending, and replay. Read it as portfolio and
             application evidence, not as a launched consumer service.
           </p>

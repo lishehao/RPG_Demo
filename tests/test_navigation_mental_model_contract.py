@@ -83,7 +83,8 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
     assert "作品集案例里的互动短剧演示" in about
     assert "AI 互动短剧系统" in about
     assert "AI 叙事运行系统" not in about
-    assert "compact AI story game" in about
+    assert "compact AI interactive story" in about
+    assert "compact AI story game" not in about
     assert "compact AI narrative runtime" not in about
     assert "类型化数据约束、持久化状态、评审证据" in about
     assert "公开证据预检失败" in about
