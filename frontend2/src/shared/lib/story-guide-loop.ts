@@ -500,8 +500,8 @@ export function advanceStoryGuideLoop(
       status: "redirect",
       reply:
         lang === "zh"
-          ? "这个 beta 不会围绕毒品使用或成瘾来搭故事。我们可以把它改成公开压力、被误读的证据、或一个必须当场决定的物件。"
-          : "I can’t build this beta around drug use or addiction. We can redirect it into public pressure, misunderstood evidence, or a contested decision in the room.",
+          ? "这个故事不会围绕毒品使用或成瘾来展开。我们可以把它改成公开压力、被误读的证据、或一个必须当场决定的物件。"
+          : "I can’t build this story around drug use or addiction. We can redirect it into public pressure, misunderstood evidence, or a contested decision in the room.",
       acceptedText: false,
       blocked: true,
       canShapeBrief: false,
@@ -622,8 +622,8 @@ export function advanceStoryGuideLoop(
       status: "needs_field",
       reply:
         lang === "zh"
-          ? "我看到的是两人、低冲突、物件线索。这个 beta 需要至少第三方在场压力或公开后果，才能变成可玩的 Story Brief。加一个旁观者、阵营或必须当场选择的压力。"
-          : "I’m reading this as two people, low conflict, and an object-only thread. This beta needs a third active pressure or public consequence before I shape a Story Brief. Add one watcher, faction, or decision that must be handled in the room.",
+          ? "我看到的是两人、低冲突、物件线索。这个故事需要至少第三方在场压力或公开后果，才能变成可玩的 Story Brief。加一个旁观者、阵营或必须当场选择的压力。"
+          : "I’m reading this as two people, low conflict, and an object-only thread. This story needs a third active pressure or public consequence before I shape a Story Brief. Add one watcher, faction, or decision that must be handled in the room.",
       acceptedText: true,
       blocked: false,
       canShapeBrief: false,

@@ -40,6 +40,10 @@ def test_korean_agent_chat_slot_loop_blocks_drug_addiction_before_brief() -> Non
     assert "drug" in source
     assert "addiction" in source
     assert "redirect_out_of_spec" in source
+    assert "I can’t build this story around drug use or addiction" in source
+    assert "这个故事不会围绕毒品使用或成瘾来展开" in source
+    assert "this beta around drug use" not in source
+    assert "这个 beta 不会" not in source
     assert "acceptedText: false" in source
 
 
@@ -52,13 +56,19 @@ def test_korean_agent_chat_slot_loop_blocks_small_cast_object_only_before_brief(
     assert "no public pressure" in source
     assert "wedding ring" in source
     assert "object-only thread" in source
+    assert "This story needs a third active pressure or public consequence" in source
+    assert "这个故事需要至少第三方在场压力或公开后果" in source
+    assert "This beta needs" not in source
+    assert "这个 beta 需要" not in source
     assert "canShapeBrief: false" in source
 
     unsupported_guard = source.index("detectsUnsupportedSmallCastDirection(text)")
     ready_assignment = source.index("const ready = canShapeStoryBrief")
     assert unsupported_guard < ready_assignment
 
-    auto_brief_guard = create_source.index("if (!guideReadyToBrief || !hasSeed")
+    auto_brief_guard = create_source.index("!guideReadyToBrief ||")
+    assert create_source.index("!hasSeed ||", auto_brief_guard) > auto_brief_guard
+    assert create_source.index("privacyPromptVisible ||", auto_brief_guard) > auto_brief_guard
     story_brief_call = create_source.index("void handlePlanStory()", auto_brief_guard)
     assert auto_brief_guard < story_brief_call
 
@@ -77,7 +87,9 @@ def test_create_page_uses_slot_loop_before_story_brief_generation() -> None:
     story_brief_call = source.index("createNarrativeStoryBrief")
     assert readiness_guard < story_brief_call
 
-    auto_brief_guard = source.index("if (!guideReadyToBrief || !hasSeed")
+    auto_brief_guard = source.index("!guideReadyToBrief ||")
+    assert source.index("!hasSeed ||", auto_brief_guard) > auto_brief_guard
+    assert source.index("privacyPromptVisible ||", auto_brief_guard) > auto_brief_guard
     auto_brief_call = source.index("void handlePlanStory()", auto_brief_guard)
     story_brief_call = source.index("createNarrativeStoryBrief")
     assert story_brief_call < auto_brief_guard < auto_brief_call
@@ -106,4 +118,4 @@ def test_create_page_keeps_long_generate_handoff_visible_before_navigation() -> 
     assert "create.building_handoff_ready" in strings
     assert "create.building_handoff_ready_long" in strings
     assert "create.building_handoff_recovered" in strings
-    assert "Opening tightened from the Brief. Entering the scene..." in strings
+    assert "Opening tightened from the plan. Entering the scene..." in strings
