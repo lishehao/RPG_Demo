@@ -378,6 +378,10 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "sponsor director" in data
     assert "no violence and no blackmail" in data
     assert "Missing singer, live awards stream, sponsor pressure" in reviewer
+    assert "Proof limits" in reviewer
+    assert "proof that is not available yet is left out instead of overclaimed" in reviewer
+    assert "Checks boundary" not in reviewer
+    assert "archived judge checks" not in reviewer
     launch_error_block = reviewer[
         reviewer.index("if (!error) return")
         : reviewer.index("}, [error])")

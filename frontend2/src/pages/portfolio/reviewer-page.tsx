@@ -49,8 +49,8 @@ const REVIEWER_EVIDENCE_CHECKS = [
     detail: "The latest beat exposes relationship pulse and inventory consequences.",
   },
   {
-    label: "Checks boundary",
-    detail: "Live state is visible immediately; archived judge checks appear only after they exist.",
+    label: "Proof limits",
+    detail: "Live state is visible immediately; proof that is not available yet is left out instead of overclaimed.",
   },
 ] as const
 
