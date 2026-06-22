@@ -318,9 +318,10 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "75s reviewer cut" in landing
     assert "Watch 75s demo" in landing
     assert "Open MP4 demo" in landing
-    assert "Reviewer path" in landing
+    assert "Reviewer run guide" in landing
     assert "RPG_Demo#reviewer-path" in landing
-    assert "#/portfolio -> #/reviewer" in landing
+    assert "open the reviewer run locally" in landing
+    assert "#/portfolio -> #/reviewer" not in landing
     assert "inspect the checked evidence path" in landing
     assert "Source evidence" in landing
     assert "What reviewers can inspect" in landing
@@ -330,7 +331,7 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "Consequence" in landing
     assert "One move should visibly change the room, assets, or next-choice pressure." in landing
     assert "Evidence limits" in landing
-    assert "Reviewer evidence stays separate from normal play and public claims need preflight." in landing
+    assert "Reviewer evidence stays separate from normal play and public claims need a public-link check." in landing
     assert "Replay artifact" in landing
     assert "A finished run should become highlights, full read, share, and same-opening restart." in landing
     assert "What the demo proves" not in landing
@@ -343,7 +344,7 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "compare a few meaningful moves" in hero_copy
     assert "act once" in hero_copy
     assert "follow the visible" in hero_copy
-    assert "reviewer path then exposes" in hero_copy
+    assert "reviewer run then exposes" in hero_copy
     assert "portfolio-grade AI product-system evidence" in landing
     assert "not a" in landing
     assert "launched consumer game or broad adoption proof" in landing
@@ -355,15 +356,16 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "UI promise" in landing
     assert "not a blank writing canvas or a dashboard" in landing
     assert "Keep story context near decisions" in landing
-    assert "system map, reviewer path, contracts, and tests" in landing
+    assert "system map, reviewer run, contracts, and tests" in landing
     assert "python3 tools/portfolio_public_evidence_preflight.py" in landing
     assert "local commits ahead of public main" in landing
     assert "missing Pages" in landing
     assert "use the demo video for orientation only" in landing
     assert "Do not cite the" in landing
     assert "current Portfolio, Reviewer, Story Desk, Create, Play, or Replay" in landing
-    assert "routes as public evidence" in landing
-    assert "deployed" in landing and "rechecked" in landing and "preflight passes" in landing
+    assert "surfaces as public evidence" in landing
+    assert "routes as public evidence" not in landing
+    assert "deployed" in landing and "rechecked" in landing and "public-link check passes" in landing
     assert ".proof-checks" in landing
     assert ".proof-check" in landing
     assert ".audience-model" in landing
