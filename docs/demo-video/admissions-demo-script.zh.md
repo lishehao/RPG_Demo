@@ -68,7 +68,7 @@
 
 - 选择：
   - Medium
-  - Gauntlet mode
+  - High-stakes mode
   - English
   - Just me
 - 点击 `Start this story`。

@@ -40,6 +40,16 @@ def test_play_route_mounts_direction_a_editorial_primitives() -> None:
     assert '"play.current_scene_label": "Current scene"' in strings
     assert '"play.current_scene_next_cue": "Then use the choices below to answer this moment."' in strings
     assert '"play.current_scene_next_cue": "再用下方选择回应这一刻。"' in strings
+    assert '"play.gauntlet_badge": "High-stakes"' in strings
+    assert '"play.gauntlet_goals_title": "High-stakes aim this run:"' in strings
+    assert '"play.gauntlet_goal_stakes": "If it falls apart: {stakes}"' in strings
+    assert '"play.gauntlet_badge": "高压模式"' in strings
+    assert '"play.gauntlet_goals_title": "这一局的高压目标："' in strings
+    assert '"play.gauntlet_goal_stakes": "如果局面失守：{stakes}"' in strings
+    assert '"play.gauntlet_badge": "Gauntlet"' not in strings
+    assert '"play.gauntlet_badge": "博弈模式"' not in strings
+    assert '"play.gauntlet_goal_stakes": "Cost of failure: {stakes}"' not in strings
+    assert '"play.gauntlet_goal_stakes": "失败：{stakes}"' not in strings
     assert "currentScenePreviewNextCue" in styles
     story_timeline_block = play_page[play_page.index("<StoryTimeline innerRef={scrollerRef}>"):]
     assert "<RunContextPanel" in story_timeline_block

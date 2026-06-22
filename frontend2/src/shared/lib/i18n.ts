@@ -718,10 +718,10 @@ export const STRINGS_ZH = {
   "play.role_leverage_prepare": "行动区可用",
   "play.role_inventory": "手里的牌（{count}）",
 
-  // Play page — gauntlet goals card
-  "play.gauntlet_badge": "博弈模式",
-  "play.gauntlet_goals_title": "你这一局想要的：",
-  "play.gauntlet_goal_stakes": "失败：{stakes}",
+  // Play page — high-stakes goals card
+  "play.gauntlet_badge": "高压模式",
+  "play.gauntlet_goals_title": "这一局的高压目标：",
+  "play.gauntlet_goal_stakes": "如果局面失守：{stakes}",
 
   // Play page — finale-approaching banners
   "play.finale_wrapping": "故事正在收尾…",
@@ -1796,9 +1796,9 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.role_leverage_prepare": "Use below",
   "play.role_inventory": "In hand ({count})",
 
-  "play.gauntlet_badge": "Gauntlet",
-  "play.gauntlet_goals_title": "What you want this run:",
-  "play.gauntlet_goal_stakes": "Cost of failure: {stakes}",
+  "play.gauntlet_badge": "High-stakes",
+  "play.gauntlet_goals_title": "High-stakes aim this run:",
+  "play.gauntlet_goal_stakes": "If it falls apart: {stakes}",
 
   "play.finale_wrapping": "Story wrapping up…",
   "play.finale_one_left": "Next turn is the ending — choose carefully.",

@@ -35,7 +35,7 @@ Examples handled by `shared/lib/story-guide-settings.ts`, with loop orchestratio
 - `short`, `10 min`, `shorter` -> Short run / 8 turns.
 - `15 minutes`, `one sitting` -> One sitting / 12 turns.
 - `long`, `25 min`, `epic` -> Longer run / 20 turns.
-- `hard mode`, `NPCs fight back`, `can I lose`, `gauntlet` -> Gauntlet mode.
+- `hard mode`, `NPCs fight back`, `can I lose`, `gauntlet` -> High-stakes mode.
 - `中文`, `make it Chinese`, `用英文写`, `English` -> story language.
 - `backstage`, `disappearance`, `public scandal` -> high drama.
 - `cozy`, `clues`, `small town` -> cozy mystery.

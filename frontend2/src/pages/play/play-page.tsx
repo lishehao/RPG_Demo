@@ -1444,7 +1444,7 @@ export function PlayPage({
 
           {renderReviewerEvidenceJump("opening")}
 
-          {/* Gauntlet-mode goals stay as a single reminder line instead of
+          {/* High-stakes goals stay as a single reminder line instead of
               another nested panel in the story column. */}
           {isGauntlet && story.template.player_goals && story.template.player_goals.length > 0 ? (
             <div style={ppStyles.goalsCard}>

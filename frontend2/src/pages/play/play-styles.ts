@@ -1301,7 +1301,7 @@ export const ppStyles: Record<string, CSSProperties> = {
   },
 
   // Inventory delta toast — sits above pulse chips on a narrator beat
-  // Gauntlet-mode goals line
+  // High-stakes goals line
   goalsCard: {
     margin: "0 0 16px",
     padding: 0,

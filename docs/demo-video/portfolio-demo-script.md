@@ -64,7 +64,7 @@ Actual product capture. Open Tiny Stories create page. Cursor enters the seed:
 
 Then select:
 - Length: Medium
-- Difficulty: Gauntlet mode
+- Difficulty: High-stakes mode
 - Story language: English
 - Visibility: Just me
 
@@ -286,7 +286,7 @@ Required product capture:
 
 1. Home or create page entry.
 2. Typing seed into textarea.
-3. Create options: Medium, Gauntlet, English, Just me.
+3. Create options: Medium, High-stakes, English, Just me.
 4. Busy generation feedback.
 5. Play page after session starts.
 6. Cast strip and player role banner.
@@ -341,7 +341,7 @@ Recommended product route:
 
 1. Start at `#/create`.
 2. Create the wedding seed.
-3. Use `Gauntlet mode` if the backend run is stable enough.
+3. Use `High-stakes mode` if the backend run is stable enough.
 4. Continue until at least one consequence is visible.
 5. If the live ending takes too long, use an existing completed session for the ending proof, but keep the seed/run visually consistent.
 
