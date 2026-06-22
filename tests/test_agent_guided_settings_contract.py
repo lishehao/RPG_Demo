@@ -199,6 +199,8 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"world.section_failure": "红线 · 可能让这一局提前结束"',
         '"world.failure_hint": "越过任意一条都可能把这一局推向崩盘结局。开始前先看一眼，玩的时候才知道哪些动作风险最高。"',
         '"create.tension_auto_desc": "根据种子自动判断张力类型"',
+        '"create.guide_planning_slow": "Checking this opening can become first-scene choices..."',
+        '"create.guide_planning_slow": "正在检查这个开场能否变成第一幕选择..."',
         '"create.brief_handoff_note_ready": "Next, I’ll generate role cards, the opening passage, and playable choices, then send you into the story."',
         '"create.brief_handoff_note_blocked": "Tighten the plan first; once ready, I’ll build the first scene and playable choices."',
         '"create.brief_play_plan_label": "Ready to enter story"',
@@ -228,6 +230,8 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         "可进入 Play",
         "NPCs push back",
         "NPC 会主动施压",
+        "Locking the playable promise",
+        "正在锁定可玩的承诺",
     ):
         assert stale not in strings
 
