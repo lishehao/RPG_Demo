@@ -72,9 +72,9 @@ const PORTFOLIO_TARGET_USER_MODEL = [
 const PORTFOLIO_PUBLIC_EVIDENCE_GATE = {
   label: "Public evidence gate",
   summary:
-    "Public repo and Pages links can lag this local build. Verify them before citing the demo as public evidence.",
+    "Public repo and Pages links can lag this local build. If preflight fails, use the reviewer cut for orientation only.",
   detail:
-    "Before sending a public GitHub Pages or repository link, run the public-evidence preflight. If it fails, label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only until the intended branch is pushed, deployed, and rechecked.",
+    "Before sending a public GitHub Pages or repository link, run the public-evidence preflight. If it fails, do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay routes as public evidence until the intended branch is pushed, deployed, rechecked, and the preflight passes.",
   command: "python3 tools/portfolio_public_evidence_preflight.py",
 } as const
 
@@ -120,7 +120,7 @@ export function PortfolioPage({
               </button>
             </div>
             <p className="portfolio-hero__evidence-note" data-portfolio-hero-evidence-note="true">
-              Current reviewer path is local evidence until public repo and Pages links pass preflight.
+              Use the reviewer cut for orientation only; do not cite the current local route as public evidence until preflight passes.
             </p>
           </div>
           <div className="portfolio-hero__video" aria-label="Tiny Stories reviewer cut preview">
@@ -236,7 +236,8 @@ export function PortfolioPage({
               narrow runtime path behind this demo. These are public-main
               references and may lag the current local build. Before relying on
               public links, run the public-evidence preflight; if it fails,
-              treat the local route as local-only evidence.
+              use the reviewer cut for orientation only and do not cite the
+              current local route as public evidence until preflight passes.
             </p>
             <div>
               <a href={PUBLIC_REPO_URL} target="_blank" rel="noreferrer">GitHub repo</a>

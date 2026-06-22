@@ -111,7 +111,8 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Launch reviewer route" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
     assert 'data-portfolio-hero-evidence-note="true"' in portfolio
     hero_note = portfolio[portfolio.index('data-portfolio-hero-evidence-note="true"') : portfolio.index('className="portfolio-hero__video"')]
-    assert "Current reviewer path is local evidence until public repo and Pages links pass preflight." in hero_note
+    assert "Use the reviewer cut for orientation only" in hero_note
+    assert "do not cite the current local route as public evidence until preflight passes" in hero_note
     assert ".portfolio-hero__evidence-note" in theme
     assert 'data-portfolio-review-order="true"' in portfolio
     assert "data-portfolio-review-step={item.step}" in portfolio
@@ -384,12 +385,17 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "public-main" in portfolio
     assert "may lag the current local build" in portfolio
     assert "Public repo and Pages links can lag this local build" in portfolio
-    assert "Verify them before citing the demo as public evidence" in portfolio
+    assert "If preflight fails, use the reviewer cut for orientation only" in portfolio
     assert "Before relying on" in portfolio
     assert "public links" in portfolio
     assert "run the public-evidence preflight" in portfolio
     assert "python3 tools/portfolio_public_evidence_preflight.py" in portfolio
-    assert "treat the" in portfolio and "local route as local-only evidence" in portfolio
+    assert "do not cite the current Portfolio, Reviewer path, Story Desk, Create, Play, or Replay" in portfolio
+    assert "routes as public evidence until the intended branch is pushed, deployed, rechecked, and the preflight passes" in portfolio
+    assert "use the reviewer cut for orientation only" in portfolio
+    assert "do not cite the" in portfolio and "current local route as public evidence until preflight passes" in portfolio
+    assert "label this Portfolio" not in portfolio
+    assert "local route as local-only evidence" not in portfolio
     assert "GitHub repo" in portfolio
     assert "System map" in portfolio
     assert "Evidence packet" in portfolio
