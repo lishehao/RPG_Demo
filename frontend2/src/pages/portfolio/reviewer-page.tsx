@@ -20,7 +20,7 @@ const REVIEWER_LAUNCH_STEPS: Array<{
   {
     phase: "auth",
     title: "Reviewer session",
-    detail: "Signs into the evidence-enabled reviewer account when needed.",
+    detail: "Prepares a temporary reviewer session when the demo needs one.",
   },
   {
     phase: "brief",
@@ -30,12 +30,12 @@ const REVIEWER_LAUNCH_STEPS: Array<{
   {
     phase: "runtime",
     title: "Playable runtime",
-    detail: "Creates the template, first scene, options, advisor context, and inspector data.",
+    detail: "Creates the first scene, choices, advisor context, and proof summary reviewers inspect beside play.",
   },
   {
     phase: "opening",
     title: "Evidence mode",
-    detail: "Opens the run with reviewer-only runtime evidence available beside play.",
+    detail: "Opens the run with reviewer-only proof summary beside the normal story UI.",
   },
 ]
 

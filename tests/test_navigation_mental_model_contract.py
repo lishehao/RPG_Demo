@@ -378,6 +378,11 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "sponsor director" in data
     assert "no violence and no blackmail" in data
     assert "Missing singer, live awards stream, sponsor pressure" in reviewer
+    assert "Prepares a temporary reviewer session when the demo needs one" in reviewer
+    assert "proof summary reviewers inspect beside play" in reviewer
+    assert "reviewer-only proof summary beside the normal story UI" in reviewer
+    assert "evidence-enabled reviewer account" not in reviewer
+    assert "inspector data" not in reviewer
     assert "Proof limits" in reviewer
     assert "proof that is not available yet is left out instead of overclaimed" in reviewer
     assert "Checks boundary" not in reviewer
