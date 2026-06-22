@@ -414,3 +414,23 @@ def test_opening_generation_wait_state_explains_playable_outputs() -> None:
         '"create.busy_preview_pending": "接下来"',
     ):
         assert key in strings
+
+
+def test_create_readme_uses_current_story_butler_framing() -> None:
+    readme = (ROOT / "frontend2/src/pages/create/README.md").read_text()
+
+    assert "# Create Page: Story Butler" in readme
+    assert "player-facing scene plan review" in readme
+    assert "The page is a Story Butler chat, not a SaaS form." in readme
+    assert "`Generate and enter story` lives with the scene plan." in readme
+
+    for stale_copy in (
+        "Korean Agent Chat",
+        "Korean webtoon Agent Chat",
+        "production slate",
+        "Brief slate",
+        "Story Brief production slate",
+        "missing Story Brief slots",
+        "final Brief slate",
+    ):
+        assert stale_copy not in readme

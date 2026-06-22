@@ -1,13 +1,13 @@
-# Create Page: Korean Agent Chat
+# Create Page: Story Butler
 
 `create-page.tsx` owns the current Story Butler creation flow as a route/container. It holds state, API orchestration, and navigation callbacks. View-only pieces live beside it in local modules.
 
 ## File Map
 
 - `create-page.tsx`
-  - Route/container state, Story Brief and Generate API calls, guest session prep, transcript state, and navigation.
+  - Route/container state, scene-plan shaping and Generate API calls, guest session prep, transcript state, and navigation.
 - `components/create-flow-panels.tsx`
-  - View-only panels for busy stages, internal ledger primitives, the Brief settings read, and the Story Brief production slate.
+  - View-only panels for busy stages, internal ledger primitives, the story-shape read, and the player-facing scene plan review.
 - `create-options.ts`
   - Create constants and option metadata: seed examples, handoff timing, visibility options, budgets, difficulties, language options, tension options.
 - `create-types.ts`
@@ -20,10 +20,10 @@
 ## Current Interaction Contract
 
 1. Home `Write a new story` opens `#/create` without a login/name gate.
-2. The page is a Korean webtoon Agent Chat, not a SaaS form.
-3. The assistant asks for missing Story Brief slots and redirects unsafe/out-of-spec prompts while keeping pre-Brief chat natural.
-4. When enough fields are present, the Story Brief is shaped automatically and appears as an assistant production slate inside the transcript.
-5. `Generate and enter story` lives with the Brief slate.
+2. The page is a Story Butler chat, not a SaaS form.
+3. The assistant asks for missing scene-plan ingredients and redirects unsafe/out-of-spec prompts while keeping pre-plan chat natural.
+4. When enough fields are present, the scene plan is shaped automatically and appears inside the transcript.
+5. `Generate and enter story` lives with the scene plan.
 6. Generate creates a template/session and routes to Play.
 
 ## Story-Shape Settings
@@ -40,7 +40,7 @@ Examples handled by `shared/lib/story-guide-settings.ts`, with loop orchestratio
 - `backstage`, `disappearance`, `public scandal` -> high drama.
 - `cozy`, `clues`, `small town` -> cozy mystery.
 
-The inferred read is kept internal during ordinary collection so pre-Brief chat stays one-question-at-a-time. It is surfaced inside the final Brief slate before Generate. If a user correction changes story-shape settings after a Brief is ready, the flow must require reshaping before Generate.
+The inferred read is kept internal during ordinary collection so pre-plan chat stays one-question-at-a-time. It is surfaced inside the final scene plan before Generate. If a user correction changes story-shape settings after a scene plan is ready, the flow must require reshaping before Generate.
 
 ## Visibility
 
@@ -66,11 +66,11 @@ Only the source of story-shape values changed from visible form controls to the 
 
 ## Live Generate UX
 
-- Story Brief planning uses the live/hybrid text path when configured, with deterministic validation/fallback as a reliability layer.
+- Scene-plan shaping uses the live/hybrid text path when configured, with deterministic validation/fallback as a reliability layer.
 - Opening/template generation may use the live provider path when configured.
 - Live opening is capped in backend service code and can recover with a reliable opening while preserving player-safe copy.
 - Normal player copy must not mention provider/model/API/schema/debug/fallback/deterministic.
 
 ## Future Split Notes
 
-The current split intentionally keeps API orchestration in the container. Further extraction should target view-only pieces first, such as a dedicated `TranscriptLane`, `StoryComposer`, or `VisibilityControl`, without moving Story Brief or Generate state transitions in the same patch.
+The current split intentionally keeps API orchestration in the container. Further extraction should target view-only pieces first, such as a dedicated `TranscriptLane`, `StoryComposer`, or `VisibilityControl`, without moving scene-plan or Generate state transitions in the same patch.
