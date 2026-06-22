@@ -358,6 +358,14 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "sponsor director" in data
     assert "no violence and no blackmail" in data
     assert "Missing singer, live awards stream, sponsor pressure" in reviewer
+    launch_error_block = reviewer[
+        reviewer.index("if (!error) return")
+        : reviewer.index("}, [error])")
+    ]
+    assert 'data-reviewer-launch-error="true"' in reviewer
+    assert 'behavior: "auto"' in launch_error_block
+    assert 'block: "center"' in launch_error_block
+    assert 'behavior: prefersReducedMotion ? "auto" : "smooth"' not in launch_error_block
     assert "live awards stakes" in portfolio
     assert "missing singer" in portfolio
     assert "sponsor pressure" in portfolio

@@ -101,9 +101,8 @@ export function ReviewerPage({
     const frame = window.requestAnimationFrame(() => {
       const panel = launchErrorRef.current
       if (!panel) return
-      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       panel.scrollIntoView({
-        behavior: prefersReducedMotion ? "auto" : "smooth",
+        behavior: "auto",
         block: "center",
       })
     })
