@@ -356,7 +356,8 @@ def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
     assert "12-turn cap" in data
     assert "bounded episode budget visible in Play" in data
     assert "3 proofs" in data
-    assert "playable state, state change, checks boundary" in data
+    assert "playable state, visible change, proof limits" in data
+    assert "playable state, state change, checks boundary" not in data
     assert "playable state, state change, archived checks" not in data
     assert "Replay loop" in data
     assert "ending can be shared or restarted" in data

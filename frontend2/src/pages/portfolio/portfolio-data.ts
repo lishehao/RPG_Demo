@@ -29,7 +29,7 @@ export const REVIEWER_DEMO_ACTIONS = [
 export const PORTFOLIO_METRICS = [
   { value: "Locked seed", label: "same premise for every reviewer run" },
   { value: "12-turn cap", label: "bounded episode budget visible in Play" },
-  { value: "3 proofs", label: "playable state, state change, checks boundary" },
+  { value: "3 proofs", label: "playable state, visible change, proof limits" },
   { value: "Replay loop", label: "ending can be shared or restarted" },
 ] as const
 
