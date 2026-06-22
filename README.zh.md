@@ -53,7 +53,7 @@ play / replay / ending loop,不是已经验证过的消费级游戏或大规模�
 `#/portfolio`、`#/reviewer`、system map 和 engineering evidence packet 里.
 
 如果要把公开链接发给招生、推荐人或招聘 reviewer,先运行
-`python tools/portfolio_public_evidence_preflight.py`.如果它提示本地 `HEAD`
+`python3 tools/portfolio_public_evidence_preflight.py`.如果它提示本地 `HEAD`
 领先 `origin/main`,或 GitHub Pages 缺少当前 marker,这些证据只能算
 local-only.这包括 Story Desk、template detail、portfolio/reviewer 和 play
 路径的本地改动.它会先汇总受影响的 reviewer surface,再列路径,避免本地分支很大时

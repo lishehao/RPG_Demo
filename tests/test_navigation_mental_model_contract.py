@@ -204,7 +204,7 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "`#/portfolio`" in evidence_packet
     assert "`#/reviewer`" in evidence_packet
     assert "Public visibility check" in evidence_packet
-    assert "python tools/portfolio_public_evidence_preflight.py" in evidence_packet
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in evidence_packet
     assert "local `HEAD` is ahead of `origin/main`" in evidence_packet
     assert "GitHub Pages is missing" in evidence_packet
     assert "current markers" in evidence_packet
@@ -246,7 +246,7 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "视频用于快速理解玩家看到的 loop" in readme
     assert "真正的申请材料证据仍然在 source、tests" in readme
     assert "engineering evidence packet" in readme
-    assert "python tools/portfolio_public_evidence_preflight.py" in readme
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
     assert "本地 `HEAD`" in readme
     assert "GitHub Pages 缺少当前 marker" in readme
     assert "local-only" in readme

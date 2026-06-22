@@ -309,7 +309,7 @@ Useful checks:
 
 ```bash
 python tools/narrative_release_gate.py --mode fake
-python tools/portfolio_public_evidence_preflight.py
+python3 tools/portfolio_public_evidence_preflight.py
 pytest -q
 
 cd frontend2
