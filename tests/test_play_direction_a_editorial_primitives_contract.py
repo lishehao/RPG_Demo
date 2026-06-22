@@ -1060,7 +1060,7 @@ def test_play_action_fixture_rehearses_normal_move_flow_without_live_calls() -> 
     assert 'data-play-action-result-next-bridge="true"' in fixture
     assert "Your last move changed the next action menu." in fixture
     assert "The room is stable now, so Reveal and Deflect are about spending that pause." in fixture
-    assert "The sponsor is exposed, so the new choices either show proof or move pressure private." in fixture
+    assert "The sponsor is exposed, so the new choices either show evidence or move pressure private." in fixture
     assert "The crowd is held, so the next menu shifts toward evidence and risk control." in fixture
     assert "Use this before choosing the next move." not in fixture
     assert "Result landed. The next action set is ready." not in fixture
@@ -1152,7 +1152,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'block: "end"' in fixture
     assert 'data-gameplay-stakes-header="true"' in fixture
     assert "What is at stake" in fixture
-    assert "Each move trades time, pressure, trust, or proof." in fixture
+    assert "Each move trades time, pressure, trust, or evidence." in fixture
     assert "Watch these while choosing a move." not in fixture
     assert "data-gameplay-pressure-track={track.id}" in fixture
     assert 'gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))"' in fixture
@@ -1242,7 +1242,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "{nextActionBridgeLabelForAction(committed?.action ?? null)}" in fixture
     assert "Why the next moves changed" in fixture
     assert "The badge clue changed the menu" in fixture
-    assert "you can now use proof directly or turn it into public leverage" in fixture
+    assert "you can now use evidence directly or turn it into public leverage" in fixture
     assert "return SHOW_BADGE_TRACKS" in fixture
     assert "return TRAP_ANSWER_TRACKS" in fixture
     assert "setTracks(resolvedTracksForAction(committed.action, clueWasUnlocked))" in fixture
@@ -1271,10 +1271,10 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-person-action="true"' in fixture
     assert "shift?: string" in fixture
     assert 'data-gameplay-person-shift="true"' in fixture
-    assert "Badge proof gives Lena a concrete route to manage." in fixture
+    assert "Badge evidence gives Lena a concrete route to manage." in fixture
     assert "Marcus can now answer a public contradiction, not a vague suspicion." in fixture
     assert "Arthur's timeline can be tested against the badge trail." in fixture
-    assert "Dana can compare proof-first moves instead of guessing." in fixture
+    assert "Dana can compare evidence-first moves instead of guessing." in fixture
     assert 'data-gameplay-people-usage-note="true"' in fixture
     assert "People you can involve" in fixture
     assert "Ask them to open paths, block pressure, or reveal clues." in fixture
@@ -1284,9 +1284,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "People are resources." not in fixture
     assert "Clues you can use" in fixture
     assert "0 usable yet" in fixture
-    assert "Need proof" in fixture
+    assert "Need evidence" in fixture
     assert "Find the green-room clue" in fixture
-    assert "Find concrete proof to unlock a sharper next move." in fixture
+    assert "Find concrete evidence to unlock a sharper next move." in fixture
     assert "Not found yet" not in fixture
     assert "consultedPersonId" in fixture
     assert "setConsultedPersonId(person.id)" in fixture
@@ -1353,7 +1353,7 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "clueLinkWhy" in fixture
     assert 'data-gameplay-clue-impact="green-room-badge"' in fixture
     assert "Opens move" in fixture
-    assert "A proof-backed path, not another vague public challenge." in fixture
+    assert "An evidence-backed path, not another vague public challenge." in fixture
     assert "Clue action impact" in fixture
     assert 'data-gameplay-clue-use="green-room-badge"' in fixture
     assert 'data-gameplay-clue-armed={clueArmed ? "true" : undefined}' in fixture
@@ -1431,12 +1431,14 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "buildGameplayEnvelope" in envelope
     assert "deriveActionForecastChips" in envelope
     assert "normalizeBackendEnvelope" in envelope
-    assert '"May reveal proof"' in envelope
+    assert '"May reveal evidence"' in envelope
+    assert '"May reveal proof"' not in envelope
     assert '"Read the room"' in envelope
     assert '"Use leverage"' in envelope
     assert '"Evidence lead"' not in envelope
     assert '"Room read"' not in envelope
-    assert '"May reveal proof"' in backend_service
+    assert '"May reveal evidence"' in backend_service
+    assert '"May reveal proof"' not in backend_service
     assert '"Read the room"' in backend_service
     assert '"Use leverage"' in backend_service
     assert '"Evidence lead"' not in backend_service
@@ -1906,7 +1908,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_objective_label": "Your goal"' in strings
     assert '"play.gameplay_objective_label": "你的目标"' in strings
     assert '"play.gameplay_tracks_label": "What is at stake"' in strings
-    assert '"play.gameplay_tracks_hint": "Each move trades time, pressure, trust, or proof"' in strings
+    assert '"play.gameplay_tracks_hint": "Each move trades time, pressure, trust, or evidence"' in strings
+    assert '"play.gameplay_tracks_hint": "Each move trades time, pressure, trust, or proof"' not in strings
     assert '"play.gameplay_tracks_hint": "Watch these while choosing a move"' not in strings
     assert '"play.gameplay_tracks_label": "风险与资源"' in strings
     assert '"play.gameplay_tracks_hint": "每次行动都在交换时间、压力、信任或证据"' in strings
@@ -1985,8 +1988,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.resource_focus_time_match_detail_many": "{count} current moves can buy, spend, or squeeze time."' in strings
     assert '"play.resource_focus_pressure_match_detail_one": "1 current move can calm, raise, or redirect pressure."' in strings
     assert '"play.resource_focus_pressure_match_detail_many": "{count} current moves can calm, raise, or redirect pressure."' in strings
-    assert '"play.resource_focus_evidence_match_detail_one": "1 current move can turn a clue or proof into leverage."' in strings
-    assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can turn clues or proof into leverage."' in strings
+    assert '"play.resource_focus_evidence_match_detail_one": "1 current move can turn a clue or evidence into leverage."' in strings
+    assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can turn clues or evidence into leverage."' in strings
+    assert '"play.resource_focus_evidence_match_detail_one": "1 current move can turn a clue or proof into leverage."' not in strings
+    assert '"play.resource_focus_evidence_match_detail_many": "{count} current moves can turn clues or proof into leverage."' not in strings
     assert '"play.resource_focus_instruction": "Choose a matching move, or write your own."' in strings
     assert '"play.resource_focus_filter_note": "This only filters the current choices; no move is submitted yet."' in strings
     assert '"play.resource_focus_matches_label": "Matching moves"' in strings
@@ -2635,7 +2640,7 @@ def test_play_long_history_fixture_exercises_action_jump_with_real_action_area()
     assert "Next choice:" in fixture
     assert "Use the fixed timestamp to pressure the door story instead of asking broad questions." in fixture
     assert "Use the control-door clue while the sponsor is still answering in public." in fixture
-    assert "Return to proof now that the hallway is watched." in fixture
+    assert "Return to evidence now that the hallway is watched." in fixture
     assert "outcomeReceiptNextFocus" in styles
     assert "outcomeReceiptNextValue" in styles
     assert "scrollIntoView({ block: \"start\", behavior: \"smooth\" })" in fixture

@@ -106,7 +106,7 @@ def test_gameplay_forecast_turns_probe_actions_into_useful_signals() -> None:
     )
 
     labels = [chip.label for chip in chips]
-    assert "May reveal proof" in labels
+    assert "May reveal evidence" in labels
     assert "Read the room" not in labels
 
 
@@ -120,7 +120,7 @@ def test_gameplay_forecast_keeps_gentle_witness_actions_playable() -> None:
     )
 
     labels = [chip.label for chip in chips]
-    assert "May reveal proof" in labels
+    assert "May reveal evidence" in labels
     assert "Trust +1" in labels
     assert "Read the room" not in labels
 

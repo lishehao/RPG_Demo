@@ -289,7 +289,7 @@ def _gameplay_forecast_for_option(option: StoryOption) -> list[GameplayChip]:
         r"\b(ask|probe|question|interview|witness|account|source|handled|last seen|saw)\b",
         haystack,
     ):
-        _add_gameplay_chip(chips, "May reveal proof", "unlock")
+        _add_gameplay_chip(chips, "May reveal evidence", "unlock")
     if re.search(
         r"\b(trust|calm|cover|protect|help|ally|promise|reassure|soften|support|invite|speak|explain|give room)\b",
         haystack,
@@ -299,7 +299,7 @@ def _gameplay_forecast_for_option(option: StoryOption) -> list[GameplayChip]:
         r"\b(clue|evidence|proof|recording|footage|badge|phone|message|lead|find|discover|document|receipt)\b",
         haystack,
     ):
-        _add_gameplay_chip(chips, "May reveal proof", "unlock")
+        _add_gameplay_chip(chips, "May reveal evidence", "unlock")
     if re.search(
         r"\b(leverage|trump|blackmail|secret|threat|trade|bargain|deal)\b",
         haystack,

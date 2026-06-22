@@ -242,10 +242,10 @@ export function deriveActionForecastChips(option: NarrativeStoryOption): Gamepla
     addUniqueChip(chips, "Trust +1", "gain")
   }
   if (/\b(ask|probe|question|interview|witness|account|source|handled|last seen|saw)\b/.test(haystack)) {
-    addUniqueChip(chips, "May reveal proof", "unlock")
+    addUniqueChip(chips, "May reveal evidence", "unlock")
   }
   if (/\b(clue|evidence|proof|recording|footage|badge|phone|message|lead|find|discover|document|receipt)\b/.test(haystack)) {
-    addUniqueChip(chips, "May reveal proof", "unlock")
+    addUniqueChip(chips, "May reveal evidence", "unlock")
   }
   if (/\b(leverage|trump|blackmail|secret|threat|trade|bargain|deal)\b/.test(haystack)) {
     addUniqueChip(chips, "Use leverage", "unlock")

@@ -50,7 +50,7 @@ const INITIAL_TRACKS: Track[] = [
   { id: "time", label: "Time", value: "8 min", note: "Countdown before the live award reveal." },
   { id: "pressure", label: "Public pressure", value: "2 / 5", note: "The room is restless, but not breaking." },
   { id: "lena", label: "Lena trust", value: "1 / 5", note: "Lena will help if the ask feels specific." },
-  { id: "evidence", label: "Evidence", value: "0 / 3", note: "No concrete proof has landed yet." },
+  { id: "evidence", label: "Evidence", value: "0 / 3", note: "No concrete evidence has landed yet." },
 ]
 
 const RESOLVED_TRACKS: Track[] = [
@@ -64,20 +64,20 @@ const LENA_HOLD_TRACKS: Track[] = [
   { id: "time", label: "Time", value: "7 min", note: "Lena buys order, but the countdown keeps moving." },
   { id: "pressure", label: "Public pressure", value: "1 / 5", note: "The room settles while Lena gives people a task." },
   { id: "lena", label: "Lena trust", value: "2 / 5", note: "Lena trusts you more because the ask was specific." },
-  { id: "evidence", label: "Evidence", value: "0 / 3", note: "The room is calmer, but you still need proof." },
+  { id: "evidence", label: "Evidence", value: "0 / 3", note: "The room is calmer, but you still need evidence." },
 ]
 
 const MARCUS_STALL_TRACKS: Track[] = [
   { id: "time", label: "Time", value: "9 min", note: "Marcus buys time with the sponsors." },
   { id: "pressure", label: "Public pressure", value: "2 / 5", note: "Sponsor pressure moves away from the stage for now." },
   { id: "lena", label: "Lena trust", value: "0 / 5", note: "Lena doubts why Marcus got the job." },
-  { id: "evidence", label: "Evidence", value: "0 / 3", note: "You opened space, but not proof." },
+  { id: "evidence", label: "Evidence", value: "0 / 3", note: "You opened space, but not evidence." },
 ]
 
 const SHOW_BADGE_TRACKS: Track[] = [
   { id: "time", label: "Time", value: "6 min", note: "Using the badge spends another minute." },
   { id: "pressure", label: "Public pressure", value: "3 / 5", note: "The room watches where the badge leads." },
-  { id: "lena", label: "Lena trust", value: "3 / 5", note: "Lena sees proof and commits to the next door." },
+  { id: "lena", label: "Lena trust", value: "3 / 5", note: "Lena sees evidence and commits to the next door." },
   { id: "evidence", label: "Evidence", value: "2 / 3", note: "The badge clue becomes a path to the control door." },
 ]
 
@@ -137,7 +137,7 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     name: "Lena",
     role: "Stage manager",
     state: "Ready to route people through the control door.",
-    shift: "Badge proof gives Lena a concrete route to manage.",
+    shift: "Badge evidence gives Lena a concrete route to manage.",
     action: "Ask Lena how the badge changes the route.",
     advice: "Lena can turn the badge into a cleaner path instead of another public delay.",
     suggestedMove: "Show Lena the green-room badge",
@@ -169,8 +169,8 @@ const UNLOCKED_PEOPLE: PersonResource[] = [
     id: "dana",
     name: "Dana Vale",
     role: "Crisis confidant",
-    state: "Weighs proof against the cost of using it.",
-    shift: "Dana can compare proof-first moves instead of guessing.",
+    state: "Weighs evidence against the cost of using it.",
+    shift: "Dana can compare evidence-first moves instead of guessing.",
     action: "Ask Dana which unlocked move is worth the risk.",
     advice: "Dana points out the tradeoff, but the decision still stays with you.",
     suggestedMove: "Choose the unlocked move whose cost you can defend.",
@@ -271,7 +271,7 @@ const UNLOCKED_ACTIONS: FixtureAction[] = [
     number: 1,
     intent: "Inspect",
     title: "Show Lena the green-room badge",
-    body: "Use the badge as proof and ask Lena to point you toward the last person with access.",
+    body: "Use the badge as evidence and ask Lena to point you toward the last person with access.",
     availableBecause: "The green-room badge turns a vague suspicion into a route Lena can act on.",
     forecast: [
       { id: "evidence-use", label: "Uses badge clue", tone: "unlock" },
@@ -313,7 +313,7 @@ function resolvedTracksForAction(action: FixtureAction, clueWasUnlocked: boolean
 function resolvedSummaryForAction(action: FixtureAction | null): string {
   if (!action) return "The room has shifted. Use the new state before the countdown closes."
   if (action.id === "lena-hold") {
-    return "Lena steadies the room, giving you a calmer but still proof-light next choice."
+    return "Lena steadies the room, giving you a calmer but still evidence-light next choice."
   }
   if (action.id === "arthur-badge") {
     return "Arthur is publicly tied to the missing badge, and the badge clue opens sharper moves."
@@ -336,16 +336,16 @@ function resolvedSummaryForAction(action: FixtureAction | null): string {
 function nextActionBridgeForAction(action: FixtureAction | null): string {
   if (!action) return "Read the changed pressure, then pick the next move that uses it."
   if (action.id === "lena-hold") {
-    return "The room is calmer, so the next move should spend that control on proof."
+    return "The room is calmer, so the next move should spend that control on evidence."
   }
   if (action.id === "arthur-badge") {
-    return "The badge clue changed the menu: you can now use proof directly or turn it into public leverage."
+    return "The badge clue changed the menu: you can now use evidence directly or turn it into public leverage."
   }
   if (action.id === "lena-check-path") {
-    return "Lena found the badge route; the next move can use that proof instead of guessing."
+    return "Lena found the badge route; the next move can use that evidence instead of guessing."
   }
   if (action.id === "marcus-stall") {
-    return "Marcus bought time, but the next move needs proof before Lena loses more trust."
+    return "Marcus bought time, but the next move needs evidence before Lena loses more trust."
   }
   if (action.id === "show-badge") {
     return "The badge route is active; the next move should follow the control-door lead."
@@ -501,12 +501,12 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     ? actions.find((action) => action.id === "show-badge") ?? null
     : null
   const clueArmed = !!unlockedClueAction && selectedId === unlockedClueAction.id
-  const clueStatus = clueArmed ? "Attached to move" : unlockedClue ? "Discovered" : "Need proof"
+  const clueStatus = clueArmed ? "Attached to move" : unlockedClue ? "Discovered" : "Need evidence"
   const clueBody = clueArmed
     ? "This clue is attached to the selected move."
     : unlockedClue
       ? "Arthur has to explain why this access badge was missing."
-      : "Find concrete proof to unlock a sharper next move."
+      : "Find concrete evidence to unlock a sharper next move."
   const isPending = phase === "pending"
   const actionHeaderTitle = motiveOpen
     ? "Add inner motive"
@@ -663,7 +663,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
             <span style={styles.kicker}>Your goal</span>
             <h1 style={styles.title}>Find the singer before the countdown ends</h1>
             <p style={styles.bodyCopy}>
-              The awards livestream is still running. Every move should buy time, expose proof, or move a person into position.
+              The awards livestream is still running. Every move should buy time, expose evidence, or move a person into position.
             </p>
           </section>
 
@@ -676,7 +676,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
 
           <div style={styles.sectionHeader} data-gameplay-stakes-header="true">
             <span style={styles.kicker}>What is at stake</span>
-            <span style={styles.headerNote}>Each move trades time, pressure, trust, or proof.</span>
+            <span style={styles.headerNote}>Each move trades time, pressure, trust, or evidence.</span>
           </div>
           <section style={styles.trackGrid} aria-label="What is at stake">
             {tracks.map((track) => (
@@ -1114,7 +1114,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                     <span style={styles.clueLinkLabel}>Opens move</span>
                     <strong style={styles.clueLinkTitle}>{unlockedClueAction.title}</strong>
                     <span style={styles.clueLinkHint}>
-                      A proof-backed path, not another vague public challenge.
+                      An evidence-backed path, not another vague public challenge.
                     </span>
                     {unlockedClueAction.availableBecause ? (
                       <span

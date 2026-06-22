@@ -70,7 +70,7 @@ function rehearsalOutcomeForMove(action: string): RehearsalOutcome {
     return {
       title: "Pressure moved",
       summary: "The sponsor is now part of the room's attention instead of background noise.",
-      nextReason: "The sponsor is exposed, so the new choices either show proof or move pressure private.",
+      nextReason: "The sponsor is exposed, so the new choices either show evidence or move pressure private.",
       items: [
         { label: "Pressure", value: "public answer forced", tone: "tense" },
         { label: "Trust", value: "producer watching", tone: "safe" },

@@ -98,7 +98,7 @@ function longHistoryOutcomeForMove(action: string): LongHistoryOutcome {
   return {
     title: "Second watcher placed",
     summary: "The service hall is covered, so the next choice can focus on evidence instead of chasing noise.",
-    nextFocus: "Return to proof now that the hallway is watched.",
+    nextFocus: "Return to evidence now that the hallway is watched.",
     items: [
       { label: "Coverage", value: "hall watched", tone: "safe" },
       { label: "Evidence", value: "badge route protected", tone: "gold" },
