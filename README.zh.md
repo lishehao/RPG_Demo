@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>一个 LLM 驱动的 12 回合互动博弈剧引擎 · An LLM-driven 12-turn interactive drama engine</strong>
+  <strong>一个可检查的 AI 互动短剧 · An inspectable AI story game</strong>
 </p>
 
 <p align="center">
@@ -66,7 +66,7 @@ template 或 Story Desk 变化被截断输出藏掉.直到目标分支 push、�
 
 1. 先看 75 秒 demo,理解玩家看到的 loop.
 2. 本地运行后打开 `#/portfolio`,看 guided case-study surface.
-3. 从 portfolio 进入 `#/reviewer`,检查 locked seed、runtime evidence hooks、
+3. 从 portfolio 进入 `#/reviewer`,检查 locked seed、状态/后果证据钩子、
    replay / ending path.
    四个检查点要保持一致:可游玩状态、一次行动后的后果、证据边界、回放 artifact.
 4. 如果需要稳定检查 Story Desk populated card 到首回合的入口体验,本地打开

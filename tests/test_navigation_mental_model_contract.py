@@ -81,7 +81,10 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
     assert "作品集/申请材料证据" in about
     assert "不是已经上线的" in about
     assert "作品集案例里的互动短剧演示" in about
-    assert "AI 叙事运行系统" in about
+    assert "AI 互动短剧系统" in about
+    assert "AI 叙事运行系统" not in about
+    assert "compact AI story game" in about
+    assert "compact AI narrative runtime" not in about
     assert "类型化数据约束、持久化状态、评审证据" in about
     assert "公开证据预检失败" in about
     assert "标成本地证据" in about
@@ -454,11 +457,15 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "local-only" in readme
     assert "目标分支 push、部署并重新检查通过" in readme
     assert "## 申请 / 作品集审阅路径" in readme
+    assert "一个可检查的 AI 互动短剧" in readme
+    assert "LLM 驱动的 12 回合互动博弈剧引擎" not in readme
     assert "`#/portfolio`" in readme
     assert "`#/reviewer`" in readme
     assert "`#/qa/home-start`" in readme
     assert "`#/qa/replay`" in readme
     assert "四个检查点要保持一致" in readme
+    assert "状态/后果证据钩子" in readme
+    assert "runtime evidence hooks" not in readme
     assert "可游玩状态、一次行动后的后果、证据边界、回放 artifact" in readme
     assert "local QA evidence" in readme
     assert "不要当作公开链接证据" in readme

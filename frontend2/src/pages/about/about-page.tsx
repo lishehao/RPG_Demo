@@ -85,7 +85,7 @@ const aboutContentZh: AboutContent = {
           </p>
           <p style={apStyles.p}>
             它的目标不是无穷小说流或聊天机器人,而是一个短篇、可结束、可回放的
-            AI 叙事运行系统。当前请把它读作作品集/申请材料证据,不是已经上线的
+            AI 互动短剧系统。当前请把它读作作品集/申请材料证据,不是已经上线的
             消费级服务.
           </p>
         </>
@@ -164,7 +164,7 @@ const aboutContentEn: AboutContent = {
           </p>
           <p style={apStyles.p}>
             The goal is not an infinite fiction feed or a chat bot. It
-            is a compact AI narrative runtime with a bounded episode,
+            is a compact AI story game with a bounded episode,
             visible state, ending, and replay. Read it as portfolio and
             application evidence, not as a launched consumer service.
           </p>
