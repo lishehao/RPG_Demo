@@ -872,6 +872,11 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "scrollToReviewerEvidence" in play_page
     assert "[data-reviewer-evidence='true']" in play_page
     assert "reviewerEvidenceJump" in styles
+    back_button_style = styles[styles.index("backBtn: {") : styles.index("backBtnCompact:", styles.index("backBtn: {"))]
+    assert "minHeight: 44" in back_button_style
+    assert "minWidth: 90" in back_button_style
+    assert 'display: "inline-flex"' in back_button_style
+    assert 'alignItems: "center"' in back_button_style
     assert "reviewerEvidencePrimer" in styles
     assert "reviewerProofStrip" in styles
     assert "reviewerProofGrid" in styles

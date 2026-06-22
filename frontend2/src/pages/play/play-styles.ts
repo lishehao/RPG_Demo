@@ -153,6 +153,10 @@ export const ppStyles: Record<string, CSSProperties> = {
     width: "auto",
   },
   backBtn: {
+    minHeight: 44,
+    minWidth: 90,
+    display: "inline-flex",
+    alignItems: "center",
     fontSize: 13,
     color: "var(--text-muted)",
     background: "none",
