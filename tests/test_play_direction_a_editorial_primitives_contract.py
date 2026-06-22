@@ -1129,6 +1129,15 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-action-support-cue={!selectedAction && !motiveOpen ? "true" : undefined}' in fixture
     assert "Compare likely impact before you submit. People and clues can open sharper moves." in fixture
     assert "Badge clue opened new moves. People and clues can still sharpen the choice." in fixture
+    assert "const supportStripRows =" in fixture
+    assert "unlockedClue && !selectedAction && !motiveOpen" in fixture
+    assert 'data-gameplay-support-strip="true"' in fixture
+    assert "data-gameplay-support-strip-item={row.id}" in fixture
+    assert "Clue ready" in fixture
+    assert "Opens ${unlockedClueAction.title}." in fixture
+    assert "Person to use" in fixture
+    assert "She can turn the badge into a route before Arthur redirects." in fixture
+    assert 'gridTemplateColumns: "repeat(auto-fit, minmax(138px, 1fr))"' in fixture
     assert "Compare likely impact before you commit." not in fixture
     assert "LENA_HOLD_ACTIONS" in fixture
     assert 'if (phase === "resolved" && committed?.action.id === "lena-hold") return LENA_HOLD_ACTIONS' in fixture

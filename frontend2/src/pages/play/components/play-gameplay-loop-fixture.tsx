@@ -520,6 +520,25 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
       : unlockedClue
         ? "Badge clue opened new moves. People and clues can still sharpen the choice."
         : "Compare likely impact before you submit. People and clues can open sharper moves."
+  const supportStripRows =
+    unlockedClue && !selectedAction && !motiveOpen
+      ? [
+          {
+            id: "clue",
+            label: "Clue ready",
+            title: "Green-room badge",
+            detail: unlockedClueAction
+              ? `Opens ${unlockedClueAction.title}.`
+              : "Turns suspicion into a concrete route.",
+          },
+          {
+            id: "person",
+            label: "Person to use",
+            title: "Lena",
+            detail: "She can turn the badge into a route before Arthur redirects.",
+          },
+        ]
+      : []
 
   useEffect(() => {
     if (!isPending || !committed) return
@@ -765,6 +784,21 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                   {actionHeaderNote}
                 </span>
               </div>
+              {supportStripRows.length > 0 ? (
+                <div style={styles.supportStrip} data-gameplay-support-strip="true">
+                  {supportStripRows.map((row) => (
+                    <span
+                      key={row.id}
+                      style={styles.supportStripItem}
+                      data-gameplay-support-strip-item={row.id}
+                    >
+                      <span style={styles.supportStripLabel}>{row.label}</span>
+                      <strong style={styles.supportStripTitle}>{row.title}</strong>
+                      <span style={styles.supportStripDetail}>{row.detail}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
               <div style={styles.actionGrid}>
                 {actions.map((action) => {
                   const selected = selectedId === action.id
@@ -1225,6 +1259,35 @@ const styles: Record<string, CSSProperties> = {
   headerNote: {
     color: actionPalette.faintIvory,
     fontSize: 12,
+  },
+  supportStrip: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(138px, 1fr))",
+    gap: 8,
+    padding: 10,
+    border: "1px solid rgba(229,190,124,0.14)",
+    background: "rgba(229,190,124,0.055)",
+    borderRadius: 8,
+  },
+  supportStripItem: {
+    minWidth: 0,
+    display: "grid",
+    gap: 3,
+  },
+  supportStripLabel: {
+    color: actionPalette.amberText,
+    fontSize: 10.5,
+    fontWeight: 820,
+  },
+  supportStripTitle: {
+    color: actionPalette.ivoryText,
+    fontSize: 12.5,
+    lineHeight: 1.2,
+  },
+  supportStripDetail: {
+    color: actionPalette.faintIvory,
+    fontSize: 11.5,
+    lineHeight: 1.35,
   },
   actionGrid: {
     display: "grid",
