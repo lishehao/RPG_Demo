@@ -1473,6 +1473,15 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "`${count} turns left`" in envelope
     assert 'value: turnsLeftTrackValue(turnsRemaining)' in envelope
     assert 'value: `${Math.max(0, turnsRemaining)}/${Math.max(1, turnBudget)}`' not in envelope
+    assert "function evidenceTrackValue" in envelope
+    assert '"1 item held"' in envelope
+    assert "`${liveInventoryCount} items held`" in envelope
+    assert '"1 leverage card"' in envelope
+    assert "`${playableLeverageCount} leverage cards`" in envelope
+    assert 'return "none yet"' in envelope
+    assert 'value: evidenceValue' not in envelope
+    assert "`${liveInventory.length} held`" not in envelope
+    assert "card${playableLeverageCount === 1" not in envelope
     assert '"Evidence lead"' not in envelope
     assert '"Room read"' not in envelope
     assert '"May reveal evidence"' in backend_service

@@ -292,6 +292,16 @@ function turnsLeftTrackValue(turnsRemaining: number): string {
   return count === 1 ? "1 turn left" : `${count} turns left`
 }
 
+function evidenceTrackValue(liveInventoryCount: number, playableLeverageCount: number): string {
+  if (liveInventoryCount > 0) {
+    return liveInventoryCount === 1 ? "1 item held" : `${liveInventoryCount} items held`
+  }
+  if (playableLeverageCount > 0) {
+    return playableLeverageCount === 1 ? "1 leverage card" : `${playableLeverageCount} leverage cards`
+  }
+  return "none yet"
+}
+
 function objectiveForStory(story: NarrativeStoryHistoryResponse): Pick<GameplayEnvelope, "objective" | "objectiveSource"> {
   const firstGoal = story.template.player_goals?.[0]?.goal
   if (firstGoal) {
@@ -376,12 +386,6 @@ export function buildGameplayEnvelope({
   const objective = objectiveForStory(story)
   const pulses = lastNarrator?.npc_pulse ?? []
   const playableLeverageCount = leverageCards.filter((card) => !card.used).length
-  const evidenceValue =
-    liveInventory.length > 0
-      ? `${liveInventory.length} held`
-      : playableLeverageCount > 0
-        ? `${playableLeverageCount} card${playableLeverageCount === 1 ? "" : "s"}`
-        : "none"
   const actionForecasts = (lastNarrator?.options ?? []).map(deriveActionForecastChips)
 
   const baseEnvelope: GameplayEnvelope = {
@@ -399,7 +403,7 @@ export function buildGameplayEnvelope({
       {
         id: "evidence",
         label: "Evidence",
-        value: evidenceValue,
+        value: evidenceTrackValue(liveInventory.length, playableLeverageCount),
         tone: liveInventory.length > 0 || playableLeverageCount > 0 ? "unlock" : "shift",
       },
     ],
