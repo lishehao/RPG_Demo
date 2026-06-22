@@ -892,7 +892,7 @@ export function CreatePage({
                     <span>Lining up cast</span>
                     <span>Locking pressure</span>
                     <span>Checking boundaries</span>
-                    <span>Writing Brief</span>
+                    <span>Writing plan</span>
                   </span>
                   <span style={cpStyles.guideScanRail} aria-hidden>
                     <motion.span

@@ -199,12 +199,12 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         '"world.section_failure": "红线 · 可能让这一局提前结束"',
         '"world.failure_hint": "越过任意一条都可能把这一局推向崩盘结局。开始前先看一眼，玩的时候才知道哪些动作风险最高。"',
         '"create.tension_auto_desc": "根据种子自动判断张力类型"',
-        '"create.brief_handoff_note_ready": "Next, I’ll generate role cards, the opening passage, and playable choices, then send you into Play."',
-        '"create.brief_handoff_note_blocked": "Tighten the Brief first; once ready, I’ll build the first scene and playable choices."',
-        '"create.brief_play_plan_label": "Ready for Play"',
-        '"create.brief_handoff_note_ready": "下一步会生成角色身份、第一段叙事和可选择行动，然后直接进入 Play。"',
-        '"create.brief_handoff_note_blocked": "先补强 Brief；准备好后再生成第一幕和可玩选择。"',
-        '"create.brief_play_plan_label": "可进入 Play"',
+        '"create.brief_handoff_note_ready": "Next, I’ll generate role cards, the opening passage, and playable choices, then send you into the story."',
+        '"create.brief_handoff_note_blocked": "Tighten the plan first; once ready, I’ll build the first scene and playable choices."',
+        '"create.brief_play_plan_label": "Ready to enter story"',
+        '"create.brief_handoff_note_ready": "下一步会生成角色身份、第一段叙事和可选择行动，然后直接进入故事。"',
+        '"create.brief_handoff_note_blocked": "先补强计划；准备好后再生成第一幕和可玩选择。"',
+        '"create.brief_play_plan_label": "可以进入故事"',
     ):
         assert key in strings
     for stale in (
@@ -221,6 +221,11 @@ def test_prebrief_chat_hides_dashboards_and_brief_payload_still_uses_values() ->
         "博弈(可触发 collapse 结局)",
         "你不会真正失败",
         "第 5 回合就翻车",
+        "send you into Play",
+        "Tighten the Brief",
+        "Ready for Play",
+        "进入 Play",
+        "可进入 Play",
     ):
         assert stale not in strings
 
@@ -291,7 +296,7 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.example_aria": "Use example {n}: {example}"',
         '"create.guide_revision_count": "{n} follow-ups"',
         '"create.guide_next_prompt_hint": "Answer the Story Butler prompt next."',
-        '"create.guide_ready_brief_hint": "The Story Brief will shape itself once ready."',
+        '"create.guide_ready_brief_hint": "The story plan will shape itself once ready."',
         '"create.seed_recipe_label": "好种子需要"',
         '"create.seed_recipe_people_label": "谁在场"',
         '"create.seed_recipe_pressure_label": "为什么现在"',
@@ -305,10 +310,17 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.brief_keep_correcting": "补更多细节"',
         '"create.example_aria": "使用示例 {n}：{example}"',
         '"create.guide_revision_count": "{n} 条补充"',
-        '"create.guide_next_prompt_hint": "继续回答 Story Butler 的追问"',
-        '"create.guide_ready_brief_hint": "信息足够后会自动整理 Brief"',
+        '"create.guide_next_prompt_hint": "继续回答故事管家的追问"',
+        '"create.guide_ready_brief_hint": "信息足够后会自动整理计划"',
     ):
         assert key in strings
+    for stale_copy in (
+        '"create.guide_agent_label": "创作 Agent"',
+        '"create.guide_ready_brief_hint": "The Story Brief will shape itself once ready."',
+        '"create.guide_ready_brief_hint": "信息足够后会自动整理 Brief"',
+    ):
+        assert stale_copy not in strings
+    assert "Writing Brief" not in source
 
 
 def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
@@ -321,8 +333,8 @@ def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
     assert 't("create.brief_plan_note")' in panels_source
     assert "{brief.adaptation_note}" not in panels_source
     assert "{brief.runtime_fit_rationale}" not in panels_source
-    assert '"create.brief_card_label": "Scene plan · Story Brief"' in strings
-    assert '"create.brief_fit": "Ready for Play"' in strings
+    assert '"create.brief_card_label": "Scene plan"' in strings
+    assert '"create.brief_fit": "Ready to enter story"' in strings
     assert '"create.brief_plan_note": "This is the plan for the first playable scene.' in strings
     assert '"create.brief_fit_reason_fit": "This has enough cast, pressure, and player focus' in strings
     assert '"create.brief_profile": "Story feel"' in strings
@@ -330,7 +342,7 @@ def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
     assert '"create.brief_kernel": "Core tension"' in strings
     assert '"create.brief_constraints": "Must keep"' in strings
     assert '"create.brief_card_mechanic": "Player hook"' in strings
-    assert '"create.brief_card_label": "场景计划 · Brief"' in strings
+    assert '"create.brief_card_label": "场景计划"' in strings
     assert '"create.brief_fit": "可进入故事"' in strings
     assert '"create.brief_plan_note": "这是接下来生成第一幕会使用的计划。' in strings
     assert '"create.brief_profile": "故事气质"' in strings
@@ -340,7 +352,9 @@ def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
     assert '"create.brief_card_mechanic": "玩家抓手"' in strings
     for stale_copy in (
         "Production slate · Story Brief",
+        "Scene plan · Story Brief",
         "Ready to try generation",
+        "Ready for Play",
         "Beta planner draft",
         "current multi-party runtime",
         '"create.brief_profile": "Profile"',
