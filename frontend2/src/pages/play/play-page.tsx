@@ -1364,10 +1364,10 @@ export function PlayPage({
       <div style={ppStyles.reviewerEvidenceJumpCopy}>
         <span style={ppStyles.reviewerEvidenceJumpKicker}>Reviewer evidence</span>
         <strong style={ppStyles.reviewerEvidenceJumpTitle}>
-          Live state checks are attached below this play surface.
+          Proof summary is attached below this play surface.
         </strong>
         <span style={ppStyles.reviewerEvidenceJumpMeta}>
-          {lastNarrator?.options.length ?? 0} current moves / runtime state / {hasArchivedReviewerChecks ? "archived checks" : "checks pending"}
+          {lastNarrator?.options.length ?? 0} current moves / live state / {hasArchivedReviewerChecks ? "archived proof" : "proof limits"}
         </span>
       </div>
       <button

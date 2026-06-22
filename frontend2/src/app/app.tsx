@@ -11,6 +11,7 @@ import { PlayActionStateFixture } from "../pages/play/components/play-action-sta
 import { PlayEndingFixture } from "../pages/play/components/play-ending-fixture"
 import { PlayGameplayLoopFixture } from "../pages/play/components/play-gameplay-loop-fixture"
 import { PlayLeverageFixture } from "../pages/play/components/play-leverage-fixture"
+import { PlayReviewerEvidenceFixture } from "../pages/play/components/play-reviewer-evidence-fixture"
 import { PlayRetryFailureFixture } from "../pages/play/components/play-retry-recovery"
 import { AboutPage } from "../pages/about/about-page"
 import { LoginPage } from "../pages/auth/login-page"
@@ -85,6 +86,8 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       return <PlayGameplayLoopFixture onBackHome={() => navigate({ name: "home" })} />
     case "playLeverageFixture":
       return <PlayLeverageFixture onBackHome={() => navigate({ name: "home" })} />
+    case "playReviewerEvidenceFixture":
+      return <PlayReviewerEvidenceFixture onBackHome={() => navigate({ name: "home" })} />
     case "playRetryFixture":
       return <PlayRetryFailureFixture onBackHome={() => navigate({ name: "home" })} />
     case "template":
@@ -149,6 +152,7 @@ function routeKey(route: AppRoute): string {
     case "playEndingFixture": return "playEndingFixture"
     case "playGameplayLoopFixture": return "playGameplayLoopFixture"
     case "playLeverageFixture": return "playLeverageFixture"
+    case "playReviewerEvidenceFixture": return "playReviewerEvidenceFixture"
     case "playRetryFixture": return "playRetryFixture"
     case "about": return "about"
     case "portfolio": return "portfolio"

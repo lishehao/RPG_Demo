@@ -767,7 +767,10 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     play_page = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
     panels = (ROOT / "frontend2/src/pages/play/components/play-flow-panels.tsx").read_text()
     runtime_inspector = (ROOT / "frontend2/src/pages/play/components/runtime-inspector.tsx").read_text()
+    reviewer_fixture = (ROOT / "frontend2/src/pages/play/components/play-reviewer-evidence-fixture.tsx").read_text()
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     route_map = (ROOT / "frontend2/src/api/route-map.ts").read_text()
     client = (ROOT / "frontend2/src/api/client.ts").read_text()
 
@@ -788,15 +791,17 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "What this proves" in runtime_inspector
     assert 'data-reviewer-evidence-primer="true"' in runtime_inspector
     assert "Start with the live proof chips." in runtime_inspector
-    assert "Score and reason rows are archived judge checks" in runtime_inspector
-    assert "they can stay unarchived while playable state is still inspectable" in runtime_inspector
-    assert 'const reviewerCheckLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Checks boundary"' in runtime_inspector
-    assert runtime_inspector.count("{reviewerCheckLabel}") >= 2
+    assert "Scored rows appear only when an archived evaluation result exists" in runtime_inspector
+    assert "reviewer run can still prove live play state" in runtime_inspector
+    assert 'const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"' in runtime_inspector
+    assert runtime_inspector.count("{reviewerProofLimitLabel}") >= 2
+    assert "Checks boundary" not in runtime_inspector
+    assert "archived judge checks" not in runtime_inspector
     assert '<span style={ppStyles.evaluationLabel}>Archived checks</span>' not in runtime_inspector
-    assert "pending archive" in runtime_inspector
+    assert "not available yet" in runtime_inspector
     assert 'const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "not archived yet"' in runtime_inspector
     assert "const reasonCategory = hasArchivedJudgeEvidence" in runtime_inspector
-    assert "live state is available before judge archive" in runtime_inspector
+    assert "live state visible; archive not claimed yet" in runtime_inspector
     assert "getNarrativeLLMEvents" in client
     assert "/narrative/sessions/:session_id/llm-events" in route_map
     assert 'data-reviewer-evidence-jump="true"' in play_page
@@ -810,11 +815,18 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "reviewerEvidencePrimer" in styles
     assert "reviewerProofStrip" in styles
     assert "reviewerProofGrid" in styles
+    assert "playReviewerEvidenceFixture" in routes
+    assert "#/qa/play-reviewer-evidence" in routes
+    assert "PlayReviewerEvidenceFixture" in app
+    assert "data-play-reviewer-evidence-fixture=\"true\"" in reviewer_fixture
+    assert "<RuntimeInspector" in reviewer_fixture
+    assert "data-reviewer-proof-strip" not in reviewer_fixture
+    assert "Proof limits" not in reviewer_fixture
     assert "const hasArchivedReviewerChecks = latestAgentEvents.some" in play_page
     assert 'event.event_type === "step_judge" || event.event_type === "contract_judge"' in play_page
-    assert '{hasArchivedReviewerChecks ? "archived checks" : "checks pending"}' in play_page
+    assert '{hasArchivedReviewerChecks ? "archived proof" : "proof limits"}' in play_page
     assert "runtime state / contract checks" not in play_page
-    assert "Live state checks are attached below this play surface." in play_page
+    assert "Proof summary is attached below this play surface." in play_page
     assert "Jump to evidence" in play_page
 
 

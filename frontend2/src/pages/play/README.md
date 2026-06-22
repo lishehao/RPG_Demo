@@ -40,6 +40,8 @@
   - Local QA route fixture for `#/qa/play-leverage`. Mounts the real `ActionArea` with deterministic leverage cards so leverage summary, card arming, and reveal-panel visibility can be browser-smoked without backend or live generation.
 - `components/runtime-inspector.tsx`
   - Reviewer-only evaluation drawer and trace/evidence helpers. This owns persisted agent/LLM evidence rendering; normal Play surfaces import it only behind reviewer gating.
+- `components/play-reviewer-evidence-fixture.tsx`
+  - Local QA route fixture for `#/qa/play-reviewer-evidence`. Mounts the real `RuntimeInspector` with deterministic fresh-run evidence so proof-limit copy can be browser-smoked without backend or live generation.
 - `components/play-editorial-primitives.tsx`
   - Direction A Play primitive kit: `PlayShell`, `MoodPlate`, `StoryTimeline`, and `SceneSupportRail`. These primitives define the story-world mental model and should stay source-owned/local unless a future UI-kit migration is explicitly scoped.
 - `play-styles.ts`
@@ -61,6 +63,7 @@
 - `#/qa/play-leverage` exercises the real leverage `ActionArea` surface without backend or live generation.
 - `#/qa/play-advisor` exercises the real advisor FAB/sidechat without backend or live generation.
 - `#/qa/play-ending` exercises the real ending payoff surface without backend or live generation.
+- `#/qa/play-reviewer-evidence` exercises the real reviewer evidence drawer without backend or live generation.
 - Mobile 390px must have no horizontal overflow and action/retry controls must remain reachable.
 - Play is a story-world scene surface: Narrator/World, scene characters, and You. Story Butler is not the primary Play speaker; advisor behavior stays optional and secondary.
 

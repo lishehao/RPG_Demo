@@ -78,8 +78,8 @@ export function RuntimeInspector({
   ])
   const score = evaluationScore(criteria)
   const hasArchivedJudgeEvidence = Boolean(latestStepJudge || latestContractJudge)
-  const reviewerCheckLabel = hasArchivedJudgeEvidence ? "Archived checks" : "Checks boundary"
-  const archivedCheckStatus = hasArchivedJudgeEvidence ? latestStatus : "pending archive"
+  const reviewerProofLimitLabel = hasArchivedJudgeEvidence ? "Archived proof" : "Proof limits"
+  const archivedCheckStatus = hasArchivedJudgeEvidence ? latestStatus : "not available yet"
   const archivedScore = hasArchivedJudgeEvidence ? `${score}/100` : "not archived yet"
   const reasonCategory = hasArchivedJudgeEvidence
     ? evaluationReasonCategory(latestStepJudge, latestContractJudge, llmEvents)
@@ -115,8 +115,8 @@ export function RuntimeInspector({
         <strong>Evaluation evidence</strong>
       </div>
       <p style={ppStyles.reviewerEvidencePrimer} data-reviewer-evidence-primer="true">
-        Start with the live proof chips. Score and reason rows are archived judge checks; on a fresh reviewer run,
-        they can stay unarchived while playable state is still inspectable.
+        Start with the live proof chips. Scored rows appear only when an archived evaluation result exists; a fresh
+        reviewer run can still prove live play state before that archive is available.
       </p>
       <section
         style={ppStyles.reviewerProofStrip}
@@ -138,17 +138,17 @@ export function RuntimeInspector({
             <span style={ppStyles.reviewerProofDetail}>visible consequence on the latest beat</span>
           </div>
           <div style={ppStyles.reviewerProofChip} data-reviewer-proof-chip="checks">
-            <span style={ppStyles.reviewerProofLabel}>{reviewerCheckLabel}</span>
+            <span style={ppStyles.reviewerProofLabel}>{reviewerProofLimitLabel}</span>
             <strong style={ppStyles.reviewerProofValue}>{archivedCheckStatus}</strong>
             <span style={ppStyles.reviewerProofDetail}>
-              {hasArchivedJudgeEvidence ? "step and contract evidence attached" : "live state is available before judge archive"}
+              {hasArchivedJudgeEvidence ? "step and contract proof attached" : "live state visible; archive not claimed yet"}
             </span>
           </div>
         </div>
       </section>
       <div style={ppStyles.evaluationHero}>
         <div style={ppStyles.evaluationVerdictBlock}>
-          <span style={ppStyles.evaluationLabel}>{reviewerCheckLabel}</span>
+          <span style={ppStyles.evaluationLabel}>{reviewerProofLimitLabel}</span>
           <strong style={ppStyles.evaluationVerdict} data-evaluation-verdict={hasArchivedJudgeEvidence ? latestStatus : "pending"}>
             {archivedCheckStatus}
           </strong>
