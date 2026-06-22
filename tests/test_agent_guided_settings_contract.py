@@ -341,6 +341,8 @@ def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
     assert "{brief.runtime_fit_rationale}" not in panels_source
     assert '"create.brief_card_label": "Scene plan"' in strings
     assert '"create.brief_fit": "Ready to enter story"' in strings
+    assert '"create.brief_needs_revision": "Could be stronger"' in strings
+    assert '"create.brief_not_fit": "Needs scene pressure"' in strings
     assert '"create.brief_plan_note": "This is the plan for the first playable scene.' in strings
     assert '"create.brief_fit_reason_fit": "This has enough cast, pressure, and player focus' in strings
     assert '"create.brief_profile": "Story feel"' in strings
@@ -350,6 +352,8 @@ def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
     assert '"create.brief_card_mechanic": "Player hook"' in strings
     assert '"create.brief_card_label": "场景计划"' in strings
     assert '"create.brief_fit": "可进入故事"' in strings
+    assert '"create.brief_needs_revision": "还能更稳"' in strings
+    assert '"create.brief_not_fit": "需要场面压力"' in strings
     assert '"create.brief_plan_note": "这是接下来生成第一幕会使用的计划。' in strings
     assert '"create.brief_profile": "故事气质"' in strings
     assert '"create.brief_primary_cast": "主要人物"' in strings
@@ -363,6 +367,10 @@ def test_create_story_brief_card_uses_player_facing_plan_language() -> None:
         "Ready for Play",
         "Beta planner draft",
         "current multi-party runtime",
+        "Revision advised",
+        "Not a fit yet",
+        "建议微调",
+        "暂不适配",
         '"create.brief_profile": "Profile"',
         '"create.brief_kernel": "Tension kernel"',
         '"create.brief_card_mechanic": "Intervention card"',
