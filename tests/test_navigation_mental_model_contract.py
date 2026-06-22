@@ -105,6 +105,8 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Open Reviewer path" in portfolio
     assert "Use #/portfolio -> #/reviewer" in portfolio
     assert "Inspect evidence" in portfolio
+    assert 'localHref: "#/qa/play-reviewer-evidence"' in portfolio
+    assert "Open local proof fixture" in portfolio
     assert "Verify replay artifact" in portfolio
     assert "Local build only: inspect a completed memory" in portfolio
     assert 'localHref: "#/qa/replay"' in portfolio

@@ -33,6 +33,8 @@ const PORTFOLIO_REVIEW_ORDER = [
     step: "inspect",
     title: "Inspect evidence",
     detail: "Use reviewer mode to check state, advisor boundary, and ending logic.",
+    localHref: "#/qa/play-reviewer-evidence",
+    localLabel: "Open local proof fixture",
   },
   {
     step: "replay",
