@@ -1926,17 +1926,17 @@ kbd {
     margin: 0;
   }
   .portfolio-hero__actions {
-    order: 4;
-  }
-  .portfolio-hero__video {
     order: 5;
   }
-  .portfolio-hero__lens {
+  .portfolio-hero__video {
     order: 6;
+  }
+  .portfolio-hero__lens {
+    order: 7;
     margin: 0;
   }
   .portfolio-hero__evidence-note {
-    order: 7;
+    order: 4;
     margin-top: 0;
   }
   .portfolio-hero__review {

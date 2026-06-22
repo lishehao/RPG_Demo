@@ -208,10 +208,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert ".portfolio-hero {\n    min-height: auto;\n    grid-template-columns: 1fr;\n    gap: 18px;" in mobile_portfolio
     assert ".portfolio-hero h1 {\n    margin: 10px 0 0;" in mobile_portfolio
     assert ".portfolio-hero__content {\n    display: contents;" in mobile_portfolio
-    assert ".portfolio-hero__actions {\n    order: 4;" in mobile_portfolio
-    assert ".portfolio-hero__video {\n    order: 5;" in mobile_portfolio
-    assert ".portfolio-hero__lens {\n    order: 6;" in mobile_portfolio
-    assert ".portfolio-hero__evidence-note {\n    order: 7;" in mobile_portfolio
+    assert ".portfolio-hero__evidence-note {\n    order: 4;" in mobile_portfolio
+    assert ".portfolio-hero__actions {\n    order: 5;" in mobile_portfolio
+    assert ".portfolio-hero__video {\n    order: 6;" in mobile_portfolio
+    assert ".portfolio-hero__lens {\n    order: 7;" in mobile_portfolio
     video_link_style = theme[
         theme.index(".portfolio-video-card__links a {") : theme.index(
             "}", theme.index(".portfolio-video-card__links a {")
