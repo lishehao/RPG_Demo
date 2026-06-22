@@ -11,7 +11,7 @@
  */
 
 import type { CSSProperties } from "react"
-import { motion } from "motion/react"
+import { motion, useReducedMotion } from "motion/react"
 
 // Bouncing dots use ease-in-out, not the project-standard ease-out:
 // the dot needs to slow at BOTH the apex and the floor, not just the
@@ -28,6 +28,9 @@ const DOT_TRANSITION = (idx: number) => ({
   repeat: Infinity,
   delay: idx * STAGGER_PER_DOT_S,
 })
+const BOUNCE_DOT_ANIMATION = { y: [0, -5, 0], opacity: [0.45, 1, 0.45] }
+const STATIC_DOT_ANIMATION = { y: 0, opacity: 0.72 }
+const STATIC_DOT_TRANSITION = { duration: 0 }
 
 export function LoadingShim({
   label,
@@ -36,6 +39,7 @@ export function LoadingShim({
   label?: string
   variant?: "inline" | "page"
 }) {
+  const prefersReducedMotion = useReducedMotion()
   const wrapStyle =
     variant === "inline" ? styles.wrapInline : styles.wrapPage
   return (
@@ -45,8 +49,8 @@ export function LoadingShim({
           <motion.span
             key={i}
             style={styles.dot}
-            animate={{ y: [0, -5, 0], opacity: [0.45, 1, 0.45] }}
-            transition={DOT_TRANSITION(i)}
+            animate={prefersReducedMotion ? STATIC_DOT_ANIMATION : BOUNCE_DOT_ANIMATION}
+            transition={prefersReducedMotion ? STATIC_DOT_TRANSITION : DOT_TRANSITION(i)}
           />
         ))}
       </div>

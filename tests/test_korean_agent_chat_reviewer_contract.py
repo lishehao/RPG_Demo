@@ -117,6 +117,20 @@ def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     assert "min-height: 44px" in error_action_styles
 
 
+def test_loading_shim_respects_reduced_motion_preference() -> None:
+    source = (ROOT / "frontend2/src/shared/ui/loading-shim.tsx").read_text()
+
+    assert "useReducedMotion" in source
+    assert "const prefersReducedMotion = useReducedMotion()" in source
+    assert "STATIC_DOT_ANIMATION" in source
+    assert "STATIC_DOT_TRANSITION" in source
+    assert "prefersReducedMotion ? STATIC_DOT_ANIMATION : BOUNCE_DOT_ANIMATION" in source
+    assert "prefersReducedMotion ? STATIC_DOT_TRANSITION : DOT_TRANSITION(i)" in source
+    assert 'role="status"' in source
+    assert 'aria-live="polite"' in source
+    assert "repeat: Infinity" in source
+
+
 def test_reviewer_launch_enters_reviewer_mode_play_evidence_path() -> None:
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
