@@ -2377,8 +2377,12 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert '"play.diary_private_motive_label": "真实意图"' in strings
     assert '"world.network_hint": "Characters hold dirt on each other.' in strings
     assert '"world.network_hint": "整局戏里人物之间相互捏着把柄。' in strings
-    assert '"play.hint_oracle": "Your friend is normally just chatting. Spend 1 turn for a deep read' in strings
-    assert '"play.hint_oracle": "顾问平时只是陪你聊。用 1 回合请 TA 深度读局' in strings
+    assert '"play.hint_oracle": "Your friend is normally just chatting. A deep read spends 1 turn' in strings
+    assert "the move is still yours to choose" in strings
+    assert '"play.hint_oracle": "顾问平时只是陪你聊。深度读局会消耗 1 回合' in strings
+    assert "最后行动仍由你决定" in strings
+    assert "they get to see what's really going on" not in strings
+    assert "只有 TA 才看得到的局势线索" not in strings
     assert '"play.outcome_npc_label": "Characters"' in strings
     assert '"play.outcome_npc_label": "人物"' in strings
     assert '"play.preview_action_risk_default": "Characters react from their current stance"' in strings
