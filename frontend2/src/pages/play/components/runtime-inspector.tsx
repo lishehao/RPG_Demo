@@ -247,8 +247,8 @@ export function RuntimeInspector({
           </div>
         </section>
 
-        <section style={ppStyles.evaluationSection}>
-          <span style={ppStyles.evaluationSectionTitle}>Telemetry</span>
+        <section style={ppStyles.evaluationSection} data-reviewer-generation-record="true">
+          <span style={ppStyles.evaluationSectionTitle}>Generation record</span>
           {telemetryRows.length ? (
             <div style={ppStyles.telemetryList}>
               {telemetryRows.map((event) => (
@@ -275,7 +275,7 @@ export function RuntimeInspector({
             </div>
           ) : (
             <span style={ppStyles.agentTraceEmpty}>
-              {agentTraceAccessGranted ? "No LLM call events for this session yet." : "Reviewer access not granted."}
+              {agentTraceAccessGranted ? "No generation log is attached to this local evidence run yet." : "Reviewer access not granted."}
             </span>
           )}
         </section>

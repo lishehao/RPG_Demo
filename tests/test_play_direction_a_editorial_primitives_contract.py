@@ -862,6 +862,10 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "const reasonCategory = hasArchivedJudgeEvidence" in runtime_inspector
     assert "live state visible; archive not claimed yet" in runtime_inspector
     assert "step and contract checks attached" in runtime_inspector
+    assert 'data-reviewer-generation-record="true"' in runtime_inspector
+    assert "Generation record" in runtime_inspector
+    assert "No generation log is attached to this local evidence run yet." in runtime_inspector
+    assert "No LLM call events for this session yet." not in runtime_inspector
     assert "getNarrativeLLMEvents" in client
     assert "/narrative/sessions/:session_id/llm-events" in route_map
     assert 'data-reviewer-evidence-jump="true"' in play_page
