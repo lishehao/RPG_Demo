@@ -58,6 +58,21 @@ const REVIEWER_EVIDENCE_CHECKS = [
   },
 ] as const
 
+const REVIEWER_HERO_PROOF_POINTS = [
+  {
+    label: "Real run",
+    detail: "Launch creates a playable session from the locked seed, not a static mockup.",
+  },
+  {
+    label: "One-move consequence",
+    detail: "Take one move and inspect how the room, assets, and next choices change.",
+  },
+  {
+    label: "Evidence boundary",
+    detail: "Reviewer evidence stays beside Play and should be cited only after preflight.",
+  },
+] as const
+
 const REVIEWER_LAUNCH_ERROR =
   "The reviewer run did not open this time."
 
@@ -180,6 +195,18 @@ export function ReviewerPage({
             a real session, keeps the player-facing story UI intact, and opens
             a reviewer evidence summary for playable state and consequences.
           </p>
+          <ul
+            className="reviewer-hero-proof"
+            aria-label="Reviewer proof path"
+            data-reviewer-hero-proof-strip="true"
+          >
+            {REVIEWER_HERO_PROOF_POINTS.map((item) => (
+              <li key={item.label} data-reviewer-hero-proof-item={item.label}>
+                <strong>{item.label}</strong>
+                <span>{item.detail}</span>
+              </li>
+            ))}
+          </ul>
           <div className="reviewer-seed-summary" data-reviewer-seed-summary="true">
             <span>Locked seed preview</span>
             <strong>Missing singer, live awards stream, sponsor pressure; no violence or blackmail.</strong>

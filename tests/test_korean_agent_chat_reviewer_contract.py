@@ -140,11 +140,22 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
+    hero_proof_idx = source.index('data-reviewer-hero-proof-strip="true"')
+    seed_summary_idx = source.index('data-reviewer-seed-summary="true"')
+    local_note_idx = source.index('data-reviewer-local-evidence-note="true"')
     actions_idx = source.index('className="reviewer-actions"')
     evidence_idx = source.index('data-reviewer-evidence-preview="true"')
-    local_note_idx = source.index('data-reviewer-local-evidence-note="true"')
     launch_idx = source.index('data-reviewer-launch-plan="true"')
 
+    assert hero_proof_idx < seed_summary_idx < local_note_idx < actions_idx < evidence_idx < launch_idx
+    assert "REVIEWER_HERO_PROOF_POINTS" in source
+    assert "Real run" in source
+    assert "Launch creates a playable session from the locked seed, not a static mockup." in source
+    assert "One-move consequence" in source
+    assert "Take one move and inspect how the room, assets, and next choices change." in source
+    assert "Evidence boundary" in source
+    assert "Reviewer evidence stays beside Play and should be cited only after preflight." in source
+    assert "data-reviewer-hero-proof-item={item.label}" in source
     assert local_note_idx < actions_idx < evidence_idx < launch_idx
     assert "Public evidence boundary: inspect the current local build here" in source
     assert "application links, cite this route only after Portfolio preflight" in source
@@ -171,6 +182,8 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "Archived checks" not in source
     assert 'data-reviewer-evidence-preview="true"' in source
     assert "data-reviewer-evidence-preview-item={item.label}" in source
+    assert ".reviewer-hero-proof" in theme
+    assert "grid-template-columns: repeat(3, minmax(0, 1fr))" in theme
     assert ".reviewer-evidence-preview" in theme
     assert ".reviewer-evidence-preview__head" in theme
     assert "grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))" in theme
