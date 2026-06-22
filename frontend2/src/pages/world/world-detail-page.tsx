@@ -24,6 +24,8 @@ import {
   getCoverForTemplate,
 } from "../../shared/lib/webtoon-assets"
 
+type TemplateErrorContext = "load" | "start" | "visibility" | null
+
 export function TemplateDetailPage({
   templateId,
   onBackHome,
@@ -42,6 +44,7 @@ export function TemplateDetailPage({
   const [template, setTemplate] = useState<NarrativeTemplateSummary | null>(null)
   const [distribution, setDistribution] = useState<NarrativeEndingDistributionResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [errorContext, setErrorContext] = useState<TemplateErrorContext>(null)
   const [busy, setBusy] = useState(false)
   const [visBusy, setVisBusy] = useState(false)
   const [selectedRoleIndex, setSelectedRoleIndex] = useState<number | null>(null)
@@ -50,6 +53,7 @@ export function TemplateDetailPage({
   useEffect(() => {
     let cancelled = false
     setError(null)
+    setErrorContext(null)
     setSelectedRoleIndex(null)
     api
       .getNarrativeTemplate(templateId)
@@ -60,6 +64,7 @@ export function TemplateDetailPage({
       })
       .catch((err) => {
         if (cancelled) return
+        setErrorContext("load")
         setError(friendlyError(err, t("world.error_template_missing")))
       })
     api
@@ -82,6 +87,7 @@ export function TemplateDetailPage({
     setSelectedRoleIndex(roleIndex ?? null)
     setBusy(true)
     setError(null)
+    setErrorContext(null)
     try {
       const res = await api.startNarrativeSession(
         templateId,
@@ -89,6 +95,7 @@ export function TemplateDetailPage({
       )
       onSessionStarted(res.session.session_id)
     } catch (err) {
+      setErrorContext("start")
       setError(friendlyError(err, t("world.error_start_failed")))
       setBusy(false)
       startInflightRef.current = false
@@ -103,7 +110,10 @@ export function TemplateDetailPage({
         visibility: next,
       })
       setTemplate(updated)
+      setError(null)
+      setErrorContext(null)
     } catch (err) {
+      setErrorContext("visibility")
       setError(friendlyError(err, t("world.error_visibility_failed")))
     } finally {
       setVisBusy(false)
@@ -216,7 +226,13 @@ export function TemplateDetailPage({
                               ...(compactLayout ? tdStyles.roleChoiceButtonCompact : null),
                               ...(isActive ? tdStyles.roleChoiceButtonActive : null),
                             }}
-                            onClick={() => setSelectedRoleIndex(idx)}
+                            onClick={() => {
+                              setSelectedRoleIndex(idx)
+                              if (errorContext === "start") {
+                                setError(null)
+                                setErrorContext(null)
+                              }
+                            }}
                             disabled={busy}
                             aria-pressed={isActive}
                           >
@@ -263,6 +279,7 @@ export function TemplateDetailPage({
                         cast={template.cast}
                         busy={busy}
                         hasAlternates
+                        startError={errorContext === "start" ? error : null}
                         onStart={() => void handleStart(selectedRoleIndex)}
                       />
                     ) : null}
@@ -274,6 +291,7 @@ export function TemplateDetailPage({
                     cast={template.cast}
                     busy={busy}
                     hasAlternates={false}
+                    startError={errorContext === "start" ? error : null}
                     onStart={() => void handleStart(selectedRoleIndex)}
                   />
                 ) : null}
@@ -531,12 +549,14 @@ function SelectedRoleLaunchPanel({
   cast,
   busy,
   hasAlternates,
+  startError,
   onStart,
 }: {
   role: NarrativePlayerRole
   cast: NarrativeTemplateSummary["cast"]
   busy: boolean
   hasAlternates: boolean
+  startError: string | null
   onStart: () => void
 }) {
   const t = useT()
@@ -675,6 +695,21 @@ function SelectedRoleLaunchPanel({
         >
           {hasAlternates ? t("world.role_launch_hint") : t("world.start_hint")}
         </span>
+        {startError ? (
+          <div
+            style={tdStyles.roleLaunchRecovery}
+            data-world-role-launch-recovery="true"
+            role="status"
+            aria-live="polite"
+          >
+            <span style={tdStyles.roleLaunchRecoveryTitle}>
+              {t("world.role_start_error_title")}
+            </span>
+            <span style={tdStyles.roleLaunchRecoveryDetail}>
+              {t("world.role_start_error_detail")}
+            </span>
+          </div>
+        ) : null}
       </div>
     </motion.div>
   )
@@ -1381,5 +1416,22 @@ const tdStyles: Record<string, CSSProperties> = {
   },
   roleLaunchHintCompact: {
     maxWidth: "none",
+  },
+  roleLaunchRecovery: {
+    marginTop: 8,
+    maxWidth: 360,
+    display: "grid",
+    gap: 4,
+    color: "rgba(255,226,178,0.9)",
+    lineHeight: 1.4,
+  },
+  roleLaunchRecoveryTitle: {
+    fontSize: 12,
+    fontWeight: 820,
+    color: "rgba(255,226,178,0.96)",
+  },
+  roleLaunchRecoveryDetail: {
+    fontSize: 11.5,
+    color: "rgba(232,218,205,0.7)",
   },
 }

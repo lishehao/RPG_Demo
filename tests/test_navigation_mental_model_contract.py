@@ -588,12 +588,24 @@ def test_existing_play_world_replay_page_navigation_stays_top_level() -> None:
 
 def test_world_role_launch_has_ready_and_starting_feedback() -> None:
     world = (ROOT / "frontend2/src/pages/world/world-detail-page.tsx").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
+    assert 'type TemplateErrorContext = "load" | "start" | "visibility" | null' in world
+    assert 'setErrorContext("start")' in world
     assert 'data-world-role-launch-state={busy ? "starting" : "ready"}' in world
     assert 'data-world-role-launch-cta={busy ? "starting" : "ready"}' in world
+    assert 'startError={errorContext === "start" ? error : null}' in world
+    assert 'data-world-role-launch-recovery="true"' in world
+    assert 't("world.role_start_error_title")' in world
+    assert 't("world.role_start_error_detail")' in world
     assert "roleLaunchPanelStarting" in world
     assert "roleLaunchButtonStarting" in world
+    assert "roleLaunchRecovery" in world
     assert "cursor: \"progress\"" in world
+    assert '"world.role_start_error_title": "The story did not open this time"' in strings
+    assert '"world.role_start_error_detail": "The same opening and selected role are still here. Press Start this run again, or choose another identity first."' in strings
+    assert '"world.role_start_error_title": "这次没有进入故事"' in strings
+    assert '"world.role_start_error_detail": "同一个开场和已选身份还在；可以再次点击「开始这一局」，或先换一个身份。"' in strings
 
 
 def test_world_role_launch_explains_first_turn_reading() -> None:
