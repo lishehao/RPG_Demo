@@ -71,7 +71,7 @@ const PORTFOLIO_TARGET_USER_MODEL = [
 const PORTFOLIO_PUBLIC_EVIDENCE_GATE = {
   label: "Public evidence gate",
   detail:
-    "Before sending a public GitHub Pages or repository link, run the preflight. If it fails, label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only until the intended branch is pushed, deployed, and rechecked.",
+    "Before sending a public GitHub Pages or repository link, run python3 tools/portfolio_public_evidence_preflight.py. If it fails, public repo and Pages links may lag this local build; label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only until the intended branch is pushed, deployed, and rechecked.",
 } as const
 
 export function PortfolioPage({
@@ -213,9 +213,10 @@ export function PortfolioPage({
             <span>Source evidence</span>
             <p>
               Open the repo and system map to review code, docs, tests, and the
-              narrow runtime path behind this demo. Before relying on public
-              links, run the public-evidence preflight; if it fails, treat the
-              local route as local-only evidence.
+              narrow runtime path behind this demo. These are public-main
+              references and may lag the current local build. Before relying on
+              public links, run the public-evidence preflight; if it fails,
+              treat the local route as local-only evidence.
             </p>
             <div>
               <a href={PUBLIC_REPO_URL} target="_blank" rel="noreferrer">GitHub repo</a>

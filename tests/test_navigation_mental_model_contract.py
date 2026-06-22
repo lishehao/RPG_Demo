@@ -351,7 +351,10 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "Source evidence" in portfolio
     assert "review code, docs, tests, and the" in portfolio
     assert "narrow runtime path behind this demo" in portfolio
-    assert "Before relying on public" in portfolio
+    assert "public-main" in portfolio
+    assert "may lag the current local build" in portfolio
+    assert "Before relying on" in portfolio
+    assert "public links" in portfolio
     assert "run the public-evidence preflight" in portfolio
     assert "treat the" in portfolio and "local route as local-only evidence" in portfolio
     assert "GitHub repo" in portfolio
