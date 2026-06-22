@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useState } from "react"
+import type { FrontendApiClient } from "../../api/client"
 import type { NarrativePublicReplayResponse } from "../../api/contracts"
 import { useApi } from "../../app/api-context"
 import { ENDING_LABEL_DISPLAY, useLanguage, useT } from "../../shared/lib/i18n"
@@ -26,12 +27,15 @@ export function ReplayPage({
   sessionId,
   onBackHome,
   onOpenTemplate,
+  apiClient,
 }: {
   sessionId: string
   onBackHome: () => void
   onOpenTemplate: (templateId: string) => void
+  apiClient?: Pick<FrontendApiClient, "getNarrativePublicReplay">
 }) {
-  const api = useApi()
+  const defaultApi = useApi()
+  const api = apiClient ?? defaultApi
   const t = useT()
   const { lang } = useLanguage()
   const [replay, setReplay] = useState<NarrativePublicReplayResponse | null>(null)
@@ -133,7 +137,7 @@ export function ReplayPage({
   const hasPreviewHighlights = Boolean(replay.ending?.highlights && replay.ending.highlights.length > 0)
 
   return (
-    <div style={rpStyles.page}>
+    <div style={rpStyles.page} data-replay-page="true">
       {/* Hero: shell cover banner with title + meta */}
       <div
         style={{

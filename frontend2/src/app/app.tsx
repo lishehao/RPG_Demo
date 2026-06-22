@@ -16,6 +16,7 @@ import { PlayRetryFailureFixture } from "../pages/play/components/play-retry-rec
 import { AboutPage } from "../pages/about/about-page"
 import { LoginPage } from "../pages/auth/login-page"
 import { ReplayPage } from "../pages/replay/replay-page"
+import { ReplayFixture } from "../pages/replay/replay-fixture"
 import { TemplateDetailPage } from "../pages/world/world-detail-page"
 import { PortfolioPage } from "../pages/portfolio/portfolio-page"
 import { ReviewerPage } from "../pages/portfolio/reviewer-page"
@@ -90,6 +91,13 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       return <PlayReviewerEvidenceFixture onBackHome={() => navigate({ name: "home" })} />
     case "playRetryFixture":
       return <PlayRetryFailureFixture onBackHome={() => navigate({ name: "home" })} />
+    case "replayFixture":
+      return (
+        <ReplayFixture
+          onBackHome={() => navigate({ name: "home" })}
+          onOpenTemplate={(templateId) => navigate({ name: "template", templateId })}
+        />
+      )
     case "template":
       return (
         <TemplateDetailPage
@@ -155,6 +163,7 @@ function routeKey(route: AppRoute): string {
     case "playLeverageFixture": return "playLeverageFixture"
     case "playReviewerEvidenceFixture": return "playReviewerEvidenceFixture"
     case "playRetryFixture": return "playRetryFixture"
+    case "replayFixture": return "replayFixture"
     case "about": return "about"
     case "portfolio": return "portfolio"
     case "reviewer": return "reviewer"

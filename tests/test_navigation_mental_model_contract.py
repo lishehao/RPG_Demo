@@ -840,6 +840,43 @@ def test_replay_hero_preserves_player_role_context() -> None:
     assert '"replay.role_meta": "Played as {role}"' in strings
 
 
+def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
+    fixture = (ROOT / "frontend2/src/pages/replay/replay-fixture.tsx").read_text()
+    frontend_readme = (ROOT / "frontend2/src/README.md").read_text()
+    code_map = (ROOT / "docs/tiny-stories-code-map.md").read_text()
+
+    assert 'apiClient?: Pick<FrontendApiClient, "getNarrativePublicReplay">' in replay
+    assert "const defaultApi = useApi()" in replay
+    assert "const api = apiClient ?? defaultApi" in replay
+    assert 'data-replay-page="true"' in replay
+
+    assert '| { name: "replayFixture" }' in routes
+    assert "replayFixture: 1" in routes
+    assert 'segments[1] === "replay"' in routes
+    assert '{ name: "replayFixture" }' in routes
+    assert 'return "#/qa/replay"' in routes
+
+    assert 'import { ReplayFixture } from "../pages/replay/replay-fixture"' in app
+    assert 'case "replayFixture"' in app
+    assert "<ReplayFixture" in app
+    assert "onOpenTemplate={(templateId) => navigate({ name: \"template\", templateId })}" in app
+
+    assert 'import { ReplayPage } from "./replay-page"' in fixture
+    assert "QA_REPLAY" in fixture
+    assert 'data-replay-fixture="true"' in fixture
+    assert "apiClient={qaReplayApi}" in fixture
+    assert "<ReplayPage" in fixture
+    assert 'data-replay-view-mode-hint="true"' not in fixture
+    assert 'data-replay-preview-why="true"' not in fixture
+    assert 't("replay.cta_hint")' not in fixture
+
+    assert "`#/qa/replay` fixture" in frontend_readme
+    assert "`#/qa/replay` mounts the real ReplayPage" in code_map
+
+
 def test_home_story_entries_are_generated_playable_template_objects() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()

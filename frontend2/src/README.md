@@ -15,7 +15,7 @@
 - `pages/home/`: Story Desk/home, starter premise doors, published story cards, My Stories.
 - `pages/create/`: Korean webtoon Agent Chat and Story Brief creation flow. Container, styles, options, local types, and view panels are split inside this folder.
 - `pages/play/`: live turn loop, choices/free input, advisor, current beat, ending payoff. Container, styles, local types, layout hook, and panels are split inside this folder.
-- `pages/replay/`: public replay and result-first memory loop.
+- `pages/replay/`: public replay and result-first memory loop, plus the local `#/qa/replay` fixture for deterministic replay evidence.
 - `pages/world/`: generated template detail and direct Play/session entry.
 - `pages/portfolio/`: portfolio and reviewer evidence mode.
 - `pages/about/`, `pages/auth/`: secondary surfaces.
@@ -37,6 +37,7 @@
 - Create has one explicit top-left Story Desk escape; the composer owns only story progression.
 - Published playable cards start/resume Play; starter premise doors route to Create.
 - Play/Replay may show local route crumbs, but page-level escape navigation should not be buried near action controls.
+- Local QA routes such as `#/qa/replay` must mount the real page/component with deterministic data rather than duplicate the player UI.
 - Reviewer evidence mode stays separate from normal player routes.
 
 ## Player Copy Rules
