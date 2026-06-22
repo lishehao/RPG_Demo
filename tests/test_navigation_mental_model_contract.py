@@ -43,7 +43,8 @@ def test_shared_header_supports_explicit_back_for_secondary_pages() -> None:
     assert 'className="topbar-back"' in header
     assert 't("action.back_home")' in header
     assert ".topbar-back" in theme
-    assert ".topbar--with-back .brand strong" in theme
+    assert ".topbar--with-back .brand { display: none; }" in theme
+    assert ".topbar--with-back .brand strong" not in theme
     assert "showBackButton" in about
     assert "showBackButton" in portfolio
     assert "showBackButton" in reviewer

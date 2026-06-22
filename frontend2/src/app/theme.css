@@ -1585,7 +1585,7 @@ kbd {
   .topbar-back { flex: 0 0 auto; font-size: 12.5px; padding-bottom: 4px; }
   .brand { flex: 0 1 auto; min-width: 0; }
   .brand strong { font-size: 15px; white-space: nowrap; }
-  .topbar--with-back .brand strong { display: none; }
+  .topbar--with-back .brand { display: none; }
   .topbar-actions {
     width: auto;
     min-width: 0;
