@@ -1130,6 +1130,10 @@ def test_replay_preview_labels_why_highlights_matter() -> None:
 
     assert 'data-replay-view-mode-hint="true"' in replay
     assert 't("replay.view_mode_hint")' in replay
+    assert 'data-replay-full-story-note="true"' in replay
+    assert 't("replay.full_story_no_highlights")' in replay
+    assert 't("replay.full_story_in_progress")' in replay
+    assert "LLM failure" not in replay
     assert 'data-replay-advisor-archive-hint="true"' in replay
     assert 't("replay.advisor_archive_hint")' in replay
     assert "replay.advisor_messages.length > 0" in replay
@@ -1142,7 +1146,11 @@ def test_replay_preview_labels_why_highlights_matter() -> None:
     assert 't("replay.preview_why_label")' in replay
     assert "previewRecordWhyLabel" in replay
     assert '"replay.view_mode_hint": "先看关键转折；想细读时切到完整故事。"' in strings
+    assert '"replay.full_story_no_highlights": "这段回放没有单独的高光卡片，所以直接从完整故事读起。"' in strings
+    assert '"replay.full_story_in_progress": "这一局还没有结束；这里先保留目前发生的故事。"' in strings
     assert '"replay.view_mode_hint": "Start with the key turns; switch to full when you want every beat."' in strings
+    assert '"replay.full_story_no_highlights": "This replay has no separate highlight cards, so it opens as the full story."' in strings
+    assert '"replay.full_story_in_progress": "This run is still in progress, so this replay keeps the story so far."' in strings
     assert '"replay.advisor_archive_hint": "完整阅读也保留玩家和顾问的私聊。"' in strings
     assert '"replay.advisor_archive_hint": "Full read also keeps the player and advisor side-chat."' in strings
     assert '"replay.preview_why_label": "为什么关键"' in strings

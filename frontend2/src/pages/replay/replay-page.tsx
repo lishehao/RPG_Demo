@@ -200,8 +200,8 @@ export function ReplayPage({
 
       <main style={rpStyles.main}>
         {/* Preview / Full view-mode toggle. Hidden when there are no
-            highlights to preview (incomplete run or LLM failure) —
-            in that case "full" is the only sensible mode anyway. */}
+            highlight cards to preview. In that case the full story is
+            the clearest route for a returning viewer. */}
         {hasPreviewHighlights ? (
           <div style={rpStyles.viewModeRow}>
             <span style={rpStyles.viewModePrimaryLine}>
@@ -292,8 +292,15 @@ export function ReplayPage({
         ) : null}
 
         {/* FULL MODE — advisor toggle + story column + ending. */}
-        {viewMode === "full" || !replay.ending?.highlights || replay.ending.highlights.length === 0 ? (
+        {viewMode === "full" || !hasPreviewHighlights ? (
         <>
+        {!hasPreviewHighlights ? (
+          <p style={rpStyles.fullStoryNote} data-replay-full-story-note="true">
+            {replay.completed && replay.ending
+              ? t("replay.full_story_no_highlights")
+              : t("replay.full_story_in_progress")}
+          </p>
+        ) : null}
         {/* Story column with optional inline advisor messages */}
         <section style={rpStyles.storyColumn}>
           {/* Skim toggle — friends landing on a shared replay don't
@@ -693,6 +700,13 @@ const rpStyles: Record<string, CSSProperties> = {
     color: "rgba(245,200,120,0.68)",
     fontSize: 12.5,
     lineHeight: 1.45,
+  },
+  fullStoryNote: {
+    maxWidth: 560,
+    margin: "0 0 18px",
+    color: "rgba(232,218,205,0.66)",
+    fontSize: 12.5,
+    lineHeight: 1.5,
   },
   highlightCarousel: {
     display: "grid",
