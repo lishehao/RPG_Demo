@@ -1449,6 +1449,11 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert "import { HomePage } from \"./home-page\"" in fixture
     assert "import { PlayPage } from \"../play/play-page\"" in fixture
     assert 'data-home-start-fixture="true"' in fixture
+    assert 'data-home-start-fixture-intro="true"' in fixture
+    assert "Local Story Desk start check" in fixture
+    assert "Story Desk card -&gt; readable first turn" in fixture
+    assert "real Story Desk card and real Play first-turn surface" in fixture
+    assert "local-only application evidence until the public-link check passes" in fixture
     assert "listPublicNarrativeTemplates: async () => ({ items: [QA_HOME_TEMPLATE] })" in fixture
     assert "startNarrativeSession: async" in fixture
     assert 'setView("play")' in fixture

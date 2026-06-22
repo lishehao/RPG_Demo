@@ -11,6 +11,37 @@ import type {
 import { PlayPage } from "../play/play-page"
 import { HomePage } from "./home-page"
 
+const QA_INTRO_STYLE = {
+  display: "grid",
+  gap: 6,
+  padding: "12px 18px",
+  borderBottom: "1px solid rgba(255,255,255,0.12)",
+  background: "rgba(12,18,30,0.96)",
+  color: "rgba(255,255,255,0.88)",
+} as const
+
+const QA_INTRO_KICKER_STYLE = {
+  color: "rgba(245,200,120,0.84)",
+  fontSize: 11,
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+} as const
+
+const QA_INTRO_TITLE_STYLE = {
+  color: "#ffffff",
+  fontSize: 14,
+  lineHeight: 1.25,
+} as const
+
+const QA_INTRO_COPY_STYLE = {
+  margin: 0,
+  maxWidth: 720,
+  color: "rgba(255,255,255,0.68)",
+  fontSize: 12,
+  lineHeight: 1.45,
+} as const
+
 const QA_HOME_TEMPLATE: NarrativeTemplateSummary = {
   template_id: "qa-home-start-template",
   owner_user_id: "qa-author",
@@ -246,12 +277,26 @@ export function HomeStartFixture({ onBackHome }: { onBackHome: () => void }) {
           apiClient={playApi}
         />
       ) : (
-        <HomePage
-          onOpenCreate={onBackHome}
-          onOpenReplay={onBackHome}
-          onOpenPlay={() => setView("play")}
-          apiClient={homeApi}
-        />
+        <>
+          <section
+            aria-label="Local Story Desk start check"
+            data-home-start-fixture-intro="true"
+            style={QA_INTRO_STYLE}
+          >
+            <span style={QA_INTRO_KICKER_STYLE}>Local evidence check</span>
+            <strong style={QA_INTRO_TITLE_STYLE}>Story Desk card -&gt; readable first turn</strong>
+            <p style={QA_INTRO_COPY_STYLE}>
+              Mounts the real Story Desk card and real Play first-turn surface with deterministic data.
+              Use as local-only application evidence until the public-link check passes.
+            </p>
+          </section>
+          <HomePage
+            onOpenCreate={onBackHome}
+            onOpenReplay={onBackHome}
+            onOpenPlay={() => setView("play")}
+            apiClient={homeApi}
+          />
+        </>
       )}
     </div>
   )
