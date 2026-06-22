@@ -869,6 +869,11 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "Local reviewer evidence, not a public benchmark" in runtime_inspector
     assert "Use this as local reviewer evidence" in runtime_inspector
     assert "It is not a public benchmark" in runtime_inspector
+    assert "Story references stay inside the saved cast/session contract." in runtime_inspector
+    assert "Runtime ids and visible references" not in runtime_inspector
+    assert "hidden-info drift avoided" in runtime_inspector
+    assert "invalid story shape" in runtime_inspector
+    assert "invalid runtime shape" not in runtime_inspector
     assert "repo/demo preflight" in runtime_inspector
     assert "reviewerArchiveScopeSummary" in styles
     assert "reviewerArchiveScopeNote" in styles

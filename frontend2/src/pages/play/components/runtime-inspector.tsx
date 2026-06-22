@@ -413,7 +413,7 @@ function evaluationCriteria({
       criterion: "entities remain coherent",
       status: entityStatus,
       evidence: [...contractCodes].filter((code) => code.startsWith("unknown_")).join(", ") || "no unknown ids",
-      rationale: "Runtime ids and visible references stay inside the persisted cast/session contract.",
+      rationale: "Story references stay inside the saved cast/session contract.",
     },
     {
       criterion: "tone/profile respected",
@@ -428,10 +428,10 @@ function evaluationCriteria({
       rationale: "The current narrator beat must expose usable next moves.",
     },
     {
-      criterion: "unsafe/out-of-spec drift avoided",
+      criterion: "hidden-info drift avoided",
       status: unsafeStatus,
       evidence: contractCodes.has("hidden_info_leak") ? "hidden_info_leak" : "no hidden-info or out-of-contract leak",
-      rationale: "Reviewer evidence checks for hidden-info leakage and invalid runtime shape.",
+      rationale: "Reviewer evidence checks for hidden-info leakage and invalid story shape.",
     },
     {
       criterion: "trajectory advances",
