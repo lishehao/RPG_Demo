@@ -117,11 +117,17 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "act once" in hero_copy
     assert "follow the consequence" in hero_copy
     assert "75s reviewer cut" in hero_copy
-    assert "Reviewer path" in hero_copy
-    assert "#/portfolio -&gt; #/reviewer" in hero_copy
-    assert "portfolio-grade AI" in hero_copy
-    assert "product-system evidence, not a launched consumer adoption" in hero_copy
-    assert "claim" in hero_copy
+    assert "Reviewer path" in portfolio
+    assert "#/reviewer" in portfolio
+    assert "portfolio-grade AI" in portfolio
+    assert "product-system evidence, not a launched consumer adoption" in portfolio
+    assert "claim" in portfolio
+    assert "PORTFOLIO_REVIEW_LENS" in portfolio
+    assert 'data-portfolio-hero-lens="true"' in portfolio
+    assert "data-portfolio-hero-lens-item={item.label}" in portfolio
+    assert "Player loop" in portfolio
+    assert "Claim boundary" in portfolio
+    assert ".portfolio-hero__lens" in theme
     assert "PORTFOLIO_REVIEW_ORDER" in portfolio
     assert "Watch 75s reviewer cut" in portfolio
     assert "Open Reviewer path" in portfolio

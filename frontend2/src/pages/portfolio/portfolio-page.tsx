@@ -61,6 +61,21 @@ const PORTFOLIO_EVIDENCE_BOUNDARY = [
   },
 ] as const
 
+const PORTFOLIO_REVIEW_LENS = [
+  {
+    label: "Player loop",
+    detail: "Read a scene, compare a few meaningful moves, act once, then follow the consequence.",
+  },
+  {
+    label: "Reviewer path",
+    detail: "Watch the 75s cut, launch #/reviewer, then inspect state and consequence evidence.",
+  },
+  {
+    label: "Claim boundary",
+    detail: "Portfolio-grade AI product-system evidence, not a launched consumer adoption claim.",
+  },
+] as const
+
 const PORTFOLIO_TARGET_USER_MODEL = [
   {
     label: "Target player",
@@ -125,13 +140,23 @@ export function PortfolioPage({
             <span className="ts-tag">Portfolio Case Study</span>
             <h1>Tiny Stories is an inspectable AI narrative runtime.</h1>
             <p>
-              Watch the 75s reviewer cut first: it shows a short,
+              Watch the 75s reviewer cut first. Tiny Stories is a short,
               story-first mobile episode where players read a scene, compare a
-              few meaningful moves, act once, and follow the consequence. The
-              Reviewer path (#/portfolio -&gt; #/reviewer) is the inspection
-              path behind that loop. Read it as portfolio-grade AI
-              product-system evidence, not a launched consumer adoption claim.
+              few meaningful moves, act once, and follow the consequence
+              without turning Play into a dashboard.
             </p>
+            <ul
+              className="portfolio-hero__lens"
+              aria-label="Portfolio review lens"
+              data-portfolio-hero-lens="true"
+            >
+              {PORTFOLIO_REVIEW_LENS.map((item) => (
+                <li key={item.label} data-portfolio-hero-lens-item={item.label}>
+                  <strong>{item.label}</strong>
+                  <span>{item.detail}</span>
+                </li>
+              ))}
+            </ul>
             <div className="portfolio-hero__actions">
               <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">
                 Watch 75s reviewer cut

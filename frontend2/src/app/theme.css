@@ -403,7 +403,7 @@ kbd {
   display: grid;
   grid-template-columns: minmax(0, 0.88fr) minmax(420px, 1.12fr);
   gap: 42px;
-  align-items: center;
+  align-items: start;
   padding: 42px 0 36px;
   background-image: none;
   overflow: visible;
@@ -462,6 +462,10 @@ kbd {
   margin: 22px 0 20px;
   text-shadow: 0 2px 26px rgba(0,0,0,0.6);
 }
+.portfolio-hero h1 {
+  font-size: 48px;
+  line-height: 1.06;
+}
 
 .portfolio-hero p,
 .reviewer-hero p {
@@ -518,6 +522,37 @@ kbd {
   color: rgba(244,239,230,0.62);
   font-size: 12.5px;
   line-height: 1.45;
+}
+.portfolio-hero__lens {
+  display: grid;
+  gap: 0;
+  max-width: 650px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+.portfolio-hero__lens li {
+  display: grid;
+  grid-template-columns: 126px minmax(0, 1fr);
+  gap: 14px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.portfolio-hero__lens li:last-child {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.portfolio-hero__lens strong {
+  color: rgba(255,226,172,0.92);
+  font-size: 11.5px;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.portfolio-hero__lens span {
+  min-width: 0;
+  color: rgba(244,239,230,0.68);
+  font-size: 12.5px;
+  line-height: 1.42;
 }
 .portfolio-review-order {
   display: grid;
