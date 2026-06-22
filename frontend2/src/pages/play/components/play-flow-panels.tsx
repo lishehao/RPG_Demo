@@ -1216,10 +1216,16 @@ export function ActionArea({
   const freeActionTargetName = freeActionTarget?.name ?? ""
   const freeActionContextTargetName =
     freeActionFocusContext?.kind === "actor" ? freeActionFocusContext.label : ""
+  const freeActionReceiptPrefix =
+    freeActionFocusContext?.kind === "actor" || freeActionFocusContext?.kind === "inventory"
+      ? freeActionFocusContext.label
+      : ""
   const freeActionTargetNameForFeedback = freeActionContextTargetName || freeActionTargetName
   const freeActionSubmittedText =
-    freeActionDraft && freeActionContextTargetName && freeActionTargetName !== freeActionContextTargetName
-      ? `${freeActionContextTargetName} — ${freeActionDraft}`
+    freeActionDraft &&
+    freeActionReceiptPrefix &&
+    !freeActionDraft.toLocaleLowerCase().includes(freeActionReceiptPrefix.toLocaleLowerCase())
+      ? `${freeActionReceiptPrefix} — ${freeActionDraft}`
       : freeActionDraft
   const freeActionStarterMoves = !freeActionDraft
     ? buildFreeActionStarterMoves({ context: freeActionFocusContext, t })

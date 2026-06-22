@@ -309,14 +309,17 @@ function buildQaReplayStartedStory(role: NarrativePlayerRole): NarrativeStoryHis
 }
 
 function buildQaReplayAdvance(request: NarrativeAdvanceTurnRequest): NarrativeAdvanceTurnResponse {
+  const freeInput = request.free_input?.trim()
   const selectedIndex = request.chosen_option_index ?? 0
   const selectedOption = QA_REPLAY_OPENING.options[selectedIndex] ?? QA_REPLAY_OPENING.options[0]
+  const selectedOptionText = selectedOption.label.replace(/^\[[^\]]+\]\s*/, "")
+  const submittedMove = freeInput || selectedOptionText
   return {
     player_message: {
       ord: 2,
       role: "player",
-      content: selectedOption.label.replace(/^\[[^\]]+\]\s*/, ""),
-      chosen_option_index: null,
+      content: submittedMove,
+      chosen_option_index: freeInput ? null : selectedIndex,
       options: [],
       npc_pulse: [],
       inventory_delta: null,

@@ -1055,6 +1055,11 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "apiClient={qaReplayApi}" in fixture
     assert "apiClient={qaTemplateApi}" in fixture
     assert "apiClient={qaPlayApi}" in fixture
+    assert "const freeInput = request.free_input?.trim()" in fixture
+    assert "const selectedOptionText = selectedOption.label.replace" in fixture
+    assert "const submittedMove = freeInput || selectedOptionText" in fixture
+    assert "content: submittedMove" in fixture
+    assert "chosen_option_index: freeInput ? null : selectedIndex" in fixture
     assert "handleOpenTemplate" in fixture
     assert 'setFixtureView("template")' in fixture
     assert 'setFixtureView("play")' in fixture

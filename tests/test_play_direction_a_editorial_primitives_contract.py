@@ -1692,10 +1692,13 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-play-free-action-boundary="true"' in panels
     assert 't("play.free_action_boundary_hint")' in panels
     assert "const freeActionContextTargetName =" in panels
+    assert 'freeActionFocusContext?.kind === "actor" ? freeActionFocusContext.label : ""' in panels
+    assert "const freeActionReceiptPrefix =" in panels
+    assert 'freeActionFocusContext?.kind === "actor" || freeActionFocusContext?.kind === "inventory"' in panels
     assert "const freeActionTargetNameForFeedback = freeActionContextTargetName || freeActionTargetName" in panels
     assert "const freeActionSubmittedText =" in panels
-    assert "freeActionTargetName !== freeActionContextTargetName" in panels
-    assert "`${freeActionContextTargetName} — ${freeActionDraft}`" in panels
+    assert "!freeActionDraft.toLocaleLowerCase().includes(freeActionReceiptPrefix.toLocaleLowerCase())" in panels
+    assert "`${freeActionReceiptPrefix} — ${freeActionDraft}`" in panels
     assert "onSubmitFree(diaryOverride, freeActionSubmittedText)" in panels
     assert ": freeActionTargetNameForFeedback || undefined" in panels
     assert "title: freeActionSubmittedText" in panels
