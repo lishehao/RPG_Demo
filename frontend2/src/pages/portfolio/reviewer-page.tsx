@@ -67,6 +67,11 @@ const REVIEWER_LAUNCH_RECOVERY =
 const launchPhaseIndex = (phase: LaunchPhase) =>
   REVIEWER_LAUNCH_STEPS.findIndex((step) => step.phase === phase)
 
+function canOpenLocalQaRoute() {
+  const host = window.location.hostname
+  return host === "localhost" || host === "127.0.0.1" || host === "::1"
+}
+
 export function ReviewerPage({
   onBackHome,
   onOpenCreate,
@@ -87,6 +92,7 @@ export function ReviewerPage({
   const inflightRef = useRef(false)
   const launchPlanRef = useRef<HTMLElement | null>(null)
   const launchErrorRef = useRef<HTMLDivElement | null>(null)
+  const localQaAvailable = canOpenLocalQaRoute()
 
   useEffect(() => {
     setLang("en")
@@ -197,6 +203,15 @@ export function ReviewerPage({
             application links, cite this route only after Portfolio preflight
             passes; otherwise use the reviewer cut.
           </p>
+          {localQaAvailable ? (
+            <a
+              className="reviewer-local-evidence-link"
+              href="#/qa/play-reviewer-evidence"
+              data-reviewer-local-evidence-fixture-link="true"
+            >
+              Open local proof fixture
+            </a>
+          ) : null}
           <section
             className="reviewer-evidence-preview"
             aria-label="Evidence to verify after launch"
@@ -284,6 +299,15 @@ export function ReviewerPage({
                 >
                   Review portfolio evidence
                 </button>
+                {localQaAvailable ? (
+                  <a
+                    className="reviewer-error__action"
+                    href="#/qa/play-reviewer-evidence"
+                    data-reviewer-launch-error-local-proof="true"
+                  >
+                    Open local proof fixture
+                  </a>
+                ) : null}
                 <button
                   className="reviewer-error__action"
                   type="button"

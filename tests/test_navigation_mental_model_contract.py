@@ -491,6 +491,10 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "Local evidence note: inspect the current local build here" in reviewer
     assert "application links, cite this route only after Portfolio preflight" in reviewer
     assert "passes; otherwise use the reviewer cut" in reviewer
+    assert "canOpenLocalQaRoute" in reviewer
+    assert 'data-reviewer-local-evidence-fixture-link="true"' in reviewer
+    assert 'data-reviewer-launch-error-local-proof="true"' in reviewer
+    assert "Open local proof fixture" in reviewer
     assert "evidence-enabled reviewer account" not in reviewer
     assert "inspector data" not in reviewer
     assert "Proof limits" in reviewer
