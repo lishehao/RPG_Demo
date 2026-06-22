@@ -20,9 +20,10 @@ for the current reviewer path, start from the root README, `#/portfolio`,
 - Historical artifact names: live acceptance summary, reviewer screenshot, and
   normal-player screenshot from the 2026-06-08 live gate. These were local
   run outputs, not public links shipped in this repository.
-- Current public/reviewable evidence: root README, `docs/CURRENT_SYSTEM_MAP.md`,
-  `docs/CASE_STUDY.md`, `#/portfolio`, `#/reviewer`, and the contract tests
-  listed below.
+- Current source/local-reviewable evidence: root README,
+  `docs/CURRENT_SYSTEM_MAP.md`, `docs/CASE_STUDY.md`, `#/portfolio`,
+  `#/reviewer`, and the contract tests listed below. Treat these as public
+  evidence only after the public visibility preflight passes.
 
 Public visibility check:
 

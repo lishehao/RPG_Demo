@@ -295,11 +295,13 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "`frontend2/src/pages/play/components/runtime-inspector.tsx`" in evidence_packet
     assert "These were local" in evidence_packet
     assert "not public links shipped in this repository" in evidence_packet
-    assert "Current public/reviewable evidence" in evidence_packet
+    assert "Current source/local-reviewable evidence" in evidence_packet
     assert "`docs/CURRENT_SYSTEM_MAP.md`" in evidence_packet
     assert "`docs/CASE_STUDY.md`" in evidence_packet
     assert "`#/portfolio`" in evidence_packet
     assert "`#/reviewer`" in evidence_packet
+    assert "Treat these as public" in evidence_packet
+    assert "evidence only after the public visibility preflight passes" in evidence_packet
     assert "Public visibility check" in evidence_packet
     assert "python3 tools/portfolio_public_evidence_preflight.py" in evidence_packet
     assert "local `HEAD` is ahead of `origin/main`" in evidence_packet
