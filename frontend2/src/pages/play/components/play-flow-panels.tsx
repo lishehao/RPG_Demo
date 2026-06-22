@@ -990,6 +990,23 @@ export function ActionArea({
           return
         }
       }
+      if (selectedOptionIndex !== null && !showPickedReflection) {
+        const confirmPanel = document.querySelector<HTMLElement>("[data-play-action-card-confirm-panel='true']")
+        if (confirmPanel) {
+          const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0
+          const rect = confirmPanel.getBoundingClientRect()
+          const visibleTop = headerHeight + 12
+          const visibleBottom = window.innerHeight - 12
+          if (rect.bottom > visibleBottom || rect.top < visibleTop) {
+            const top =
+              rect.bottom > visibleBottom
+                ? Math.max(0, window.scrollY + rect.bottom - visibleBottom)
+                : Math.max(0, window.scrollY + rect.top - visibleTop)
+            window.scrollTo({ top, left: 0, behavior })
+            return
+          }
+        }
+      }
       const selectedMove = document.querySelector<HTMLElement>("[data-play-selected-move='true']")
       if (selectedMove) {
         const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0

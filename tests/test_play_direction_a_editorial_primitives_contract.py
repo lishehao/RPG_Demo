@@ -2185,6 +2185,9 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "selectedOptionSubmitForecasts.slice(0, 2).map((chip) => chip.label).join(\" · \")" in panels
     assert 'document.querySelector<HTMLElement>("[data-play-selected-move=\'true\']")' in panels
     assert 'document.querySelector<HTMLElement>("[data-play-pending-reaction-panel=\'true\']")' in panels
+    assert 'document.querySelector<HTMLElement>("[data-play-action-card-confirm-panel=\'true\']")' in panels
+    assert "const visibleBottom = window.innerHeight - 12" in panels
+    assert "rect.bottom > visibleBottom || rect.top < visibleTop" in panels
     assert "headerHeight - 12" in panels
     assert "window.scrollTo({ top, left: 0, behavior })" in panels
     assert "selectedOptionIndex, showPickedReflection])" in panels
