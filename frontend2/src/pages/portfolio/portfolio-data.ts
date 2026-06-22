@@ -40,7 +40,7 @@ export const PIPELINE_STEPS = [
   {
     eyebrow: "02",
     title: "Role creates stakes",
-    summary: "The protagonist becomes a playable identity with public persona, private objective, leverage, and starting assets.",
+    summary: "The protagonist becomes a playable identity with public persona, private objective, leverage cards, and starting assets.",
     proof: "This is the piece that makes the project more than story completion: the player has a position to defend, not just text to read.",
   },
   {
@@ -88,7 +88,7 @@ export const INTERACTION_LOOP = [
   {
     eyebrow: "Role",
     title: "The player gets a position to defend",
-    body: "The generated role gives the player a public persona, private objective, leverage, and starting assets before the first turn.",
+    body: "The generated role gives the player a public persona, private objective, leverage cards, and starting assets before the first turn.",
     artifact: "visible evidence: role panel, objective, assets",
   },
   {

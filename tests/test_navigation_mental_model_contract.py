@@ -644,6 +644,9 @@ def test_case_study_states_target_player_and_content_model() -> None:
     assert "use that consequence to choose the next beat" in case_study
     assert "make the \"why now\" reason visible" in case_study
     assert "private motive drafting attached to the selected move" in case_study
+    assert "private objectives, leverage\n   cards" in case_study
+    assert "public persona, private objective, leverage cards, and assets" in case_study
+    assert "hidden goals, leverage" not in case_study
     assert "reviewer evidence separate from the normal player surface" in case_study
     assert "not proof" in case_study
     assert "validated retention or broad demand" in case_study
@@ -918,6 +921,7 @@ def test_portfolio_case_study_points_are_evidence_oriented() -> None:
         "player role, state changes, and ending evidence",
         "designed product system",
         "locked setup, playable role, visible state changes",
+        "private objective, leverage cards, and starting assets",
         "advisor boundary, and replayable ending",
         "product-system evidence",
         "typed state, persistent sessions, reviewer evidence hooks",

@@ -19,8 +19,8 @@ with state, roles, replay, and evaluation hooks?
 ## Product Loop
 
 1. A player types one premise.
-2. The compiler turns it into cast, role cards, hidden goals, leverage, failure
-   conditions, and an opening scene.
+2. The compiler turns it into cast, role cards, private objectives, leverage
+   cards, failure conditions, and an opening scene.
 3. The player runs a bounded 12-turn session with choices, free-form actions,
    advisor help, inventory shifts, and consequence tracking.
 4. The ending compiler turns the actual run history into a label, passage,
@@ -57,7 +57,7 @@ validated retention or broad demand.
 | Mechanism | Product effect | Engineering surface |
 | --- | --- | --- |
 | Template/session split | Many players can fork the same story shell and compare endings. | `rpg_backend/narrative/repository.py` |
-| Player role contract | The user plays a strategic character with public and private goals. | `PlayerRole`, `PlayerGoal`, `starting_assets` |
+| Player role contract | The user plays a strategic character with a public persona, private objective, leverage cards, and assets. | `PlayerRole`, `PlayerGoal`, `starting_assets` |
 | Deterministic turn scaffolding | The model writes inside a paced game frame. | `rpg_backend/narrative/engine.py` |
 | Advisor side-channel | Help is contextual but cannot silently alter story state. | `ask_advisor`, advisor message table |
 | Replay and fork CTA | A finished run becomes shareable and replayable. | `PublicReplayResponse.template_id` |
