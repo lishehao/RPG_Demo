@@ -637,14 +637,22 @@ def test_world_owner_visibility_explains_current_reach() -> None:
     assert "visibilityDescription(template.visibility, t)" in world
     assert 'data-world-visibility-current="true"' in world
     assert "data-world-visibility-option={v}" in world
+    assert 'data-world-visibility-recovery="true"' in world
+    assert 't("world.visibility_error_title")' in world
+    assert 't("world.visibility_error_detail")' in world
+    assert 'errorContext !== "visibility"' in world
     assert '"world.visibility_current": "当前：{label}"' in strings
     assert '"world.visibility_private_desc": "只有你能看到并继续测试这个故事。"' in strings
     assert '"world.visibility_unlisted_desc": "拿到链接的人可以打开并玩出自己的版本。"' in strings
     assert '"world.visibility_public_desc": "故事会出现在广场，任何玩家都能开始一局。"' in strings
+    assert '"world.visibility_error_title": "这次没有改成新的可见性"' in strings
+    assert '"world.visibility_error_detail": "当前设置没有变化；可以再点一次目标可见性，或先保留现在的设置。"' in strings
     assert '"world.visibility_current": "Current: {label}"' in strings
     assert '"world.visibility_private_desc": "Only you can see and keep testing this story."' in strings
     assert '"world.visibility_unlisted_desc": "People with the link can open it and play their own run."' in strings
     assert '"world.visibility_public_desc": "The story appears in the plaza so anyone can start a run."' in strings
+    assert '"world.visibility_error_title": "Visibility did not change"' in strings
+    assert '"world.visibility_error_detail": "The current setting is unchanged. Try the same visibility choice again, or keep the current setting."' in strings
 
 
 def test_world_advisor_preview_explains_playtime_use() -> None:

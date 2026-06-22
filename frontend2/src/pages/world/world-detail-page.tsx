@@ -105,6 +105,8 @@ export function TemplateDetailPage({
   const handleVisibility = async (next: NarrativeTemplateVisibility) => {
     if (visBusy || !template) return
     setVisBusy(true)
+    setError(null)
+    setErrorContext(null)
     try {
       const updated = await api.updateNarrativeTemplateVisibility(templateId, {
         visibility: next,
@@ -186,7 +188,9 @@ export function TemplateDetailPage({
       </div>
 
       <main style={tdStyles.main}>
-        {error ? <div style={tdStyles.errorBox}>{error}</div> : null}
+        {error && errorContext !== "start" && errorContext !== "visibility" ? (
+          <div style={tdStyles.errorBox}>{error}</div>
+        ) : null}
 
         <div style={{
           ...tdStyles.launchGrid,
@@ -354,6 +358,21 @@ export function TemplateDetailPage({
               </span>
               <span>{visibilityDescription(template.visibility, t)}</span>
             </p>
+            {errorContext === "visibility" && error ? (
+              <div
+                style={tdStyles.visibilityRecovery}
+                data-world-visibility-recovery="true"
+                role="status"
+                aria-live="polite"
+              >
+                <span style={tdStyles.visibilityRecoveryTitle}>
+                  {t("world.visibility_error_title")}
+                </span>
+                <span style={tdStyles.visibilityRecoveryDetail}>
+                  {t("world.visibility_error_detail")}
+                </span>
+              </div>
+            ) : null}
           </section>
         ) : null}
       </main>
@@ -1129,6 +1148,23 @@ const tdStyles: Record<string, CSSProperties> = {
   visibilityCurrent: {
     color: "var(--text)",
     fontWeight: 650,
+  },
+  visibilityRecovery: {
+    marginTop: 10,
+    display: "grid",
+    gap: 4,
+    maxWidth: 520,
+    color: "rgba(255,226,178,0.9)",
+    lineHeight: 1.45,
+  },
+  visibilityRecoveryTitle: {
+    fontSize: 12,
+    fontWeight: 820,
+    color: "rgba(255,226,178,0.96)",
+  },
+  visibilityRecoveryDetail: {
+    fontSize: 11.5,
+    color: "rgba(232,218,205,0.72)",
   },
 
   roleSection: { marginTop: 24, marginBottom: 28 },
