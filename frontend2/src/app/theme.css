@@ -599,6 +599,8 @@ kbd {
   overflow-wrap: anywhere;
 }
 .portfolio-review-order a {
+  min-height: 44px;
+  align-items: center;
   text-decoration: none;
   border-bottom: 1px solid rgba(245,200,120,0.36);
 }
@@ -639,6 +641,7 @@ kbd {
   display: inline-flex;
   align-items: center;
   width: fit-content;
+  min-height: 44px;
   color: rgba(245,200,120,0.86);
   cursor: pointer;
   font-weight: 720;
@@ -1246,8 +1249,10 @@ kbd {
 }
 .reviewer-local-evidence-link {
   display: inline-flex;
+  align-items: center;
   width: fit-content;
   max-width: 100%;
+  min-height: 44px;
   margin-top: 8px;
   color: rgba(255,226,172,0.9);
   font-size: 12.5px;

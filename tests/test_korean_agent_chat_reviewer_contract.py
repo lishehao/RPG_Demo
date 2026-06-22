@@ -168,6 +168,11 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert ".reviewer-evidence-preview__head" in theme
     assert "grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))" in theme
     assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in theme
+    reviewer_local_link_start = theme.index(".reviewer-local-evidence-link")
+    reviewer_local_link_end = theme.index(".reviewer-local-evidence-link:hover", reviewer_local_link_start)
+    reviewer_local_link_styles = theme[reviewer_local_link_start:reviewer_local_link_end]
+    assert "min-height: 44px" in reviewer_local_link_styles
+    assert "align-items: center" in reviewer_local_link_styles
 
 
 def test_reviewer_launch_keeps_full_seed_secondary_to_proof_preview() -> None:
@@ -214,6 +219,15 @@ def test_portfolio_hero_surfaces_public_evidence_gate_before_proofbar() -> None:
     assert "public reviewers will not see" not in source
     assert ".portfolio-public-evidence-gate" in theme
     assert ".portfolio-public-evidence-gate details" in theme
+    gate_summary_start = theme.index(".portfolio-public-evidence-gate summary")
+    gate_summary_end = theme.index(".portfolio-public-evidence-gate details p", gate_summary_start)
+    gate_summary_styles = theme[gate_summary_start:gate_summary_end]
+    assert "min-height: 44px" in gate_summary_styles
+    review_order_link_start = theme.index(".portfolio-review-order a {")
+    review_order_link_end = theme.index(".portfolio-review-order a:hover", review_order_link_start)
+    review_order_link_styles = theme[review_order_link_start:review_order_link_end]
+    assert "min-height: 44px" in review_order_link_styles
+    assert "align-items: center" in review_order_link_styles
 
 
 def test_reviewer_seed_is_concrete_enough_to_avoid_generic_scaffold_roles() -> None:
