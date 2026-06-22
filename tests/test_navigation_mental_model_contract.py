@@ -554,9 +554,12 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "evidence summary reviewers inspect beside play" in reviewer
     assert "reviewer-only evidence summary beside the normal story UI" in reviewer
     assert 'data-reviewer-local-evidence-note="true"' in reviewer
-    assert "Local evidence note: inspect the current local build here" in reviewer
+    assert "Public evidence boundary: inspect the current local build here" in reviewer
     assert "application links, cite this route only after Portfolio preflight" in reviewer
     assert "passes; otherwise use the reviewer cut" in reviewer
+    local_note_idx = reviewer.index('data-reviewer-local-evidence-note="true"')
+    launch_cta_idx = reviewer.index('data-reviewer-launch-cta={busy ? "starting" : "ready"}')
+    assert local_note_idx < launch_cta_idx
     assert "canOpenLocalQaRoute" in reviewer
     assert 'data-reviewer-local-evidence-fixture-link="true"' in reviewer
     assert 'data-reviewer-launch-error-local-proof="true"' in reviewer

@@ -1257,7 +1257,11 @@ kbd {
 .reviewer-local-evidence-note {
   margin: 12px 0 0;
   max-width: 620px;
+  padding: 10px 12px;
   color: rgba(244,239,230,0.62);
+  background: rgba(245, 200, 120, 0.07);
+  border-left: 3px solid rgba(245, 200, 120, 0.45);
+  border-radius: 8px;
   font-size: 12.5px;
   line-height: 1.45;
 }

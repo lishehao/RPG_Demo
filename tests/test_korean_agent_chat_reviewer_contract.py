@@ -145,7 +145,9 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     local_note_idx = source.index('data-reviewer-local-evidence-note="true"')
     launch_idx = source.index('data-reviewer-launch-plan="true"')
 
-    assert actions_idx < evidence_idx < local_note_idx < launch_idx
+    assert local_note_idx < actions_idx < evidence_idx < launch_idx
+    assert "Public evidence boundary: inspect the current local build here" in source
+    assert "application links, cite this route only after Portfolio preflight" in source
     assert "keeps the player-facing story UI intact" in source
     assert "playable state and consequences" in source
     assert "Korean-webtoon visual language" not in source
@@ -185,12 +187,13 @@ def test_reviewer_launch_keeps_full_seed_secondary_to_proof_preview() -> None:
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
     summary_idx = source.index('data-reviewer-seed-summary="true"')
+    local_note_idx = source.index('data-reviewer-local-evidence-note="true"')
     actions_idx = source.index('className="reviewer-actions"')
     evidence_idx = source.index('data-reviewer-evidence-preview="true"')
     launch_idx = source.index('data-reviewer-launch-plan="true"')
     details_idx = source.index('data-reviewer-seed-details="true"')
 
-    assert summary_idx < actions_idx < evidence_idx < launch_idx < details_idx
+    assert summary_idx < local_note_idx < actions_idx < evidence_idx < launch_idx < details_idx
     assert "Locked seed preview" in source
     assert "Missing singer, live awards stream, sponsor pressure" in source
     assert "Read locked seed" in source

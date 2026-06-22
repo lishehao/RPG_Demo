@@ -184,6 +184,11 @@ export function ReviewerPage({
             <span>Locked seed preview</span>
             <strong>Missing singer, live awards stream, sponsor pressure; no violence or blackmail.</strong>
           </div>
+          <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
+            Public evidence boundary: inspect the current local build here. For
+            application links, cite this route only after Portfolio preflight
+            passes; otherwise use the reviewer cut.
+          </p>
           <div className="reviewer-actions">
             <button
               className="reviewer-action reviewer-action--primary"
@@ -216,11 +221,6 @@ export function ReviewerPage({
               ))}
             </ol>
           </section>
-          <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
-            Local evidence note: inspect the current local build here. For
-            application links, cite this route only after Portfolio preflight
-            passes; otherwise use the reviewer cut.
-          </p>
           {localQaAvailable ? (
             <a
               className="reviewer-local-evidence-link"
