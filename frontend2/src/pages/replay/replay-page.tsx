@@ -227,6 +227,14 @@ export function ReplayPage({
             >
               {t("replay.view_mode_hint")}
             </span>
+            {replay.advisor_messages.length > 0 ? (
+              <span
+                style={rpStyles.viewModeAdvisorHint}
+                data-replay-advisor-archive-hint="true"
+              >
+                {t("replay.advisor_archive_hint")}
+              </span>
+            ) : null}
           </div>
         ) : null}
 
@@ -426,7 +434,11 @@ function renderInterleavedStream(
           stream as a separate vertical track, since we can't reliably
           interleave by turn without additional ord metadata. */}
       {replay.advisor_messages.length > 0 ? (
-        <section style={rpStyles.advisorTrack}>
+        <section
+          style={rpStyles.advisorTrack}
+          data-replay-advisor-track="true"
+          data-replay-advisor-exchanges={replay.advisor_messages.length}
+        >
           <div style={rpStyles.advisorTrackHeader}>
             <img
               src={advisorAvatar}
@@ -439,6 +451,7 @@ function renderInterleavedStream(
           {replay.advisor_messages.map((m) => (
             <div
               key={`a-${m.role}-${m.ord}`}
+              data-replay-advisor-message-role={m.role}
               style={
                 m.role === "player" ? rpStyles.advisorRowPlayer : rpStyles.advisorRowAdvisor
               }
@@ -672,6 +685,12 @@ const rpStyles: Record<string, CSSProperties> = {
   viewModeHint: {
     maxWidth: 560,
     color: "rgba(232,218,205,0.60)",
+    fontSize: 12.5,
+    lineHeight: 1.45,
+  },
+  viewModeAdvisorHint: {
+    maxWidth: 560,
+    color: "rgba(245,200,120,0.68)",
     fontSize: 12.5,
     lineHeight: 1.45,
   },

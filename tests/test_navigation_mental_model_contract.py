@@ -970,12 +970,21 @@ def test_replay_preview_labels_why_highlights_matter() -> None:
 
     assert 'data-replay-view-mode-hint="true"' in replay
     assert 't("replay.view_mode_hint")' in replay
+    assert 'data-replay-advisor-archive-hint="true"' in replay
+    assert 't("replay.advisor_archive_hint")' in replay
+    assert "replay.advisor_messages.length > 0" in replay
+    assert 'data-replay-advisor-track="true"' in replay
+    assert "data-replay-advisor-exchanges={replay.advisor_messages.length}" in replay
+    assert "data-replay-advisor-message-role={m.role}" in replay
     assert "viewModeHint" in replay
+    assert "viewModeAdvisorHint" in replay
     assert 'data-replay-preview-why="true"' in replay
     assert 't("replay.preview_why_label")' in replay
     assert "previewRecordWhyLabel" in replay
     assert '"replay.view_mode_hint": "先看关键转折；想细读时切到完整故事。"' in strings
     assert '"replay.view_mode_hint": "Start with the key turns; switch to full when you want every beat."' in strings
+    assert '"replay.advisor_archive_hint": "完整阅读也保留玩家和顾问的私聊。"' in strings
+    assert '"replay.advisor_archive_hint": "Full read also keeps the player and advisor side-chat."' in strings
     assert '"replay.preview_why_label": "为什么关键"' in strings
     assert '"replay.preview_why_label": "Why it mattered"' in strings
 
@@ -1048,6 +1057,8 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "<TemplateDetailPage" in fixture
     assert "<PlayPage" in fixture
     assert 'data-replay-view-mode-hint="true"' not in fixture
+    assert 'data-replay-advisor-archive-hint="true"' not in fixture
+    assert 'data-replay-advisor-track="true"' not in fixture
     assert 'data-replay-preview-why="true"' not in fixture
     assert 'data-world-role-launch-read="true"' not in fixture
     assert 'data-play-action-option-card="true"' not in fixture
