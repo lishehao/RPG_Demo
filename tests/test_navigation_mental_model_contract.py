@@ -1328,6 +1328,12 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "QA_REPLAY_TEMPLATE" in fixture
     assert "QA_REPLAY_OPENING" in fixture
     assert 'data-replay-fixture="true"' in fixture
+    assert 'data-replay-fixture-view={fixtureView}' in fixture
+    assert 'data-replay-fixture-intro="true"' in fixture
+    assert "Local replay check" in fixture
+    assert "Replay memory -&gt; same-opening restart" in fixture
+    assert "real replay page, role selection, and Play first-turn surface" in fixture
+    assert "local-only application evidence until the public-link check passes" in fixture
     assert "apiClient={qaReplayApi}" in fixture
     assert "apiClient={qaTemplateApi}" in fixture
     assert "apiClient={qaPlayApi}" in fixture

@@ -15,6 +15,37 @@ import { PlayPage } from "../play/play-page"
 import { TemplateDetailPage } from "../world/world-detail-page"
 import { ReplayPage } from "./replay-page"
 
+const QA_REPLAY_INTRO_STYLE = {
+  display: "grid",
+  gap: 6,
+  padding: "12px 18px",
+  borderBottom: "1px solid rgba(255,255,255,0.12)",
+  background: "rgba(12,18,30,0.96)",
+  color: "rgba(255,255,255,0.88)",
+} as const
+
+const QA_REPLAY_INTRO_KICKER_STYLE = {
+  color: "rgba(245,200,120,0.84)",
+  fontSize: 11,
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+} as const
+
+const QA_REPLAY_INTRO_TITLE_STYLE = {
+  color: "#ffffff",
+  fontSize: 14,
+  lineHeight: 1.25,
+} as const
+
+const QA_REPLAY_INTRO_COPY_STYLE = {
+  margin: 0,
+  maxWidth: 760,
+  color: "rgba(255,255,255,0.68)",
+  fontSize: 12,
+  lineHeight: 1.45,
+} as const
+
 const QA_REPLAY: NarrativePublicReplayResponse = {
   session_id: "qa-replay-completed",
   template_id: "qa-replay-template",
@@ -422,7 +453,7 @@ export function ReplayFixture({
   }
 
   return (
-    <div data-replay-fixture="true">
+    <div data-replay-fixture="true" data-replay-fixture-view={fixtureView}>
       {fixtureView === "template" ? (
         <TemplateDetailPage
           templateId={QA_REPLAY.template_id}
@@ -438,12 +469,26 @@ export function ReplayFixture({
           apiClient={qaPlayApi}
         />
       ) : (
-        <ReplayPage
-          sessionId={QA_REPLAY.session_id}
-          onBackHome={onBackHome}
-          onOpenTemplate={handleOpenTemplate}
-          apiClient={qaReplayApi}
-        />
+        <>
+          <section
+            aria-label="Local replay check"
+            data-replay-fixture-intro="true"
+            style={QA_REPLAY_INTRO_STYLE}
+          >
+            <span style={QA_REPLAY_INTRO_KICKER_STYLE}>Local evidence check</span>
+            <strong style={QA_REPLAY_INTRO_TITLE_STYLE}>Replay memory -&gt; same-opening restart</strong>
+            <p style={QA_REPLAY_INTRO_COPY_STYLE}>
+              Mounts the real replay page, role selection, and Play first-turn surface with deterministic completed-run data.
+              Use as local-only application evidence until the public-link check passes.
+            </p>
+          </section>
+          <ReplayPage
+            sessionId={QA_REPLAY.session_id}
+            onBackHome={onBackHome}
+            onOpenTemplate={handleOpenTemplate}
+            apiClient={qaReplayApi}
+          />
+        </>
       )}
     </div>
   )
