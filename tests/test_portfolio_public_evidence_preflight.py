@@ -61,6 +61,8 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     assert "- frontend2/src/pages/portfolio/reviewer-page.tsx" in output
     assert "- tools/internal_note.txt" not in output
     assert "push the intended branch" in output
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in output
+    assert "label the listed surfaces as local-only application evidence" in output
 
 
 def test_public_evidence_preflight_passes_only_when_synced() -> None:
@@ -101,6 +103,7 @@ def test_public_evidence_preflight_fails_when_deployed_page_is_stale() -> None:
     assert "- #/portfolio -> #/reviewer" in output
     assert "- Who this loop is for" in output
     assert "GitHub Pages may still be stale" in output
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in output
 
 
 def test_public_evidence_preflight_is_documented_for_application_links() -> None:

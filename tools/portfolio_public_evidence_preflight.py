@@ -191,7 +191,11 @@ def format_status(status: PublicEvidenceStatus) -> str:
             lines.append(f"- ... {len(sensitive) - 24} more")
     else:
         lines.append("No configured evidence-sensitive paths changed, but commit state is still not public-synced.")
-    lines.append("Next: push the intended branch, wait for the public page/docs to update, then rerun this preflight.")
+    lines.append(
+        "Next: push the intended branch, wait for the public page/docs to update, "
+        "then rerun `python3 tools/portfolio_public_evidence_preflight.py`."
+    )
+    lines.append("Until this preflight passes, label the listed surfaces as local-only application evidence.")
     return "\n".join(lines)
 
 
