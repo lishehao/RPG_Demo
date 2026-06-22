@@ -657,6 +657,33 @@ def test_case_study_states_target_player_and_content_model() -> None:
     assert "validated retention or broad demand" in case_study
 
 
+def test_playtest_report_collects_target_user_evidence_without_fabrication() -> None:
+    report = (ROOT / "docs/playtest_report.md").read_text()
+
+    assert "intentionally a template, not fabricated evidence" in report
+    assert "planned validation method, not as proof of retention" in report
+    assert "Target Player Fit" in report
+    assert "story-first players who are willing to read a compact mobile drama" in report
+    assert "Task Script" in report
+    assert "Play at least three turns" in report
+    assert "First-choice time" in report
+    assert "Horizontal overflow / clipped text observed" in report
+    assert "Story Desk / entry" in report
+    assert "Opening scene" in report
+    assert "First choice" in report
+    assert "Selected confirm" in report
+    assert "Inner motive" in report
+    assert "Pending / resolved feedback" in report
+    assert "Replay / fork" in report
+    assert "UI / Visual Experience Notes" in report
+    assert "Application Evidence Boundary" in report
+    assert "Strong evidence" in report
+    assert "Weak evidence" in report
+    assert "Not evidence" in report
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in report
+    assert "local-only evidence" in report
+
+
 def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
 
