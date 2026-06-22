@@ -1125,7 +1125,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "No direct cost" in fixture
     assert "No direct gain" in fixture
     assert "No new path" in fixture
-    assert "Compare likely impact before you submit." in fixture
+    assert 'data-gameplay-action-support-cue={!selectedAction && !motiveOpen ? "true" : undefined}' in fixture
+    assert "Compare likely impact before you submit. People and clues can open sharper moves." in fixture
+    assert "Badge clue opened new moves. People and clues can still sharpen the choice." in fixture
     assert "Compare likely impact before you commit." not in fixture
     assert "LENA_HOLD_ACTIONS" in fixture
     assert 'if (phase === "resolved" && committed?.action.id === "lena-hold") return LENA_HOLD_ACTIONS' in fixture

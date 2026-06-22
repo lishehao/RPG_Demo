@@ -518,8 +518,8 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     : selectedAction
       ? "Submit it, or add what you secretly mean."
       : unlockedClue
-        ? "Badge clue opened new moves."
-        : "Compare likely impact before you submit."
+        ? "Badge clue opened new moves. People and clues can still sharpen the choice."
+        : "Compare likely impact before you submit. People and clues can open sharper moves."
 
   useEffect(() => {
     if (!isPending || !committed) return
@@ -760,6 +760,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                 <span
                   style={styles.headerNote}
                   data-gameplay-selected-review={selectedAction ? "true" : undefined}
+                  data-gameplay-action-support-cue={!selectedAction && !motiveOpen ? "true" : undefined}
                 >
                   {actionHeaderNote}
                 </span>
