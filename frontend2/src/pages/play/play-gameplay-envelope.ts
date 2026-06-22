@@ -267,7 +267,7 @@ function pressureLabelFromPulses(pulses: NarrativeNPCPulse[]): GameplayPressureT
     return { id: "pressure", label: "Pressure", value: "rising", tone: "cost" }
   }
   if (warmerCount > 0) {
-    return { id: "pressure", label: "Pressure", value: "opening", tone: "gain" }
+    return { id: "pressure", label: "Pressure", value: "easing", tone: "gain" }
   }
   return { id: "pressure", label: "Pressure", value: "held", tone: "shift" }
 }

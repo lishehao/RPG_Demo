@@ -1464,6 +1464,8 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "buildGameplayEnvelope" in envelope
     assert "deriveActionForecastChips" in envelope
     assert "normalizeBackendEnvelope" in envelope
+    assert 'value: "easing"' in envelope
+    assert 'value: "opening"' not in envelope
     assert '"May reveal evidence"' in envelope
     assert '"May reveal proof"' not in envelope
     assert '"Read the room"' in envelope
