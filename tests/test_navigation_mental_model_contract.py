@@ -802,6 +802,48 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
         assert stale not in script
 
 
+def test_chinese_admissions_demo_script_matches_current_product_flow() -> None:
+    script = (ROOT / "docs/demo-video/admissions-demo-script.zh.md").read_text()
+
+    assert "playable AI story loop" in script
+    assert "真实 UI" in script
+    assert "Story Brief" in script
+    assert "Generate and enter story" in script
+    assert "Story Brief review 和 generation handoff" in script
+    assert "Seed -> Story Brief -> Player role -> First scene -> Choices" in script
+    assert "private objective" in script
+    assert "leverage cards / assets" in script
+    assert "`Move sent` / `Room reacting` / `Next moves forming`" in script
+    assert "Write your own move" in script
+    assert "Add inner motive" in script
+    assert "Submit with motive" in script
+    assert "Advisor boundary + reviewer evidence" in script
+    assert "不要把它伪装成普通玩家 UI" in script
+    assert "reviewer evidence panel" in script
+
+    for stale in (
+        "韩漫互动游戏宣传片",
+        "韩漫素材",
+        "韩漫纯氛围镜头",
+        "stateful LLM interactive drama engine",
+        "stateful LLM drama engine",
+        "Start this story",
+        "High-stakes mode",
+        "Structured generation loading",
+        "Role/state page",
+        "secret objective",
+        "trump cards / inventory",
+        "Continuing the story",
+        "Write your own action",
+        "inner monologue",
+        "Do that",
+        "runtime inspector",
+        "NPC mood / pulse",
+        "busy generation",
+    ):
+        assert stale not in script
+
+
 def test_portfolio_inspector_uses_reviewer_verifiable_capability_labels() -> None:
     data = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
 

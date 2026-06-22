@@ -10,7 +10,7 @@
 4. 你对 LLM 产品的可靠性、状态管理、可解释性和用户体验有没有清晰理解。
 5. 你是否能把一个模糊想法做成完整闭环，并且知道下一步怎么改进。
 
-所以这版视频不要拍成“韩漫互动游戏宣传片”，而要拍成“一个 technical AI product builder 的项目证明”。韩漫素材仍然保留，但它只是视觉包装；真正的主角是系统能力。
+所以这版视频不要拍成“纯氛围互动故事宣传片”，而要拍成“一个 technical AI product builder 的项目证明”。电影感素材仍然保留，但它只是章节转场；真正的主角是系统能力和真实 UI。
 
 ## 视频定位
 
@@ -20,7 +20,7 @@
 
 叙事目标：
 
-> I built a stateful LLM interactive drama engine: a user writes one seed, the system generates a playable world, tracks choices and hidden state, supports fixed and free-form actions, offers advisor context, and compiles a shareable ending.
+> I built a playable AI story loop: a user writes one seed, the system shapes a Story Brief, generates a first scene with roles and choices, preserves player state, supports fixed and free-form moves, keeps advisor help bounded, and produces a shareable ending.
 
 给招生看的核心信息：
 
@@ -41,11 +41,11 @@
 
 - 先不要直接大字标题。
 - 真实 create page 画面，光标停在 seed 输入框。
-- 背景可以淡入 AI 生成的婚礼韩漫关键帧，但 UI 要清楚可读。
+- 背景可以淡入电影感婚礼关键帧，但 UI 要清楚可读。
 
 屏幕文字：
 
-`Tiny Stories: a stateful LLM drama engine`
+`Tiny Stories: a playable AI story loop`
 
 旁白英文：
 
@@ -66,12 +66,10 @@
 
 `At my wedding, the groom asks me to sign away my shares before the ceremony starts.`
 
-- 选择：
-  - Medium
-  - High-stakes mode
-  - English
-  - Just me
-- 点击 `Start this story`。
+- 点击 `Send opening`。
+- 如果出现 visibility prompt，选择 `Just me`。
+- 展示 Story Brief 的顶部 summary。
+- 点击 `Generate and enter story`。
 
 屏幕文字：
 
@@ -91,16 +89,16 @@
 
 画面：
 
-- 真实 loading / busy card。
+- 真实 Story Brief review 和 generation handoff。
 - 展示系统正在生成：
-  - characters
-  - leverage network
-  - player identity cards
-  - opening dramatic beat
+  - player role
+  - first scene
+  - first moves
+  - saved Story Brief context
 - 中间穿插 1-2 秒 AI 生成的 evidence board / story engine 关键帧。
 - 叠加一层简单系统图，不要复杂：
 
-`Seed -> Cast -> Hidden goals -> State -> First playable turn`
+`Seed -> Story Brief -> Player role -> First scene -> Choices`
 
 屏幕文字：
 
@@ -108,7 +106,7 @@
 
 旁白英文：
 
-`Before the first turn, the backend compiles the seed into structured gameplay data: cast, private goals, leverage, inventory, pressure, and the first scene.`
+`Before the first turn, the product turns the seed into a scene plan, player role, opening passage, and choices the user can actually press.`
 
 设计意图：
 
@@ -126,16 +124,16 @@
   - stage progress bar
   - `This run, you are...`
   - player role banner
-  - secret objective
-  - trump cards / inventory
+  - private objective
+  - leverage cards / assets
 
 屏幕文字：
 
-`The player is assigned a role, motive, and private leverage`
+`The player gets a role, private objective, and usable cards`
 
 旁白英文：
 
-`Each run gives the player a concrete role. The system tracks what the player wants, what they know, and what they can use against other characters.`
+`Each run gives the player a concrete role. The system tracks what the player wants, what they know, and what they can use in later moves.`
 
 设计意图：
 
@@ -150,7 +148,7 @@
 - 展示第一段 narration。
 - 展示 3 个 options。
 - 点一个最有策略感的选项。
-- 显示 loading：`Continuing the story...`
+- 显示 pending receipt：`Move sent` / `Room reacting` / `Next moves forming`
 - 闪回 0.5 秒 AI choice keyframe 作为情绪转场。
 
 屏幕文字：
@@ -171,16 +169,16 @@
 
 画面：
 
-- 点击 `+ Write your own action`。
+- 点击 `Write your own move`。
 - 输入：
 
 `I ask the lawyer to read the clause aloud, then secretly record his answer.`
 
-- 可选：打开 inner monologue，输入：
+- 可选：打开 `Add inner motive`，输入：
 
 `If he hesitates, I know the witness was coached.`
 
-- 点击 `Do that`。
+- 点击 `Submit with motive`。
 - 展示新 narrator beat 出现。
 
 屏幕文字：
@@ -207,7 +205,7 @@
 `Should I expose him now or stall for one more turn?`
 
 - 展示 advisor 回复。
-- 如果可用，切到 reviewer mode 或 runtime inspector：
+- 如果使用 reviewer capture，切到 reviewer evidence；不要把它伪装成普通玩家 UI：
   - current stage
   - turns played
   - inventory state
@@ -215,7 +213,7 @@
 
 屏幕文字：
 
-`Advisor context + inspectable runtime state`
+`Advisor boundary + reviewer evidence`
 
 旁白英文：
 
@@ -234,7 +232,7 @@
 - 快速 montage：
   - player bubble
   - new narration
-  - NPC mood / pulse
+  - character reaction
   - inventory changed
   - stage bar moved
 - 切到 ending screen：
@@ -289,8 +287,8 @@
 如果需要压到 90 秒，保留这些镜头：
 
 1. Seed 输入。
-2. Structured generation loading。
-3. Role/state page。
+2. Story Brief 和 generation handoff。
+3. Role/private objective/assets page。
 4. Option click。
 5. Free-form action。
 6. Advisor。
@@ -299,7 +297,7 @@
 
 可以删掉：
 
-- 过长的韩漫纯氛围镜头。
+- 过长的纯氛围镜头。
 - 太多艺术图 montage。
 - 过多的剧情阅读。
 
@@ -324,18 +322,18 @@
 必须拍到：
 
 1. seed 输入和点击创建。
-2. busy generation 的结构化提示。
-3. role / secret objective / inventory。
-4. option click 后的 loading 和下一段。
+2. Story Brief 和生成 handoff 的结构化提示。
+3. role / private objective / assets。
+4. option click 后的 pending receipt 和下一段。
 5. free-form action 输入。
 6. advisor 问答。
 7. ending screen。
 
 加分镜头：
 
-1. reviewer runtime inspector。
+1. reviewer evidence panel。
 2. stage progress bar 变化。
-3. NPC mood / pulse。
+3. character reaction。
 4. paths not taken。
 5. share copied。
 
