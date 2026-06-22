@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "motion/react"
 import { Header } from "../../shared/ui/header"
+import { useLanguage } from "../../shared/lib/i18n"
 import {
   CASE_STUDY_POINTS,
   EVIDENCE_PACKET_URL,
@@ -104,6 +105,11 @@ export function PortfolioPage({
   const [activeStep, setActiveStep] = useState(0)
   const step = PIPELINE_STEPS[activeStep]
   const localQaAvailable = canOpenLocalQaRoute()
+  const { setLang } = useLanguage()
+
+  useEffect(() => {
+    setLang("en")
+  }, [setLang])
 
   return (
     <div className="portfolio-page">

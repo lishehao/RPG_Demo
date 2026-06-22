@@ -58,6 +58,20 @@ def test_reviewer_page_normalizes_direct_entry_to_english() -> None:
     assert "A locked English demo path designed for portfolio review" in source
 
 
+def test_portfolio_page_normalizes_application_entry_to_english() -> None:
+    source = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
+
+    mount_language_idx = source.index('useEffect(() => {\n    setLang("en")')
+    hero_idx = source.index("<h1>Tiny Stories")
+
+    assert mount_language_idx < hero_idx
+    assert '}, [setLang])' in source[mount_language_idx:hero_idx]
+    assert 'import { useLanguage } from "../../shared/lib/i18n"' in source
+    assert "Portfolio Case Study" in source
+    assert "portfolio-grade AI product-system evidence" in source
+    assert "not a launched consumer adoption claim" in source
+
+
 def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
 
