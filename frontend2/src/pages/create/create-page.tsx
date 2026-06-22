@@ -1040,6 +1040,7 @@ export function CreatePage({
                       }}
                       disabled={busy || briefBusy || guideBusy}
                       type="button"
+                      aria-label={t("create.example_aria", { n: index + 1, example })}
                     >
                       <span style={cpStyles.exampleLineIndex}>{index + 1}.</span>
                       <span style={cpStyles.exampleLineText}>{example}</span>

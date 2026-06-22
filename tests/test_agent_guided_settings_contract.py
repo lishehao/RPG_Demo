@@ -118,7 +118,7 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert "VISIBILITY_OPTION_IDS.map" not in summary_segment
 
     composer_start = source.index("{privacyIntroComplete ? (")
-    composer_end = source.index("{error ? <div style={cpStyles.error}>", composer_start)
+    composer_end = source.index("{error ? (", composer_start)
     composer_segment = source[composer_start:composer_end]
     assert "...cpStyles.textareaWrap" in composer_segment
     assert "appendGuideTurn(draftTurn)" in composer_segment
@@ -228,6 +228,7 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
     assert 't("create.guide_add_opening")' in source
     assert 't("create.guide_add_answer")' in source
     assert 't("create.guide_add_correction")' in source
+    assert 'aria-label={t("create.example_aria", { n: index + 1, example })}' in source
     assert "activeBrief || guideReadyToBrief" in source
     assert 'hasSeed ? t("create.guide_add_correction") : t("create.guide_add_opening")' not in source
     assert 't("create.char_count", { n: draftTurn.length })' in source
@@ -255,6 +256,7 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.guide_add_answer": "Send answer"',
         '"create.guide_add_correction": "Send update"',
         '"create.brief_keep_correcting": "Add more detail"',
+        '"create.example_aria": "Use example {n}: {example}"',
         '"create.guide_revision_count": "{n} follow-ups"',
         '"create.guide_next_prompt_hint": "Answer the Story Butler prompt next."',
         '"create.guide_ready_brief_hint": "The Story Brief will shape itself once ready."',
@@ -269,6 +271,7 @@ def test_empty_create_composer_teaches_seed_recipe_before_examples() -> None:
         '"create.guide_add_answer": "发送回答"',
         '"create.guide_add_correction": "发送补充"',
         '"create.brief_keep_correcting": "补更多细节"',
+        '"create.example_aria": "使用示例 {n}：{example}"',
         '"create.guide_revision_count": "{n} 条补充"',
         '"create.guide_next_prompt_hint": "继续回答 Story Butler 的追问"',
         '"create.guide_ready_brief_hint": "信息足够后会自动整理 Brief"',
