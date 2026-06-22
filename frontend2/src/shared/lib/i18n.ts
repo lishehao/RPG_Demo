@@ -394,6 +394,7 @@ export const STRINGS_ZH = {
 
   // Login page
   "login.tag": "登录",
+  "login.tag_create": "保存笔名",
   "login.title": "你叫什么?",
   "login.title_create": "用什么名字保存?",
   "login.sub": "随便起个用户名,没有密码.",
@@ -1474,6 +1475,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "create.busy_preview_pending": "Next",
 
   "login.tag": "Sign in",
+  "login.tag_create": "Pen name",
   "login.title": "What's your name?",
   "login.title_create": "Save this story as",
   "login.sub": "Pick any handle. No password.",

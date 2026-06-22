@@ -728,9 +728,14 @@ def test_create_entry_guest_path_explains_temporary_pen_name() -> None:
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
     assert "CREATE_GUEST_PLAN_KEYS" in login
+    assert 'isCreateEntry ? t("login.tag_create") : t("login.tag")' in login
     assert 'data-login-guest-plan="true"' in login
     assert "data-login-guest-plan-item={key}" in login
     assert 't("login.guest_plan_label")' in login
+    assert '"login.tag": "Sign in"' in strings
+    assert '"login.tag_create": "Pen name"' in strings
+    assert '"login.tag": "登录"' in strings
+    assert '"login.tag_create": "保存笔名"' in strings
     assert '"login.guest_plan_editor": "Opens the story editor without email or password."' in strings
     assert '"login.guest_plan_saved": "Saves this draft and later runs under the same pen name."' in strings
     assert '"login.guest_plan_custom": "You can still choose your own pen name when it matters."' in strings

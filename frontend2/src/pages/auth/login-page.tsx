@@ -108,7 +108,7 @@ export function LoginPage({
           transition={itemTransition}
         >
           <span className="ts-tag" style={lpStyles.kicker}>
-            {t("login.tag")}
+            {isCreateEntry ? t("login.tag_create") : t("login.tag")}
           </span>
           <h1 style={{ ...lpStyles.title, ...(compactLayout ? lpStyles.titleCompact : null) }}>
             {isCreateEntry ? t("login.title_create") : t("login.title")}
