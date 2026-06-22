@@ -5724,8 +5724,8 @@ export const ppStyles: Record<string, CSSProperties> = {
   errorInlineRetry: {
     flexShrink: 0,
     fontSize: 12,
-    padding: "6px 0 5px",
-    minHeight: 32,
+    padding: "8px 0 7px",
+    minHeight: 44,
     background: "transparent",
     borderTopWidth: 0,
     borderTopStyle: "none",

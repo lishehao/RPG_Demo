@@ -969,6 +969,8 @@ def test_play_turn_submission_has_parent_level_duplicate_guard() -> None:
     assert "advanceInFlightRef.current = false" in handle_advance
     assert "disabled={busy}" in recovery
     assert "errorInlineRetryDisabled" in recovery
+    retry_style = styles[styles.index("errorInlineRetry:") : styles.index("errorInlineRetryDisabled:")]
+    assert "minHeight: 44" in retry_style
     assert "keepRecoveryVisible" in play_page
     assert "lastFailedActionRef.current = null" in handle_advance
     assert "errorInlineRetryDisabled" in styles
@@ -1002,7 +1004,10 @@ def test_play_retry_fixture_route_is_local_only_and_reuses_player_safe_banner() 
     assert 'data-play-retry-fixture="true"' in recovery
     assert 'data-play-retry-recovery="true"' in recovery
     assert "PlayRetryRecoveryBanner" in recovery
-    assert "without advancing the story" in recovery
+    assert "without losing context" in recovery
+    assert "Same-move retries completed" in recovery
+    assert "This rehearsal keeps" not in recovery
+    assert "Retry cycles completed" not in recovery
     for forbidden in ("provider", "model", "schema", "token", "fallback", "deterministic"):
         assert forbidden not in recovery.casefold()
 

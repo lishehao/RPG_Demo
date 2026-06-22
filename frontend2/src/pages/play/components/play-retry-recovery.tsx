@@ -135,10 +135,10 @@ export function PlayRetryFailureFixture({ onBackHome }: { onBackHome: () => void
           display: "grid",
           gap: 14,
         }}
-        aria-label="Play recovery rehearsal"
+        aria-label="Play recovery preview"
       >
         <p style={{ margin: 0, color: "rgba(255,245,230,0.76)", lineHeight: 1.5 }}>
-          This rehearsal keeps the recovery state repeatable without advancing the story.
+          The scene stays in place when a move fails, so the player can retry the same action without losing context.
         </p>
         <PlayRetryRecoveryBanner
           recovery={recovery}
@@ -153,7 +153,7 @@ export function PlayRetryFailureFixture({ onBackHome }: { onBackHome: () => void
           style={{ margin: 0, color: "rgba(255,226,178,0.82)", fontSize: 12 }}
           aria-live="polite"
         >
-          {busy ? "Retry is held in place." : `Retry cycles completed: ${retryCount}`}
+          {busy ? "Retrying the same move..." : `Same-move retries completed: ${retryCount}`}
         </p>
       </section>
     </main>
