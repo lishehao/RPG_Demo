@@ -197,7 +197,12 @@ export function PortfolioPage({
             data-portfolio-source-evidence="true"
           >
             <span>Source evidence</span>
-            <p>Open the repo and system map to review code, docs, tests, and the narrow runtime path behind this demo.</p>
+            <p>
+              Open the repo and system map to review code, docs, tests, and the
+              narrow runtime path behind this demo. Before relying on public
+              links, run the public-evidence preflight; if it fails, treat the
+              local route as local-only evidence.
+            </p>
             <div>
               <a href={PUBLIC_REPO_URL} target="_blank" rel="noreferrer">GitHub repo</a>
               <a href={SYSTEM_MAP_URL} target="_blank" rel="noreferrer">System map</a>
