@@ -1271,6 +1271,9 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert 'data-gameplay-unlocked-action={unlockedClue ? "true" : undefined}' in fixture
     assert 'data-play-move-receipt="true"' in fixture
     assert 'data-gameplay-pending-impact="true"' in fixture
+    assert "const pendingPanelRef = useRef<HTMLElement | null>(null)" in fixture
+    assert 'ref={pendingPanelRef}' in fixture
+    assert 'panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" })' in fixture
     assert "Effects in motion" in fixture
     assert "Queued impact" not in fixture
     assert 'data-play-room-reacting="true"' in fixture

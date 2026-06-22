@@ -465,6 +465,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const [resolvedDeltas, setResolvedDeltas] = useState<FixtureDelta[]>([])
   const [consultedPersonId, setConsultedPersonId] = useState<string | null>(null)
   const actionAreaRef = useRef<HTMLElement | null>(null)
+  const pendingPanelRef = useRef<HTMLElement | null>(null)
   const resolvedPanelRef = useRef<HTMLElement | null>(null)
   const actions = useMemo(() => {
     if (unlockedClue) return UNLOCKED_ACTIONS
@@ -536,6 +537,17 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     }, 780)
     return () => window.clearTimeout(timer)
   }, [committed, isPending, unlockedClue])
+
+  useEffect(() => {
+    if (phase !== "pending" || !committed) return
+    const panel = pendingPanelRef.current
+    if (!panel) return
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const timer = window.setTimeout(() => {
+      panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" })
+    }, 40)
+    return () => window.clearTimeout(timer)
+  }, [committed, phase])
 
   useEffect(() => {
     if (phase !== "resolved" || !committed) return
@@ -682,7 +694,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
           ) : null}
 
           {phase === "pending" && committed ? (
-            <section style={styles.pendingStack} data-gameplay-reaction-panel="true">
+            <section ref={pendingPanelRef} style={styles.pendingStack} data-gameplay-reaction-panel="true">
               <article style={styles.receiptPanel} data-play-move-receipt="true">
                 <span style={styles.kicker}>Your move</span>
                 <strong style={styles.receiptTitle}>{committed.action.title}</strong>
