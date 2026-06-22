@@ -50,7 +50,12 @@ play / replay / ending loop,不是已经验证过的消费级游戏或大规模�
 - [打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)
 
 视频用于快速理解玩家看到的 loop;真正的申请材料证据仍然在 source、tests、
-`#/portfolio`、`#/reviewer` 和 system map 里.
+`#/portfolio`、`#/reviewer`、system map 和 engineering evidence packet 里.
+
+如果要把公开链接发给招生、推荐人或招聘 reviewer,先运行
+`python tools/portfolio_public_evidence_preflight.py`.如果它提示本地 `HEAD`
+领先 `origin/main`,或 GitHub Pages 缺少当前 marker,这些证据只能算
+local-only,直到目标分支 push、部署并重新检查通过.
 
 ## 申请 / 作品集审阅路径
 
@@ -61,8 +66,9 @@ play / replay / ending loop,不是已经验证过的消费级游戏或大规模�
 3. 从 portfolio 进入 `#/reviewer`,检查 locked seed、runtime evidence hooks、
    replay / ending path.
 4. 再读 [Current System Map](./docs/CURRENT_SYSTEM_MAP.md)、
-   [Case Study](./docs/CASE_STUDY.md) 和对应 tests,确认哪些 claim 有 source
-   evidence,哪些还只是下一步验证.
+   [Case Study](./docs/CASE_STUDY.md)、
+   [Engineering Evidence Packet](./docs/tiny-stories-engineering-evidence-packet.md)
+   和对应 tests,确认哪些 claim 有 source evidence,哪些还只是下一步验证.
 
 ---
 

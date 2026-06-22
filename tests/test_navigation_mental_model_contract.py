@@ -245,6 +245,12 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "[打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)" in readme
     assert "视频用于快速理解玩家看到的 loop" in readme
     assert "真正的申请材料证据仍然在 source、tests" in readme
+    assert "engineering evidence packet" in readme
+    assert "python tools/portfolio_public_evidence_preflight.py" in readme
+    assert "本地 `HEAD`" in readme
+    assert "GitHub Pages 缺少当前 marker" in readme
+    assert "local-only" in readme
+    assert "目标分支 push、部署并重新检查通过" in readme
     assert "## 申请 / 作品集审阅路径" in readme
     assert "`#/portfolio`" in readme
     assert "`#/reviewer`" in readme
@@ -259,6 +265,7 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "可发朋友圈" not in readme
     assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
     assert "[Case Study](./docs/CASE_STUDY.md)" in readme
+    assert "[Engineering Evidence Packet](./docs/tiny-stories-engineering-evidence-packet.md)" in readme
     assert "portfolio case study / open-source preview" in readme
     assert "consumer traction" in readme
     assert "Play 容器 + StoryBeat / ActionArea / Advisor / Ending 等模块" in readme
