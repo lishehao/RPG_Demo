@@ -1358,8 +1358,10 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
 
     assert "`#/qa/replay` fixture" in frontend_readme
     assert "chain must stay locally runnable without backend data" in frontend_readme
+    assert "do not cite them as public evidence merely because the fixture passes locally" in frontend_readme
     assert "`#/qa/replay` mounts the real ReplayPage" in code_map
     assert "same-opening restart path stays on real TemplateDetailPage / PlayPage components" in code_map
+    assert "local-only application evidence until the public-link check passes" in code_map
 
 
 def test_source_maps_use_current_story_butler_product_framing() -> None:
@@ -1466,4 +1468,6 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert 'data-story-card-kind="published-story"' not in fixture
     assert 'data-play-action-option-card="true"' not in fixture
     assert "`#/qa/home-start` populated-card-to-first-turn fixture" in frontend_readme
+    assert "do not cite them as public evidence merely because the fixture passes locally" in frontend_readme
     assert "`#/qa/home-start` mounts the real HomePage" in code_map
+    assert "local-only application evidence until the public-link check passes" in code_map

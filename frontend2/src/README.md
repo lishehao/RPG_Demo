@@ -37,7 +37,7 @@
 - Create has one explicit top-left Story Desk escape; the composer owns only story progression.
 - Published playable cards start/resume Play; starter premise doors route to Create.
 - Play/Replay may show local route crumbs, but page-level escape navigation should not be buried near action controls.
-- Local QA routes such as `#/qa/home-start` and `#/qa/replay` must mount the real page/component with deterministic data rather than duplicate the player UI; if the route exposes a local start/replay chain, that chain must stay locally runnable without backend data.
+- Local QA routes such as `#/qa/home-start` and `#/qa/replay` must mount the real page/component with deterministic data rather than duplicate the player UI; if the route exposes a local start/replay chain, that chain must stay locally runnable without backend data. Treat these routes as local-only application evidence until the public-link check passes, and do not cite them as public evidence merely because the fixture passes locally.
 - Reviewer evidence mode stays separate from normal player routes.
 
 ## Player Copy Rules

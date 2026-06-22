@@ -20,7 +20,7 @@ This map documents the current Tiny Stories product demo candidate. It is intend
   - Story Desk home/library.
   - Published playable cards start or resume Play directly.
   - Starter premise doors route to Create/Story Butler and must not look like published games.
-  - `#/qa/home-start` mounts the real HomePage with a deterministic populated Story Desk card and starts the real PlayPage first-turn surface without backend data.
+  - `#/qa/home-start` mounts the real HomePage with a deterministic populated Story Desk card and starts the real PlayPage first-turn surface without backend data; treat it as local-only application evidence until the public-link check passes.
 - `frontend2/src/pages/create/`
   - Story Butler creation loop.
   - Owns Story Butler transcript UI, prompt starters, scene-plan review, Generate handoff, and explicit visibility row.
@@ -33,7 +33,7 @@ This map documents the current Tiny Stories product demo candidate. It is intend
 - `frontend2/src/pages/replay/`
   - Result-first public replay and Story Desk return loop.
   - Replay can offer a completion CTA near the coda; page-level escape navigation still belongs in the route/header area.
-  - `#/qa/replay` mounts the real ReplayPage with deterministic completed-run data for browser evidence without backend or live generation; its same-opening restart path stays on real TemplateDetailPage / PlayPage components with fixture APIs.
+  - `#/qa/replay` mounts the real ReplayPage with deterministic completed-run data for browser evidence without backend or live generation; its same-opening restart path stays on real TemplateDetailPage / PlayPage components with fixture APIs, and remains local-only application evidence until the public-link check passes.
 - `frontend2/src/pages/world/`
   - Published template detail / role pick / direct Play entry.
   - Do not re-run Story Brief shaping for an already generated playable template.
