@@ -195,6 +195,11 @@ def format_status(status: PublicEvidenceStatus) -> str:
         "Next: push the intended branch, wait for the public page/docs to update, "
         "then rerun `python3 tools/portfolio_public_evidence_preflight.py`."
     )
+    lines.append(
+        "Application wording: use the demo video for orientation only; do not cite the current "
+        "Portfolio, Reviewer path, Story Desk, Create, Play, or Replay routes as public evidence "
+        "until this preflight passes."
+    )
     lines.append("Until this preflight passes, label the listed surfaces as local-only application evidence.")
     return "\n".join(lines)
 
