@@ -235,6 +235,41 @@
         gap: 14px;
       }
 
+      .proof-checks {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+        margin: 0 0 18px;
+        border-top: 1px solid rgba(231, 184, 93, 0.28);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .proof-check {
+        min-width: 0;
+        padding: 12px 14px 12px 0;
+        border-right: 1px solid var(--line);
+      }
+
+      .proof-check:last-child {
+        border-right: 0;
+      }
+
+      .proof-check strong {
+        display: block;
+        color: var(--gold);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .proof-check span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
       .evidence-boundary {
         margin: 18px 0 0;
         max-width: 880px;
@@ -374,6 +409,7 @@
         .hero,
         .grid,
         .audience-model__grid,
+        .proof-checks,
         .flow {
           grid-template-columns: 1fr;
         }
@@ -384,6 +420,16 @@
 
         .step::after {
           display: none;
+        }
+
+        .proof-check {
+          padding: 11px 0;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .proof-check:last-child {
+          border-bottom: 0;
         }
       }
 
@@ -510,6 +556,24 @@
 
       <section class="shell section" aria-labelledby="why-it-matters">
         <h2 id="why-it-matters">What reviewers can inspect</h2>
+        <div class="proof-checks" aria-label="Four reviewer evidence checks">
+          <div class="proof-check">
+            <strong>Playable state</strong>
+            <span>Locked seed, generated role, turn budget, assets, and first choices.</span>
+          </div>
+          <div class="proof-check">
+            <strong>Consequence</strong>
+            <span>One move should visibly change the room, assets, or next-choice pressure.</span>
+          </div>
+          <div class="proof-check">
+            <strong>Evidence limits</strong>
+            <span>Reviewer evidence stays separate from normal play and public claims need preflight.</span>
+          </div>
+          <div class="proof-check">
+            <strong>Replay artifact</strong>
+            <span>A finished run should become highlights, full read, share, and same-opening restart.</span>
+          </div>
+        </div>
         <div class="grid">
           <article class="card">
             <h3>Playable structure</h3>

@@ -284,6 +284,15 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "inspect the checked evidence path" in landing
     assert "Source evidence" in landing
     assert "What reviewers can inspect" in landing
+    assert "Four reviewer evidence checks" in landing
+    assert "Playable state" in landing
+    assert "Locked seed, generated role, turn budget, assets, and first choices." in landing
+    assert "Consequence" in landing
+    assert "One move should visibly change the room, assets, or next-choice pressure." in landing
+    assert "Evidence limits" in landing
+    assert "Reviewer evidence stays separate from normal play and public claims need preflight." in landing
+    assert "Replay artifact" in landing
+    assert "A finished run should become highlights, full read, share, and same-opening restart." in landing
     assert "What the demo proves" not in landing
     assert "docs/CURRENT_SYSTEM_MAP.md" in landing
     assert "MP4 fallback" not in landing
@@ -315,6 +324,8 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "current Portfolio, Reviewer, Story Desk, Create, Play, or Replay" in landing
     assert "routes as public evidence" in landing
     assert "deployed" in landing and "rechecked" in landing and "preflight passes" in landing
+    assert ".proof-checks" in landing
+    assert ".proof-check" in landing
     assert ".audience-model" in landing
     assert ".audience-model__grid" in landing
     assert ".evidence-boundary" in landing
