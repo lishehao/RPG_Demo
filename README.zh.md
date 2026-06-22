@@ -41,7 +41,9 @@
 2026-05-09 的 [项目暂停 memo](./docs/PROJECT_PAUSE_2026-05-09.zh.md)
 仍然是重要边界:真实用户需求、复玩、留存和自然分享没有被证明.当前英文主路径以
 [README](./README.md)、[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)
-和 [Case Study](./docs/CASE_STUDY.md) 为准.
+和 [Case Study](./docs/CASE_STUDY.md) 为准.下一层验证应按
+[真实用户测试模板](./docs/playtest_report.md) 记录:玩家是否理解剧情、是否有选择信心、
+是否看懂后果、移动端 UI 是否舒服、以及是否产生复玩/分享意愿.
 
 ## Demo
 
@@ -133,7 +135,8 @@ scene → choice → consequence → replay flow.
 
 > **Status:** portfolio case study / open-source preview.机制链路完整,但
 > **真人测试数据仍不是已证明的 consumer traction**.如果你 fork 跑起来玩了一局,
-> 反馈非常欢迎.
+> 请按 [playtest report 模板](./docs/playtest_report.md) 记录剧情理解、选择信心、
+> 反馈清晰度、移动端 UI 感受和复玩/分享意愿,不要把一次好评当作验证结论.
 
 ---
 

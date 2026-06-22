@@ -481,6 +481,12 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "typed contracts、持久化 session" not in readme[: readme.index("## 60 秒 Quickstart")]
     assert "不是已经验证过的消费级游戏或大规模用户增长案例" in readme
     assert "真实用户需求、复玩、留存和自然分享没有被证明" in readme
+    assert "[真实用户测试模板](./docs/playtest_report.md)" in readme
+    assert "玩家是否理解剧情" in readme
+    assert "是否有选择信心" in readme
+    assert "是否看懂后果" in readme
+    assert "移动端 UI 是否舒服" in readme
+    assert "是否产生复玩/分享意愿" in readme
     assert "## Demo" in readme
     assert "[观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)" in readme
     assert "[打开 MP4 备份](./docs/demo-video/tiny-stories-admissions-demo-readme.mp4)" in readme
@@ -552,6 +558,8 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "机制链路完整" in readme
     assert "机制层面成熟" not in readme
     assert "consumer traction" in readme
+    assert "playtest report 模板" in readme
+    assert "不要把一次好评当作验证结论" in readme
     assert "Play 容器 + StoryBeat / ActionArea / Advisor / Ending 等模块" in readme
     assert "play-page.tsx (~2400 行,所有 turn UI 在这)" not in readme
 
