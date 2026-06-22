@@ -160,6 +160,25 @@ def test_reviewer_launch_keeps_full_seed_secondary_to_proof_preview() -> None:
     assert ".reviewer-seed-details summary" in theme
 
 
+def test_portfolio_hero_surfaces_public_evidence_gate_before_proofbar() -> None:
+    source = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
+    theme = (ROOT / "frontend2/src/app/theme.css").read_text()
+
+    actions_idx = source.index('className="portfolio-hero__actions"')
+    gate_idx = source.index('data-portfolio-public-evidence-gate="true"')
+    review_order_idx = source.index('data-portfolio-review-order="true"')
+    proofbar_idx = source.index('className="portfolio-proofbar"')
+    source_evidence_idx = source.index('data-portfolio-source-evidence="true"')
+
+    assert actions_idx < gate_idx < review_order_idx < proofbar_idx < source_evidence_idx
+    assert "PORTFOLIO_PUBLIC_EVIDENCE_GATE" in source
+    assert "Before sending a public GitHub Pages or repository link, run the preflight" in source
+    assert "label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only" in source
+    assert "until the intended branch is pushed, deployed, and rechecked" in source
+    assert "public reviewers will not see" not in source
+    assert ".portfolio-public-evidence-gate" in theme
+
+
 def test_reviewer_seed_is_concrete_enough_to_avoid_generic_scaffold_roles() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/portfolio-data.ts").read_text()
     service = (ROOT / "rpg_backend/narrative/service.py").read_text()

@@ -68,6 +68,12 @@ const PORTFOLIO_TARGET_USER_MODEL = [
   },
 ] as const
 
+const PORTFOLIO_PUBLIC_EVIDENCE_GATE = {
+  label: "Public evidence gate",
+  detail:
+    "Before sending a public GitHub Pages or repository link, run the preflight. If it fails, label this Portfolio, Reviewer path, Story Desk, Create, Play, and Replay evidence as local-only until the intended branch is pushed, deployed, and rechecked.",
+} as const
+
 export function PortfolioPage({
   onBackHome,
   onOpenCreate,
@@ -109,6 +115,14 @@ export function PortfolioPage({
                 Launch reviewer route
               </button>
             </div>
+            <aside
+              className="portfolio-public-evidence-gate"
+              aria-label="Public evidence visibility gate"
+              data-portfolio-public-evidence-gate="true"
+            >
+              <strong>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.label}</strong>
+              <p>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.detail}</p>
+            </aside>
             <ol
               className="portfolio-review-order"
               aria-label="Recommended portfolio review order"

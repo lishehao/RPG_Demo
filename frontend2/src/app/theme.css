@@ -529,6 +529,28 @@ kbd {
   line-height: 1.45;
 }
 
+.portfolio-public-evidence-gate {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(245,200,120,0.22);
+}
+.portfolio-public-evidence-gate strong {
+  color: rgba(255,226,172,0.96);
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.portfolio-public-evidence-gate p {
+  margin: 0;
+  max-width: 620px;
+  color: rgba(244,239,230,0.66);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
 .portfolio-hero__video {
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.16);
