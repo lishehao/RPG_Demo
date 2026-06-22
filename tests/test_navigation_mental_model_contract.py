@@ -800,7 +800,12 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert "hpStyles.emptyAction" in home
     assert 'height: "clamp(118px, 18vw, 180px)"' in home
     assert 'setError(t("home.error_plaza"))' in home
-    assert '"home.empty_plaza": "No playable stories yet. Write a new opening to start your own episode, or come back when the plaza has one."' in strings
+    assert '"home.tab_plaza": "Playable stories"' in strings
+    assert '"home.tab_plaza": "可玩故事"' in strings
+    assert '"home.tab_plaza": "Plaza"' not in strings
+    assert '"home.tab_plaza": "广场"' not in strings
+    assert '"home.empty_plaza": "No playable stories yet. Write a new opening to start your own episode, or come back when more stories are available."' in strings
+    assert "come back when the plaza has one" not in strings
     assert '"home.empty_plaza": "No public stories yet. Write one for everyone to play?"' not in strings
     assert '"home.empty_plaza": "还没有可玩的故事。可以先写一个新开场，开始自己的这一集；也可以稍后回来继续选。"' in strings
     assert '"home.empty_plaza": "还没有公开作品.写一个让所有人来玩?"' not in strings
@@ -1000,13 +1005,17 @@ def test_world_owner_visibility_explains_current_reach() -> None:
     assert '"world.visibility_current": "当前：{label}"' in strings
     assert '"world.visibility_private_desc": "只有你能看到并继续测试这个故事。"' in strings
     assert '"world.visibility_unlisted_desc": "拿到链接的人可以打开并玩出自己的版本。"' in strings
-    assert '"world.visibility_public_desc": "故事会出现在广场，任何玩家都能开始一局。"' in strings
+    assert '"world.visibility_public": "公开展示"' in strings
+    assert '"world.visibility_public_desc": "故事会出现在故事入口的可玩故事列表，任何玩家都能开始一局。"' in strings
+    assert "故事会出现在广场" not in strings
     assert '"world.visibility_error_title": "这次没有改成新的可见性"' in strings
     assert '"world.visibility_error_detail": "当前设置没有变化；可以再点一次目标可见性，或先保留现在的设置。"' in strings
     assert '"world.visibility_current": "Current: {label}"' in strings
     assert '"world.visibility_private_desc": "Only you can see and keep testing this story."' in strings
     assert '"world.visibility_unlisted_desc": "People with the link can open it and play their own run."' in strings
-    assert '"world.visibility_public_desc": "The story appears in the plaza so anyone can start a run."' in strings
+    assert '"world.visibility_public": "Public on Story Desk"' in strings
+    assert '"world.visibility_public_desc": "The story appears in Story Desk\'s playable stories list so anyone can start a run."' in strings
+    assert "appears in the plaza" not in strings
     assert '"world.visibility_error_title": "Visibility did not change"' in strings
     assert '"world.visibility_error_detail": "The current setting is unchanged. Try the same visibility choice again, or keep the current setting."' in strings
 
@@ -1058,6 +1067,10 @@ def test_replay_hero_preserves_player_role_context() -> None:
     assert 'data-replay-hero-role="true"' in replay
     assert '"replay.role_meta": "扮演 {role}"' in strings
     assert '"replay.role_meta": "Played as {role}"' in strings
+    assert '"replay.cta_back_plaza": "回到故事入口"' in strings
+    assert '"replay.cta_back_plaza": "Back to Story Desk"' in strings
+    assert '"replay.cta_back_plaza": "回到广场"' not in strings
+    assert '"replay.cta_back_plaza": "Back to plaza"' not in strings
 
 
 def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:

@@ -94,7 +94,9 @@ def test_create_privacy_checkpoint_replaces_persistent_settings_footer() -> None
     assert '"create.privacy_summary_change": "Change"' in strings
     assert '"create.visibility_private_desc": "Only you can play this story."' in strings
     assert '"create.visibility_unlisted_desc": "Send the link to friends' in strings
-    assert '"create.visibility_public_desc": "Anyone can find and play your story."' in strings
+    assert '"create.visibility_public_label": "Public on Story Desk"' in strings
+    assert '"create.visibility_public_desc": "Anyone can find it from Story Desk and play their own run."' in strings
+    assert '"create.visibility_public_desc": "Anyone can find and play your story."' not in strings
     assert '"create.privacy_recorded_reply": "I’ve recorded {value}.' in strings
 
     checkpoint_start = source.index('data-create-privacy-settings="true"')
