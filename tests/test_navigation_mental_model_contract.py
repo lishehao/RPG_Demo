@@ -611,10 +611,12 @@ def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
 
     assert "Locked seed" in data
     assert "same premise for every reviewer run" in data
-    assert "12-turn cap" in data
-    assert "bounded episode budget visible in Play" in data
-    assert "4 checks" in data
+    assert "12-turn episode" in data
+    assert "bounded story budget visible in Play" in data
+    assert "12-turn cap" not in data
+    assert "4 review checks" in data
     assert "playable state, consequence, evidence limits, replay artifact" in data
+    assert "4 checks" not in data
     assert "3 checks" not in data
     assert "playable state, state change, checks boundary" not in data
     assert "playable state, state change, archived checks" not in data
