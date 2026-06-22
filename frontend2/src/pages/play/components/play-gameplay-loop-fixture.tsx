@@ -575,7 +575,7 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
     if (!panel) return
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     const timer = window.setTimeout(() => {
-      panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "end" })
+      panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" })
     }, 40)
     return () => window.clearTimeout(timer)
   }, [consultedPersonId])
@@ -620,8 +620,9 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
   const selectSuggestedAction = (action: FixtureAction) => {
     selectAction(action)
     window.setTimeout(() => {
-      actionAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }, 0)
+      const selectedCard = document.querySelector<HTMLElement>('[data-gameplay-selected-action="true"]')
+      ;(selectedCard ?? actionAreaRef.current)?.scrollIntoView({ behavior: "auto", block: "end" })
+    }, 80)
   }
 
   const collapseSelection = () => {
@@ -1028,6 +1029,22 @@ export function PlayGameplayLoopFixture({ onBackHome }: { onBackHome: () => void
                       <strong style={styles.personInlineAdviceTitle}>
                         {person.suggestedMove}
                       </strong>
+                      {consulted && consultedSuggestedAction ? (
+                        <button
+                          type="button"
+                          style={{
+                            ...styles.personInlineAdviceAction,
+                            ...(adviceArmed ? styles.personInlineAdviceActionActive : null),
+                          }}
+                          data-gameplay-person-inline-select="true"
+                          data-gameplay-person-inline-select-active={adviceArmed ? "true" : undefined}
+                          onClick={() => selectSuggestedAction(consultedSuggestedAction)}
+                        >
+                          {adviceArmed
+                            ? `${firstName(person.name)}'s move selected`
+                            : `Use ${firstName(person.name)}'s move`}
+                        </button>
+                      ) : null}
                     </span>
                   ) : null}
                   </article>
@@ -1781,6 +1798,21 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     lineHeight: 1.25,
     overflowWrap: "anywhere",
+  },
+  personInlineAdviceAction: {
+    border: "1px solid rgba(229,190,124,0.28)",
+    borderRadius: 999,
+    background: "rgba(229,190,124,0.10)",
+    color: actionPalette.ivoryText,
+    fontWeight: 820,
+    fontSize: 11.5,
+    padding: "5px 9px",
+    cursor: "pointer",
+  },
+  personInlineAdviceActionActive: {
+    border: "1px solid rgba(92,196,137,0.42)",
+    background: "rgba(92,196,137,0.15)",
+    color: "rgba(206,248,222,0.96)",
   },
   personAdvice: {
     border: "1px solid rgba(229,190,124,0.18)",

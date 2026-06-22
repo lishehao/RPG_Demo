@@ -1220,10 +1220,17 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "Not found yet" not in fixture
     assert "consultedPersonId" in fixture
     assert "setConsultedPersonId(person.id)" in fixture
+    assert "const personAdviceRef = useRef<HTMLElement | null>(null)" in fixture
+    assert 'panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" })' in fixture
     assert 'data-gameplay-person-consulted={consulted ? "true" : undefined}' in fixture
     assert 'data-gameplay-person-inline-advice="true"' in fixture
-    assert "`Use ${firstName(consultedPerson.name)}'s move`" in fixture
-    assert "`${firstName(consultedPerson.name)}'s move selected`" in fixture
+    assert 'data-gameplay-person-inline-select="true"' in fixture
+    assert 'data-gameplay-person-inline-select-active={adviceArmed ? "true" : undefined}' in fixture
+    assert "personInlineAdviceAction" in fixture
+    assert "personInlineAdviceActionActive" in fixture
+    assert "selectSuggestedAction(consultedSuggestedAction)" in fixture
+    assert "`Use ${firstName(person.name)}'s move`" in fixture
+    assert "`${firstName(person.name)}'s move selected`" in fixture
     assert "Select this move" not in fixture
     assert "Suggestion selected" not in fixture
     assert "personInlineAdvice" in fixture
@@ -1256,10 +1263,12 @@ def test_gameplay_loop_fixture_proves_typed_state_loop_without_live_calls() -> N
     assert "const actionAreaRef = useRef<HTMLElement | null>(null)" in fixture
     assert "const personAdviceRef = useRef<HTMLElement | null>(null)" in fixture
     assert "if (!consultedPersonId || window.innerWidth > 640) return" in fixture
-    assert 'panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "end" })' in fixture
+    assert 'panel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "end" })' not in fixture
     assert 'ref={personAdviceRef}' in fixture
     assert "const selectSuggestedAction = (action: FixtureAction)" in fixture
-    assert 'actionAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })' in fixture
+    assert 'const selectedCard = document.querySelector<HTMLElement>(\'[data-gameplay-selected-action="true"]\')' in fixture
+    assert '(selectedCard ?? actionAreaRef.current)?.scrollIntoView({ behavior: "auto", block: "end" })' in fixture
+    assert 'actionAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })' not in fixture
     assert 'data-gameplay-person-advice-select="true"' in fixture
     assert 'data-gameplay-person-advice-armed={adviceArmed ? "true" : undefined}' in fixture
     assert 'data-gameplay-person-advice-select-active={adviceArmed ? "true" : undefined}' in fixture
