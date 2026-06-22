@@ -119,6 +119,9 @@ export function PortfolioPage({
                 Launch reviewer route
               </button>
             </div>
+            <p className="portfolio-hero__evidence-note" data-portfolio-hero-evidence-note="true">
+              Current reviewer path is local evidence until public repo and Pages links pass preflight.
+            </p>
           </div>
           <div className="portfolio-hero__video" aria-label="Tiny Stories reviewer cut preview">
             <a

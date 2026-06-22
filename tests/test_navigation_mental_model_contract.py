@@ -109,6 +109,10 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "Watch 75s reviewer cut" in portfolio[portfolio.index("portfolio-hero__actions") : portfolio.index('data-portfolio-review-order="true"')]
     assert "portfolio-action portfolio-action--secondary" in portfolio
     assert "Launch reviewer route" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
+    assert 'data-portfolio-hero-evidence-note="true"' in portfolio
+    hero_note = portfolio[portfolio.index('data-portfolio-hero-evidence-note="true"') : portfolio.index('className="portfolio-hero__video"')]
+    assert "Current reviewer path is local evidence until public repo and Pages links pass preflight." in hero_note
+    assert ".portfolio-hero__evidence-note" in theme
     assert 'data-portfolio-review-order="true"' in portfolio
     assert "data-portfolio-review-step={item.step}" in portfolio
     video_idx = portfolio.index('className="portfolio-hero__video"')

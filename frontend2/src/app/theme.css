@@ -512,6 +512,13 @@ kbd {
   cursor: default;
   opacity: 0.52;
 }
+.portfolio-hero__evidence-note {
+  margin: 14px 0 0;
+  max-width: 520px;
+  color: rgba(244,239,230,0.62);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
 .portfolio-review-order {
   display: grid;
   grid-template-columns: 1fr;
