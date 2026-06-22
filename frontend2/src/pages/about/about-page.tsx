@@ -138,7 +138,7 @@ const aboutContentZh: AboutContent = {
           </p>
           <p style={apStyles.p}>
             普通玩家界面应该只显示剧情和选择;reviewer evidence 应该留在专门路径里,
-            用来证明 playable state、visible change 和 proof limits.
+            用来证明 playable state、一次行动后的 visible change 和 proof limits.
           </p>
         </>
       ),
@@ -226,7 +226,7 @@ const aboutContentEn: AboutContent = {
           <p style={apStyles.p}>
             Normal players should see story and decisions. Reviewer
             evidence stays on the dedicated inspection path so it can
-            prove playable state, visible change, and proof limits
+            prove playable state, visible change after a move, and proof limits
             without turning Play into a dashboard.
           </p>
         </>

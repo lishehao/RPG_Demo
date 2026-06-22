@@ -65,7 +65,8 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
     assert "not as a launched consumer service" in about
     assert "local-only evidence" in about
     assert "Do not put real secrets" in about
-    assert "playable state, visible change, and proof limits" in about
+    assert "playable state, visible change after a move, and proof limits" in about
+    assert "playable state、一次行动后的 visible change 和 proof limits" in about
     assert "作品集/申请材料证据" in about
     assert "不是已经上线的" in about
     assert "不要在故事 seed" in about
@@ -397,7 +398,7 @@ def test_portfolio_proofbar_uses_reviewer_verifiable_metrics() -> None:
     assert "12-turn cap" in data
     assert "bounded episode budget visible in Play" in data
     assert "3 proofs" in data
-    assert "playable state, visible change, proof limits" in data
+    assert "playable state, change after a move, proof limits" in data
     assert "playable state, state change, checks boundary" not in data
     assert "playable state, state change, archived checks" not in data
     assert "playable state, visible change after a move, and the proof limits" in data
