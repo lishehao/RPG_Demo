@@ -241,8 +241,11 @@ def test_home_story_tiles_render_low_information_body_with_clear_start_action() 
     body = home[home.index("function HomeTileTextBody") : home.index("function FullBleedTileImage")]
 
     assert 'data-home-tile-text-body="title-deck-action"' in body
+    assert 'data-home-tile-type-label="true"' in body
+    assert "{view.copy.typeLabel}" in body
     assert "<TileTitle" in body
     assert "editorialTileDeck" in body
+    assert "lineClampStyle(deckLines)" in body
     assert 'data-home-tile-primary-action="true"' in body
     assert 'data-home-tile-action-hint="true"' in body
     assert 'data-home-tile-start-state={isStarting ? "starting" : "idle"}' in body
@@ -250,8 +253,6 @@ def test_home_story_tiles_render_low_information_body_with_clear_start_action() 
     assert "editorialTileActionHint" in body
     assert "{view.copy.primaryAction}" in body
     assert "<Truncated" not in body
-    assert "lineClampStyle" not in body
-    assert "TileKicker" not in published
+    assert "<TileKicker" not in published
     assert "TileCommand" not in published
-    assert "view.copy.typeLabel" not in published
     assert "<HomeTileTextBody" in published

@@ -1116,13 +1116,22 @@ function HomeTileTextBody({
   isStarting: boolean
 }) {
   const tightTile = span === "notice-wide" || span === "dispatch"
+  const deckLines = compact ? 3 : isSingleRowHomeTileSpan(span) ? 2 : 3
   return (
     <span data-home-tile-text-body="title-deck-action" style={hpStyles.tileLowInfoBody}>
+      <span
+        style={{ ...hpStyles.editorialTileKicker, ...hpStyles.publishedKicker }}
+        data-home-tile-type-label="true"
+      >
+        {view.copy.typeLabel}
+      </span>
       <TileTitle span={span} compact={compact} lines={tightTile ? 2 : 3}>{view.title}</TileTitle>
       <span
+        data-home-tile-deck="true"
         style={{
           ...hpStyles.editorialTileDeck,
           ...(compact ? hpStyles.editorialTileDeckCompact : null),
+          ...lineClampStyle(deckLines),
         }}
       >
         {view.deck}
@@ -1205,6 +1214,7 @@ function TileTitle({
 }) {
   return (
     <span
+      data-home-tile-title="true"
       style={{
         ...hpStyles.editorialTileTitle,
         ...homeTileTitleStyle(span, compact),
@@ -1762,7 +1772,7 @@ const hpStyles: Record<string, CSSProperties> = {
     minHeight: 0,
     flexDirection: "column" as const,
     justifyContent: "flex-end",
-    gap: 9,
+    gap: 8,
   },
   editorialTileAction: {
     width: "fit-content",

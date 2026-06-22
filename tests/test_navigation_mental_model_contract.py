@@ -1123,7 +1123,11 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert 'data-story-card-kind="published-story"' in template
     assert 'data-home-tile-span={span}' in template
     assert "displayView.copy.primaryAction" in template
-    assert "view.copy.typeLabel" not in template
+    assert 'data-home-tile-type-label="true"' in template
+    assert "{view.copy.typeLabel}" in template
+    assert 'data-home-tile-title="true"' in template
+    assert 'data-home-tile-deck="true"' in template
+    assert "deckLines = compact ? 3 : isSingleRowHomeTileSpan(span) ? 2 : 3" in template
     assert 'data-home-tile-text-body="title-deck-action"' in home
     assert "minHeight: 300" in home
     assert "fontSize: 44" in home
