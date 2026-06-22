@@ -193,11 +193,12 @@ export function ReviewerPage({
           <p>
             A locked English demo path designed for portfolio review. It starts
             a real session, keeps the player-facing story UI intact, and opens
-            a reviewer evidence summary for playable state and consequences.
+            a reviewer evidence summary for playable state and the first
+            consequence after a move.
           </p>
           <ul
             className="reviewer-hero-proof"
-            aria-label="Reviewer proof path"
+            aria-label="Reviewer evidence path"
             data-reviewer-hero-proof-strip="true"
           >
             {REVIEWER_HERO_PROOF_POINTS.map((item) => (

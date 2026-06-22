@@ -136,7 +136,7 @@ def test_reviewer_launch_enters_reviewer_mode_play_evidence_path() -> None:
     assert "<RuntimeInspector" in play_page
 
 
-def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
+def test_reviewer_launch_previews_runtime_evidence_points() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
@@ -160,7 +160,11 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "Public evidence boundary: inspect the current local build here" in source
     assert "application links, cite this route only after Portfolio preflight" in source
     assert "keeps the player-facing story UI intact" in source
-    assert "playable state and consequences" in source
+    assert "playable state and the first" in source
+    assert "consequence after a move" in source
+    assert 'aria-label="Reviewer evidence path"' in source
+    assert "Reviewer proof path" not in source
+    assert "playable state and consequences" not in source
     assert "Korean-webtoon visual language" not in source
     assert "Start reviewer run" in source
     assert "Write your own story" in source

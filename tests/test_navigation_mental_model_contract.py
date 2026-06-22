@@ -591,6 +591,11 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "Missing singer, live awards stream, sponsor pressure" in reviewer
     assert "Prepares a temporary reviewer session when the demo needs one" in reviewer
     assert "evidence summary reviewers inspect beside play" in reviewer
+    assert "playable state and the first" in reviewer
+    assert "consequence after a move" in reviewer
+    assert 'aria-label="Reviewer evidence path"' in reviewer
+    assert "Reviewer proof path" not in reviewer
+    assert "playable state and consequences" not in reviewer
     assert "reviewer-only evidence summary beside the normal story UI" in reviewer
     assert 'data-reviewer-local-evidence-note="true"' in reviewer
     assert "Public evidence boundary: inspect the current local build here" in reviewer
