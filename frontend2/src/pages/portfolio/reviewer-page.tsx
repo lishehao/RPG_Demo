@@ -45,12 +45,12 @@ const REVIEWER_EVIDENCE_CHECKS = [
     detail: "The run opens with current next moves and turn budget, not a static transcript.",
   },
   {
-    label: "State changed",
-    detail: "The latest beat exposes character reactions and story-item consequences.",
+    label: "Consequence after one move",
+    detail: "Play one move, then verify character reactions and story-item consequences.",
   },
   {
     label: "Proof limits",
-    detail: "Live state is visible immediately; proof that is not available yet is left out instead of overclaimed.",
+    detail: "The opening proves playable setup; consequence proof waits until the run produces it.",
   },
 ] as const
 

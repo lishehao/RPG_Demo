@@ -127,11 +127,12 @@ def test_reviewer_launch_previews_runtime_evidence_proof_points() -> None:
     assert "REVIEWER_EVIDENCE_CHECKS" in source
     assert "After launch, verify" in source
     assert "Playable state" in source
-    assert "State changed" in source
-    assert "character reactions and story-item consequences" in source
+    assert "Consequence after one move" in source
+    assert "Play one move, then verify character reactions and story-item consequences" in source
     assert "Proof limits" in source
-    assert "Live state is visible immediately" in source
-    assert "proof that is not available yet is left out instead of overclaimed" in source
+    assert "The opening proves playable setup; consequence proof waits until the run produces it" in source
+    assert "Live state is visible immediately" not in source
+    assert "State changed" not in source
     assert "relationship pulse and inventory consequences" not in source
     assert "Archived checks" not in source
     assert 'data-reviewer-evidence-preview="true"' in source

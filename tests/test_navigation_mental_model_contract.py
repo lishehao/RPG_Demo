@@ -425,7 +425,9 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "evidence-enabled reviewer account" not in reviewer
     assert "inspector data" not in reviewer
     assert "Proof limits" in reviewer
-    assert "proof that is not available yet is left out instead of overclaimed" in reviewer
+    assert "Consequence after one move" in reviewer
+    assert "The opening proves playable setup; consequence proof waits until the run produces it" in reviewer
+    assert "Live state is visible immediately" not in reviewer
     assert "Checks boundary" not in reviewer
     assert "archived judge checks" not in reviewer
     launch_error_block = reviewer[
