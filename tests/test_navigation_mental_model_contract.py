@@ -1268,6 +1268,38 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "same-opening restart path stays on real TemplateDetailPage / PlayPage components" in code_map
 
 
+def test_source_maps_use_current_story_butler_product_framing() -> None:
+    code_map = (ROOT / "docs/tiny-stories-code-map.md").read_text()
+    frontend_readme = (ROOT / "frontend2/src/README.md").read_text()
+    tests_readme = (ROOT / "tests/README.md").read_text()
+    brief_design = (ROOT / "docs/story_brief_agent_cast_tension_v2.md").read_text()
+
+    assert "current Tiny Stories product demo candidate" in code_map
+    assert "Story Desk home/library" in code_map
+    assert "Starter premise doors route to Create/Story Butler" in code_map
+    assert "Story Butler creation loop" in code_map
+    assert "scene-plan review" in code_map
+    assert "Story Butler visual identity for active Create flow" in code_map
+
+    assert "Story Butler creation flow and player-facing scene plan review" in frontend_readme
+    assert "current Tiny Stories Story Butler -> Play product loop" in tests_readme
+    assert "player-facing card should read as a scene plan" in brief_design
+
+    for stale_copy in (
+        "current Tiny Stories Korean webtoon demo candidate",
+        "Korean webtoon home/library",
+        "Create/Agent Chat",
+        "Korean Agent Chat creation loop",
+        "Korean webtoon Agent Chat",
+        "current Tiny Stories Korean Agent Chat product loop",
+        "beta planner / draft adaptation",
+    ):
+        assert stale_copy not in code_map
+        assert stale_copy not in frontend_readme
+        assert stale_copy not in tests_readme
+        assert stale_copy not in brief_design
+
+
 def test_home_story_entries_are_generated_playable_template_objects() -> None:
     home = (ROOT / "frontend2/src/pages/home/home-page.tsx").read_text()
     fixture = (ROOT / "frontend2/src/pages/home/home-start-fixture.tsx").read_text()

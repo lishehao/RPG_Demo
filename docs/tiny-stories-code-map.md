@@ -1,6 +1,6 @@
 # Tiny Stories Code Map
 
-This map documents the current Tiny Stories Korean webtoon demo candidate. It is intended for future developers who need to understand where product behavior lives before making changes.
+This map documents the current Tiny Stories product demo candidate. It is intended for future developers who need to understand where product behavior lives before making changes.
 
 ## Active App
 
@@ -17,13 +17,13 @@ This map documents the current Tiny Stories Korean webtoon demo candidate. It is
   - App composition, route parsing, API/auth/language providers, shared theme CSS.
   - Do not add page-specific product logic here unless it is route or provider infrastructure.
 - `frontend2/src/pages/home/`
-  - Korean webtoon home/library.
+  - Story Desk home/library.
   - Published playable cards start or resume Play directly.
-  - Starter premise doors route to Create/Agent Chat and must not look like published games.
+  - Starter premise doors route to Create/Story Butler and must not look like published games.
   - `#/qa/home-start` mounts the real HomePage with a deterministic populated Story Desk card and starts the real PlayPage first-turn surface without backend data.
 - `frontend2/src/pages/create/`
-  - Korean Agent Chat creation loop.
-  - Owns Story Butler transcript UI, prompt starters, Story Brief-as-message, Generate handoff, and explicit visibility row.
+  - Story Butler creation loop.
+  - Owns Story Butler transcript UI, prompt starters, scene-plan review, Generate handoff, and explicit visibility row.
   - Story-shape settings are inferred through the Story Butler loop; do not reintroduce a default fixed Length/Difficulty/Language/Tension settings grid.
   - Current split: `create-page.tsx` container, `components/create-flow-panels.tsx` view panels, `create-options.ts`, `create-types.ts`, `create-styles.ts`, and `hooks/use-compact-layout.ts`.
 - `frontend2/src/pages/play/`
@@ -150,7 +150,7 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:<backend-port> \
 ## Do Not Touch Casually
 
 - No pre-Create login/name gate for normal writing.
-- Korean webtoon visual identity for active Create flow.
+- Story Butler visual identity for active Create flow.
 - Story Butler slot loop and agent-guided settings.
 - Published public templates must start/resume Play by default, not reopen Create.
 - Cover resolver contract: trusted `cover_image_url` wins; internal fallback/no-overlap handles absent generated covers.

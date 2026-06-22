@@ -1,6 +1,6 @@
 # Test Suite Map
 
-The test suite mixes older RPG/authoring coverage with the current Tiny Stories Korean Agent Chat product loop. Use focused suites first, then broaden when shared contracts move.
+The test suite mixes older RPG/authoring coverage with the current Tiny Stories Story Butler -> Play product loop. Use focused suites first, then broaden when shared contracts move.
 
 ## Current Product-Loop Guards
 

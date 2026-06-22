@@ -42,9 +42,9 @@ The brief card is not persisted on the template in this MVP. It is a
 pre-generation planning contract that is injected into the opening-generation
 payload when the user confirms generation from the brief.
 
-The card is intentionally labeled as a beta planner / draft adaptation. It
-should teach the user how the runtime will adapt the premise, not promise exact
-final fidelity.
+The player-facing card should read as a scene plan, not a beta planner or draft
+adaptation. It teaches the user how the story will turn the premise into a
+first playable scene, without promising exact final fidelity.
 
 ## Cast Planner
 
