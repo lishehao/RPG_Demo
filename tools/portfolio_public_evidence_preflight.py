@@ -26,6 +26,8 @@ EVIDENCE_SENSITIVE_PREFIXES = (
     "README.md",
     "README.zh.md",
     "docs/",
+    "frontend2/src/pages/home/",
+    "frontend2/src/pages/world/",
     "frontend2/src/pages/portfolio/",
     "frontend2/src/pages/play/",
     "frontend2/src/pages/replay/",

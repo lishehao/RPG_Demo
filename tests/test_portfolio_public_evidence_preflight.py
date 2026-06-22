@@ -24,6 +24,8 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
         changed_paths=(
             "README.md",
             "docs/index.html",
+            "frontend2/src/pages/home/home-page.tsx",
+            "frontend2/src/pages/world/world-detail-page.tsx",
             "frontend2/src/pages/portfolio/reviewer-page.tsx",
             "frontend2/src/pages/play/components/play-flow-panels.tsx",
             "tools/internal_note.txt",
@@ -39,6 +41,8 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     assert "Evidence-sensitive local changes not yet public" in output
     assert "- README.md" in output
     assert "- docs/index.html" in output
+    assert "- frontend2/src/pages/home/home-page.tsx" in output
+    assert "- frontend2/src/pages/world/world-detail-page.tsx" in output
     assert "- frontend2/src/pages/portfolio/reviewer-page.tsx" in output
     assert "- tools/internal_note.txt" not in output
     assert "push the intended branch" in output
@@ -99,6 +103,8 @@ def test_evidence_sensitive_path_filter_covers_portfolio_and_play_surfaces() -> 
     paths = evidence_sensitive_paths(
         (
             "docs/CURRENT_SYSTEM_MAP.md",
+            "frontend2/src/pages/home/home-page.tsx",
+            "frontend2/src/pages/world/world-detail-page.tsx",
             "frontend2/src/pages/play/components/play-flow-panels.tsx",
             "frontend2/src/pages/portfolio/portfolio-page.tsx",
             "rpg_backend/narrative/service.py",
@@ -108,6 +114,8 @@ def test_evidence_sensitive_path_filter_covers_portfolio_and_play_surfaces() -> 
 
     assert paths == (
         "docs/CURRENT_SYSTEM_MAP.md",
+        "frontend2/src/pages/home/home-page.tsx",
+        "frontend2/src/pages/world/world-detail-page.tsx",
         "frontend2/src/pages/play/components/play-flow-panels.tsx",
         "frontend2/src/pages/portfolio/portfolio-page.tsx",
         "rpg_backend/narrative/service.py",

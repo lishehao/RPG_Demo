@@ -55,7 +55,8 @@ play / replay / ending loop,不是已经验证过的消费级游戏或大规模�
 如果要把公开链接发给招生、推荐人或招聘 reviewer,先运行
 `python tools/portfolio_public_evidence_preflight.py`.如果它提示本地 `HEAD`
 领先 `origin/main`,或 GitHub Pages 缺少当前 marker,这些证据只能算
-local-only,直到目标分支 push、部署并重新检查通过.
+local-only.这包括 Story Desk、template detail、portfolio/reviewer 和 play
+路径的本地改动;直到目标分支 push、部署并重新检查通过,才适合作为公开申请材料证据.
 
 ## 申请 / 作品集审阅路径
 
