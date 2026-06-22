@@ -35,8 +35,8 @@
 ## 项目状态
 
 当前请把 Tiny Stories 读作 **portfolio-grade AI product-system evidence**:
-它证明的是 typed contracts、持久化 session、可检查 reviewer path、移动端可用的
-play / replay / ending loop,不是已经验证过的消费级游戏或大规模用户增长案例.
+它证明的是类型化契约、持久化游玩记录、可检查评审路径、移动端可用的
+游玩 / 回放 / 结局闭环,不是已经验证过的消费级游戏或大规模用户增长案例.
 
 2026-05-09 的 [项目暂停 memo](./docs/PROJECT_PAUSE_2026-05-09.zh.md)
 仍然是重要边界:真实用户需求、复玩、留存和自然分享没有被证明.当前英文主路径以
@@ -68,10 +68,10 @@ template 或 Story Desk 变化被截断输出藏掉.直到目标分支 push、�
 2. 本地运行后打开 `#/portfolio`,看 guided case-study surface.
 3. 从 portfolio 进入 `#/reviewer`,检查 locked seed、状态/后果证据钩子、
    replay / ending path.
-   四个检查点要保持一致:可游玩状态、一次行动后的后果、证据边界、回放 artifact.
+   四个检查点要保持一致:可游玩状态、一次行动后的后果、证据边界、回放作品.
 4. 如果需要稳定检查 Story Desk populated card 到首回合的入口体验,本地打开
    `#/qa/home-start`;这只是 local QA evidence,不要当作公开链接证据.
-5. 如果需要稳定检查 completed-run replay artifact,本地打开 `#/qa/replay`;
+5. 如果需要稳定检查已完成局的回放作品,本地打开 `#/qa/replay`;
    这只是 local QA evidence,不要当作公开链接证据.
 6. 再读 [Current System Map](./docs/CURRENT_SYSTEM_MAP.md)、
    [Case Study](./docs/CASE_STUDY.md)、
@@ -88,8 +88,8 @@ Tiny Stories 面向的是想在移动端玩一段短篇互动剧情的 story-fir
 下一步选择.
 
 这也是 UI 判断的来源:普通 Play 页面要把剧情上下文和决策上下文放近;选中的
-move 要保留"为什么现在能做这步";inner motive 要贴在已选 move 上;reviewer
-evidence 则必须留在普通玩家界面之外.
+行动要保留"为什么现在能做这步";内心动机要贴在已选行动上;评审证据则必须
+留在普通玩家界面之外.
 
 ---
 
@@ -97,12 +97,12 @@ evidence 则必须留在普通玩家界面之外.
 
 你写一句故事开头.Tiny Stories 会把它整理成一个可玩的短篇互动剧:
 角色身份、目标/资产、当前场景、少量有意义的选择、一次行动后的后果,
-以及**可复制分享的结局标签** / replay artifact.
+以及**可复制分享的结局标签** / 回放作品.
 
 > 这不是聊天 bot,不是无穷模拟,是一个**有结构、有结局、可检查证据边界**的短剧引擎.
 
 ```
-seed → Story Brief → role + scene + choices
+seed → 故事计划 → role + scene + choices
    ↓ each turn ↓
    读场景 → 选/写一次行动 → 看后果 → 带着后果进入下一步
    ↓ ending ↓
@@ -111,7 +111,7 @@ seed → Story Brief → role + scene + choices
 
 **这是给做 LLM-driven 产品的人的 portfolio case study**,不是给终端用户的 SaaS.
 申请材料价值不在于声称已经有 consumer traction,而在于可运行的 player loop、
-typed contracts、持久化 session、reviewer evidence 和 replay artifact 能互相对上.
+类型化契约、持久化游玩记录、评审证据和回放作品能互相对上.
 读懂这个 repo 你能拿到的:结构化 prompt design、scheduler-driven LLM control
 和跨层契约设计这一套实战 pattern.
 
@@ -120,11 +120,11 @@ typed contracts、持久化 session、reviewer evidence 和 replay artifact 能�
 ## 它是什么
 
 你写一句故事的开头(豪门年夜饭 / 颁奖礼上的爆料 / 婚礼前夜的电话…),
-系统先整理 Story Brief,再生成可选身份、目标/资产、当前场景和首轮选择.
+系统先整理故事计划,再生成可选身份、目标/资产、当前场景和首轮选择.
 
 你选一个身份进入后,每回合先读场景,再从少量选择、自由行动或内心动机里
 提交一个动作,随后看到后果和下一步菜单.后端把角色目标、leverage/inventory、
-NPC 压力、行动后果和 ending/replay 串起来;前端把这些机制翻译成移动端可读的
+人物压力、行动后果和 ending/replay 串起来;前端把这些机制翻译成移动端可读的
 scene → choice → consequence → replay flow.
 
 完局后生成结局、highlight/replay 和 branch 信息,可以复制分享链接或回到

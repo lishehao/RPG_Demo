@@ -442,6 +442,8 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "status-paused" not in readme
     assert "alpha / open-source preview" not in readme
     assert "portfolio-grade AI product-system evidence" in readme
+    assert "类型化契约、持久化游玩记录、可检查评审路径" in readme
+    assert "typed contracts、持久化 session" not in readme[: readme.index("## 60 秒 Quickstart")]
     assert "不是已经验证过的消费级游戏或大规模用户增长案例" in readme
     assert "真实用户需求、复玩、留存和自然分享没有被证明" in readme
     assert "## Demo" in readme
@@ -466,7 +468,10 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "四个检查点要保持一致" in readme
     assert "状态/后果证据钩子" in readme
     assert "runtime evidence hooks" not in readme
-    assert "可游玩状态、一次行动后的后果、证据边界、回放 artifact" in readme
+    assert "可游玩状态、一次行动后的后果、证据边界、回放作品" in readme
+    assert "可游玩状态、一次行动后的后果、证据边界、回放 artifact" not in readme
+    assert "已完成局的回放作品" in readme
+    assert "completed-run replay artifact" not in readme
     assert "local QA evidence" in readme
     assert "不要当作公开链接证据" in readme
     assert "## 目标玩家 / 内容消费模型" in readme
@@ -474,7 +479,8 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "不是空白写作工具用户、无限小说流用户或系统 dashboard 用户" in readme
     assert "先读当前场景,比较少量但有意义的选择" in readme
     assert "普通 Play 页面要把剧情上下文和决策上下文放近" in readme
-    assert "inner motive 要贴在已选 move 上" in readme
+    assert "内心动机要贴在已选行动上" in readme
+    assert "inner motive 要贴在已选 move 上" not in readme
     assert "reviewer" in readme and "普通玩家界面之外" in readme
     assert "Tiny Stories 会把它整理成一个可玩的短篇互动剧" in readme
     assert "一次行动后的后果" in readme
@@ -482,8 +488,14 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "ending + highlights/replay + reviewer 可检查证据边界" in readme
     assert "申请材料价值不在于声称已经有 consumer traction" in readme
     assert "可运行的 player loop" in readme
-    assert "typed contracts、持久化 session、reviewer evidence 和 replay artifact 能互相对上" in readme
-    assert "系统先整理 Story Brief" in readme
+    assert "类型化契约、持久化游玩记录、评审证据和回放作品能互相对上" in readme
+    assert "typed contracts、持久化 session、reviewer evidence 和 replay artifact 能互相对上" not in readme
+    assert "系统先整理故事计划" in readme
+    assert "系统先整理 Story Brief" not in readme[: readme.index("## 60 秒 Quickstart")]
+    assert "seed → 故事计划 → role + scene + choices" in readme
+    assert "replay artifact" not in readme[: readme.index("## 60 秒 Quickstart")]
+    assert "人物压力、行动后果" in readme
+    assert "NPC 压力" not in readme[: readme.index("## 60 秒 Quickstart")]
     assert "scene → choice → consequence → replay flow" in readme
     assert "具体机制和数量边界放在下面的架构章节里" in readme
     assert "可复制分享的结局标签" in readme
