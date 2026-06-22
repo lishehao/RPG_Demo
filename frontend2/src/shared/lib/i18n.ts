@@ -434,7 +434,7 @@ export const STRINGS_ZH = {
   // Play page — page chrome / loading / errors
   "play.back_home": "← 故事入口",
   "play.back_home_short": "← 故事入口",
-  "play.load_failed": "加载失败：{error}",
+  "play.load_failed": "这一局暂时没有打开。",
   "play.load_failed_title": "这一局暂时没有打开",
   "play.load_failed_detail": "回到故事入口，可以重新打开已保存的局、选别的故事，或写一个新开场。",
   "play.loading_story": "故事正在加载…",
@@ -1511,7 +1511,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
 
   "play.back_home": "← Story Desk",
   "play.back_home_short": "← Story Desk",
-  "play.load_failed": "Failed to load: {error}",
+  "play.load_failed": "This run did not open.",
   "play.load_failed_title": "This run did not open",
   "play.load_failed_detail": "Return to Story Desk to reopen saved runs, choose another story, or write a new opening.",
   "play.loading_story": "Loading the story…",

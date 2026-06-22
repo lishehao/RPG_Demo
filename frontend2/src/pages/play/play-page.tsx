@@ -912,9 +912,9 @@ export function PlayPage({
           }
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return
-        setError(friendlyError(err, t("play.error_load_story")))
+        setError(t("play.load_failed_detail"))
       })
     return () => {
       cancelled = true

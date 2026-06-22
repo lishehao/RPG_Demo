@@ -56,7 +56,13 @@ def test_play_initial_load_failure_is_story_desk_recoverable() -> None:
     assert 't("play.load_failed_title")' in play_page
     assert 't("play.load_failed_detail")' in play_page
     assert 'onClick={onBackHome}' in play_page
+    assert 'setError(t("play.load_failed_detail"))' in play_page
+    assert 'setError(friendlyError(err, t("play.error_load_story")))' not in play_page
     assert 't("play.load_failed", { error })' not in play_page
+    assert '"play.load_failed": "Failed to load: {error}"' not in strings
+    assert '"play.load_failed": "加载失败：{error}"' not in strings
+    assert '"play.load_failed": "This run did not open."' in strings
+    assert '"play.load_failed": "这一局暂时没有打开。"' in strings
     assert "loadErrorCard" in styles
     assert "loadErrorAction" in styles
     assert '"play.load_failed_title": "This run did not open"' in strings
