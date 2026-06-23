@@ -2631,7 +2631,10 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert "endingRecapSection" in styles
     assert '"play.ending_recap_title": "How this run got here"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
     assert '"play.ending_next_steps": "Next steps"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
-    assert '"play.ending_next_steps_hint": "Share the ending you reached, or replay from the same opening."' in (
+    assert '"play.ending_next_steps_hint": "Read the full story, share the ending, or replay from the same opening."' in (
+        ROOT / "frontend2/src/shared/lib/i18n.ts"
+    ).read_text()
+    assert '"play.ending_next_steps_hint": "读完整故事、分享这局的结局，或用同一个开场再走一次。"' in (
         ROOT / "frontend2/src/shared/lib/i18n.ts"
     ).read_text()
     assert '"play.ending_read_full": "Read full story"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
