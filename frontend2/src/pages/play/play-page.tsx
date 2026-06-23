@@ -1508,7 +1508,7 @@ export function PlayPage({
                 )
               }}
               onReadFullStory={() => {
-                window.location.hash = `#/replay/${sessionId}`
+                window.location.hash = `#/replay/${sessionId}?view=full`
               }}
               onPlayAgain={() => {
                 // Land on the template detail page where the user can

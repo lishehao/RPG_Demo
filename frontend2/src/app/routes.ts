@@ -12,10 +12,10 @@ export type AppRoute =
   | { name: "playLeverageFixture" }
   | { name: "playReviewerEvidenceFixture" }
   | { name: "playRetryFixture" }
-  | { name: "replayFixture" }
+  | { name: "replayFixture"; view?: "full" }
   | { name: "template"; templateId: string }
   | { name: "play"; sessionId: string; reviewer?: boolean }
-  | { name: "replay"; sessionId: string }
+  | { name: "replay"; sessionId: string; view?: "full" }
   | { name: "portfolio" }
   | { name: "reviewer" }
   | { name: "about" }
@@ -87,7 +87,9 @@ function parseRoute(hash: string): AppRoute {
     if (segments[1] === "play-leverage") return { name: "playLeverageFixture" }
     if (segments[1] === "play-reviewer-evidence") return { name: "playReviewerEvidenceFixture" }
     if (segments[1] === "play-retry") return { name: "playRetryFixture" }
-    if (segments[1] === "replay") return { name: "replayFixture" }
+    if (segments[1] === "replay") {
+      return { name: "replayFixture", view: params.get("view") === "full" ? "full" : undefined }
+    }
   }
   if (segments[0] === "template" && segments[1]) {
     return { name: "template", templateId: segments[1] }
@@ -96,7 +98,11 @@ function parseRoute(hash: string): AppRoute {
     return { name: "play", sessionId: segments[1], reviewer: params.get("reviewer") === "1" }
   }
   if (segments[0] === "replay" && segments[1]) {
-    return { name: "replay", sessionId: segments[1] }
+    return {
+      name: "replay",
+      sessionId: segments[1],
+      view: params.get("view") === "full" ? "full" : undefined,
+    }
   }
   if (segments[0] === "portfolio") {
     return { name: "portfolio" }
@@ -141,7 +147,7 @@ export function buildHash(route: AppRoute): string {
     case "playRetryFixture":
       return "#/qa/play-retry"
     case "replayFixture":
-      return "#/qa/replay"
+      return route.view === "full" ? "#/qa/replay?view=full" : "#/qa/replay"
     case "template":
       return `#/template/${route.templateId}`
     case "play":
@@ -149,7 +155,9 @@ export function buildHash(route: AppRoute): string {
         ? `#/play/${route.sessionId}?reviewer=1`
         : `#/play/${route.sessionId}`
     case "replay":
-      return `#/replay/${route.sessionId}`
+      return route.view === "full"
+        ? `#/replay/${route.sessionId}?view=full`
+        : `#/replay/${route.sessionId}`
     case "portfolio":
       return "#/portfolio"
     case "reviewer":

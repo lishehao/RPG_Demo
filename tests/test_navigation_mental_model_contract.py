@@ -1281,9 +1281,21 @@ def test_world_advisor_preview_explains_playtime_use() -> None:
 
 
 def test_replay_preview_labels_why_highlights_matter() -> None:
+    app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
     strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
 
+    assert '| { name: "replay"; sessionId: string; view?: "full" }' in routes
+    assert 'view: params.get("view") === "full" ? "full" : undefined' in routes
+    assert 'route.view === "full"' in routes
+    assert '`#/replay/${route.sessionId}?view=full`' in routes
+    assert 'initialViewMode={route.view === "full" ? "full" : "preview"}' in app
+    assert 'initialViewMode = "preview"' in replay
+    assert 'initialViewMode?: "preview" | "full"' in replay
+    assert 'useState<"preview" | "full">(initialViewMode)' in replay
+    assert 'setViewMode(initialViewMode)' in replay
+    assert "[initialViewMode, sessionId]" in replay
     assert 'data-replay-view-mode-hint="true"' in replay
     assert 't("replay.view_mode_hint")' in replay
     assert 'data-replay-full-story-note="true"' in replay
@@ -1357,18 +1369,21 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "const defaultApi = useApi()" in play
     assert "const api = apiClient ?? defaultApi" in play
 
-    assert '| { name: "replayFixture" }' in routes
+    assert '| { name: "replayFixture"; view?: "full" }' in routes
     assert "replayFixture: 1" in routes
     assert 'segments[1] === "replay"' in routes
-    assert '{ name: "replayFixture" }' in routes
-    assert 'return "#/qa/replay"' in routes
+    assert '{ name: "replayFixture", view: params.get("view") === "full" ? "full" : undefined }' in routes
+    assert 'route.view === "full" ? "#/qa/replay?view=full" : "#/qa/replay"' in routes
 
     assert 'import { ReplayFixture } from "../pages/replay/replay-fixture"' in app
     assert 'case "replayFixture"' in app
     assert "<ReplayFixture" in app
+    assert 'initialViewMode={route.view === "full" ? "full" : "preview"}' in app
     assert "onOpenTemplate={(templateId) => navigate({ name: \"template\", templateId })}" in app
 
     assert 'import { ReplayPage } from "./replay-page"' in fixture
+    assert 'initialViewMode = "preview"' in fixture
+    assert 'initialViewMode?: "preview" | "full"' in fixture
     assert 'import { TemplateDetailPage } from "../world/world-detail-page"' in fixture
     assert 'import { PlayPage } from "../play/play-page"' in fixture
     assert "QA_REPLAY" in fixture
@@ -1381,6 +1396,7 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "Replay memory -&gt; same-opening restart" in fixture
     assert "real replay page, role selection, and Play first-turn surface" in fixture
     assert "local-only application evidence until the public-link check passes" in fixture
+    assert "initialViewMode={initialViewMode}" in fixture
     assert "apiClient={qaReplayApi}" in fixture
     assert "apiClient={qaTemplateApi}" in fixture
     assert "apiClient={qaPlayApi}" in fixture

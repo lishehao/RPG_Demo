@@ -405,9 +405,11 @@ function buildQaReplayAdvance(request: NarrativeAdvanceTurnRequest): NarrativeAd
 }
 
 export function ReplayFixture({
+  initialViewMode = "preview",
   onBackHome,
   onOpenTemplate,
 }: {
+  initialViewMode?: "preview" | "full"
   onBackHome: () => void
   onOpenTemplate: (templateId: string) => void
 }) {
@@ -484,6 +486,7 @@ export function ReplayFixture({
           </section>
           <ReplayPage
             sessionId={QA_REPLAY.session_id}
+            initialViewMode={initialViewMode}
             onBackHome={onBackHome}
             onOpenTemplate={handleOpenTemplate}
             apiClient={qaReplayApi}

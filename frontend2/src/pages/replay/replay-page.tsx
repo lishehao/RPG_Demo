@@ -25,11 +25,13 @@ import {
  */
 export function ReplayPage({
   sessionId,
+  initialViewMode = "preview",
   onBackHome,
   onOpenTemplate,
   apiClient,
 }: {
   sessionId: string
+  initialViewMode?: "preview" | "full"
   onBackHome: () => void
   onOpenTemplate: (templateId: string) => void
   apiClient?: Pick<FrontendApiClient, "getNarrativePublicReplay">
@@ -46,7 +48,7 @@ export function ReplayPage({
   //   shape of the story at a glance, decide if they want to dive in.
   //   "full"    — the original 12-beat read, with skim toggle.
   // Switching is a single tap; preference is per-tab (not persisted).
-  const [viewMode, setViewMode] = useState<"preview" | "full">("preview")
+  const [viewMode, setViewMode] = useState<"preview" | "full">(initialViewMode)
   // Skim mode: collapse narrator beats to a 3-line preview by default.
   // Friends opening a 12-turn replay link don't necessarily want to
   // read all 4000 words — they want to see the shape, then expand
@@ -61,6 +63,10 @@ export function ReplayPage({
       return next
     })
   }
+
+  useEffect(() => {
+    setViewMode(initialViewMode)
+  }, [initialViewMode, sessionId])
 
   useEffect(() => {
     let cancelled = false

@@ -97,6 +97,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
     case "replayFixture":
       return (
         <ReplayFixture
+          initialViewMode={route.view === "full" ? "full" : "preview"}
           onBackHome={() => navigate({ name: "home" })}
           onOpenTemplate={(templateId) => navigate({ name: "template", templateId })}
         />
@@ -122,6 +123,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       return (
         <ReplayPage
           sessionId={route.sessionId}
+          initialViewMode={route.view === "full" ? "full" : "preview"}
           onBackHome={() => navigate({ name: "home" })}
           onOpenTemplate={(templateId) => navigate({ name: "template", templateId })}
         />

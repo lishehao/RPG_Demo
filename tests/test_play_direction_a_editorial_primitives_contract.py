@@ -2639,7 +2639,7 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     ).read_text()
     assert '"play.ending_read_full": "Read full story"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
     assert '"play.ending_read_full": "读完整故事"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
-    assert 'window.location.hash = `#/replay/${sessionId}`' in play_page
+    assert 'window.location.hash = `#/replay/${sessionId}?view=full`' in play_page
     assert 'onReadFullStory={() => {' in play_page
 
 
