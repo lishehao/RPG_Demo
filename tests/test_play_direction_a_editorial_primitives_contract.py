@@ -2188,6 +2188,12 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert 'data-play-inner-motive-panel={context === "option" ? "true" : undefined}' in panels
     assert 'data-play-inner-motive-frame={context === "option" ? "true" : undefined}' in panels
     assert 'data-play-inner-motive-writing-hint={context === "option" ? "true" : undefined}' in panels
+    assert "const diaryCount = diary.length" in panels
+    assert "const diaryNearLimit = diaryCount > 540" in panels
+    assert "maxLength={600}" in panels
+    assert 'data-play-diary-counter="true"' in panels
+    assert 'data-play-diary-counter-state={diaryNearLimit ? "near-limit" : "ok"}' in panels
+    assert "{diaryCount} / 600" in panels
     assert "isWritingOptionDiary ? null : (" in selected_confirm
     assert 'block: "nearest"' in panels
     assert 'block: "center",\n        behavior: prefersReducedMotion ? "auto" : "smooth",' not in panels[
@@ -2238,6 +2244,10 @@ def test_play_selected_action_expands_card_in_place_with_explicit_confirm() -> N
     assert "diarySubmitButton" in styles
     assert "diaryIntentFrame" in styles
     assert "diaryIntentRow" in styles
+    assert "diaryTextareaMeta" in styles
+    assert "diaryCounterChip" in styles
+    assert "diaryCounterChipWarm" in styles
+    assert 'borderRadius: 999' in styles[styles.index("diaryCounterChip:") : styles.index("diaryCounterChipWarm:")]
     assert "moveReceiptPanel" in styles
     assert "roomReactingPanel" in styles
     assert "reducedMotionTransition" in styles

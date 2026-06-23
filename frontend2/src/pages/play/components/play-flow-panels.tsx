@@ -1699,6 +1699,8 @@ export function ActionArea({
   }
   const renderDiaryEditor = (context: "leverage" | "option" | "free") => {
     const optionMotiveNeedsText = context === "option" && !diary.trim()
+    const diaryCount = diary.length
+    const diaryNearLimit = diaryCount > 540
     const diarySubmitDisabled =
       actionControlsDisabled ||
       (context === "option" && selectedOptionIndex === null) ||
@@ -1783,6 +1785,18 @@ export function ActionArea({
           rows={2}
           maxLength={600}
         />
+        <div style={ppStyles.diaryTextareaMeta}>
+          <span
+            style={{
+              ...ppStyles.diaryCounterChip,
+              ...(diaryNearLimit ? ppStyles.diaryCounterChipWarm : null),
+            }}
+            data-play-diary-counter="true"
+            data-play-diary-counter-state={diaryNearLimit ? "near-limit" : "ok"}
+          >
+            {diaryCount} / 600
+          </span>
+        </div>
         {optionMotiveNeedsText ? (
           <span
             style={ppStyles.diaryDisabledReason}
