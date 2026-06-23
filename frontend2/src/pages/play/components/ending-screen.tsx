@@ -57,6 +57,7 @@ export function EndingScreen({
   bookmarkedOrds,
   shareCopied,
   onShare,
+  onReadFullStory,
   onPlayAgain,
   onBackHome,
 }: {
@@ -67,6 +68,7 @@ export function EndingScreen({
   bookmarkedOrds: Set<number>
   shareCopied: boolean
   onShare: () => void
+  onReadFullStory: () => void
   onPlayAgain: () => void
   onBackHome: () => void
 }) {
@@ -265,6 +267,16 @@ export function EndingScreen({
                 transition={transitions.base}
               >
                 {shareCopied ? t("play.ending_share_copied") : t("play.ending_share")}
+              </motion.button>
+              <motion.button
+                data-play-ending-read-full="true"
+                style={ppStyles.endingTextAction}
+                onClick={onReadFullStory}
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={tapPress}
+              >
+                {t("play.ending_read_full")}
               </motion.button>
               {/* Replay-with-different-role — closes the loop. Without
                   this, finishing a run was a dead end; user had to nav

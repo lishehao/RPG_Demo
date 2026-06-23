@@ -118,6 +118,9 @@ export function PlayEndingFixture({ onBackHome }: { onBackHome: () => void }) {
   const markReplay = (caseId: "highlight" | "recap") => {
     setLastAction(caseId === "highlight" ? "replay-highlight" : "replay-recap")
   }
+  const markReadFull = (caseId: "highlight" | "recap") => {
+    setLastAction(caseId === "highlight" ? "read-full-highlight" : "read-full-recap")
+  }
 
   return (
     <main
@@ -154,6 +157,7 @@ export function PlayEndingFixture({ onBackHome }: { onBackHome: () => void }) {
             bookmarkedOrds={new Set([4, 6])}
             shareCopied={copiedCase === "highlight"}
             onShare={() => markShared("highlight")}
+            onReadFullStory={() => markReadFull("highlight")}
             onPlayAgain={() => markReplay("highlight")}
             onBackHome={onBackHome}
           />
@@ -167,6 +171,7 @@ export function PlayEndingFixture({ onBackHome }: { onBackHome: () => void }) {
             bookmarkedOrds={new Set()}
             shareCopied={copiedCase === "recap"}
             onShare={() => markShared("recap")}
+            onReadFullStory={() => markReadFull("recap")}
             onPlayAgain={() => markReplay("recap")}
             onBackHome={onBackHome}
           />

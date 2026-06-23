@@ -2607,6 +2607,8 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert 'data-play-ending-actions="true"' in ending_screen
     assert 'data-play-ending-next-step-label="true"' in ending_screen
     assert 'data-play-ending-next-step-hint="true"' in ending_screen
+    assert 'data-play-ending-read-full="true"' in ending_screen
+    assert "onReadFullStory" in ending_screen
     assert 'data-play-ending-illustration="true"' in ending_screen
     assert ending_screen.index("style={ppStyles.endingPassage}") < ending_screen.index('data-play-ending-actions="true"')
     assert ending_screen.index('data-play-ending-next-step-label="true"') < ending_screen.index("style={ppStyles.endingActionsRow}")
@@ -2632,6 +2634,10 @@ def test_ending_screen_prioritizes_result_text_before_illustration() -> None:
     assert '"play.ending_next_steps_hint": "Share the ending you reached, or replay from the same opening."' in (
         ROOT / "frontend2/src/shared/lib/i18n.ts"
     ).read_text()
+    assert '"play.ending_read_full": "Read full story"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    assert '"play.ending_read_full": "读完整故事"' in (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+    assert 'window.location.hash = `#/replay/${sessionId}`' in play_page
+    assert 'onReadFullStory={() => {' in play_page
 
 
 def test_play_ending_fixture_mounts_real_ending_screen() -> None:
@@ -2653,6 +2659,11 @@ def test_play_ending_fixture_mounts_real_ending_screen() -> None:
     assert 'data-play-ending-fixture-case="recap"' in fixture
     assert 'import { EndingScreen } from "./ending-screen"' in fixture
     assert fixture.count("<EndingScreen") == 2
+    assert "markReadFull" in fixture
+    assert "read-full-highlight" in fixture
+    assert "read-full-recap" in fixture
+    assert "onReadFullStory={() => markReadFull(\"highlight\")}" in fixture
+    assert "onReadFullStory={() => markReadFull(\"recap\")}" in fixture
     assert "const HIGHLIGHT_ENDING: NarrativeEnding" in fixture
     assert "const RECAP_ENDING: NarrativeEnding" in fixture
     assert "highlights: []" in fixture

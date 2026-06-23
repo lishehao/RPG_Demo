@@ -1507,6 +1507,9 @@ export function PlayPage({
                   },
                 )
               }}
+              onReadFullStory={() => {
+                window.location.hash = `#/replay/${sessionId}`
+              }}
               onPlayAgain={() => {
                 // Land on the template detail page where the user can
                 // pick a different role and start a fresh session. We

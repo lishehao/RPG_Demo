@@ -1074,6 +1074,7 @@ export const STRINGS_ZH = {
   "play.ending_next_steps": "下一步",
   "play.ending_next_steps_hint": "分享这局的结局，或用同一个开场再走一次。",
   "play.ending_share_copied": "✓ 链接已复制",
+  "play.ending_read_full": "读完整故事",
   "play.ending_share_hint": "把链接发给朋友 — 他们能玩同一个开场，看自己会走出什么结局。",
 
   // Stage labels (textual descriptions)
@@ -2147,6 +2148,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.ending_next_steps": "Next steps",
   "play.ending_next_steps_hint": "Share the ending you reached, or replay from the same opening.",
   "play.ending_share_copied": "✓ Link copied",
+  "play.ending_read_full": "Read full story",
   "play.ending_share_hint": "Send the link to a friend — they'll play the same opening and see what ending they land on.",
 
   "stage.hook": "Hook",
