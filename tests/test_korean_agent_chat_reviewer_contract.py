@@ -251,7 +251,7 @@ def test_reviewer_launch_keeps_full_seed_secondary_to_proof_preview() -> None:
     assert ".reviewer-seed-details summary" in theme
 
 
-def test_portfolio_hero_surfaces_public_evidence_gate_before_proofbar() -> None:
+def test_portfolio_hero_surfaces_review_order_and_public_gate_before_proofbar() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
 
@@ -261,7 +261,7 @@ def test_portfolio_hero_surfaces_public_evidence_gate_before_proofbar() -> None:
     proofbar_idx = source.index('className="portfolio-proofbar"')
     source_evidence_idx = source.index('data-portfolio-source-evidence="true"')
 
-    assert actions_idx < gate_idx < review_order_idx < proofbar_idx < source_evidence_idx
+    assert actions_idx < review_order_idx < gate_idx < proofbar_idx < source_evidence_idx
     assert "PORTFOLIO_PUBLIC_EVIDENCE_GATE" in source
     assert 'data-portfolio-public-evidence-gate-summary="true"' in source
     assert 'data-portfolio-public-evidence-gate-details="true"' in source

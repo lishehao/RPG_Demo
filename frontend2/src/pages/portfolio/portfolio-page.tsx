@@ -165,7 +165,7 @@ export function PortfolioPage({
               ))}
             </ul>
             <p className="portfolio-hero__evidence-note" data-portfolio-hero-evidence-note="true">
-              Use the reviewer cut for orientation only; do not cite this local build as public evidence until the public-link check passes.
+              Evidence boundary: use the reviewer cut for orientation; cite current app surfaces only after the public-link check passes.
             </p>
             <div className="portfolio-hero__actions">
               <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">
@@ -199,19 +199,6 @@ export function PortfolioPage({
             </p>
           </div>
           <div className="portfolio-hero__review" data-portfolio-hero-review-frame="true">
-            <aside
-              className="portfolio-public-evidence-gate"
-              aria-label="Public evidence visibility gate"
-              data-portfolio-public-evidence-gate="true"
-            >
-              <strong>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.label}</strong>
-              <p data-portfolio-public-evidence-gate-summary="true">{PORTFOLIO_PUBLIC_EVIDENCE_GATE.summary}</p>
-              <details data-portfolio-public-evidence-gate-details="true">
-                <summary>How to verify public links</summary>
-                <p>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.detail}</p>
-                <code>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.command}</code>
-              </details>
-            </aside>
             <ol
               className="portfolio-review-order"
               aria-label="Recommended portfolio review order"
@@ -239,6 +226,19 @@ export function PortfolioPage({
                 </li>
               ))}
             </ol>
+            <aside
+              className="portfolio-public-evidence-gate"
+              aria-label="Public evidence visibility gate"
+              data-portfolio-public-evidence-gate="true"
+            >
+              <strong>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.label}</strong>
+              <p data-portfolio-public-evidence-gate-summary="true">{PORTFOLIO_PUBLIC_EVIDENCE_GATE.summary}</p>
+              <details data-portfolio-public-evidence-gate-details="true">
+                <summary>How to verify public links</summary>
+                <p>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.detail}</p>
+                <code>{PORTFOLIO_PUBLIC_EVIDENCE_GATE.command}</code>
+              </details>
+            </aside>
           </div>
         </motion.section>
 

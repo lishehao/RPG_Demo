@@ -1932,15 +1932,15 @@ kbd {
   .portfolio-hero__actions {
     order: 5;
   }
-  .portfolio-hero__evidence-note {
+  .portfolio-hero p.portfolio-hero__evidence-note {
     order: 6;
-    margin-top: 0;
+    margin: 0;
   }
   .portfolio-hero__video {
-    order: 7;
+    order: 8;
   }
   .portfolio-hero__review {
-    order: 8;
+    order: 7;
   }
   .portfolio-hero h1,
   .reviewer-hero h1 {

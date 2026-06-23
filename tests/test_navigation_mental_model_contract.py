@@ -180,20 +180,22 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     actions_idx = portfolio.index('className="portfolio-hero__actions"')
     assert note_idx < actions_idx
     hero_note = portfolio[portfolio.index('data-portfolio-hero-evidence-note="true"') : portfolio.index('className="portfolio-hero__video"')]
-    assert "Use the reviewer cut for orientation only" in hero_note
-    assert "do not cite this local build as public evidence until the public-link check passes" in hero_note
+    assert "Evidence boundary: use the reviewer cut for orientation" in hero_note
+    assert "cite current app surfaces only after the public-link check passes" in hero_note
     assert "current local route" not in hero_note
     assert ".portfolio-hero__evidence-note" in theme
     assert 'data-portfolio-review-order="true"' in portfolio
     assert "data-portfolio-review-step={item.step}" in portfolio
     video_idx = portfolio.index('className="portfolio-hero__video"')
+    review_order_idx = portfolio.index('data-portfolio-review-order="true"')
     gate_idx = portfolio.index('data-portfolio-public-evidence-gate="true"')
-    assert portfolio.index('className="portfolio-hero__actions"') < video_idx < gate_idx
+    assert portfolio.index('className="portfolio-hero__actions"') < video_idx
     assert 'data-portfolio-hero-review-frame="true"' in portfolio
-    gate_before_order = portfolio[portfolio.index('data-portfolio-public-evidence-gate="true"') : portfolio.index('data-portfolio-review-order="true"')]
-    assert 'data-portfolio-public-evidence-gate-summary="true"' in gate_before_order
-    assert 'data-portfolio-public-evidence-gate-details="true"' in gate_before_order
-    assert "How to verify public links" in gate_before_order
+    assert review_order_idx < gate_idx
+    gate_after_order = portfolio[gate_idx: portfolio.index("</aside>", gate_idx)]
+    assert 'data-portfolio-public-evidence-gate-summary="true"' in gate_after_order
+    assert 'data-portfolio-public-evidence-gate-details="true"' in gate_after_order
+    assert "How to verify public links" in gate_after_order
     assert "PORTFOLIO_REVIEWER_CUT_POSTER" in portfolio
     assert "/portfolio/admissions-trailer-contact.jpg" in portfolio
     assert (ROOT / "frontend2/public/portfolio/admissions-trailer-contact.jpg").exists()
@@ -218,8 +220,15 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert ".portfolio-hero__content {\n    display: contents;" in mobile_portfolio
     assert ".portfolio-hero__lens {\n    order: 4;" in mobile_portfolio
     assert ".portfolio-hero__actions {\n    order: 5;" in mobile_portfolio
-    assert ".portfolio-hero__evidence-note {\n    order: 6;" in mobile_portfolio
-    assert ".portfolio-hero__video {\n    order: 7;" in mobile_portfolio
+    assert ".portfolio-hero p.portfolio-hero__evidence-note {\n    order: 6;" in mobile_portfolio
+    evidence_note_mobile = mobile_portfolio[
+        mobile_portfolio.index(".portfolio-hero p.portfolio-hero__evidence-note {") : mobile_portfolio.index(
+            "}", mobile_portfolio.index(".portfolio-hero p.portfolio-hero__evidence-note {")
+        )
+    ]
+    assert "margin: 0" in evidence_note_mobile
+    assert ".portfolio-hero__review {\n    order: 7;" in mobile_portfolio
+    assert ".portfolio-hero__video {\n    order: 8;" in mobile_portfolio
     video_link_style = theme[
         theme.index(".portfolio-video-card__links a {") : theme.index(
             "}", theme.index(".portfolio-video-card__links a {")
@@ -611,7 +620,7 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay" in portfolio
     assert "surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes" in portfolio
     assert "use the reviewer cut for orientation only" in portfolio
-    assert "do not cite this local build as public evidence until the public-link check passes" in portfolio
+    assert "cite current app surfaces only after the public-link check passes" in portfolio
     assert "label this Portfolio" not in portfolio
     assert "local route as local-only evidence" not in portfolio
     assert "GitHub repo" in portfolio
@@ -638,13 +647,20 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert ".portfolio-target-user__grid" in mobile_theme
     assert ".portfolio-hero__lens {\n    order: 4;" in mobile_theme
     assert ".portfolio-hero__actions {\n    order: 5;" in mobile_theme
-    assert ".portfolio-hero__evidence-note {\n    order: 6;" in mobile_theme
-    assert ".portfolio-hero__video {\n    order: 7;" in mobile_theme
+    assert ".portfolio-hero p.portfolio-hero__evidence-note {\n    order: 6;" in mobile_theme
+    evidence_note_mobile = mobile_theme[
+        mobile_theme.index(".portfolio-hero p.portfolio-hero__evidence-note {") : mobile_theme.index(
+            "}", mobile_theme.index(".portfolio-hero p.portfolio-hero__evidence-note {")
+        )
+    ]
+    assert "margin: 0" in evidence_note_mobile
+    assert ".portfolio-hero__review {\n    order: 7;" in mobile_theme
+    assert ".portfolio-hero__video {\n    order: 8;" in mobile_theme
     assert ".portfolio-evidence-boundary" in theme
     assert ".portfolio-evidence-boundary__grid" in theme
     assert ".portfolio-source-evidence" in theme
     assert 'data-portfolio-hero-review-frame="true"' in portfolio
-    assert portfolio.index('className="portfolio-hero__video"') < portfolio.index('data-portfolio-public-evidence-gate="true"')
+    assert portfolio.index('data-portfolio-review-order="true"') < portfolio.index('data-portfolio-public-evidence-gate="true"')
     assert ".portfolio-public-evidence-gate details" in theme
     assert ".portfolio-public-evidence-gate summary" in theme
     assert ".portfolio-public-evidence-gate code" in theme
