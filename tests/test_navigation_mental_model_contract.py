@@ -363,6 +363,14 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "act once" in hero_copy
     assert "follow the visible" in hero_copy
     assert "reviewer run then exposes" in hero_copy
+    assert "hero-evidence-note" in landing
+    hero_boundary_idx = landing.index("hero-evidence-note")
+    tags_idx = landing.index('<div class="tag-row"')
+    video_idx = landing.index('<div class="video-frame"')
+    assert hero_boundary_idx < tags_idx < video_idx
+    assert "Evidence boundary: use this video for orientation" in landing
+    assert "Cite current app" in landing
+    assert "surfaces only after the public-link check passes" in landing
     assert "portfolio-grade AI product-system evidence" in landing
     assert "not a" in landing
     assert "launched consumer game or broad adoption proof" in landing
