@@ -10,6 +10,8 @@ import {
   PIPELINE_STEPS,
   PORTFOLIO_METRICS,
   PUBLIC_REPO_URL,
+  PUBLIC_REVIEWER_DEMO_PATH,
+  PUBLIC_REVIEWER_DEMO_URL,
   REVIEWER_DEMO_ACTIONS,
   REVIEWER_DEMO_SEED,
   REVIEWER_DEMO_TITLE,
@@ -23,12 +25,12 @@ const PORTFOLIO_REVIEW_ORDER = [
   {
     step: "watch",
     title: "Watch 75s reviewer cut",
-    detail: "See the bounded product loop before opening the reviewer run.",
+    detail: "See the bounded product loop before opening the public reviewer demo.",
   },
   {
     step: "launch",
-    title: "Open reviewer run",
-    detail: "Use the Portfolio page to open the locked reviewer run and verify the generated play surface.",
+    title: "Open public reviewer demo",
+    detail: "Inspect a deterministic reviewer evidence surface without a backend or API key.",
   },
   {
     step: "story-desk-start",
@@ -56,11 +58,11 @@ const PORTFOLIO_REVIEW_ORDER = [
 const PORTFOLIO_EVIDENCE_BOUNDARY = [
   {
     label: "Public artifact",
-    detail: "Video and written case study show the intended reviewer journey and product thesis.",
+    detail: "Video, written case study, and public static reviewer demo show the intended reviewer journey and product thesis.",
   },
   {
-    label: "Checked reviewer run",
-    detail: "In the checked build, the reviewer run lets evaluators inspect playable state, consequences, and evidence hooks.",
+    label: "Public reviewer demo",
+    detail: "The public app path exposes deterministic playable-state evidence; live generation remains a local or server-backed check.",
   },
   {
     label: "Not claimed",
@@ -75,7 +77,7 @@ const PORTFOLIO_REVIEW_LENS = [
   },
   {
     label: "Reviewer run",
-    detail: "Watch the 75s cut, open the reviewer run, then inspect state and consequence evidence.",
+    detail: "Watch the 75s cut, open the public reviewer demo, then use the live backend run only when configured.",
   },
   {
     label: "Claim boundary",
@@ -104,9 +106,9 @@ const PORTFOLIO_TARGET_USER_MODEL = [
 const PORTFOLIO_PUBLIC_EVIDENCE_GATE = {
   label: "Public-link check",
   summary:
-    "Public repo and Pages links can lag this local build. If the public-link check fails, use the reviewer cut for orientation only.",
+    "Public repo, Pages shell, and static reviewer demo can lag this local build. If the public-link check fails, use the reviewer cut for orientation only.",
   detail:
-    "Before sending a public GitHub Pages or repository link, run the public-link check. If it fails, do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes.",
+    "Before sending a public GitHub Pages or repository link, run the public-link check. If it fails, do not cite the current Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes.",
   command: "python3 tools/portfolio_public_evidence_preflight.py",
 } as const
 
@@ -119,10 +121,12 @@ export function PortfolioPage({
   onBackHome,
   onOpenCreate,
   onOpenReviewer,
+  onOpenPublicDemo,
 }: {
   onBackHome: () => void
   onOpenCreate: () => void
   onOpenReviewer: () => void
+  onOpenPublicDemo: () => void
 }) {
   const [activeStep, setActiveStep] = useState(0)
   const step = PIPELINE_STEPS[activeStep]
@@ -171,8 +175,11 @@ export function PortfolioPage({
               <a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer">
                 Watch 75s reviewer cut
               </a>
+              <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenPublicDemo}>
+                Open public reviewer demo
+              </button>
               <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenReviewer}>
-                Open reviewer run
+                Try live backend reviewer run
               </button>
             </div>
           </div>
@@ -194,6 +201,8 @@ export function PortfolioPage({
               <span className="portfolio-video-card__links" data-portfolio-video-links="true">
                 <a href={YOUTUBE_DEMO_URL} target="_blank" rel="noreferrer" data-portfolio-video-link="youtube">Open on YouTube</a>
                 <span aria-hidden="true">·</span>
+                <a href={PUBLIC_REVIEWER_DEMO_URL} target="_blank" rel="noreferrer" data-portfolio-video-link="public-demo">Open public reviewer demo</a>
+                <span aria-hidden="true">·</span>
                 <a href={LOCAL_DEMO_MP4_URL} data-portfolio-video-link="mp4">Open MP4 backup</a>
               </span>
             </p>
@@ -210,7 +219,11 @@ export function PortfolioPage({
                   <div>
                     <strong>{item.title}</strong>
                     <p>{item.detail}</p>
-                    {"localHref" in item ? (
+                    {item.step === "launch" ? (
+                      <a href={PUBLIC_REVIEWER_DEMO_PATH} data-portfolio-review-public-demo="true">
+                        Open public reviewer demo
+                      </a>
+                    ) : "localHref" in item ? (
                       localQaAvailable ? (
                         <a
                           href={item.localHref}
@@ -300,14 +313,14 @@ export function PortfolioPage({
             <span>Source evidence</span>
             <p>
               Open the repo and system map to review code, docs, tests, and the
-              narrow product path behind this demo. These are public-main
-              references and may lag the current local build. Before relying on
-              public links, run the public-link check; if it fails,
-              use the reviewer cut for orientation only and do not cite the
-              current local build as public evidence until the check passes.
+              narrow product path behind this demo. The public reviewer demo is
+              deterministic and backend-free; it is a citeable surface only
+              after the public-link check passes. Live generation remains local
+              or server-backed evidence.
             </p>
             <div>
               <a href={PUBLIC_REPO_URL} target="_blank" rel="noreferrer">GitHub repo</a>
+              <a href={PUBLIC_REVIEWER_DEMO_URL} target="_blank" rel="noreferrer">Public reviewer demo</a>
               <a href={SYSTEM_MAP_URL} target="_blank" rel="noreferrer">System map</a>
               <a href={EVIDENCE_PACKET_URL} target="_blank" rel="noreferrer">Evidence packet</a>
             </div>

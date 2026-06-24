@@ -6,21 +6,31 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.error import URLError
+from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PUBLIC_PAGE_URL = "https://lishehao.github.io/RPG_Demo/"
+DEFAULT_PUBLIC_APP_URL = "https://lishehao.github.io/RPG_Demo/app/"
 PUBLIC_PAGE_MARKERS = (
     "75s reviewer cut",
+    "Public reviewer demo",
     "Reviewer run guide",
-    "open the reviewer run locally",
+    "Open public reviewer demo",
     "Source evidence",
     "What reviewers can inspect",
     "portfolio-grade AI product-system evidence",
     "Who this loop is for",
     "story-first players who want a compact",
     "not a blank writing canvas or a dashboard",
+)
+PUBLIC_APP_MARKERS = (
+    "demo/reviewer",
+    "Public reviewer demo",
+    "Static reviewer path for admissions review",
+    "The Missing Singer Broadcast",
+    "deterministic story state",
 )
 
 EVIDENCE_SENSITIVE_PREFIXES = (
@@ -63,6 +73,9 @@ class PublicEvidenceStatus:
     public_page_url: str | None = None
     public_page_missing_markers: tuple[str, ...] = ()
     public_page_error: str | None = None
+    public_app_url: str | None = None
+    public_app_missing_markers: tuple[str, ...] = ()
+    public_app_error: str | None = None
 
 
 def _run_git(args: list[str]) -> str:
@@ -108,12 +121,42 @@ def public_page_marker_status(url: str, *, timeout_seconds: float = 20.0) -> tup
     return missing, None
 
 
+def public_app_marker_status(url: str, *, timeout_seconds: float = 20.0) -> tuple[tuple[str, ...], str | None]:
+    request = Request(url, headers={"User-Agent": "TinyStoriesPortfolioPreflight/1.0"})
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:
+            charset = response.headers.get_content_charset() or "utf-8"
+            index_body = response.read().decode(charset, errors="replace")
+    except (OSError, URLError) as exc:
+        return (), f"{type(exc).__name__}: {exc}"
+
+    combined = index_body
+    asset_paths = tuple(
+        token
+        for token in index_body.replace("'", '"').split('"')
+        if "/assets/" in token and token.endswith(".js")
+    )
+    for path in asset_paths[:3]:
+        try:
+            with urlopen(
+                Request(urljoin(url, path), headers={"User-Agent": "TinyStoriesPortfolioPreflight/1.0"}),
+                timeout=timeout_seconds,
+            ) as response:
+                charset = response.headers.get_content_charset() or "utf-8"
+                combined += "\n" + response.read().decode(charset, errors="replace")
+        except (OSError, URLError) as exc:
+            return (), f"{type(exc).__name__}: {exc}"
+    missing = tuple(marker for marker in PUBLIC_APP_MARKERS if marker not in combined)
+    return missing, None
+
+
 def collect_status(
     remote: str,
     branch: str,
     *,
     skip_fetch: bool = False,
     public_page_url: str | None = DEFAULT_PUBLIC_PAGE_URL,
+    public_app_url: str | None = DEFAULT_PUBLIC_APP_URL,
 ) -> PublicEvidenceStatus:
     remote_ref = f"{remote}/{branch}"
     if not skip_fetch:
@@ -126,8 +169,12 @@ def collect_status(
     changed_paths = tuple(path for path in changed_raw.splitlines() if path)
     public_page_missing_markers: tuple[str, ...] = ()
     public_page_error: str | None = None
+    public_app_missing_markers: tuple[str, ...] = ()
+    public_app_error: str | None = None
     if public_page_url:
         public_page_missing_markers, public_page_error = public_page_marker_status(public_page_url)
+    if public_app_url:
+        public_app_missing_markers, public_app_error = public_app_marker_status(public_app_url)
     return PublicEvidenceStatus(
         head=head,
         remote_ref=remote_ref,
@@ -138,6 +185,9 @@ def collect_status(
         public_page_url=public_page_url,
         public_page_missing_markers=public_page_missing_markers,
         public_page_error=public_page_error,
+        public_app_url=public_app_url,
+        public_app_missing_markers=public_app_missing_markers,
+        public_app_error=public_app_error,
     )
 
 
@@ -145,6 +195,8 @@ def status_exit_code(status: PublicEvidenceStatus) -> int:
     if status.ahead_count != 0 or status.behind_count != 0:
         return 1
     if status.public_page_error or status.public_page_missing_markers:
+        return 1
+    if status.public_app_error or status.public_app_missing_markers:
         return 1
     return 0
 
@@ -154,7 +206,7 @@ def format_status(status: PublicEvidenceStatus) -> str:
         return (
             "Portfolio public-link check: PASS\n"
             f"Local HEAD matches {status.remote_ref} at {status.head[:7]}.\n"
-            "Public GitHub and GitHub Pages reviewers should see the same committed source evidence."
+            "Public GitHub, GitHub Pages shell, and static reviewer demo should show the same committed evidence."
         )
 
     lines = [
@@ -181,6 +233,15 @@ def format_status(status: PublicEvidenceStatus) -> str:
         lines.append(f"Deployed page {status.public_page_url} is missing current portfolio evidence markers:")
         lines.extend(f"- {marker}" for marker in status.public_page_missing_markers)
         lines.append("GitHub Pages may still be stale or not deployed from the intended branch.")
+    if status.public_app_error:
+        lines.append(
+            f"Could not verify deployed app {status.public_app_url}: {status.public_app_error}. "
+            "Do not treat the public reviewer demo as verified application evidence yet."
+        )
+    if status.public_app_missing_markers:
+        lines.append(f"Deployed app {status.public_app_url} is missing current reviewer demo markers:")
+        lines.extend(f"- {marker}" for marker in status.public_app_missing_markers)
+        lines.append("GitHub Pages app may still be stale or not built from the intended branch.")
 
     sensitive = evidence_sensitive_paths(status.changed_paths)
     if sensitive:
@@ -200,7 +261,7 @@ def format_status(status: PublicEvidenceStatus) -> str:
     )
     lines.append(
         "Application wording: use the demo video for orientation only; do not cite the current "
-        "Portfolio, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence "
+        "Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence "
         "until this public-link check passes."
     )
     lines.append("Until this public-link check passes, label the listed surfaces as local-only application evidence.")
@@ -219,6 +280,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Use the existing remote-tracking ref without fetching. Useful for offline checks.",
     )
     parser.add_argument("--public-page-url", default=DEFAULT_PUBLIC_PAGE_URL)
+    parser.add_argument("--public-app-url", default=DEFAULT_PUBLIC_APP_URL)
     parser.add_argument(
         "--skip-public-page",
         action="store_true",
@@ -234,6 +296,7 @@ def main(argv: list[str] | None = None) -> int:
         args.branch,
         skip_fetch=args.skip_fetch,
         public_page_url=None if args.skip_public_page else args.public_page_url,
+        public_app_url=None if args.skip_public_page else args.public_app_url,
     )
     print(format_status(status))
     return status_exit_code(status)

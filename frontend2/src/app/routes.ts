@@ -18,6 +18,7 @@ export type AppRoute =
   | { name: "replay"; sessionId: string; view?: "full" }
   | { name: "portfolio" }
   | { name: "reviewer" }
+  | { name: "publicReviewerDemo" }
   | { name: "about" }
 
 export type NavDirection = "forward" | "backward"
@@ -36,6 +37,7 @@ const ROUTE_DEPTH: Record<AppRoute["name"], number> = {
   replay: 1,
   portfolio: 1,
   reviewer: 1,
+  publicReviewerDemo: 1,
   playAdvisorFixture: 1,
   playActionFixture: 1,
   playEndingFixture: 1,
@@ -110,6 +112,9 @@ function parseRoute(hash: string): AppRoute {
   if (segments[0] === "reviewer") {
     return { name: "reviewer" }
   }
+  if (segments[0] === "demo" && segments[1] === "reviewer") {
+    return { name: "publicReviewerDemo" }
+  }
   if (segments[0] === "about") {
     return { name: "about" }
   }
@@ -162,6 +167,8 @@ export function buildHash(route: AppRoute): string {
       return "#/portfolio"
     case "reviewer":
       return "#/reviewer"
+    case "publicReviewerDemo":
+      return "#/demo/reviewer"
     case "about":
       return "#/about"
   }

@@ -3,6 +3,8 @@ import { useT } from "../../../shared/lib/i18n"
 import { ppStyles } from "../play-styles"
 import { RuntimeInspector } from "./runtime-inspector"
 
+const PUBLIC_REVIEWER_DEMO_STORY_TITLE = "The Missing Singer Broadcast"
+
 const REVIEWER_LAST_NARRATOR: NarrativeStoryMessage = {
   ord: 2,
   role: "narrator",
@@ -220,8 +222,15 @@ const CASE_MAP_NOTE_STYLE = {
   lineHeight: 1.35,
 } as const
 
-export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => void }) {
+export function PlayReviewerEvidenceFixture({
+  onBackHome,
+  variant = "local",
+}: {
+  onBackHome: () => void
+  variant?: "local" | "public"
+}) {
   const t = useT()
+  const publicMode = variant === "public"
 
   return (
     <main
@@ -232,6 +241,7 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
         gap: 24,
       }}
       data-play-reviewer-evidence-fixture="true"
+      data-play-reviewer-evidence-fixture-variant={variant}
     >
       <button
         type="button"
@@ -249,12 +259,22 @@ export function PlayReviewerEvidenceFixture({ onBackHome }: { onBackHome: () => 
         aria-label="Reviewer evidence check"
       >
         <div style={INTRO_STYLE} data-play-reviewer-evidence-fixture-intro="true">
-          <span style={INTRO_KICKER_STYLE}>Local reviewer evidence check</span>
-          <strong style={INTRO_TITLE_STYLE}>Evidence drawer for application review.</strong>
+          <span style={INTRO_KICKER_STYLE}>
+            {publicMode ? "Public reviewer demo" : "Local reviewer evidence check"}
+          </span>
+          <strong style={INTRO_TITLE_STYLE}>
+            {publicMode ? "Static reviewer path for admissions review." : "Evidence drawer for application review."}
+          </strong>
           <p style={INTRO_COPY_STYLE}>
-            Fresh live evidence appears first; archived checks appear second. Use this for application review evidence;
-            cite public claims only after the public-link check passes.
+            {publicMode
+              ? "This public GitHub Pages demo uses a deterministic story state: no API key, no live backend, and no generated claim beyond the source/test evidence linked from the repo."
+              : "Fresh live evidence appears first; archived checks appear second. Use this for application review evidence; cite public claims only after the public-link check passes."}
           </p>
+          {publicMode ? (
+            <p style={INTRO_COPY_STYLE} data-play-reviewer-evidence-public-title="true">
+              Reviewer seed: {PUBLIC_REVIEWER_DEMO_STORY_TITLE}
+            </p>
+          ) : null}
           <div style={CASE_MAP_STYLE} data-play-reviewer-evidence-fixture-case-map="true">
             <span style={CASE_MAP_ITEM_STYLE}>
               <strong style={CASE_MAP_LABEL_STYLE}>1. Fresh evidence limit</strong>

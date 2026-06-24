@@ -507,6 +507,7 @@
       <div class="brand">Tiny Stories</div>
       <nav class="nav-links" aria-label="Project links">
         <a href="https://github.com/lishehao/RPG_Demo">GitHub</a>
+        <a href="./app/#/demo/reviewer">Public reviewer demo</a>
         <a href="https://github.com/lishehao/RPG_Demo#reviewer-run">Reviewer run guide</a>
         <a href="https://github.com/lishehao/RPG_Demo#architecture">Architecture</a>
         <a href="https://github.com/lishehao/RPG_Demo/blob/main/docs/CURRENT_SYSTEM_MAP.md">System map</a>
@@ -526,9 +527,14 @@
             behind that loop.
           </p>
           <p class="hero-evidence-note">
-            Evidence boundary: use this video for orientation. Cite current app
-            surfaces only after the public-link check passes.
+            Evidence boundary: use the video for orientation, then open the
+            public reviewer demo for a backend-free playable evidence surface.
+            Cite current app surfaces only after the public-link check passes.
           </p>
+          <div class="cta-row" aria-label="Public reviewer actions">
+            <a class="play-button" href="./app/#/demo/reviewer">Open public reviewer demo</a>
+            <a class="direct-link" href="https://github.com/lishehao/RPG_Demo#reviewer-run">Reviewer run guide</a>
+          </div>
           <div class="tag-row" aria-label="Project highlights">
             <span class="tag">React 19</span>
             <span class="tag">FastAPI</span>
@@ -549,10 +555,11 @@
           <div class="video-actions">
             <span>
               <span class="video-kicker">75s reviewer cut</span>
-              Watch first, then open the reviewer run locally to inspect the checked evidence path.
+              Watch first, then open the public reviewer demo to inspect the checked evidence path.
             </span>
             <span>
               <a href="https://youtu.be/RRJ7uyjW_nA">Watch 75s demo</a>
+              <a href="./app/#/demo/reviewer">Public reviewer demo</a>
               <a href="https://github.com/lishehao/RPG_Demo#reviewer-run">Reviewer run guide</a>
               <a href="https://github.com/lishehao/RPG_Demo/blob/main/docs/CURRENT_SYSTEM_MAP.md">Source evidence</a>
             </span>
@@ -579,7 +586,7 @@
         <div class="proof-checks" aria-label="Four reviewer evidence checks">
           <div class="proof-check">
             <strong>Playable state</strong>
-            <span>Locked seed, generated role, turn budget, assets, and first choices.</span>
+            <span>Public deterministic reviewer demo exposes locked seed, role, turn budget, assets, and choices.</span>
           </div>
           <div class="proof-check">
             <strong>Consequence</strong>
@@ -620,7 +627,10 @@
         <p class="evidence-boundary">
           Boundary: this is portfolio-grade AI product-system evidence, not a
           launched consumer game or broad adoption proof. The source evidence
-          starts with the system map, reviewer run, contracts, and tests.
+          starts with the system map, public reviewer demo, reviewer run,
+          contracts, and tests. The public reviewer demo is deterministic and
+          backend-free; a live generated run requires a configured backend and
+          must keep API keys server-side.
           Before relying on public GitHub Pages or repository links, run
           <code>python3 tools/portfolio_public_evidence_preflight.py</code>;
           if it reports local commits ahead of public main or missing Pages

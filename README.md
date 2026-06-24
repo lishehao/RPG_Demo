@@ -52,6 +52,8 @@
 <p align="center">
   <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch 75s demo</strong></a>
   ·
+  <a href="https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer"><strong>Open public reviewer demo</strong></a>
+  ·
   <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">Open MP4 demo</a>
   ·
   <a href="./docs/CURRENT_SYSTEM_MAP.md">Inspect source evidence</a>
@@ -61,6 +63,8 @@ The unlisted YouTube cut is the primary reviewer watch path. The MP4 is
 the same 720p reviewer cut for environments where YouTube is blocked
 (~4.6 MB). Treat the video as orientation; the evidence lives in the
 source, tests, reviewer run, and system map.
+The public reviewer demo is a deterministic GitHub Pages app path: no API key,
+no live backend, and no generation claim beyond the committed source evidence.
 
 ---
 
@@ -70,10 +74,13 @@ Recommended order for an admissions or recruiting review:
 
 1. Watch the 75s demo to see the player-facing loop without reading the
    repository first.
-2. Run locally and open `#/portfolio`; use it as the guided case-study
-   surface.
-3. Open the reviewer run from the portfolio page and inspect the
-   locked-seed run, state/consequence evidence hooks, and replay/ending path.
+2. Open the public reviewer demo:
+   `https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer`.
+   It is the backend-free public path for inspecting the deterministic
+   reviewer evidence surface.
+3. Run locally and open `#/portfolio` for live generation; use it as the
+   guided case-study surface. Open the live backend reviewer run from the
+   portfolio page.
    The four checks to keep consistent are playable state, one-move
    consequence, evidence limits, and replay artifact.
 4. In a local build, open `#/qa/home-start` when you need deterministic
@@ -94,9 +101,10 @@ Evidence visibility gate: before sending a public GitHub Pages or repository
 link as admissions evidence, run the public-link check:
 `python3 tools/portfolio_public_evidence_preflight.py`.
 If it fails, use the demo video for orientation and label `#/portfolio`,
-`#/reviewer`, local QA routes such as `#/qa/home-start` and `#/qa/replay`,
-Story Desk, Create, Play, and Replay as local-only evidence until the intended
-branch is pushed, deployed, and rechecked.
+`#/reviewer`, the public reviewer demo, local QA routes such as
+`#/qa/home-start` and `#/qa/replay`, Story Desk, Create, Play, and Replay as
+local-only evidence until the intended branch is pushed, deployed, and
+rechecked.
 
 ---
 
@@ -318,6 +326,8 @@ npm run dev
 
 Open `http://127.0.0.1:8001`. For the curated portfolio path, open
 `http://127.0.0.1:8001/#/portfolio`.
+For the static public reviewer path, open `http://127.0.0.1:8001/#/demo/reviewer`
+locally or `https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer` after deployment.
 
 Useful checks:
 
@@ -338,10 +348,11 @@ npm run render:admissions
 Run the public-link check before sending application or recruiting links:
 `python3 tools/portfolio_public_evidence_preflight.py`. It should report that
 local `HEAD` matches `origin/main`; if it reports
-local commits ahead of the public branch, GitHub and GitHub Pages reviewers
-will not see the current Story Desk, template detail, portfolio/reviewer, or
-play evidence yet. In that state, use the demo video for orientation only; do
-not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or
+local commits ahead of the public branch, GitHub, GitHub Pages shell, and
+static reviewer demo reviewers will not see the current Story Desk, template
+detail, public reviewer demo, `#/portfolio`, `#/reviewer`, local QA routes, or
+play evidence yet. In that state, use the demo video for orientation only; do not cite the current
+Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or
 Replay surfaces as public evidence until the public-link check passes. It also summarizes
 the affected reviewer surfaces before the path list, so large local branches do
 not hide a template or Story Desk change in truncated output. It also runs a

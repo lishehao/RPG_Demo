@@ -48,6 +48,7 @@ function routeFromLoginNext(next?: string): AppRoute {
   }
   if (segments[0] === "reviewer") return { name: "reviewer" }
   if (segments[0] === "portfolio") return { name: "portfolio" }
+  if (segments[0] === "demo" && segments[1] === "reviewer") return { name: "publicReviewerDemo" }
   if (segments[0] === "about") return { name: "about" }
   return { name: "home" }
 }
@@ -134,6 +135,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
           onBackHome={() => navigate({ name: "home" })}
           onOpenCreate={() => navigate({ name: "create" })}
           onOpenReviewer={() => navigate({ name: "reviewer" })}
+          onOpenPublicDemo={() => navigate({ name: "publicReviewerDemo" })}
         />
       )
     case "reviewer":
@@ -142,9 +144,12 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
           onBackHome={() => navigate({ name: "home" })}
           onOpenCreate={() => navigate({ name: "create" })}
           onOpenPortfolio={() => navigate({ name: "portfolio" })}
+          onOpenPublicDemo={() => navigate({ name: "publicReviewerDemo" })}
           onSessionStarted={(sessionId) => navigate({ name: "play", sessionId, reviewer: true })}
         />
       )
+    case "publicReviewerDemo":
+      return <PlayReviewerEvidenceFixture variant="public" onBackHome={() => navigate({ name: "portfolio" })} />
     case "about":
       return (
         <AboutPage
@@ -173,6 +178,7 @@ function routeKey(route: AppRoute): string {
     case "about": return "about"
     case "portfolio": return "portfolio"
     case "reviewer": return "reviewer"
+    case "publicReviewerDemo": return "publicReviewerDemo"
     case "template": return `template:${route.templateId}`
     case "play": return route.reviewer ? `play:${route.sessionId}:reviewer` : `play:${route.sessionId}`
     case "replay": return `replay:${route.sessionId}`

@@ -343,7 +343,7 @@ Recommended product route:
 6. If the live ending takes too long, use an existing completed session for the ending evidence, but keep the seed/run visually consistent.
 
 For a reviewer-run capture rather than a create-flow trailer, start at
-`#/portfolio`, open the reviewer run, and keep the Missing Singer Broadcast title
+`#/portfolio`, open the public reviewer demo, and keep the Missing Singer Broadcast title
 and seed visible in the opening evidence.
 
 Recommended motion in Remotion:

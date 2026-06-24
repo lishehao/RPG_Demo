@@ -842,6 +842,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     styles = (ROOT / "frontend2/src/pages/play/play-styles.ts").read_text()
     theme = (ROOT / "frontend2/src/app/theme.css").read_text()
     app = (ROOT / "frontend2/src/app/app.tsx").read_text()
+    auth_context = (ROOT / "frontend2/src/app/auth-context.tsx").read_text()
     routes = (ROOT / "frontend2/src/app/routes.ts").read_text()
     route_map = (ROOT / "frontend2/src/api/route-map.ts").read_text()
     client = (ROOT / "frontend2/src/api/client.ts").read_text()
@@ -942,13 +943,28 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "display: none !important" in theme
     assert "playReviewerEvidenceFixture" in routes
     assert "#/qa/play-reviewer-evidence" in routes
+    assert '| { name: "publicReviewerDemo" }' in routes
+    assert 'segments[0] === "demo" && segments[1] === "reviewer"' in routes
+    assert 'return "#/demo/reviewer"' in routes
     assert "PlayReviewerEvidenceFixture" in app
+    assert 'case "publicReviewerDemo"' in app
+    assert '<PlayReviewerEvidenceFixture variant="public"' in app
     assert "data-play-reviewer-evidence-fixture=\"true\"" in reviewer_fixture
+    assert 'data-play-reviewer-evidence-fixture-variant={variant}' in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-intro="true"' in reviewer_fixture
     assert 'data-play-reviewer-evidence-fixture-case-map="true"' in reviewer_fixture
     assert 'gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"' in reviewer_fixture
     assert 'gridTemplateColumns: "repeat(auto-fit, minmax(126px, 1fr))"' not in reviewer_fixture
     assert "Local reviewer evidence check" in reviewer_fixture
+    assert "Public reviewer demo" in reviewer_fixture
+    assert "Static reviewer path for admissions review." in reviewer_fixture
+    assert "no API key, no live backend" in reviewer_fixture
+    assert "PUBLIC_REVIEWER_DEMO_STORY_TITLE" in reviewer_fixture
+    assert "The Missing Singer Broadcast" in reviewer_fixture
+    assert 'data-play-reviewer-evidence-public-title="true"' in reviewer_fixture
+    assert "shouldSkipInitialAuthRefresh" in auth_context
+    assert 'startsWith("/demo/reviewer")' in auth_context
+    assert "if (skipInitialRefresh) return" in auth_context
     assert "Evidence drawer for application review." in reviewer_fixture
     assert "Fresh live evidence appears first; archived checks appear second." in reviewer_fixture
     assert "application review evidence" in reviewer_fixture

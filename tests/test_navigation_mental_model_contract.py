@@ -134,7 +134,7 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "follow the consequence" in hero_copy
     assert "75s reviewer cut" in hero_copy
     assert "Reviewer run" in portfolio
-    assert "open the reviewer run" in portfolio
+    assert "public reviewer demo" in portfolio
     assert "portfolio-grade AI" in portfolio
     assert "product-system evidence, not a launched consumer adoption" in portfolio
     assert "claim" in portfolio
@@ -148,10 +148,13 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert 'aria-label="Portfolio proof points"' not in portfolio
     assert "PORTFOLIO_REVIEW_ORDER" in portfolio
     assert "Watch 75s reviewer cut" in portfolio
-    assert "See the bounded product loop before opening the reviewer run." in portfolio
+    assert "See the bounded product loop before opening the reviewer run." not in portfolio
+    assert "See the bounded product loop before opening the public reviewer demo." in portfolio
+    assert "Inspect a deterministic reviewer evidence surface without a backend or API key." in portfolio
     assert "opening the live reviewer path" not in portfolio
-    assert "Open reviewer run" in portfolio
-    assert "Use the Portfolio page to open the locked reviewer run" in portfolio
+    assert "Open public reviewer demo" in portfolio
+    assert "Try live backend reviewer run" in portfolio
+    assert "Use the Portfolio page to open the locked reviewer run" not in portfolio
     assert "Verify Story Desk start" in portfolio
     assert "Local build only: open a populated Story Desk card" in portfolio
     assert 'localHref: "#/qa/home-start"' in portfolio
@@ -173,7 +176,8 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert '<a className="portfolio-action portfolio-action--primary" href={YOUTUBE_DEMO_URL}' in portfolio
     assert "Watch 75s reviewer cut" in portfolio[portfolio.index("portfolio-hero__actions") : portfolio.index('data-portfolio-review-order="true"')]
     assert "portfolio-action portfolio-action--secondary" in portfolio
-    assert "Open reviewer run" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
+    assert "Open public reviewer demo" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
+    assert "Try live backend reviewer run" in portfolio[portfolio.index("portfolio-action portfolio-action--secondary") : portfolio.index('data-portfolio-review-order="true"')]
     assert "Launch reviewer route" not in portfolio
     assert 'data-portfolio-hero-evidence-note="true"' in portfolio
     note_idx = portfolio.index('data-portfolio-hero-evidence-note="true"')
@@ -268,9 +272,11 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "## Reviewer Run" in readme
     assert "## Reviewer Path" not in readme
     assert "Run locally and open `#/portfolio`" in readme
-    assert "Open the reviewer run from the portfolio page" in readme
+    assert "Open the live backend reviewer run from the" in readme
+    assert "portfolio page." in readme
     assert "Launch the reviewer route from the portfolio page" not in readme
-    assert "state/consequence evidence hooks" in readme
+    assert "playable state, one-move" in readme
+    assert "consequence, evidence limits, and replay artifact" in readme
     assert "runtime evidence hooks" not in readme
     assert "open `#/qa/replay`" in readme
     assert "deterministic evidence" in readme
@@ -302,9 +308,11 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "four checks to keep consistent" in reviewer_path
     assert "playable state, one-move" in reviewer_path
     assert "consequence, evidence limits, and replay artifact" in reviewer_path
-    assert "local QA routes such as `#/qa/home-start` and `#/qa/replay`" in reviewer_path
+    assert "local QA routes such as" in reviewer_path
+    assert "`#/qa/home-start` and `#/qa/replay`" in reviewer_path
     assert "local-only evidence" in reviewer_path
-    assert "pushed, deployed, and rechecked" in reviewer_path
+    assert "pushed, deployed, and" in reviewer_path
+    assert "rechecked" in reviewer_path
     assert "Reviewer run<br/>Portfolio + Reviewer" in readme
     assert "Reviewer path<br/>#/portfolio + #/reviewer" not in readme
     assert "Replay surfaces as public evidence until the public-link check passes" in readme
@@ -338,14 +346,15 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "Reviewer run guide" in landing
     assert "RPG_Demo#reviewer-run" in landing
     assert "RPG_Demo#reviewer-path" not in landing
-    assert "open the reviewer run locally" in landing
+    assert "open the public reviewer demo" in landing
+    assert "open the reviewer run locally" not in landing
     assert "#/portfolio -> #/reviewer" not in landing
     assert "inspect the checked evidence path" in landing
     assert "Source evidence" in landing
     assert "What reviewers can inspect" in landing
     assert "Four reviewer evidence checks" in landing
     assert "Playable state" in landing
-    assert "Locked seed, generated role, turn budget, assets, and first choices." in landing
+    assert "Public deterministic reviewer demo exposes locked seed, role, turn budget, assets, and choices." in landing
     assert "Consequence" in landing
     assert "One move should visibly change the room, assets, or next-choice pressure." in landing
     assert "Evidence limits" in landing
@@ -368,7 +377,7 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     tags_idx = landing.index('<div class="tag-row"')
     video_idx = landing.index('<div class="video-frame"')
     assert hero_boundary_idx < tags_idx < video_idx
-    assert "Evidence boundary: use this video for orientation" in landing
+    assert "Evidence boundary: use the video for orientation" in landing
     assert "Cite current app" in landing
     assert "surfaces only after the public-link check passes" in landing
     assert "portfolio-grade AI product-system evidence" in landing
@@ -382,7 +391,8 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert "UI promise" in landing
     assert "not a blank writing canvas or a dashboard" in landing
     assert "Keep story context near decisions" in landing
-    assert "system map, reviewer run, contracts, and tests" in landing
+    assert "system map, public reviewer demo, reviewer run" in landing
+    assert "contracts, and tests" in landing
     assert "python3 tools/portfolio_public_evidence_preflight.py" in landing
     assert "local commits ahead of public main" in landing
     assert "missing Pages" in landing
@@ -402,8 +412,8 @@ def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
     assert ".audience-model__grid" in landing
     assert ".evidence-boundary" in landing
     assert ".video-actions span:last-child" in landing
-    assert '<meta property="og:image" content="/og-share.jpg" />' in app_index
-    assert '<meta name="twitter:image" content="/og-share.jpg" />' in app_index
+    assert '<meta property="og:image" content="https://lishehao.github.io/RPG_Demo/images/og-share.jpg" />' in app_index
+    assert '<meta name="twitter:image" content="https://lishehao.github.io/RPG_Demo/images/og-share.jpg" />' in app_index
     assert "product UI and reviewer evidence contact sheet" in app_index
     assert 'og:image:alt" content="Tiny Stories — interactive drama in 12 turns"' not in app_index
 
@@ -607,7 +617,7 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert 'data-portfolio-evidence-boundary="true"' in portfolio
     assert 'data-portfolio-source-evidence="true"' in portfolio
     assert "Public artifact" in portfolio
-    assert "Checked reviewer run" in portfolio
+    assert "Public reviewer demo" in portfolio
     assert "Reviewer run" in portfolio
     assert "Reviewer path" not in portfolio
     assert "Live reviewer path" not in portfolio
@@ -616,16 +626,16 @@ def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
     assert "Source evidence" in portfolio
     assert "review code, docs, tests, and the" in portfolio
     assert "narrow product path behind this demo" in portfolio
-    assert "public-main" in portfolio
-    assert "may lag the current local build" in portfolio
-    assert "Public repo and Pages links can lag this local build" in portfolio
-    assert "In the checked build, the reviewer run lets evaluators inspect" in portfolio
+    assert "PUBLIC_REVIEWER_DEMO_URL" in portfolio
+    assert "can lag this local build" in portfolio
+    assert "Public repo, Pages shell, and static reviewer demo can lag this local build" in portfolio
+    assert "static reviewer demo can lag this local build" in portfolio
     assert "If the public-link check fails, use the reviewer cut for orientation only" in portfolio
-    assert "Before relying on" in portfolio
+    assert "Before sending a public GitHub Pages or repository link" in portfolio
     assert "public links" in portfolio
     assert "run the public-link check" in portfolio
     assert "python3 tools/portfolio_public_evidence_preflight.py" in portfolio
-    assert "do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay" in portfolio
+    assert "do not cite the current Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or Replay" in portfolio
     assert "surfaces as public evidence until the intended branch is pushed, deployed, rechecked, and the check passes" in portfolio
     assert "use the reviewer cut for orientation only" in portfolio
     assert "cite current app surfaces only after the public-link check passes" in portfolio
@@ -755,8 +765,8 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "Missing singer, live awards stream, sponsor pressure" in reviewer
     assert "Prepares a temporary reviewer session when the demo needs one" in reviewer
     assert "evidence summary reviewers inspect beside play" in reviewer
-    assert "playable state and the first" in reviewer
-    assert "consequence after a move" in reviewer
+    assert "current next moves and turn budget" in reviewer
+    assert "Consequence after one move" in reviewer
     assert 'aria-label="Reviewer run evidence"' in reviewer
     assert 'aria-label="Reviewer run"' in reviewer
     assert 'aria-label="Reviewer path"' not in reviewer
@@ -764,8 +774,11 @@ def test_portfolio_reviewer_seed_framing_matches_locked_seed() -> None:
     assert "playable state and consequences" not in reviewer
     assert "reviewer-only evidence summary beside the normal story UI" in reviewer
     assert 'data-reviewer-local-evidence-note="true"' in reviewer
-    assert "Public evidence boundary: local build only until the public-link" in reviewer
-    assert "check passes; otherwise use the reviewer cut" in reviewer
+    assert "Public evidence boundary: cite the public static demo only after" in reviewer
+    assert "the public-link check passes" in reviewer
+    assert "Live generation is local or" in reviewer
+    assert "configured-backend evidence" in reviewer
+    assert "never exposes API keys in the browser" in reviewer
     assert "inspect the current local build here" not in reviewer
     assert "application links, cite this reviewer run" not in reviewer
     local_note_idx = reviewer.index('data-reviewer-local-evidence-note="true"')
@@ -830,7 +843,7 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
     assert "no violence and no blackmail" in script
     assert "the Missing Singer Broadcast seed matches the" in script
     assert "reviewer run and current portfolio page" in script
-    assert "`#/portfolio`, open the reviewer run" in script
+    assert "`#/portfolio`, open the public reviewer demo" in script
     assert "story-first social drama, real product evidence" in script
     assert "Click `Send opening`" in script
     assert "Story Brief is ready" in script

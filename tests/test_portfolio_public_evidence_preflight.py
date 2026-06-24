@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tools.portfolio_public_evidence_preflight import (
+    PUBLIC_APP_MARKERS,
     PUBLIC_PAGE_MARKERS,
     PublicEvidenceStatus,
     evidence_sensitive_paths,
@@ -66,7 +67,7 @@ def test_public_evidence_preflight_flags_local_commits_not_visible_to_reviewers(
     assert "push the intended branch" in output
     assert "python3 tools/portfolio_public_evidence_preflight.py" in output
     assert "Application wording: use the demo video for orientation only" in output
-    assert "do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence" in output
+    assert "do not cite the current Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence" in output
     assert "Reviewer path" not in output
     assert "routes as public evidence" not in output
     assert "label the listed surfaces as local-only application evidence" in output
@@ -99,7 +100,7 @@ def test_public_evidence_preflight_fails_when_deployed_page_is_stale() -> None:
         behind_count=0,
         changed_paths=(),
         public_page_url="https://lishehao.github.io/RPG_Demo/",
-        public_page_missing_markers=("Reviewer run guide", "open the reviewer run locally", "Who this loop is for"),
+        public_page_missing_markers=("Reviewer run guide", "Open public reviewer demo", "Who this loop is for"),
     )
 
     output = format_status(status)
@@ -107,7 +108,7 @@ def test_public_evidence_preflight_fails_when_deployed_page_is_stale() -> None:
     assert status_exit_code(status) == 1
     assert "Deployed page https://lishehao.github.io/RPG_Demo/ is missing current portfolio evidence markers" in output
     assert "- Reviewer run guide" in output
-    assert "- open the reviewer run locally" in output
+    assert "- Open public reviewer demo" in output
     assert "- Who this loop is for" in output
     assert "GitHub Pages may still be stale" in output
     assert "python3 tools/portfolio_public_evidence_preflight.py" in output
@@ -124,14 +125,17 @@ def test_public_evidence_preflight_is_documented_for_application_links() -> None
     assert "Evidence visibility gate" in readme
     assert "before sending a public GitHub Pages or repository" in readme
     assert "If it fails, use the demo video for orientation" in readme
-    assert "`#/portfolio`,\n`#/reviewer`, local QA routes such as `#/qa/home-start` and `#/qa/replay`,\nStory Desk, Create, Play, and Replay as local-only evidence" in readme
+    assert "public reviewer demo, `#/portfolio`, `#/reviewer`, local QA routes" in readme
     assert "before sending application or recruiting links:" in readme
     assert "It should report that\nlocal `HEAD` matches `origin/main`" in readme
     assert "local `HEAD` matches `origin/main`" in readme
-    assert "GitHub and GitHub Pages reviewers" in readme
-    assert "Story Desk, template detail, portfolio/reviewer, or" in readme
+    assert "GitHub, GitHub Pages shell" in readme
+    assert "static reviewer demo reviewers" in readme
+    assert "Story Desk, template" in readme
+    assert "detail, public reviewer demo" in readme
     assert "use the demo video for orientation only" in readme
-    assert "not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or" in readme
+    assert "not cite the current" in readme
+    assert "Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or" in readme
     assert "Replay surfaces as public evidence until the public-link check passes" in readme
     assert "Reviewer path" not in readme
     assert "routes as public evidence" not in readme
@@ -198,12 +202,20 @@ def test_evidence_sensitive_surface_summary_keeps_hidden_paths_legible() -> None
 def test_public_page_markers_cover_current_reviewer_path_language() -> None:
     assert PUBLIC_PAGE_MARKERS == (
         "75s reviewer cut",
+        "Public reviewer demo",
         "Reviewer run guide",
-        "open the reviewer run locally",
+        "Open public reviewer demo",
         "Source evidence",
         "What reviewers can inspect",
         "portfolio-grade AI product-system evidence",
         "Who this loop is for",
         "story-first players who want a compact",
         "not a blank writing canvas or a dashboard",
+    )
+    assert PUBLIC_APP_MARKERS == (
+        "demo/reviewer",
+        "Public reviewer demo",
+        "Static reviewer path for admissions review",
+        "The Missing Singer Broadcast",
+        "deterministic story state",
     )

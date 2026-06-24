@@ -8,6 +8,7 @@ import {
   REVIEWER_DEMO_ACTIONS,
   REVIEWER_DEMO_SEED,
   REVIEWER_DEMO_TITLE,
+  PUBLIC_REVIEWER_DEMO_URL,
 } from "./portfolio-data"
 
 type LaunchPhase = "ready" | "auth" | "brief" | "runtime" | "opening"
@@ -96,11 +97,13 @@ export function ReviewerPage({
   onBackHome,
   onOpenCreate,
   onOpenPortfolio,
+  onOpenPublicDemo,
   onSessionStarted,
 }: {
   onBackHome: () => void
   onOpenCreate: () => void
   onOpenPortfolio: () => void
+  onOpenPublicDemo: () => void
   onSessionStarted: (sessionId: string) => void
 }) {
   const api = useApi()
@@ -197,28 +200,40 @@ export function ReviewerPage({
           <span className="ts-tag">Reviewer Mode</span>
           <h1>{REVIEWER_DEMO_TITLE}</h1>
           <p>
-            A locked English demo path designed for portfolio review. It starts
-            a real session, keeps the player-facing story UI intact, and opens
-            a reviewer evidence summary for playable state and the first
-            consequence after a move.
+            A locked English demo path designed for portfolio review. The
+            public demo opens a deterministic reviewer evidence surface without
+            a backend; the live reviewer run creates a real session when a
+            backend is configured.
           </p>
           <p className="reviewer-local-evidence-note" data-reviewer-local-evidence-note="true">
-            Public evidence boundary: local build only until the public-link
-            check passes; otherwise use the reviewer cut.
+            Public evidence boundary: cite the public static demo only after
+            the public-link check passes. Live generation is local or
+            configured-backend evidence and never exposes API keys in the browser.
           </p>
           <div className="reviewer-actions">
             <button
               className="reviewer-action reviewer-action--primary"
               type="button"
+              onClick={onOpenPublicDemo}
+              data-reviewer-public-demo-cta="true"
+            >
+              Open public reviewer demo
+            </button>
+            <button
+              className="reviewer-action reviewer-action--secondary"
+              type="button"
               onClick={() => void handleStart()}
               disabled={busy || auth.loading}
               data-reviewer-launch-cta={busy ? "starting" : "ready"}
             >
-              {busy && activeLaunchStep ? activeLaunchStep.ctaLabel : "Start reviewer run"}
+              {busy && activeLaunchStep ? activeLaunchStep.ctaLabel : "Try live backend run"}
             </button>
             <button className="reviewer-action reviewer-action--secondary" type="button" onClick={onOpenCreate} disabled={busy}>
               Write your own story
             </button>
+            <a className="reviewer-action reviewer-action--secondary" href={PUBLIC_REVIEWER_DEMO_URL} target="_blank" rel="noreferrer">
+              Open public URL
+            </a>
           </div>
           <ul
             className="reviewer-hero-proof"

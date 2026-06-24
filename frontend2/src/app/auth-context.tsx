@@ -26,11 +26,16 @@ function detectAnonymous(user: AuthUserResponse | null): boolean {
   return false
 }
 
+function shouldSkipInitialAuthRefresh(): boolean {
+  return window.location.hash.replace(/^#/, "").startsWith("/demo/reviewer")
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const api = useApi()
   const [user, setUser] = useState<AuthUserResponse | null>(null)
   const [canViewAgentTrace, setCanViewAgentTrace] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const skipInitialRefresh = shouldSkipInitialAuthRefresh()
+  const [loading, setLoading] = useState(!skipInitialRefresh)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -47,8 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [api])
 
   useEffect(() => {
+    if (skipInitialRefresh) return
     void refresh()
-  }, [refresh])
+  }, [refresh, skipInitialRefresh])
 
   const login = useCallback(
     async (username: string) => {

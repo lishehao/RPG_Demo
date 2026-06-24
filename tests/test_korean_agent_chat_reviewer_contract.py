@@ -34,7 +34,7 @@ def test_reviewer_launch_explains_async_progress_to_external_reviewers() -> None
     assert "Shaping story brief..." in source
     assert "Creating playable run..." in source
     assert "Opening evidence mode..." in source
-    assert 'activeLaunchStep ? activeLaunchStep.ctaLabel : "Start reviewer run"' in source
+    assert 'activeLaunchStep ? activeLaunchStep.ctaLabel : "Try live backend run"' in source
     assert "Launching demo..." not in source
     assert 'data-reviewer-launch-plan="true"' in source
     assert 'data-reviewer-launch-state={busy ? launchPhase : "ready"}' in source
@@ -110,7 +110,8 @@ def test_reviewer_launch_failure_keeps_recovery_story_facing() -> None:
     assert 'prefers-reduced-motion: reduce' in source
     assert "Could not launch" not in source
     assert "server" not in source.lower()
-    assert "backend" not in source.lower()
+    assert "OPENAI_API_KEY" not in source
+    assert "api_key" not in source.lower()
     error_action_start = theme.index(".reviewer-error__action {")
     error_action_end = theme.index(".reviewer-error__action--primary", error_action_start)
     error_action_styles = theme[error_action_start:error_action_end]
@@ -185,19 +186,21 @@ def test_reviewer_launch_previews_runtime_evidence_points() -> None:
     assert "Reviewer evidence stays beside Play and should be cited only after the public-link check passes." in source
     assert "data-reviewer-hero-proof-item={item.label}" in source
     assert local_note_idx < actions_idx < hero_proof_idx < evidence_idx < launch_idx
-    assert "Public evidence boundary: local build only until the public-link" in source
-    assert "check passes; otherwise use the reviewer cut" in source
+    assert "Public evidence boundary: cite the public static demo only after" in source
+    assert "the public-link check passes" in source
+    assert "Live generation is local or" in source
+    assert "configured-backend evidence" in source
+    assert "never exposes API keys in the browser" in source
     assert "inspect the current local build here" not in source
     assert "application links, cite this reviewer run" not in source
-    assert "keeps the player-facing story UI intact" in source
-    assert "playable state and the first" in source
-    assert "consequence after a move" in source
+    assert "current next moves and turn budget" in source
+    assert "Consequence after one move" in source
     assert 'aria-label="Reviewer run evidence"' in source
     assert 'aria-label="Reviewer evidence path"' not in source
     assert "Reviewer proof path" not in source
     assert "playable state and consequences" not in source
     assert "Korean-webtoon visual language" not in source
-    assert "Start reviewer run" in source
+    assert "Try live backend run" in source
     assert "Write your own story" in source
     assert "Start curated run" not in source
     assert "Use normal author flow" not in source
@@ -265,10 +268,10 @@ def test_portfolio_hero_surfaces_review_order_and_public_gate_before_proofbar() 
     assert "PORTFOLIO_PUBLIC_EVIDENCE_GATE" in source
     assert 'data-portfolio-public-evidence-gate-summary="true"' in source
     assert 'data-portfolio-public-evidence-gate-details="true"' in source
-    assert "Public repo and Pages links can lag this local build" in source
+    assert "Public repo, Pages shell, and static reviewer demo can lag this local build" in source
     assert "How to verify public links" in source
     assert "python3 tools/portfolio_public_evidence_preflight.py" in source
-    assert "do not cite the current Portfolio, Reviewer run, Story Desk, Create, Play, or Replay" in source
+    assert "do not cite the current Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or Replay" in source
     assert "until the intended branch is pushed, deployed, rechecked, and the check passes" in source
     assert "Reviewer path" not in source
     assert "Portfolio preflight" not in source
