@@ -400,6 +400,40 @@ def test_story_butler_rejects_multi_question_or_repeated_live_rows(tmp_path) -> 
     assert "gala" in response.reply.lower()
 
 
+def test_story_butler_ready_reply_hands_off_to_automatic_brief_without_a_question(tmp_path) -> None:
+    seed = (
+        "At a livestream gala, I am the singer's publicist. The singer vanishes ninety seconds before curtain "
+        "while the producer, backup dancer, and sponsor fight over a copied badge log. Keep it grounded and social."
+    )
+    deterministic = advance_story_guide_loop(None, seed, "en")
+
+    assert deterministic.status == "ready_to_brief"
+    assert "shaped it below" in deterministic.reply
+    assert "?" not in deterministic.reply
+    policy = story_butler_voice_policy(deterministic, message=seed)
+    assert policy["id"] == "brief_readiness"
+    assert "Ask no question" in str(policy["variation_instruction"])
+
+    transport = _transport(
+        {"reply": "Want me to shape the Story Brief now, or add one boundary first?"},
+        usage={"input_tokens": 42, "output_tokens": 16, "total_tokens": 58},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message=seed, language="en"),
+        owner_user_id="user_ready_handoff",
+    )
+
+    assert response.status == "ready_to_brief"
+    assert response.source == "live"
+    assert "shaped it below" in response.reply
+    assert "?" not in response.reply
+
+
 def test_story_guide_handles_me_and_who_as_contextual_short_inputs() -> None:
     first = advance_story_guide_loop(None, "Gala goes wrong.", "en")
     role_answer = advance_story_guide_loop(first.state, "Me", "en")

@@ -152,12 +152,12 @@ Use the supplied compressed_context, deterministic slot state, and selected voic
 - Anchor to current scene nouns from voice_skill.grounding_terms or the user's input when possible.
 - If the input is tiny or unclear, use the opening_scene_prompt skill and ask for a grounded scene spark; do not invent genre, cast, setting, or protagonist.
 - Ask exactly one focused next question when status is needs_field.
-- Acknowledge corrections naturally when status is ready_to_brief.
+- When status is ready_to_brief, the Story Brief has already been shaped below the reply. Confirm that handoff without asking permission or another question; mention that the player can enter the story or send one correction.
 - If voice_skill.previous_assistant_reply is present, vary the wording and avoid repeating its sentence shape.
 - Do not mention provider, model, API, JSON, schema, backend, or deterministic fallback.
 - Do not override safety/unsupported decisions from the deterministic contract.
 - Keep the reply under 45 words in English or 90 Chinese characters where practical.
-- Do not ask multiple questions. One reply, one job, one question.
+- Do not ask multiple questions. One reply, one job; ask one question only when status is needs_field.
 
 JSON shape:
 {"reply":"player-facing assistant row"}
@@ -3739,6 +3739,8 @@ def _reply_matches_voice_skill(reply: str, voice_skill: dict[str, object] | None
         return True
     skill_id = str(voice_skill.get("id") or "")
     lowered = reply.casefold()
+    if skill_id == "brief_readiness" and ("?" in reply or "？" in reply):
+        return False
     semantic_markers = {
         "opening_scene_prompt": ("scene", "where", "trouble", "open", "start", "first", "writing desk", "camera"),
         "role_focus": ("who", "you", "player", "closest", "role"),

@@ -156,11 +156,11 @@ STORY_BUTLER_VOICE_SKILLS: dict[str, dict[str, object]] = {
         ],
     },
     "brief_readiness": {
-        "job": "confirm enough story material exists and invite either Story Brief shaping or one last correction",
-        "response_shape": "short confidence line grounded in scene nouns, then one optional correction question",
-        "tone_anchors": ["playable promise", "ready to shape", "last correction"],
+        "job": "confirm enough story material exists and hand off to the Story Brief already shaped below",
+        "response_shape": "short confidence line grounded in scene nouns, then state that the Brief is ready below and corrections remain possible; ask no question",
+        "tone_anchors": ["playable promise", "brief ready", "corrections remain open"],
         "example_moves": [
-            "That has a stage, witness, and pressure. Want me to shape the Story Brief now, or add one boundary first?",
+            "That has a stage, witness, and pressure. I’ve shaped the Story Brief below; enter the story when it feels right, or send one correction.",
         ],
     },
     "meta_assistant": {
@@ -253,7 +253,11 @@ def story_butler_voice_policy(
         "previous_assistant_reply": _short_evidence(previous_assistant_reply),
         "variation_instruction": (
             "Do not repeat the previous assistant reply or sentence shape. "
-            "Use the selected skill's job and current scene nouns to phrase a fresh, concise one-question response."
+            + (
+                "Use current scene nouns to confirm the Story Brief is already ready below. Ask no question."
+                if skill_id == "brief_readiness"
+                else "Use the selected skill's job and current scene nouns to phrase a fresh, concise one-question response."
+            )
         ),
     }
 
@@ -952,9 +956,9 @@ def _self_role_reply(slot: StoryGuideSlotId | None, language: TemplateLanguage) 
 
 def _ready_reply(language: TemplateLanguage) -> str:
     return (
-        "这些已经足够整理成 Story Brief。你也可以继续补充一个边界或第一幕细节。"
+        "这些信息已经整理成下方的 Story Brief。你可以直接进入故事，也可以再发一条修正。"
         if language == "zh"
-        else "That is enough to shape a Story Brief. You can still add one boundary or first-scene detail before I do."
+        else "That is enough for a playable Story Brief. I’ve shaped it below; enter the story or send one correction."
     )
 
 
