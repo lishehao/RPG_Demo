@@ -2313,8 +2313,27 @@ def _ending_action_clause(raw: str) -> str:
 
 
 def _ending_excerpt(raw: str, limit: int) -> str:
-    text = normalize_whitespace(raw)[:limit].strip()
-    return text.rstrip(" .。!！?？,，;；:：—–-")
+    text = normalize_whitespace(raw).strip()
+    if len(text) <= limit:
+        return text.rstrip(" .。!！?？,，;；:：—–-")
+
+    complete_sentences = re.findall(r".*?[.!?。！？](?=\s|$)", text)
+    selected: list[str] = []
+    selected_length = 0
+    for sentence in complete_sentences:
+        sentence = sentence.strip()
+        separator_length = 1 if selected else 0
+        if selected_length + separator_length + len(sentence) > limit:
+            break
+        selected.append(sentence)
+        selected_length += separator_length + len(sentence)
+    if selected:
+        return " ".join(selected).rstrip(" .。!！?？,，;；:：—–-")
+
+    clipped = text[:limit]
+    if " " in clipped:
+        clipped = clipped.rsplit(" ", 1)[0]
+    return clipped.rstrip(" .。!！?？,，;；:：—–-")
 
 
 def _sentence_mid_clause(raw: str) -> str:
