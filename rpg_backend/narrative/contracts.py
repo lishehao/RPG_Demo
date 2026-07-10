@@ -612,6 +612,7 @@ class StoryBrief(BaseModel):
     display_title: str | None = Field(default=None, min_length=1, max_length=72)
     display_intro: str | None = Field(default=None, min_length=1, max_length=140)
     premise_summary: str = Field(min_length=1, max_length=260)
+    player_role: str | None = Field(default=None, max_length=160)
     genre_tone: str = Field(min_length=1, max_length=160)
     tension_profile: TensionProfile
     story_kernel: str = Field(min_length=1, max_length=220)
@@ -661,12 +662,33 @@ class StoryBriefConsistencyCheck(BaseModel):
     should_retry: bool = False
 
 
+class StoryBriefGuideContext(BaseModel):
+    """Compact Story Butler facts carried into Story Brief planning.
+
+    This is optional so older clients can keep sending only a seed. The fields
+    are already sanitized/compressed by the guide loop; Brief planning treats
+    them as confirmed input rather than asking the model to rediscover them
+    from an accumulated chat transcript.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    scene_summary: str = Field(default="", max_length=260)
+    player_role: str = Field(default="", max_length=160)
+    cast_or_factions: list[str] = Field(default_factory=list, max_length=8)
+    pressure: str = Field(default="", max_length=220)
+    constraints: list[str] = Field(default_factory=list, max_length=8)
+    tone: str = Field(default="", max_length=120)
+    confirmed_facts: list[str] = Field(default_factory=list, max_length=12)
+
+
 class StoryBriefAdvisorRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     seed: str = Field(min_length=1, max_length=4000)
     language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
     desired_tension_profile: TensionProfile | None = None
+    guide_context: StoryBriefGuideContext | None = None
 
     @field_validator("seed")
     @classmethod

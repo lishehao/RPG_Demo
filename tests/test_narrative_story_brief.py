@@ -10,16 +10,88 @@ from rpg_backend.narrative.contracts import (
     CreateTemplateRequest,
     PlayerRole,
     StoryBriefAdvisorRequest,
+    StoryBriefGuideContext,
     StoryMessage,
     StoryOption,
 )
 from rpg_backend.narrative.repository import NarrativeRepository
-from rpg_backend.narrative.service import NarrativeService
+from rpg_backend.narrative.service import NarrativeService, _story_brief_fallback_opening
 
 
 class _OpeningResponder:
     def __init__(self) -> None:
         self.story_brief_payload = None
+
+
+def test_story_brief_preserves_confirmed_guide_context_instead_of_generic_cast() -> None:
+    response = build_story_brief(
+        seed="Gala goes wrong.",
+        language="en",
+        desired_tension_profile="high_drama",
+        guide_context=StoryBriefGuideContext(
+            scene_summary="A singer vanishes ninety seconds before an awards livestream.",
+            player_role="the singer's publicist",
+            cast_or_factions=["producer", "sponsor representative", "backup dancer"],
+            pressure="A copied badge log can expose who moved her, but the countdown can make the team take the blame.",
+            constraints=["Keep the confrontation nonviolent."],
+            tone="tense backstage drama",
+            confirmed_facts=["The copied badge log is the first usable evidence."],
+        ),
+    )
+
+    primary_names = {entity.display_name.lower() for entity in response.brief.cast_plan.primary_active_entities}
+    assert primary_names == {
+        "producer",
+        "sponsor representative",
+        "backup dancer",
+    }
+    assert not {"rival", "witness", "deadline holder"} & primary_names
+    assert response.brief.player_role == "the singer's publicist"
+    assert "publicist" in response.brief.premise_summary.lower()
+    assert "badge log" in response.brief.premise_summary.lower()
+    assert any("badge log" in item.label.lower() for item in response.brief.constraints)
+
+
+def test_story_brief_recovery_opening_keeps_scene_role_cast_and_clue_coherent() -> None:
+    seed = (
+        "At a livestream gala, I'm the missing singer's publicist. "
+        "The producer, sponsor representative, and backup dancer are in the room. "
+        "A copied badge log can expose who moved her, but if the ninety-second countdown "
+        "reaches zero, my team takes the blame."
+    )
+    guide_context = StoryBriefGuideContext(
+        scene_summary="At a livestream gala, I'm the missing singer's publicist.",
+        player_role="singer's publicist",
+        cast_or_factions=["producer", "sponsor representative", "backup dancer"],
+        pressure=(
+            "A copied badge log can expose who moved her, but if the ninety-second countdown "
+            "reaches zero, my team takes the blame."
+        ),
+        tone="high_drama",
+        confirmed_facts=["The copied badge log is the first usable evidence."],
+    )
+    brief = build_story_brief(
+        seed=seed,
+        language="en",
+        desired_tension_profile="high_drama",
+        guide_context=guide_context,
+    ).brief
+
+    opening = _story_brief_fallback_opening(brief, language="en")
+    opening_text = opening.opening_message.content.lower()
+
+    assert [member.display_name for member in opening.cast] == [
+        "producer",
+        "sponsor representative",
+        "backup dancer",
+    ]
+    assert [role.label for role in opening.player_role_options] == ["singer's publicist"]
+    assert opening.title == "Ninety-Second Countdown"
+    assert "at the livestream gala" in opening_text
+    assert "copied badge log" in opening_text
+    assert "at the a copied" not in opening_text
+    assert "i'm missing" not in opening_text
+    assert all("copied badge log" in option.label.lower() or "countdown" in option.label.lower() for option in opening.opening_message.options)
 
 
 class _Opening:

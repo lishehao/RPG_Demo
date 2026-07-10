@@ -11,6 +11,7 @@ from rpg_backend.narrative.contracts import (
     StoryBriefAdvisorResponse,
     StoryBriefConsistencyCheck,
     StoryBriefConsistencyViolation,
+    StoryBriefGuideContext,
     StoryBriefPlanItem,
     StoryBriefRevisionAction,
     TemplateLanguage,
@@ -442,6 +443,7 @@ def build_story_brief(
     seed: str,
     language: TemplateLanguage = "en",
     desired_tension_profile: TensionProfile | None = None,
+    guide_context: StoryBriefGuideContext | None = None,
 ) -> StoryBriefAdvisorResponse:
     """Plan a supported story shape before spending opening-generation budget.
 
@@ -451,16 +453,34 @@ def build_story_brief(
     """
     del language
     clean_seed = " ".join(seed.strip().split())
-    profile = desired_tension_profile or infer_tension_profile(clean_seed)
+    guide_story_text = _guide_context_story_text(guide_context)
+    planning_seed = " ".join(part for part in (clean_seed, guide_story_text) if part)
+    profile = desired_tension_profile or infer_tension_profile(planning_seed)
     title, kernel, intervention = _PROFILE_KERNELS[profile]
-    mentioned_entities = _extract_entities(clean_seed)
-    cast_plan = _build_cast_plan(clean_seed, mentioned_entities, profile)
+    guide_entities = _guide_context_entities(guide_context)
+    mentioned_entities = (
+        guide_entities
+        if len(guide_entities) >= 3
+        else _dedupe_preserving_order([*guide_entities, *_extract_entities(clean_seed)])
+    )
+    cast_seed = clean_seed
+    if guide_entities:
+        cast_seed += f"\nMust include: {', '.join(guide_entities)}."
+    cast_plan = _build_cast_plan(cast_seed, mentioned_entities, profile)
     warnings: list[str] = []
     revision_suggestions: list[str] = []
-    preserved = _preserved_constraints(clean_seed, profile)
-    constraints = _constraint_items(clean_seed)
-    time_event_anchors = _time_event_anchor_items(clean_seed)
-    tone_constraints = _tone_constraint_items(clean_seed, profile)
+    preserved = _dedupe_preserving_order(
+        [*_guide_context_preserved_labels(guide_context), *_preserved_constraints(clean_seed, profile)]
+    )[:8]
+    constraints = _dedupe_plan_items(
+        [*_guide_context_constraint_items(guide_context), *_constraint_items(clean_seed)]
+    )[:10]
+    time_event_anchors = _dedupe_plan_items(
+        [*_guide_context_pressure_items(guide_context), *_time_event_anchor_items(clean_seed)]
+    )[:10]
+    tone_constraints = _dedupe_plan_items(
+        [*_guide_context_tone_items(guide_context), *_tone_constraint_items(clean_seed, profile)]
+    )[:10]
     world_setting_pressure = _world_setting_items(clean_seed)
     compressed: list[str] = []
     dropped: list[str] = []
@@ -479,7 +499,7 @@ def build_story_brief(
         revision_suggestions.append(
             "Add a third party with a concrete stake: witness, rival, family member, faction, or owner of the contested object."
         )
-    if not _has_pressure_signal(clean_seed):
+    if not _has_pressure_signal(planning_seed):
         warnings.append("The premise does not clearly include time pressure or a public conflict yet.")
         revision_suggestions.append("Add a deadline, audience, vote, ceremony, missing object, or public reveal window.")
 
@@ -515,6 +535,12 @@ def build_story_brief(
             profile=profile,
             time_event_anchors=time_event_anchors,
             world_setting_pressure=world_setting_pressure,
+            guide_context=guide_context,
+        ),
+        player_role=(
+            _normalized_guide_text(guide_context.player_role, max_len=160)
+            if guide_context is not None and guide_context.player_role.strip()
+            else None
         ),
         genre_tone=title,
         tension_profile=profile,
@@ -1040,6 +1066,116 @@ def _world_setting_items(seed: str) -> list[StoryBriefPlanItem]:
     return _dedupe_plan_items(items)[:10]
 
 
+def _normalized_guide_text(value: str, *, max_len: int) -> str:
+    normalized = " ".join(value.strip().split()).rstrip(" ,;:")
+    if len(normalized) <= max_len:
+        return normalized
+    clipped = normalized[: max_len - 3].rsplit(" ", 1)[0].rstrip(" ,;:.")
+    return f"{clipped}..."
+
+
+def _guide_context_story_text(context: StoryBriefGuideContext | None) -> str:
+    if context is None:
+        return ""
+    parts = [
+        context.scene_summary,
+        context.player_role,
+        *context.cast_or_factions,
+        context.pressure,
+        *context.constraints,
+        context.tone,
+        *context.confirmed_facts,
+    ]
+    normalized = [_normalized_guide_text(part, max_len=220) for part in parts if part.strip()]
+    return ". ".join(_dedupe_preserving_order(normalized))
+
+
+def _guide_context_entities(context: StoryBriefGuideContext | None) -> list[str]:
+    if context is None:
+        return []
+    entities: list[str] = []
+    for value in context.cast_or_factions:
+        for raw in _ENTITY_SPLIT_RE.split(value):
+            candidate = _clean_entity(raw)
+            if candidate:
+                entities.append(candidate)
+    return _dedupe_preserving_order(entities)[:10]
+
+
+def _guide_context_preserved_labels(context: StoryBriefGuideContext | None) -> list[str]:
+    if context is None:
+        return []
+    values = [
+        "core premise",
+        context.scene_summary,
+        context.pressure,
+        *context.constraints,
+        *context.confirmed_facts,
+    ]
+    labels = [_normalized_guide_text(value, max_len=120) for value in values if value.strip()]
+    return _dedupe_preserving_order(labels)[:8]
+
+
+def _guide_context_constraint_items(context: StoryBriefGuideContext | None) -> list[StoryBriefPlanItem]:
+    if context is None:
+        return []
+    items: list[StoryBriefPlanItem] = []
+    for value in [*context.constraints, *context.confirmed_facts]:
+        label = _normalized_guide_text(value, max_len=140)
+        if label:
+            items.append(
+                StoryBriefPlanItem(
+                    label=label,
+                    rationale="Confirmed by Story Butler; preserve it in the opening instead of replacing it with a generic detail.",
+                )
+            )
+    return _dedupe_plan_items(items)[:8]
+
+
+def _guide_context_pressure_items(context: StoryBriefGuideContext | None) -> list[StoryBriefPlanItem]:
+    if context is None or not context.pressure.strip():
+        return []
+    return [
+        StoryBriefPlanItem(
+            label=_normalized_guide_text(context.pressure, max_len=140),
+            rationale="Confirmed scene pressure from the guided conversation.",
+        )
+    ]
+
+
+def _guide_context_tone_items(context: StoryBriefGuideContext | None) -> list[StoryBriefPlanItem]:
+    if context is None or not context.tone.strip():
+        return []
+    return [
+        StoryBriefPlanItem(
+            label=_normalized_guide_text(context.tone, max_len=140),
+            rationale="Confirmed tone and run feel from the guided conversation.",
+        )
+    ]
+
+
+def _guide_context_premise(context: StoryBriefGuideContext | None) -> str:
+    if context is None:
+        return ""
+    scene = _normalized_guide_text(context.scene_summary, max_len=150).rstrip(".!?")
+    if not scene and context.confirmed_facts:
+        scene = _normalized_guide_text(context.confirmed_facts[0], max_len=150).rstrip(".!?")
+    if not scene:
+        return ""
+    parts = [scene]
+    player_role = _normalized_guide_text(context.player_role, max_len=64).rstrip(".!?")
+    pressure_source = re.split(r"\s*(?:,?\s+but\b|;)\s*", context.pressure, maxsplit=1, flags=re.I)[0]
+    pressure = _normalized_guide_text(pressure_source, max_len=90).rstrip(".!?")
+    if player_role and player_role.lower() not in scene.lower():
+        parts.append(f"Player: {player_role}")
+    if pressure and pressure.lower() not in scene.lower():
+        parts.append(f"Pressure: {pressure}")
+    summary = ". ".join(parts)
+    if len(summary) > 259:
+        summary = ". ".join(parts[:2])
+    return summary[:259].rstrip(" ,;:.") + "."
+
+
 def _revision_actions(warnings: list[str], profile: TensionProfile) -> list[StoryBriefRevisionAction]:
     actions = [
         StoryBriefRevisionAction(
@@ -1116,7 +1252,11 @@ def _premise_summary(
     profile: TensionProfile | None = None,
     time_event_anchors: list[StoryBriefPlanItem] | None = None,
     world_setting_pressure: list[StoryBriefPlanItem] | None = None,
+    guide_context: StoryBriefGuideContext | None = None,
 ) -> str:
+    guided_summary = _guide_context_premise(guide_context)
+    if guided_summary:
+        return guided_summary
     if cast_plan is not None and profile is not None:
         cast_names = [
             entity.display_name

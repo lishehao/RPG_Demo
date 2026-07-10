@@ -53,7 +53,7 @@ UNSAFE_RE = re.compile(
     re.I,
 )
 PARTICIPANT_RE = re.compile(
-    r"\b(parent|parents|teen|volunteer|customer|attendant|cofounder|investor|rival|assistant|manager|committee|witness|publicist|producer|dancer|sponsor|singer|audience|fans|bride|groom|family|lawyer|host|guest|chef|judge|courier|detective|police|vendor|reporter)\b|角色|家人|父母|志愿者|顾客|店员|合伙人|投资人|对手|见证人|制作人|公关|舞者|赞助|歌手|观众|新娘|新郎|家庭|律师|主持人|客人|评委|快递员|侦探|警察|摊主|记者",
+    r"\b(sponsor representative|backup dancer|missing singer|famous singer|crisis manager|family elder|board member|parent|parents|teen|volunteer|customer|attendant|cofounder|investor|rival|assistant|manager|committee|witness|publicist|producer|dancer|sponsor|singer|audience|fans|bride|groom|family|lawyer|host|guest|chef|judge|courier|detective|police|vendor|reporter)\b|角色|家人|父母|志愿者|顾客|店员|合伙人|投资人|对手|见证人|制作人|公关|舞者|赞助代表|赞助|歌手|观众|新娘|新郎|家庭|律师|主持人|客人|评委|快递员|侦探|警察|摊主|记者",
     re.I,
 )
 PRESSURE_RE = re.compile(
@@ -89,6 +89,16 @@ INTERACTION_HELP_RE = re.compile(
 )
 CORRECTION_RE = re.compile(
     r"\b(actually|instead|change|switch|make it|revise|correction|not that|更改|改成|其实|不是|换成|调整)\b",
+    re.I,
+)
+
+PLAYER_ROLE_CAPTURE_RE = re.compile(
+    r"\b(?:i am|i'm|i play as|i play|my role is|make me|player is|protagonist is|player should be)\s+(?:a\s+|an\s+|the\s+)?([^.!?;,]{2,100})",
+    re.I,
+)
+PLAYER_ROLE_CAPTURE_ZH_RE = re.compile(r"(?:我是|我扮演|让我当|把我改成)([^。！？，；]{1,40})")
+PRESSURE_DETAIL_RE = re.compile(
+    r"\b(badge log|evidence|countdown|take(?:s)? the blame|expose|vanish(?:es|ed)?|disappear(?:s|ed|ance)?|unlock|opportunity)\b|证据|倒计时|背锅|曝光|失踪|线索|机会",
     re.I,
 )
 
@@ -493,12 +503,9 @@ def _compress_story_context(
     ][-10:]
     confirmed_facts = _compact_list(
         [
-            *_fact("scene", scene_summary),
-            *_fact("player", player_role),
-            *_fact("cast", ", ".join(cast)),
-            *_fact("pressure", pressure),
-            *_fact("constraints", ", ".join(constraints)),
-            *_fact("tone", tone),
+            scene_summary,
+            pressure,
+            *constraints,
         ],
         limit=12,
     )
@@ -695,27 +702,92 @@ def _is_direct_answer_to_last_question(previous: StoryGuideLoopState, text: str)
     return previous.status in {"needs_field", "collecting", "empty"} or bool(previous.context.last_question)
 
 
+def _story_sentences(text: str) -> list[str]:
+    return [
+        sentence.strip(" \n\t")
+        for sentence in re.split(r"(?<=[.!?。！？])\s+|[\n]+", text)
+        if sentence.strip()
+    ]
+
+
+def _extract_player_role(text: str) -> str:
+    match = PLAYER_ROLE_CAPTURE_RE.search(text) or PLAYER_ROLE_CAPTURE_ZH_RE.search(text)
+    if not match:
+        return ""
+    role = match.group(1).strip(" \"'“”‘’")
+    role = re.split(r"\b(?:carrying|holding|chasing|who must|who has)\b", role, maxsplit=1, flags=re.I)[0]
+    role = re.sub(r"^(?:missing|famous)\s+(.+?'s\s+publicist)$", r"\1", role, flags=re.I)
+    if re.match(r"^(?:at|in|on|with)\b", role, re.I):
+        return ""
+    return _short_evidence(role)[:100]
+
+
+def _extract_active_cast(text: str, player_role: str) -> list[str]:
+    cast_sentences = [
+        sentence
+        for sentence in _story_sentences(text)
+        if re.search(
+            r"\b(?:with|alongside|between|against|versus|vs\.?|in the room|inside the room|are present|is present|cast includes?)\b|在场|房间里|同场|和|与",
+            sentence,
+            re.I,
+        )
+    ]
+    participants = _find_terms(PARTICIPANT_RE, " ".join(cast_sentences) if cast_sentences else text)
+    role_tail = re.sub(r"[^\w\u3400-\u9fff]+", " ", player_role.casefold()).split()
+    final_role_term = role_tail[-1] if role_tail else ""
+    return [
+        participant
+        for participant in participants
+        if participant.casefold() != final_role_term
+    ][:5]
+
+
+def _extract_pressure_evidence(text: str) -> str:
+    ranked: list[tuple[int, int, str]] = []
+    for index, sentence in enumerate(_story_sentences(text)):
+        score = len(PRESSURE_RE.findall(sentence)) + (2 * len(PRESSURE_DETAIL_RE.findall(sentence)))
+        if score:
+            ranked.append((score, index, sentence))
+    if not ranked:
+        return ""
+    _, _, strongest = max(ranked, key=lambda item: (item[0], item[1]))
+    return _short_evidence(strongest)
+
+
+def _extract_scene_evidence(text: str) -> str:
+    for sentence in _story_sentences(text):
+        if HOOK_RE.search(sentence):
+            return _short_evidence(sentence)
+    return ""
+
+
+def _extract_boundary_evidence(text: str) -> str:
+    for sentence in _story_sentences(text):
+        if BOUNDARY_RE.search(sentence):
+            return _short_evidence(sentence)
+    return ""
+
+
 def _extract_slots(text: str) -> dict[StoryGuideSlotId, str]:
     slots: dict[StoryGuideSlotId, str] = {}
-    if re.search(
-        r"\b(i am|i'm|my role|i play|as the|as a|player is|protagonist is|make me|switch me to|change me to|make the player|player should be|i should be)\b|我(是|扮演)|玩家|主角|把我改成|让我当",
-        text,
-        re.I,
-    ):
-        slots["player_role"] = _short_evidence(text)
-    participants = _find_terms(PARTICIPANT_RE, text)
-    if len(participants) >= 2 or re.search(r"\b(with|between|against|and|versus|vs\.?)\b|和|与|对上|之间", text, re.I):
-        slots["active_cast"] = " / ".join(participants[:5]) if participants else _short_evidence(text)
-    pressures = _find_terms(PRESSURE_RE, text)
-    if pressures or re.search(r"\bmust decide\b|\bgoes wrong\b|\babout to\b|\bfalls apart\b|必须|快要|失控|当众|逼近", text, re.I):
-        slots["pressure"] = " / ".join(pressures[:4]) if pressures else _short_evidence(text)
+    player_role = _extract_player_role(text)
+    if player_role:
+        slots["player_role"] = player_role
+    participants = _extract_active_cast(text, player_role)
+    if len(participants) >= 2:
+        slots["active_cast"] = " / ".join(participants)
+    pressure = _extract_pressure_evidence(text)
+    if pressure:
+        slots["pressure"] = pressure
     tones = _find_terms(TONE_RE, text)
     if tones:
         slots["tone"] = " / ".join(tones[:3])
-    if BOUNDARY_RE.search(text):
-        slots["boundaries"] = _short_evidence(text)
-    if HOOK_RE.search(text):
-        slots["first_scene_hook"] = _short_evidence(text)
+    boundary = _extract_boundary_evidence(text)
+    if boundary:
+        slots["boundaries"] = boundary
+    scene = _extract_scene_evidence(text)
+    if scene:
+        slots["first_scene_hook"] = scene
     return slots
 
 
