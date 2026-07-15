@@ -246,6 +246,7 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert "```mermaid" in packet
     assert "Productized LLM / applied AI systems engineering, not HCI research." in packet
     assert "Historical live evidence anchor:" in packet
+    assert "Current live evidence anchor:" in packet
     assert "It is not a claim that the commit below is current HEAD" in packet
     assert "for the current reviewer run, first check public visibility" in packet
     assert "those routes remain local" in packet
@@ -278,7 +279,8 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert "local verification targets and demo-video context" in visibility["application_claim_rule"]
     assert "not public links" in visibility["historical_anchor_boundary"]
 
-    assert "| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |" in packet
+    assert "| Opening | `narrative.opening` | 1 | `live/success` | 13317/13317/13317ms | 2716 | 0 | 686 | 3402 | 0 | none |" in packet
+    assert "the 14.0s median Play-turn latency is a real product risk" in packet
     assert "Step Judge" in packet
     assert "Contract Judge" in packet
     assert "deterministic trajectory trend" in packet
@@ -289,10 +291,19 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     live_gate = summary["live_gate"]
     assert live_gate["status"] == "pass"
     assert live_gate["failure_count"] == 0
+    assert live_gate["completed_turns"] == 12
+    current_anchor = summary["current_live_evidence_anchor"]
+    assert current_anchor["completed_turns"] == 12
+    assert current_anchor["step_judge_passes"] == 12
+    assert current_anchor["contract_judge_passes"] == 12
+    assert current_anchor["quality_status"] == "warn"
+    assert current_anchor["public_link"] is False
     operations = {row["operation"]: row for row in live_gate["required_operations"]}
     assert operations["narrative.opening"]["source"] == "live"
     assert operations["narrative.opening"]["fallback"] is None
-    assert operations["narrative.opening"]["total_tokens"] == 3462
+    assert operations["narrative.opening"]["total_tokens"] == 3402
+    assert operations["narrative.advance_turn"]["call_count"] == 12
+    assert operations["narrative.advance_turn"]["retry_count_max"] == 0
     assert any("full live trajectory judge" in item for item in summary["guardrails"])
     assert any("neural embeddings" in item for item in summary["guardrails"])
     assert any("/tmp historical artifact paths" in item for item in summary["guardrails"])
