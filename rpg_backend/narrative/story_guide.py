@@ -528,7 +528,7 @@ def _compress_story_context(
         cast_or_factions=cast,
         pressure=_short_evidence(pressure),
         constraints=constraints,
-        tone=_short_evidence(tone),
+        tone=_short_evidence(tone, max_chars=120),
         open_questions=open_questions,
         confirmed_facts=confirmed_facts,
         rejected_or_changed_facts=_compact_list(changed, limit=8),
@@ -962,9 +962,9 @@ def _ready_reply(language: TemplateLanguage) -> str:
     )
 
 
-def _short_evidence(text: str) -> str:
+def _short_evidence(text: str, *, max_chars: int = 160) -> str:
     cleaned = re.sub(r"\s+", " ", text.strip())
-    return cleaned[:160]
+    return cleaned[:max_chars]
 
 
 def _detects_hard_conflict(text: str) -> bool:

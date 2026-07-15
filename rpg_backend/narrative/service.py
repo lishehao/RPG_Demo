@@ -582,10 +582,7 @@ class NarrativeService:
                 cached_input_tokens=_safe_int_or_none(usage.get("cached_input_tokens")),
                 output_tokens=_safe_int_or_none(usage.get("output_tokens")),
                 total_tokens=_safe_int_or_none(usage.get("total_tokens")),
-                retry_count=max(
-                    _safe_int_or_none(entry.get("retry_count")) or 0,
-                    max(0, (_safe_int_or_none(entry.get("attempt_index")) or 1) - 1),
-                ),
+                retry_count=_safe_int_or_none(entry.get("retry_count")) or 0,
                 repair_count=_safe_int_or_none(entry.get("repair_count")) or 0,
                 fallback_reason=fallback_reason,
                 response_id=str(entry.get("response_id")) if entry.get("response_id") else None,

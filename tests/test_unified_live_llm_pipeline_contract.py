@@ -434,6 +434,32 @@ def test_story_butler_ready_reply_hands_off_to_automatic_brief_without_a_questio
     assert "?" not in response.reply
 
 
+def test_story_butler_accepts_a_long_correction_after_ready_without_overflow() -> None:
+    ready = advance_story_guide_loop(
+        None,
+        (
+            "At a livestream gala, I am the backup dancer. The singer vanishes ninety seconds before curtain "
+            "while the producer, publicist, and sponsor fight over a copied badge log. Keep it grounded and social."
+        ),
+        "en",
+    )
+
+    correction = advance_story_guide_loop(
+        ready.state,
+        (
+            "Actually, change that: I am the singer's publicist, not the backup dancer. A copied security-badge "
+            "log can expose who moved the singer. Keep it grounded, tense, and investigative with no supernatural "
+            "elements or arbitrary fantasy details."
+        ),
+        "en",
+    )
+
+    assert correction.status == "ready_to_brief"
+    assert correction.state.context.player_role == "singer's publicist"
+    assert len(correction.state.context.tone) <= 120
+    assert any("superseded player_role" in fact for fact in correction.state.context.rejected_or_changed_facts)
+
+
 def test_story_guide_handles_me_and_who_as_contextual_short_inputs() -> None:
     first = advance_story_guide_loop(None, "Gala goes wrong.", "en")
     role_answer = advance_story_guide_loop(first.state, "Me", "en")

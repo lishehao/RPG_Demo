@@ -9,6 +9,26 @@ observability, and repeatable validation gates.
 
 Framing: Productized LLM / applied AI systems engineering, not HCI research.
 
+Current live evidence anchor:
+
+On 2026-07-16, the strict live golden-path harness completed a fresh isolated
+Create -> Story Brief -> Opening -> 12-turn Play -> Ending run against the
+configured gateway. Required calls were `live/success`, no required call used
+fallback, and the persisted retry count was zero for every successful call.
+
+- Branch under review: `codex/tiny-stories-target-mode`
+- Template/session: `tmpl_8ebe8ce16f83` / `sess_1508a69fc15e`
+- Result: 12/12 turns and a generated ending; failure count 0
+- Reviewer evidence: 12 Step Judge passes and 12 Contract Judge passes
+- Deterministic quality packaging: `warn`, not `fail`. Consequence clarity,
+  choice diversity, escalation, brief payoff, and playable options passed. The
+  warning is a measurement gap: persisted trace data did not classify an
+  active-NPC turn even though NPC interactions appeared in the generated story.
+- Player-surface check: Victory ending rendered with no horizontal overflow and
+  zero browser console warnings/errors. A bounded copy scan found no technical
+  provider/debug/schema/token language; substring matches inside ordinary words
+  such as `escaped` and `traceable` were discarded as false positives.
+
 Historical live evidence anchor:
 
 This is a dated 2026-06-08 live-gate snapshot kept for admissions and
@@ -101,7 +121,7 @@ The current acceptance gate is live-backed. It is not satisfied by `/health`
 alone and does not accept deterministic fallback for required product text
 paths.
 
-Live run exercised:
+The 2026-07-16 live run exercised:
 
 1. `/health` configured status for `text_llm`, `create_story_butler`,
    `story_brief`, `opening`, and `play_turns`;
@@ -109,28 +129,40 @@ Live run exercised:
 3. Story Brief shaping;
 4. template/opening generation;
 5. Play story fetch with reviewer trace enabled;
-6. one Play turn;
-7. reviewer-only telemetry query.
+6. twelve Play turns through the configured live text path;
+7. live ending, highlight, and branch generation;
+8. reviewer-only telemetry and judge evidence.
 
 Run result:
 
 - Status: pass
-- Template/session: `tmpl_e6a132445fe8` / `sess_61d85a921fda`
+- Template/session: `tmpl_8ebe8ce16f83` / `sess_1508a69fc15e`
 - Failure count: 0
-- Story Butler latency: 6216ms
-- Story Brief latency: 2487ms
-- template/opening latency: 13108ms
-- Play turn latency: 9649ms
-- telemetry endpoint latency: 3ms
+- Completed turns: 12/12
+- Step Judge / Contract Judge: 12 pass / 12 pass
+- Story Butler latency: 1463ms
+- Story Brief latency: 4942ms
+- opening latency: 13317ms
+- Play turn latency: 9138-18301ms; median 14025ms
+- Required-operation fallback count: 0
+- Maximum persisted retry count: 0
 
 Required live telemetry table:
 
-| Stage | Operation | Source | Status | Latency | Input | Cached input | Output | Total | Fallback |
-| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Story Butler | `create.story_butler_turn` | `live` | `success` | 1568ms | 2697 | 384 | 32 | 2729 | none |
-| Story Brief | `narrative.story_brief` | `live` | `success` | 2479ms | 1408 | 1280 | 156 | 1564 | none |
-| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |
-| Play turn | `narrative.advance_turn` | `live` | `success` | 7701ms | 6464 | 4864 | 420 | 6884 | none |
+| Stage | Operation | Calls | Source/status | Latency (min/median/max) | Input | Cached input | Output | Total | Retry max | Fallback |
+| --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Story Butler | `create.story_butler_turn` | 1 | `live/success` | 1463/1463/1463ms | 2389 | 384 | 35 | 2424 | 0 | none |
+| Story Brief | `narrative.story_brief` | 1 | `live/success` | 4942/4942/4942ms | 1477 | 0 | 200 | 1677 | 0 | none |
+| Opening | `narrative.opening` | 1 | `live/success` | 13317/13317/13317ms | 2716 | 0 | 686 | 3402 | 0 | none |
+| Play turns | `narrative.advance_turn` | 12 | `live/success` | 9138/14025/18301ms | 99845 | 64512 | 9128 | 108973 | 0 | none |
+| Ending | `narrative.ending` | 1 | `live/success` | 8805/8805/8805ms | 5456 | 0 | 360 | 5816 | 0 | none |
+| Highlights | `narrative.highlights` | 1 | `live/success` | 10549/10549/10549ms | 5803 | 0 | 713 | 6516 | 0 | none |
+| Branches | `narrative.branches` | 1 | `live/success` | 8252/8252/8252ms | 7688 | 0 | 460 | 8148 | 0 | none |
+
+These are system-validation observations from one bounded canonical run, not
+population-level latency, quality, retention, or market evidence. In particular,
+the 14.0s median Play-turn latency is a real product risk even though the run
+completed without fallback.
 
 The gate rejects these rows for the required operations:
 
