@@ -482,6 +482,7 @@ class _RawResponsesResource:
     ) -> SimpleNamespace:
         streamed_payload = dict(request_payload)
         streamed_payload["stream"] = True
+        network_retry_count = 0
         for attempt in range(2):
             client = self._get_or_create_client()
             try:
@@ -558,11 +559,13 @@ class _RawResponsesResource:
                         id=response_id,
                         output_text=merged_output,
                         usage=usage,
+                        retry_count=network_retry_count,
                     )
             except ResponsesProviderError:
                 raise
             except httpx.HTTPError as exc:
                 if attempt == 0:
+                    network_retry_count += 1
                     self._reset_client()
                     continue
                 raise ResponsesProviderError(
@@ -587,6 +590,7 @@ class _RawResponsesResource:
         pending_retry_attempted = False
         empty_content_retry_attempted = False
         retry_key_offset = 0
+        provider_retry_count = 0
         while True:
             active_api_key = self._next_api_key(retry_offset=retry_key_offset)
             headers = {
@@ -598,12 +602,16 @@ class _RawResponsesResource:
                 headers.setdefault("Accept", "application/json")
             try:
                 if use_stream_chat:
-                    return self._request_via_stream_chat_completions(
+                    response = self._request_via_stream_chat_completions(
                         endpoint_url=endpoint_url,
                         headers=headers,
                         request_payload=request_payload,
                         timeout_seconds=timeout or 60.0,
                     )
+                    response.retry_count = provider_retry_count + int(
+                        getattr(response, "retry_count", 0) or 0
+                    )
+                    return response
                 response: httpx.Response | None = None
                 for attempt in range(2):
                     client = self._get_or_create_client()
@@ -617,6 +625,7 @@ class _RawResponsesResource:
                         break
                     except httpx.HTTPError as exc:
                         if attempt == 0:
+                            provider_retry_count += 1
                             self._reset_client()
                             continue
                         raise ResponsesProviderError(
@@ -643,6 +652,7 @@ class _RawResponsesResource:
                     id=body.get("id"),
                     output_text=output_text,
                     usage=body.get("usage"),
+                    retry_count=provider_retry_count,
                 )
             except ResponsesProviderError as exc:
                 message = str(exc)
@@ -651,6 +661,7 @@ class _RawResponsesResource:
                     message=message,
                 ):
                     pending_retry_attempted = True
+                    provider_retry_count += 1
                     retry_key_offset += 1
                     time.sleep(_PENDING_OVERLOAD_RETRY_DELAY_SECONDS)
                     continue
@@ -659,6 +670,7 @@ class _RawResponsesResource:
                     message=message,
                 ):
                     empty_content_retry_attempted = True
+                    provider_retry_count += 1
                     retry_key_offset += 1
                     time.sleep(_EMPTY_CONTENT_RETRY_DELAY_SECONDS)
                     continue
@@ -942,6 +954,7 @@ class ResponsesJSONTransport:
             request_kwargs["previous_response_id"] = previous_response_id
         operation = operation_name or "unknown"
         attempt_index = sum(1 for entry in self.call_trace if entry.get("operation") == operation) + 1
+        transport_retry_count = 0
         started_at = time.monotonic()
 
         def _latency_ms() -> int:
@@ -979,12 +992,13 @@ class ResponsesJSONTransport:
                     "status": status,
                     "latency_ms": _latency_ms(),
                     "repair_count": repair_count,
-                    "retry_count": max(0, attempt_index - 1),
+                    "retry_count": transport_retry_count,
                 }
             )
 
         try:
             response = self._create_chat_completion(request_kwargs)
+            transport_retry_count = max(0, int(getattr(response, "retry_count", 0) or 0))
         except Exception as exc:  # noqa: BLE001
             status_code = _provider_error_status_code(exc)
             bucket = _failure_message_bucket(str(exc))

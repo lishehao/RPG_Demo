@@ -22,9 +22,10 @@
 1. Home `Write a new story` opens `#/create` without a login/name gate.
 2. The page is a Story Butler chat, not a SaaS form.
 3. The assistant asks for missing scene-plan ingredients and redirects unsafe/out-of-spec prompts while keeping pre-plan chat natural.
-4. When enough fields are present, the scene plan is shaped automatically and appears inside the transcript.
-5. `Generate and enter story` lives with the scene plan.
-6. Generate creates a template/session and routes to Play.
+4. When enough fields are present, the compact Story Butler context is sent with the seed so the scene plan preserves confirmed roles, cast, pressure, constraints, and clues instead of rediscovering them from raw transcript text.
+5. The scene plan opens with only the playable essentials. Inferred settings, full cast planning, revisions, and handoff mechanics remain available in a closed details section.
+6. `Generate and enter story` lives with the scene plan.
+7. Generate creates a template/session and routes to Play.
 
 ## Story-Shape Settings
 
@@ -40,7 +41,7 @@ Examples handled by `shared/lib/story-guide-settings.ts`, with loop orchestratio
 - `backstage`, `disappearance`, `public scandal` -> high drama.
 - `cozy`, `clues`, `small town` -> cozy mystery.
 
-The inferred read is kept internal during ordinary collection so pre-plan chat stays one-question-at-a-time. It is surfaced inside the final scene plan before Generate. If a user correction changes story-shape settings after a scene plan is ready, the flow must require reshaping before Generate.
+The inferred read is kept internal during ordinary collection so pre-plan chat stays one-question-at-a-time. It is available inside the scene plan's closed planning details before Generate. If a user correction changes story-shape settings after a scene plan is ready, the flow must require reshaping before Generate.
 
 ## Visibility
 

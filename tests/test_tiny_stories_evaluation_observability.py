@@ -66,6 +66,18 @@ def test_live_acceptance_contract_requires_core_live_operations() -> None:
     }.issubset(REQUIRED_HEALTH_CONFIG)
 
 
+def test_ci_uses_current_node24_action_runtimes() -> None:
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+
+    assert workflow.count("actions/checkout@v7") == 2
+    assert workflow.count("actions/setup-node@v7") == 2
+    assert "actions/setup-python@v6" in workflow
+    assert workflow.count('node-version: "24"') == 2
+    assert "actions/checkout@v4" not in workflow
+    assert "actions/setup-node@v4" not in workflow
+    assert "actions/setup-python@v5" not in workflow
+
+
 def test_live_operation_validation_rejects_fallback_rows() -> None:
     rows = [
         {
@@ -209,9 +221,104 @@ def test_golden_path_quality_summary_is_bounded_not_research_metric() -> None:
         seed="At an awards gala, a publicist, a singer, and a sponsor discover the live trophy reveal is rigged.",
     )
 
-    assert summary["schema_version"] == "tiny_stories_golden_path_quality.v1"
+    assert summary["schema_version"] == "tiny_stories_golden_path_quality.v2"
     assert summary["status"] in {"pass", "warn"}
     assert "not a calibrated fun metric" in summary["rationale"]
+
+
+def test_story_mode_character_quality_uses_live_responses_not_gauntlet_agenda() -> None:
+    turns = [
+        {
+            "turn_number": index,
+            "chosen_option_label": f"Choice {index}",
+            "next_option_count": 3 if index < 12 else 0,
+            "is_complete": index == 12,
+        }
+        for index in range(1, 13)
+    ]
+    agent_events: list[dict[str, object]] = []
+    for index in range(1, 13):
+        agent_events.extend([
+            {
+                "event_type": "agent_plan",
+                "payload": {
+                    "director": {
+                        "difficulty": "story",
+                        "stage_phase": "pressure" if index < 8 else "climax",
+                        "active_npc_ids": [],
+                        "focus_window_npc_ids": ["singer", "sponsor"],
+                    }
+                },
+            },
+            {"event_type": "step_judge", "payload": {"status": "pass"}},
+            {"event_type": "contract_judge", "payload": {"status": "pass"}},
+        ])
+    messages: list[dict[str, object]] = [{"role": "narrator", "content": "Opening", "npc_pulse": []}]
+    messages.extend(
+        {
+            "role": "narrator",
+            "content": f"Resolved beat {index}",
+            "npc_pulse": [
+                {"npc_id": "singer", "shift": "wary" if index % 2 else "steady"},
+                {"npc_id": "sponsor", "shift": "colder"},
+            ],
+        }
+        for index in range(1, 13)
+    )
+
+    summary = _quality_summary(
+        turn_summaries=turns,
+        agent_events=agent_events,
+        story={"messages": messages},
+        ending={"label": "Freedom", "passage": "The singer leaves the gala."},
+        seed="At a gala, a singer and sponsor corner the publicist.",
+    )
+
+    character = summary["criteria"]["character_intent"]
+    assert character["status"] == "pass"
+    assert character["evidence"]["mode"] == "story"
+    assert character["evidence"]["active_npc_turns"] == 0
+    assert character["evidence"]["responsive_npc_turns"] == 12
+    assert character["evidence"]["shifted_npc_turns"] == 12
+    assert character["evidence"]["distinct_npc_ids"] == ["singer", "sponsor"]
+
+
+def test_story_mode_character_quality_warns_when_npcs_never_respond() -> None:
+    turns = [
+        {
+            "turn_number": index,
+            "chosen_option_label": f"Choice {index}",
+            "next_option_count": 3 if index < 4 else 0,
+            "is_complete": index == 4,
+        }
+        for index in range(1, 5)
+    ]
+    agent_events = [
+        {
+            "event_type": "agent_plan",
+            "payload": {
+                "director": {
+                    "difficulty": "story",
+                    "stage_phase": "pressure",
+                    "active_npc_ids": [],
+                    "focus_window_npc_ids": ["singer", "sponsor"],
+                }
+            },
+        }
+        for _ in turns
+    ]
+
+    summary = _quality_summary(
+        turn_summaries=turns,
+        agent_events=agent_events,
+        story={"messages": [{"role": "narrator", "content": "No character response", "npc_pulse": []}]},
+        ending=None,
+        seed="A singer and sponsor wait at a gala.",
+    )
+
+    character = summary["criteria"]["character_intent"]
+    assert character["status"] == "warn"
+    assert character["evidence"]["responsive_npc_turns"] == 0
 
 
 def test_opening_generation_uses_compact_live_prompt_for_eval_gate() -> None:
@@ -246,6 +353,7 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert "```mermaid" in packet
     assert "Productized LLM / applied AI systems engineering, not HCI research." in packet
     assert "Historical live evidence anchor:" in packet
+    assert "Current live evidence anchor:" in packet
     assert "It is not a claim that the commit below is current HEAD" in packet
     assert "for the current reviewer run, first check public visibility" in packet
     assert "those routes remain local" in packet
@@ -278,7 +386,8 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert "local verification targets and demo-video context" in visibility["application_claim_rule"]
     assert "not public links" in visibility["historical_anchor_boundary"]
 
-    assert "| Opening | `narrative.opening` | `live` | `success` | 13100ms | 2630 | 0 | 832 | 3462 | none |" in packet
+    assert "| Opening | `narrative.opening` | 1 | `live/success` | 10942/10942/10942ms | 2678 | 1408 | 693 | 3371 | 0 | none |" in packet
+    assert "the 14.0s median Play-turn latency is a real provider-bound product risk" in packet
     assert "Step Judge" in packet
     assert "Contract Judge" in packet
     assert "deterministic trajectory trend" in packet
@@ -289,10 +398,20 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     live_gate = summary["live_gate"]
     assert live_gate["status"] == "pass"
     assert live_gate["failure_count"] == 0
+    assert live_gate["completed_turns"] == 12
+    current_anchor = summary["current_live_evidence_anchor"]
+    assert current_anchor["completed_turns"] == 12
+    assert current_anchor["step_judge_passes"] == 12
+    assert current_anchor["contract_judge_passes"] == 12
+    assert current_anchor["quality_schema_version"] == "tiny_stories_golden_path_quality.v2"
+    assert current_anchor["quality_status"] == "pass"
+    assert current_anchor["public_link"] is False
     operations = {row["operation"]: row for row in live_gate["required_operations"]}
     assert operations["narrative.opening"]["source"] == "live"
     assert operations["narrative.opening"]["fallback"] is None
-    assert operations["narrative.opening"]["total_tokens"] == 3462
+    assert operations["narrative.opening"]["total_tokens"] == 3371
+    assert operations["narrative.advance_turn"]["call_count"] == 12
+    assert operations["narrative.advance_turn"]["retry_count_max"] == 0
     assert any("full live trajectory judge" in item for item in summary["guardrails"])
     assert any("neural embeddings" in item for item in summary["guardrails"])
     assert any("/tmp historical artifact paths" in item for item in summary["guardrails"])

@@ -492,6 +492,15 @@ export function CreatePage({
         language: storyLanguage,
         desired_tension_profile:
           desiredTensionProfile === "auto" ? null : desiredTensionProfile,
+        guide_context: {
+          scene_summary: guideLoopState.context.scene_summary,
+          player_role: guideLoopState.context.player_role,
+          cast_or_factions: guideLoopState.context.cast_or_factions,
+          pressure: guideLoopState.context.pressure,
+          constraints: guideLoopState.context.constraints,
+          tone: guideLoopState.context.tone,
+          confirmed_facts: guideLoopState.context.confirmed_facts,
+        },
       })
       setBriefResponse(response)
       setBriefResponseKey(briefKey(trimmed, storyLanguage, desiredTensionProfile))
@@ -957,33 +966,11 @@ export function CreatePage({
                       compact={compactLayout}
                       busy={busy}
                       shapeRead={storyShapeRead}
+                      guideContext={guideLoopState.context}
                       onGenerate={() => void handleCreate()}
                       onKeepCorrecting={focusComposer}
                       onApplyRevisionAction={handleApplyRevisionAction}
                     />
-                  </div>
-                </div>
-                <div
-                  data-guide-node={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
-                  data-guide-state={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}
-                  style={{
-                    ...cpStyles.guideMessage,
-                    ...cpStyles.guideMessageGuide,
-                    ...(compactLayout ? cpStyles.guideMessageCompact : null),
-                  }}
-                >
-                  <img
-                    src={STORY_BUTLER_AVATAR}
-                    alt=""
-                    style={{ ...cpStyles.guideAvatarSmall, ...(compactLayout ? cpStyles.guideAvatarSmallCompact : null) }}
-                  />
-                  <div style={cpStyles.guideMessageContent}>
-                    <span style={cpStyles.guideSpeaker}>{t("create.guide_agent_label")}</span>
-                    <span style={cpStyles.guideMessageText}>
-                    {activeBriefResponse.can_generate
-                      ? t("create.guide_brief_ready")
-                      : t("create.guide_brief_not_fit")}
-                    </span>
                   </div>
                 </div>
               </>

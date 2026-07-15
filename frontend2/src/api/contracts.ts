@@ -802,6 +802,7 @@ export type NarrativeStoryBrief = {
   display_title?: string | null
   display_intro?: string | null
   premise_summary: string
+  player_role?: string | null
   genre_tone: string
   tension_profile: NarrativeTensionProfile
   story_kernel: string
@@ -839,10 +840,21 @@ export type NarrativeStoryBriefConsistencyCheck = {
   should_retry: boolean
 }
 
+export type NarrativeStoryBriefGuideContext = {
+  scene_summary: string
+  player_role: string
+  cast_or_factions: string[]
+  pressure: string
+  constraints: string[]
+  tone: string
+  confirmed_facts: string[]
+}
+
 export type NarrativeStoryBriefAdvisorRequest = {
   seed: string
   language?: NarrativeTemplateLanguage
   desired_tension_profile?: NarrativeTensionProfile | null
+  guide_context?: NarrativeStoryBriefGuideContext | null
 }
 
 export type NarrativeStoryBriefAdvisorResponse = {

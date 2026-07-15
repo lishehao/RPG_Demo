@@ -400,6 +400,66 @@ def test_story_butler_rejects_multi_question_or_repeated_live_rows(tmp_path) -> 
     assert "gala" in response.reply.lower()
 
 
+def test_story_butler_ready_reply_hands_off_to_automatic_brief_without_a_question(tmp_path) -> None:
+    seed = (
+        "At a livestream gala, I am the singer's publicist. The singer vanishes ninety seconds before curtain "
+        "while the producer, backup dancer, and sponsor fight over a copied badge log. Keep it grounded and social."
+    )
+    deterministic = advance_story_guide_loop(None, seed, "en")
+
+    assert deterministic.status == "ready_to_brief"
+    assert "shaped it below" in deterministic.reply
+    assert "?" not in deterministic.reply
+    policy = story_butler_voice_policy(deterministic, message=seed)
+    assert policy["id"] == "brief_readiness"
+    assert "Ask no question" in str(policy["variation_instruction"])
+
+    transport = _transport(
+        {"reply": "Want me to shape the Story Brief now, or add one boundary first?"},
+        usage={"input_tokens": 42, "output_tokens": 16, "total_tokens": 58},
+    )
+    service = NarrativeService(
+        repository=NarrativeRepository(str(tmp_path / "runtime.sqlite3")),
+        gateway=NarrativeLLMGateway(transport=transport, model="deepseek-test"),
+    )
+
+    response = service.create_story_guide_turn(
+        StoryGuideTurnRequest(message=seed, language="en"),
+        owner_user_id="user_ready_handoff",
+    )
+
+    assert response.status == "ready_to_brief"
+    assert response.source == "live"
+    assert "shaped it below" in response.reply
+    assert "?" not in response.reply
+
+
+def test_story_butler_accepts_a_long_correction_after_ready_without_overflow() -> None:
+    ready = advance_story_guide_loop(
+        None,
+        (
+            "At a livestream gala, I am the backup dancer. The singer vanishes ninety seconds before curtain "
+            "while the producer, publicist, and sponsor fight over a copied badge log. Keep it grounded and social."
+        ),
+        "en",
+    )
+
+    correction = advance_story_guide_loop(
+        ready.state,
+        (
+            "Actually, change that: I am the singer's publicist, not the backup dancer. A copied security-badge "
+            "log can expose who moved the singer. Keep it grounded, tense, and investigative with no supernatural "
+            "elements or arbitrary fantasy details."
+        ),
+        "en",
+    )
+
+    assert correction.status == "ready_to_brief"
+    assert correction.state.context.player_role == "singer's publicist"
+    assert len(correction.state.context.tone) <= 120
+    assert any("superseded player_role" in fact for fact in correction.state.context.rejected_or_changed_facts)
+
+
 def test_story_guide_handles_me_and_who_as_contextual_short_inputs() -> None:
     first = advance_story_guide_loop(None, "Gala goes wrong.", "en")
     role_answer = advance_story_guide_loop(first.state, "Me", "en")
@@ -426,13 +486,39 @@ def test_story_guide_context_tracks_superseded_facts_and_delegated_choices() -> 
 
     assert first.state.context.scene_summary
     assert first.state.context.planner_skill == "role_focus"
-    assert role.state.context.player_role.startswith("I am the courier")
-    assert correction.state.context.player_role.startswith("Actually I am the reporter")
+    assert role.state.context.player_role == "courier"
+    assert correction.state.context.player_role == "reporter"
     assert any("superseded player_role" in fact for fact in correction.state.context.rejected_or_changed_facts)
     assert delegated.acceptedText is True
     assert delegated.state.slots["player_role"].filled is True
     assert "Story Butler chooses" in delegated.state.context.player_role
     assert "Who is the player" not in delegated.reply
+
+
+def test_story_guide_compresses_rich_seed_into_specific_playable_facts() -> None:
+    response = advance_story_guide_loop(
+        None,
+        (
+            "At a livestream gala, I'm the missing singer's publicist. "
+            "The producer, sponsor representative, and backup dancer are in the room. "
+            "A copied badge log can expose who moved her, but if the ninety-second countdown "
+            "reaches zero, my team takes the blame."
+        ),
+        "en",
+    )
+
+    context = response.state.context
+    assert response.canShapeBrief is True
+    assert context.player_role == "singer's publicist"
+    assert context.cast_or_factions == [
+        "producer",
+        "sponsor representative",
+        "backup dancer",
+    ]
+    assert "badge log" in context.pressure.lower()
+    assert "countdown" in context.pressure.lower()
+    assert context.confirmed_facts == [context.scene_summary, context.pressure]
+    assert all(not fact.startswith(("scene:", "player:", "cast:", "pressure:")) for fact in context.confirmed_facts)
 
 
 def test_story_guide_routes_meta_and_help_without_story_fact_pollution() -> None:
@@ -575,6 +661,10 @@ def test_create_page_calls_backend_story_guide_turn_and_shows_thinking_row() -> 
     route_map = (root / "frontend2/src/api/route-map.ts").read_text()
 
     assert "createNarrativeStoryGuideTurn" in create_page
+    assert "guide_context:" in create_page
+    assert "scene_summary: guideLoopState.context.scene_summary" in create_page
+    assert "guideContext={guideLoopState.context}" in create_page
+    assert create_page.count('data-guide-node={activeBriefResponse.can_generate ? "brief_ready" : "brief_not_fit"}') == 1
     assert 'data-guide-node="story_butler_turn"' in create_page
     assert 'data-guide-process="story_guide.live"' in create_page
     assert 'data-guide-stage="slot_focus"' in create_page

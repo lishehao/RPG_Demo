@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react"
 import type { NarrativeStoryBrief } from "../../../api/contracts"
 import { useT, type StringKey } from "../../../shared/lib/i18n"
 import { transitions } from "../../../shared/lib/motion-presets"
-import type { StoryGuideInlineLedger } from "../../../shared/lib/story-guide-loop"
+import type { StoryGuideCompressedContext, StoryGuideInlineLedger } from "../../../shared/lib/story-guide-loop"
 import type { StoryShapeRead } from "../create-types"
 import { busyStageStyles, busyTipStyles, cpStyles } from "../create-styles"
 
@@ -256,6 +256,7 @@ export function StoryBriefCard({
   compact,
   busy,
   shapeRead,
+  guideContext,
   onGenerate,
   onKeepCorrecting,
   onApplyRevisionAction,
@@ -266,6 +267,7 @@ export function StoryBriefCard({
   compact: boolean
   busy: boolean
   shapeRead: StoryShapeRead
+  guideContext: StoryGuideCompressedContext
   onGenerate: () => void
   onKeepCorrecting: () => void
   onApplyRevisionAction: (seedAppend: string) => void
@@ -276,16 +278,59 @@ export function StoryBriefCard({
   const omitted = brief.cast_plan.omitted_entities
   const decisions = brief.constraint_dispositions.slice(0, 8)
   const primaryNames = primary.map((entity) => entity.display_name).join(" · ")
-  const surfacedConstraints = brief.constraints
-    .map((item) => item.label)
+  const surfacedConstraints = [...new Set([
+    ...guideContext.constraints,
+    ...brief.constraints.map((item) => item.label),
+  ])]
     .filter((label) => label.toLowerCase() !== "core premise")
     .slice(0, 4)
-  const visiblePressure = [...brief.time_event_anchors, ...brief.world_setting_pressure]
+  const plannedPressure = [...brief.time_event_anchors, ...brief.world_setting_pressure]
     .map((item) => item.label)
     .filter(Boolean)
     .slice(0, 2)
     .join(" · ")
+  const visiblePressure = guideContext.pressure.trim() || plannedPressure
   const visibleRules = surfacedConstraints.length > 0 ? surfacedConstraints.join(" · ") : brief.genre_tone
+  const playerRole = brief.player_role?.trim() || guideContext.player_role.trim() || t("create.brief_empty")
+  const alreadySurfacedFacts = [
+    brief.premise_summary,
+    guideContext.scene_summary,
+    guideContext.pressure,
+  ].map((fact) => fact.trim().toLowerCase()).filter(Boolean)
+  const confirmedFacts = [...new Set([
+    ...guideContext.confirmed_facts,
+    ...guideContext.constraints,
+  ].map((fact) => fact.trim()))]
+    .filter(Boolean)
+    .filter((fact) => !alreadySurfacedFacts.includes(fact.toLowerCase()))
+    .slice(0, 4)
+  const revisionActionBlock = brief.revision_actions.length > 0 ? (
+    <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
+      <span style={cpStyles.briefFieldLabel}>{t("create.brief_revision_actions")}</span>
+      <span style={cpStyles.briefRevisionHint} data-create-brief-revision-hint="true">
+        {t("create.brief_revision_hint")}
+      </span>
+      <div style={cpStyles.briefRevisionActionRow}>
+        {brief.revision_actions.slice(0, 5).map((action) => (
+          <button
+            key={action.action_id}
+            type="button"
+            style={cpStyles.briefRevisionAction}
+            title={action.description}
+            onClick={() => onApplyRevisionAction(action.seed_append)}
+          >
+            <span style={cpStyles.briefRevisionActionLabel}>{action.label}</span>
+            <span
+              style={cpStyles.briefRevisionActionDesc}
+              data-create-brief-revision-action-desc="true"
+            >
+              {action.description}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  ) : null
 
   return (
     <section style={{ ...cpStyles.briefRail, ...(compact ? cpStyles.briefRailCompact : null) }}>
@@ -301,43 +346,32 @@ export function StoryBriefCard({
         </span>
       </div>
       <div style={cpStyles.briefBetaNote}>{t("create.brief_plan_note")}</div>
+      <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
       {canGenerate ? (
         <div data-create-brief-review-summary="true" style={cpStyles.briefReviewSummary}>
           <span style={cpStyles.briefReviewSummaryTitle}>{t("create.brief_review_summary_title")}</span>
+          <span style={cpStyles.briefReviewSummaryItem}>
+            <strong>{t("create.brief_player_role")}</strong>
+            <span>{playerRole}</span>
+          </span>
           <span style={cpStyles.briefReviewSummaryItem}>
             <strong>{t("create.brief_review_summary_pressure")}</strong>
             <span>{visiblePressure || brief.story_kernel}</span>
           </span>
           <span style={cpStyles.briefReviewSummaryItem}>
-            <strong>{t("create.brief_review_summary_seed")}</strong>
-            <span>{visibleRules}</span>
+            <strong>{t("create.brief_primary_cast")}</strong>
+            <span>{primaryNames || t("create.brief_empty")}</span>
           </span>
           <span style={cpStyles.briefReviewSummaryItem}>
-            <strong>{t("create.brief_review_summary_next")}</strong>
-            <span>{t("create.brief_review_summary_next_value")}</span>
+            <strong>{t("create.brief_card_mechanic")}</strong>
+            <span>{brief.intervention_card_label}</span>
           </span>
         </div>
       ) : null}
-      <p style={cpStyles.briefPremise}>{brief.premise_summary}</p>
-      <StoryShapeReadLedger shapeRead={shapeRead} compact={compact} inBrief />
-      <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
-        <BriefField label={t("create.brief_profile")} value={brief.genre_tone || t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
-        <BriefField label={t("create.brief_primary_cast")} value={primaryNames || t("create.brief_empty")} />
-        <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
-        <BriefField label={t("create.brief_constraints")} value={visibleRules} />
-        <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
-      </div>
-      {surfacedConstraints.length > 0 ? (
+      {confirmedFacts.length > 0 ? (
         <BriefList
-          label={t("create.brief_key_details")}
-          items={surfacedConstraints}
-          empty={t("create.brief_empty")}
-        />
-      ) : null}
-      {visiblePressure ? (
-        <BriefList
-          label={t("create.brief_event_pressure")}
-          items={[visiblePressure]}
+          label={t("create.brief_confirmed_facts")}
+          items={confirmedFacts}
           empty={t("create.brief_empty")}
         />
       ) : null}
@@ -351,11 +385,26 @@ export function StoryBriefCard({
           ))}
         </div>
       ) : null}
+      {!canGenerate ? revisionActionBlock : null}
+      {!canGenerate ? (
+        <div style={cpStyles.briefFooter}>
+          <span>{t(FIT_REASON_LABEL_KEYS[brief.runtime_fit_status])}</span>
+          <strong>{t("create.brief_revise_first")}</strong>
+        </div>
+      ) : null}
       <details style={cpStyles.briefDetails}>
         <summary style={cpStyles.briefDetailsSummary}>
           <span>{t("create.brief_details_toggle")}</span>
           <span style={cpStyles.briefDetailsTitle}>{t("create.brief_details_title")}</span>
         </summary>
+        <StoryShapeReadLedger shapeRead={shapeRead} compact={compact} inBrief />
+        <div style={{ ...cpStyles.briefMetaGrid, ...(compact ? cpStyles.briefMetaGridCompact : null) }}>
+          <BriefField label={t("create.brief_profile")} value={brief.genre_tone || t(TENSION_PROFILE_LABEL_KEYS[brief.tension_profile])} />
+          <BriefField label={t("create.brief_primary_cast")} value={primaryNames || t("create.brief_empty")} />
+          <BriefField label={t("create.brief_kernel")} value={brief.story_kernel} />
+          <BriefField label={t("create.brief_constraints")} value={visibleRules} />
+          <BriefField label={t("create.brief_card_mechanic")} value={brief.intervention_card_label} />
+        </div>
         <div style={{ ...cpStyles.briefCastGrid, ...(compact ? cpStyles.briefCastGridCompact : null) }}>
           <BriefEntityList
             label={t("create.brief_primary_cast")}
@@ -398,38 +447,27 @@ export function StoryBriefCard({
             ))}
           </div>
         ) : null}
-      </details>
-      {brief.revision_actions.length > 0 ? (
-        <div style={cpStyles.briefRevisionActions} aria-label={t("create.brief_revision_actions")}>
-          <span style={cpStyles.briefFieldLabel}>{t("create.brief_revision_actions")}</span>
-          <span style={cpStyles.briefRevisionHint} data-create-brief-revision-hint="true">
-            {t("create.brief_revision_hint")}
-          </span>
-          <div style={cpStyles.briefRevisionActionRow}>
-            {brief.revision_actions.slice(0, 5).map((action) => (
-              <button
-                key={action.action_id}
-                type="button"
-                style={cpStyles.briefRevisionAction}
-                title={action.description}
-                onClick={() => onApplyRevisionAction(action.seed_append)}
-              >
-                <span style={cpStyles.briefRevisionActionLabel}>{action.label}</span>
-                <span
-                  style={cpStyles.briefRevisionActionDesc}
-                  data-create-brief-revision-action-desc="true"
-                >
-                  {action.description}
-                </span>
-              </button>
-            ))}
+        {canGenerate ? revisionActionBlock : null}
+        {canGenerate ? (
+          <div style={cpStyles.briefFooter}>
+            <span>{t(FIT_REASON_LABEL_KEYS[brief.runtime_fit_status])}</span>
+            <strong>{nextStep}</strong>
           </div>
-        </div>
-      ) : null}
-      <div style={cpStyles.briefFooter}>
-        <span>{t(FIT_REASON_LABEL_KEYS[brief.runtime_fit_status])}</span>
-        <strong>{canGenerate ? nextStep : t("create.brief_revise_first")}</strong>
-      </div>
+        ) : null}
+        {canGenerate ? (
+          <div data-create-brief-play-plan="true" style={cpStyles.briefPlayPlan}>
+            <span style={cpStyles.briefPlayPlanLabel}>{t("create.brief_play_plan_label")}</span>
+            <div style={cpStyles.briefPlayPlanItems}>
+              {BUSY_BUILD_PREVIEW.map((item) => (
+                <span key={item.labelKey} style={cpStyles.briefPlayPlanItem}>
+                  <strong>{t(item.labelKey)}</strong>
+                  <span>{t(item.detailKey)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </details>
       <div
         data-create-brief-handoff-note="true"
         style={{
@@ -439,19 +477,6 @@ export function StoryBriefCard({
       >
         {canGenerate ? t("create.brief_handoff_note_ready") : t("create.brief_handoff_note_blocked")}
       </div>
-      {canGenerate ? (
-        <div data-create-brief-play-plan="true" style={cpStyles.briefPlayPlan}>
-          <span style={cpStyles.briefPlayPlanLabel}>{t("create.brief_play_plan_label")}</span>
-          <div style={cpStyles.briefPlayPlanItems}>
-            {BUSY_BUILD_PREVIEW.map((item) => (
-              <span key={item.labelKey} style={cpStyles.briefPlayPlanItem}>
-                <strong>{t(item.labelKey)}</strong>
-                <span>{t(item.detailKey)}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : null}
       <div style={cpStyles.briefChatActions}>
         {canGenerate ? (
           <button

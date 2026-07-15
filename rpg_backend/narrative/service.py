@@ -152,12 +152,12 @@ Use the supplied compressed_context, deterministic slot state, and selected voic
 - Anchor to current scene nouns from voice_skill.grounding_terms or the user's input when possible.
 - If the input is tiny or unclear, use the opening_scene_prompt skill and ask for a grounded scene spark; do not invent genre, cast, setting, or protagonist.
 - Ask exactly one focused next question when status is needs_field.
-- Acknowledge corrections naturally when status is ready_to_brief.
+- When status is ready_to_brief, the Story Brief has already been shaped below the reply. Confirm that handoff without asking permission or another question; mention that the player can enter the story or send one correction.
 - If voice_skill.previous_assistant_reply is present, vary the wording and avoid repeating its sentence shape.
 - Do not mention provider, model, API, JSON, schema, backend, or deterministic fallback.
 - Do not override safety/unsupported decisions from the deterministic contract.
 - Keep the reply under 45 words in English or 90 Chinese characters where practical.
-- Do not ask multiple questions. One reply, one job, one question.
+- Do not ask multiple questions. One reply, one job; ask one question only when status is needs_field.
 
 JSON shape:
 {"reply":"player-facing assistant row"}
@@ -198,6 +198,7 @@ Return strict JSON only.
 
 You receive a deterministic Story Brief candidate that already protects entity hygiene, not-fit gates, and safety boundaries.
 Refine only the readable top-level copy without changing the cast plan, fit status, safety boundaries, or ability to generate.
+When guide_context is present, it contains facts the user already confirmed with Story Butler. Keep its player role, named people or factions, pressure, and concrete clue or opportunity explicit in the readable copy. Do not replace them with generic roles, rename them, or invent substitutes.
 Keep entities clean. Do not promote negated constraints into cast.
 Do not mention provider, model, API, JSON, schema, backend, or fallback.
 
@@ -581,10 +582,7 @@ class NarrativeService:
                 cached_input_tokens=_safe_int_or_none(usage.get("cached_input_tokens")),
                 output_tokens=_safe_int_or_none(usage.get("output_tokens")),
                 total_tokens=_safe_int_or_none(usage.get("total_tokens")),
-                retry_count=max(
-                    _safe_int_or_none(entry.get("retry_count")) or 0,
-                    max(0, (_safe_int_or_none(entry.get("attempt_index")) or 1) - 1),
-                ),
+                retry_count=_safe_int_or_none(entry.get("retry_count")) or 0,
                 repair_count=_safe_int_or_none(entry.get("repair_count")) or 0,
                 fallback_reason=fallback_reason,
                 response_id=str(entry.get("response_id")) if entry.get("response_id") else None,
@@ -797,6 +795,7 @@ class NarrativeService:
             seed=seed,
             language=request.language,
             desired_tension_profile=request.desired_tension_profile,
+            guide_context=request.guide_context,
         )
         deterministic = deterministic.model_copy(
             update={
@@ -824,6 +823,11 @@ class NarrativeService:
                     "seed": seed,
                     "language": request.language,
                     "desired_tension_profile": request.desired_tension_profile,
+                    "guide_context": (
+                        request.guide_context.model_dump(mode="json")
+                        if request.guide_context is not None
+                        else None
+                    ),
                     "deterministic_brief": deterministic.brief.model_dump(mode="json"),
                     "can_generate": deterministic.can_generate,
                     "next_step": deterministic.next_step,
@@ -2306,8 +2310,27 @@ def _ending_action_clause(raw: str) -> str:
 
 
 def _ending_excerpt(raw: str, limit: int) -> str:
-    text = normalize_whitespace(raw)[:limit].strip()
-    return text.rstrip(" .。!！?？,，;；:：—–-")
+    text = normalize_whitespace(raw).strip()
+    if len(text) <= limit:
+        return text.rstrip(" .。!！?？,，;；:：—–-")
+
+    complete_sentences = re.findall(r".*?[.!?。！？](?=\s|$)", text)
+    selected: list[str] = []
+    selected_length = 0
+    for sentence in complete_sentences:
+        sentence = sentence.strip()
+        separator_length = 1 if selected else 0
+        if selected_length + separator_length + len(sentence) > limit:
+            break
+        selected.append(sentence)
+        selected_length += separator_length + len(sentence)
+    if selected:
+        return " ".join(selected).rstrip(" .。!！?？,，;；:：—–-")
+
+    clipped = text[:limit]
+    if " " in clipped:
+        clipped = clipped.rsplit(" ", 1)[0]
+    return clipped.rstrip(" .。!！?？,，;；:：—–-")
 
 
 def _sentence_mid_clause(raw: str) -> str:
@@ -2828,6 +2851,10 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
         entity
         for entity in brief.cast_plan.primary_active_entities
         if entity.kind in {"character", "faction", "object"}
+        and not (
+            brief.player_role
+            and entity.display_name.strip().casefold() == brief.player_role.strip().casefold()
+        )
     ]
     if len(primary_entities) < 3:
         primary_entities = [
@@ -2968,6 +2995,8 @@ def _fallback_player_roles(brief: StoryBrief, cast: list[CastMember]) -> list[Pl
 
 def _fallback_role_names(brief: StoryBrief) -> list[str]:
     seed = brief.original_seed.casefold()
+    if brief.player_role:
+        return [brief.player_role]
     if "bake sale" in seed or "cupcake" in seed:
         return ["Label checker", "Bake-sale host", "Volunteer ally"]
     if "mars" in seed and "talent show" in seed:
@@ -3056,6 +3085,10 @@ def _fallback_opening_passage(
 
 def _fallback_scene_label(brief: StoryBrief, pressure_labels: list[str]) -> str:
     seed = brief.original_seed.lower()
+    if "livestream gala" in seed:
+        return "the livestream gala"
+    if "gala" in seed:
+        return "the gala"
     event = _fallback_event_label(pressure_labels)
     setting = _fallback_setting_label(brief, pressure_labels)
     if "mars" in seed and event and "talent show" in event.lower():
@@ -3093,6 +3126,8 @@ def _fallback_event_label(pressure_labels: list[str]) -> str:
     setting_terms = ("mars", "colony", "library", "school", "setting")
     for label in pressure_labels:
         lower = label.lower()
+        if len(label) > 80 or len(label.split()) > 10 or any(mark in label for mark in (".", ",", ";")):
+            continue
         if not any(token in lower for token in setting_terms):
             return label
     return ""
@@ -3111,6 +3146,8 @@ def _fallback_secondary_event_clause(pressure_labels: list[str], scene: str) -> 
     setting_terms = ("mars", "colony", "library", "school", "sale", "setting")
     for label in pressure_labels:
         lower = label.lower()
+        if len(label) > 80 or len(label.split()) > 10 or any(mark in label for mark in (".", ",", ";")):
+            continue
         if any(token in lower for token in setting_terms):
             continue
         if lower and lower not in scene_lower and lower != primary:
@@ -3120,6 +3157,8 @@ def _fallback_secondary_event_clause(pressure_labels: list[str], scene: str) -> 
 
 def _fallback_contested_object(seed: str) -> str:
     lower = seed.lower()
+    if "badge log" in lower:
+        return "copied badge log" if "copied badge log" in lower else "badge log"
     if "disappearance" in lower or "disappears" in lower:
         return "disappearance"
     if "recipe card" in lower:
@@ -3334,6 +3373,27 @@ def _fallback_opening_options(brief: StoryBrief) -> list[StoryOption]:
             StoryOption(label=f"Let the {volunteer} explain the handoff", hint="Lower worry", handle="witness"),
             StoryOption(label="Compare the table versions gently", hint="Repair trust", handle="compare"),
         ]
+    if brief.tension_profile == "high_drama" and contested != "contested detail":
+        witness = _fallback_named_party(brief, "dancer") or _fallback_named_party(brief, "witness") or "closest witness"
+        operator = _fallback_named_party(brief, "producer") or "room lead"
+        pressure_holder = _fallback_named_party(brief, "sponsor") or _fallback_background_label(brief)
+        return [
+            StoryOption(
+                label=f"Ask {witness} who handled the {contested} last",
+                hint="Test the evidence trail",
+                handle="ask_evidence",
+            ),
+            StoryOption(
+                    label=f"Compare the {contested} with {operator}'s timeline",
+                    hint="Make one account answerable",
+                    handle="compare_time",
+            ),
+            StoryOption(
+                    label=f"Tell {pressure_holder} what the countdown will expose",
+                    hint="Turn time pressure public",
+                    handle="name_timer",
+            ),
+        ]
     return [
         StoryOption(label="Ask who is being left out", hint="Bring in a quiet party", handle="ask"),
         StoryOption(label="Name the pressure everyone is avoiding", hint="Focus the room", handle="name"),
@@ -3360,12 +3420,34 @@ def _fallback_named_party(brief: StoryBrief, token: str) -> str:
 
 
 def _fallback_pressure_labels(brief: StoryBrief) -> list[str]:
-    labels = [
+    raw_labels = [
         item.label
         for item in [*brief.time_event_anchors, *brief.world_setting_pressure]
         if item.label.lower() != "core premise"
     ]
-    return labels[:5]
+    labels: list[str] = []
+    searchable = " ".join([brief.original_seed, *raw_labels]).lower()
+    countdown = re.search(
+        r"\b((?:\d+|[a-z]+(?:-[a-z]+)*)(?:\s+(?:seconds?|minutes?|hours?))?)\s+countdown\b",
+        searchable,
+    )
+    if countdown:
+        labels.append(f"{countdown.group(1)} countdown")
+    if "livestream" in searchable:
+        labels.append("livestream deadline")
+    for label in raw_labels:
+        if len(label) > 80 or len(label.split()) > 10 or any(mark in label for mark in (".", ",", ";")):
+            continue
+        labels.append(label)
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for label in labels:
+        key = label.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(label)
+    return deduped[:5]
 
 
 def _fallback_title(brief: StoryBrief, pressure_labels: list[str]) -> str:
@@ -3520,8 +3602,14 @@ def _safe_story_guide_context(
     story_text_fields = {"scene_summary", "player_role", "pressure", "tone"}
     updates: dict[str, object] = {}
     for field in text_fields:
-        raw_value = getattr(fallback, field) if preserve_story_facts and field in story_text_fields else payload.get(field)
-        value = _safe_context_text(raw_value, getattr(fallback, field), max_len=260)
+        fallback_value = getattr(fallback, field)
+        keep_deterministic_fact = field in story_text_fields and bool(fallback_value.strip())
+        raw_value = (
+            fallback_value
+            if keep_deterministic_fact or (preserve_story_facts and field in story_text_fields)
+            else payload.get(field)
+        )
+        value = _safe_context_text(raw_value, fallback_value, max_len=260)
         if value:
             updates[field] = value
     for field, limit in (
@@ -3531,8 +3619,15 @@ def _safe_story_guide_context(
         ("confirmed_facts", 12),
         ("non_story_user_intents", 8),
     ):
-        raw_value = getattr(fallback, field) if preserve_story_facts and field in {"cast_or_factions", "constraints", "confirmed_facts"} else payload.get(field)
-        value = _safe_context_list(raw_value, getattr(fallback, field), limit=limit)
+        fallback_value = getattr(fallback, field)
+        story_list_field = field in {"cast_or_factions", "constraints", "confirmed_facts"}
+        keep_deterministic_fact = story_list_field and bool(fallback_value)
+        raw_value = (
+            fallback_value
+            if keep_deterministic_fact or (preserve_story_facts and story_list_field)
+            else payload.get(field)
+        )
+        value = _safe_context_list(raw_value, fallback_value, limit=limit)
         updates[field] = value
     raw_changed = payload.get("rejected_or_changed_facts")
     live_changed = raw_changed if isinstance(raw_changed, list) else []
@@ -3641,6 +3736,8 @@ def _reply_matches_voice_skill(reply: str, voice_skill: dict[str, object] | None
         return True
     skill_id = str(voice_skill.get("id") or "")
     lowered = reply.casefold()
+    if skill_id == "brief_readiness" and ("?" in reply or "？" in reply):
+        return False
     semantic_markers = {
         "opening_scene_prompt": ("scene", "where", "trouble", "open", "start", "first", "writing desk", "camera"),
         "role_focus": ("who", "you", "player", "closest", "role"),

@@ -316,11 +316,12 @@ def test_reviewer_seed_is_concrete_enough_to_avoid_generic_scaffold_roles() -> N
     assert "Sponsor-room liaison" in service
 
 
-def test_brief_card_surfaces_object_constraints_before_collapsed_details() -> None:
+def test_brief_card_surfaces_confirmed_facts_before_collapsed_planning_details() -> None:
     source = (ROOT / "frontend2/src/pages/create/components/create-flow-panels.tsx").read_text()
 
-    visible_constraints_idx = source.index("surfacedConstraints.length")
+    visible_facts_idx = source.index("confirmedFacts.length")
     collapsed_details_idx = source.index("<details style={cpStyles.briefDetails}>")
 
-    assert visible_constraints_idx < collapsed_details_idx
-    assert 'label={t("create.brief_key_details")}' in source
+    assert visible_facts_idx < collapsed_details_idx
+    assert 'label={t("create.brief_confirmed_facts")}' in source
+    assert source.index("<StoryShapeReadLedger", visible_facts_idx) > collapsed_details_idx

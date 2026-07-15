@@ -25,6 +25,7 @@ from rpg_backend.narrative.engine import build_agent_plan
 from rpg_backend.narrative.repository import NarrativeRepository
 from rpg_backend.narrative.service import (
     NarrativeService,
+    _ending_excerpt,
     _fallback_verb,
     _fallback_turn_action_phrase,
     _fallback_turn_options,
@@ -33,6 +34,23 @@ from rpg_backend.narrative.service import (
 )
 from rpg_backend.responses_transport import ResponsesJSONResponse
 from tests.auth_helpers import ensure_authenticated_client
+
+
+def test_ending_excerpt_keeps_complete_sentences_instead_of_cutting_words() -> None:
+    passage = (
+        "The room absorbs your move and turns toward the producer. "
+        "The producer answers while the backup dancer watches. "
+        "The pressure stays visible enough that the room has to answer."
+    )
+
+    excerpt = _ending_excerpt(passage, 105)
+
+    assert excerpt == "The room absorbs your move and turns toward the producer"
+    assert not excerpt.endswith(("pressur", "produc", "watche"))
+
+    chinese_excerpt = _ending_excerpt("灯光熄灭后所有人都在等待她说出真相", 10)
+
+    assert chinese_excerpt == "灯光熄灭后所有人都在"
 
 
 def _cast() -> list[CastMember]:

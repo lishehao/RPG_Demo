@@ -581,6 +581,47 @@ def test_shared_transport_records_failed_provider_attempt_in_call_trace() -> Non
     assert trace[0]["failure_code"] == "provider_failed"
     assert trace[0]["failure_message_bucket"] == "timeout"
     assert trace[0]["attempt_index"] == 1
+    assert trace[0]["retry_count"] == 0
+
+
+def test_shared_transport_does_not_count_prior_calls_as_retries() -> None:
+    class _SuccessClient:
+        def __init__(self) -> None:
+            self.responses = self
+
+        def create(self, **kwargs):  # noqa: ANN201, ARG002
+            return SimpleNamespace(
+                id="resp-demo",
+                output_text='{"ok": true}',
+                usage={"total_tokens": 1},
+                retry_count=0,
+            )
+
+    trace: list[dict[str, object]] = []
+    transport = ResponsesJSONTransport(
+        client=_SuccessClient(),  # type: ignore[arg-type]
+        model="demo-model",
+        timeout_seconds=20.0,
+        use_session_cache=False,
+        temperature=0.2,
+        enable_thinking=False,
+        provider_failed_code="provider_failed",
+        invalid_response_code="invalid_response",
+        invalid_json_code="invalid_json",
+        error_factory=lambda code, message, status_code: RuntimeError(f"{code}:{message}:{status_code}"),
+        call_trace=trace,
+    )
+
+    for _ in range(2):
+        transport.invoke_json(
+            system_prompt="Return JSON only.",
+            user_payload={"ping": True},
+            max_output_tokens=32,
+            operation_name="demo.op",
+        )
+
+    assert [entry["attempt_index"] for entry in trace] == [1, 2]
+    assert [entry["retry_count"] for entry in trace] == [0, 0]
 
 
 def test_shared_transport_preserves_upstream_http_status_on_provider_error() -> None:
@@ -1225,6 +1266,7 @@ def test_raw_responses_client_retries_pending_overload_once_then_succeeds(monkey
     )
 
     assert response.output_text == "{\"ok\": true}"
+    assert response.retry_count == 1
     assert recorded["stream_count"] == 2
     assert sleep_calls == [5.0]
 
@@ -1368,6 +1410,7 @@ def test_raw_responses_client_retries_empty_content_once_and_rotates_key(monkeyp
 
     assert response.id == "resp-ok"
     assert response.output_text == "{\"ok\": true}"
+    assert response.retry_count == 1
     assert recorded["post_count"] == 2
     assert recorded["auth_headers"] == ["Bearer key-a", "Bearer key-b"]
     assert sleep_calls == [0.5]

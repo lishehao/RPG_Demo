@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+from math import ceil
 from pathlib import Path
 from typing import Any
 
@@ -111,6 +112,64 @@ def _active_npc_count(payload: dict[str, Any]) -> int:
     return len(active) if isinstance(active, list) else 0
 
 
+def _focused_npc_count(payload: dict[str, Any]) -> int:
+    director = payload.get("director")
+    if not isinstance(director, dict):
+        return 0
+    focused = director.get("focus_window_npc_ids")
+    return len(focused) if isinstance(focused, list) else 0
+
+
+def _director_difficulty(payload: dict[str, Any]) -> str | None:
+    director = payload.get("director")
+    if not isinstance(director, dict):
+        return None
+    difficulty = str(director.get("difficulty") or "").strip()
+    return difficulty or None
+
+
+def _npc_response_evidence(
+    story: dict[str, Any],
+    *,
+    expected_turn_count: int,
+) -> dict[str, Any]:
+    narrators = [
+        message for message in story.get("messages") or []
+        if isinstance(message, dict) and message.get("role") == "narrator"
+    ]
+    # A complete story includes the opening narrator message before resolved
+    # turn messages. Keep the newest expected_turn_count beats so the opening
+    # does not dilute the response-rate denominator.
+    if expected_turn_count > 0 and len(narrators) > expected_turn_count:
+        narrators = narrators[-expected_turn_count:]
+
+    responsive_turns = 0
+    shifted_turns = 0
+    distinct_npc_ids: set[str] = set()
+    for message in narrators:
+        pulses = [pulse for pulse in message.get("npc_pulse") or [] if isinstance(pulse, dict)]
+        if not pulses:
+            continue
+        responsive_turns += 1
+        has_meaningful_shift = False
+        for pulse in pulses:
+            npc_id = str(pulse.get("npc_id") or "").strip()
+            if npc_id:
+                distinct_npc_ids.add(npc_id)
+            shift = str(pulse.get("shift") or "").strip().casefold()
+            if shift and shift not in {"steady", "unchanged", "neutral", "none"}:
+                has_meaningful_shift = True
+        if has_meaningful_shift:
+            shifted_turns += 1
+
+    return {
+        "observed_turns": len(narrators),
+        "responsive_npc_turns": responsive_turns,
+        "shifted_npc_turns": shifted_turns,
+        "distinct_npc_ids": sorted(distinct_npc_ids),
+    }
+
+
 def _visible_text_for_payoff(story: dict[str, Any], ending: dict[str, Any] | None) -> str:
     parts: list[str] = []
     for message in story.get("messages") or []:
@@ -140,6 +199,24 @@ def _quality_summary(
     contract_counts = _status_counts(contract_payloads)
     stage_phases = [phase for payload in plan_payloads if (phase := _stage_phase(payload))]
     active_npc_turns = sum(1 for payload in plan_payloads if _active_npc_count(payload) > 0)
+    focused_npc_turns = sum(1 for payload in plan_payloads if _focused_npc_count(payload) > 0)
+    difficulties = [
+        difficulty for payload in plan_payloads
+        if (difficulty := _director_difficulty(payload))
+    ]
+    character_mode = "gauntlet" if "gauntlet" in difficulties or (not difficulties and active_npc_turns) else "story"
+    npc_response = _npc_response_evidence(story, expected_turn_count=len(turn_summaries))
+    observed_character_turns = max(1, int(npc_response["observed_turns"]) or len(turn_summaries))
+    responsive_required = max(1, ceil(observed_character_turns * (0.5 if character_mode == "gauntlet" else 0.75)))
+    shifted_required = max(1, ceil(observed_character_turns * 0.5))
+    distinct_required = 1 if observed_character_turns == 1 else 2
+    active_required = max(2, ceil(len(plan_payloads) * 0.4)) if plan_payloads else 1
+    character_intent_passes = (
+        int(npc_response["responsive_npc_turns"]) >= responsive_required
+        and int(npc_response["shifted_npc_turns"]) >= shifted_required
+        and len(npc_response["distinct_npc_ids"]) >= distinct_required
+        and (character_mode != "gauntlet" or active_npc_turns >= active_required)
+    )
     non_final = [turn for turn in turn_summaries if not turn.get("is_complete")]
     chosen_labels = [
         str(turn.get("chosen_option_label") or "").strip().casefold()
@@ -180,9 +257,18 @@ def _quality_summary(
             },
         },
         "character_intent": {
-            "status": "pass" if active_npc_turns >= 8 else "warn",
+            "status": "pass" if character_intent_passes else "warn",
             "evidence": {
+                "mode": character_mode,
                 "active_npc_turns": active_npc_turns,
+                "active_npc_turns_required": active_required if character_mode == "gauntlet" else 0,
+                "focused_npc_turns": focused_npc_turns,
+                "responsive_npc_turns": npc_response["responsive_npc_turns"],
+                "responsive_npc_turns_required": responsive_required,
+                "shifted_npc_turns": npc_response["shifted_npc_turns"],
+                "shifted_npc_turns_required": shifted_required,
+                "distinct_npc_ids": npc_response["distinct_npc_ids"],
+                "distinct_npc_ids_required": distinct_required,
                 "plan_count": len(plan_payloads),
             },
         },
@@ -208,11 +294,11 @@ def _quality_summary(
         verdict = "warn"
     rationale = (
         "Deterministic quality packaging only: it checks judge pass/fail rows, "
-        "choice variety, stage escalation, cast pressure, ending payoff, and option availability. "
+        "choice variety, stage escalation, mode-aware character response, ending payoff, and option availability. "
         "It is not a calibrated fun metric."
     )
     return {
-        "schema_version": "tiny_stories_golden_path_quality.v1",
+        "schema_version": "tiny_stories_golden_path_quality.v2",
         "status": verdict,
         "criteria": criteria,
         "rationale": rationale,

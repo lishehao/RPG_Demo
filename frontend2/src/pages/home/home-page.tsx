@@ -974,7 +974,7 @@ function HomeEditorialMosaic({
             onClick={onOpenCreate}
             data-home-empty-create="true"
           >
-            {t("home.cta_create")}
+            {t("home.cta_empty_create")}
           </motion.button>
         </div>
       </motion.div>
