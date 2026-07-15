@@ -11,18 +11,18 @@ jobs:
     name: backend (pytest + import smoke)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
 
-      - name: Set up Node 20 for backend source guards
-        uses: actions/setup-node@v4
+      - name: Set up Node 24 for backend source guards
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: frontend2/package-lock.json
 
@@ -50,12 +50,12 @@ jobs:
       run:
         working-directory: frontend2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: frontend2/package-lock.json
 
