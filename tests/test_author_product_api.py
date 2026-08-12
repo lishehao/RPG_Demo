@@ -622,7 +622,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             225,
             {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "generation_status", "token_budget"},
             "Story frame drafted. Title, premise, and stakes are set.",
-            "225 total tokens · USD 0.000020 est.",
+            "225 total tokens · USD 0.000030 est.",
         ),
         (
             "cast_ready",
@@ -630,7 +630,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             300,
             {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "generation_status", "token_budget"},
             "Cast roster drafted. NPC tensions are in place.",
-            "300 total tokens · USD 0.000020 est.",
+            "300 total tokens · USD 0.000030 est.",
         ),
         (
             "beat_plan_ready",
@@ -638,7 +638,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             360,
             {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "beat_count", "opening_beat", "final_beat", "generation_status", "token_budget"},
             "Beat plan drafted. Main progression is mapped.",
-            "360 total tokens · USD 0.000020 est.",
+            "360 total tokens · USD 0.000030 est.",
         ),
         (
             "completed",
@@ -646,7 +646,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             570,
             {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "beat_count", "opening_beat", "final_beat", "generation_status", "token_budget"},
             "Bundle complete. Story package is ready.",
-            "570 total tokens · USD 0.000020 est.",
+            "570 total tokens · USD 0.000030 est.",
         ),
     ]
 
