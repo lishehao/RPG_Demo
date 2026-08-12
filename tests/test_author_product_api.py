@@ -582,6 +582,24 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
     import rpg_backend.author.jobs as jobs_module
 
     service = AuthorJobService()
+    settings = get_settings()
+    uncached_input_tokens = max(240 - 160 - 30, 0)
+    estimated_cost_rmb = (
+        uncached_input_tokens * settings.responses_input_price_per_million_tokens_rmb / 1_000_000
+        + 160
+        * settings.responses_input_price_per_million_tokens_rmb
+        / 1_000_000
+        * settings.responses_session_cache_hit_multiplier
+        + 30
+        * settings.responses_input_price_per_million_tokens_rmb
+        / 1_000_000
+        * settings.responses_session_cache_creation_multiplier
+        + 60 * settings.responses_output_price_per_million_tokens_rmb / 1_000_000
+    )
+    estimated_cost_usd = round(estimated_cost_rmb, 6) * settings.responses_usd_per_rmb
+
+    def expected_token_budget(total_tokens: int) -> str:
+        return f"{total_tokens} total tokens · USD {estimated_cost_usd:.6f} est."
 
     def build_record(stage: str, stage_index: int, total_tokens: int | None) -> jobs_module._AuthorJobRecord:
         metrics = None
@@ -622,7 +640,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             225,
             {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "generation_status", "token_budget"},
             "Story frame drafted. Title, premise, and stakes are set.",
-            "225 total tokens · USD 0.000030 est.",
+            expected_token_budget(225),
         ),
         (
             "cast_ready",
@@ -630,7 +648,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             300,
             {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "generation_status", "token_budget"},
             "Cast roster drafted. NPC tensions are in place.",
-            "300 total tokens · USD 0.000030 est.",
+            expected_token_budget(300),
         ),
         (
             "beat_plan_ready",
@@ -638,7 +656,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             360,
             {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "beat_count", "opening_beat", "final_beat", "generation_status", "token_budget"},
             "Beat plan drafted. Main progression is mapped.",
-            "360 total tokens · USD 0.000030 est.",
+            expected_token_budget(360),
         ),
         (
             "completed",
@@ -646,7 +664,7 @@ def test_author_job_service_loading_cards_are_stage_adaptive() -> None:
             570,
             {"theme", "structure", "working_title", "tone", "story_premise", "story_stakes", "cast_count", "cast_anchor", "beat_count", "opening_beat", "final_beat", "generation_status", "token_budget"},
             "Bundle complete. Story package is ready.",
-            "570 total tokens · USD 0.000030 est.",
+            expected_token_budget(570),
         ),
     ]
 
