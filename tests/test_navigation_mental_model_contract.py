@@ -1110,6 +1110,8 @@ def test_home_topbar_account_ia_keeps_creation_in_hero() -> None:
     assert "topbar-account__label" in header
     assert "topbar-lang" in header
     assert "topbar-account" in header
+    assert "accountInitial" not in header
+    assert 'className="topbar-account__avatar"' not in header
     assert '"header.account": "Account"' in strings
     assert '"header.account": "账号"' in strings
 
