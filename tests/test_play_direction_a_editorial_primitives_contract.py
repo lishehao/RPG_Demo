@@ -2550,7 +2550,8 @@ def test_play_has_jump_to_action_affordance_when_choices_are_below_viewport() ->
     assert "data-play-action-jump-stage={stage}" in action_jump
     assert 'data-play-action-jump-compact={compactJump ? "true" : "false"}' in action_jump
     assert 'data-play-action-jump-detail="true"' in action_jump
-    assert "onPointerDown={onClick}" in action_jump
+    assert "onPointerDown={onClick}" not in action_jump
+    assert "onClick={onClick}" in action_jump
     assert "isPlayElementAwayFromViewport" in action_jump_utils
     assert "scrollToPlayActionArea" in action_jump_utils
     assert "scrollToPlayImpactSummaryOrAction" in action_jump_utils

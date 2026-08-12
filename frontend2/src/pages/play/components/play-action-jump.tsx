@@ -34,7 +34,6 @@ export function PlayActionJumpButton({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 12 }}
       transition={transitions.snap}
-      onPointerDown={onClick}
       onClick={onClick}
       aria-label={t("play.action_jump_title")}
       title={t("play.action_jump_title")}
