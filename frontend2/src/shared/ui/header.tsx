@@ -18,7 +18,6 @@ export function Header({
   const { lang, setLang, t } = useLanguage()
   const [menuOpen, setMenuOpen] = useState(false)
   const accountName = auth.user?.display_name?.trim() || "reader"
-  const accountInitial = accountName.slice(0, 1).toUpperCase()
   const accountLabel = t("header.account")
 
   const handleLogin = () => {
@@ -61,9 +60,6 @@ export function Header({
               aria-expanded={menuOpen}
               title={accountName}
             >
-              <span className="topbar-account__avatar" aria-hidden>
-                {accountInitial}
-              </span>
               <span className="topbar-account__label">{accountLabel}</span>
             </button>
             {menuOpen ? (
