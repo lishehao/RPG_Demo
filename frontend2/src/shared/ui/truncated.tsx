@@ -71,7 +71,12 @@ export function Truncated({
 
   const affordanceStyle: CSSProperties = showAffordance
     ? {
-        borderBottom: "1px dashed var(--text-faint)",
+        // Keep each border side explicit because callers may provide a
+        // borderBottomColor override. Mixing shorthand with a side-specific
+        // property makes React warn during responsive/stateful rerenders.
+        borderBottomWidth: 1,
+        borderBottomStyle: "dashed",
+        borderBottomColor: "var(--text-faint)",
         cursor: "help",
       }
     : {}
