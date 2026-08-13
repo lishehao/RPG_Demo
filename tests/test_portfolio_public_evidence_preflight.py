@@ -117,30 +117,17 @@ def test_public_evidence_preflight_fails_when_deployed_page_is_stale() -> None:
 
 def test_public_evidence_preflight_is_documented_for_application_links() -> None:
     readme = (ROOT / "README.md").read_text()
-    hero_block = readme.split("</p>", 1)[0]
 
-    assert '<a href="https://youtu.be/RRJ7uyjW_nA">' in hero_block
-    assert '<a href="https://lishehao.github.io/RPG_Demo/">' not in hero_block
+    assert '<a href="https://youtu.be/RRJ7uyjW_nA">' in readme
+    assert '<a href="https://lishehao.github.io/RPG_Demo/">' not in readme
     assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
-    assert "Evidence visibility gate" in readme
-    assert "before sending a public GitHub Pages or repository" in readme
-    assert "If it fails, use the demo video for orientation" in readme
-    assert "public reviewer demo, `#/portfolio`, `#/reviewer`, local QA routes" in readme
-    assert "before sending application or recruiting links:" in readme
-    assert "It should report that\nlocal `HEAD` matches `origin/main`" in readme
-    assert "local `HEAD` matches `origin/main`" in readme
-    assert "GitHub, GitHub Pages shell" in readme
-    assert "static reviewer demo reviewers" in readme
-    assert "Story Desk, template" in readme
-    assert "detail, public reviewer demo" in readme
-    assert "use the demo video for orientation only" in readme
-    assert "not cite the current" in readme
-    assert "Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or" in readme
-    assert "Replay surfaces as public evidence until the public-link check passes" in readme
-    assert "Reviewer path" not in readme
-    assert "routes as public evidence" not in readme
-    assert "affected reviewer surfaces" in readme
-    assert "live GitHub Pages marker check" in readme
+    assert "Before citing a deployed route as application evidence" in readme
+    assert "public branch and GitHub Pages deployment actually" in readme
+    assert "contain the evidence being referenced" in readme
+    assert "public reviewer demo is deterministic and backend-free" in readme
+    assert "not presented as a live-generation" in readme
+    assert "one reproducible system\ntrajectory" in readme
+    assert "not population-level story quality, retention, or market demand" in readme
 
 
 def test_evidence_sensitive_path_filter_covers_portfolio_and_play_surfaces() -> None:

@@ -247,76 +247,50 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
 
 def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     readme = (ROOT / "README.md").read_text()
-    hero_block = readme.split("</p>", 1)[0]
 
-    assert "./docs/demo-video/admissions-trailer-contact.jpg" in hero_block
-    assert "product UI and reviewer evidence" in hero_block
-    assert "./docs/images/social-preview.jpg" not in hero_block
-    readme_top = readme[:readme.index("<table>")]
-    assert "short, story-first mobile episode" in readme_top
-    assert "read a scene" in readme_top
-    assert "compare a few meaningful moves" in readme_top
-    assert "act once" in readme_top
-    assert "follow visible" in readme_top
-    assert "playable 12-turn ending path" in readme_top
-    assert "Watch 75s demo" in readme
-    assert "Open MP4 demo" in readme
-    assert "Inspect source evidence" in readme
-    assert "MP4 fallback" not in readme
-    assert "offline/fallback" not in readme
-    assert "An inspectable AI interactive story, not another story chatbot." in readme
-    assert "An inspectable AI story game, not another story chatbot." not in readme
-    assert "An inspectable AI narrative runtime" not in readme
-    assert "<strong>State-shaped</strong>" in readme
-    assert "<strong>Runtime-driven</strong>" not in readme
-    assert "## Reviewer Run" in readme
-    assert "## Reviewer Path" not in readme
-    assert "Run locally and open `#/portfolio`" in readme
-    assert "Open the live backend reviewer run from the" in readme
-    assert "portfolio page." in readme
-    assert "Launch the reviewer route from the portfolio page" not in readme
-    assert "playable state, one-move" in readme
-    assert "consequence, evidence limits, and replay artifact" in readme
-    assert "runtime evidence hooks" not in readme
-    assert "open `#/qa/replay`" in readme
-    assert "deterministic evidence" in readme
-    assert "Verify source evidence" in readme
-    assert "## Target Player And Content Model" in readme
-    assert "story-first players who want a compact mobile" in readme
-    assert "not a blank writing canvas, infinite fiction feed, or systems" in readme
-    assert "read the current scene, compare a few" in readme
-    assert "selected moves preserve the \"why now\" reason" in readme
-    assert "inner" in readme and "motive drafting stays attached to the chosen move" in readme
-    assert "reviewer evidence stays" in readme
-    assert "outside the normal player surface" in readme
-    assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
-    assert "[Case Study](./docs/CASE_STUDY.md)" in readme
-    assert "`tests/test_navigation_mental_model_contract.py`" in readme
-    assert "`tests/test_play_direction_a_editorial_primitives_contract.py`" in readme
-    assert "portfolio-grade AI product-system evidence" in readme
-    assert "It is not claimed as a launched consumer" in readme
-    assert "game or broad adoption proof" in readme
-    reviewer_path = readme[readme.index("## Reviewer Run") : readme.index("## Target Player And Content Model")]
-    assert "Evidence visibility gate" in reviewer_path
-    assert "before sending a public GitHub Pages or repository" in reviewer_path
-    assert "run the public-link check" in reviewer_path
-    assert "If it fails, use the demo video for orientation" in reviewer_path
+    assert '<h1 align="center">Tiny Stories</h1>' in readme
+    assert "An inspectable LLM narrative runtime for bounded, stateful play." in readme
+    assert "./docs/demo-video/admissions-trailer-contact.jpg" in readme
+    assert "product loop: creation, play, ending, and reviewer evidence" in readme
+    assert "actions/workflows/ci.yml/badge.svg?branch=main" in readme
+    assert "github/stars" not in readme
+    assert "Watch the 75s demo" in readme
+    assert "Open the reviewer demo" in readme
+    assert "Engineering evidence" in readme
+
+    assert "## The Product Question" in readme
+    assert "designed game loop rather than a" in readme
+    assert "prose-only chatbot" in readme
+    assert "story-first players" in readme
+    assert "read the\ncurrent scene, compare a few meaningful moves, commit once" in readme
+    assert "inner motive remains attached to the selected move" in readme
+    assert "technical evidence stays outside normal Play" in readme
+
+    assert "## Engineering Contribution" in readme
+    assert "Guided creation agent" in readme
+    assert "Typed story compiler" in readme
+    assert "Gameplay envelope" in readme
+    assert "Evaluation and observability" in readme
+    assert "live_enriched" in readme
+
+    assert "## Live Evaluation Snapshot" in readme
+    assert "2026-07-16" in readme
+    assert "Turn completion | 12/12" in readme
+    assert "Step Judge | 12/12 pass" in readme
+    assert "Contract Judge | 12/12 pass" in readme
+    assert "0 persisted retries; 0 required-operation fallbacks" in readme
+    assert "median live Play-turn latency was 14.0 seconds" in readme
+    assert "not population-level story quality, retention, or market demand" in readme
+
+    assert "## Reviewer Path" in readme
+    reviewer_path = readme[readme.index("## Reviewer Path") : readme.index("## Evaluation Design")]
+    assert "deterministic reviewer demo" in reviewer_path
+    assert "engineering evidence packet" in reviewer_path
     assert "`#/portfolio`" in reviewer_path
-    assert "`#/reviewer`" in reviewer_path
-    assert "`#/qa/home-start`" in reviewer_path
-    assert "`#/qa/replay`" in reviewer_path
-    assert "four checks to keep consistent" in reviewer_path
-    assert "playable state, one-move" in reviewer_path
-    assert "consequence, evidence limits, and replay artifact" in reviewer_path
-    assert "local QA routes such as" in reviewer_path
-    assert "`#/qa/home-start` and `#/qa/replay`" in reviewer_path
-    assert "local-only evidence" in reviewer_path
-    assert "pushed, deployed, and" in reviewer_path
-    assert "rechecked" in reviewer_path
-    assert "Reviewer run<br/>Portfolio + Reviewer" in readme
-    assert "Reviewer path<br/>#/portfolio + #/reviewer" not in readme
-    assert "Replay surfaces as public evidence until the public-link check passes" in readme
-    assert "Replay routes as public evidence until the preflight passes" not in readme
+    assert "`?reviewer=1`" in reviewer_path
+    assert "python3 tools/portfolio_public_evidence_preflight.py" in reviewer_path
+    assert "public branch and GitHub Pages deployment" in reviewer_path
+
     assert "python3 tools/narrative_release_gate.py --mode fake" in readme
     assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
     assert "python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000" in readme
@@ -326,14 +300,10 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     assert "\npytest -q" not in readme
     assert "python tools/" not in readme
     assert "python -m tools.rpg_eval" not in readme
-    assert "## Engineering Evidence" in readme
-    assert "## Engineering Proof" not in readme
-    assert "designed game loop" in readme
-    assert "designed game runtime" not in readme
-    assert "product system around it" in readme
-    assert "runtime around it" not in readme
-    assert "| Play UI | `frontend2/src/pages/play/`" in readme
-    assert "StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules" in readme
+    assert "## Source Map" in readme
+    assert "| Play and reviewer UI | `frontend2/src/pages/play/` |" in readme
+    assert "validated consumer product or research\ncontribution" in readme
+    assert "Human completion, replay intent, retention, and organic sharing" in readme
 
 
 def test_public_pages_landing_matches_reviewer_evidence_path() -> None:

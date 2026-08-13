@@ -1,383 +1,290 @@
-# Tiny Stories
+<h1 align="center">Tiny Stories</h1>
+
+<p align="center">
+  <strong>An inspectable LLM narrative runtime for bounded, stateful play.</strong>
+</p>
+
+<p align="center">
+  One premise becomes a guided Story Brief, a live opening, 12 consequential
+  turns, and a replayable ending.
+</p>
+
+<p align="center">
+  <a href="https://github.com/lishehao/RPG_Demo/actions/workflows/ci.yml">
+    <img alt="CI" src="https://github.com/lishehao/RPG_Demo/actions/workflows/ci.yml/badge.svg?branch=main" />
+  </a>
+  <img alt="Python 3.11" src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" />
+  <img alt="Node 24" src="https://img.shields.io/badge/Node-24-5FA04E?logo=nodedotjs&logoColor=white" />
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-runtime-009688?logo=fastapi&logoColor=white" />
+  <img alt="MIT License" src="https://img.shields.io/badge/License-MIT-D6A84B" />
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch the 75s demo</strong></a>
+  &nbsp;|&nbsp;
+  <a href="https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer"><strong>Open the reviewer demo</strong></a>
+  &nbsp;|&nbsp;
+  <a href="./docs/tiny-stories-engineering-evidence-packet.md">Engineering evidence</a>
+  &nbsp;|&nbsp;
+  <a href="./docs/CURRENT_SYSTEM_MAP.md">System map</a>
+  &nbsp;|&nbsp;
+  <a href="./README.zh.md">中文</a>
+</p>
 
 <p align="center">
   <a href="https://youtu.be/RRJ7uyjW_nA">
-    <img src="./docs/demo-video/admissions-trailer-contact.jpg" alt="Tiny Stories admissions demo contact sheet showing product UI and reviewer evidence" width="100%" />
+    <img src="./docs/demo-video/admissions-trailer-contact.jpg" alt="Tiny Stories product loop: creation, play, ending, and reviewer evidence" width="100%" />
   </a>
-</p>
-
-<p align="center">
-  <strong>An inspectable AI interactive story, not another story chatbot.</strong>
-</p>
-
-<p align="center">
-  Type one premise. Tiny Stories compiles a short, story-first mobile episode:
-  read a scene, compare a few meaningful moves, act once, then follow visible
-  consequences through a playable 12-turn ending path.
-</p>
-
-<p align="center">
-  <a href="#innovation">Innovation</a>
-  · <a href="#architecture">Architecture</a>
-  · <a href="#evaluation-v3">Evaluation</a>
-  · <a href="./docs/CURRENT_SYSTEM_MAP.md">System map</a>
-  · <a href="./docs/CASE_STUDY.md">Case study</a>
-  · <a href="#run-locally">Run locally</a>
-  · <a href="./README.zh.md">中文</a>
-</p>
-
-<p align="center">
-  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-yellow.svg" />
-  <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11+-blue.svg" />
-  <img alt="React 19" src="https://img.shields.io/badge/react-19-61dafb.svg" />
-  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-runtime-009688.svg" />
-  <img alt="GitHub stars" src="https://img.shields.io/github/stars/lishehao/RPG_Demo?style=social" />
-  <img alt="Status: portfolio case study" src="https://img.shields.io/badge/status-portfolio_case_study-6f42c1.svg" />
 </p>
 
 <table>
   <tr>
-    <td><strong>Player-facing</strong><br/>A seed becomes a short interactive drama with role cards, choices, free-form action, advisor help, and a compiled ending.</td>
-    <td><strong>State-shaped</strong><br/>Deterministic schedulers shape pressure, state, inventory, and consequences before each LLM call.</td>
-    <td><strong>Reviewable</strong><br/>Portfolio and the reviewer run expose the contracts, state, and boundaries behind the polished demo.</td>
+    <td width="33%"><strong>Product loop</strong><br/>Guided creation -> typed Story Brief -> live play -> ending and replay.</td>
+    <td width="33%"><strong>Systems work</strong><br/>Structured contracts, persistent state, bounded metadata, evaluation, and telemetry.</td>
+    <td width="33%"><strong>Evidence boundary</strong><br/>Validated as an AI product system, not claimed as a proven consumer game.</td>
   </tr>
 </table>
 
----
+> The public reviewer demo is deterministic and backend-free. It is safe to
+> inspect without an API key, but it is not presented as a live-generation
+> result. Live-system evidence is documented separately and reproducibly.
 
-## Demo
+## The Product Question
 
-[![Watch the Tiny Stories demo](./docs/demo-video/admissions-trailer-contact.jpg)](https://youtu.be/RRJ7uyjW_nA)
+Most LLM story demos stop at generated prose. Tiny Stories asks a narrower,
+more demanding engineering question:
 
-<p align="center">
-  <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch 75s demo</strong></a>
-  ·
-  <a href="https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer"><strong>Open public reviewer demo</strong></a>
-  ·
-  <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">Open MP4 demo</a>
-  ·
-  <a href="./docs/CURRENT_SYSTEM_MAP.md">Inspect source evidence</a>
-</p>
+> Can an LLM story generator behave like a designed game loop rather than a
+> prose-only chatbot?
 
-The unlisted YouTube cut is the primary reviewer watch path. The MP4 is
-the same 720p reviewer cut for environments where YouTube is blocked
-(~4.6 MB). Treat the video as orientation; the evidence lives in the
-source, tests, reviewer run, and system map.
-The public reviewer demo is a deterministic GitHub Pages app path: no API key,
-no live backend, and no generation claim beyond the committed source evidence.
+The system treats generation as one component inside a stateful product. A
+Story Butler interprets arbitrary input, maintains compressed context, and
+hands off automatically when a playable Story Brief is ready. The runtime then
+combines deterministic state transitions with constrained live generation,
+persists the resulting trajectory, and compiles an ending from the path the
+player actually took.
 
----
-
-## Reviewer Run
-
-Recommended order for an admissions or recruiting review:
-
-1. Watch the 75s demo to see the player-facing loop without reading the
-   repository first.
-2. Open the public reviewer demo:
-   `https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer`.
-   It is the backend-free public path for inspecting the deterministic
-   reviewer evidence surface.
-3. Run locally and open `#/portfolio` for live generation; use it as the
-   guided case-study surface. Open the live backend reviewer run from the
-   portfolio page.
-   The four checks to keep consistent are playable state, one-move
-   consequence, evidence limits, and replay artifact.
-4. In a local build, open `#/qa/home-start` when you need deterministic
-   evidence that a populated Story Desk card lands in a readable first turn.
-5. In a local build, open `#/qa/replay` when you need deterministic evidence
-   of the completed-run replay artifact without backend or live generation.
-6. Verify source evidence in [Current System Map](./docs/CURRENT_SYSTEM_MAP.md),
-   [Case Study](./docs/CASE_STUDY.md),
-   `tests/test_navigation_mental_model_contract.py`, and
-   `tests/test_play_direction_a_editorial_primitives_contract.py`.
-
-Boundary: this is portfolio-grade AI product-system evidence: typed
-contracts, persistent sessions, reviewer instrumentation, deterministic
-QA routes, and a demo trailer. It is not claimed as a launched consumer
-game or broad adoption proof.
-
-Evidence visibility gate: before sending a public GitHub Pages or repository
-link as admissions evidence, run the public-link check:
-`python3 tools/portfolio_public_evidence_preflight.py`.
-If it fails, use the demo video for orientation and label `#/portfolio`,
-`#/reviewer`, the public reviewer demo, local QA routes such as
-`#/qa/home-start` and `#/qa/replay`, Story Desk, Create, Play, and Replay as
-local-only evidence until the intended branch is pushed, deployed, and
-rechecked.
-
----
-
-## Target Player And Content Model
-
-Tiny Stories is built for story-first players who want a compact mobile
-episode, not a blank writing canvas, infinite fiction feed, or systems
-dashboard. The intended rhythm is simple: read the current scene, compare a few
-meaningful moves, act once, see what changed, then use that consequence to pick
-the next beat.
-
-That target user model explains the UI choices: normal Play keeps story context
-near decision context; selected moves preserve the "why now" reason; inner
-motive drafting stays attached to the chosen move; and reviewer evidence stays
-outside the normal player surface.
-
----
-
-## What This Is
-
-Tiny Stories asks a narrow product question:
-
-> Can an LLM story generator feel like a designed game loop instead
-> of a chatbot?
-
-The answer here is a constrained full-stack system:
+The target experience is a compact episode for story-first players: read the
+current scene, compare a few meaningful moves, commit once, see what changed,
+then act on that consequence. Narrative context stays close to decision
+context; inner motive remains attached to the selected move; advisor support
+lives with the scene cast; technical evidence stays outside normal Play.
 
 ```text
-seed
-  -> story compiler
-  -> cast + player role + hidden objectives + leverage network
-  -> 12-turn play loop
-  -> advisor side-channel + persistent state
-  -> ending compiler + highlights + alternate branches
+premise
+  -> guided Story Butler conversation
+  -> typed Story Brief
+  -> live opening + player role + cast pressure
+  -> 12-turn choose / act / react loop
+  -> persisted ending + highlights + alternate branches
 ```
 
-The project is best read as an AI product engineering case study. The
-LLM writes prose, but the interesting work is the product system around it:
-typed contracts, deterministic schedulers, persisted state, visible
-inspection surfaces, and a final artifact generated from the path
-actually played.
+This is an AI product engineering case study: the model writes prose, while
+the surrounding system owns state, authority, validation, persistence,
+observability, and failure handling.
 
-For the current active chain versus legacy experimental folders, see
-[Current System Map](./docs/CURRENT_SYSTEM_MAP.md).
+## Engineering Contribution
 
----
-
-## Innovation
-
-| Layer | What is different | Engineering value |
+| System layer | Implementation | Why it matters |
 | --- | --- | --- |
-| **Seed-to-runtime compiler** | One premise becomes cast, roles, hidden objectives, leverage, failure conditions, and an opening scene. | Turns lightweight input into playable structure, not just generated prose. |
-| **Player role model** | The player gets a public persona, private objective, starting assets, and leverage cards. | Makes the user a strategic actor rather than a passive reader. |
-| **Deterministic scaffolding** | Python schedulers prepare NPC agenda, reversal pressure, inventory, and consequences before each LLM call. | Keeps pacing and state inspectable instead of leaving everything to the model. |
-| **Bounded advisor channel** | A second LLM can reason over run context but cannot mutate story state. | Adds guidance without letting the assistant become the player. |
-| **Ending compiler** | The final screen uses run history to produce a label, highlights, alternate branches, and replay path. | Makes a session reviewable and shareable. |
-| **Reviewer mode** | `#/play/<session>?reviewer=1` exposes seed, stage, role, option count, inventory, and ending state. | Makes the project legible as an engineered system, not just a polished trailer. |
+| **Guided creation agent** | Intent routing, rolling transcript, compressed story context, correction handling, skill-based next-question policy, and automatic readiness. | Arbitrary chat does not silently become story facts, and context does not grow without bound. |
+| **Typed story compiler** | Story Brief contracts capture cast, player role, pressure, constraints, tone, and opening promise before play begins. | The runtime receives a playable contract instead of an unconstrained prompt. |
+| **Hybrid turn runtime** | Deterministic schedulers prepare stage, NPC focus, inventory, and pressure before each constrained LLM turn. | Creative prose remains flexible while pacing and state stay inspectable. |
+| **Gameplay envelope** | Validated live metadata enriches people, pressure, clue, and opportunity changes; backend and UI derivation remain tolerant fallbacks. | Choices produce visible game-state feedback without making optional model metadata a hard dependency. |
+| **Reliability controls** | Typed parsing, clipping, duplicate-submit guards, retry-safe UI, persisted turn metadata, quota boundaries, and player-safe recovery. | Provider or schema problems do not become raw JSON, double turns, or hidden state corruption. |
+| **Evaluation and observability** | Gold scenarios, Step Judge, Contract Judge, trajectory packaging, LLM call telemetry, and reviewer-only evidence surfaces. | Reliability claims can be inspected without exposing technical internals to normal players. |
 
----
+## Live Evaluation Snapshot
+
+The current evidence anchor is a fresh isolated run completed on 2026-07-16
+through the configured live gateway.
+
+| Check | Observed result |
+| --- | --- |
+| End-to-end path | Create -> Story Brief -> Opening -> 12 Play turns -> Ending |
+| Required live calls | `live/success`; no required fallback |
+| Turn completion | 12/12 |
+| Step Judge | 12/12 pass |
+| Contract Judge | 12/12 pass |
+| Quality gate v2 | Pass across consequence clarity, choice diversity, escalation, character response, payoff, and playable options |
+| Retry / fallback | 0 persisted retries; 0 required-operation fallbacks |
+| Player surface | Generated ending rendered with no horizontal overflow and zero browser console warnings/errors |
+
+The evidence is intentionally bounded. It demonstrates one reproducible system
+trajectory, not population-level story quality, retention, or market demand.
+The measured median live Play-turn latency was 14.0 seconds and remains a real,
+provider-bound product risk.
+
+For token counts, cache usage, per-operation latency, failure taxonomy, and the
+claim boundary, read the
+[Engineering Evidence Packet](./docs/tiny-stories-engineering-evidence-packet.md).
 
 ## Architecture
 
-Gold nodes are the product innovations. Blue nodes are engineering
-control points. Purple nodes are explicit LLM boundaries.
-
 ```mermaid
-flowchart TB
-    U["Player / reviewer"]
+flowchart LR
+    Player["Player"] --> Create["Story Butler"]
+    Create --> Context["Intent routing + compressed context"]
+    Context --> Brief["Typed Story Brief"]
+    Brief --> Opening["Live opening"]
 
-    subgraph Product["React product surface"]
-        HOME["Seed input"]
-        REVIEW["Reviewer run<br/>Portfolio + Reviewer"]
-        PLAY["Play UI<br/>role, stage, options, free-form action"]
-        INSPECT["Runtime inspector"]
+    subgraph Loop["Bounded Play Loop"]
+        Action["Player action"] --> Scheduler["Deterministic scheduler"]
+        Scheduler --> LLM["Constrained LLM turn"]
+        LLM --> Validate["Parse + validate + clip"]
+        Validate --> Persist["Persist passage, state, metadata"]
+        Persist --> Feedback["Consequence + next actions"]
+        Feedback --> Action
     end
 
-    subgraph API["Typed API boundary"]
-        CLIENT["TS contracts<br/>frontend2/src/api/contracts.ts"]
-        ROUTES["FastAPI routes<br/>rpg_backend/main.py"]
-    end
-
-    subgraph Runtime["Narrative runtime"]
-        SERVICE["Session service<br/>validation + lifecycle"]
-        OPENING["Opening compiler<br/>cast, roles, leverage graph"]
-        TURN["Turn scheduler<br/>NPC agenda, twist, inventory, consequences"]
-        ADVISOR["Advisor channel<br/>context-aware, no state mutation"]
-        ENDING["Ending compiler<br/>label, highlights, branches"]
-        STORE[("SQLite persistence<br/>templates, sessions, messages")]
-    end
-
-    subgraph LLM["LLM boundary"]
-        OPEN_LLM["Opening generation"]
-        TURN_LLM["Narration turn"]
-        ADVISOR_LLM["Advisor response"]
-        END_LLM["Ending synthesis"]
-    end
-
-    U --> HOME
-    U --> REVIEW
-    HOME --> PLAY
-    REVIEW --> PLAY
-    PLAY --> INSPECT
-    PLAY --> CLIENT
-    CLIENT --> ROUTES
-    ROUTES --> SERVICE
-
-    SERVICE --> OPENING
-    SERVICE --> TURN
-    SERVICE --> ADVISOR
-    SERVICE --> ENDING
-    SERVICE <--> STORE
-
-    OPENING --> OPEN_LLM --> STORE
-    TURN --> TURN_LLM --> STORE
-    ADVISOR --> ADVISOR_LLM --> STORE
-    ENDING --> END_LLM --> STORE
-
-    STORE --> INSPECT
-    STORE --> PLAY
-
-    classDef innovation fill:#4f3516,stroke:#d7ad50,color:#fff4df,stroke-width:2px;
-    classDef engineering fill:#0d2c3a,stroke:#8ee8ff,color:#ecfbff,stroke-width:1.5px;
-    classDef llm fill:#35215c,stroke:#bda7ff,color:#f4efff,stroke-width:1.5px;
-    classDef store fill:#1e2730,stroke:#c7ced8,color:#f4f7fb,stroke-width:1.5px;
-
-    class OPENING,TURN,ADVISOR,ENDING,REVIEW,INSPECT innovation;
-    class CLIENT,ROUTES,SERVICE,PLAY,HOME engineering;
-    class OPEN_LLM,TURN_LLM,ADVISOR_LLM,END_LLM llm;
-    class STORE store;
+    Opening --> Action
+    Persist --> Judges["Step Judge + Contract Judge"]
+    Persist --> Telemetry["Latency, tokens, cache, retry, fallback"]
+    Persist --> Ending["Ending + highlights + branches"]
+    Judges --> Reviewer["Reviewer-only evidence"]
+    Telemetry --> Reviewer
+    Ending --> Replay["Replay / fork"]
 ```
 
-Each turn follows the same control pattern:
+Three rules keep the architecture honest:
 
-1. Deterministic schedulers assemble state: NPC agenda, twist pressure,
-   current inventory, and recent consequences.
-2. The LLM receives a constrained payload and returns structured output:
-   narration, three options, NPC pulse shifts, and optional inventory
-   deltas.
-3. The repository persists the result before the UI renders the next
-   state.
+1. **Deterministic before generative.** The runtime decides what state and
+   pressure the model must address before asking it to write.
+2. **Optional metadata cannot fail the turn.** Valid live metadata produces a
+   `live_enriched` envelope; missing or invalid metadata degrades to backend,
+   then UI-derived evidence.
+3. **Inspection is separated from play.** Normal players see story, choices,
+   consequences, and people. Reviewer mode owns judge rows and sanitized
+   telemetry; raw prompts, provider payloads, and private reasoning stay out.
 
----
+## Reviewer Path
 
-## Engineering Evidence
+An admissions or recruiting reviewer can evaluate the project in this order:
 
-| Area | What to inspect |
-| --- | --- |
-| Typed contracts | `rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts` |
-| Runtime orchestration | `rpg_backend/narrative/engine.py` |
-| Persistence | `rpg_backend/narrative/repository.py` |
-| HTTP/session flow | `rpg_backend/narrative/service.py`, `rpg_backend/main.py` |
-| Auth, quota, migration safety | `rpg_backend/main.py`, `rpg_backend/quotas.py`, `rpg_backend/auth/storage.py`, `rpg_backend/library/storage.py` |
-| Play UI | `frontend2/src/pages/play/` (`play-page.tsx` plus StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules) |
-| Reviewer layer | `frontend2/src/pages/portfolio/` |
-| Programmatic demo | `remotion-demo/src/AdmissionsDemoTrailer.tsx` |
+1. [Watch the 75-second product demo](https://youtu.be/RRJ7uyjW_nA).
+2. [Open the deterministic reviewer demo](https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer)
+   to inspect the interface without credentials or provider spend.
+3. Read the [case study](./docs/CASE_STUDY.md) and
+   [current system map](./docs/CURRENT_SYSTEM_MAP.md).
+4. Inspect the [engineering evidence packet](./docs/tiny-stories-engineering-evidence-packet.md)
+   for the live gate, telemetry, evaluation design, and overclaim guardrails.
+5. Run locally and open `#/portfolio` or a Play route with `?reviewer=1` to
+   inspect the live backend path.
 
-Key engineering decisions:
+Before citing a deployed route as application evidence, run:
 
-- **Typed contract first**: Pydantic backend models mirrored by frontend
-  TypeScript contracts.
-- **Deterministic before generative**: schedulers define what the LLM
-  should pay attention to each turn.
-- **Persisted run history**: templates, sessions, messages, advisor
-  messages, and endings are stored for replay and inspection.
-- **Role-separated LLM calls**: narrator, advisor, and ending compiler
-  have different authority and context.
-- **Reviewer observability**: the portfolio path exposes runtime state
-  that a normal player does not need to see.
-- **Demo safety rails**: anonymous visitors can browse and play shared
-  sessions, while authoring/write routes require a real session; public
-  deployments can disable authoring and enforce per-IP/per-user LLM quotas.
+```bash
+python3 tools/portfolio_public_evidence_preflight.py
+```
 
----
+This checks whether the public branch and GitHub Pages deployment actually
+contain the evidence being referenced.
 
-## Evaluation v3
+## Evaluation Design
 
-The old gold/self-play/light-ab benchmark stack has been removed. The
-new eval direction is environment-first: case catalog, player policy,
-episode trace, deterministic oracles, and separated release gates for
-author validity, runtime validity, agency, trajectory, quality review,
-and ops reliability.
+Tiny Stories does not use a single model-generated score as proof. Its release
+evidence is layered:
 
-Start here:
+- **Gold scenarios** cover arbitrary input, help/meta input, unsafe and not-fit
+  prompts, high-drama creation, corrections, and Play consequences.
+- **Step Judge** checks agency, consequence alignment, scene coherence, and
+  whether the next state remains playable.
+- **Contract Judge** checks response shape, option count, known entities,
+  hidden-information leakage, leverage ownership, and inventory sanity.
+- **Quality gate v2** packages deterministic trajectory evidence without
+  claiming to be a calibrated fun metric.
+- **Telemetry** records operation, live source/status, latency, input/cache/
+  output tokens, retries, and fallback reason.
+- **Mock-user tooling** supports repeatable episode traces and separate LLM
+  quality review without replacing the deterministic release gates.
+
+Start with:
 
 - [Eval v3 redesign](./docs/eval/EVAL_V3_REDESIGN.md)
-- `python3 -m tools.rpg_eval.runner --dry-run --output-dir artifacts/eval_v3/dry_run`
-- [Narrative mock-user agent chain](./docs/eval/MOCK_USER_AGENT_CHAIN.md)
-- `python3 -m tools.rpg_eval.narrative_mock_user --mode live --base-url http://127.0.0.1:8000 --session <session_id> --output artifacts/mock_user_episode.jsonl`
-- `python3 -m tools.rpg_eval.narrative_llm_judge --gold-set tools/rpg_eval/gold_sets/narrative_agent_smoke.json --mode fixture --llm-judge fake --output artifacts/narrative_llm_judge_report.json`
+- [Mock-user agent chain](./docs/eval/MOCK_USER_AGENT_CHAIN.md)
+- `tools/rpg_eval/tiny_stories_golden_path_harness.py`
+- `tools/rpg_eval/gold_sets/tiny_stories_reliability.json`
 
----
+## Source Map
+
+| Concern | Primary source |
+| --- | --- |
+| Story Butler policy and memory | `rpg_backend/narrative/story_guide.py`, `rpg_backend/narrative/service.py` |
+| Typed backend contracts | `rpg_backend/narrative/contracts.py` |
+| LLM boundary and turn generation | `rpg_backend/narrative/engine.py`, `rpg_backend/narrative/gateway.py` |
+| Session and metadata persistence | `rpg_backend/narrative/repository.py` |
+| Frontend API contracts | `frontend2/src/api/contracts.ts` |
+| Gameplay envelope | `frontend2/src/pages/play/play-gameplay-envelope.ts` |
+| Play and reviewer UI | `frontend2/src/pages/play/` |
+| Live/evaluation harnesses | `tools/rpg_eval/` |
+| Product and claim boundary | `docs/CASE_STUDY.md`, `docs/PROJECT_PAUSE_2026-05-09.md` |
+
+For the active product path versus retained experiments, use the
+[Current System Map](./docs/CURRENT_SYSTEM_MAP.md).
 
 ## Run Locally
 
-Requirements:
+### Requirements
 
-- Python 3.11+
-- Node 18+
-- A DeepSeek V4 Flash chat/completions endpoint
+- Python 3.11
+- Node.js 24 (the CI baseline)
+- A DeepSeek V4 Flash compatible chat/completions endpoint
+
+### Backend
 
 ```bash
 python3 -m pip install -e ".[dev]"
 cp .env.example .env
-# Fill:
-#   APP_RESPONSES_PLAY_BASE_URL=https://api.deepseek.com
-#   APP_RESPONSES_PLAY_API_KEY=...
-#   APP_RESPONSES_PLAY_MODEL=deepseek-v4-flash
+# Add APP_RESPONSES_PLAY_BASE_URL, APP_RESPONSES_PLAY_API_KEY,
+# and APP_RESPONSES_PLAY_MODEL without committing secrets.
 
 uvicorn rpg_backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-In another terminal:
+### Frontend
 
 ```bash
 cd frontend2
-npm install
+npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:8001`. For the curated portfolio path, open
-`http://127.0.0.1:8001/#/portfolio`.
-For the static public reviewer path, open `http://127.0.0.1:8001/#/demo/reviewer`
-locally or `https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer` after deployment.
+Open `http://127.0.0.1:8001`. Useful routes:
 
-Useful checks:
+- `#/portfolio` - guided live reviewer path
+- `#/demo/reviewer` - deterministic reviewer fixture
+- `#/qa/play-action` - action-state rehearsal
+- `#/qa/play-gameplay-loop` - typed gameplay loop fixture
+
+### Verification
 
 ```bash
 python3 tools/narrative_release_gate.py --mode fake
-python3 tools/portfolio_public_evidence_preflight.py
 python3 -m pytest -q
 
 cd frontend2
 npm run check
 npm run build
-
-cd ../remotion-demo
-npm run check
-npm run render:admissions
 ```
 
-Run the public-link check before sending application or recruiting links:
-`python3 tools/portfolio_public_evidence_preflight.py`. It should report that
-local `HEAD` matches `origin/main`; if it reports
-local commits ahead of the public branch, GitHub, GitHub Pages shell, and
-static reviewer demo reviewers will not see the current Story Desk, template
-detail, public reviewer demo, `#/portfolio`, `#/reviewer`, local QA routes, or
-play evidence yet. In that state, use the demo video for orientation only; do not cite the current
-Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or
-Replay surfaces as public evidence until the public-link check passes. It also summarizes
-the affected reviewer surfaces before the path list, so large local branches do
-not hide a template or Story Desk change in truncated output. It also runs a
-live GitHub Pages marker check, so rerun it after pushing and waiting for the
-public page to update.
-
-For a configured live backend, the HTTP smoke follows the same current
-`/narrative/*` product path. Local authoring-enabled runs can create a
-template; production authoring-off runs should read and play an already seeded
-public template:
+For a configured live backend:
 
 ```bash
 python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000
-python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000 --use-first-public-template
 ```
 
----
+## Status And Limits
 
-## Status
+Tiny Stories is complete as a portfolio-grade AI product systems case study.
+It demonstrates a playable full-stack loop, typed LLM boundaries, persistent
+state, evaluation harnesses, reviewer observability, a public deterministic
+demo, and a reproducible video artifact.
 
-Tiny Stories is not positioned as a validated consumer product. Demand,
-repeat play, and sharing loops remain unproven; see the
-[pause memo](./docs/PROJECT_PAUSE_2026-05-09.md). What is complete is
-the portfolio artifact: a playable full-stack loop, reviewer run,
-runtime inspector, generated visual system, Remotion demo, and
-architecture documentation.
+It is **not** presented as a validated consumer product or research
+contribution. Human completion, replay intent, retention, and organic sharing
+remain unproven. The next product-validity step is a small observed playtest,
+not another broad feature pass. The decision criteria are documented in the
+[Project Pause Memo](./docs/PROJECT_PAUSE_2026-05-09.md).
 
 MIT licensed. See [LICENSE](./LICENSE).
