@@ -396,6 +396,18 @@ export function createHttpApiClient(baseUrl: string): FrontendApiClient {
       )
     },
 
+    getNarrativeEvaluationBundle(sessionId: string) {
+      return requestJson<unknown>("getNarrativeEvaluationBundle", {
+        params: { session_id: sessionId },
+      })
+    },
+
+    evaluatePortableRpgRun(bundle: unknown) {
+      return requestJson<unknown>("evaluatePortableRpgRun", {
+        body: bundle,
+      })
+    },
+
     advanceNarrativeTurn(
       sessionId: string,
       request: NarrativeAdvanceTurnRequest,

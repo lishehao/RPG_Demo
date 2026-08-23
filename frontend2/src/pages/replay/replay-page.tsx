@@ -39,7 +39,7 @@ export function ReplayPage({
   const defaultApi = useApi()
   const api = apiClient ?? defaultApi
   const t = useT()
-  const { lang } = useLanguage()
+  const { lang, setLang } = useLanguage()
   const [replay, setReplay] = useState<NarrativePublicReplayResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   // Entry mode for shared replay links:
@@ -75,16 +75,17 @@ export function ReplayPage({
       .getNarrativePublicReplay(sessionId)
       .then((r) => {
         if (cancelled) return
+        if (r.language) setLang(r.language)
         setReplay(r)
       })
       .catch(() => {
         if (cancelled) return
-        setError(t("replay.error_load_failed"))
+        setError("load_failed")
       })
     return () => {
       cancelled = true
     }
-  }, [api, sessionId, t])
+  }, [api, sessionId, setLang])
 
   if (!replay) {
     return (
@@ -114,7 +115,9 @@ export function ReplayPage({
   }
 
   // Build a synthetic template-like object so we can reuse the cover helper.
-  const displayTitle = getReplayDisplayTitle(replay, lang)
+  const displayTitle = replay.template_forkable
+    ? getReplayDisplayTitle(replay, lang)
+    : t("replay.private_title")
   const displaySummary = getReplayDisplaySummary(replay, lang)
   const templateLike = {
     template_id: sessionId, // stable hash on session_id for the cover pick

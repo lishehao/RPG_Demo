@@ -58,3 +58,40 @@ The research artifact is complete only when a third party can:
 3. run a bounded live path with real telemetry;
 4. inspect memory, state, consequences, and evaluator evidence;
 5. reproduce the tests and static public demo without secrets.
+
+## Reference Data Path
+
+```text
+arbitrary input
+  -> intent-aware Story Butler
+  -> bounded current-truth memory
+  -> Story Brief
+  -> persisted template research context
+  -> live opening
+  -> 12-turn Action Runtime
+  -> ending
+  -> portable session bundle
+  -> deterministic evaluator + Reviewer evidence
+```
+
+Corrections are first-class events: the replacement becomes active truth while
+the old value remains only in `superseded_facts`. Play and ending prompts use a
+sanitized Story Contract rather than the unbounded Create transcript. The
+portable evaluator receives explicit terminal-turn and progress-provenance
+fields so it can distinguish runtime facts from turn-budget proxies.
+
+The public Vercel lab is deliberately static and backend-free. Live acceptance
+is proven separately through a configured local gateway, strict telemetry, and
+a 12-turn golden-path artifact. This division keeps the demo reproducible while
+preventing a static portfolio surface from being mistaken for live-provider
+evidence.
+
+## Current Reference Acceptance
+
+As of 2026-08-24, the strict reference run completes a corrected Story Butler
+conversation, Story Brief, live opening, 12 live Play turns, ending, persisted
+session export, Reviewer evidence, and portable evaluation with no required
+operation falling back. English and Chinese bounded runs verify that current
+facts, superseded corrections, story language, and responsive UI state survive
+the same chain. The full records live under `docs/evidence/` and intentionally
+retain latency, token, source, fallback, provenance, and consistency caveats.

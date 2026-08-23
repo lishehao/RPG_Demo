@@ -110,12 +110,17 @@ class RpgTurnObservationV1(BaseModel):
     turn_index: int = Field(ge=1, le=500)
     player_action: str = Field(min_length=1, max_length=800)
     world_response: str = Field(min_length=1, max_length=2400)
-    options: list[str] = Field(default_factory=list, min_length=1, max_length=6)
+    # A terminal turn can legitimately have no next actions. The evaluator
+    # distinguishes that from an agency failure using scenario completion
+    # evidence instead of rejecting the bundle at parse time.
+    options: list[str] = Field(default_factory=list, max_length=6)
     state_deltas: list[RpgStateDeltaV1] = Field(default_factory=list, max_length=8)
     clue_unlocks: list[str] = Field(default_factory=list, max_length=4)
     opportunity_unlocks: list[str] = Field(default_factory=list, max_length=4)
     referenced_entity_ids: list[str] = Field(default_factory=list, max_length=12)
+    terminal: bool = False
     objective_progress: float = Field(default=0.0, ge=0.0, le=1.0)
+    progress_basis: Literal["runtime_reported", "turn_budget_proxy", "unknown"] = "unknown"
     memory: RpgMemorySnapshotV1
 
 

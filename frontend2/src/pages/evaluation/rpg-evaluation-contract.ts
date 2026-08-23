@@ -57,7 +57,9 @@ export type RpgTurnObservation = {
   clue_unlocks: string[]
   opportunity_unlocks: string[]
   referenced_entity_ids: string[]
+  terminal?: boolean
   objective_progress: number
+  progress_basis?: "runtime_reported" | "turn_budget_proxy" | "unknown"
   memory: RpgMemorySnapshot
 }
 
@@ -134,8 +136,10 @@ export function evaluateRpgBundle(bundle: RpgEvaluationBundle): RpgEvaluationRep
   let previousProgress = 0
   let progressAdvances = 0
   let progressRegressions = 0
+  const progressBases = new Set<string>()
 
   for (const turn of turns) {
+    progressBases.add(turn.progress_basis ?? "unknown")
     const activeKeys = new Set<string>()
     const supersededIds = new Set(turn.memory.superseded_facts.map((fact) => fact.fact_id))
     for (const fact of turn.memory.active_facts) {
@@ -153,8 +157,8 @@ export function evaluateRpgBundle(bundle: RpgEvaluationBundle): RpgEvaluationRep
       consequenceGaps.push(`Turn ${turn.turn_index}: no typed visible consequence`)
     }
     const options = turn.options.map((option) => option.trim().toLowerCase())
-    if (new Set(options).size < 2) agencyGaps.push(`Turn ${turn.turn_index}: fewer than two distinct options`)
-    optionSignatures.add(options.join("|"))
+    if (!turn.terminal && new Set(options).size < 2) agencyGaps.push(`Turn ${turn.turn_index}: fewer than two distinct options`)
+    if (!turn.terminal && options.length > 0) optionSignatures.add(options.join("|"))
     const unknown = turn.referenced_entity_ids.filter((id) => !bundle.scenario.entity_ids.includes(id))
     if (unknown.length > 0) entityGaps.push(`Turn ${turn.turn_index}: unknown entities ${unknown.join(", ")}`)
     if (TECHNICAL_LEAK.test([turn.player_action, turn.world_response, ...turn.options].join(" "))) {
@@ -166,6 +170,13 @@ export function evaluateRpgBundle(bundle: RpgEvaluationBundle): RpgEvaluationRep
   }
 
   const denominator = Math.max(1, turns.length)
+  const nonTerminalTurns = turns.filter((turn) => !turn.terminal).length
+  const choiceDiversityScore = nonTerminalTurns > 0
+    ? Math.min(100, 100 * optionSignatures.size / nonTerminalTurns)
+    : 55
+  const playerAgencyScore = nonTerminalTurns > 0
+    ? 100 * (nonTerminalTurns - agencyGaps.length) / nonTerminalTurns
+    : 55
   const criteria: RpgCriterion[] = [
     criterion("memory_continuity", 100 - memoryConflicts.length * 35,
       memoryConflicts.length === 0 ? "Corrections remain auditable without conflicting active facts." : "Active and superseded facts conflict.",
@@ -176,18 +187,26 @@ export function evaluateRpgBundle(bundle: RpgEvaluationBundle): RpgEvaluationRep
     criterion("consequence_visibility", 100 * (turns.length - consequenceGaps.length) / denominator,
       consequenceGaps.length === 0 ? "Moves resolve into visible state changes, clues, or opportunities." : "Some moves produced prose without a visible game-state consequence.",
       consequenceGaps.length > 0 ? consequenceGaps : [`All ${turns.length} turns expose a typed consequence.`]),
-    criterion("player_agency", 100 * (turns.length - agencyGaps.length) / denominator,
-      agencyGaps.length === 0 ? "Every turn preserves at least two distinct next actions." : "At least one turn collapsed into duplicated or singular choice.",
-      agencyGaps.length > 0 ? agencyGaps : [`Distinct choices preserved across ${turns.length} turns.`]),
+    criterion("player_agency", playerAgencyScore,
+      nonTerminalTurns === 0
+        ? "A terminal-only run has insufficient evidence for player agency."
+        : agencyGaps.length === 0
+          ? "Every turn preserves at least two distinct next actions."
+          : "At least one turn collapsed into duplicated or singular choice.",
+      agencyGaps.length > 0 ? agencyGaps : [`Distinct choices preserved across ${nonTerminalTurns} non-terminal turns.`]),
     criterion("trajectory_progress", previousProgress * 70 + Math.min(30, progressAdvances * 10) - progressRegressions * 25,
-      progressRegressions === 0 ? "Objective progress advances without unexplained regression." : "Objective progress regressed on at least one turn.",
-      [`Final observed progress: ${Math.round(previousProgress * 100)}%.`, `Meaningful advances: ${progressAdvances}; regressions: ${progressRegressions}.`]),
+      progressRegressions === 0 ? "Reported or explicitly proxied progress advances without unexplained regression." : "Objective progress regressed on at least one turn.",
+      [`Final observed progress: ${Math.round(previousProgress * 100)}%.`, `Meaningful advances: ${progressAdvances}; regressions: ${progressRegressions}.`, `Progress basis: ${[...progressBases].sort().join(", ")}.`]),
     criterion("entity_coherence", 100 - entityGaps.length * 35,
       entityGaps.length === 0 ? "People and factions stay inside the scenario registry." : "The run referenced entities outside the scenario contract.",
       entityGaps.length > 0 ? entityGaps : [`Validated against ${bundle.scenario.entity_ids.length} registered entities.`]),
-    criterion("choice_diversity", 100 * optionSignatures.size / denominator,
-      optionSignatures.size === turns.length ? "Next-action sets change with the trajectory." : "Some turns repeated the same full action set.",
-      [`${optionSignatures.size} distinct action sets across ${turns.length} turns.`]),
+    criterion("choice_diversity", choiceDiversityScore,
+      nonTerminalTurns === 0
+        ? "A terminal-only run has insufficient evidence for choice diversity."
+        : optionSignatures.size === nonTerminalTurns
+          ? "Next-action sets change with the trajectory."
+          : "Some turns repeated the same full action set.",
+      [`${optionSignatures.size} distinct action sets across ${nonTerminalTurns} non-terminal turns.`]),
     criterion("boundary_hygiene", 100 - leakage.length * 50,
       leakage.length === 0 ? "Player-facing text is free of protocol and private-reasoning language." : "Technical implementation wording leaked into player-facing text.",
       leakage.length > 0 ? leakage : ["No provider, schema, token, raw JSON, or private-reasoning terms detected."]),
@@ -204,6 +223,9 @@ export function evaluateRpgBundle(bundle: RpgEvaluationBundle): RpgEvaluationRep
       "This deterministic report is a product reliability diagnostic, not a calibrated research metric.",
       "Narrative appeal and emotional quality still require bounded human review.",
       "Imported state deltas are only as trustworthy as the source adapter.",
+      ...(progressBases.has("turn_budget_proxy")
+        ? ["Trajectory progress for this run uses elapsed turn budget as a proxy, not model-reported goal completion."]
+        : []),
     ],
   }
 }
@@ -217,4 +239,14 @@ export function isRpgEvaluationBundle(value: unknown): value is RpgEvaluationBun
     && Boolean(candidate.scenario && typeof candidate.scenario === "object")
     && Array.isArray(candidate.turns)
     && candidate.turns.length > 0
+}
+
+export function isRpgEvaluationReport(value: unknown): value is RpgEvaluationReport {
+  if (!value || typeof value !== "object") return false
+  const candidate = value as Partial<RpgEvaluationReport>
+  return candidate.schema_version === "rpg_evaluation_report.v1"
+    && typeof candidate.run_id === "string"
+    && typeof candidate.score === "number"
+    && Array.isArray(candidate.criteria)
+    && candidate.criteria.length === 8
 }

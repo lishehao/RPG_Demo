@@ -129,24 +129,30 @@ def reduce_memory_events(
     )
 
 
-def project_story_guide_memory(
+def story_guide_memory_events(
     context: StoryGuideCompressedContext,
     *,
-    run_id: str,
     turn_index: int,
-) -> RpgMemorySnapshotV1:
-    """Project the existing Story Butler memory into the portable contract."""
+) -> list[RpgMemoryEventV1]:
+    """Convert bounded Story Butler state into portable memory events."""
 
     events: list[RpgMemoryEventV1] = []
     sequence = 0
 
-    def add(kind: str, *, key: str = "", value: str = "", namespace: str = "story") -> None:
+    def add(
+        kind: str,
+        *,
+        key: str = "",
+        value: str = "",
+        namespace: str = "story",
+        event_turn: int | None = None,
+    ) -> None:
         nonlocal sequence
         sequence += 1
         events.append(
             RpgMemoryEventV1(
                 event_id=f"guide_{turn_index}_{sequence}",
-                turn_index=turn_index,
+                turn_index=turn_index if event_turn is None else event_turn,
                 kind=kind,
                 namespace=namespace,
                 key=key,
@@ -155,6 +161,23 @@ def project_story_guide_memory(
             )
         )
 
+    superseded_keys: set[str] = set()
+    for item in context.rejected_or_changed_facts:
+        match = re.match(r"superseded\s+([^:]+):\s*(.+)", item, re.I)
+        if not match:
+            continue
+        key, value = match.groups()
+        clean_key = key.strip()
+        superseded_keys.add(clean_key.casefold())
+        add(
+            "fact_asserted",
+            key=clean_key,
+            value=value.strip(),
+            event_turn=max(0, turn_index - 1),
+        )
+
+    if context.scene_summary:
+        add("objective_set", value=context.scene_summary)
     for key, value in (
         ("scene_summary", context.scene_summary),
         ("player_role", context.player_role),
@@ -162,17 +185,30 @@ def project_story_guide_memory(
         ("tone", context.tone),
     ):
         if value:
-            add("fact_asserted", key=key, value=value)
+            add(
+                "fact_corrected" if key.casefold() in superseded_keys else "fact_asserted",
+                key=key,
+                value=value,
+            )
     for index, value in enumerate(context.cast_or_factions):
         add("fact_asserted", key=f"cast_{index + 1}", value=value, namespace="cast")
     for index, value in enumerate(context.constraints):
         add("fact_asserted", key=f"constraint_{index + 1}", value=value, namespace="boundary")
-    for item in context.rejected_or_changed_facts:
-        match = re.match(r"superseded\s+([^:]+):\s*(.+)", item, re.I)
-        if not match:
-            continue
-        key, value = match.groups()
-        add("fact_asserted", key=key.strip(), value=value.strip(), namespace="superseded")
+    existing_values = {
+        value.casefold()
+        for value in (
+            context.scene_summary,
+            context.player_role,
+            context.pressure,
+            context.tone,
+            *context.cast_or_factions,
+            *context.constraints,
+        )
+        if value
+    }
+    for index, value in enumerate(context.confirmed_facts):
+        if value.casefold() not in existing_values:
+            add("fact_asserted", key=f"confirmed_{index + 1}", value=value)
     for item in context.non_story_user_intents:
         add("non_story_input", value=item, namespace="conversation")
     for item in context.open_questions:
@@ -180,23 +216,25 @@ def project_story_guide_memory(
     if context.planner_job:
         add("world_consequence", value=f"Planner focus: {context.planner_job}", namespace="planner")
 
+    return events
+
+
+def project_story_guide_memory(
+    context: StoryGuideCompressedContext,
+    *,
+    run_id: str,
+    turn_index: int,
+) -> RpgMemorySnapshotV1:
+    """Project the existing Story Butler memory into the portable contract."""
+
+    events = story_guide_memory_events(context, turn_index=turn_index)
     snapshot = reduce_memory_events(run_id, events)
-    superseded = [
-        fact.model_copy(update={"status": "superseded"})
-        for fact in snapshot.active_facts
-        if fact.namespace == "superseded"
-    ]
-    active = [fact for fact in snapshot.active_facts if fact.namespace != "superseded"]
     return snapshot.model_copy(
         update={
             "turn_index": turn_index,
             "objective": context.scene_summary,
-            "active_facts": active,
-            "superseded_facts": [*snapshot.superseded_facts, *superseded][-32:],
             "diagnostics": snapshot.diagnostics.model_copy(
                 update={
-                    "active_fact_count": len(active),
-                    "superseded_fact_count": len(snapshot.superseded_facts) + len(superseded),
                     "last_compacted_turn": turn_index,
                 }
             ),

@@ -48,7 +48,9 @@ def evaluate_rpg_bundle(bundle: RpgEvaluationBundleV1) -> RpgEvaluationReportV1:
     previous_progress = 0.0
     progress_regressions = 0
     progress_advances = 0
+    progress_bases: set[str] = set()
     for turn in turns:
+        progress_bases.add(turn.progress_basis)
         active_keys: set[tuple[str, str]] = set()
         superseded_ids = {fact.fact_id for fact in turn.memory.superseded_facts}
         for fact in turn.memory.active_facts:
@@ -64,9 +66,10 @@ def evaluate_rpg_bundle(bundle: RpgEvaluationBundleV1) -> RpgEvaluationReportV1:
         if not turn.state_deltas and not turn.clue_unlocks and not turn.opportunity_unlocks:
             consequence_gaps.append(f"Turn {turn.turn_index}: no typed visible consequence")
         normalized_options = tuple(" ".join(option.casefold().split()) for option in turn.options)
-        if len(set(normalized_options)) < 2:
+        if not turn.terminal and len(set(normalized_options)) < 2:
             agency_gaps.append(f"Turn {turn.turn_index}: fewer than two distinct options")
-        option_signatures.add(normalized_options)
+        if not turn.terminal and normalized_options:
+            option_signatures.add(normalized_options)
 
         unknown_entities = set(turn.referenced_entity_ids) - set(bundle.scenario.entity_ids)
         if unknown_entities:
@@ -82,6 +85,17 @@ def evaluate_rpg_bundle(bundle: RpgEvaluationBundleV1) -> RpgEvaluationReportV1:
             progress_advances += 1
         previous_progress = max(previous_progress, turn.objective_progress)
 
+    non_terminal_turn_count = sum(not turn.terminal for turn in turns)
+    player_agency_score = (
+        max(0, round(100 * (non_terminal_turn_count - len(agency_gaps)) / non_terminal_turn_count))
+        if non_terminal_turn_count
+        else 55
+    )
+    choice_diversity_score = (
+        min(100, round(100 * len(option_signatures) / non_terminal_turn_count))
+        if non_terminal_turn_count
+        else 55
+    )
     criteria = [
         _criterion(
             "memory_continuity",
@@ -109,21 +123,24 @@ def evaluate_rpg_bundle(bundle: RpgEvaluationBundleV1) -> RpgEvaluationReportV1:
         ),
         _criterion(
             "player_agency",
-            max(0, round(100 * (len(turns) - len(agency_gaps)) / len(turns))),
+            player_agency_score,
             "Each turn preserves at least two distinct next actions."
-            if not agency_gaps
+            if non_terminal_turn_count and not agency_gaps
+            else "A terminal-only run has insufficient evidence for player agency."
+            if not non_terminal_turn_count
             else "At least one turn collapsed into a single or duplicated action path.",
-            agency_gaps or [f"Distinct choices preserved across {len(turns)} turns."],
+            agency_gaps or [f"Distinct choices preserved across {non_terminal_turn_count} non-terminal turns."],
         ),
         _criterion(
             "trajectory_progress",
             max(0, min(100, round(previous_progress * 70) + min(30, progress_advances * 10) - progress_regressions * 25)),
-            "Objective progress advances without unexplained regression."
+            "Reported or explicitly proxied progress advances without unexplained regression."
             if progress_regressions == 0
             else "Objective progress regressed on at least one turn.",
             [
                 f"Final observed progress: {previous_progress:.0%}.",
                 f"Meaningful advances: {progress_advances}; regressions: {progress_regressions}.",
+                f"Progress basis: {', '.join(sorted(progress_bases))}.",
             ],
         ),
         _criterion(
@@ -136,11 +153,13 @@ def evaluate_rpg_bundle(bundle: RpgEvaluationBundleV1) -> RpgEvaluationReportV1:
         ),
         _criterion(
             "choice_diversity",
-            round(100 * len(option_signatures) / len(turns)),
+            choice_diversity_score,
             "Next-action sets change as the trajectory changes."
-            if len(option_signatures) == len(turns)
+            if non_terminal_turn_count and len(option_signatures) == non_terminal_turn_count
+            else "A terminal-only run has insufficient evidence for choice diversity."
+            if not non_terminal_turn_count
             else "Some turns repeated the same full action set.",
-            [f"{len(option_signatures)} distinct action sets across {len(turns)} turns."],
+            [f"{len(option_signatures)} distinct action sets across {non_terminal_turn_count} non-terminal turns."],
         ),
         _criterion(
             "boundary_hygiene",
@@ -152,15 +171,20 @@ def evaluate_rpg_bundle(bundle: RpgEvaluationBundleV1) -> RpgEvaluationReportV1:
         ),
     ]
     score = round(mean(item.score for item in criteria))
+    limitations = [
+        "This deterministic report is a product reliability diagnostic, not a calibrated research metric.",
+        "Narrative appeal and emotional quality still require bounded human review.",
+        "Imported state deltas are trusted only to the extent that the source adapter is trustworthy.",
+    ]
+    if "turn_budget_proxy" in progress_bases:
+        limitations.append(
+            "Trajectory progress for this run uses elapsed turn budget as a proxy, not model-reported goal completion."
+        )
     return RpgEvaluationReportV1(
         run_id=bundle.run_id,
         system_label=bundle.system_label,
         status=_status(score),
         score=score,
         criteria=criteria,
-        limitations=[
-            "This deterministic report is a product reliability diagnostic, not a calibrated research metric.",
-            "Narrative appeal and emotional quality still require bounded human review.",
-            "Imported state deltas are trusted only to the extent that the source adapter is trustworthy.",
-        ],
+        limitations=limitations,
     )

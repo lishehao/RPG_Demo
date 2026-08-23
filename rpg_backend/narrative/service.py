@@ -90,6 +90,11 @@ from rpg_backend.narrative.home_story_library import DEFAULT_HOME_STORY_OWNER_ID
 from rpg_backend.narrative.judges import judge_contract, judge_step
 from rpg_backend.narrative.repository import NarrativeNotFoundError, NarrativeRepository
 from rpg_backend.narrative.story_guide import advance_story_guide_loop, story_butler_voice_policy
+from rpg_backend.research_runtime.contracts import RpgEvaluationBundleV1
+from rpg_backend.research_runtime.session_export import (
+    SessionEvaluationNotReadyError,
+    build_session_evaluation_bundle,
+)
 
 
 PRIVATE_REPLAY_TITLE = "Shared private story"
@@ -994,6 +999,12 @@ class NarrativeService:
                         status_code=422,
                     )
 
+            opening = _complete_opening_identity_from_brief(
+                opening,
+                brief=request.story_brief,
+                language=request.language,
+            )
+
         template_id = _generate_template_id()
         display_title, display_intro = _template_display_metadata(
             seed=seed,
@@ -1017,6 +1028,12 @@ class NarrativeService:
             language=request.language,
             title_i18n=_localized_text_for_language(display_title, request.language),
             summary_i18n=_localized_text_for_language(display_intro, request.language),
+            story_brief=request.story_brief,
+            story_guide_context=(
+                request.story_guide_context.model_copy(update={"recent_turns": []})
+                if request.story_guide_context is not None
+                else None
+            ),
         )
 
         # Auto-create the creator's session with the requested difficulty.
@@ -1198,6 +1215,34 @@ class NarrativeService:
         self._load_session_for_player(session_id, player_user_id)
         return LLMCallEventListResponse(items=self._repo.list_llm_call_events_for_session(session_id))
 
+    def get_rpg_evaluation_bundle(
+        self,
+        session_id: str,
+        *,
+        player_user_id: str,
+    ) -> RpgEvaluationBundleV1:
+        """Export one owned session into the portable research contract."""
+
+        session = self._load_session_for_player(session_id, player_user_id)
+        template = self._repo.get_template(session.template_id)
+        story_brief, story_guide_context = self._repo.get_template_research_context(
+            template.template_id
+        )
+        try:
+            return build_session_evaluation_bundle(
+                template=template,
+                session=session,
+                messages=self._repo.list_story_messages(session_id),
+                story_brief=story_brief,
+                story_guide_context=story_guide_context,
+            )
+        except SessionEvaluationNotReadyError as exc:
+            raise NarrativeServiceError(
+                code="evaluation_not_ready",
+                message="Play at least one complete turn before evaluating this run.",
+                status_code=409,
+            ) from exc
+
     # ------------------------------------------------------------------
     # Advance a turn
     # ------------------------------------------------------------------
@@ -1218,6 +1263,9 @@ class NarrativeService:
                 status_code=409,
             )
         template = self._repo.get_template(session.template_id)
+        story_brief, story_guide_context = self._repo.get_template_research_context(
+            template.template_id
+        )
         active_role = _resolve_player_role(template, session.selected_player_role_id)
         if self._finalize_if_budget_exhausted(session, template, player_role=active_role):
             raise NarrativeServiceError(
@@ -1312,6 +1360,8 @@ class NarrativeService:
                 current_inventory=current_inventory or None,
                 player_diary=diary_text,
                 played_leverage=played_leverage,
+                story_brief=story_brief,
+                story_guide_context=story_guide_context,
                 language=template.language,
             )
         except NarrativeServiceError as exc:
@@ -1652,6 +1702,9 @@ class NarrativeService:
         budget.
         """
         full_history = self._repo.list_story_messages(session_id)
+        story_brief, story_guide_context = self._repo.get_template_research_context(
+            template.template_id
+        )
         try:
             if self._gateway is None:
                 raise NarrativeServiceError(
@@ -1667,6 +1720,8 @@ class NarrativeService:
                 history=full_history,
                 turn_count=len([m for m in full_history if m.role == "narrator"]) - 1,
                 player_role=player_role,
+                story_brief=story_brief,
+                story_guide_context=story_guide_context,
                 language=template.language,
             )
         except (NarrativeGatewayError, NarrativeServiceError, ValueError, AttributeError) as exc:
@@ -1740,6 +1795,9 @@ class NarrativeService:
         turn. Generate a 'collapsed' ending right now, regardless of
         turn_budget."""
         full_history = self._repo.list_story_messages(session_id)
+        story_brief, story_guide_context = self._repo.get_template_research_context(
+            template.template_id
+        )
         try:
             if self._gateway is None:
                 raise NarrativeServiceError(
@@ -1756,6 +1814,8 @@ class NarrativeService:
                 failure_trigger=failure_trigger,
                 failure_reason=failure_reason,
                 player_role=player_role,
+                story_brief=story_brief,
+                story_guide_context=story_guide_context,
                 language=template.language,
             )
         except (NarrativeGatewayError, NarrativeServiceError, ValueError, AttributeError) as exc:
@@ -1911,6 +1971,7 @@ class NarrativeService:
             template_seed=template.seed if is_shareable_template else "",
             template_title_i18n=template.title_i18n if is_shareable_template else None,
             template_summary_i18n=template.summary_i18n if is_shareable_template else None,
+            language=template.language,
             cast=_public_replay_cast(template.cast) if is_shareable_template else [],
             advisor_persona=template.advisor_persona if is_shareable_template else "",
             cover_image_url=template.cover_image_url if is_shareable_template else None,
@@ -2914,6 +2975,52 @@ def _story_brief_fallback_opening(brief: StoryBrief, *, language: str) -> Openin
                 description="The room circles the premise without a visible clue, prop, decision, or callback.",
             ),
         ],
+        player_role_options=player_roles,
+    )
+
+
+def _complete_opening_identity_from_brief(
+    opening: OpeningResult,
+    *,
+    brief: StoryBrief,
+    language: str,
+) -> OpeningResult:
+    """Fill an omitted live role card from the reviewed Brief contract.
+
+    Role cards are optional in the live opening response so their absence must
+    not fail an otherwise useful opening. The Play UI still needs a stable
+    player identity, though. This completion keeps the live passage, cast,
+    choices, goals, and failure conditions intact and derives only the missing
+    identity from the already reviewed Story Brief.
+    """
+    if opening.player_role_options or not brief.player_role or not opening.cast:
+        return opening
+    if language == "zh":
+        target = opening.cast[0]
+        player_roles = [
+            PlayerRole(
+                role_id=_fallback_slug(brief.player_role)[:32] or "role_1",
+                label=_fallback_label(brief.player_role, limit=24),
+                public_persona=f"你是{brief.player_role}，需要在当前压力下稳住局面。",
+                hidden_objective="在局势定型前，让关键人物、压力与线索浮出水面。",
+                leverages_over_npcs=[
+                    PlayerLeverageOverNPC(
+                        npc_id=target.character_id,
+                        leverage=f"你知道为什么必须先听到{target.display_name}的立场。",
+                    )
+                ],
+                starting_assets=["行动筹码"],
+            )
+        ]
+    else:
+        player_roles = _fallback_player_roles(brief, opening.cast)
+    return OpeningResult(
+        title=opening.title,
+        advisor_persona=opening.advisor_persona,
+        cast=opening.cast,
+        opening_message=opening.opening_message,
+        player_goals=opening.player_goals,
+        failure_conditions=opening.failure_conditions,
         player_role_options=player_roles,
     )
 

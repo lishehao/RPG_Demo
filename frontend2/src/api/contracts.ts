@@ -1111,6 +1111,7 @@ export type NarrativePublicReplayResponse = {
   template_seed: string
   template_title_i18n?: NarrativeLocalizedText | null
   template_summary_i18n?: NarrativeLocalizedText | null
+  language?: NarrativeTemplateLanguage
   cover_image_url?: string | null
   cast: NarrativeCastMember[]
   advisor_persona: string
@@ -1133,6 +1134,7 @@ export type NarrativeCreateTemplateRequest = {
   difficulty?: NarrativeDifficulty
   language?: NarrativeTemplateLanguage
   story_brief?: NarrativeStoryBrief | null
+  story_guide_context?: NarrativeStoryGuideCompressedContext | null
 }
 
 export type NarrativeStartSessionRequest = {

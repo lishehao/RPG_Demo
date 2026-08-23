@@ -77,6 +77,8 @@ from rpg_backend.narrative.contracts import (
 )
 from rpg_backend.narrative.service import NarrativeServiceError, get_narrative_service
 from rpg_backend.quotas import DailyQuotaLimiter, QuotaExceededError
+from rpg_backend.research_runtime.contracts import RpgEvaluationBundleV1, RpgEvaluationReportV1
+from rpg_backend.research_runtime.evaluator import evaluate_rpg_bundle
 
 app = FastAPI(title="rpg-demo-rebuild")
 settings = get_settings()
@@ -721,6 +723,32 @@ def get_narrative_story(
         player_user_id=user.user_id,
         include_agent_trace=agent_trace,
     )
+
+
+@app.get(
+    "/narrative/sessions/{session_id}/evaluation-bundle",
+    response_model=RpgEvaluationBundleV1,
+)
+def get_narrative_evaluation_bundle(
+    session_id: str,
+    user=Depends(get_required_request_user),
+) -> RpgEvaluationBundleV1:
+    """Export an owned run without exposing prompts, keys, or raw traces."""
+
+    return narrative_service.get_rpg_evaluation_bundle(
+        session_id,
+        player_user_id=user.user_id,
+    )
+
+
+@app.post("/research/rpg-evaluations", response_model=RpgEvaluationReportV1)
+def evaluate_portable_rpg_run(
+    payload: RpgEvaluationBundleV1,
+    _user=Depends(get_required_request_user),
+) -> RpgEvaluationReportV1:
+    """Run the deterministic portable rubric for an authenticated reviewer."""
+
+    return evaluate_rpg_bundle(payload)
 
 
 @app.get("/narrative/sessions/{session_id}/llm-events", response_model=LLMCallEventListResponse)

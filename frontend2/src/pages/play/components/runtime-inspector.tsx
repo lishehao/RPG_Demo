@@ -316,7 +316,18 @@ export function RuntimeInspector({
       </details>
 
       <div style={ppStyles.evaluationFooter}>
-        Session {story.session.turn_count}/{story.session.turn_budget} · {inventoryState} · ending {endingLabel} · {turnsRemaining} left
+        <span>
+          Session {story.session.turn_count}/{story.session.turn_budget} · {inventoryState} · ending {endingLabel} · {turnsRemaining} left
+        </span>
+        {story.session.turn_count > 0 ? (
+          <a
+            href={`#/lab/rpg-evaluation?session=${encodeURIComponent(story.session.session_id)}`}
+            style={ppStyles.evaluationFooterLink}
+            data-reviewer-open-portable-evaluation="true"
+          >
+            Open portable run evaluation
+          </a>
+        ) : null}
       </div>
     </motion.section>
   )

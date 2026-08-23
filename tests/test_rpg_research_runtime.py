@@ -137,6 +137,49 @@ def test_portable_evaluator_scores_specific_stateful_run() -> None:
     assert all(item.status == "pass" for item in report.criteria)
 
 
+def test_terminal_options_do_not_overcount_choice_diversity() -> None:
+    memory = reduce_memory_events(
+        "terminal-options",
+        [_event("objective", 0, "objective_set", value="Resolve the gala reveal.")],
+    )
+    bundle = RpgEvaluationBundleV1(
+        run_id="terminal-options",
+        system_label="Terminal option compatibility",
+        scenario=RpgEvaluationScenarioV1(
+            scenario_id="gala",
+            title="Gala",
+            objective="Resolve the gala reveal.",
+        ),
+        turns=[
+            RpgTurnObservationV1(
+                turn_index=1,
+                player_action="Show the timestamp.",
+                world_response="The room accepts the evidence.",
+                options=["Question the sponsor", "Protect the singer"],
+                state_deltas=[RpgStateDeltaV1(target="pressure", kind="decrease", label="Pressure eased")],
+                objective_progress=0.5,
+                memory=memory,
+            ),
+            RpgTurnObservationV1(
+                turn_index=2,
+                player_action="Close the broadcast.",
+                world_response="The gala ends with the truth on record.",
+                options=["Replay", "Go home"],
+                terminal=True,
+                state_deltas=[RpgStateDeltaV1(target="objective", kind="increase", label="Truth recorded")],
+                objective_progress=1.0,
+                memory=memory,
+            ),
+        ],
+    )
+
+    report = evaluate_rpg_bundle(bundle)
+    choice = next(item for item in report.criteria if item.criterion == "choice_diversity")
+
+    assert choice.score == 100
+    assert choice.evidence == ["1 distinct action sets across 1 non-terminal turns."]
+
+
 def test_portable_evaluator_warns_for_prose_only_repeated_choices() -> None:
     memory = reduce_memory_events(
         "weak-run",

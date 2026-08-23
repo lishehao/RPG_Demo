@@ -421,6 +421,7 @@ export function CreatePage({
         difficulty,
         language: storyLanguage,
         story_brief: activeBriefResponse?.can_generate ? activeBriefResponse.brief : null,
+        story_guide_context: guideLoopState.context,
       })
       const openingElapsedMs = Date.now() - startedAt
       const handoffLabelKey: StringKey | null =

@@ -424,7 +424,7 @@ def test_run_context_stage_label_module_owns_passive_fallback_stage_copy() -> No
     assert 'return "Coda"' not in stage_label
     assert '"stage_bar.pre_finale": "Final stretch"' in strings
     assert '"stage_bar.pre_finale": "Coda"' not in strings
-    assert '"Final stretch"' in mood_plate
+    assert 't("play.mood_stage_final")' in mood_plate
     assert '"Coda"' not in mood_plate
     assert 'return stage.replace(/_/g, " ")' in stage_label
     assert "function stageDisplayName" not in panels
@@ -785,7 +785,7 @@ def test_scene_support_rail_uses_webtoon_portrait_images() -> None:
     assert "onFocusActor={focusSceneActor}" in play_page
     assert "onClearActorFocus={() => setFocusedActorId(null)}" in play_page
     assert "onAskAdvisor={openAdvisor}" in play_page
-    assert 'title="People you can involve"' in primitives
+    assert 'title={t("play.rail_people")}' in primitives
     assert "play.advisor_card_name" in primitives
     assert "play.advisor_card_background" in primitives
     assert "advisorAskTitle" in primitives
@@ -1026,15 +1026,15 @@ def test_finish_mode_normal_play_reduces_top_metadata_density() -> None:
     assert "moodPlateComplete" in mood_plate
     assert "moodPlateCopyComplete" in mood_plate
     assert "moodTitleComplete" in mood_plate
-    assert "This run is finished. Review the ending, then replay or share it." in mood_plate
+    assert 't("play.mood_context_complete")' in mood_plate
     assert "{!isComplete ? (" in mood_plate
     assert "cast={story.template.cast.map" not in play_page
     assert "const castLine" not in mood_plate
     assert "story.template.seed" not in mood_plate
-    assert "First shot is live" in mood_plate
-    assert "The room is waiting." in mood_plate
-    assert "turns to play" in mood_plate
-    assert "turns played" in mood_plate
+    assert 't("play.mood_context_opening")' in mood_plate
+    assert 't("play.mood_context_waiting")' in mood_plate
+    assert 't("play.mood_progress_empty"' in mood_plate
+    assert 't("play.mood_progress_played"' in mood_plate
     assert "Turn ${turnsCompleted} of ${turnBudget}" not in mood_plate
     assert "The latest beat is ready for your next move." not in mood_plate
     assert '<PrimitiveSection title="Progress">' not in scene_rail
@@ -1591,7 +1591,7 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert 'data-gameplay-evidence-resource={focusableTrackId === "evidence" ? "true" : undefined}' in play_page
     assert "data-gameplay-resource-focus={isFocused ? \"true\" : undefined}" in play_page
     assert "data-gameplay-resource-action-count={resourceMatchCount}" in play_page
-    assert 'aria-label={`${track.label}: ${track.value}. ${resourceActionLabel ? `${resourceActionLabel}. ` : ""}${focusTitle}`}' in play_page
+    assert 'aria-label={`${displayLabel}: ${displayValue}. ${resourceActionLabel ? `${resourceActionLabel}. ` : ""}${focusTitle}`}' in play_page
     assert 'aria-label={`${track.label}: ${track.value}. ${focusTitle}`}' not in play_page
     assert 't("play.resource_focus_active_count_one")' in play_page
     assert 't("play.resource_focus_active_count_many", { count: resourceMatchCount })' in play_page
@@ -1650,7 +1650,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert "focusedActorId={focusedActorId}" in play_page
     assert "onFocusActor={focusSceneActor}" in play_page
     assert "!isComplete && !busy && turnsCompleted > 0" in play_page
-    assert "actionForecasts={gameplayEnvelope.actionForecasts}" in play_page
+    assert "const displayActionForecasts = localizedActionForecasts(t, gameplayEnvelope.actionForecasts)" in play_page
+    assert "actionForecasts={displayActionForecasts}" in play_page
+    assert "function gameplayForecastLabel(" in play_page
+    assert 't("play.gameplay_forecast_read_room")' in play_page
     assert "actorFocus={actorFocus}" in play_page
     assert "resourceFocus={focusedResourceId && focusedResourceTrack" in play_page
     assert "const compactTracks = useCompactLayout(\"(max-width: 680px)\")" in play_page
@@ -2008,6 +2011,10 @@ def test_normal_play_prefers_backend_gameplay_envelope_with_derived_backup() -> 
     assert '"play.gameplay_tracks_label": "风险与资源"' in strings
     assert '"play.gameplay_tracks_hint": "每次行动都在交换时间、压力、信任或证据"' in strings
     assert '"play.gameplay_tracks_hint": "选择行动时盯住这些变化"' not in strings
+    assert '"play.gameplay_track_none": "暂无"' in strings
+    assert '"play.gameplay_forecast_read_room": "观察局面"' in strings
+    assert '"play.gameplay_forecast_evidence": "可能发现证据"' in strings
+    assert '"play.advisor_card_name": "黛娜·维尔"' in strings
     assert "gameplayStakesHeader" in styles
     assert '"play.feedback_source_move_label": "From your move"' in strings
     assert '"play.gameplay_decision_forecast_label": "Likely impact"' in strings

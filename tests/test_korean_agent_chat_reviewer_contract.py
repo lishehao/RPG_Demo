@@ -54,27 +54,21 @@ def test_reviewer_launch_explains_async_progress_to_external_reviewers() -> None
     assert ".reviewer-launch-plan__head" in theme
 
 
-def test_reviewer_page_normalizes_direct_entry_to_english() -> None:
+def test_reviewer_page_preserves_ui_language_until_locked_english_launch() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
 
-    mount_language_idx = source.index('useEffect(() => {\n    setLang("en")')
     handle_start_idx = source.index("const handleStart = async")
 
-    assert mount_language_idx < handle_start_idx
-    assert '}, [setLang])' in source[mount_language_idx:handle_start_idx]
+    assert 'setLang("en")' not in source[:handle_start_idx]
     assert 'setLang("en")' in source[source.index("const handleStart = async") :]
     assert "A locked English demo path designed for portfolio review" in source
 
 
-def test_portfolio_page_normalizes_application_entry_to_english() -> None:
+def test_portfolio_page_preserves_the_selected_application_language() -> None:
     source = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
 
-    mount_language_idx = source.index('useEffect(() => {\n    setLang("en")')
-    hero_idx = source.index("<h1>Tiny Stories")
-
-    assert mount_language_idx < hero_idx
-    assert '}, [setLang])' in source[mount_language_idx:hero_idx]
-    assert 'import { useLanguage } from "../../shared/lib/i18n"' in source
+    assert 'setLang("en")' not in source
+    assert 'import { useLanguage } from "../../shared/lib/i18n"' not in source
     assert "Portfolio Case Study" in source
     assert "portfolio-grade AI product-system evidence" in source
     assert "not a launched consumer adoption claim" in source

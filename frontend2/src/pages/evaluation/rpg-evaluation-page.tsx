@@ -1,8 +1,10 @@
-import { useMemo, useRef, useState, type ChangeEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react"
+import { useApi } from "../../app/api-context"
 import { useLanguage } from "../../shared/lib/i18n"
 import {
   evaluateRpgBundle,
   isRpgEvaluationBundle,
+  isRpgEvaluationReport,
   type EvaluationStatus,
   type RpgEvaluationBundle,
   type RpgEvaluationReport,
@@ -56,6 +58,11 @@ const UI = {
     exportReport: "下载评测报告",
     reset: "恢复内置样例",
     invalid: "文件不是 rpg_evaluation_bundle.v1，或缺少回合数据。",
+    sessionLabel: "评测真实会话",
+    sessionPlaceholder: "输入 Tiny Stories session id",
+    loadSession: "载入会话",
+    loadingSession: "正在整理运行证据...",
+    sessionError: "无法载入该运行。请确认已用运行所有者登录，并至少完成一个回合。",
     adapterTitle: "让其他 RPG 接入",
     adapterCopy: "适配器只需输出场景、逐回合行动/响应、选项、结构化变化和记忆快照。评测前端不要求接入 Tiny Stories 后端。",
     noValue: "无",
@@ -93,6 +100,11 @@ const UI = {
     exportReport: "Download evaluation report",
     reset: "Restore built-in sample",
     invalid: "The file is not an rpg_evaluation_bundle.v1 bundle, or has no turns.",
+    sessionLabel: "Evaluate a live session",
+    sessionPlaceholder: "Enter a Tiny Stories session id",
+    loadSession: "Load session",
+    loadingSession: "Compiling run evidence...",
+    sessionError: "This run could not be loaded. Sign in as its owner and complete at least one turn.",
     adapterTitle: "Connect another RPG",
     adapterCopy: "An adapter only needs to emit the scenario, per-turn action/response, options, typed changes, and memory snapshots. The lab does not require the Tiny Stories backend.",
     noValue: "None",
@@ -115,15 +127,30 @@ function scoreTone(status: EvaluationStatus) {
   return `rpg-lab-status rpg-lab-status--${status}`
 }
 
-export function RpgEvaluationPage({ onBack }: { onBack: () => void }) {
+export function RpgEvaluationPage({
+  onBack,
+  sessionId,
+}: {
+  onBack: () => void
+  sessionId?: string
+}) {
+  const api = useApi()
   const { lang, setLang } = useLanguage()
   const copy = UI[lang]
   const [bundle, setBundle] = useState<RpgEvaluationBundle>(RPG_EVALUATION_SAMPLES[0])
   const [view, setView] = useState<LabView>("overview")
   const [selectedTurn, setSelectedTurn] = useState(RPG_EVALUATION_SAMPLES[0].turns.length - 1)
   const [importError, setImportError] = useState("")
+  const [sessionInput, setSessionInput] = useState(sessionId ?? "")
+  const [sessionBusy, setSessionBusy] = useState(false)
+  const [sessionError, setSessionError] = useState("")
+  const [authoritativeReport, setAuthoritativeReport] = useState<RpgEvaluationReport | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const report = useMemo(() => evaluateRpgBundle(bundle), [bundle])
+  const loadedSessionRef = useRef("")
+  const sessionRequestRef = useRef("")
+  const liveSessionEnabled = import.meta.env.VITE_PUBLIC_LAB_DEFAULT !== "true"
+  const localReport = useMemo(() => evaluateRpgBundle(bundle), [bundle])
+  const report = authoritativeReport?.run_id === bundle.run_id ? authoritativeReport : localReport
   const comparison = useMemo(
     () => RPG_EVALUATION_SAMPLES.map((sample) => ({ sample, report: evaluateRpgBundle(sample) })),
     [],
@@ -131,9 +158,46 @@ export function RpgEvaluationPage({ onBack }: { onBack: () => void }) {
   const latestMemory = bundle.turns[Math.min(selectedTurn, bundle.turns.length - 1)]?.memory
 
   const chooseBundle = (next: RpgEvaluationBundle) => {
+    if (next.locale !== "mixed") setLang(next.locale)
     setBundle(next)
     setSelectedTurn(Math.max(0, next.turns.length - 1))
     setImportError("")
+    setSessionError("")
+    setAuthoritativeReport(null)
+  }
+
+  const loadLiveSession = async (rawSessionId: string) => {
+    const nextSessionId = rawSessionId.trim()
+    if (!nextSessionId || !liveSessionEnabled || sessionRequestRef.current === nextSessionId) return
+    sessionRequestRef.current = nextSessionId
+    setSessionBusy(true)
+    setSessionError("")
+    try {
+      const value = await api.getNarrativeEvaluationBundle(nextSessionId)
+      if (!isRpgEvaluationBundle(value)) throw new Error("invalid evaluation bundle")
+      const serverReport = await api.evaluatePortableRpgRun(value)
+      if (!isRpgEvaluationReport(serverReport)) throw new Error("invalid evaluation report")
+      chooseBundle(value)
+      setAuthoritativeReport(serverReport)
+      setView("overview")
+      loadedSessionRef.current = nextSessionId
+    } catch {
+      setSessionError(copy.sessionError)
+    } finally {
+      sessionRequestRef.current = ""
+      setSessionBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!sessionId || !liveSessionEnabled || loadedSessionRef.current === sessionId) return
+    setSessionInput(sessionId)
+    void loadLiveSession(sessionId)
+  }, [sessionId])
+
+  const handleSessionLoad = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    void loadLiveSession(sessionInput)
   }
 
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -151,7 +215,12 @@ export function RpgEvaluationPage({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="rpg-lab-page" data-rpg-evaluation-lab="true" data-rpg-evaluation-locale={lang}>
+    <div
+      className="rpg-lab-page"
+      data-rpg-evaluation-lab="true"
+      data-rpg-evaluation-locale={lang}
+      data-rpg-evaluation-engine={authoritativeReport?.run_id === bundle.run_id ? "backend" : "browser"}
+    >
       <header className="rpg-lab-topbar">
         <button type="button" className="rpg-lab-back" onClick={onBack} aria-label={copy.back}>←</button>
         <div className="rpg-lab-brand">
@@ -190,7 +259,25 @@ export function RpgEvaluationPage({ onBack }: { onBack: () => void }) {
             <input ref={fileInputRef} type="file" accept="application/json,.json" onChange={(event) => void handleImport(event)} />
             <button type="button" onClick={() => fileInputRef.current?.click()}>{copy.import}</button>
           </div>
+          {liveSessionEnabled ? (
+            <form className="rpg-lab-session-loader" onSubmit={handleSessionLoad} data-rpg-live-session-loader="true">
+              <label htmlFor="rpg-session-id">{copy.sessionLabel}</label>
+              <div>
+                <input
+                  id="rpg-session-id"
+                  value={sessionInput}
+                  onChange={(event) => setSessionInput(event.target.value)}
+                  placeholder={copy.sessionPlaceholder}
+                  autoComplete="off"
+                />
+                <button type="submit" disabled={sessionBusy || !sessionInput.trim()}>
+                  {sessionBusy ? copy.loadingSession : copy.loadSession}
+                </button>
+              </div>
+            </form>
+          ) : null}
           {importError ? <p className="rpg-lab-import-error" role="alert">{importError}</p> : null}
+          {sessionError ? <p className="rpg-lab-import-error" role="alert">{sessionError}</p> : null}
         </section>
 
         <section className="rpg-lab-scoreboard" data-rpg-evaluation-summary="true">

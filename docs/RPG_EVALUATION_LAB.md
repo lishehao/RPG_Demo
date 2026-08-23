@@ -112,6 +112,34 @@ contracts.
 The built-in candidate and prose-only baseline make the lab usable without a
 backend. Imported bundles never leave the browser.
 
+When the full local Tiny Stories backend is running, the same route also accepts
+`?session=<session_id>`. An authenticated owner can load a completed live
+session, export its server-built bundle, and run the authoritative deterministic
+evaluator without copying JSON. This local-only loader is omitted from the
+public static build, so the Vercel artifact remains backend-free and cannot
+silently claim access to live sessions.
+
+## End-to-End Provenance
+
+The reference runtime keeps one auditable contract across the product chain:
+
+1. Story Butler compacts current facts, corrections, boundaries, open questions,
+   and non-story intents.
+2. Template creation persists the Story Brief plus a sanitized Story Guide
+   context. Raw chat turns are not stored in this research seed.
+3. Play turns and endings receive a compact `story_contract` containing current
+   truth only. Superseded facts, meta conversation, planner internals, and raw
+   model messages are excluded.
+4. Session export projects the persisted seed and every completed Play turn into
+   `rpg_evaluation_bundle.v1`.
+5. The frontend lab and backend evaluator share the same terminal-turn and
+   progress-provenance rules. A reported progress value derived from the turn
+   budget is labeled `turn_budget_proxy`, not presented as engine ground truth.
+
+The owner-only Reviewer surface links to the session-scoped lab after the first
+completed turn. Normal Play remains free of evaluator, token, provider, and
+private-reasoning details.
+
 ## Vercel Delivery
 
 `frontend2/vercel.json` builds the same React application with
@@ -122,21 +150,52 @@ needed for the public artifact.
 The live Tiny Stories acceptance path remains a separate, configured-backend
 validation. A static Vercel demo must not be cited as live-provider proof.
 
+## Strict Live Gate
+
+`tools/rpg_eval/tiny_stories_golden_path_harness.py` is the strict completion
+gate. It runs a corrected Story Butler memory sequence, Story Brief, live
+opening, 12 live Play turns, ending, persisted session export, and backend
+evaluation. Every required provider operation must be `live` or
+`live_repaired`, with no fallback reason. The gate preserves exact telemetry
+and a deterministic quality summary; neither is a substitute for human
+narrative judgment.
+
 ## Latest Bounded Live Acceptance
 
-The 2026-08-24 local acceptance run used a fresh runtime database and a
-configured live text gateway. It exercised Story Butler, Story Brief, opening,
-one Play turn, and reviewer telemetry. The durable, sanitized record is
-[`evidence/rpg-evaluation-live-acceptance-2026-08-24.json`](./evidence/rpg-evaluation-live-acceptance-2026-08-24.json).
+The strict 2026-08-24 run used an isolated runtime database and a configured
+live text gateway. It corrected an initially wrong player role, compiled the
+current truth into a Story Brief, generated a live opening, completed all 12
+Play turns, produced an ending, exported the persisted session, and evaluated
+the portable bundle. The sanitized evidence is available as
+[`evidence/tiny-stories-12-turn-live-research-runtime-2026-08-24.json`](./evidence/tiny-stories-12-turn-live-research-runtime-2026-08-24.json)
+and a compact
+[`Markdown report`](./evidence/tiny-stories-12-turn-live-research-runtime-2026-08-24.md).
 
-| Operation | Source | Status | Latency | Input | Cached input | Output | Total | Fallback |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| `create.story_butler_turn` | live | success | 1,281 ms | 2,389 | 0 | 31 | 2,420 | none |
-| `narrative.story_brief` | live | success | 2,207 ms | 1,477 | 0 | 156 | 1,633 | none |
-| `narrative.opening` | live | success | 12,635 ms | 2,686 | 0 | 808 | 3,494 | none |
-| `narrative.advance_turn` | live | success | 9,312 ms | 6,863 | 0 | 447 | 7,310 | none |
+| Gate | Result |
+| --- | --- |
+| Required live operations | Story Butler, Story Brief, Opening, 12 Play turns |
+| Provider classification | all `live/success`; zero fallback, repair, or retry |
+| Play latency | 11,403 ms median; 14,858 ms max |
+| Play usage | 99,705 input; 71,680 cached input; 7,665 output; 107,370 total tokens |
+| Ending | completed at 12/12, canonical label `共谋` |
+| Step / Contract Judge | 12 / 12 rows, all pass |
+| Deterministic quality package | all 6 bounded criteria pass |
+| Portable evaluator | pass, 100/100, progress provenance `turn_budget_proxy` |
+| Memory | 13 active facts; 3 superseded facts; corrected role absent from current truth |
 
-This run proves that the reference path can complete through the configured
-live provider without deterministic fallback. It does not prove general story
-quality. The opening consistency classifier returned `warn`; that is retained
-as a visible quality risk rather than reclassified as success.
+Two shorter bilingual runs separately exercise the same current-truth memory,
+Brief, opening, Play, persistence, and evaluator path:
+
+- [English live acceptance](./evidence/rpg-evaluation-live-memory-acceptance-2026-08-24.json):
+  pass, portable score 90, opening consistency pass.
+- [Chinese live acceptance](./evidence/rpg-evaluation-live-zh-acceptance-2026-08-24.json):
+  pass, portable score 90, Chinese Story Butler/Brief/Opening/Play output, opening
+  consistency warn retained as a quality limitation.
+
+These runs prove that the bounded reference path can complete through the
+configured provider without deterministic fallback. They do not prove general
+story quality, calibrated fun, consumer demand, or robustness outside the
+tested scenarios. The Browser acceptance also covered English and Chinese
+Home, Create, Play, Replay, Portfolio, About, Evaluation, Reviewer, and local QA
+routes at desktop and 390 px widths; normal player surfaces had no provider,
+schema, token, trace, fallback, raw JSON, or private-reasoning copy.

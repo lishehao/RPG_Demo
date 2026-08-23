@@ -153,7 +153,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
     case "publicReviewerDemo":
       return <PlayReviewerEvidenceFixture variant="public" onBackHome={() => navigate({ name: "portfolio" })} />
     case "rpgEvaluation":
-      return <RpgEvaluationPage onBack={() => navigate({ name: "portfolio" })} />
+      return <RpgEvaluationPage sessionId={route.sessionId} onBack={() => navigate({ name: "portfolio" })} />
     case "about":
       return (
         <AboutPage
@@ -183,7 +183,7 @@ function routeKey(route: AppRoute): string {
     case "portfolio": return "portfolio"
     case "reviewer": return "reviewer"
     case "publicReviewerDemo": return "publicReviewerDemo"
-    case "rpgEvaluation": return "rpgEvaluation"
+    case "rpgEvaluation": return route.sessionId ? `rpgEvaluation:${route.sessionId}` : "rpgEvaluation"
     case "template": return `template:${route.templateId}`
     case "play": return route.reviewer ? `play:${route.sessionId}:reviewer` : `play:${route.sessionId}`
     case "replay": return `replay:${route.sessionId}`

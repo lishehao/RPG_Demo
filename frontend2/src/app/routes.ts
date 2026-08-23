@@ -19,7 +19,7 @@ export type AppRoute =
   | { name: "portfolio" }
   | { name: "reviewer" }
   | { name: "publicReviewerDemo" }
-  | { name: "rpgEvaluation" }
+  | { name: "rpgEvaluation"; sessionId?: string }
   | { name: "about" }
 
 export type NavDirection = "forward" | "backward"
@@ -120,7 +120,7 @@ function parseRoute(hash: string): AppRoute {
     return { name: "publicReviewerDemo" }
   }
   if (segments[0] === "lab" && segments[1] === "rpg-evaluation") {
-    return { name: "rpgEvaluation" }
+    return { name: "rpgEvaluation", sessionId: params.get("session") ?? undefined }
   }
   if (segments[0] === "about") {
     return { name: "about" }
@@ -177,7 +177,9 @@ export function buildHash(route: AppRoute): string {
     case "publicReviewerDemo":
       return "#/demo/reviewer"
     case "rpgEvaluation":
-      return "#/lab/rpg-evaluation"
+      return route.sessionId
+        ? `#/lab/rpg-evaluation?session=${encodeURIComponent(route.sessionId)}`
+        : "#/lab/rpg-evaluation"
     case "about":
       return "#/about"
   }

@@ -88,6 +88,8 @@ export type FrontendApiClient = {
     options?: NarrativeAgentTraceOptions,
   ): Promise<NarrativeStoryHistoryResponse>
   getNarrativeLLMEvents(sessionId: string): Promise<NarrativeLLMCallEventListResponse>
+  getNarrativeEvaluationBundle(sessionId: string): Promise<unknown>
+  evaluatePortableRpgRun(bundle: unknown): Promise<unknown>
   advanceNarrativeTurn(
     sessionId: string,
     request: NarrativeAdvanceTurnRequest,

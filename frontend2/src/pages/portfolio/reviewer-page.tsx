@@ -118,10 +118,6 @@ export function ReviewerPage({
   const localQaAvailable = canOpenLocalQaRoute()
 
   useEffect(() => {
-    setLang("en")
-  }, [setLang])
-
-  useEffect(() => {
     if (!busy || launchPhase === "ready") return
     const frame = window.requestAnimationFrame(() => {
       const plan = launchPlanRef.current
