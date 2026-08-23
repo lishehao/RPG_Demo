@@ -122,11 +122,13 @@ export function PortfolioPage({
   onOpenCreate,
   onOpenReviewer,
   onOpenPublicDemo,
+  onOpenEvaluation,
 }: {
   onBackHome: () => void
   onOpenCreate: () => void
   onOpenReviewer: () => void
   onOpenPublicDemo: () => void
+  onOpenEvaluation: () => void
 }) {
   const [activeStep, setActiveStep] = useState(0)
   const step = PIPELINE_STEPS[activeStep]
@@ -177,6 +179,9 @@ export function PortfolioPage({
               </a>
               <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenPublicDemo}>
                 Open public reviewer demo
+              </button>
+              <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenEvaluation}>
+                Open RPG evaluation lab
               </button>
               <button className="portfolio-action portfolio-action--secondary" type="button" onClick={onOpenReviewer}>
                 Try live backend reviewer run

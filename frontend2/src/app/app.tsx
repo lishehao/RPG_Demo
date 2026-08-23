@@ -21,6 +21,7 @@ import { ReplayFixture } from "../pages/replay/replay-fixture"
 import { TemplateDetailPage } from "../pages/world/world-detail-page"
 import { PortfolioPage } from "../pages/portfolio/portfolio-page"
 import { ReviewerPage } from "../pages/portfolio/reviewer-page"
+import { RpgEvaluationPage } from "../pages/evaluation/rpg-evaluation-page"
 
 function NotFoundRedirect({ navigate }: { navigate: (next: AppRoute) => void }) {
   useEffect(() => {
@@ -136,6 +137,7 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
           onOpenCreate={() => navigate({ name: "create" })}
           onOpenReviewer={() => navigate({ name: "reviewer" })}
           onOpenPublicDemo={() => navigate({ name: "publicReviewerDemo" })}
+          onOpenEvaluation={() => navigate({ name: "rpgEvaluation" })}
         />
       )
     case "reviewer":
@@ -150,6 +152,8 @@ function renderRoute(route: AppRoute, navigate: (next: AppRoute) => void) {
       )
     case "publicReviewerDemo":
       return <PlayReviewerEvidenceFixture variant="public" onBackHome={() => navigate({ name: "portfolio" })} />
+    case "rpgEvaluation":
+      return <RpgEvaluationPage onBack={() => navigate({ name: "portfolio" })} />
     case "about":
       return (
         <AboutPage
@@ -179,6 +183,7 @@ function routeKey(route: AppRoute): string {
     case "portfolio": return "portfolio"
     case "reviewer": return "reviewer"
     case "publicReviewerDemo": return "publicReviewerDemo"
+    case "rpgEvaluation": return "rpgEvaluation"
     case "template": return `template:${route.templateId}`
     case "play": return route.reviewer ? `play:${route.sessionId}:reviewer` : `play:${route.sessionId}`
     case "replay": return `replay:${route.sessionId}`
