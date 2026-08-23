@@ -1466,6 +1466,25 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "local-only application evidence until the public-link check passes" in code_map
 
 
+def test_story_language_drives_play_replay_and_evaluation_without_portfolio_side_effects() -> None:
+    play = (ROOT / "frontend2/src/pages/play/play-page.tsx").read_text()
+    replay = (ROOT / "frontend2/src/pages/replay/replay-page.tsx").read_text()
+    evaluation = (ROOT / "frontend2/src/pages/evaluation/rpg-evaluation-page.tsx").read_text()
+    portfolio = (ROOT / "frontend2/src/pages/portfolio/portfolio-page.tsx").read_text()
+    reviewer = (ROOT / "frontend2/src/pages/portfolio/reviewer-page.tsx").read_text()
+    contracts = (ROOT / "rpg_backend/narrative/contracts.py").read_text()
+    strings = (ROOT / "frontend2/src/shared/lib/i18n.ts").read_text()
+
+    assert "setLang(response.template.language)" in play
+    assert "setLang(r.language)" in replay
+    assert 'if (next.locale !== "mixed") setLang(next.locale)' in evaluation
+    assert "language: TemplateLanguage" in contracts
+    assert 'setLang("en")\n  }, [setLang])' not in portfolio
+    assert 'setLang("en")\n  }, [setLang])' not in reviewer
+    assert '"play.mood_context_waiting": "房间在等你的下一步。"' in strings
+    assert '"play.gameplay_track_pressure": "压力"' in strings
+
+
 def test_source_maps_use_current_story_butler_product_framing() -> None:
     code_map = (ROOT / "docs/tiny-stories-code-map.md").read_text()
     frontend_readme = (ROOT / "frontend2/src/README.md").read_text()

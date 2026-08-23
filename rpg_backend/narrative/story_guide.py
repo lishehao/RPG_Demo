@@ -484,12 +484,37 @@ def _compress_story_context(
     previous = state.context
     player_role = _slot_evidence(state, "player_role") or previous.player_role
     cast = _compact_list(_split_context_terms(_slot_evidence(state, "active_cast")) or previous.cast_or_factions, limit=8)
+    role_only_cast_entries = {
+        role.casefold().removeprefix("the ").strip()
+        for role in (previous.player_role, player_role)
+        if role
+    }
+    cast = [
+        member
+        for member in cast
+        if member.casefold().removeprefix("the ").strip() not in role_only_cast_entries
+    ]
     pressure = _slot_evidence(state, "pressure") or previous.pressure
     constraints = _compact_list(_split_context_terms(_slot_evidence(state, "boundaries")) or previous.constraints, limit=8)
     tone = _slot_evidence(state, "tone") or (settings.tensionProfile or "") or previous.tone
     scene_summary = _slot_evidence(state, "first_scene_hook") or previous.scene_summary
     if not scene_summary and state.acceptedTurns:
         scene_summary = _short_evidence(state.acceptedTurns[0])
+    if (
+        previous.player_role
+        and player_role
+        and previous.player_role.casefold() != player_role.casefold()
+    ):
+        scene_summary = _rewrite_player_role_reference(
+            scene_summary, previous.player_role, player_role
+        )
+        pressure = _rewrite_player_role_reference(
+            pressure, previous.player_role, player_role
+        )
+        constraints = [
+            _rewrite_player_role_reference(item, previous.player_role, player_role)
+            for item in constraints
+        ]
 
     changed = list(previous.rejected_or_changed_facts)
     _append_superseded(changed, "player_role", previous.player_role, player_role)
@@ -577,6 +602,33 @@ def _append_superseded(changed: list[str], label: str, previous: str, current: s
     if not previous or not current or previous.casefold() == current.casefold():
         return
     changed.append(f"superseded {label}: {previous}")
+
+
+def _rewrite_player_role_reference(value: str, previous: str, current: str) -> str:
+    """Update explicit player-identity clauses without rewriting unrelated cast prose."""
+
+    if not value or not previous or not current:
+        return value
+    old = previous.strip()
+    new = current.strip()
+    rewritten = value.replace(f"玩家是{old}", f"玩家是{new}")
+    rewritten = rewritten.replace(f"我是{old}", f"我是{new}")
+    old_without_article = re.sub(r"^(?:a|an|the)\s+", "", old, flags=re.I).strip()
+    if old_without_article:
+        role_pattern = rf"(?:a\s+|an\s+|the\s+)?{re.escape(old_without_article)}"
+        rewritten = re.sub(
+            rf"((?:the\s+)?player\s+is\s+){role_pattern}",
+            lambda match: f"{match.group(1)}{new}",
+            rewritten,
+            flags=re.I,
+        )
+        rewritten = re.sub(
+            rf"(i(?:'m|\s+am)\s+){role_pattern}",
+            lambda match: f"{match.group(1)}{new}",
+            rewritten,
+            flags=re.I,
+        )
+    return rewritten
 
 
 def _fact(label: str, value: str) -> list[str]:

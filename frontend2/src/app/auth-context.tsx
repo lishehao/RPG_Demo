@@ -27,7 +27,9 @@ function detectAnonymous(user: AuthUserResponse | null): boolean {
 }
 
 function shouldSkipInitialAuthRefresh(): boolean {
-  return window.location.hash.replace(/^#/, "").startsWith("/demo/reviewer")
+  if (import.meta.env.VITE_PUBLIC_LAB_DEFAULT === "true") return true
+  const route = window.location.hash.replace(/^#/, "")
+  return route.startsWith("/demo/reviewer") || route.startsWith("/lab/rpg-evaluation")
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

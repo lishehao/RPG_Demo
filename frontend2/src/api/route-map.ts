@@ -42,6 +42,14 @@ export const BACKEND_ROUTE_MAP = {
     method: "GET",
     path: "/narrative/sessions/:session_id/llm-events",
   },
+  getNarrativeEvaluationBundle: {
+    method: "GET",
+    path: "/narrative/sessions/:session_id/evaluation-bundle",
+  },
+  evaluatePortableRpgRun: {
+    method: "POST",
+    path: "/research/rpg-evaluations",
+  },
   advanceNarrativeTurn: {
     method: "POST",
     path: "/narrative/sessions/:session_id/story/turns",

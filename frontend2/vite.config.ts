@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
       port: 8001,
       strictPort: true,
       proxy: {
-        "^/(health|me|auth|author|stories|play|benchmark|narrative)": {
+        "^/(health|me|auth|author|stories|play|benchmark|narrative|research)": {
           target: backendTarget,
           changeOrigin: true,
         },

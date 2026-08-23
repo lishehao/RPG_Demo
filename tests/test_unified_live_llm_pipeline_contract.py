@@ -495,6 +495,53 @@ def test_story_guide_context_tracks_superseded_facts_and_delegated_choices() -> 
     assert "Who is the player" not in delegated.reply
 
 
+def test_player_role_correction_removes_role_only_residue_from_active_cast() -> None:
+    initial = advance_story_guide_loop(
+        None,
+        (
+            "At an awards gala, a publicist, a singer, and a sponsor discover the reveal is rigged. "
+            "The player is a backup dancer who must protect the singer before air."
+        ),
+        "en",
+    )
+    corrected = advance_story_guide_loop(
+        initial.state,
+        "Correction: I am the publicist, not the backup dancer.",
+        "en",
+    )
+
+    assert corrected.state.context.player_role == "publicist"
+    assert "backup dancer" not in corrected.state.context.cast_or_factions
+    assert "publicist" not in corrected.state.context.cast_or_factions
+    assert "backup dancer" not in corrected.state.context.scene_summary.lower()
+    assert "backup dancer" not in corrected.state.context.pressure.lower()
+    assert all("backup dancer" not in item.lower() for item in corrected.state.context.constraints)
+    assert "singer" in corrected.state.context.cast_or_factions
+    assert any(
+        "superseded player_role: backup dancer" in fact
+        for fact in corrected.state.context.rejected_or_changed_facts
+    )
+
+    zh_initial = advance_story_guide_loop(
+        None,
+        "直播颁奖礼被人操纵。玩家是伴舞，必须在主持人上台前保护歌手。",
+        "zh",
+    )
+    zh_state = zh_initial.state.model_copy(
+        update={
+            "context": zh_initial.state.context.model_copy(update={"player_role": "伴舞"})
+        }
+    )
+    zh_corrected = advance_story_guide_loop(
+        zh_state,
+        "修正：我是公关，不是伴舞。",
+        "zh",
+    )
+    assert zh_corrected.state.context.player_role == "公关"
+    assert "玩家是伴舞" not in zh_corrected.state.context.scene_summary
+    assert "玩家是公关" in zh_corrected.state.context.scene_summary
+
+
 def test_story_guide_compresses_rich_seed_into_specific_playable_facts() -> None:
     response = advance_story_guide_loop(
         None,

@@ -88,27 +88,28 @@ export function MoodPlate({
   compact: boolean
   isComplete?: boolean
 }) {
+  const t = useT()
   const imageUrl = sceneUrl || coverUrl
   const safeTurnBudget = Math.max(turnBudget, 1)
   const turnsPlayed = Math.max(0, Math.min(turnsCompleted, safeTurnBudget))
   const progress =
     turnsPlayed <= 0
-      ? `${safeTurnBudget} turns to play`
-      : `${turnsPlayed}/${safeTurnBudget} turns played`
+      ? t("play.mood_progress_empty", { count: safeTurnBudget })
+      : t("play.mood_progress_played", { current: turnsPlayed, total: safeTurnBudget })
   const stage = isComplete
-    ? "Complete"
+    ? t("play.mood_stage_complete")
     : turnsRemaining <= 2
-      ? "Final stretch"
+      ? t("play.mood_stage_final")
       : turnsCompleted <= 0
-        ? "Opening"
-        : "In motion"
+        ? t("play.mood_stage_opening")
+        : t("play.mood_stage_motion")
   const context = isComplete
-    ? "This run is finished. Review the ending, then replay or share it."
+    ? t("play.mood_context_complete")
     : turnsCompleted <= 0
-    ? "First shot is live. Choose the pressure you step into."
+    ? t("play.mood_context_opening")
     : turnsRemaining <= 2
-      ? "The room is close to its final break."
-      : "The room is waiting."
+      ? t("play.mood_context_final")
+      : t("play.mood_context_waiting")
 
   return (
     <section
@@ -187,7 +188,7 @@ export function SceneSupportRail({
 }) {
   const t = useT()
   const playerRole = story.session.player_role
-  const role = playerRole?.label || playerRole?.public_persona || "You"
+  const role = playerRole?.label || playerRole?.public_persona || t("play.rail_you_fallback")
   const playerPortraitUrl = playerPortraitForStory(story)
   const pressure = scenePressureText(story, lastNarrator)
   const actors = sceneActors(story, lastNarrator?.npc_pulse ?? [])
@@ -201,9 +202,9 @@ export function SceneSupportRail({
         ...primitiveStyles.supportRail,
         ...(compact ? primitiveStyles.supportRailCompact : null),
       }}
-      aria-label="Scene support"
+      aria-label={t("play.rail_aria")}
     >
-      <PrimitiveSection title="You are">
+      <PrimitiveSection title={t("play.rail_you_are")}>
         <div style={primitiveStyles.playerIdentityRow}>
           <span style={primitiveStyles.playerPortraitFrame}>
             <img
@@ -222,12 +223,12 @@ export function SceneSupportRail({
           </span>
         </div>
       </PrimitiveSection>
-      <PrimitiveSection title="Pressure now">
+      <PrimitiveSection title={t("play.rail_pressure_now")}>
         <span style={primitiveStyles.pressureText}>
           <Truncated lines={3}>{pressure}</Truncated>
         </span>
       </PrimitiveSection>
-      <PrimitiveSection title="People you can involve">
+      <PrimitiveSection title={t("play.rail_people")}>
         <div style={primitiveStyles.actorList}>
           {actors.map((actor) => {
             const focused = focusedActorId === actor.id

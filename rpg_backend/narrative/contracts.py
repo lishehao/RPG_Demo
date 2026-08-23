@@ -1006,6 +1006,7 @@ class PublicReplayResponse(BaseModel):
     template_seed: str
     template_title_i18n: LocalizedText | None = None
     template_summary_i18n: LocalizedText | None = None
+    language: TemplateLanguage = "en"
     cast: list[CastMember]
     advisor_persona: str
     cover_image_url: str | None = Field(default=None, max_length=1000)
@@ -1037,10 +1038,14 @@ class CreateTemplateRequest(BaseModel):
     # all sessions forking this template share the same language.
     language: TemplateLanguage = DEFAULT_TEMPLATE_LANGUAGE
     # Optional create-time plan returned by Story Brief Advisor. This is
-    # reviewed by the user before generation, then injected into the opening
-    # payload so planning and generation use the same facts. It is not
-    # persisted on the template in this MVP.
+    # reviewed by the user before generation, injected into the opening, and
+    # persisted as an internal research/audit seed. It is not exposed in the
+    # public template summary.
     story_brief: StoryBrief | None = None
+    # Sanitized Story Butler memory at the exact generation boundary. Keeping
+    # this separate from the raw transcript preserves corrections and intent
+    # routing without persisting unbounded chat or private model reasoning.
+    story_guide_context: StoryGuideCompressedContext | None = None
 
     @field_validator("seed")
     @classmethod

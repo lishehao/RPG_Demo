@@ -19,6 +19,7 @@ export type AppRoute =
   | { name: "portfolio" }
   | { name: "reviewer" }
   | { name: "publicReviewerDemo" }
+  | { name: "rpgEvaluation"; sessionId?: string }
   | { name: "about" }
 
 export type NavDirection = "forward" | "backward"
@@ -38,6 +39,7 @@ const ROUTE_DEPTH: Record<AppRoute["name"], number> = {
   portfolio: 1,
   reviewer: 1,
   publicReviewerDemo: 1,
+  rpgEvaluation: 1,
   playAdvisorFixture: 1,
   playActionFixture: 1,
   playEndingFixture: 1,
@@ -67,7 +69,9 @@ function parseRoute(hash: string): AppRoute {
   const params = new URLSearchParams(search)
 
   if (segments.length === 0) {
-    return { name: "home" }
+    return import.meta.env.VITE_PUBLIC_LAB_DEFAULT === "true"
+      ? { name: "rpgEvaluation" }
+      : { name: "home" }
   }
   if (segments[0] === "login") {
     return { name: "login", next: params.get("next") ?? undefined }
@@ -114,6 +118,9 @@ function parseRoute(hash: string): AppRoute {
   }
   if (segments[0] === "demo" && segments[1] === "reviewer") {
     return { name: "publicReviewerDemo" }
+  }
+  if (segments[0] === "lab" && segments[1] === "rpg-evaluation") {
+    return { name: "rpgEvaluation", sessionId: params.get("session") ?? undefined }
   }
   if (segments[0] === "about") {
     return { name: "about" }
@@ -169,6 +176,10 @@ export function buildHash(route: AppRoute): string {
       return "#/reviewer"
     case "publicReviewerDemo":
       return "#/demo/reviewer"
+    case "rpgEvaluation":
+      return route.sessionId
+        ? `#/lab/rpg-evaluation?session=${encodeURIComponent(route.sessionId)}`
+        : "#/lab/rpg-evaluation"
     case "about":
       return "#/about"
   }
@@ -196,9 +207,12 @@ export function useAppRoute() {
     }
     window.addEventListener("hashchange", onChange)
     if (!window.location.hash) {
-      window.history.replaceState(null, "", buildHash({ name: "home" }))
-      setRoute({ name: "home" })
-      prevRouteRef.current = { name: "home" }
+      const defaultRoute: AppRoute = import.meta.env.VITE_PUBLIC_LAB_DEFAULT === "true"
+        ? { name: "rpgEvaluation" }
+        : { name: "home" }
+      window.history.replaceState(null, "", buildHash(defaultRoute))
+      setRoute(defaultRoute)
+      prevRouteRef.current = defaultRoute
     }
     return () => window.removeEventListener("hashchange", onChange)
   }, [])

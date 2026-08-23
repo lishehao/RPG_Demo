@@ -31,6 +31,8 @@ from rpg_backend.narrative.contracts import (
     PlayerGoal,
     PlayerRole,
     StepJudgeResult,
+    StoryBrief,
+    StoryGuideCompressedContext,
     StoryMessage,
     StoryOption,
     TemplateLanguage,
@@ -154,6 +156,8 @@ class NarrativeRepository:
             ("cover_image_url", "ALTER TABLE narrative_templates ADD COLUMN cover_image_url TEXT"),
             ("title_i18n_json", "ALTER TABLE narrative_templates ADD COLUMN title_i18n_json TEXT"),
             ("summary_i18n_json", "ALTER TABLE narrative_templates ADD COLUMN summary_i18n_json TEXT"),
+            ("story_brief_json", "ALTER TABLE narrative_templates ADD COLUMN story_brief_json TEXT"),
+            ("story_guide_context_json", "ALTER TABLE narrative_templates ADD COLUMN story_guide_context_json TEXT"),
             # Pre-i18n templates default to "zh"; this matches the
             # historic behavior where every template was generated in
             # Chinese.
@@ -306,18 +310,21 @@ class NarrativeRepository:
         cover_image_url: str | None = None,
         title_i18n: LocalizedText | None = None,
         summary_i18n: LocalizedText | None = None,
+        story_brief: StoryBrief | None = None,
+        story_guide_context: StoryGuideCompressedContext | None = None,
     ) -> NarrativeTemplate:
         created_at = _utc_now()
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO narrative_templates
-                (template_id, owner_user_id, seed, title, title_i18n_json, summary_i18n_json, cast_json,
+                (template_id, owner_user_id, seed, title, title_i18n_json, summary_i18n_json,
+                 story_brief_json, story_guide_context_json, cast_json,
                  advisor_persona, opening_passage, opening_options_json,
                  player_goals_json, failure_conditions_json,
                  player_role_options_json,
                  cover_image_url, visibility, language, play_count, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
                 """,
                 (
                     template_id,
@@ -326,6 +333,12 @@ class NarrativeRepository:
                     title,
                     _dump_localized_text(title_i18n),
                     _dump_localized_text(summary_i18n),
+                    json.dumps(story_brief.model_dump(mode="json"), ensure_ascii=False)
+                    if story_brief is not None
+                    else None,
+                    json.dumps(story_guide_context.model_dump(mode="json"), ensure_ascii=False)
+                    if story_guide_context is not None
+                    else None,
                     json.dumps([c.model_dump() for c in cast], ensure_ascii=False),
                     advisor_persona,
                     opening_passage,
@@ -359,6 +372,42 @@ class NarrativeRepository:
             language=language,
             play_count=0,
             created_at=created_at,
+        )
+
+    def get_template_research_context(
+        self,
+        template_id: str,
+    ) -> tuple[StoryBrief | None, StoryGuideCompressedContext | None]:
+        """Return validated create-time memory seeds for reviewer evaluation.
+
+        Legacy rows and malformed additive metadata deliberately downgrade to
+        ``None`` instead of making the playable template unreadable.
+        """
+
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT story_brief_json, story_guide_context_json
+                FROM narrative_templates
+                WHERE template_id = ?
+                """,
+                (template_id,),
+            ).fetchone()
+        if row is None:
+            raise NarrativeNotFoundError(f"narrative template not found: {template_id}")
+
+        def load(model: type[StoryBrief] | type[StoryGuideCompressedContext], raw: str | None):
+            if not raw:
+                return None
+            try:
+                payload = json.loads(raw)
+                return model.model_validate(payload) if isinstance(payload, dict) else None
+            except Exception:  # noqa: BLE001
+                return None
+
+        return (
+            load(StoryBrief, row["story_brief_json"]),
+            load(StoryGuideCompressedContext, row["story_guide_context_json"]),
         )
 
     def get_template(self, template_id: str) -> NarrativeTemplate:

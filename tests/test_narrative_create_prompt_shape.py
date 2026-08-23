@@ -207,6 +207,63 @@ def test_generate_opening_injects_reviewed_story_brief() -> None:
     assert "Do not convert a comedy/cozy brief" in payload["story_brief_generation_rules"]
 
 
+def test_missing_live_player_role_is_completed_from_reviewed_brief() -> None:
+    brief = build_story_brief(
+        seed=(
+            "颁奖礼直播前歌手失踪，玩家是公关，制作人、赞助商和主持人都在控制室里施压。"
+            "倒计时已经开始，不要血腥。"
+        ),
+        language="zh",
+        desired_tension_profile="high_drama",
+    ).brief.model_copy(update={"player_role": "公关"})
+    opening = narrative_service_module.OpeningResult(
+        title="直播暗箱",
+        advisor_persona="一位场外顾问守着电话。",
+        cast=[
+            CastMember(
+                character_id="singer",
+                display_name="歌手",
+                role="失踪的表演者",
+                relation_to_protagonist="等待玩家找到她。",
+            ),
+            CastMember(
+                character_id="producer",
+                display_name="制作人",
+                role="直播负责人",
+                relation_to_protagonist="要求节目继续。",
+            ),
+            CastMember(
+                character_id="host",
+                display_name="主持人",
+                role="台前主持",
+                relation_to_protagonist="等待新的说辞。",
+            ),
+        ],
+        opening_message=StoryMessage(
+            ord=0,
+            role="narrator",
+            content="倒计时还在走，控制室里所有人都看向你。",
+            options=[StoryOption(label="查看监控", hint="寻找线索", handle="查监控")],
+        ),
+        player_goals=[],
+        failure_conditions=[],
+        player_role_options=[],
+    )
+
+    completed = narrative_service_module._complete_opening_identity_from_brief(
+        opening,
+        brief=brief,
+        language="zh",
+    )
+
+    assert completed.opening_message is opening.opening_message
+    assert completed.cast is opening.cast
+    assert completed.player_goals == []
+    assert [role.label for role in completed.player_role_options] == ["公关"]
+    assert completed.player_role_options[0].hidden_objective.startswith("在局势定型前")
+    assert completed.player_role_options[0].starting_assets == ["行动筹码"]
+
+
 def test_create_template_blocks_explicit_small_cast_prompt_before_llm(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,

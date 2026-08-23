@@ -286,6 +286,48 @@ function resourceActionCountsForOptions(
   return counts
 }
 
+function gameplayTrackLabel(t: ReturnType<typeof useT>, id: string, fallback: string): string {
+  if (id === "time") return t("play.gameplay_track_time")
+  if (id === "pressure") return t("play.gameplay_track_pressure")
+  if (id === "people") return t("play.gameplay_track_people")
+  if (id === "evidence") return t("play.gameplay_track_evidence")
+  return fallback
+}
+
+function gameplayTrackValue(t: ReturnType<typeof useT>, value: string): string {
+  const normalized = value.trim().toLowerCase()
+  if (normalized === "none" || normalized === "none yet") return t("play.gameplay_track_none")
+  if (normalized === "rising") return t("play.gameplay_track_rising")
+  if (normalized === "easing") return t("play.gameplay_track_easing")
+  if (normalized === "held") return t("play.gameplay_track_held")
+  if (normalized === "watching") return t("play.gameplay_track_watching")
+  const heldMatch = normalized.match(/^(\d+)\s+(?:items?\s+)?held$/)
+  if (heldMatch) return t("play.gameplay_track_items_held", { count: heldMatch[1] })
+  return value
+}
+
+function gameplayForecastLabel(t: ReturnType<typeof useT>, label: string): string {
+  const normalized = label.replace(/\s+/g, " ").trim().toLowerCase()
+  if (normalized === "read the room") return t("play.gameplay_forecast_read_room")
+  if (normalized === "time -1") return t("play.gameplay_forecast_time_cost")
+  if (normalized === "pressure +1") return t("play.gameplay_forecast_pressure_cost")
+  if (normalized === "trust +1") return t("play.gameplay_forecast_trust_gain")
+  if (normalized === "may reveal evidence") return t("play.gameplay_forecast_evidence")
+  if (normalized === "use leverage") return t("play.gameplay_forecast_leverage")
+  if (normalized === "risk +1") return t("play.gameplay_forecast_risk_cost")
+  return label
+}
+
+function localizedActionForecasts(
+  t: ReturnType<typeof useT>,
+  rows: GameplayEnvelope["actionForecasts"],
+): GameplayEnvelope["actionForecasts"] {
+  return rows.map((row) => row.map((chip) => ({
+    ...chip,
+    label: gameplayForecastLabel(t, chip.label),
+  })))
+}
+
 function GameplayStatePanel({
   envelope,
   focusedResourceId,
@@ -319,6 +361,8 @@ function GameplayStatePanel({
         aria-label={t("play.gameplay_tracks_label")}
       >
         {envelope.tracks.map((track) => {
+          const displayLabel = gameplayTrackLabel(t, track.id, track.label)
+          const displayValue = gameplayTrackValue(t, track.value)
           const focusableTrackId = isGameplayResourceFocusId(track.id) ? track.id : null
           const isFocused = focusedResourceId === focusableTrackId && focusableTrackId !== null
           const focusTitle = focusableTrackId ? gameplayResourceFocusTitle(t, focusableTrackId) : ""
@@ -345,8 +389,8 @@ function GameplayStatePanel({
           }
           const content = (
             <>
-              <span style={ppStyles.gameplayTrackLabel}>{track.label}</span>
-              <span style={ppStyles.gameplayTrackValue}>{track.value}</span>
+              <span style={ppStyles.gameplayTrackLabel}>{displayLabel}</span>
+              <span style={ppStyles.gameplayTrackValue}>{displayValue}</span>
               {focusableTrackId && resourceActionLabel ? (
                 <span style={ppStyles.gameplayTrackAction}>
                   {resourceActionLabel}
@@ -365,7 +409,7 @@ function GameplayStatePanel({
               data-gameplay-resource-focus={isFocused ? "true" : undefined}
               data-gameplay-resource-action-count={resourceMatchCount}
               aria-pressed={isFocused}
-              aria-label={`${track.label}: ${track.value}. ${resourceActionLabel ? `${resourceActionLabel}. ` : ""}${focusTitle}`}
+              aria-label={`${displayLabel}: ${displayValue}. ${resourceActionLabel ? `${resourceActionLabel}. ` : ""}${focusTitle}`}
               title={focusTitle}
               onClick={() => onFocusResource?.(focusableTrackId)}
             >
@@ -840,6 +884,7 @@ export function PlayPage({
   const api = apiClient ?? defaultApi
   const auth = useAuth()
   const t = useT()
+  const { setLang } = useLanguage()
   const [story, setStory] = useState<NarrativeStoryHistoryResponse | null>(null)
   const [ending, setEnding] = useState<NarrativeEnding | null>(null)
   const [latestAgentPlan, setLatestAgentPlan] = useState<NarrativeAgentPlan | null>(null)
@@ -896,6 +941,7 @@ export function PlayPage({
       .getNarrativeStory(sessionId, canRequestAgentTrace ? { agentTrace: true } : undefined)
       .then(async (response) => {
         if (cancelled) return
+        if (response.template.language) setLang(response.template.language)
         setStory(response)
         const agentEvents = canRequestAgentTrace ? response.agent_events ?? [] : []
         setLatestAgentEvents(agentEvents)
@@ -1277,6 +1323,7 @@ export function PlayPage({
     castNameById,
     backendEnvelope: story.gameplay_envelope ?? null,
   })
+  const displayActionForecasts = localizedActionForecasts(t, gameplayEnvelope.actionForecasts)
   const showGameplayImpactSummary =
     actionAreaVisible && turnsCompleted > 0 && gameplayEnvelope.impact.length > 0
   const nextChoiceTargets = lastNarrator
@@ -1656,7 +1703,7 @@ export function PlayPage({
                 // state, so remount doesn't drop user typing.
                 key={`actions-${lastNarrator.ord}`}
                 options={lastNarrator.options}
-                actionForecasts={gameplayEnvelope.actionForecasts}
+                actionForecasts={displayActionForecasts}
                 leverageCards={leverageCards}
                 roleHasNoLeverage={Boolean(story.session.player_role) && leverageCards.length === 0}
                 latestNpcPulses={lastNarrator.npc_pulse ?? []}

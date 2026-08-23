@@ -23,6 +23,7 @@ from rpg_backend.narrative.contracts import (
     PlayerLeverageOverNPC,
     PlayerRole,
     StoryBrief,
+    StoryGuideCompressedContext,
     StoryMessage,
     StoryOption,
     STORY_OPTION_LABEL_MAX_LENGTH,
@@ -253,7 +254,7 @@ Hard limits:
 _TURN_SYSTEM_PROMPT = """\
 你是一名擅长写关系剧的剧作家。玩家正在玩一个互动故事，你负责续写下一段。
 
-每个回合你会收到：故事种子、cast 名单（每个 NPC 都带有 `hidden_objective`、`leverage_over_player`、以及 `leverages_over_other_npcs` —— **这是 NPC 之间的相互把柄网络**）、最近若干段故事历史、玩家这一回合的动作、**当前所处的故事阶段**（关键！）、`difficulty` 字段（`story` 或 `gauntlet`）、**玩家的角色卡 `player_role`**（玩家这局选了谁来扮演）、**`current_inventory`**（玩家当前手里的所有物件/情报，包括 starting_assets 和过去几回合获得的）、可选的 `npc_agenda_this_turn`（gauntlet 主动调度）、**可选的 `twist_directive`**（reversal 阶段强制翻转指令）、**可选的 `player_diary`**（玩家私下对自己说的话，NPC 不可见）和 `recent_consequences`（上一回合结构化回响）。
+每个回合你会收到：故事种子、cast 名单（每个 NPC 都带有 `hidden_objective`、`leverage_over_player`、以及 `leverages_over_other_npcs` —— **这是 NPC 之间的相互把柄网络**）、最近若干段故事历史、玩家这一回合的动作、**当前所处的故事阶段**（关键！）、`difficulty` 字段（`story` 或 `gauntlet`）、**玩家的角色卡 `player_role`**（玩家这局选了谁来扮演）、**`current_inventory`**（玩家当前手里的所有物件/情报，包括 starting_assets 和过去几回合获得的）、可选的 `story_contract`（Create 阶段确认并压缩过的当前事实、边界和语气）、可选的 `npc_agenda_this_turn`（gauntlet 主动调度）、**可选的 `twist_directive`**（reversal 阶段强制翻转指令）、**可选的 `player_diary`**（玩家私下对自己说的话，NPC 不可见）和 `recent_consequences`（上一回合结构化回响）。
 
 你的任务是续写**一段**叙述（200-400 字），并给出**3 个新选项**，同时输出每个 NPC 的当下反应（`npc_pulse`）。
 
@@ -305,6 +306,7 @@ _TURN_SYSTEM_PROMPT = """\
 写作要求：
 - 第二人称
 - 必须**真正承接**玩家的动作，让 TA 看见自己的选择带来了什么
+- 如果有 `story_contract`，把它视为当前有效事实与边界；不要恢复被用户改掉的旧角色/设定，也不要违反其中的 boundaries
 - 节奏感：每段聚焦一个戏剧瞬间，**根据 stage_phase 调整事件密度**
 
 **故事阶段（stage_phase）会随回合推进，请严格依照阶段调度节奏:**
@@ -1165,6 +1167,45 @@ def build_agent_plan(
     )
 
 
+def _build_turn_story_contract(
+    story_brief: StoryBrief | None,
+    story_guide_context: StoryGuideCompressedContext | None,
+) -> dict[str, object] | None:
+    """Compact Create-time truth for turn generation.
+
+    Raw chat, non-story input, superseded values, planner internals, and model
+    source labels are intentionally excluded.
+    """
+
+    payload: dict[str, object] = {}
+    if story_brief is not None:
+        payload.update(
+            {
+                "premise": story_brief.premise_summary,
+                "story_kernel": story_brief.story_kernel,
+                "player_role": story_brief.player_role,
+                "tone": story_brief.genre_tone,
+                "boundaries": story_brief.preserved_constraints[:8],
+            }
+        )
+    if story_guide_context is not None:
+        if story_guide_context.scene_summary:
+            payload["scene_summary"] = story_guide_context.scene_summary
+        if story_guide_context.player_role:
+            payload["player_role"] = story_guide_context.player_role
+        if story_guide_context.cast_or_factions:
+            payload["cast_or_factions"] = story_guide_context.cast_or_factions[:8]
+        if story_guide_context.pressure:
+            payload["pressure"] = story_guide_context.pressure
+        if story_guide_context.constraints:
+            payload["boundaries"] = story_guide_context.constraints[:8]
+        if story_guide_context.tone:
+            payload["tone"] = story_guide_context.tone
+        if story_guide_context.confirmed_facts:
+            payload["confirmed_facts"] = story_guide_context.confirmed_facts[:12]
+    return payload or None
+
+
 def advance_turn(
     *,
     gateway: NarrativeLLMGateway,
@@ -1182,6 +1223,8 @@ def advance_turn(
     current_inventory: list[str] | None = None,
     player_diary: str | None = None,
     played_leverage: PlayedLeverageCard | None = None,
+    story_brief: StoryBrief | None = None,
+    story_guide_context: StoryGuideCompressedContext | None = None,
     language: TemplateLanguage = "en",
 ) -> TurnResult:
     """Advance one turn."""
@@ -1221,6 +1264,9 @@ def advance_turn(
         user_payload["player_diary"] = player_diary
     if played_leverage is not None:
         user_payload["played_leverage_card"] = played_leverage.model_dump()
+    story_contract = _build_turn_story_contract(story_brief, story_guide_context)
+    if story_contract is not None:
+        user_payload["story_contract"] = story_contract
 
     # Active scheduling: tell the LLM which NPC should actively push their
     # agenda this turn. Empty in story mode and during the hook phase.
@@ -1354,6 +1400,8 @@ def synthesize_early_ending(
     failure_trigger: str,
     failure_reason: str,
     player_role: PlayerRole | None = None,
+    story_brief: StoryBrief | None = None,
+    story_guide_context: StoryGuideCompressedContext | None = None,
     language: TemplateLanguage = "en",
 ) -> EndingResult:
     """Generate a 'collapsed' ending when judge_failure flagged a trigger.
@@ -1370,6 +1418,9 @@ def synthesize_early_ending(
     }
     if player_role is not None:
         user_payload["player_role"] = player_role.model_dump()
+    story_contract = _build_turn_story_contract(story_brief, story_guide_context)
+    if story_contract is not None:
+        user_payload["story_contract"] = story_contract
     response = gateway.invoke_json(
         system_prompt=_EARLY_ENDING_SYSTEM_PROMPT,
         user_payload=user_payload,
@@ -1765,6 +1816,8 @@ def synthesize_ending(
     history: list[StoryMessage],
     turn_count: int,
     player_role: PlayerRole | None = None,
+    story_brief: StoryBrief | None = None,
+    story_guide_context: StoryGuideCompressedContext | None = None,
     language: TemplateLanguage = "en",
 ) -> EndingResult:
     """Generate a 400-600 word ending + label + first-person subtitle.
@@ -1788,6 +1841,9 @@ def synthesize_ending(
     }
     if player_role is not None:
         user_payload["player_role"] = player_role.model_dump()
+    story_contract = _build_turn_story_contract(story_brief, story_guide_context)
+    if story_contract is not None:
+        user_payload["story_contract"] = story_contract
     system_prompt = _ENDING_SYSTEM_PROMPT_TEMPLATE.format(
         turn_count=turn_count,
         labels_list=" / ".join(ENDING_LABELS),

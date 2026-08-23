@@ -1,0 +1,76 @@
+{
+  "schema_version": "tiny_stories_live_acceptance_evidence.v1",
+  "generated_at": "2026-08-23T16:42:37.169185+00:00",
+  "local_acceptance_date": "2026-08-24",
+  "status": "pass",
+  "scope": [
+    "story_butler_turn",
+    "story_brief",
+    "opening",
+    "play_turn",
+    "reviewer_telemetry"
+  ],
+  "health": {
+    "text_llm": "configured",
+    "create_story_butler": "configured",
+    "story_brief": "configured",
+    "opening": "configured",
+    "play_turns": "configured"
+  },
+  "operations": [
+    {
+      "operation": "create.story_butler_turn",
+      "source_label": "live",
+      "status": "success",
+      "latency_ms": 1281,
+      "input_tokens": 2389,
+      "cached_input_tokens": 0,
+      "output_tokens": 31,
+      "total_tokens": 2420,
+      "fallback_reason": null
+    },
+    {
+      "operation": "narrative.story_brief",
+      "source_label": "live",
+      "status": "success",
+      "latency_ms": 2207,
+      "input_tokens": 1477,
+      "cached_input_tokens": 0,
+      "output_tokens": 156,
+      "total_tokens": 1633,
+      "fallback_reason": null
+    },
+    {
+      "operation": "narrative.opening",
+      "source_label": "live",
+      "status": "success",
+      "latency_ms": 12635,
+      "input_tokens": 2686,
+      "cached_input_tokens": 0,
+      "output_tokens": 808,
+      "total_tokens": 3494,
+      "fallback_reason": null
+    },
+    {
+      "operation": "narrative.advance_turn",
+      "source_label": "live",
+      "status": "success",
+      "latency_ms": 9312,
+      "input_tokens": 6863,
+      "cached_input_tokens": 0,
+      "output_tokens": 447,
+      "total_tokens": 7310,
+      "fallback_reason": null
+    }
+  ],
+  "quality_signals": {
+    "opening_recovery": null,
+    "opening_consistency_status": "warn",
+    "play_turn_complete": false,
+    "judge_events_present": [
+      "step_judge",
+      "contract_judge"
+    ]
+  },
+  "claim_boundary": "This bounded run proves live-path execution and telemetry for one reference case. It does not establish calibrated narrative quality, general robustness, or consumer-market validation."
+}

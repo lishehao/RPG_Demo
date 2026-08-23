@@ -43,6 +43,10 @@ LIVE_ACCEPTANCE_SEED = (
     "At an awards gala, a publicist, a singer, and a sponsor discover the live trophy reveal is rigged. "
     "The player is the publicist who must protect the singer before the host walks onstage. No gore."
 )
+LIVE_ACCEPTANCE_SEED_ZH = (
+    "在一场直播颁奖礼上，公关、歌手和赞助商发现奖杯揭晓被人操纵。"
+    "玩家是公关，必须在主持人上台前保护歌手。不要出现血腥暴力。"
+)
 REQUIRED_CASES = {
     "arbitrary_input_smalltalk",
     "meta_help_input",
@@ -423,6 +427,7 @@ def run_live_acceptance(
     seed: str = LIVE_ACCEPTANCE_SEED,
     runtime_db: Path | None = None,
     timeout: float = 150.0,
+    language: str = "en",
 ) -> dict[str, Any]:
     run_started_at = _utc_now_iso()
     client = LiveHarnessClient(base_url, timeout=timeout)
@@ -450,35 +455,131 @@ def run_live_acceptance(
         if not user_id:
             failures.append(_live_failure("environment", "auth", "login did not return a user id"))
 
+        if language == "zh":
+            initial_guide_seed = seed.replace("玩家是公关", "玩家是伴舞")
+            correction_message = "修正：我是公关，不是伴舞。"
+        else:
+            initial_guide_seed = seed.replace(
+                "The player is the publicist",
+                "The player is a backup dancer",
+            )
+            correction_message = "Correction: I am the publicist, not the backup dancer."
         guide, api_latencies["story_guide_ms"] = client.request_json(
             "POST",
             "/narrative/story-guide/turns",
-            payload={"message": seed, "language": "en"},
+            payload={"message": initial_guide_seed, "language": language},
             timeout=timeout,
         )
+        corrected_guide, api_latencies["story_guide_correction_ms"] = client.request_json(
+            "POST",
+            "/narrative/story-guide/turns",
+            payload={
+                "message": correction_message,
+                "language": language,
+                "current_seed": initial_guide_seed,
+                "previous_assistant_reply": guide.get("reply"),
+                "state": guide.get("state"),
+            },
+            timeout=timeout,
+        )
+        guide_context = ((corrected_guide.get("state") or {}).get("context") or {})
         stage_sources["story_guide"] = {
-            "source": guide.get("source"),
-            "status": guide.get("status"),
-            "canShapeBrief": guide.get("canShapeBrief"),
-            "reply_excerpt": str(guide.get("reply") or "")[:180],
+            "initial_source": guide.get("source"),
+            "correction_source": corrected_guide.get("source"),
+            "status": corrected_guide.get("status"),
+            "canShapeBrief": corrected_guide.get("canShapeBrief"),
+            "reply_excerpt": str(corrected_guide.get("reply") or "")[:180],
+            "player_role": guide_context.get("player_role"),
+            "active_cast": guide_context.get("cast_or_factions"),
+            "superseded_count": len(guide_context.get("rejected_or_changed_facts") or []),
         }
-        if guide.get("source") not in LIVE_ACCEPTED_SOURCE_LABELS:
+        if (
+            guide.get("source") not in LIVE_ACCEPTED_SOURCE_LABELS
+            or corrected_guide.get("source") not in LIVE_ACCEPTED_SOURCE_LABELS
+        ):
             failures.append(
                 _live_failure(
                     "provider",
                     "create.story_butler_turn",
-                    "Story Butler guide response was not live-backed",
-                    observed_source=guide.get("source"),
+                    "One or more Story Butler guide responses were not live-backed",
+                    initial_source=guide.get("source"),
+                    correction_source=corrected_guide.get("source"),
                 )
             )
+        expected_role = "公关" if language == "zh" else "publicist"
+        superseded_role = "伴舞" if language == "zh" else "backup dancer"
+        if expected_role not in str(guide_context.get("player_role") or "").lower():
+            failures.append(
+                _live_failure(
+                    "story_guide_intent",
+                    "create.story_butler_turn",
+                    "Correction did not replace the initial player role",
+                    observed_role=guide_context.get("player_role"),
+                )
+            )
+        if not any(
+            "superseded player_role" in str(item).lower()
+            and superseded_role in str(item).lower()
+            for item in guide_context.get("rejected_or_changed_facts") or []
+        ):
+            failures.append(
+                _live_failure(
+                    "story_guide_intent",
+                    "create.story_butler_turn",
+                    "Correction did not preserve the superseded role as audit evidence",
+                )
+            )
+        active_cast = {
+            str(item).strip().casefold()
+            for item in guide_context.get("cast_or_factions") or []
+        }
+        if {superseded_role, expected_role}.intersection(active_cast):
+            failures.append(
+                _live_failure(
+                    "story_guide_intent",
+                    "create.story_butler_turn",
+                    "Player-role identities leaked into the active NPC cast after correction",
+                    observed_cast=sorted(active_cast),
+                )
+            )
+        active_truth = " ".join(
+            [
+                str(guide_context.get("scene_summary") or ""),
+                str(guide_context.get("pressure") or ""),
+                *[str(item) for item in guide_context.get("constraints") or []],
+                *[str(item) for item in guide_context.get("confirmed_facts") or []],
+            ]
+        ).casefold()
+        if superseded_role in active_truth:
+            failures.append(
+                _live_failure(
+                    "story_guide_intent",
+                    "create.story_butler_turn",
+                    "Superseded player role remained in active compressed story facts",
+                )
+            )
+
+        brief_guide_context = {
+            key: guide_context.get(key)
+            for key in (
+                "scene_summary",
+                "player_role",
+                "cast_or_factions",
+                "pressure",
+                "constraints",
+                "tone",
+                "confirmed_facts",
+            )
+        }
 
         brief, api_latencies["story_brief_ms"] = client.request_json(
             "POST",
             "/narrative/story-briefs",
             payload={
                 "seed": seed,
-                "language": "en",
+                "language": language,
                 "desired_tension_profile": "high_drama",
+                "guide_context": brief_guide_context,
             },
             timeout=timeout,
         )
@@ -507,8 +608,9 @@ def run_live_acceptance(
                 "visibility": "private",
                 "turn_budget": 8,
                 "difficulty": "gauntlet",
-                "language": "en",
+                "language": language,
                 "story_brief": brief.get("brief"),
+                "story_guide_context": guide_context,
             },
             timeout=timeout,
         )
@@ -555,6 +657,48 @@ def run_live_acceptance(
                     "narrative.advance_turn",
                     "advance turn did not return step/contract judge evidence",
                     agent_event_types=agent_event_types,
+                )
+            )
+
+        evaluation_bundle, api_latencies["evaluation_bundle_ms"] = client.request_json(
+            "GET",
+            f"/narrative/sessions/{session_id}/evaluation-bundle",
+            timeout=timeout,
+        )
+        evaluation_report, api_latencies["evaluation_report_ms"] = client.request_json(
+            "POST",
+            "/research/rpg-evaluations",
+            payload=evaluation_bundle,
+            timeout=timeout,
+        )
+        latest_memory = ((evaluation_bundle.get("turns") or [{}])[-1].get("memory") or {})
+        stage_sources["portable_evaluation"] = {
+            "bundle_schema": evaluation_bundle.get("schema_version"),
+            "report_schema": evaluation_report.get("schema_version"),
+            "status": evaluation_report.get("status"),
+            "score": evaluation_report.get("score"),
+            "progress_basis": ((evaluation_bundle.get("turns") or [{}])[-1].get("progress_basis")),
+            "active_fact_count": len(latest_memory.get("active_facts") or []),
+            "superseded_fact_count": len(latest_memory.get("superseded_facts") or []),
+        }
+        if evaluation_bundle.get("schema_version") != "rpg_evaluation_bundle.v1":
+            failures.append(
+                _live_failure("schema", "research.rpg_evaluation", "Portable evaluation bundle schema was missing")
+            )
+        if evaluation_report.get("schema_version") != "rpg_evaluation_report.v1":
+            failures.append(
+                _live_failure("schema", "research.rpg_evaluation", "Portable evaluation report schema was missing")
+            )
+        if not any(
+            superseded_role in str(fact.get("value") or "").lower()
+            for fact in latest_memory.get("superseded_facts") or []
+            if isinstance(fact, dict)
+        ):
+            failures.append(
+                _live_failure(
+                    "artifact",
+                    "research.rpg_evaluation",
+                    "Create-time correction was not preserved in the Play evaluation memory",
                 )
             )
 
@@ -613,6 +757,7 @@ def run_live_acceptance(
         "status": "fail" if failures else "pass",
         "base_url": base_url,
         "username": username,
+        "language": language,
         "seed_excerpt": seed[:220],
         "template_id": template_id,
         "session_id": session_id,
@@ -645,6 +790,7 @@ def main() -> int:
     parser.add_argument("--base-url", default="http://127.0.0.1:8350", help="Backend base URL for live_acceptance.")
     parser.add_argument("--username", default="portfolio_reviewer", help="Reviewer username for live_acceptance.")
     parser.add_argument("--seed", default=LIVE_ACCEPTANCE_SEED, help="Story seed for live_acceptance.")
+    parser.add_argument("--language", choices=("en", "zh"), default="en", help="Live acceptance language.")
     parser.add_argument(
         "--runtime-db",
         default=None,
@@ -664,13 +810,17 @@ def main() -> int:
 
             runtime_db_env = os.environ.get("APP_RUNTIME_STATE_DB_PATH")
             runtime_db = Path(runtime_db_env) if runtime_db_env else None
+        live_seed = args.seed
+        if args.language == "zh" and live_seed == LIVE_ACCEPTANCE_SEED:
+            live_seed = LIVE_ACCEPTANCE_SEED_ZH
         payload = run_live_acceptance(
             base_url=args.base_url,
             output=output,
             username=args.username,
-            seed=args.seed,
+            seed=live_seed,
             runtime_db=runtime_db,
             timeout=args.timeout,
+            language=args.language,
         )
     else:
         payload = run_protocol_contract(output)

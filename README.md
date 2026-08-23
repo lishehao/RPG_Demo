@@ -54,6 +54,10 @@
   ·
   <a href="https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer"><strong>Open public reviewer demo</strong></a>
   ·
+  <a href="./docs/RPG_EVALUATION_LAB.md"><strong>RPG evaluation lab</strong></a>
+  ·
+  <a href="https://tiny-stories-rpg-evaluation.vercel.app"><strong>Open deployed evaluation lab</strong></a>
+  ·
   <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">Open MP4 demo</a>
   ·
   <a href="./docs/CURRENT_SYSTEM_MAP.md">Inspect source evidence</a>
@@ -65,6 +69,14 @@ the same 720p reviewer cut for environments where YouTube is blocked
 source, tests, reviewer run, and system map.
 The public reviewer demo is a deterministic GitHub Pages app path: no API key,
 no live backend, and no generation claim beyond the committed source evidence.
+
+The [RPG Runtime Evaluation Lab](./docs/RPG_EVALUATION_LAB.md) adds a portable,
+backend-free reviewer surface for comparing another RPG agent's memory,
+consequences, agency, trajectory, entities, choices, and player-facing boundary
+hygiene through `rpg_evaluation_bundle.v1`. It is a deterministic diagnostic,
+not a calibrated academic metric.
+
+Public deployment: <https://tiny-stories-rpg-evaluation.vercel.app>
 
 ---
 

@@ -18,7 +18,7 @@
 // union, list it in LANGUAGE_OPTIONS, and add a prompt-language branch
 // in `rpg_backend/narrative/engine.py`.
 
-import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
 export type Lang = "zh" | "en"
 
@@ -598,6 +598,38 @@ export const STRINGS_ZH = {
   "play.gameplay_loop_react_detail": "人物和局势变化",
   "play.gameplay_loop_update_label": "用变化",
   "play.gameplay_loop_update_detail": "线索、压力、下一步",
+  "play.mood_progress_empty": "还有 {count} 段可行动",
+  "play.mood_progress_played": "已行动 {current}/{total} 段",
+  "play.mood_stage_complete": "已完结",
+  "play.mood_stage_final": "最后阶段",
+  "play.mood_stage_opening": "第一幕",
+  "play.mood_stage_motion": "局面推进中",
+  "play.mood_context_complete": "本局已经结束。可以查看结局、回放或分享。",
+  "play.mood_context_opening": "第一幕已经开始。选择你要踏入的压力。",
+  "play.mood_context_final": "局面正在逼近最后的断点。",
+  "play.mood_context_waiting": "房间在等你的下一步。",
+  "play.gameplay_track_time": "时间",
+  "play.gameplay_track_pressure": "压力",
+  "play.gameplay_track_people": "人物",
+  "play.gameplay_track_evidence": "证据",
+  "play.gameplay_track_rising": "上升",
+  "play.gameplay_track_easing": "缓和",
+  "play.gameplay_track_held": "稳住",
+  "play.gameplay_track_watching": "正在观察",
+  "play.gameplay_track_none": "暂无",
+  "play.gameplay_forecast_read_room": "观察局面",
+  "play.gameplay_forecast_time_cost": "时间 -1",
+  "play.gameplay_forecast_pressure_cost": "压力 +1",
+  "play.gameplay_forecast_trust_gain": "信任 +1",
+  "play.gameplay_forecast_evidence": "可能发现证据",
+  "play.gameplay_forecast_leverage": "使用筹码",
+  "play.gameplay_forecast_risk_cost": "风险 +1",
+  "play.gameplay_track_items_held": "持有 {count} 项",
+  "play.rail_aria": "场景支持",
+  "play.rail_you_are": "你是",
+  "play.rail_you_fallback": "你",
+  "play.rail_pressure_now": "当前压力",
+  "play.rail_people": "可介入的人物",
   "play.runtime_inspector_label": "运行检查器",
   "play.runtime_inspector_kicker": "评审运行检查器",
   "play.runtime_inspector_title": "系统视角",
@@ -851,7 +883,7 @@ export const STRINGS_ZH = {
   "play.inner_motive_submit_cta": "带着动机提交",
   "play.inner_motive_submit_disabled_hint": "先写一句真实动机，才能带着动机提交。",
   "play.advisor_card_title": "场外朋友",
-  "play.advisor_card_name": "Dana Vale",
+  "play.advisor_card_name": "黛娜·维尔",
   "play.advisor_card_role": "危机旁批",
   "play.advisor_card_background": "懂你的压力点，只帮你看清下一步，不替你行动。",
   "play.advisor_card_ask": "问一句",
@@ -1117,6 +1149,7 @@ export const STRINGS_ZH = {
   "replay.loading_label": "正在还原这一局…",
   "replay.crumb_back_home": "← 故事入口",
   "replay.badge": "回放",
+  "replay.private_title": "私密故事回放",
   "replay.completed_meta": "已完成的一局",
   "replay.role_meta": "扮演 {role}",
   "replay.turns_meta": "这局 {current} / {total} 段",
@@ -1684,6 +1717,38 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "play.gameplay_loop_react_detail": "People and stakes shift",
   "play.gameplay_loop_update_label": "Use what changed",
   "play.gameplay_loop_update_detail": "Clues, pressure, next move",
+  "play.mood_progress_empty": "{count} turns to play",
+  "play.mood_progress_played": "{current}/{total} turns played",
+  "play.mood_stage_complete": "Complete",
+  "play.mood_stage_final": "Final stretch",
+  "play.mood_stage_opening": "Opening",
+  "play.mood_stage_motion": "In motion",
+  "play.mood_context_complete": "This run is finished. Review the ending, then replay or share it.",
+  "play.mood_context_opening": "First shot is live. Choose the pressure you step into.",
+  "play.mood_context_final": "The room is close to its final break.",
+  "play.mood_context_waiting": "The room is waiting.",
+  "play.gameplay_track_time": "Time",
+  "play.gameplay_track_pressure": "Pressure",
+  "play.gameplay_track_people": "People",
+  "play.gameplay_track_evidence": "Evidence",
+  "play.gameplay_track_rising": "rising",
+  "play.gameplay_track_easing": "easing",
+  "play.gameplay_track_held": "held",
+  "play.gameplay_track_watching": "watching",
+  "play.gameplay_track_none": "none",
+  "play.gameplay_forecast_read_room": "Read the room",
+  "play.gameplay_forecast_time_cost": "Time -1",
+  "play.gameplay_forecast_pressure_cost": "Pressure +1",
+  "play.gameplay_forecast_trust_gain": "Trust +1",
+  "play.gameplay_forecast_evidence": "May reveal evidence",
+  "play.gameplay_forecast_leverage": "Use leverage",
+  "play.gameplay_forecast_risk_cost": "Risk +1",
+  "play.gameplay_track_items_held": "{count} held",
+  "play.rail_aria": "Scene support",
+  "play.rail_you_are": "You are",
+  "play.rail_you_fallback": "You",
+  "play.rail_pressure_now": "Pressure now",
+  "play.rail_people": "People you can involve",
   "play.runtime_inspector_label": "Runtime inspector",
   "play.runtime_inspector_kicker": "Reviewer runtime inspector",
   "play.runtime_inspector_title": "System lens",
@@ -2192,6 +2257,7 @@ export const STRINGS_EN: Record<StringKey, string> = {
   "replay.loading_label": "Restoring this run…",
   "replay.crumb_back_home": "← Story Desk",
   "replay.badge": "Replay",
+  "replay.private_title": "Shared private story",
   "replay.completed_meta": "Completed run",
   "replay.role_meta": "Played as {role}",
   "replay.turns_meta": "{current} / {total} turns in this run",
@@ -2298,15 +2364,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = lang
   }, [lang])
 
-  const value = useMemo<LanguageContextValue>(() => {
-    const setLang = (next: Lang) => {
-      setLangState(next)
-      try {
-        window.localStorage.setItem(STORAGE_KEY, next)
-      } catch {
-        // localStorage unavailable (private browsing) — fail silently.
-      }
+  const setLang = useCallback((next: Lang) => {
+    setLangState(next)
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next)
+    } catch {
+      // localStorage unavailable (private browsing) — fail silently.
     }
+  }, [])
+
+  const value = useMemo<LanguageContextValue>(() => {
     const t: TFn = (key, paramsOrFallback, fallback) => {
       const params = typeof paramsOrFallback === "object" ? paramsOrFallback : undefined
       const stringFallback = typeof paramsOrFallback === "string" ? paramsOrFallback : fallback
@@ -2318,7 +2385,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       return stringFallback ?? String(key)
     }
     return { lang, setLang, t }
-  }, [lang])
+  }, [lang, setLang])
 
   return createElement(LanguageContext.Provider, { value }, children)
 }

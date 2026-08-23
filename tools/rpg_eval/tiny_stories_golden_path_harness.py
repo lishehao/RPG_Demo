@@ -456,27 +456,114 @@ def run_live_golden_path(
         if not user_id:
             failures.append(_live_failure("environment", "auth", "login did not return a user id"))
 
+        initial_guide_seed = seed.replace(
+            "The player is the publicist",
+            "The player is a backup dancer",
+        )
         guide, api_latencies["story_guide_ms"] = client.request_json(
             "POST",
             "/narrative/story-guide/turns",
-            payload={"message": seed, "language": "en"},
+            payload={"message": initial_guide_seed, "language": "en"},
             timeout=timeout,
         )
+        corrected_guide, api_latencies["story_guide_correction_ms"] = client.request_json(
+            "POST",
+            "/narrative/story-guide/turns",
+            payload={
+                "message": "Correction: I am the publicist, not the backup dancer.",
+                "language": "en",
+                "current_seed": initial_guide_seed,
+                "previous_assistant_reply": guide.get("reply"),
+                "state": guide.get("state"),
+            },
+            timeout=timeout,
+        )
+        guide_context = ((corrected_guide.get("state") or {}).get("context") or {})
         stage_sources["story_guide"] = {
-            "source": guide.get("source"),
-            "status": guide.get("status"),
-            "canShapeBrief": guide.get("canShapeBrief"),
-            "reply_excerpt": str(guide.get("reply") or "")[:180],
+            "initial_source": guide.get("source"),
+            "correction_source": corrected_guide.get("source"),
+            "status": corrected_guide.get("status"),
+            "canShapeBrief": corrected_guide.get("canShapeBrief"),
+            "reply_excerpt": str(corrected_guide.get("reply") or "")[:180],
+            "player_role": guide_context.get("player_role"),
+            "active_cast": guide_context.get("cast_or_factions"),
+            "superseded_count": len(guide_context.get("rejected_or_changed_facts") or []),
         }
-        if guide.get("source") not in LIVE_ACCEPTED_SOURCE_LABELS:
+        if (
+            guide.get("source") not in LIVE_ACCEPTED_SOURCE_LABELS
+            or corrected_guide.get("source") not in LIVE_ACCEPTED_SOURCE_LABELS
+        ):
             failures.append(
                 _live_failure(
                     "provider",
                     "create.story_butler_turn",
-                    "Story Butler guide response was not live-backed",
-                    observed_source=guide.get("source"),
+                    "One or more Story Butler guide responses were not live-backed",
+                    initial_source=guide.get("source"),
+                    correction_source=corrected_guide.get("source"),
                 )
             )
+        if "publicist" not in str(guide_context.get("player_role") or "").lower():
+            failures.append(
+                _live_failure(
+                    "story_guide_intent",
+                    "create.story_butler_turn",
+                    "Correction did not replace the initial player role",
+                    observed_role=guide_context.get("player_role"),
+                )
+            )
+        if not any(
+            "superseded player_role" in str(item).lower()
+            for item in guide_context.get("rejected_or_changed_facts") or []
+        ):
+            failures.append(
+                _live_failure(
+                    "story_guide_intent",
+                    "create.story_butler_turn",
+                    "Correction did not preserve superseded role evidence",
+                )
+            )
+        active_cast = {
+            str(item).strip().casefold()
+            for item in guide_context.get("cast_or_factions") or []
+        }
+        if {"backup dancer", "publicist"}.intersection(active_cast):
+            failures.append(
+                _live_failure(
+                    "story_guide_intent",
+                    "create.story_butler_turn",
+                    "Player-role identities leaked into the active NPC cast after correction",
+                    observed_cast=sorted(active_cast),
+                )
+            )
+        active_truth = " ".join(
+            [
+                str(guide_context.get("scene_summary") or ""),
+                str(guide_context.get("pressure") or ""),
+                *[str(item) for item in guide_context.get("constraints") or []],
+                *[str(item) for item in guide_context.get("confirmed_facts") or []],
+            ]
+        ).casefold()
+        if "backup dancer" in active_truth:
+            failures.append(
+                _live_failure(
+                    "story_guide_intent",
+                    "create.story_butler_turn",
+                    "Superseded player role remained in active compressed story facts",
+                )
+            )
+
+        brief_guide_context = {
+            key: guide_context.get(key)
+            for key in (
+                "scene_summary",
+                "player_role",
+                "cast_or_factions",
+                "pressure",
+                "constraints",
+                "tone",
+                "confirmed_facts",
+            )
+        }
 
         brief, api_latencies["story_brief_ms"] = client.request_json(
             "POST",
@@ -485,6 +572,7 @@ def run_live_golden_path(
                 "seed": seed,
                 "language": "en",
                 "desired_tension_profile": "high_drama",
+                "guide_context": brief_guide_context,
             },
             timeout=timeout,
         )
@@ -515,6 +603,7 @@ def run_live_golden_path(
                 "difficulty": "story",
                 "language": "en",
                 "story_brief": brief.get("brief"),
+                "story_guide_context": guide_context,
             },
             timeout=timeout,
         )
@@ -639,6 +728,44 @@ def run_live_golden_path(
         if ending_payload is None:
             failures.append(_live_failure("trajectory_judge", "ending", "ending payload was not available"))
 
+        evaluation_bundle, api_latencies["evaluation_bundle_ms"] = client.request_json(
+            "GET",
+            f"/narrative/sessions/{session_id}/evaluation-bundle",
+            timeout=timeout,
+        )
+        evaluation_report, api_latencies["evaluation_report_ms"] = client.request_json(
+            "POST",
+            "/research/rpg-evaluations",
+            payload=evaluation_bundle,
+            timeout=timeout,
+        )
+        latest_memory = ((evaluation_bundle.get("turns") or [{}])[-1].get("memory") or {})
+        stage_sources["portable_evaluation"] = {
+            "bundle_schema": evaluation_bundle.get("schema_version"),
+            "report_schema": evaluation_report.get("schema_version"),
+            "status": evaluation_report.get("status"),
+            "score": evaluation_report.get("score"),
+            "progress_basis": ((evaluation_bundle.get("turns") or [{}])[-1].get("progress_basis")),
+            "active_fact_count": len(latest_memory.get("active_facts") or []),
+            "superseded_fact_count": len(latest_memory.get("superseded_facts") or []),
+        }
+        if evaluation_bundle.get("schema_version") != "rpg_evaluation_bundle.v1":
+            failures.append(_live_failure("schema", "research.rpg_evaluation", "portable bundle schema missing"))
+        if evaluation_report.get("schema_version") != "rpg_evaluation_report.v1":
+            failures.append(_live_failure("schema", "research.rpg_evaluation", "portable report schema missing"))
+        if not any(
+            "backup dancer" in str(fact.get("value") or "").lower()
+            for fact in latest_memory.get("superseded_facts") or []
+            if isinstance(fact, dict)
+        ):
+            failures.append(
+                _live_failure(
+                    "artifact",
+                    "research.rpg_evaluation",
+                    "Create correction was not retained in the 12-turn evaluation memory",
+                )
+            )
+
         session_event_response, api_latencies["llm_events_ms"] = client.request_json(
             "GET",
             f"/narrative/sessions/{session_id}/llm-events",
@@ -754,6 +881,135 @@ def run_live_golden_path(
     return payload
 
 
+def resume_live_golden_path_evidence(
+    *,
+    base_url: str,
+    artifact: Path,
+    report: Path,
+    runtime_db: Path,
+    username: str = "portfolio_reviewer",
+    timeout: float = 180.0,
+) -> dict[str, Any]:
+    """Finish deterministic/reviewer evidence for an already completed live run.
+
+    This recovery path never submits a Play turn or invokes an LLM. It is for
+    evaluator/telemetry failures that happen after the live trajectory has
+    already reached its persisted ending.
+    """
+
+    payload = json.loads(artifact.read_text())
+    session_id = str(payload.get("session_id") or "")
+    if not session_id or int(payload.get("completed_turns") or 0) != int(payload.get("turn_budget") or 0):
+        raise ValueError("Resume requires an artifact with a complete persisted trajectory.")
+
+    client = LiveHarnessClient(base_url, timeout=timeout)
+    failures = [
+        failure
+        for failure in payload.get("failures") or []
+        if str(failure.get("stage") or "") != "/research/rpg-evaluations"
+    ]
+    api_latencies = dict(payload.get("api_latencies_ms") or {})
+    stage_sources = dict(payload.get("stage_sources") or {})
+
+    health, api_latencies["resume_health_ms"] = client.request_json("GET", "/health", timeout=30)
+    failures.extend(_health_failures(health))
+    login, api_latencies["resume_login_ms"] = client.request_json(
+        "POST", "/auth/login", payload={"username": username}, timeout=30,
+    )
+    user = login.get("user") if isinstance(login.get("user"), dict) else {}
+    user_id = str(user.get("user_id") or "")
+    story, api_latencies["resume_story_ms"] = client.request_json(
+        "GET", f"/narrative/sessions/{session_id}/story", query={"agent_trace": True}, timeout=timeout,
+    )
+    ending, api_latencies["resume_ending_ms"] = client.request_json(
+        "GET", f"/narrative/sessions/{session_id}/ending", timeout=timeout,
+    )
+    bundle, api_latencies["resume_evaluation_bundle_ms"] = client.request_json(
+        "GET", f"/narrative/sessions/{session_id}/evaluation-bundle", timeout=timeout,
+    )
+    evaluation, api_latencies["resume_evaluation_report_ms"] = client.request_json(
+        "POST", "/research/rpg-evaluations", payload=bundle, timeout=timeout,
+    )
+    event_response, api_latencies["resume_llm_events_ms"] = client.request_json(
+        "GET", f"/narrative/sessions/{session_id}/llm-events", timeout=timeout,
+    )
+    session_events = [item for item in event_response.get("items") or [] if isinstance(item, dict)]
+    all_events = _load_live_events_from_runtime_db(
+        runtime_db,
+        user_id=user_id,
+        started_at=str(payload.get("run_started_at") or payload.get("generated_at") or ""),
+    )
+    failures.extend(_session_event_failures(session_events))
+    failures.extend(
+        _telemetry_failures(
+            events=all_events,
+            session_id=session_id,
+            turn_budget=int(payload.get("turn_budget") or GOLDEN_PATH_TURN_BUDGET),
+        )
+    )
+
+    latest_memory = ((bundle.get("turns") or [{}])[-1].get("memory") or {})
+    stage_sources["portable_evaluation"] = {
+        "bundle_schema": bundle.get("schema_version"),
+        "report_schema": evaluation.get("schema_version"),
+        "status": evaluation.get("status"),
+        "score": evaluation.get("score"),
+        "progress_basis": ((bundle.get("turns") or [{}])[-1].get("progress_basis")),
+        "active_fact_count": len(latest_memory.get("active_facts") or []),
+        "superseded_fact_count": len(latest_memory.get("superseded_facts") or []),
+    }
+    if bundle.get("schema_version") != "rpg_evaluation_bundle.v1" or evaluation.get("schema_version") != "rpg_evaluation_report.v1":
+        failures.append(_live_failure("schema", "research.rpg_evaluation", "portable evaluation schema missing"))
+    if not any(
+        "backup dancer" in str(fact.get("value") or "").lower()
+        for fact in latest_memory.get("superseded_facts") or []
+        if isinstance(fact, dict)
+    ):
+        failures.append(_live_failure("artifact", "research.rpg_evaluation", "Create correction missing from evaluation memory"))
+
+    agent_events = [event for event in story.get("agent_events") or [] if isinstance(event, dict)]
+    quality = _quality_summary(
+        turn_summaries=list(payload.get("turns") or []),
+        agent_events=agent_events,
+        story=story,
+        ending=ending,
+        seed=str(payload.get("seed_excerpt") or ""),
+    )
+    if quality["status"] == "fail":
+        failures.append(_live_failure("trajectory_judge", "quality_fun_gate", "deterministic quality gate failed"))
+
+    payload.update({
+        "status": "fail" if failures else "pass",
+        "base_url": base_url,
+        "api_latencies_ms": api_latencies,
+        "stage_sources": stage_sources,
+        "turn_telemetry": _turn_telemetry_summaries(all_events, session_id),
+        "operation_events": {
+            operation: [_event_summary(event) for event in events]
+            for operation, events in sorted(_events_by_operation(all_events).items())
+            if operation in GOLDEN_PATH_REQUIRED_OPERATIONS
+            or operation in {"narrative.ending", "narrative.highlights", "narrative.branches"}
+        },
+        "session_llm_events": [_event_summary(event) for event in session_events],
+        "quality_fun_gate": quality,
+        "ending": ending,
+        "reviewer_evidence": {
+            "agent_event_count": len(agent_events),
+            "step_judge_count": len(_agent_event_payloads(agent_events, "step_judge")),
+            "contract_judge_count": len(_agent_event_payloads(agent_events, "contract_judge")),
+            "session_llm_event_count": len(session_events),
+        },
+        "runtime_db": str(runtime_db),
+        "failures": failures,
+    })
+    payload.setdefault("notes", []).append(
+        "Post-run evaluator and telemetry evidence was resumed without additional LLM or Play calls."
+    )
+    _write_json(artifact, payload)
+    _write_markdown_report(report, payload)
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the Tiny Stories strict 12-turn live golden path gate.")
     parser.add_argument("--base-url", default="http://127.0.0.1:8350", help="Backend base URL.")
@@ -764,6 +1020,11 @@ def main() -> int:
     parser.add_argument("--turn-budget", type=int, default=GOLDEN_PATH_TURN_BUDGET, help="Expected live turn count.")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Summary JSON path.")
     parser.add_argument("--report", default=str(DEFAULT_REPORT), help="Markdown report path.")
+    parser.add_argument(
+        "--resume-existing",
+        action="store_true",
+        help="Resume evaluator/telemetry evidence from --output without submitting more live turns.",
+    )
     args = parser.parse_args()
 
     runtime_db = Path(args.runtime_db) if args.runtime_db else None
@@ -772,16 +1033,28 @@ def main() -> int:
 
         runtime_db_env = os.environ.get("APP_RUNTIME_STATE_DB_PATH")
         runtime_db = Path(runtime_db_env) if runtime_db_env else None
-    payload = run_live_golden_path(
-        base_url=args.base_url,
-        output=Path(args.output),
-        report=Path(args.report),
-        username=args.username,
-        seed=args.seed,
-        runtime_db=runtime_db,
-        timeout=args.timeout,
-        turn_budget=args.turn_budget,
-    )
+    if args.resume_existing:
+        if runtime_db is None:
+            parser.error("--resume-existing requires --runtime-db or APP_RUNTIME_STATE_DB_PATH")
+        payload = resume_live_golden_path_evidence(
+            base_url=args.base_url,
+            artifact=Path(args.output),
+            report=Path(args.report),
+            runtime_db=runtime_db,
+            username=args.username,
+            timeout=args.timeout,
+        )
+    else:
+        payload = run_live_golden_path(
+            base_url=args.base_url,
+            output=Path(args.output),
+            report=Path(args.report),
+            username=args.username,
+            seed=args.seed,
+            runtime_db=runtime_db,
+            timeout=args.timeout,
+            turn_budget=args.turn_budget,
+        )
     print(json.dumps({
         "status": payload["status"],
         "mode": payload["mode"],

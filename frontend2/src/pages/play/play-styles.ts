@@ -1293,6 +1293,17 @@ export const ppStyles: Record<string, CSSProperties> = {
     color: "rgba(244,239,230,0.48)",
     fontSize: 11.5,
     lineHeight: 1.4,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  evaluationFooterLink: {
+    color: "rgba(245,200,120,0.92)",
+    textDecoration: "none",
+    borderBottom: "1px solid rgba(245,200,120,0.42)",
+    paddingBottom: 2,
   },
 
   roleInvAcquired: {

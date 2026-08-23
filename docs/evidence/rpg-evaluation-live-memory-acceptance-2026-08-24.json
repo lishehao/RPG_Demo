@@ -1,0 +1,284 @@
+{
+  "schema_version": "tiny_stories_reliability_live_summary.v1",
+  "mode": "live_acceptance",
+  "generated_at": "2026-08-23T18:57:51.391453+00:00",
+  "run_started_at": "2026-08-23T18:57:14.249111+00:00",
+  "status": "pass",
+  "base_url": "http://127.0.0.1:8450",
+  "username": "portfolio_reviewer",
+  "language": "en",
+  "seed_excerpt": "At an awards gala, a publicist, a singer, and a sponsor discover the live trophy reveal is rigged. The player is the publicist who must protect the singer before the host walks onstage. No gore.",
+  "template_id": "tmpl_3a081028c1f0",
+  "session_id": "sess_39113231e58b",
+  "required_operations": [
+    "create.story_butler_turn",
+    "narrative.advance_turn",
+    "narrative.opening",
+    "narrative.story_brief"
+  ],
+  "health_required": [
+    "create_story_butler",
+    "opening",
+    "play_turns",
+    "story_brief",
+    "text_llm"
+  ],
+  "api_latencies_ms": {
+    "health_ms": 4,
+    "login_ms": 2,
+    "story_guide_ms": 6581,
+    "story_guide_correction_ms": 6272,
+    "story_brief_ms": 2337,
+    "template_opening_ms": 13020,
+    "story_with_trace_ms": 7,
+    "advance_turn_ms": 8877,
+    "evaluation_bundle_ms": 10,
+    "evaluation_report_ms": 3,
+    "llm_events_ms": 3
+  },
+  "stage_sources": {
+    "story_guide": {
+      "initial_source": "live",
+      "correction_source": "live",
+      "status": "needs_field",
+      "canShapeBrief": false,
+      "reply_excerpt": "Noted—you're the publicist. The rigged reveal is about to go live. What hits first: an accusation, a disappearance, a forced decision, or an exposed secret?",
+      "player_role": "publicist",
+      "active_cast": [
+        "singer",
+        "sponsor",
+        "host"
+      ],
+      "superseded_count": 1
+    },
+    "story_brief": {
+      "source": "live_hybrid_v1",
+      "runtime_source": "live",
+      "can_generate": true
+    },
+    "opening": {
+      "template_id": "tmpl_3a081028c1f0",
+      "session_id": "sess_39113231e58b",
+      "opening_recovery": null,
+      "consistency_status": "pass"
+    },
+    "advance_turn": {
+      "is_complete": false,
+      "agent_event_types": [
+        "agent_plan",
+        "step_judge",
+        "contract_judge"
+      ]
+    },
+    "portable_evaluation": {
+      "bundle_schema": "rpg_evaluation_bundle.v1",
+      "report_schema": "rpg_evaluation_report.v1",
+      "status": "pass",
+      "score": 90,
+      "progress_basis": "turn_budget_proxy",
+      "active_fact_count": 13,
+      "superseded_fact_count": 3
+    }
+  },
+  "failures": [],
+  "operation_events": {
+    "create.story_butler_context": [
+      {
+        "event_id": 60,
+        "operation": "create.story_butler_context",
+        "status": "success",
+        "source_label": "live",
+        "latency_ms": 4783,
+        "operation_latency_ms": 4783,
+        "input_tokens": 1294,
+        "cached_input_tokens": 1280,
+        "output_tokens": 321,
+        "total_tokens": 1615,
+        "retry_count": 0,
+        "repair_count": 0,
+        "fallback_reason": null,
+        "template_id": null,
+        "session_id": null,
+        "created_at": "2026-08-23T18:57:19.060862+00:00"
+      },
+      {
+        "event_id": 62,
+        "operation": "create.story_butler_context",
+        "status": "success",
+        "source_label": "live",
+        "latency_ms": 4038,
+        "operation_latency_ms": 4038,
+        "input_tokens": 1783,
+        "cached_input_tokens": 640,
+        "output_tokens": 309,
+        "total_tokens": 2092,
+        "retry_count": 0,
+        "repair_count": 0,
+        "fallback_reason": null,
+        "template_id": null,
+        "session_id": null,
+        "created_at": "2026-08-23T18:57:24.899236+00:00"
+      }
+    ],
+    "create.story_butler_turn": [
+      {
+        "event_id": 61,
+        "operation": "create.story_butler_turn",
+        "status": "success",
+        "source_label": "live",
+        "latency_ms": 1784,
+        "operation_latency_ms": 1786,
+        "input_tokens": 2407,
+        "cached_input_tokens": 2304,
+        "output_tokens": 38,
+        "total_tokens": 2445,
+        "retry_count": 0,
+        "repair_count": 0,
+        "fallback_reason": null,
+        "template_id": null,
+        "session_id": null,
+        "created_at": "2026-08-23T18:57:20.851787+00:00"
+      },
+      {
+        "event_id": 63,
+        "operation": "create.story_butler_turn",
+        "status": "success",
+        "source_label": "live",
+        "latency_ms": 2221,
+        "operation_latency_ms": 2221,
+        "input_tokens": 2674,
+        "cached_input_tokens": 512,
+        "output_tokens": 42,
+        "total_tokens": 2716,
+        "retry_count": 0,
+        "repair_count": 0,
+        "fallback_reason": null,
+        "template_id": null,
+        "session_id": null,
+        "created_at": "2026-08-23T18:57:27.125423+00:00"
+      }
+    ],
+    "narrative.advance_turn": [
+      {
+        "event_id": 66,
+        "operation": "narrative.advance_turn",
+        "status": "success",
+        "source_label": "live",
+        "latency_ms": 7852,
+        "operation_latency_ms": 8860,
+        "input_tokens": 7115,
+        "cached_input_tokens": 5376,
+        "output_tokens": 445,
+        "total_tokens": 7560,
+        "retry_count": 0,
+        "repair_count": 0,
+        "fallback_reason": null,
+        "template_id": "tmpl_3a081028c1f0",
+        "session_id": "sess_39113231e58b",
+        "created_at": "2026-08-23T18:57:51.362260+00:00"
+      }
+    ],
+    "narrative.opening": [
+      {
+        "event_id": 65,
+        "operation": "narrative.opening",
+        "status": "success",
+        "source_label": "live",
+        "latency_ms": 13000,
+        "operation_latency_ms": 13014,
+        "input_tokens": 2856,
+        "cached_input_tokens": 1536,
+        "output_tokens": 847,
+        "total_tokens": 3703,
+        "retry_count": 0,
+        "repair_count": 0,
+        "fallback_reason": null,
+        "template_id": "tmpl_3a081028c1f0",
+        "session_id": "sess_39113231e58b",
+        "created_at": "2026-08-23T18:57:42.485195+00:00"
+      }
+    ],
+    "narrative.story_brief": [
+      {
+        "event_id": 64,
+        "operation": "narrative.story_brief",
+        "status": "success",
+        "source_label": "live",
+        "latency_ms": 2319,
+        "operation_latency_ms": 2319,
+        "input_tokens": 1763,
+        "cached_input_tokens": 1664,
+        "output_tokens": 155,
+        "total_tokens": 1918,
+        "retry_count": 0,
+        "repair_count": 0,
+        "fallback_reason": null,
+        "template_id": null,
+        "session_id": null,
+        "created_at": "2026-08-23T18:57:29.458211+00:00"
+      }
+    ]
+  },
+  "session_llm_events": [
+    {
+      "event_id": 65,
+      "operation": "narrative.opening",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 13000,
+      "operation_latency_ms": 13014,
+      "input_tokens": 2856,
+      "cached_input_tokens": 1536,
+      "output_tokens": 847,
+      "total_tokens": 3703,
+      "retry_count": 0,
+      "repair_count": 0,
+      "fallback_reason": null,
+      "template_id": "tmpl_3a081028c1f0",
+      "session_id": "sess_39113231e58b",
+      "created_at": "2026-08-23T18:57:42.485195+00:00"
+    },
+    {
+      "event_id": 66,
+      "operation": "narrative.advance_turn",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 7852,
+      "operation_latency_ms": 8860,
+      "input_tokens": 7115,
+      "cached_input_tokens": 5376,
+      "output_tokens": 445,
+      "total_tokens": 7560,
+      "retry_count": 0,
+      "repair_count": 0,
+      "fallback_reason": null,
+      "template_id": "tmpl_3a081028c1f0",
+      "session_id": "sess_39113231e58b",
+      "created_at": "2026-08-23T18:57:51.362260+00:00"
+    },
+    {
+      "event_id": 67,
+      "operation": "narrative.judge_failure",
+      "status": "success",
+      "source_label": "live",
+      "latency_ms": 998,
+      "operation_latency_ms": 8860,
+      "input_tokens": 718,
+      "cached_input_tokens": 256,
+      "output_tokens": 22,
+      "total_tokens": 740,
+      "retry_count": 0,
+      "repair_count": 0,
+      "fallback_reason": null,
+      "template_id": "tmpl_3a081028c1f0",
+      "session_id": "sess_39113231e58b",
+      "created_at": "2026-08-23T18:57:51.367614+00:00"
+    }
+  ],
+  "runtime_db": "/tmp/tiny-stories-research-runtime-live-20260824.sqlite3",
+  "notes": [
+    "This is the live acceptance path: it drives Story Butler, Story Brief, opening/template, Play turn, and reviewer telemetry APIs.",
+    "A pass requires accepted live/live_repaired telemetry for all required operations and no fallback_reason on those rows.",
+    "Protocol/fixture checks are separate and cheaper; they are not the main acceptance evidence."
+  ]
+}
