@@ -1,0 +1,1754 @@
+{
+ "schema": "everwith-generated-assets-v1",
+ "batch": "v2-batch-01",
+ "rights": "用户经 GPT 生成并提供；商用/再分发权未核实",
+ "note": "User-provided GPT output. Not part of the original handoff package; commercial use and redistribution are unverified. Only resized here (see transform).",
+ "source": {
+  "dropbox_folder": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/",
+  "manifest_sha256": "03e10cd7e985b70a2edd4fc4b3ca25ac71ee6ca6b2d35a9d3be518d59f1d533d",
+  "sha256sums_sha256": "f14a47a4366fb3c58dd34a710e78ffd825ecd0830339466a3f960c4a9d1c9ed7",
+  "slots": 45,
+  "images": 59
+ },
+ "derived_with": {
+  "pillow": "12.3.0"
+ },
+ "assets": [
+  {
+   "slot": "story-last-train-cover-tall",
+   "chosen_variant": "a",
+   "used_in": "Discover story card (4:5), story preparation poster (3:4), Recent / continue / play-together thumbnails",
+   "original": {
+    "file": "story-last-train-cover-tall__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-last-train-cover-tall__a.png",
+    "sha256": "916afdf6d0d0167926b03f0338d18094cc7cc541695ef39133ede9aedd43dcdb",
+    "bytes": 2602231,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T03:40:23.740Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Portrait 2:3 illustration of the waiting room of a small old railway station on a rainy night, just after the last train has left. In the lower center a worn vintage brown leather suitcase with brass corners stands upright beside an empty wooden bench; a rain-soaked paper luggage tag hangs from its handle, its ink run and unreadable. Two old pendant lamps pool warm amber light on the bench and the terrazzo floor; behind them a tall window shows a wet, empty platform under deep blue night, rain streaks on the glass and a distant red signal light. Quiet, gentle mystery: a little lonely but safe. Keep the suitcase and the bench inside the central square of the frame. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Portrait 2:3 illustration of the waiting room of a small old railway station on a rainy night, just after the last train has left. In the lower center a worn vintage brown leather suitcase with brass corners stands upright beside an empty wooden bench; a rain-soaked paper luggage tag hangs from its handle, its ink run and unreadable. Two old pendant lamps pool warm amber light on the bench and the terrazzo floor; behind them a tall window shows a wet, empty platform under deep blue night, rain streaks on the glass and a distant red signal light. Quiet, gentle mystery: a little lonely but safe. Keep the suitcase and the bench inside the central square of the frame. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 手提箱和长椅放在画面中央的正方形里. Continuity: modest early twentieth-century rural station, teal painted wooden trim, tall rectangular windows, cream plaster, dark walnut benches, terrazzo floor; when the suitcase is required, use the same upright worn brown leather rectangular suitcase, brass corners and pale blank paper tag. No train-brand identifiers. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-last-train-cover-tall.webp",
+    "url": "/generated/batch-01/story-last-train-cover-tall.webp",
+    "sha256": "8db4e77c2c9dadd8407f5210b0ee35536a91c12f92d06b1839ea48d244a003b5",
+    "bytes": 150984,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q82 method 6"
+   },
+   "unused_candidates": [
+    "story-last-train-cover-tall__b.png"
+   ]
+  },
+  {
+   "slot": "story-last-train-cover-wide",
+   "chosen_variant": "a",
+   "used_in": "Story detail hero (4:3)",
+   "original": {
+    "file": "story-last-train-cover-wide__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-last-train-cover-wide__a.png",
+    "sha256": "5f8b1a0ab5c94fc87d3dd4d3417c28c486b4dcf46125b1276db0fa37a8cf6c67",
+    "bytes": 2678933,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T03:41:45.153Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Landscape 3:2 illustration of the waiting room of a small old railway station on a rainy night, just after the last train has left. Centered: a worn vintage brown leather suitcase with brass corners standing beside an empty wooden bench, a rain-soaked paper luggage tag with run, unreadable ink. Warm amber pendant lamps; tall windows on both sides show a wet empty platform under deep blue night, rain streaks, a distant red signal light. Quiet, gentle mystery, a little lonely but safe. Keep the suitcase and bench within the middle two-thirds of the width. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Landscape 3:2 illustration of the waiting room of a small old railway station on a rainy night, just after the last train has left. Centered: a worn vintage brown leather suitcase with brass corners standing beside an empty wooden bench, a rain-soaked paper luggage tag with run, unreadable ink. Warm amber pendant lamps; tall windows on both sides show a wet empty platform under deep blue night, rain streaks, a distant red signal light. Quiet, gentle mystery, a little lonely but safe. Keep the suitcase and bench within the middle two-thirds of the width. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 3:2 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 主体在中间 2/3 宽度内. Continuity: modest early twentieth-century rural station, teal painted wooden trim, tall rectangular windows, cream plaster, dark walnut benches, terrazzo floor; when the suitcase is required, use the same upright worn brown leather rectangular suitcase, brass corners and pale blank paper tag. No train-brand identifiers. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-last-train-cover-wide.webp",
+    "url": "/generated/batch-01/story-last-train-cover-wide.webp",
+    "sha256": "4e8010033d7d34d5463745a859f7fb837720d50784c0323a2cb97d75246a691a",
+    "bytes": 188054,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q82 method 6"
+   },
+   "unused_candidates": [
+    "story-last-train-cover-wide__b.png"
+   ]
+  },
+  {
+   "slot": "story-last-train-scene-waiting-room",
+   "chosen_variant": null,
+   "used_in": "Story play scene banner: opening and beat 1",
+   "original": {
+    "file": "story-last-train-scene-waiting-room.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-last-train-scene-waiting-room.png",
+    "sha256": "f5a2ad0a9b4ec8c212bc8e674683ee159f0e8d643e205cf1c78c47b5b5ea118a",
+    "bytes": 2214677,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T03:48:06.874Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of own newly generated v2 source; original and all prompts in reworks",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Wide landscape 3:2 view of the waiting room of a small old railway station on a rainy night, just after the last train has left, at about 1 a.m.: rows of wooden benches, a shuttered ticket window, a round wall clock with plain hands and no numerals, a small lost-and-found counter with a brass bell and a closed logbook, and an old brown leather suitcase standing beside a bench in the middle ground. Only a few warm lamps are on; the rest falls into soft blue shadow; rain on tall windows, a wet platform glimpsed outside. Calm, slightly mysterious slice-of-life mood; an ordinary working station, not abandoned. Keep all key objects in the middle horizontal band of the frame. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Edit this image only: resize the central midground wooden bench and its one tagged leather suitcase to 65% of their current size, move their grouping up so the whole grouping sits between y=440 and y=660 in this 1536x1024 frame. Keep only one suitcase. Move the numeral-free round wall clock down to have its full outline from y=455 to y=525. Preserve the closed ticket window, brass bell and closed blank logbook at the right counter, their current locations, station architecture, rain, blue night and amber light. No text, writing, glyphs, logos or humans. Keep native 1536x1024, no enlargement."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-last-train-scene-waiting-room.webp",
+    "url": "/generated/batch-01/story-last-train-scene-waiting-room.webp",
+    "sha256": "47dfaf081d85d488ff7384a129030aa3d701bbcbec6c812dfa21d8ee92513dd3",
+    "bytes": 128322,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "story-last-train-scene-corner",
+   "chosen_variant": null,
+   "used_in": "Story play scene banner: beat 2",
+   "original": {
+    "file": "story-last-train-scene-corner.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-last-train-scene-corner.png",
+    "sha256": "2c2ecbb9b6417c018661eda445c84107bf88891aec547ba75e322040776ff350",
+    "bytes": 2686362,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T03:51:44.412Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Wide landscape 3:2 view of a quiet corner of the waiting room of a small old railway station on a rainy night, just after the last train has left: an old cast-iron radiator, a single bench with a folded woollen scarf and a paper cup of tea left on it, a dim wall lamp, a rain-streaked window with the blue platform lights beyond. Tender, hesitant mood, as if someone has just stood up. Keep the bench and the scarf in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Wide landscape 3:2 view of a quiet corner of the waiting room of a small old railway station on a rainy night, just after the last train has left: an old cast-iron radiator, a single bench with a folded woollen scarf and a paper cup of tea left on it, a dim wall lamp, a rain-streaked window with the blue platform lights beyond. Tender, hesitant mood, as if someone has just stood up. Keep the bench and the scarf in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 3:2 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中段横条. Compose key props on one horizontal plane around 52.5% image height, entirely within a central 5:1 crop spanning 37.5%-67.5% image height. Pull the camera back enough to preserve key props in that thin strip. Continuity: modest early twentieth-century rural station, teal painted wooden trim, tall rectangular windows, cream plaster, dark walnut benches, terrazzo floor; when the suitcase is required, use the same upright worn brown leather rectangular suitcase, brass corners and pale blank paper tag. No train-brand identifiers."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-last-train-scene-corner.webp",
+    "url": "/generated/batch-01/story-last-train-scene-corner.webp",
+    "sha256": "62ae7c62ab0d5774503a349f5273484c7c65a5d743a6948d20958796256e560f",
+    "bytes": 168656,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "story-last-train-scene-duty-room",
+   "chosen_variant": null,
+   "used_in": "Story play scene banner: beat 3",
+   "original": {
+    "file": "story-last-train-scene-duty-room.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-last-train-scene-duty-room.png",
+    "sha256": "73aedfb7f2bd948aa2d3da88dcda8b53e81a7c68b3e2ff6d4b3db36cb8953ae5",
+    "bytes": 2189512,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T03:46:53.672Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Wide landscape 3:2 view of the small duty room / lost-property office of the same old railway station just before dawn: a tidy wooden desk with an open logbook and a fountain pen (handwriting not legible), a metal flashlight, a wall board with several keys on hooks, and the old brown leather suitcase placed on a shelf inside a wire-mesh locker. A green-shaded desk lamp gives warm light while the window shows the sky turning pale blue-grey at dawn. Orderly, calm, reassuring. Key objects in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, pale dawn light meeting warm lamplight, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Wide landscape 3:2 view of the small duty room / lost-property office of the same old railway station just before dawn: a tidy wooden desk with an open logbook and a fountain pen (handwriting not legible), a metal flashlight, a wall board with several keys on hooks, and the old brown leather suitcase placed on a shelf inside a wire-mesh locker. A green-shaded desk lamp gives warm light while the window shows the sky turning pale blue-grey at dawn. Orderly, calm, reassuring. Key objects in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, pale dawn light meeting warm lamplight, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 3:2 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中段横条. Compose key props on one horizontal plane around 52.5% image height, entirely within a central 5:1 crop spanning 37.5%-67.5% image height. Pull the camera back enough to preserve key props in that thin strip. Continuity: modest early twentieth-century rural station, teal painted wooden trim, tall rectangular windows, cream plaster, dark walnut benches, terrazzo floor; when the suitcase is required, use the same upright worn brown leather rectangular suitcase, brass corners and pale blank paper tag. No train-brand identifiers. Final composition override: ALL keys and the whole small key board must hang LOW immediately behind the desk, entirely between 39% and 60% image height; suitcase inside locker between 40% and 63%; whole desktop with open blank logbook, single fountain pen and flashlight between 53% and 66%; low green lamp shade between 39% and 50%. Camera pulled far back. Absolutely blank book pages: no handwriting strokes, marks or ink. Exactly one suitcase with rounded brass corner guards matching the cover, standing vertically."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-last-train-scene-duty-room.webp",
+    "url": "/generated/batch-01/story-last-train-scene-duty-room.webp",
+    "sha256": "2319267b88c1bd89e11ecf1bf58039c3b3947ca21fb4664368c81eff3278843b",
+    "bytes": 105316,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "story-last-train-scene-platform-dawn",
+   "chosen_variant": null,
+   "used_in": "Story play scene banner: open mode after the last beat",
+   "original": {
+    "file": "story-last-train-scene-platform-dawn.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-last-train-scene-platform-dawn.png",
+    "sha256": "a5817285ec7619a0b048062b1e765f6044fc3669944cb6d08c01ba48fb82e38e",
+    "bytes": 2568097,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:12:48.020Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of own new v2 source",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Wide landscape 3:2 view of an empty small-town railway platform at dawn after a rainy night: wet concrete reflecting a pale peach-and-blue sky, rails curving away into light mist, a single wooden bench, an illuminated departure board glowing softly with abstract light rows only (no characters), overhead wires catching the first light. Hopeful, quiet morning. Key elements in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, pale dawn light meeting warm lamplight, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Edit only the departure display: move the small glowing display down and to the right, mount it on a short dark teal post near the wooden bench with its complete rectangle from y=445 to y=500 in the 1536x1024 image. Its screen contains ONLY three continuous horizontal bars of amber light, absolutely no segmented characters or glyphs. Remove the old hanging display and the small plaque on the station wall. Keep the single bench, sunrise, wet platform, rails, wire system, empty station and style unchanged. No text, numerals, people or silhouettes anywhere. Preserve native size, no enlargement."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-last-train-scene-platform-dawn.webp",
+    "url": "/generated/batch-01/story-last-train-scene-platform-dawn.webp",
+    "sha256": "9024a2db5a76eb389ebcd696540561ccd8c9d07cb263b13ef1cec5dac1fc73d8",
+    "bytes": 166868,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "story-promise-rain-cover-tall",
+   "chosen_variant": "a",
+   "used_in": "Discover story card (4:5), story preparation poster (3:4), Recent / continue / play-together thumbnails",
+   "original": {
+    "file": "story-promise-rain-cover-tall__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-promise-rain-cover-tall__a.png",
+    "sha256": "7ebd34d35659f80c2a8510a9166d8103801540068f2705598ada331285a9d621",
+    "bytes": 3235088,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T03:53:32.431Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Portrait 2:3 illustration of the entrance of an old ornate 1920s theatre at night in heavy rain. A marquee lined with warm light bulbs, a few of them flickering, carries no lettering at all. Under the awning: a red velvet rope, a wooden doorman's lectern with a clipboard guest list whose writing is not legible, and a dark umbrella leaning against it. Wet pavement and puddles reflect gold and crimson light; rain falls in visible streaks against deep blue night. Mystery with a touch of romance. Keep the doorway and the lectern inside the central square. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Portrait 2:3 illustration of the entrance of an old ornate 1920s theatre at night in heavy rain. A marquee lined with warm light bulbs, a few of them flickering, carries no lettering at all. Under the awning: a red velvet rope, a wooden doorman's lectern with a clipboard guest list whose writing is not legible, and a dark umbrella leaning against it. Wet pavement and puddles reflect gold and crimson light; rain falls in visible streaks against deep blue night. Mystery with a touch of romance. Keep the doorway and the lectern inside the central square. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 门口和讲台在中央正方形内. Continuity: same ornate 1920s theatre with red-brown brick, dark brass framed double glass doors, cream carved stone surround, amber round bulbs on a shallow brass marquee and crimson rope; interior walnut, crimson velvet and brass. No masks, human portraits or mannequin silhouettes. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-promise-rain-cover-tall.webp",
+    "url": "/generated/batch-01/story-promise-rain-cover-tall.webp",
+    "sha256": "98ea72d82f8bd32e52fb3e5dfaeaebe5dc3e9d4dc70cca9757aebeeea56adbf7",
+    "bytes": 246096,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q82 method 6"
+   },
+   "unused_candidates": [
+    "story-promise-rain-cover-tall__b.png"
+   ]
+  },
+  {
+   "slot": "story-promise-rain-cover-wide",
+   "chosen_variant": "a",
+   "used_in": "Story detail hero (4:3)",
+   "original": {
+    "file": "story-promise-rain-cover-wide__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-promise-rain-cover-wide__a.png",
+    "sha256": "c6520259facf815ff60126c376aa080c0431b7589cad14952fc8574cda25ba40",
+    "bytes": 3261613,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T03:55:26.399Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Landscape 3:2 illustration of the entrance of an old ornate 1920s theatre at night in heavy rain: bulb-lined marquee with no lettering, glass doors glowing warm, a red velvet rope, a doorman's lectern with an illegible guest list on a clipboard, a dark umbrella, gold and crimson reflections in puddles, rain streaks against deep blue night. Mystery with a touch of romance. Keep the doorway and lectern within the middle two-thirds of the width. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Landscape 3:2 illustration of the entrance of an old ornate 1920s theatre at night in heavy rain: bulb-lined marquee with no lettering, glass doors glowing warm, a red velvet rope, a doorman's lectern with an illegible guest list on a clipboard, a dark umbrella, gold and crimson reflections in puddles, rain streaks against deep blue night. Mystery with a touch of romance. Keep the doorway and lectern within the middle two-thirds of the width. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 3:2 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 主体在中间 2/3 宽度内. Continuity: same ornate 1920s theatre with red-brown brick, dark brass framed double glass doors, cream carved stone surround, amber round bulbs on a shallow brass marquee and crimson rope; interior walnut, crimson velvet and brass. No masks, human portraits or mannequin silhouettes. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-promise-rain-cover-wide.webp",
+    "url": "/generated/batch-01/story-promise-rain-cover-wide.webp",
+    "sha256": "db7f7bb8740cbf50d76948cedd742d22e48aa0ca495de3e8c492f96fea6b6aca",
+    "bytes": 305484,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q82 method 6"
+   },
+   "unused_candidates": [
+    "story-promise-rain-cover-wide__b.png"
+   ]
+  },
+  {
+   "slot": "story-promise-rain-scene-entrance-rain",
+   "chosen_variant": null,
+   "used_in": "Story play scene banner: opening and beat 1",
+   "original": {
+    "file": "story-promise-rain-scene-entrance-rain.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-promise-rain-scene-entrance-rain.png",
+    "sha256": "459fae2184ac561e1df74d0417c764da3c658e12dd9d4077ae84a58f74776976",
+    "bytes": 3279274,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T03:57:29.434Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Wide landscape 3:2 view of the entrance of an old ornate 1920s theatre at night in heavy rain, seen from across a wet cobblestone street: a glowing bulb marquee with no lettering, glass doors with warm light behind them, a velvet rope and a doorman's lectern under the awning, an umbrella, reflections in puddles, rain streaks. Mysterious but inviting. Key elements in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Wide landscape 3:2 view of the entrance of an old ornate 1920s theatre at night in heavy rain, seen from across a wet cobblestone street: a glowing bulb marquee with no lettering, glass doors with warm light behind them, a velvet rope and a doorman's lectern under the awning, an umbrella, reflections in puddles, rain streaks. Mysterious but inviting. Key elements in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 3:2 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中段横条. Compose key props on one horizontal plane around 52.5% image height, entirely within a central 5:1 crop spanning 37.5%-67.5% image height. Pull the camera back enough to preserve key props in that thin strip. Continuity: same ornate 1920s theatre with red-brown brick, dark brass framed double glass doors, cream carved stone surround, amber round bulbs on a shallow brass marquee and crimson rope; interior walnut, crimson velvet and brass. No masks, human portraits or mannequin silhouettes."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-promise-rain-scene-entrance-rain.webp",
+    "url": "/generated/batch-01/story-promise-rain-scene-entrance-rain.webp",
+    "sha256": "e052e77a4f4cb71eab8c30674915ddab09b037f6f91314360c7d42ea77de962d",
+    "bytes": 281324,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "story-promise-rain-scene-backstage",
+   "chosen_variant": null,
+   "used_in": "Story play scene banner: beat 2",
+   "original": {
+    "file": "story-promise-rain-scene-backstage.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-promise-rain-scene-backstage.png",
+    "sha256": "e50d3e4e50d8650c8c5022a34845ca71e65a0cbea89ea3bfbeecd0bcdcf45d68",
+    "bytes": 2198019,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:27:29.722Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of own new v2 source",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Wide landscape 3:2 view of a quiet backstage corridor of an old ornate 1920s theatre at night: exposed brick wall, a costume rack with velvet garments, coiled ropes and a sandbag, a stage door with a small round window, and a wooden desk under a green-shaded lamp holding an open sign-in book (handwriting not legible) and a pen. A small locked wooden key cabinet hangs on the wall. Hushed, intimate, faintly suspenseful; muted crimson and brass. Key elements in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Add exactly one slim dark fountain pen with a small brass cap on the desk beside the open blank sign-in book, near x=1320,y=660. Change nothing else. Keep all pages and surfaces blank, the key cabinet closed with its padlock, costumes, ropes, sandbag, green lamp, empty corridor, and round-window stage door. No text, glyphs, humans, logos. Keep native1536x1024."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-promise-rain-scene-backstage.webp",
+    "url": "/generated/batch-01/story-promise-rain-scene-backstage.webp",
+    "sha256": "79fb86e539c5d205b81e8d8fd5fe43d74561143b920cc7f90682c4a4d2f7f338",
+    "bytes": 140816,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "story-promise-rain-scene-office",
+   "chosen_variant": null,
+   "used_in": "Story play scene banner: beat 3",
+   "original": {
+    "file": "story-promise-rain-scene-office.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-promise-rain-scene-office.png",
+    "sha256": "bf0fc897ce1f07f08394248d179ac50c91f7e25db6b85842ba76c4a0c943fc5e",
+    "bytes": 1927799,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:16:01.199Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of own new v2 source",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Wide landscape 3:2 view of the theatre manager's small office at night, the door half open: a heavy wooden desk with a single brass key whose paper tag is smudged with dark ink, an inkwell, a neat stack of programs with no readable printing, a framed photograph too far away to make out, rain on the window behind, a warm desk lamp. Calm, a little melancholy, quietly revealing. Key elements in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Change only small decorative markings: make all drawer label holders completely blank unmarked brass; remove all lettering and small glyphs from every book spine and the border below the large framed empty-theatre photograph. The photo itself must show only empty architecture, no human or figure. Preserve the desk key with abstract ink smudge, inkwell, unmarked programs, desk photograph of empty buildings, half-open door, lamp and rainy window. No letters, text, numerals, faces or humans anywhere. Keep framing and native size unchanged."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-promise-rain-scene-office.webp",
+    "url": "/generated/batch-01/story-promise-rain-scene-office.webp",
+    "sha256": "56392a4b6445921d2155a6738ca722fac1136cae6ece6df32a9921d6c5bc9949",
+    "bytes": 114022,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "story-promise-rain-scene-entrance-after-rain",
+   "chosen_variant": null,
+   "used_in": "Story play scene banner: beat 4",
+   "original": {
+    "file": "story-promise-rain-scene-entrance-after-rain.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/story-promise-rain-scene-entrance-after-rain.png",
+    "sha256": "ea887326d14de6d48b9037109c94a83ed16b2720a08dfed7ce420b2c81f18cc9",
+    "bytes": 3292347,
+    "dims": [
+     1536,
+     1024
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:00:00.407Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Wide landscape 3:2 view of the same entrance of an old ornate 1920s theatre as the rain eases: last drops in puddles, the bulb marquee now fully and steadily lit (no lettering), the glass doors open and spilling warm golden light, a closed umbrella hanging on a rope post, the faint glow of the auditorium beyond. Relieved, warm ending. Key elements in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Wide landscape 3:2 view of the same entrance of an old ornate 1920s theatre as the rain eases: last drops in puddles, the bulb marquee now fully and steadily lit (no lettering), the glass doors open and spilling warm golden light, a closed umbrella hanging on a rope post, the faint glow of the auditorium beyond. Relieved, warm ending. Key elements in the middle horizontal band. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 3:2 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中段横条. Compose key props on one horizontal plane around 52.5% image height, entirely within a central 5:1 crop spanning 37.5%-67.5% image height. Pull the camera back enough to preserve key props in that thin strip. Continuity: same ornate 1920s theatre with red-brown brick, dark brass framed double glass doors, cream carved stone surround, amber round bulbs on a shallow brass marquee and crimson rope; interior walnut, crimson velvet and brass. No masks, human portraits or mannequin silhouettes."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/story-promise-rain-scene-entrance-after-rain.webp",
+    "url": "/generated/batch-01/story-promise-rain-scene-entrance-after-rain.webp",
+    "sha256": "fef4ed9f75ec56400ad6c8420525c1f0d3b6ac7c905a745f46533ef46c3a7216",
+    "bytes": 300876,
+    "dims": [
+     1280,
+     853
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1536x1024 -> 1280x853; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "backdrop-lena",
+   "chosen_variant": "a",
+   "used_in": "LiveStage backdrop behind the Live2D canvas and the static portrait (character page, private chat, table rail, story rail, discover card)",
+   "original": {
+    "file": "backdrop-lena__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/backdrop-lena__a.png",
+    "sha256": "b5da63d9316c2f6653ce3949185a6c4e5e155f1be5d1f39d376dd2708dd1d417",
+    "bytes": 2208235,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:01:12.318Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Portrait 2:3 background illustration of an investigator's study in an old theatre district at night: a tall arched window on the left with rain and soft city lights, bookshelves and neatly tied case folders on the right, a brass desk lamp glowing, a pinned street map with red string on a cork board (no writing). This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Portrait 2:3 background illustration of an investigator's study in an old theatre district at night: a tall arched window on the left with rain and soft city lights, bookshelves and neatly tied case folders on the right, a brass desk lamp glowing, a pinned street map with red string on a cork board (no writing). This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中间一半宽度保持干净、虚化（人物会叠在中间）. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/backdrop-lena.webp",
+    "url": "/generated/batch-01/backdrop-lena.webp",
+    "sha256": "02a95515edcf6c409bc1488784621912d811ea319441bd57aafaaa3b54d25598",
+    "bytes": 94902,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q78 method 6"
+   },
+   "unused_candidates": [
+    "backdrop-lena__b.png"
+   ]
+  },
+  {
+   "slot": "backdrop-arthur",
+   "chosen_variant": "a",
+   "used_in": "LiveStage backdrop behind the Live2D canvas and the static portrait (character page, private chat, table rail, story rail, discover card)",
+   "original": {
+    "file": "backdrop-arthur__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/backdrop-arthur__a.png",
+    "sha256": "877725684588df72948cb652071364dc01c005094a53fd14983bf89dd80ae322",
+    "bytes": 1929482,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:02:56.480Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Portrait 2:3 background illustration of a theatre manager's office above a grand old stage: dark wood panelling, deep red velvet curtains, a brass key board, leather ledgers, framed playbills seen from too far to read, and an interior window looking down on a softly lit, empty stage. This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Portrait 2:3 background illustration of a theatre manager's office above a grand old stage: dark wood panelling, deep red velvet curtains, a brass key board, leather ledgers, framed playbills seen from too far to read, and an interior window looking down on a softly lit, empty stage. This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中间一半宽度保持干净、虚化（人物会叠在中间）. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/backdrop-arthur.webp",
+    "url": "/generated/batch-01/backdrop-arthur.webp",
+    "sha256": "48d7f68eba34ff7669c2d37ed3db7652e107e302f16c56eeb49d6af9635a8e44",
+    "bytes": 73886,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q78 method 6"
+   },
+   "unused_candidates": [
+    "backdrop-arthur__b.png"
+   ]
+  },
+  {
+   "slot": "backdrop-marcus",
+   "chosen_variant": "a",
+   "used_in": "LiveStage backdrop behind the Live2D canvas and the static portrait (character page, private chat, table rail, story rail, discover card)",
+   "original": {
+    "file": "backdrop-marcus__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/backdrop-marcus__a.png",
+    "sha256": "db527378ef4181f642cef73af2591e174604b4aad6ddc89829342f73dac6d856",
+    "bytes": 1946458,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:05:14.718Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Portrait 2:3 background illustration of a stage manager's prompt corner backstage: a cue-light panel with small coloured bulbs, a headset hanging on a hook, ropes and pulleys of the fly system rising into darkness, painted scenery flats leaning against the wall, a clamp work lamp with warm light against the dark stage. This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Portrait 2:3 background illustration of a stage manager's prompt corner backstage: a cue-light panel with small coloured bulbs, a headset hanging on a hook, ropes and pulleys of the fly system rising into darkness, painted scenery flats leaning against the wall, a clamp work lamp with warm light against the dark stage. This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中间一半宽度保持干净、虚化（人物会叠在中间）. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/backdrop-marcus.webp",
+    "url": "/generated/batch-01/backdrop-marcus.webp",
+    "sha256": "0aaef6240f727b0d3856defe5b55077e67ec3fdc736f9a6ae86846130b5466a8",
+    "bytes": 70352,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q78 method 6"
+   },
+   "unused_candidates": [
+    "backdrop-marcus__b.png"
+   ]
+  },
+  {
+   "slot": "backdrop-nora",
+   "chosen_variant": "a",
+   "used_in": "LiveStage backdrop behind the Live2D canvas and the static portrait (character page, private chat, table rail, story rail, discover card)",
+   "original": {
+    "file": "backdrop-nora__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/backdrop-nora__a.png",
+    "sha256": "9c519d994bc89cfc5260fda6fd42098f8c7491a8c199ab4469391f894f8a999c",
+    "bytes": 2148042,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:19:59.717Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of own new v2 source",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Portrait 2:3 background illustration of a curious explorer's attic workshop at golden hour: a round window with low warm sun, old maps and a globe, potted plants, small brass gadgets and a telescope, open notebooks with sketches only (no writing); warm and inviting. This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm golden-hour sunlight with soft teal shadows, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Remove ALL writing, letters, numerals, glyph-like ticks, labels and annotations from every map, globe and notebook. Keep maps and globe as ONLY simple unlabelled landmass outlines and plain grid lines. Notebook drawings remain simple leaves, mountains and geometric instruments without annotations. Preserve curious explorer attic, round sunset window, plants, telescope, brass gadgets, warm style, blurred low-contrast central half and native dimensions. No text, numerals, faces or humans."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/backdrop-nora.webp",
+    "url": "/generated/batch-01/backdrop-nora.webp",
+    "sha256": "62e614f596f61a7562facecdf8676372fe905f3e9917e80947b9dd4153aa24f0",
+    "bytes": 102454,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q78 method 6"
+   },
+   "unused_candidates": [
+    "backdrop-nora__b.png"
+   ]
+  },
+  {
+   "slot": "backdrop-iris",
+   "chosen_variant": "a",
+   "used_in": "LiveStage backdrop behind the Live2D canvas and the static portrait (character page, private chat, table rail, story rail, discover card)",
+   "original": {
+    "file": "backdrop-iris__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/backdrop-iris__a.png",
+    "sha256": "be814c797aed6464a4b5454d8ee292d12fc845f7b1bd1409b1939823c53bde50",
+    "bytes": 2224225,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:23:13.002Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of own new v2 source",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Portrait 2:3 background illustration of a quiet reading nook by a rainy window at dusk: a window seat with a soft knitted blanket, a tea set, a small stack of letters and a fountain pen (no readable writing), candle light meeting blue-grey dusk; calm and gentle. This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Make all book spines completely unmarked, retaining leather and plain brass bands but no lettering or glyphs. Make all letter sheets and envelopes entirely blank unmarked cream paper, no writing or stamps. Keep fountain pen, tea set, rainy dusk window, candle light, knitted blanket, framing, gentle blur and low-contrast central half. No humans, silhouettes, faces, text, letters or numbers. Keep native size unchanged."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/backdrop-iris.webp",
+    "url": "/generated/batch-01/backdrop-iris.webp",
+    "sha256": "ab9a7971e7d6ab87e48c5bf4f787eac39280e4f0b863630b902a39108cbd7ca4",
+    "bytes": 102388,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q78 method 6"
+   },
+   "unused_candidates": [
+    "backdrop-iris__b.png"
+   ]
+  },
+  {
+   "slot": "backdrop-generic",
+   "chosen_variant": null,
+   "used_in": "Stage backdrop for characters without their own (user-created work characters)",
+   "original": {
+    "file": "backdrop-generic.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/backdrop-generic.png",
+    "sha256": "43f0e979fe751eeca57bb79700e480e828557441750b1d994dee3ad7baada6a9",
+    "bytes": 1916431,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:25:35.084Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of own new v2 source",
+    "qa_status": "checked: full image and contact sheet/crop previews; accepted",
+    "reference_images": [],
+    "prompt": "Portrait 2:3 background illustration of a neutral cozy room at night with a window, warm lamps and soft bokeh lights, no specific profession; suits any character. This is a background plate: an animated character will be composited in the center, so keep the central half of the width calm, softly out of focus and low in contrast (a wall, window glow or gentle bokeh), with the interesting detail toward the edges and the top. Eye-level camera, shallow depth of field. Style: painterly cinematic digital illustration, semi-realistic, fine brushwork, soft volumetric light, warm amber and brass lamplight against cool teal-blue night, rich but muted colors, high detail. No people, no faces, no human silhouettes. No text, letters, numbers, readable writing, signage, logos, watermarks or UI elements. Not photographic, not cartoon or chibi, no horror.",
+    "actual_prompt": "Change only the small book spines in the left shelves: remove ALL text, glyphs and numbers so spines are plain unmarked leather with simple brass bands. Keep neutral cozy room, warm lamps, window and soft bokeh, plants, empty furnishings, low-contrast central half, style and native dimensions. No humans, faces, silhouettes, letters or numerals anywhere."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/backdrop-generic.webp",
+    "url": "/generated/batch-01/backdrop-generic.webp",
+    "sha256": "d71aaceab1193400b3c8e19d0faf31d763067011370a776e582429f61b6b6599",
+    "bytes": 76548,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q78 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "game-royale-cover",
+   "chosen_variant": "a",
+   "used_in": "Game poster: Discover game card (1:1), game preparation (3:4), play-together and Recent thumbnails",
+   "original": {
+    "file": "game-royale-cover__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/game-royale-cover__a.png",
+    "sha256": "955c06a04e47df7b5d6d37253fac7cfc90b3bb0b3d7a3718747ea1bb21aabf88",
+    "bytes": 2489067,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:39:21.030Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "new text-prompt generation in v2 thread",
+    "qa_status": "checked: full composition and central square, 4:5, 3:4 crops; accepted",
+    "reference_images": [],
+    "prompt": "Original key art for a casino dice board game. A stylized night boulevard of six glamorous fictional casino buildings in black-and-gold art-deco style with neon accents, seen from slightly above; in the foreground on green felt, a handful of colourful six-sided dice with white pips tumbling mid-roll beside a fan of fictional pastel banknotes decorated only with abstract guilloche patterns; gold light bokeh. Rich black, gold, emerald and ruby; polished premium tabletop-game illustration. Main subject inside the central square of a portrait 2:3 frame. No text, letters or numbers anywhere (titles and values are drawn by the app), no logos or publisher marks, no watermarks, no people; do not imitate any published board game's box or card art. No real casino names, city signs or real currency designs.",
+    "actual_prompt": "Edit this original game cover, preserving the same six fictional casino buildings, front-facing composition, dice colors, abstract pastel banknotes, premium painted black/gold/emerald/ruby style. Zoom out substantially so the ENTIRE cluster of six buildings (every rooftop), all SIX dice (including entire lowest red die), and ENTIRE banknote fan fit together inside a compact central rectangle, x=140..880 and y=380..1130, within the existing 1024x1536 portrait canvas. Make the complete subject group about 25 percent smaller. Add quiet dark night sky above y=350, smooth empty green felt below y=1180, and side margins. The canvas stays 2:3, 1024x1536, no enlargement. A centered square crop from y=256 to1280 MUST preserve every rooftop, die, and full banknote. No text, letters, numbers, signs, logos, people or watermarks. Banknotes have only abstract rosette/guilloche decoration, no glyphs."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/game-royale-cover.webp",
+    "url": "/generated/batch-01/game-royale-cover.webp",
+    "sha256": "eb96c3a6bcc8723df64499ff8d5fb6fcd1a3e13f401bc6f000e4a2eea46ff7ff",
+    "bytes": 156848,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q82 method 6"
+   },
+   "unused_candidates": [
+    "game-royale-cover__b.png"
+   ]
+  },
+  {
+   "slot": "game-splendor-cover",
+   "chosen_variant": "a",
+   "used_in": "Game poster: Discover game card (1:1), game preparation (3:4), play-together and Recent thumbnails",
+   "original": {
+    "file": "game-splendor-cover__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/game-splendor-cover__a.png",
+    "sha256": "98acbe94447fd96c01b014e65c4619857cfe40d18a51dafc109291df8c7ec4cb",
+    "bytes": 2757283,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:36:06.437Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and central square, 4:5, 3:4 crops; accepted",
+    "reference_images": [],
+    "prompt": "Original key art evoking the Renaissance gem trade. A merchant's walnut table by an arched stone window overlooking a Renaissance harbour city at golden hour; on a deep velvet cloth lie piles of cut and uncut gemstones — emerald green, sapphire blue, ruby red, diamond white and onyx black — with a few plain gold tokens, a brass balance scale and a closed leather ledger tied with a ribbon. Oil-painting look, warm light, rich textures. Main subject inside the central square of a portrait 2:3 frame. No text, letters or numbers anywhere (titles and values are drawn by the app), no logos or publisher marks, no watermarks, no people; do not imitate any published board game's box or card art.",
+    "actual_prompt": "Original key art evoking the Renaissance gem trade. A merchant's walnut table by an arched stone window overlooking a Renaissance harbour city at golden hour; on a deep velvet cloth lie piles of cut and uncut gemstones — emerald green, sapphire blue, ruby red, diamond white and onyx black — with a few plain gold tokens, a brass balance scale and a closed leather ledger tied with a ribbon. Oil-painting look, warm light, rich textures. Main subject inside the central square of a portrait 2:3 frame. No text, letters or numbers anywhere (titles and values are drawn by the app), no logos or publisher marks, no watermarks, no people; do not imitate any published board game's box or card art.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 主体在中央正方形内. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space. Keep every required object entirely inside x=80..940 and y=320..1210 of portrait 1024x1536, with quiet sky or backdrop above and below. All rooftops and dice/cards/gem props fit in the central square. Artwork touches neither side edge."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/game-splendor-cover.webp",
+    "url": "/generated/batch-01/game-splendor-cover.webp",
+    "sha256": "e164cd165c53bab2c6a4266b7e2235892d30ffc354e547919414445bb46d472c",
+    "bytes": 167242,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q82 method 6"
+   },
+   "unused_candidates": [
+    "game-splendor-cover__b.png"
+   ]
+  },
+  {
+   "slot": "game-cabo-cover",
+   "chosen_variant": "a",
+   "used_in": "Game poster: Discover game card (1:1), game preparation (3:4), play-together and Recent thumbnails",
+   "original": {
+    "file": "game-cabo-cover__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/game-cabo-cover__a.png",
+    "sha256": "a1d9d60fd0a3baccff34079e0e62bd139d5f66f3a2ce0f928d7fe66ecfa09002",
+    "bytes": 2618456,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:37:17.826Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and central square, 4:5, 3:4 crops; accepted",
+    "reference_images": [],
+    "prompt": "Original whimsical storybook illustration for a light card game. Four playing cards fan out in the center against a deep forest-green background with a subtle leaf pattern; each card shows a cute creature in lush leaves, flowers and mushrooms — a fox, a small octopus, an owl and a rabbit — and a fifth card lies face down showing an ornamental pattern of overlapping green, teal and yellow leaf scales. Bright friendly colours, gouache-like texture, clean shapes, soft shading, children's-book quality. The cards carry no numbers, letters or symbols. Main subject inside the central square of a portrait 2:3 frame. No text, letters or numbers anywhere (titles and values are drawn by the app), no logos or publisher marks, no watermarks, no people; do not imitate any published board game's box or card art. No scary creatures.",
+    "actual_prompt": "Original whimsical storybook illustration for a light card game. Four playing cards fan out in the center against a deep forest-green background with a subtle leaf pattern; each card shows a cute creature in lush leaves, flowers and mushrooms — a fox, a small octopus, an owl and a rabbit — and a fifth card lies face down showing an ornamental pattern of overlapping green, teal and yellow leaf scales. Bright friendly colours, gouache-like texture, clean shapes, soft shading, children's-book quality. The cards carry no numbers, letters or symbols. Main subject inside the central square of a portrait 2:3 frame. No text, letters or numbers anywhere (titles and values are drawn by the app), no logos or publisher marks, no watermarks, no people; do not imitate any published board game's box or card art. No scary creatures.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 主体在中央正方形内. Candidate A: balanced front-facing viewpoint and compact centered subject grouping, with calm negative space. Keep every required object entirely inside x=80..940 and y=320..1210 of portrait 1024x1536, with quiet sky or backdrop above and below. All rooftops and dice/cards/gem props fit in the central square. Artwork touches neither side edge."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/game-cabo-cover.webp",
+    "url": "/generated/batch-01/game-cabo-cover.webp",
+    "sha256": "c9a4921c7a373b4a5f5f7a8167c8d3ff940228763012127a51cb2f2c234e79d2",
+    "bytes": 141044,
+    "dims": [
+     768,
+     1152
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 768x1152; WebP q82 method 6"
+   },
+   "unused_candidates": [
+    "game-cabo-cover__b.png"
+   ]
+  },
+  {
+   "slot": "empty-friends",
+   "chosen_variant": null,
+   "used_in": "Friends: no friends yet",
+   "original": {
+    "file": "empty-friends.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/empty-friends.png",
+    "sha256": "a22a1b2773e59440ccb176011c833e9f8f340b84ca35e335838b8f2788439186",
+    "bytes": 1407318,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T04:44:37.711Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of generated asset; continuation task-13",
+    "qa_status": "checked: composition, genuine alpha, 160px on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "two cups of tea side by side on a windowsill, gentle rain outside the window, a small potted plant; cozy and inviting. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.",
+    "actual_prompt": "Edit this spot illustration only: recolor EVERY plant leaf and all greens to muted blue-teal #4B94B5, no green, olive or yellow-green anywhere. Remove the scarf/fabric completely. Retain exactly two tea cups, compact windowsill, simple partial rain window, one small potted plant. Use limited warm amber #E3B997, terracotta #CB5367, muted teal #4B94B5 and cream only, fine confident outline and light washes. Simplify details to read at 160px. Centered, at least 15 percent transparent margins. Preserve actual RGBA transparent background and native square dimensions. No white matte, checkerboard, text, letters, numbers or people."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/empty-friends.webp",
+    "url": "/generated/batch-01/empty-friends.webp",
+    "sha256": "22d64e1ea99ad56f754be9ff909fdf174741b55a25ba92d9ba44fa4ed7a7a243",
+    "bytes": 44346,
+    "dims": [
+     480,
+     480
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 480x480 (premultiplied alpha); WebP q86 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "empty-recent",
+   "chosen_variant": null,
+   "used_in": "Recent: nothing yet / nothing archived",
+   "original": {
+    "file": "empty-recent.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/empty-recent.png",
+    "sha256": "3fc5aabb0c645905230745e5ced2c7fb225ea8bd699eb7246624767dcc8cbb11",
+    "bytes": 1021469,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T04:45:27.670Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in edit of generated asset; continuation task-13",
+    "qa_status": "checked: composition, genuine alpha, 160px on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "a small neat stack of blank ticket stubs, a ribbon bookmark and a single die, loosely arranged. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.",
+    "actual_prompt": "Edit ONLY the die: remove every dot, pip, numeral and marking from ALL visible faces so this is a completely blank plain cream cube with subtle light shading. No holes or embossed marks. Keep the ticket stack entirely blank, preserve ribbon and existing amber/terracotta/teal/cream colors, thin outline and light wash. Preserve native square dimensions and genuine transparent RGBA background. No text, letters, numbers, dot marks, logos, people, white matte or painted checkerboard. Nothing else changes."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/empty-recent.webp",
+    "url": "/generated/batch-01/empty-recent.webp",
+    "sha256": "6955a081460764fc59e08daa146267628f9acd9743b153119abcb80c799992d9",
+    "bytes": 31598,
+    "dims": [
+     480,
+     480
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 480x480 (premultiplied alpha); WebP q86 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "empty-create",
+   "chosen_variant": null,
+   "used_in": "Create: no works yet",
+   "original": {
+    "file": "empty-create.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/empty-create.png",
+    "sha256": "28cd27c2e0b0ea3c7526af83ddeb56b3ad90f2c84506d479c0c4d1692e1efbb8",
+    "bytes": 1167257,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T04:46:26.205Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: composition, genuine alpha, 160px on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "an open sketchbook with a pencil resting on it and a small desk lamp glowing beside it; hopeful. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.",
+    "actual_prompt": "an open sketchbook with a pencil resting on it and a small desk lamp glowing beside it; hopeful. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 1:1 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 主体居中，四周留白. Real alpha transparency RGBA PNG, no checkerboard or painted false transparency; no matte fringes. Transparent empty space surrounds the compact spot illustration. Square 1:1 PNG with genuine alpha transparency, no painted checkerboard or flat background. Centered compact composition with at least 15 percent transparent margins. Make important silhouettes bold enough for 160px. The die, paper, seals and book pages are entirely unmarked. No text or glyphs."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/empty-create.webp",
+    "url": "/generated/batch-01/empty-create.webp",
+    "sha256": "026b9b8aba3c2f1208818f2c5e2c0463284e412bb95a26d9fdac1d4c90c5c1a4",
+    "bytes": 44396,
+    "dims": [
+     480,
+     480
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 480x480 (premultiplied alpha); WebP q86 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "state-not-found",
+   "chosen_variant": null,
+   "used_in": "Not found (route, character, story, run, game, friend, work)",
+   "original": {
+    "file": "state-not-found.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/state-not-found.png",
+    "sha256": "270604800fb08eb47e15ca043e4b95837acebd313154f9e27c144e8c8b2bdb78",
+    "bytes": 1730103,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T04:47:47.880Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: composition, genuine alpha, 160px on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "a small wooden door slightly ajar with a soft lamp glow behind it and a few fallen leaves on the step; calm, not alarming. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.",
+    "actual_prompt": "a small wooden door slightly ajar with a soft lamp glow behind it and a few fallen leaves on the step; calm, not alarming. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 1:1 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 主体居中，四周留白. Real alpha transparency RGBA PNG, no checkerboard or painted false transparency; no matte fringes. Transparent empty space surrounds the compact spot illustration. Square 1:1 PNG with genuine alpha transparency, no painted checkerboard or flat background. Centered compact composition with at least 15 percent transparent margins. Make important silhouettes bold enough for 160px. The die, paper, seals and book pages are entirely unmarked. No text or glyphs."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/state-not-found.webp",
+    "url": "/generated/batch-01/state-not-found.webp",
+    "sha256": "c50e6a13caa826e9f359d5fcbd2437e0f7c988593ab47da5b498c5cb55de313a",
+    "bytes": 61204,
+    "dims": [
+     480,
+     480
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 480x480 (premultiplied alpha); WebP q86 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "state-load-error",
+   "chosen_variant": null,
+   "used_in": "Load failure (distinct from “nothing here”)",
+   "original": {
+    "file": "state-load-error.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/state-load-error.png",
+    "sha256": "e960e7744fe0ee00a1aed86ee1d45ceb35d1d1f05f284ea5be9e2a433a55c7fa",
+    "bytes": 846795,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T04:48:34.139Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: composition, genuine alpha, 160px on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "a short string of warm fairy lights, slightly tangled, with one bulb dimmed; gentle \"something went wrong\", not alarming. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.",
+    "actual_prompt": "a short string of warm fairy lights, slightly tangled, with one bulb dimmed; gentle \"something went wrong\", not alarming. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 1:1 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 主体居中，四周留白. Real alpha transparency RGBA PNG, no checkerboard or painted false transparency; no matte fringes. Transparent empty space surrounds the compact spot illustration. Square 1:1 PNG with genuine alpha transparency, no painted checkerboard or flat background. Centered compact composition with at least 15 percent transparent margins. Make important silhouettes bold enough for 160px. The die, paper, seals and book pages are entirely unmarked. No text or glyphs."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/state-load-error.webp",
+    "url": "/generated/batch-01/state-load-error.webp",
+    "sha256": "978c18c4d84aa945f6a036029581b01af932e4b63fc509e09cfd32e166cc7420",
+    "bytes": 45350,
+    "dims": [
+     480,
+     480
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 480x480 (premultiplied alpha); WebP q86 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "state-signin",
+   "chosen_variant": null,
+   "used_in": "Sign-in needed (friends, chat) and the sign-in dialog",
+   "original": {
+    "file": "state-signin.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/state-signin.png",
+    "sha256": "449188d214ae4653f3fdfde3f61e2f941af7af3bd572bff6f707772fab26b36d",
+    "bytes": 1407242,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T04:49:42.157Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: composition, genuine alpha, 160px on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "a small brass key resting on a folded letter sealed with a blank wax seal (no letters on the seal). Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.",
+    "actual_prompt": "a small brass key resting on a folded letter sealed with a blank wax seal (no letters on the seal). Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 1:1 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 主体居中，四周留白. Real alpha transparency RGBA PNG, no checkerboard or painted false transparency; no matte fringes. Transparent empty space surrounds the compact spot illustration. Square 1:1 PNG with genuine alpha transparency, no painted checkerboard or flat background. Centered compact composition with at least 15 percent transparent margins. Make important silhouettes bold enough for 160px. The die, paper, seals and book pages are entirely unmarked. No text or glyphs."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/state-signin.webp",
+    "url": "/generated/batch-01/state-signin.webp",
+    "sha256": "091668c040c486562cd3e27f3e8402af79b7bd26f5d65a66d62a11964d6bcac2",
+    "bytes": 47976,
+    "dims": [
+     480,
+     480
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 480x480 (premultiplied alpha); WebP q86 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "create-type-story",
+   "chosen_variant": null,
+   "used_in": "New work dialog: story type",
+   "original": {
+    "file": "create-type-story.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/create-type-story.png",
+    "sha256": "4a79ba3d9440ebc10499b704288850b66dcdd45a6c203e0a61f7b2f530407a1a",
+    "bytes": 1282023,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T04:51:05.477Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and requested size/crops; accepted",
+    "reference_images": [],
+    "prompt": "An open book with a tiny pop-up theatre stage and curtain rising from its pages. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.",
+    "actual_prompt": "An open book with a tiny pop-up theatre stage and curtain rising from its pages. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 1:1 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 居中. Real alpha transparency RGBA PNG, no checkerboard or painted false transparency; no matte fringes. Transparent empty space surrounds the compact spot illustration. Square 1:1 PNG with genuine alpha transparency, no painted checkerboard or flat background. Centered compact composition with at least 15 percent transparent margins. Make important silhouettes bold enough for 160px. The die, paper, seals and book pages are entirely unmarked. No text or glyphs."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/create-type-story.webp",
+    "url": "/generated/batch-01/create-type-story.webp",
+    "sha256": "77212795bda011a04a827d22f93084b907e48163db6ba5f694897ac0be434ae7",
+    "bytes": 19952,
+    "dims": [
+     320,
+     320
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 320x320 (premultiplied alpha); WebP q86 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "create-type-character",
+   "chosen_variant": null,
+   "used_in": "New work dialog: character type",
+   "original": {
+    "file": "create-type-character.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/create-type-character.png",
+    "sha256": "fabbf59b09a5e872c8f9dbabcef2bbb463939707d13f66b271d31e5e3408a30e",
+    "bytes": 818398,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T04:51:58.669Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and requested size/crops; accepted",
+    "reference_images": [],
+    "prompt": "An empty ornate oval portrait frame standing on a small easel, a few soft sparkles around it, no face or figure inside the frame. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.",
+    "actual_prompt": "An empty ornate oval portrait frame standing on a small easel, a few soft sparkles around it, no face or figure inside the frame. Minimal line-and-wash spot illustration on a transparent background (if transparency is impossible, use a flat #1B1311 background). Palette limited to warm amber #E3B997, terracotta #CB5367 and muted teal #4B94B5 with cream highlights; thin confident lines, lots of negative space, readable at 160 px wide. No text, no letters, no numbers, no people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 1:1 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 居中. Real alpha transparency RGBA PNG, no checkerboard or painted false transparency; no matte fringes. Transparent empty space surrounds the compact spot illustration. Square 1:1 PNG with genuine alpha transparency, no painted checkerboard or flat background. Centered compact composition with at least 15 percent transparent margins. Make important silhouettes bold enough for 160px. The die, paper, seals and book pages are entirely unmarked. No text or glyphs."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/create-type-character.webp",
+    "url": "/generated/batch-01/create-type-character.webp",
+    "sha256": "3d3d491407d7479be57670eb1864950a9587bbc5b3b8bc39afc0412d7971209e",
+    "bytes": 22672,
+    "dims": [
+     320,
+     320
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 320x320 (premultiplied alpha); WebP q86 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "work-cover-01",
+   "chosen_variant": null,
+   "used_in": "Work cover choice: work cards, editor, preview panel",
+   "original": {
+    "file": "work-cover-01.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/work-cover-01.png",
+    "sha256": "90657758022619f9877f2522a8d6a950dc1e62880abd1655f00e53327ede9c7b",
+    "bytes": 2552998,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:52:43.137Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and requested size/crops; accepted",
+    "reference_images": [],
+    "prompt": "Soft painterly abstract cover background: rain running down a window pane over warm out-of-focus lights. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.",
+    "actual_prompt": "Soft painterly abstract cover background: rain running down a window pane over warm out-of-focus lights. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中央保持安静，方便叠标题. Portrait 2:3, largest native supported dimensions, no enlargement. Central 50 percent of width and central 55 percent height stays low contrast and uncluttered for title overlays."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/work-cover-01.webp",
+    "url": "/generated/batch-01/work-cover-01.webp",
+    "sha256": "55654e81e0ee4c943f7285dfe56666c4877ce164bc19df8c55c7440ade6e5c6a",
+    "bytes": 77480,
+    "dims": [
+     600,
+     900
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 600x900; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "work-cover-02",
+   "chosen_variant": null,
+   "used_in": "Work cover choice: work cards, editor, preview panel",
+   "original": {
+    "file": "work-cover-02.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/work-cover-02.png",
+    "sha256": "47a013e6b4ef4bb0d31fbb492db3e7c07843d566d4c7f71a1b221a2538440147",
+    "bytes": 2535155,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:53:12.793Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and requested size/crops; accepted",
+    "reference_images": [],
+    "prompt": "Soft painterly abstract cover background: a parted deep red velvet stage curtain with a warm glow behind it. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.",
+    "actual_prompt": "Soft painterly abstract cover background: a parted deep red velvet stage curtain with a warm glow behind it. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中央保持安静，方便叠标题. Portrait 2:3, largest native supported dimensions, no enlargement. Central 50 percent of width and central 55 percent height stays low contrast and uncluttered for title overlays."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/work-cover-02.webp",
+    "url": "/generated/batch-01/work-cover-02.webp",
+    "sha256": "7538eb83c469ef62c20e2b339eeed08fb58a96ecbad7c2dc074d26b6dd7c3fe8",
+    "bytes": 59198,
+    "dims": [
+     600,
+     900
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 600x900; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "work-cover-03",
+   "chosen_variant": null,
+   "used_in": "Work cover choice: work cards, editor, preview panel",
+   "original": {
+    "file": "work-cover-03.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/work-cover-03.png",
+    "sha256": "de8aeeb76bc75f07f80c838670c5148ed2b3d4b2646631432a79cfbda0deb580",
+    "bytes": 2517790,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:53:57.995Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and requested size/crops; accepted",
+    "reference_images": [],
+    "prompt": "Soft painterly abstract cover background: a night sky with constellations drawn as dotted lines and small stars (no letters). Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.",
+    "actual_prompt": "Soft painterly abstract cover background: a night sky with constellations drawn as dotted lines and small stars (no letters). Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中央保持安静，方便叠标题. Portrait 2:3, largest native supported dimensions, no enlargement. Central 50 percent of width and central 55 percent height stays low contrast and uncluttered for title overlays."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/work-cover-03.webp",
+    "url": "/generated/batch-01/work-cover-03.webp",
+    "sha256": "a243867cace02b67670e77db280d5eeb86f8656bbfb72e0435ddbe2ab294e747",
+    "bytes": 49730,
+    "dims": [
+     600,
+     900
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 600x900; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "work-cover-04",
+   "chosen_variant": null,
+   "used_in": "Work cover choice: work cards, editor, preview panel",
+   "original": {
+    "file": "work-cover-04.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/work-cover-04.png",
+    "sha256": "d8a327a6d77514da2c8bdabf55bf69ad76c17d69d65d2a75836fc4cf01fddf43",
+    "bytes": 2954960,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:54:29.516Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and requested size/crops; accepted",
+    "reference_images": [],
+    "prompt": "Soft painterly abstract cover background: layered paper-cut leaves in teal and amber. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.",
+    "actual_prompt": "Soft painterly abstract cover background: layered paper-cut leaves in teal and amber. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中央保持安静，方便叠标题. Portrait 2:3, largest native supported dimensions, no enlargement. Central 50 percent of width and central 55 percent height stays low contrast and uncluttered for title overlays."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/work-cover-04.webp",
+    "url": "/generated/batch-01/work-cover-04.webp",
+    "sha256": "84b8984fd0dea6e2e6efe094fd07c38348d6a579264cddc406531a89a817b45a",
+    "bytes": 72158,
+    "dims": [
+     600,
+     900
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 600x900; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "work-cover-05",
+   "chosen_variant": null,
+   "used_in": "Work cover choice: work cards, editor, preview panel",
+   "original": {
+    "file": "work-cover-05.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/work-cover-05.png",
+    "sha256": "7026c494c9c29b93c26dd3e77f90a069b3e1107779f7af2e7c7231a29a06e0e7",
+    "bytes": 2521509,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:55:07.270Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and requested size/crops; accepted",
+    "reference_images": [],
+    "prompt": "Soft painterly abstract cover background: soft ink-wash waves in muted teal with a thin gold horizon. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.",
+    "actual_prompt": "Soft painterly abstract cover background: soft ink-wash waves in muted teal with a thin gold horizon. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中央保持安静，方便叠标题. Portrait 2:3, largest native supported dimensions, no enlargement. Central 50 percent of width and central 55 percent height stays low contrast and uncluttered for title overlays."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/work-cover-05.webp",
+    "url": "/generated/batch-01/work-cover-05.webp",
+    "sha256": "49d2766e6d30f191de196d58aab38f060a0c7c56c1ad09097c8cde5568830bbb",
+    "bytes": 44092,
+    "dims": [
+     600,
+     900
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 600x900; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "work-cover-06",
+   "chosen_variant": null,
+   "used_in": "Work cover choice: work cards, editor, preview panel",
+   "original": {
+    "file": "work-cover-06.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/work-cover-06.png",
+    "sha256": "6bbe9303fcd61f1f8a9a020000b2e8f1593e8058e8fe9bbbf209884284956168",
+    "bytes": 2104582,
+    "dims": [
+     1024,
+     1536
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T04:55:34.767Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and requested size/crops; accepted",
+    "reference_images": [],
+    "prompt": "Soft painterly abstract cover background: a few glowing paper lanterns floating in warm dusk. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.",
+    "actual_prompt": "Soft painterly abstract cover background: a few glowing paper lanterns floating in warm dusk. Calm center area for an overlaid title, works at small sizes, warm amber, terracotta and muted teal palette. No text, letters, numbers, logos or people.\n\nProduction constraints: Output one original PNG at the largest native size supported for 2:3 aspect ratio. Do not upscale. No text, letters, numerals, glyphs, signage, logos, watermarks, faces, people or human silhouettes anywhere, including reflections, photographs and pictures. Any writing requested above must be only non-glyph abstract ink smudges or blank surfaces. Safety zone: 中央保持安静，方便叠标题. Portrait 2:3, largest native supported dimensions, no enlargement. Central 50 percent of width and central 55 percent height stays low contrast and uncluttered for title overlays."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/work-cover-06.webp",
+    "url": "/generated/batch-01/work-cover-06.webp",
+    "sha256": "af07293aceabc8203f8fc4cdc2a85b705a0cd68ac1795e5c9bd821f865a9ef8f",
+    "bytes": 41356,
+    "dims": [
+     600,
+     900
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1024x1536 -> 600x900; WebP q80 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "persona-avatar-01",
+   "chosen_variant": null,
+   "used_in": "Persona avatar choice: account page, navigation, own seat at tables",
+   "original": {
+    "file": "persona-avatar-01.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/persona-avatar-01.png",
+    "sha256": "ceb1244f62457c6fe6607d1f8527e474880a2efa57964eb8cc4b6fd0ee8a2857",
+    "bytes": 1395768,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:21:41.968Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full image and 48px circular crop on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "An umbrella in light rain. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.",
+    "actual_prompt": "An umbrella in light rain. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Single bold subject entirely within inner 70 percent diameter, simple flat storybook shapes, full opaque warm-brown #2A1D19 background reaching all corners; no circular border, no complex background. Clearly recognizable in a 48px circular crop."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/persona-avatar-01.webp",
+    "url": "/generated/batch-01/persona-avatar-01.webp",
+    "sha256": "d33dc1ee03a557e43cbc7863b31dd03ac39db9621d479863e81d6f47a10fbf35",
+    "bytes": 6086,
+    "dims": [
+     256,
+     256
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1254x1254 -> 256x256; WebP q85 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "persona-avatar-02",
+   "chosen_variant": null,
+   "used_in": "Persona avatar choice: account page, navigation, own seat at tables",
+   "original": {
+    "file": "persona-avatar-02.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/persona-avatar-02.png",
+    "sha256": "201acb19cea5960c8f44b84090ecb778830a1ce26b74666dcdc48457e70901ec",
+    "bytes": 1598660,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:22:17.559Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full image and 48px circular crop on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "A glowing paper lantern. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.",
+    "actual_prompt": "A glowing paper lantern. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Single bold subject entirely within inner 70 percent diameter, simple flat storybook shapes, full opaque warm-brown #2A1D19 background reaching all corners; no circular border, no complex background. Clearly recognizable in a 48px circular crop."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/persona-avatar-02.webp",
+    "url": "/generated/batch-01/persona-avatar-02.webp",
+    "sha256": "7898a99dad8c4900492cac2a47e90bcc8dea163cf805cd8a6ec9deb02eed2104",
+    "bytes": 7848,
+    "dims": [
+     256,
+     256
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1254x1254 -> 256x256; WebP q85 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "persona-avatar-03",
+   "chosen_variant": null,
+   "used_in": "Persona avatar choice: account page, navigation, own seat at tables",
+   "original": {
+    "file": "persona-avatar-03.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/persona-avatar-03.png",
+    "sha256": "b7c887524b58e5aef3e5b072607329b82adbddaaa13aea885832c92caf49185b",
+    "bytes": 1684403,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:23:05.810Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full image and 48px circular crop on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "A steaming teacup. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.",
+    "actual_prompt": "A steaming teacup. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Single bold subject entirely within inner 70 percent diameter, simple flat storybook shapes, full opaque warm-brown #2A1D19 background reaching all corners; no circular border, no complex background. Clearly recognizable in a 48px circular crop."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/persona-avatar-03.webp",
+    "url": "/generated/batch-01/persona-avatar-03.webp",
+    "sha256": "0e24b3ed31d63eb842029ba75345215c8d28fcda749db3c680f7621f26b12702",
+    "bytes": 9700,
+    "dims": [
+     256,
+     256
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1254x1254 -> 256x256; WebP q85 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "persona-avatar-04",
+   "chosen_variant": null,
+   "used_in": "Persona avatar choice: account page, navigation, own seat at tables",
+   "original": {
+    "file": "persona-avatar-04.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/persona-avatar-04.png",
+    "sha256": "2bca1e74c1a22f5b11a338687277a47770340b037d81f7159481f6acead24c4e",
+    "bytes": 1528019,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:23:40.553Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full image and 48px circular crop on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "A small sitting fox. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.",
+    "actual_prompt": "A small sitting fox. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Single bold subject entirely within inner 70 percent diameter, simple flat storybook shapes, full opaque warm-brown #2A1D19 background reaching all corners; no circular border, no complex background. Clearly recognizable in a 48px circular crop."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/persona-avatar-04.webp",
+    "url": "/generated/batch-01/persona-avatar-04.webp",
+    "sha256": "3f042bf55e3d4ccc4d6a01b3b57d6cd846680bae58872323218898c0d9ea6ce0",
+    "bytes": 6128,
+    "dims": [
+     256,
+     256
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1254x1254 -> 256x256; WebP q85 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "persona-avatar-05",
+   "chosen_variant": null,
+   "used_in": "Persona avatar choice: account page, navigation, own seat at tables",
+   "original": {
+    "file": "persona-avatar-05.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/persona-avatar-05.png",
+    "sha256": "d52897880eeb3071806a658d2e1e7dbe963b85d45c286483939f6404ae5082e2",
+    "bytes": 1785368,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:24:29.858Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full image and 48px circular crop on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "A sleeping cat curled up. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.",
+    "actual_prompt": "A sleeping cat curled up. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Single bold subject entirely within inner 70 percent diameter, simple flat storybook shapes, full opaque warm-brown #2A1D19 background reaching all corners; no circular border, no complex background. Clearly recognizable in a 48px circular crop."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/persona-avatar-05.webp",
+    "url": "/generated/batch-01/persona-avatar-05.webp",
+    "sha256": "363493222a22052642deea71fa9d100b80f5112fb0a8ada523c26a36e03ba4bb",
+    "bytes": 8452,
+    "dims": [
+     256,
+     256
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1254x1254 -> 256x256; WebP q85 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "persona-avatar-06",
+   "chosen_variant": null,
+   "used_in": "Persona avatar choice: account page, navigation, own seat at tables",
+   "original": {
+    "file": "persona-avatar-06.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/persona-avatar-06.png",
+    "sha256": "da249ee730e17d3bd42849490532b8f7cc0e9c0e86c08ba4e8d4f8acfa745216",
+    "bytes": 1896447,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:25:00.165Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full image and 48px circular crop on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "A round little owl. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.",
+    "actual_prompt": "A round little owl. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Single bold subject entirely within inner 70 percent diameter, simple flat storybook shapes, full opaque warm-brown #2A1D19 background reaching all corners; no circular border, no complex background. Clearly recognizable in a 48px circular crop."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/persona-avatar-06.webp",
+    "url": "/generated/batch-01/persona-avatar-06.webp",
+    "sha256": "81db2e8f4e29b5dd96a56219c24b6d69090657158c7366a47ff459e08077fa37",
+    "bytes": 9958,
+    "dims": [
+     256,
+     256
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1254x1254 -> 256x256; WebP q85 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "persona-avatar-07",
+   "chosen_variant": null,
+   "used_in": "Persona avatar choice: account page, navigation, own seat at tables",
+   "original": {
+    "file": "persona-avatar-07.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/persona-avatar-07.png",
+    "sha256": "67fe0ed5bc852c8c5cc6fc653b2965083b11829cd3ee6040c5af2ec14320b4d3",
+    "bytes": 1385465,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:25:34.882Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full image and 48px circular crop on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "A folded paper boat on a ripple. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.",
+    "actual_prompt": "A folded paper boat on a ripple. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Single bold subject entirely within inner 70 percent diameter, simple flat storybook shapes, full opaque warm-brown #2A1D19 background reaching all corners; no circular border, no complex background. Clearly recognizable in a 48px circular crop."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/persona-avatar-07.webp",
+    "url": "/generated/batch-01/persona-avatar-07.webp",
+    "sha256": "707439c27ab4fa24631239809260639841008d8d5d048114f586348b6e87eeb1",
+    "bytes": 4716,
+    "dims": [
+     256,
+     256
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1254x1254 -> 256x256; WebP q85 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "persona-avatar-08",
+   "chosen_variant": null,
+   "used_in": "Persona avatar choice: account page, navigation, own seat at tables",
+   "original": {
+    "file": "persona-avatar-08.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/persona-avatar-08.png",
+    "sha256": "8da62c6a11899b6ffdfe2bdd4c5b8180d995412731ac7327404452d60415544e",
+    "bytes": 1406844,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:26:06.220Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full image and 48px circular crop on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "A crescent moon with one star. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.",
+    "actual_prompt": "A crescent moon with one star. Flat storybook illustration inside a circle-safe composition (the image will be cropped to a circle), deep warm brown background #2A1D19, simple bold shapes in amber, terracotta, teal and cream, readable at 48 px. No text, no letters, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Single bold subject entirely within inner 70 percent diameter, simple flat storybook shapes, full opaque warm-brown #2A1D19 background reaching all corners; no circular border, no complex background. Clearly recognizable in a 48px circular crop."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/persona-avatar-08.webp",
+    "url": "/generated/batch-01/persona-avatar-08.webp",
+    "sha256": "a6dc2af779adf5ec00cc353efca8ac2bb382cdf0e3f22009af17f53eaa789bf1",
+    "bytes": 4164,
+    "dims": [
+     256,
+     256
+    ],
+    "mode": "RGB",
+    "transform": "Lanczos resize 1254x1254 -> 256x256; WebP q85 method 6"
+   },
+   "unused_candidates": []
+  },
+  {
+   "slot": "brand-emblem",
+   "chosen_variant": "a",
+   "used_in": "Navigation brand mark and the first-load screen",
+   "original": {
+    "file": "brand-emblem__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/brand-emblem__a.png",
+    "sha256": "73b30be0ccd15341fe4ebb5aecf9118e5a67c9cdeceac56a48ec73cb7d8ec370",
+    "bytes": 526943,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGBA",
+    "generated_at_utc": "2026-10-14T05:27:23.174Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "text prompt; continuation task-13",
+    "qa_status": "checked: full composition and 24px on dark/light; accepted",
+    "reference_images": [],
+    "prompt": "A simple warm emblem for an app about companionship and playing together: two overlapping circles forming a soft lantern-like glow with a tiny spark where they meet. Flat geometric shapes in amber and cream on a transparent background, elegant, readable at 24 px. No letters, no text, no people.",
+    "actual_prompt": "A simple warm emblem for an app about companionship and playing together: two overlapping circles forming a soft lantern-like glow with a tiny spark where they meet. Flat geometric shapes in amber and cream on a transparent background, elegant, readable at 24 px. No letters, no text, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Exactly two solid clean overlapping circular shapes and one tiny four-point spark at their intersection, no extra dots, no complex gradients. Emblem occupies inner 70 percent of the canvas with transparent margins, genuine alpha. Use solid amber #E3B997 and cream; clearly legible at 24px. Candidate A: horizontally overlapping left amber circle and right cream circle."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/brand-emblem.png",
+    "url": "/generated/batch-01/brand-emblem.png",
+    "sha256": "ddd3f61570975c9fea7f9484c432bb069dd06f8f25d7d384dbea668961ac6052",
+    "bytes": 7696,
+    "dims": [
+     128,
+     128
+    ],
+    "mode": "RGBA",
+    "transform": "Lanczos resize 1254x1254 -> 128x128 (premultiplied alpha); PNG"
+   },
+   "unused_candidates": [
+    "brand-emblem__b.png"
+   ]
+  },
+  {
+   "slot": "app-icon",
+   "chosen_variant": "a",
+   "used_in": "Browser tab icon (corners outside the rounded square made transparent)",
+   "original": {
+    "file": "app-icon__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/app-icon__a.png",
+    "sha256": "39c5f0e39ae44baa19476948884dd504acf694c84f70c95c9a1f575064dbe315",
+    "bytes": 1329310,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:29:28.345Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in composition using generated brand-emblem__a.png",
+    "qa_status": "checked: full composition and 32px on dark/light; accepted",
+    "reference_images": [
+     "brand-emblem__a.png"
+    ],
+    "prompt": "The same warm emblem (two overlapping circles forming a soft lantern-like glow with a tiny spark where they meet), centered on a rounded-square tile of deep warm brown #1E1412 with a subtle radial glow. Flat, crisp, readable at 32 px. No letters, no text, no people.",
+    "actual_prompt": "The same warm emblem (two overlapping circles forming a soft lantern-like glow with a tiny spark where they meet), centered on a rounded-square tile of deep warm brown #1E1412 with a subtle radial glow. Flat, crisp, readable at 32 px. No letters, no text, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Brown #1E1412 tile fills entire square canvas; safe round-corner composition, emblem occupies inner 65 percent diameter. Two solid overlapping circles and one tiny spark only, flat crisp legible at 32px. Opaque background. Horizontally overlapping amber left circle and cream right circle, matching brand A. Reference image is the corresponding generated emblem: preserve its circles, overlap and spark shape exactly while adding the brown rounded square tile. Emblem itself remains unmodified."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/favicon-64.png",
+    "url": "/generated/batch-01/favicon-64.png",
+    "sha256": "ec5bf9b048dc978ad5546945a8cb84b3807f8c0887739a3c74e7f96db4f3678c",
+    "bytes": 5459,
+    "dims": [
+     64,
+     64
+    ],
+    "mode": "RGBA",
+    "transform": "black corners outside the rounded square -> transparent; Lanczos resize -> 64x64 (premultiplied alpha); PNG"
+   },
+   "unused_candidates": [
+    "app-icon__b.png"
+   ]
+  },
+  {
+   "slot": "app-icon",
+   "chosen_variant": "a",
+   "used_in": "Home-screen icon (corners filled with the tile colour)",
+   "original": {
+    "file": "app-icon__a.png",
+    "dropbox_path": "/Everwith_Claude_Frontend_Rebuild_2026-10-13/generated-assets/batch-01/app-icon__a.png",
+    "sha256": "39c5f0e39ae44baa19476948884dd504acf694c84f70c95c9a1f575064dbe315",
+    "bytes": 1329310,
+    "dims": [
+     1254,
+     1254
+    ],
+    "mode": "RGB",
+    "generated_at_utc": "2026-10-14T05:29:28.345Z",
+    "tool": "built-in image_gen.imagegen",
+    "model": "not disclosed by tool",
+    "source": "built-in composition using generated brand-emblem__a.png",
+    "qa_status": "checked: full composition and 32px on dark/light; accepted",
+    "reference_images": [
+     "brand-emblem__a.png"
+    ],
+    "prompt": "The same warm emblem (two overlapping circles forming a soft lantern-like glow with a tiny spark where they meet), centered on a rounded-square tile of deep warm brown #1E1412 with a subtle radial glow. Flat, crisp, readable at 32 px. No letters, no text, no people.",
+    "actual_prompt": "The same warm emblem (two overlapping circles forming a soft lantern-like glow with a tiny spark where they meet), centered on a rounded-square tile of deep warm brown #1E1412 with a subtle radial glow. Flat, crisp, readable at 32 px. No letters, no text, no people.\nProduction: one square 1:1 PNG at largest supported native size, no enlargement. No text, letters, numerals, glyphs, logos, watermarks or humans. Brown #1E1412 tile fills entire square canvas; safe round-corner composition, emblem occupies inner 65 percent diameter. Two solid overlapping circles and one tiny spark only, flat crisp legible at 32px. Opaque background. Horizontally overlapping amber left circle and cream right circle, matching brand A. Reference image is the corresponding generated emblem: preserve its circles, overlap and spark shape exactly while adding the brown rounded square tile. Emblem itself remains unmodified."
+   },
+   "derivative": {
+    "path": "public/generated/batch-01/apple-touch-icon.png",
+    "url": "/generated/batch-01/apple-touch-icon.png",
+    "sha256": "4fa396920abe9214b7d85d81efb3f0d80ff8469e934d38e80ded53ce3d5b142f",
+    "bytes": 24750,
+    "dims": [
+     180,
+     180
+    ],
+    "mode": "RGB",
+    "transform": "corners outside the rounded square filled with the tile edge colour; Lanczos resize -> 180x180; PNG"
+   },
+   "unused_candidates": [
+    "app-icon__b.png"
+   ]
+  }
+ ]
+}
