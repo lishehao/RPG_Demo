@@ -1,0 +1,1498 @@
+{
+  "schema": "everwith-claude-asset-lock-v1",
+  "source_package": "Everwith_Claude_Frontend_Handoff_2026-10-13",
+  "copied_at_utc": "2026-10-13T20:49:37.566Z",
+  "policy": "byte-identical copies verified against the package SHA256SUMS; no resize/re-encode; private user-authorized handoff; commercial/redistribution rights unverified",
+  "files": [
+    {
+      "rel": "assets/companions/feed/arthur.webp",
+      "dest": "public/handoff/assets/companions/feed/arthur.webp",
+      "bytes": 362768,
+      "sha256": "4aedb582201d0903f64673b0c73a0b7ad195aa0e89a5bce0c25804b0aef8c657",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/feed/iris.webp",
+      "dest": "public/handoff/assets/companions/feed/iris.webp",
+      "bytes": 257568,
+      "sha256": "355699748b9b06aab334e760e6a7d879e65504aa4850357cc012553997c84aa4",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/feed/lena.webp",
+      "dest": "public/handoff/assets/companions/feed/lena.webp",
+      "bytes": 466126,
+      "sha256": "35f3da37d168b21f50ff77912d64769e33c18e609c7425e12e0214e5b452a55b",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/feed/marcus.webp",
+      "dest": "public/handoff/assets/companions/feed/marcus.webp",
+      "bytes": 247718,
+      "sha256": "ffe420bc9bbfcdc7d49593e647afaeb4df68f938a4066a72861b48835dbbcc9a",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/feed/nora.webp",
+      "dest": "public/handoff/assets/companions/feed/nora.webp",
+      "bytes": 560612,
+      "sha256": "a67ddfa6a6d6a0913d975d71b63a4cd09dde9a722a57757d8e861f3d0d87bc6f",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/feed/provenance.json",
+      "dest": "public/handoff/assets/companions/feed/provenance.json",
+      "bytes": 3623,
+      "sha256": "c4156596ed04556e969f3128ab409ccfd029d01e7e45a475ea1d135f869b4b94",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/feed/scene-amber.webp",
+      "dest": "public/handoff/assets/companions/feed/scene-amber.webp",
+      "bytes": 211376,
+      "sha256": "d2e3dfaea7e6ccb841f32a5591d29af75afa1d84385b1a85b5fd2ba1d512eab9",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/feed/scene-rain.webp",
+      "dest": "public/handoff/assets/companions/feed/scene-rain.webp",
+      "bytes": 219068,
+      "sha256": "fc2ca71680561d4c444cf465accbbb9b4aab34ba63b9ce9f5eb5ff1c51f3bef3",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/game-previews/v1/cabo-poster.webp",
+      "dest": "public/handoff/assets/companions/game-previews/v1/cabo-poster.webp",
+      "bytes": 12016,
+      "sha256": "a87b201d83d2ae332872152bd88634f016d73ae7a8edcee0adac92137d70dac0",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/game-previews/v1/cabo.mp4",
+      "dest": "public/handoff/assets/companions/game-previews/v1/cabo.mp4",
+      "bytes": 115043,
+      "sha256": "5e29710d89445bf6c7daa91fa4e543ad4dd1764b036359245ef02e70789bcde4",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/game-previews/v1/manifest.json",
+      "dest": "public/handoff/assets/companions/game-previews/v1/manifest.json",
+      "bytes": 25355,
+      "sha256": "a188ca90cc034a80344b7a6c0a54a516da8fcbc5b485cc3e40d726e33f710f98",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/game-previews/v1/royale-poster.webp",
+      "dest": "public/handoff/assets/companions/game-previews/v1/royale-poster.webp",
+      "bytes": 29726,
+      "sha256": "a5b849fd14f7c24bd83cb1623acf0a2bcbb8dd01012dc774731f639aa7e37542",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/game-previews/v1/royale.mp4",
+      "dest": "public/handoff/assets/companions/game-previews/v1/royale.mp4",
+      "bytes": 237619,
+      "sha256": "ac07207ec3083277f7d18f4472ac02768b82a805b75a3b80148b3074ebe3867d",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/game-previews/v1/splendor-poster.webp",
+      "dest": "public/handoff/assets/companions/game-previews/v1/splendor-poster.webp",
+      "bytes": 32592,
+      "sha256": "b3cc1a9499fe6f38e9945dce794d09eb7df9a6d68e88431177cfcee7d707c163",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/game-previews/v1/splendor.mp4",
+      "dest": "public/handoff/assets/companions/game-previews/v1/splendor.mp4",
+      "bytes": 247629,
+      "sha256": "e0e102fb446f609fbff922c2e898009d49ee1503181aa8808aaf725a5cdb06c4",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/arthur-local-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/arthur-local-neutral.png",
+      "bytes": 105501,
+      "sha256": "40cfc3210bb385f87431134fc5b7c5adaa8343e97ecd7160ed0010fb49e5c52f",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/arthur-r7-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/arthur-r7-neutral.png",
+      "bytes": 231957,
+      "sha256": "ddba39a2fe3381dc80e0a24127b6c34c4393bd4f7fd414ecd4c9988d2394cc6b",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/iris-local-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/iris-local-neutral.png",
+      "bytes": 124891,
+      "sha256": "00e6b1b33384c28b3c564e466b9e29075d848d1abebab7c70b4dc651c5e3f1de",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/lena-local-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/lena-local-neutral.png",
+      "bytes": 149325,
+      "sha256": "e8145352bb6ab17cc16e05de268845f46ad2e976ccd49cdf899b5315437d9f7d",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/lena-r5-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/lena-r5-neutral.png",
+      "bytes": 112381,
+      "sha256": "b5e4524a5b904a658b6fd5d7d59ddb66aa44042fd136216ac94ef5749210e143",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/lena-soft-anime-v2-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/lena-soft-anime-v2-neutral.png",
+      "bytes": 1782649,
+      "sha256": "f44a57389e516d2ec441920a65603e79bb538c5014a01ae528d961ca17c97060",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/marcus-local-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/marcus-local-neutral.png",
+      "bytes": 72316,
+      "sha256": "fecc101c9a8cf4ca906402e3ddbbd74bc752e2f0aae1917e759d96e3a4b5d457",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/marcus-r3-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/marcus-r3-neutral.png",
+      "bytes": 61217,
+      "sha256": "259ab41edbe5106d6b492b25b246c2b34ced072a2ebab7a128beda785874b857",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/nora-local-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/nora-local-neutral.png",
+      "bytes": 142453,
+      "sha256": "1b41b482c61bea26d5de011e2ba59bcdecf2c8e072d05d6afad13863d38b0998",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/portraits/nora-r4-neutral.png",
+      "dest": "public/handoff/assets/companions/portraits/nora-r4-neutral.png",
+      "bytes": 285853,
+      "sha256": "4193f55ebcc8bb64933bcd1d6ce7ded3ee05ffb410c06df5e2d570e8423cd59d",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/companions/scenes/lena-rain-room-illustrated-20261007.png",
+      "dest": "public/handoff/assets/companions/scenes/lena-rain-room-illustrated-20261007.png",
+      "bytes": 2077517,
+      "sha256": "ad03531b9a5436091148b8e1dad8e6316132c459fcdaa2257d1ec8ab737a0a49",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-illustration/provenance.json",
+      "dest": "public/handoff/assets/games/cabo/card-illustration/provenance.json",
+      "bytes": 1239,
+      "sha256": "b865a8ab25616b3a0bfe1c9002d5591a90448fa37e2c19f15f21e4a64f834a1b",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/back-05209a8c19595393551ebb5ed1456aed1983639089b4683bd9e3ea7e0dbc0646.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/back-05209a8c19595393551ebb5ed1456aed1983639089b4683bd9e3ea7e0dbc0646.webp",
+      "bytes": 2329890,
+      "sha256": "05209a8c19595393551ebb5ed1456aed1983639089b4683bd9e3ea7e0dbc0646",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/illustration-print-1-zones.json",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/illustration-print-1-zones.json",
+      "bytes": 2686,
+      "sha256": "b77c75599c955ae9183bd173c0179aa06112287b5570c29253c376b184752c0e",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/manifest.json",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/manifest.json",
+      "bytes": 12213,
+      "sha256": "7259c0fdf5a8b150a8f8dfe235edf7f29192d5ffc5ebee046baf0ba09815ba90",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-0-bbbcffd0cfbc223a9843fb04e1ca4200069fe3e032ddcb8c07ed4cdfc456cb55.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-0-bbbcffd0cfbc223a9843fb04e1ca4200069fe3e032ddcb8c07ed4cdfc456cb55.webp",
+      "bytes": 2381072,
+      "sha256": "bbbcffd0cfbc223a9843fb04e1ca4200069fe3e032ddcb8c07ed4cdfc456cb55",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-1-ba5f66650793fc05c80ee3f94722dcef0dadd74c06d21491d30b66da5e870d44.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-1-ba5f66650793fc05c80ee3f94722dcef0dadd74c06d21491d30b66da5e870d44.webp",
+      "bytes": 2268646,
+      "sha256": "ba5f66650793fc05c80ee3f94722dcef0dadd74c06d21491d30b66da5e870d44",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-10-e4a211840ba6d4760ff1030c248e09c28cfb1d520abfca9ad504e31ac91b95fe.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-10-e4a211840ba6d4760ff1030c248e09c28cfb1d520abfca9ad504e31ac91b95fe.webp",
+      "bytes": 2324466,
+      "sha256": "e4a211840ba6d4760ff1030c248e09c28cfb1d520abfca9ad504e31ac91b95fe",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-11-b359172e1aa83f23fd6f78116990622d6c7cace419d52f33c53447631e03fcc7.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-11-b359172e1aa83f23fd6f78116990622d6c7cace419d52f33c53447631e03fcc7.webp",
+      "bytes": 1981810,
+      "sha256": "b359172e1aa83f23fd6f78116990622d6c7cace419d52f33c53447631e03fcc7",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-12-9d85bc6d569e257d59e322ef8d977233f778564612416f61dfe0b178e86f35da.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-12-9d85bc6d569e257d59e322ef8d977233f778564612416f61dfe0b178e86f35da.webp",
+      "bytes": 2150980,
+      "sha256": "9d85bc6d569e257d59e322ef8d977233f778564612416f61dfe0b178e86f35da",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-13-03f0eb5d8d2a5b695fa00dde23984ea4fb09614b4c172a4fd27432e039ae8da7.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-13-03f0eb5d8d2a5b695fa00dde23984ea4fb09614b4c172a4fd27432e039ae8da7.webp",
+      "bytes": 2343712,
+      "sha256": "03f0eb5d8d2a5b695fa00dde23984ea4fb09614b4c172a4fd27432e039ae8da7",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-2-4df6bf6039b3bc5191a84e7ec83488c139f37edf0d9d5dc44a0498c249eb25b4.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-2-4df6bf6039b3bc5191a84e7ec83488c139f37edf0d9d5dc44a0498c249eb25b4.webp",
+      "bytes": 2234194,
+      "sha256": "4df6bf6039b3bc5191a84e7ec83488c139f37edf0d9d5dc44a0498c249eb25b4",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-3-4a5605bd0afbffb98933a3f3b73b08fbfc27c66f666062c94ad58bf364fb3267.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-3-4a5605bd0afbffb98933a3f3b73b08fbfc27c66f666062c94ad58bf364fb3267.webp",
+      "bytes": 2210268,
+      "sha256": "4a5605bd0afbffb98933a3f3b73b08fbfc27c66f666062c94ad58bf364fb3267",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-4-c44d265df6d838b51841510eeb0f26d65cb6c389d04083aaec9c31b1a459baf7.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-4-c44d265df6d838b51841510eeb0f26d65cb6c389d04083aaec9c31b1a459baf7.webp",
+      "bytes": 2341890,
+      "sha256": "c44d265df6d838b51841510eeb0f26d65cb6c389d04083aaec9c31b1a459baf7",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-5-c099b701937893138611d1e7a289aea489a1ddeff774891c029584f12256e613.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-5-c099b701937893138611d1e7a289aea489a1ddeff774891c029584f12256e613.webp",
+      "bytes": 2169752,
+      "sha256": "c099b701937893138611d1e7a289aea489a1ddeff774891c029584f12256e613",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-6-7cd22f8e067743aafa90288af9f8533c9d22a29af18ea1ca550795bcadd43d90.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-6-7cd22f8e067743aafa90288af9f8533c9d22a29af18ea1ca550795bcadd43d90.webp",
+      "bytes": 2286878,
+      "sha256": "7cd22f8e067743aafa90288af9f8533c9d22a29af18ea1ca550795bcadd43d90",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-7-a922be09b8b9aa30d3ced0b5fee7ab3572278e0cd42b559bdcd011fe3197b0ef.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-7-a922be09b8b9aa30d3ced0b5fee7ab3572278e0cd42b559bdcd011fe3197b0ef.webp",
+      "bytes": 2489192,
+      "sha256": "a922be09b8b9aa30d3ced0b5fee7ab3572278e0cd42b559bdcd011fe3197b0ef",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-8-966777513baa30063249aca1876fa556670b44c9ffa57e7842fc583541763de6.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-8-966777513baa30063249aca1876fa556670b44c9ffa57e7842fc583541763de6.webp",
+      "bytes": 2419188,
+      "sha256": "966777513baa30063249aca1876fa556670b44c9ffa57e7842fc583541763de6",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/card-rank-art/rank-9-fa0ce016cb166aa420963cdfa36c1cd63bffefce68944a2da7f015eeaf580478.webp",
+      "dest": "public/handoff/assets/games/cabo/card-rank-art/rank-9-fa0ce016cb166aa420963cdfa36c1cd63bffefce68944a2da7f015eeaf580478.webp",
+      "bytes": 2292262,
+      "sha256": "fa0ce016cb166aa420963cdfa36c1cd63bffefce68944a2da7f015eeaf580478",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/cabo/embedded-surface-1.webp",
+      "dest": "public/handoff/assets/games/cabo/embedded-surface-1.webp",
+      "bytes": 354758,
+      "sha256": "1653e93650392964438cf3825c7b8335e0d202329796f6f19316ac3840bb7929",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "byte-decoded existing image"
+    },
+    {
+      "rel": "assets/games/royale/generated/PROVENANCE.json",
+      "dest": "public/handoff/assets/games/royale/generated/PROVENANCE.json",
+      "bytes": 4718,
+      "sha256": "0534ef23e4dc6402e240ed44c920ea184e9d4f499cf61bfac08c7f6cc0336b79",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/royale/generated/casino-scene-atlas-r7.png",
+      "dest": "public/handoff/assets/games/royale/generated/casino-scene-atlas-r7.png",
+      "bytes": 2844647,
+      "sha256": "63849aa383f2e4167942e8c09c7382a58d7400750129721f7b2d771b4e1ca1a1",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/royale/generated/fictional-game-token-ornament-20261004.png",
+      "dest": "public/handoff/assets/games/royale/generated/fictional-game-token-ornament-20261004.png",
+      "bytes": 3464649,
+      "sha256": "1ab6a8137d0e986867b0622b42cae8b96a2d51cd4db441eaebb3d53c0e897a89",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/backgrounds/salon.png",
+      "dest": "public/handoff/assets/games/splendor/backgrounds/salon.png",
+      "bytes": 2157439,
+      "sha256": "a3ae52573ef267a1263c5d27289dcf505b403927972ef0a4e2919920cac7ad68",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/gem-diamond-finish-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/gem-diamond-finish-round4-20261007.png",
+      "bytes": 1148365,
+      "sha256": "2c7dc99549263be949351860c7abeeae6c813cbc3bd1ab13d1706e13f3b8feb8",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/gem-emerald-polish-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/gem-emerald-polish-round4-20261007.png",
+      "bytes": 1299028,
+      "sha256": "68694dac012219ba6bd18be63ab9303d68600e042e885aa4d878af284be71e1d",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/gem-gold-finish-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/gem-gold-finish-round4-20261007.png",
+      "bytes": 1187842,
+      "sha256": "5c8a81d8e26f870a7fe988aab8f5d87d0fdf6cc50ba56ffad1442fc6537bfb8a",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/gem-onyx-polish-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/gem-onyx-polish-round4-20261007.png",
+      "bytes": 1345197,
+      "sha256": "3ed1530e8f98a7ee0d33049519a9e0b8a37570ce39165e2522b261a0805c69e2",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/gem-ruby-polish-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/gem-ruby-polish-round4-20261007.png",
+      "bytes": 1323541,
+      "sha256": "a2d2f81773715747a181fd39b35c095aa34932d3ac70aeffee510ece4a97f9aa",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/gem-sapphire-finish-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/gem-sapphire-finish-round4-20261007.png",
+      "bytes": 1298268,
+      "sha256": "59f8c59ff463249aff5759d87d5621214f593e02032488bc16c41074043fca08",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/nobles-a.jpg",
+      "dest": "public/handoff/assets/games/splendor/nobles-a.jpg",
+      "bytes": 846387,
+      "sha256": "e336034ad2f8cf2750c587763fe0f1423d8c21dc878c43dc8dc4a40728ecbd48",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/nobles-b.jpg",
+      "dest": "public/handoff/assets/games/splendor/nobles-b.jpg",
+      "bytes": 825278,
+      "sha256": "c36406d3637f2bc33d6b9ce4a921e19a49782284746b743e9a5d58c2a88add5a",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/renaissance-tier1-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/renaissance-tier1-20261007.png",
+      "bytes": 3441601,
+      "sha256": "80bcf2fcb127185af81cf42fd35743b099e376255a08b631e6d090e6a78724f7",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/renaissance-tier2-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/renaissance-tier2-20261007.png",
+      "bytes": 3680985,
+      "sha256": "d3593a29c0651e4d3a12e26c4eb65b45db2ecc225f8f54e26bd093ce2472bd6b",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/renaissance-tier2-caravan-round3-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/renaissance-tier2-caravan-round3-20261007.png",
+      "bytes": 3344055,
+      "sha256": "19433de50f8f6a6a53d4ec936c63484ec73ef64f50a81d318c524510485febcb",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/renaissance-tier2-ledger-round3-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/renaissance-tier2-ledger-round3-20261007.png",
+      "bytes": 2887104,
+      "sha256": "187c22c471ed10ab546d107637ca32a56d84e41a4a8455501cc392305aeb71c5",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/renaissance-tier2-warehouse-round3-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/renaissance-tier2-warehouse-round3-20261007.png",
+      "bytes": 3283569,
+      "sha256": "7d7333e010f65b5be9a939b2455050f79f406fd4dd8d506955264347d3cc36a7",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/renaissance-tier3-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/renaissance-tier3-20261007.png",
+      "bytes": 3619712,
+      "sha256": "99f9b96b5e7eea989b9270c140d9e02e030fd52f3ff2c2bfe2f5559453cf9d4f",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/renaissance-tier3-cathedral-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/renaissance-tier3-cathedral-round4-20261007.png",
+      "bytes": 2893222,
+      "sha256": "54542bc411d5cbceecb8ecec71f345f3522e6ae4fbaeaeb98c326aebe74c7cde",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/renaissance-tier3-harbor-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/renaissance-tier3-harbor-round4-20261007.png",
+      "bytes": 3221384,
+      "sha256": "566d821ea626af01e345ac5880dfdb73dde599fa9f4d4ab3fa9bbe0dc7fb5249",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/teal-velour-calm-round4-20261007.png",
+      "dest": "public/handoff/assets/games/splendor/teal-velour-calm-round4-20261007.png",
+      "bytes": 3036261,
+      "sha256": "bd66a0b2b7948e2ee43e8b183ed948d3ff241e17229c5775499174424df9cf70",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/tier-back-1-20261005.png",
+      "dest": "public/handoff/assets/games/splendor/tier-back-1-20261005.png",
+      "bytes": 3400223,
+      "sha256": "18938ad6d49dff10fef9e5ec503e0a5ec47f4847315c2429df81779b454c9392",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/tier-back-2-20261005.png",
+      "dest": "public/handoff/assets/games/splendor/tier-back-2-20261005.png",
+      "bytes": 3707696,
+      "sha256": "b8ffdd408b79fcda584f8bea2ab00ccc1d3b1fcf70cea19897a1ab787a188184",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/tier-back-3-20261005.png",
+      "dest": "public/handoff/assets/games/splendor/tier-back-3-20261005.png",
+      "bytes": 3464861,
+      "sha256": "200a0c4b0b6b72ed4633d5ba91273063b95cbd7bf65677178bea5d6e81de1902",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/games/splendor/tier-backs-provenance-20261005.json",
+      "dest": "public/handoff/assets/games/splendor/tier-backs-provenance-20261005.json",
+      "bytes": 1062,
+      "sha256": "6d7b564f48489353a2c8665ab5aeb7c0b7ec0ebd77f890af3ff3be32c91f0961",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/arthur/arthur-expressions.4096/texture_00.png",
+      "dest": "public/handoff/assets/live2d/arthur/arthur-expressions.4096/texture_00.png",
+      "bytes": 4410501,
+      "sha256": "64bd1c45f9f75e1228107b5c99ea5c8a8d14c44bd7a2878c15b78441f188a33a",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/arthur/arthur-expressions.cdi3.json",
+      "dest": "public/handoff/assets/live2d/arthur/arthur-expressions.cdi3.json",
+      "bytes": 4806,
+      "sha256": "935a40b34a6be1f1b04c4df8b2cc3b648fba5f70910abdab8a8213aa07a534df",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/arthur/arthur-expressions.moc3",
+      "dest": "public/handoff/assets/live2d/arthur/arthur-expressions.moc3",
+      "bytes": 373568,
+      "sha256": "047e051a47f4eac96f68446d96a8e5d993a828319992eec05fcebb1da803785f",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/arthur/arthur-expressions.model3.json",
+      "dest": "public/handoff/assets/live2d/arthur/arthur-expressions.model3.json",
+      "bytes": 479,
+      "sha256": "b836f8eec002fb35969718fb6194840a53039bc8784eb2adc2407c983206c07b",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/iris/iris-expressions.4096/texture_00.png",
+      "dest": "public/handoff/assets/live2d/iris/iris-expressions.4096/texture_00.png",
+      "bytes": 3633227,
+      "sha256": "27ad28e7b28994fd4b9f47145d332ff10dc896fac0810f1d0007e46f0bdf31e2",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/iris/iris-expressions.moc3",
+      "dest": "public/handoff/assets/live2d/iris/iris-expressions.moc3",
+      "bytes": 744640,
+      "sha256": "a53e1e6898e5ddb216052d5da3a743636ce24532a42a94d24c72ba70a159d53e",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/iris/iris-expressions.model3.json",
+      "dest": "public/handoff/assets/live2d/iris/iris-expressions.model3.json",
+      "bytes": 151,
+      "sha256": "b29dc946a739ff99d8bd64e6f0bab2d636a6a5cecf2a508ff7056409d743c7a7",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.4096/texture_00.png",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.4096/texture_00.png",
+      "bytes": 4121445,
+      "sha256": "cc41ed45da39ec00463401a0a8b72e0d5f4a7833f6a75a57731980a816deb18d",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.blink.motion3.json",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.blink.motion3.json",
+      "bytes": 1155,
+      "sha256": "399f91b7bfac0666f589ab7c6daace5e33e5c6d6e7c6e7ca4024b6db48a65110",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.cdi3.json",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.cdi3.json",
+      "bytes": 4775,
+      "sha256": "d49cffc7d49ef9c4ecd34a37b569d54c362ef70bf45f40f2e45857ab805612fd",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.idle.motion3.json",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.idle.motion3.json",
+      "bytes": 15999,
+      "sha256": "14674d50d8765df706ac253975629f7cffe97a2442248a41af59f68d9cd3f2dc",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.moc3",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.moc3",
+      "bytes": 367488,
+      "sha256": "91ade7978c80712860740e997eba5393686bb1f4948b622791eb6980659548c1",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.model3.json",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.model3.json",
+      "bytes": 821,
+      "sha256": "7196fc113aa14e4f469a5303ba6dbe5678e243d1dd7df3889d2379868e716dcc",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.nod.motion3.json",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.nod.motion3.json",
+      "bytes": 1751,
+      "sha256": "bfd9a247d5ec8479145c2dddfd5fdbf03e1c46df8d7460f07badd146c1e19418",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.physics3.json",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.physics3.json",
+      "bytes": 6067,
+      "sha256": "3ecf3dd44c55bbae30295d2ebb7a05213660f35c90b15ba1be57f4092d563f14",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/lena/lena-soft-anime-v2.shake.motion3.json",
+      "dest": "public/handoff/assets/live2d/lena/lena-soft-anime-v2.shake.motion3.json",
+      "bytes": 1573,
+      "sha256": "81f50690b925cab5487c64cd1fc9781485a141f758a1f7085d36f0596bbfe54b",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.4096/texture_00.png",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.4096/texture_00.png",
+      "bytes": 6993215,
+      "sha256": "44c0b0979b5c11f441aa85a8f1f1a72e4f2035b7c7cd38ae7ee977a2edf12d7e",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.blink.motion3.json",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.blink.motion3.json",
+      "bytes": 1155,
+      "sha256": "399f91b7bfac0666f589ab7c6daace5e33e5c6d6e7c6e7ca4024b6db48a65110",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.cdi3.json",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.cdi3.json",
+      "bytes": 4690,
+      "sha256": "a093f6ad5c430acb51a78a0ed1770744e4094d99d25b4dbc67822f380d8ce281",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.demo.motion3.json",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.demo.motion3.json",
+      "bytes": 534751,
+      "sha256": "7a569d0cca4e81050a647f8cf62de7d4402dfe8596104c4db4172d4d46828ced",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.idle.motion3.json",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.idle.motion3.json",
+      "bytes": 15999,
+      "sha256": "14674d50d8765df706ac253975629f7cffe97a2442248a41af59f68d9cd3f2dc",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.moc3",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.moc3",
+      "bytes": 365120,
+      "sha256": "d50f76fa6a7902a06add8d5c76f9287c987dc82fd0efd467cd3989bf9ddc0c60",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.model3.json",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.model3.json",
+      "bytes": 1020,
+      "sha256": "0b1eee2591d68b250a3478412115ab4d4ec6a444ae9ecbc9bb80e44a5064b556",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.nod.motion3.json",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.nod.motion3.json",
+      "bytes": 1751,
+      "sha256": "bfd9a247d5ec8479145c2dddfd5fdbf03e1c46df8d7460f07badd146c1e19418",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.physics3.json",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.physics3.json",
+      "bytes": 365,
+      "sha256": "68b5bbd65277b275fd682162db31f7ab442dba349997cab91b3100b214b3e2fd",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/marcus/marcus-live2d.shake.motion3.json",
+      "dest": "public/handoff/assets/live2d/marcus/marcus-live2d.shake.motion3.json",
+      "bytes": 1573,
+      "sha256": "81f50690b925cab5487c64cd1fc9781485a141f758a1f7085d36f0596bbfe54b",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.4096/texture_00.png",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.4096/texture_00.png",
+      "bytes": 9926737,
+      "sha256": "e1674a86cade714845c4531b3d4c7910e3c682191986443a1e2f7d238b3dfe86",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.blink.motion3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.blink.motion3.json",
+      "bytes": 821,
+      "sha256": "31fad947cc4e9921127fe6ed91ac368d090e403dc3de882a30397695571c9e23",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.cdi3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.cdi3.json",
+      "bytes": 5008,
+      "sha256": "9c1d3ed06e4e54e622fce292bd60ad4910bdb908bfc174331cf7bc66f0938691",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.demo.motion3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.demo.motion3.json",
+      "bytes": 513938,
+      "sha256": "ca809956ec28127cece96a60a191d23ae05cdaa63dac3429bb0be1313bb70973",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.idle.motion3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.idle.motion3.json",
+      "bytes": 10958,
+      "sha256": "ac87e827a8b4c21762d65b932b17d009caf77e1982a967a6039623d71061fbcb",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.moc3",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.moc3",
+      "bytes": 635968,
+      "sha256": "d3eb973f5044ac9e7d14f2e348ef5c6c0d2b7b3b1f4c46814f4f9c1c427c2b5c",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.model3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.model3.json",
+      "bytes": 1279,
+      "sha256": "7f1fc4dbf08034bc7039e5584c4e4f3eb31e9c2559e9e46d474d24e4eb904331",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.nod.motion3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.nod.motion3.json",
+      "bytes": 1230,
+      "sha256": "638ca6b03345727a79ff9d4a83ad736628dad8f44c16c66c0ae61fc0bb7c6218",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.physics3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.physics3.json",
+      "bytes": 6072,
+      "sha256": "3c9299431c1f86d2fe936b84a9920c6bb9af3a3a87d2edec3f561fbee327abe7",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.shake.motion3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.shake.motion3.json",
+      "bytes": 1093,
+      "sha256": "51d13c274f3ad4ecd1c8b28dd12fb14b740d234eca321e3594648dd32a995317",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/live2d/nora/nora-expressions.showcase.motion3.json",
+      "dest": "public/handoff/assets/live2d/nora/nora-expressions.showcase.motion3.json",
+      "bytes": 514376,
+      "sha256": "b03a16ea38b47fac943f93bd56fcac383f6d5e1f8f564dbcf3a30ba9ef65b711",
+      "rights": "private-user-authorized; commercial-redistribution-unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Core/LICENSE.md",
+      "dest": "public/handoff/assets/runtime/cubism/Core/LICENSE.md",
+      "bytes": 520,
+      "sha256": "b81e37048010ef1d336106151201a0323c3309cae44aecdedf57831fe88fa991",
+      "rights": "original SDK notice; no new acceptance",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Core/live2dcubismcore.min.js",
+      "dest": "public/handoff/assets/runtime/cubism/Core/live2dcubismcore.min.js",
+      "bytes": 228042,
+      "sha256": "8741f739779b5d5210872bd3d7d99f0f1e56e6c87409e7d26d6bb4b80aa1ef47",
+      "rights": "existing Core notices; no new agreement accepted; redistribution unverified",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/LICENSE.md",
+      "dest": "src/vendor/cubism-framework/LICENSE.md",
+      "bytes": 2234,
+      "sha256": "7ed849bff1e6499aa7cd882e47d246ddbbe06817c1e84cb974df949488302614",
+      "rights": "original SDK notice; no new acceptance",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcalphablend.frag",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcalphablend.frag",
+      "bytes": 2189,
+      "sha256": "855b247f02042a808a41e282ee4d7de7cc4533abeb5032b4ab8fe84f7dec107f",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrccolorblend.frag",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrccolorblend.frag",
+      "bytes": 7525,
+      "sha256": "01d4bf6a14b4a738976e9a538767a21da0defa8816f3845a7df08a7713327538",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrccopy.frag",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrccopy.frag",
+      "bytes": 429,
+      "sha256": "15c67a4ec3adda4c849aff2a8319a3f6aceef8a84d5e5e1f3fb7fd9cd681193c",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcmaskinvertedpremultipliedalpha.frag",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcmaskinvertedpremultipliedalpha.frag",
+      "bytes": 1051,
+      "sha256": "1005cff8113de587cf1c0e295288d04d85f0f4ebc223684c8340e017fd8fc788",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcmaskpremultipliedalpha.frag",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcmaskpremultipliedalpha.frag",
+      "bytes": 1043,
+      "sha256": "f84ff615393d26ea6ab7c28747803db6472524c92567c0ad01e8225fbab36a3b",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcpremultipliedalpha.frag",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcpremultipliedalpha.frag",
+      "bytes": 747,
+      "sha256": "c93abe215357cc782a25fc4ef20f5fe1f34e2cc193ee23d763b56b81fae5fce1",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcpremultipliedalphablend.frag",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcpremultipliedalphablend.frag",
+      "bytes": 2038,
+      "sha256": "2155076275199a2946959838391dfb856e9d1db91b6ca3abd19ed70d4ff27e15",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcsetupmask.frag",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/fragshadersrcsetupmask.frag",
+      "bytes": 736,
+      "sha256": "3cccc0b68a56cfbf4bd4841b0a759431dd159812c38dc280981ba633fa0afe7a",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrc.vert",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrc.vert",
+      "bytes": 465,
+      "sha256": "291ed3f35f71f1e71e6df33fb055f009a8a9b36ee664f74f24f6cefef0c4029b",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrcblend.vert",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrcblend.vert",
+      "bytes": 738,
+      "sha256": "2589837bd7a6a550a1c3af41b4fa776011e6e71f2531320fa39afcb83b209bf4",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrccopy.vert",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrccopy.vert",
+      "bytes": 392,
+      "sha256": "b7bc4ba7517f405af4812ac47d99bc2b633c99f463c1224029556b00e8dff3cf",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrcmasked.vert",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrcmasked.vert",
+      "bytes": 559,
+      "sha256": "6704a9df2e6d3ee5176c72fca4ba59358ba4827a07054b1e0a72a3c574e281fd",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrcsetupmask.vert",
+      "dest": "public/handoff/assets/runtime/cubism/Framework/Shaders/WebGL/vertshadersrcsetupmask.vert",
+      "bytes": 536,
+      "sha256": "649aad2f6c0af55a7a4adcf33dbf78937ef9d77ed6ba917fd716176adce25afe",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/cubismdefaultparameterid.ts",
+      "dest": "src/vendor/cubism-framework/src/cubismdefaultparameterid.ts",
+      "bytes": 5783,
+      "sha256": "f92e20db8145f06b73728fb6ba4215bbaed723e26959471f2e291962142c95b5",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/cubismframeworkconfig.ts",
+      "dest": "src/vendor/cubism-framework/src/cubismframeworkconfig.ts",
+      "bytes": 1111,
+      "sha256": "92399ad1a572ec6048ea351ce4363b357f6f86471f9edb4af84bb7e16790828b",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/cubismmodelsettingjson.ts",
+      "dest": "src/vendor/cubism-framework/src/cubismmodelsettingjson.ts",
+      "bytes": 24382,
+      "sha256": "58ff868afbdab05f905782be3ae411c787ad0c9c3e79ad254fc596d08bbe0b6e",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/effect/cubismbreath.ts",
+      "dest": "src/vendor/cubism-framework/src/effect/cubismbreath.ts",
+      "bytes": 3765,
+      "sha256": "06da2c2c10e91782fb99833c94842e6267dc996ddb35a1bfb99765f053c7729a",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/effect/cubismeyeblink.ts",
+      "dest": "src/vendor/cubism-framework/src/effect/cubismeyeblink.ts",
+      "bytes": 7222,
+      "sha256": "a1c26cfcf2656424f370e17d4b4cb0f9642db2dd452af8f562c67ced26ba64de",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/effect/cubismlook.ts",
+      "dest": "src/vendor/cubism-framework/src/effect/cubismlook.ts",
+      "bytes": 3657,
+      "sha256": "3c7f7dbea7b34c524bcf36fb5a15f9264d4a8a7228f5b124fdaddb2c82193f21",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/effect/cubismpose.ts",
+      "dest": "src/vendor/cubism-framework/src/effect/cubismpose.ts",
+      "bytes": 11698,
+      "sha256": "8eba3f692c8cd267ca75664d035565c6f61ac38201c56e7e2aa04389b964f1c2",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/icubismallcator.ts",
+      "dest": "src/vendor/cubism-framework/src/icubismallcator.ts",
+      "bytes": 1932,
+      "sha256": "d0c3a178e6c6b86697117eac21cd7faa422bf180b4cc84adecfc3491c573055f",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/icubismmodelsetting.ts",
+      "dest": "src/vendor/cubism-framework/src/icubismmodelsetting.ts",
+      "bytes": 6652,
+      "sha256": "87543afb93a5938211c08c2e5ae0116d0fd2bd813f92f3b5f48cf38105b1cf39",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/id/cubismid.ts",
+      "dest": "src/vendor/cubism-framework/src/id/cubismid.ts",
+      "bytes": 2281,
+      "sha256": "ff10538238bcda0a97756bf3e6017409acfdb901657174e7f6a027b965d34ee0",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/id/cubismidmanager.ts",
+      "dest": "src/vendor/cubism-framework/src/id/cubismidmanager.ts",
+      "bytes": 2413,
+      "sha256": "1ae3c3b2de5462d1bf6a98b5878eb7228d228d67adc7426bf549702fe6a5551e",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/live2dcubismframework.ts",
+      "dest": "src/vendor/cubism-framework/src/live2dcubismframework.ts",
+      "bytes": 8900,
+      "sha256": "dc20093ded82ed6704d94a443fa28961ba23aefb64fb76b9be35c8de869bd934",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/math/cubismmath.ts",
+      "dest": "src/vendor/cubism-framework/src/math/cubismmath.ts",
+      "bytes": 9603,
+      "sha256": "2e6816bfcecc459bb1c8bd7fcaa03f971b2545c90a9c75a7236cca9a0c282961",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/math/cubismmatrix44.ts",
+      "dest": "src/vendor/cubism-framework/src/math/cubismmatrix44.ts",
+      "bytes": 8038,
+      "sha256": "aa81745acf70315c536d0bada6cc422822765b2f44f8088a2ccea6cb6f9edc0d",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/math/cubismmodelmatrix.ts",
+      "dest": "src/vendor/cubism-framework/src/math/cubismmodelmatrix.ts",
+      "bytes": 4715,
+      "sha256": "31e8787385c4c26d78d2f627f373d7a446db1a72d38f247a442a9bc9de42ee0f",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/math/cubismtargetpoint.ts",
+      "dest": "src/vendor/cubism-framework/src/math/cubismtargetpoint.ts",
+      "bytes": 5764,
+      "sha256": "b09812890e639d89f96e0b1774a4ccdc076d1174fcb3daa95b0acd8102285999",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/math/cubismvector2.ts",
+      "dest": "src/vendor/cubism-framework/src/math/cubismvector2.ts",
+      "bytes": 4153,
+      "sha256": "369b0c0b842432f7156827bf77047276fb23b10301d9f5d40762497b9f75372d",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/math/cubismviewmatrix.ts",
+      "dest": "src/vendor/cubism-framework/src/math/cubismviewmatrix.ts",
+      "bytes": 8345,
+      "sha256": "3276768bd6efbe287a3384eb1960f6c1901f10137f38396096a9e8e84b9a65f5",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/model/cubismmoc.ts",
+      "dest": "src/vendor/cubism-framework/src/model/cubismmoc.ts",
+      "bytes": 3675,
+      "sha256": "99a80e2102af7b3ba10b15d684f965930707018b6b239a0ce6d14e3a867f266b",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/model/cubismmodel.ts",
+      "dest": "src/vendor/cubism-framework/src/model/cubismmodel.ts",
+      "bytes": 62659,
+      "sha256": "fa4c21a270b3d18ae9f550cebf181d54504cf4b4198f1eeba6d0f3c55d7055a5",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/model/cubismmodelmultiplyandscreencolor.ts",
+      "dest": "src/vendor/cubism-framework/src/model/cubismmodelmultiplyandscreencolor.ts",
+      "bytes": 31866,
+      "sha256": "478b4fb805e6d4b5c450a58f29eaebcf75d176f87421797e218b0e3542a3b4b3",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/model/cubismmodeluserdata.ts",
+      "dest": "src/vendor/cubism-framework/src/model/cubismmodeluserdata.ts",
+      "bytes": 4248,
+      "sha256": "d4aaf59e04f834de345e0f9f1cced1062c28c9b1203bf09da17a0a8c2dddb6c4",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/model/cubismmodeluserdatajson.ts",
+      "dest": "src/vendor/cubism-framework/src/model/cubismmodeluserdatajson.ts",
+      "bytes": 3035,
+      "sha256": "4c8f546a393ac47bf8245dd8f7ae65e50eb61518578c33c3ad28ef23b2ffa4c1",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/model/cubismusermodel.ts",
+      "dest": "src/vendor/cubism-framework/src/model/cubismusermodel.ts",
+      "bytes": 15104,
+      "sha256": "41707e75f0ab36808a3ba42d40a477d0b33e7c7da73cbce5a3de0771bd957a9c",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/acubismmotion.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/acubismmotion.ts",
+      "bytes": 14092,
+      "sha256": "649524b171f1a3ab8588a16dcb707a4f0da848f7fb87ad2b34148e0eea45ee08",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismbreathupdater.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismbreathupdater.ts",
+      "bytes": 1698,
+      "sha256": "57acaadd41e6dac1ca31f69521166edf8366508e3dcf21ce9279687df72080df",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismexpressionmotion.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismexpressionmotion.ts",
+      "bytes": 12157,
+      "sha256": "20a75e357391116974a589fe8a9e5da3234cd214a214df94407f29b0152e86c5",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismexpressionmotionmanager.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismexpressionmotionmanager.ts",
+      "bytes": 9079,
+      "sha256": "17a12b23cf811cf8c7794b67beef53d47b10070ebd1d05a87becafe4a03fc403",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismexpressionupdater.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismexpressionupdater.ts",
+      "bytes": 1989,
+      "sha256": "75fcf716ce50acd81c4d5f3e1179c6557e32fa4b8960d373aa36fe2734ec0c1b",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismeyeblinkupdater.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismeyeblinkupdater.ts",
+      "bytes": 2187,
+      "sha256": "a7e90b32cc8d47600ee0b2da44106efe4ea2a915556ccb28d6aa7f3ff93a5dcc",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismlipsyncupdater.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismlipsyncupdater.ts",
+      "bytes": 3003,
+      "sha256": "390bc6da44e9d2b38704b990cbbe31442b562eeb2b7d4bc1a17a1a94034958a3",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismlookupdater.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismlookupdater.ts",
+      "bytes": 2155,
+      "sha256": "a8fc4734ae53fa0f1b65b38a5358e6e7a456429a2743fc20f5fad637659bae18",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismmotion.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismmotion.ts",
+      "bytes": 37913,
+      "sha256": "eb3e8862f60feedd12bc47300d8486b044c39a8af21e66f12613ce941c8fa5f6",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismmotioninternal.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismmotioninternal.ts",
+      "bytes": 4928,
+      "sha256": "ede0f46ebdd0f4e0c25f5ba1825f6bccf658a463e08c0bc72a8af26230865805",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismmotionjson.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismmotionjson.ts",
+      "bytes": 12496,
+      "sha256": "92eb9dd6fbe6086e02952fec021cf0daa68a3fc335ae88dd19ee281591b34c64",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismmotionmanager.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismmotionmanager.ts",
+      "bytes": 3821,
+      "sha256": "7e88b825f99e4cbc1fd13ae07a7f5063a20ef9d96bf86855e426fb221813e72d",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismmotionqueueentry.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismmotionqueueentry.ts",
+      "bytes": 7248,
+      "sha256": "4619da4891829c7f8f5741a4b7f711a6cc2beb9fa06075a2b8caefec20b2ea19",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismmotionqueuemanager.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismmotionqueuemanager.ts",
+      "bytes": 10707,
+      "sha256": "1aa0f6a39ffe9d83e0e06217a9cf6ebdf3a6e593242ff84d08684bbd2f4a01bb",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismphysicsupdater.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismphysicsupdater.ts",
+      "bytes": 1719,
+      "sha256": "003fda6b8a6537b75fff8f0cd4894d9f7f9ee0a1f668197d91d497adab3dbdd9",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismposeupdater.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismposeupdater.ts",
+      "bytes": 1644,
+      "sha256": "58658839ea9aab83da69b91d6e54b9825ddb80cca47ee5c1cef615715e58c28e",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/cubismupdatescheduler.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/cubismupdatescheduler.ts",
+      "bytes": 5149,
+      "sha256": "ab59717783d79bf3675e55cf2037683cced648bca4a47dcb438c78184c9b1b5e",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/icubismupdater.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/icubismupdater.ts",
+      "bytes": 3688,
+      "sha256": "ba937ffd59bc52f4de426aadac4269630e0267d36b5ba9acab788993f586feea",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/motion/iparameterprovider.ts",
+      "dest": "src/vendor/cubism-framework/src/motion/iparameterprovider.ts",
+      "bytes": 1156,
+      "sha256": "c0b8c01f855dcf4e25a08ad19afb5136d8f92f3d6536ba125194c649df140b0b",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/physics/cubismphysics.ts",
+      "dest": "src/vendor/cubism-framework/src/physics/cubismphysics.ts",
+      "bytes": 44141,
+      "sha256": "41457e7486d380825f30936e34951c0de5362769e8229b99c28702a5a398d734",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/physics/cubismphysicsinternal.ts",
+      "dest": "src/vendor/cubism-framework/src/physics/cubismphysicsinternal.ts",
+      "bytes": 8981,
+      "sha256": "db6ee02fe53f01f9575149d33ae44fc69876b32225da921b44bfc8a6d294082b",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/physics/cubismphysicsjson.ts",
+      "dest": "src/vendor/cubism-framework/src/physics/cubismphysicsjson.ts",
+      "bytes": 17868,
+      "sha256": "cc52bf67990131e322626729a044640b016e57b42dde80c0dfd4054af815d9b2",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/rendering/cubismclippingmanager.ts",
+      "dest": "src/vendor/cubism-framework/src/rendering/cubismclippingmanager.ts",
+      "bytes": 38519,
+      "sha256": "b38ca529a5bedac4eaa0d0ff04ae4ccaaaf3173d04250dc01af4e88e72730ec9",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/rendering/cubismoffscreenmanager.ts",
+      "dest": "src/vendor/cubism-framework/src/rendering/cubismoffscreenmanager.ts",
+      "bytes": 18723,
+      "sha256": "06c8d8c7c7fcdafd126f5f01881a023f8a4158c6222cf54e4672bd35a0609ebc",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/rendering/cubismoffscreenrendertarget_webgl.ts",
+      "dest": "src/vendor/cubism-framework/src/rendering/cubismoffscreenrendertarget_webgl.ts",
+      "bytes": 7489,
+      "sha256": "04ae8ccfa59c8dc1f43528ec0ceccd06b4180e582c802d14e38a1eaf14c0694c",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/rendering/cubismrenderer.ts",
+      "dest": "src/vendor/cubism-framework/src/rendering/cubismrenderer.ts",
+      "bytes": 13697,
+      "sha256": "42f6fa6343effdb9085cd1cd49b62f06f6e172483583c3cf325e0859aee8f9c8",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/rendering/cubismrenderer_webgl.ts",
+      "dest": "src/vendor/cubism-framework/src/rendering/cubismrenderer_webgl.ts",
+      "bytes": 62458,
+      "sha256": "f054aa514bf1ee4d162698de62bc3565d8e18ef348dd9234d6dab1e78bc0e678",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/rendering/cubismrendertarget_webgl.ts",
+      "dest": "src/vendor/cubism-framework/src/rendering/cubismrendertarget_webgl.ts",
+      "bytes": 8511,
+      "sha256": "8948ac1fb66fd32a289d9e07929ef2d8e41c6deb103948e54faa6f45ebad8f21",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/rendering/cubismshader_webgl.ts",
+      "dest": "src/vendor/cubism-framework/src/rendering/cubismshader_webgl.ts",
+      "bytes": 70603,
+      "sha256": "daf9bfcbed82f4763e401fbc1ccf740e1da0a99943dbec6afb3cdfb6c3d94a32",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/type/csmrectf.ts",
+      "dest": "src/vendor/cubism-framework/src/type/csmrectf.ts",
+      "bytes": 2019,
+      "sha256": "c199fdc276d2d66ed3abd140b137a3e127fc52b5735869849d450eacd5f416d8",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/utils/cubismarrayutils.ts",
+      "dest": "src/vendor/cubism-framework/src/utils/cubismarrayutils.ts",
+      "bytes": 1073,
+      "sha256": "0f63d3a9e6f25a097905503ccedfe21130b6b857238569341628f158d44afa60",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/utils/cubismdebug.ts",
+      "dest": "src/vendor/cubism-framework/src/utils/cubismdebug.ts",
+      "bytes": 5369,
+      "sha256": "0a526141825d6a980d838e95fc6856a4362173674bb6469d8bd40d054e9e7520",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/utils/cubismjson.ts",
+      "dest": "src/vendor/cubism-framework/src/utils/cubismjson.ts",
+      "bytes": 29319,
+      "sha256": "39d9f1806b7a6909098e1b8e2b7a1af567bbd0d6800b25beeaba4cb857c7b9f0",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/utils/cubismjsonextension.ts",
+      "dest": "src/vendor/cubism-framework/src/utils/cubismjsonextension.ts",
+      "bytes": 3691,
+      "sha256": "31e7a859c82c05e869651538077bb784737c459f6408a7aa3d460ba2697f3ddd",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/Framework/src/utils/cubismstring.ts",
+      "dest": "src/vendor/cubism-framework/src/utils/cubismstring.ts",
+      "bytes": 3356,
+      "sha256": "746c4da878164ecb6444addf2934e9086897b08f0fb68fb1a5f85132f5f76a7c",
+      "rights": "existing Framework license; inspect original notice",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/LICENSE.md",
+      "dest": "public/handoff/assets/runtime/cubism/LICENSE.md",
+      "bytes": 3042,
+      "sha256": "787a7d1454240865420b96ea9a20ab5e1a5ec3c1abced2e308288c2de8aac991",
+      "rights": "original SDK notice; no new acceptance",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "assets/runtime/cubism/README.md",
+      "dest": "public/handoff/assets/runtime/cubism/README.md",
+      "bytes": 585,
+      "sha256": "bf7a11a4106f24d8a84e95f00f83f9c92d49ad8e4d06ba8a63139321c3e9fc15",
+      "rights": "see handoff 08_ASSETS_AND_RIGHTS.md",
+      "status": null
+    },
+    {
+      "rel": "assets/runtime/cubism/SDK_README_ORIGINAL.txt",
+      "dest": "public/handoff/assets/runtime/cubism/SDK_README_ORIGINAL.txt",
+      "bytes": 5576,
+      "sha256": "86272765f67de6cc527ea2e6bd4a0006681a1326c5de927475a50c2741857772",
+      "rights": "original SDK notice; no new acceptance",
+      "status": "reference; not product acceptance"
+    },
+    {
+      "rel": "verification/MODEL_PINS.json",
+      "dest": "public/handoff/verification/MODEL_PINS.json",
+      "bytes": 4456,
+      "sha256": "b44cff064eb2631d3d5217d1d57c1b4efcd38d0ed74b58d0ed0689cc1dc7b126",
+      "rights": "handoff verification metadata",
+      "status": null
+    }
+  ],
+  "missing": [],
+  "mismatched": []
+}
