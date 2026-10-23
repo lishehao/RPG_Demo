@@ -21,7 +21,7 @@ frontend2/                         current React app
   src/pages/world/                 template detail + fork
   src/pages/play/                  playable session + reviewer inspector
   src/pages/replay/                public replay + fork CTA
-  src/pages/portfolio/             admissions/reviewer entry points
+  src/pages/portfolio/             reviewer entry points
 
 rpg_backend/main.py                FastAPI route boundary, auth, quota guards
 rpg_backend/narrative/             current template/session narrative runtime

@@ -201,8 +201,8 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert 'data-portfolio-public-evidence-gate-details="true"' in gate_after_order
     assert "How to verify public links" in gate_after_order
     assert "PORTFOLIO_REVIEWER_CUT_POSTER" in portfolio
-    assert "/portfolio/admissions-trailer-contact.jpg" in portfolio
-    assert (ROOT / "frontend2/public/portfolio/admissions-trailer-contact.jpg").exists()
+    assert "/portfolio/demo-trailer-contact.jpg" in portfolio
+    assert (ROOT / "frontend2/public/portfolio/demo-trailer-contact.jpg").exists()
     assert "portfolio-video-card" in portfolio
     assert "<iframe" not in portfolio
     assert "YOUTUBE_DEMO_EMBED_URL" not in portfolio
@@ -249,7 +249,7 @@ def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
     readme = (ROOT / "README.md").read_text()
     hero_block = readme.split("</p>", 1)[0]
 
-    assert "./docs/demo-video/admissions-trailer-contact.jpg" in hero_block
+    assert "./docs/demo-video/demo-trailer-contact.jpg" in hero_block
     assert "product UI and reviewer evidence" in hero_block
     assert "./docs/images/social-preview.jpg" not in hero_block
     readme_top = readme[:readme.index("<table>")]
@@ -494,7 +494,7 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     readme = (ROOT / "README.zh.md").read_text()
     hero_block = readme.split("</p>", 1)[0]
 
-    assert "./docs/demo-video/admissions-trailer-contact.jpg" in hero_block
+    assert "./docs/demo-video/demo-trailer-contact.jpg" in hero_block
     assert "product UI and reviewer evidence" in hero_block
     assert "./docs/images/hero.jpg" not in hero_block
     readme_top = readme[:readme.index("## 项目状态")]
@@ -520,7 +520,7 @@ def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
     assert "是否产生复玩/分享意愿" in readme
     assert "## Demo" in readme
     assert "[观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)" in readme
-    assert "[打开 MP4 备份](./docs/demo-video/tiny-stories-admissions-demo-readme.mp4)" in readme
+    assert "[打开 MP4 备份](./docs/demo-video/tiny-stories-demo-readme.mp4)" in readme
     assert "[公开链接检查通过后再打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)" in readme
     assert "视频用于快速理解玩家看到的 loop" in readme
     assert "真正的申请材料证据仍然在 source、tests" in readme
@@ -897,8 +897,8 @@ def test_demo_video_script_separates_trailer_seed_from_live_reviewer_seed() -> N
         assert stale not in script
 
 
-def test_chinese_admissions_demo_script_matches_current_product_flow() -> None:
-    script = (ROOT / "docs/demo-video/admissions-demo-script.zh.md").read_text()
+def test_chinese_trailer_demo_script_matches_current_product_flow() -> None:
+    script = (ROOT / "docs/demo-video/trailer-demo-script.zh.md").read_text()
 
     assert "playable AI story loop" in script
     assert "真实 UI" in script

@@ -215,7 +215,7 @@ def test_public_page_markers_cover_current_reviewer_path_language() -> None:
     assert PUBLIC_APP_MARKERS == (
         "demo/reviewer",
         "Public reviewer demo",
-        "Static reviewer path for admissions review",
+        "Static reviewer path for public review",
         "The Missing Singer Broadcast",
         "deterministic story state",
     )

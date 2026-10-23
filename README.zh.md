@@ -1,7 +1,7 @@
 # Tiny Stories
 
 <p align="center">
-  <img src="./docs/demo-video/admissions-trailer-contact.jpg" alt="Tiny Stories 招生 demo contact sheet：product UI and reviewer evidence" width="100%" />
+  <img src="./docs/demo-video/demo-trailer-contact.jpg" alt="Tiny Stories demo contact sheet：product UI and reviewer evidence" width="100%" />
 </p>
 
 <p align="center">
@@ -48,7 +48,7 @@
 ## Demo
 
 - [观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)
-- [打开 MP4 备份](./docs/demo-video/tiny-stories-admissions-demo-readme.mp4)
+- [打开 MP4 备份](./docs/demo-video/tiny-stories-demo-readme.mp4)
 - [公开链接检查通过后再打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)
 - [查看 RPG Runtime Evaluation Lab 接入规范](./docs/RPG_EVALUATION_LAB.md)
 - [打开已部署的 RPG Runtime Evaluation Lab](https://tiny-stories-rpg-evaluation.vercel.app)
@@ -61,7 +61,7 @@ RPG Runtime Evaluation Lab 是一个不依赖后端的公开评测前端。其�
 玩家能动性、目标推进、人物一致性、选择多样性和边界卫生。该分数是确定性产品诊断,
 不是已经校准的学术质量指标。
 
-如果要把公开链接发给招生、推荐人或招聘 reviewer,先运行公开链接检查:
+如果要把公开链接发给推荐人或招聘 reviewer,先运行公开链接检查:
 `python3 tools/portfolio_public_evidence_preflight.py`.如果它提示本地 `HEAD`
 领先 `origin/main`,或 GitHub Pages 缺少当前 marker,这些证据只能算
 local-only.这包括 Story Desk、template detail、portfolio/reviewer 和 play
@@ -71,7 +71,7 @@ template 或 Story Desk 变化被截断输出藏掉.直到目标分支 push、�
 
 ## 申请 / 作品集审阅路径
 
-如果你是招生、推荐人或招聘 reviewer,推荐顺序是:
+如果你是推荐人或招聘 reviewer,推荐顺序是:
 
 1. 先看 75 秒 demo,理解玩家看到的 loop.
 2. 本地运行后打开 `#/portfolio`,看 guided case-study surface.

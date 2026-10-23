@@ -61,7 +61,7 @@ validated retention or broad demand.
 | Deterministic turn scaffolding | The model writes inside a paced game frame. | `rpg_backend/narrative/engine.py` |
 | Advisor side-channel | Help is contextual but cannot silently alter story state. | `ask_advisor`, advisor message table |
 | Replay and fork CTA | A finished run becomes shareable and replayable. | `PublicReplayResponse.template_id` |
-| Reviewer mode | Admissions/recruiting reviewers can inspect state and consequence decisions quickly. | `frontend2/src/pages/portfolio/` |
+| Reviewer mode | Recruiting and technical reviewers can inspect state and consequence decisions quickly. | `frontend2/src/pages/portfolio/` |
 
 ## Safety And Operations
 

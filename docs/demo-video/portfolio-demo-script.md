@@ -31,7 +31,7 @@ Use one polished English seed throughout the recorded video:
 > At my wedding, the groom asks me to sign away my shares before the ceremony starts.
 
 Use the current reviewer run seed for the Portfolio and Reviewer pages
-captures and admissions screenshots:
+captures and trailer screenshots:
 
 > Minutes before the awards livestream, Mira the anxious publicist, Producer Han, Rina the backup dancer witness, Eun Sol the fan-channel reporter, and Choi the sponsor director gather in the control room after singer Seo Mina disappears. Mira must decide what to reveal before sponsors and fans panic, with no violence and no blackmail.
 

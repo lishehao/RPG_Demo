@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://youtu.be/RRJ7uyjW_nA">
-    <img src="./docs/demo-video/admissions-trailer-contact.jpg" alt="Tiny Stories admissions demo contact sheet showing product UI and reviewer evidence" width="100%" />
+    <img src="./docs/demo-video/demo-trailer-contact.jpg" alt="Tiny Stories demo contact sheet showing product UI and reviewer evidence" width="100%" />
   </a>
 </p>
 
@@ -47,7 +47,7 @@
 
 ## Demo
 
-[![Watch the Tiny Stories demo](./docs/demo-video/admissions-trailer-contact.jpg)](https://youtu.be/RRJ7uyjW_nA)
+[![Watch the Tiny Stories demo](./docs/demo-video/demo-trailer-contact.jpg)](https://youtu.be/RRJ7uyjW_nA)
 
 <p align="center">
   <a href="https://youtu.be/RRJ7uyjW_nA"><strong>Watch 75s demo</strong></a>
@@ -58,7 +58,7 @@
   ·
   <a href="https://tiny-stories-rpg-evaluation.vercel.app"><strong>Open deployed evaluation lab</strong></a>
   ·
-  <a href="./docs/demo-video/tiny-stories-admissions-demo-readme.mp4">Open MP4 demo</a>
+  <a href="./docs/demo-video/tiny-stories-demo-readme.mp4">Open MP4 demo</a>
   ·
   <a href="./docs/CURRENT_SYSTEM_MAP.md">Inspect source evidence</a>
 </p>
@@ -82,7 +82,7 @@ Public deployment: <https://tiny-stories-rpg-evaluation.vercel.app>
 
 ## Reviewer Run
 
-Recommended order for an admissions or recruiting review:
+Recommended order for a recruiting or technical review:
 
 1. Watch the 75s demo to see the player-facing loop without reading the
    repository first.
@@ -110,7 +110,7 @@ QA routes, and a demo trailer. It is not claimed as a launched consumer
 game or broad adoption proof.
 
 Evidence visibility gate: before sending a public GitHub Pages or repository
-link as admissions evidence, run the public-link check:
+link as evidence, run the public-link check:
 `python3 tools/portfolio_public_evidence_preflight.py`.
 If it fails, use the demo video for orientation and label `#/portfolio`,
 `#/reviewer`, the public reviewer demo, local QA routes such as
@@ -271,7 +271,7 @@ Each turn follows the same control pattern:
 | Auth, quota, migration safety | `rpg_backend/main.py`, `rpg_backend/quotas.py`, `rpg_backend/auth/storage.py`, `rpg_backend/library/storage.py` |
 | Play UI | `frontend2/src/pages/play/` (`play-page.tsx` plus StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules) |
 | Reviewer layer | `frontend2/src/pages/portfolio/` |
-| Programmatic demo | `remotion-demo/src/AdmissionsDemoTrailer.tsx` |
+| Programmatic demo | `remotion-demo/src/DemoTrailer.tsx` |
 
 Key engineering decisions:
 
@@ -354,7 +354,7 @@ npm run build
 
 cd ../remotion-demo
 npm run check
-npm run render:admissions
+npm run render:trailer
 ```
 
 Run the public-link check before sending application or recruiting links:

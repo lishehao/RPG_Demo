@@ -28,7 +28,7 @@ PUBLIC_PAGE_MARKERS = (
 PUBLIC_APP_MARKERS = (
     "demo/reviewer",
     "Public reviewer demo",
-    "Static reviewer path for admissions review",
+    "Static reviewer path for public review",
     "The Missing Singer Broadcast",
     "deterministic story state",
 )

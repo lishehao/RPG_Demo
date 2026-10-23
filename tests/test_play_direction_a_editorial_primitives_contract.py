@@ -957,7 +957,7 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert 'gridTemplateColumns: "repeat(auto-fit, minmax(126px, 1fr))"' not in reviewer_fixture
     assert "Local reviewer evidence check" in reviewer_fixture
     assert "Public reviewer demo" in reviewer_fixture
-    assert "Static reviewer path for admissions review." in reviewer_fixture
+    assert "Static reviewer path for public review." in reviewer_fixture
     assert "no API key, no live backend" in reviewer_fixture
     assert "PUBLIC_REVIEWER_DEMO_STORY_TITLE" in reviewer_fixture
     assert "The Missing Singer Broadcast" in reviewer_fixture

@@ -21,7 +21,7 @@ def test_local_run_docs_and_tools_use_standard_ports() -> None:
         ROOT / "README.md",
         ROOT / "README.zh.md",
         ROOT / "tools/playwright_launch/runner.py",
-        ROOT / "tools/demo_video/capture_admissions_assets.py",
+        ROOT / "tools/demo_video/capture_trailer_assets.py",
     ]
     combined = "\n".join(path.read_text() for path in checked_paths)
 

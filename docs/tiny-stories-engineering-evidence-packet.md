@@ -34,7 +34,7 @@ fallback, and the persisted retry count was zero for every successful call.
 
 Historical live evidence anchor:
 
-This is a dated 2026-06-08 live-gate snapshot kept for admissions and
+This is a dated 2026-06-08 live-gate snapshot kept for reviewer and
 recommender evidence. It is not a claim that the commit below is current HEAD;
 for the current reviewer run, first check public visibility. If the public-link check
 passes, start from the root README, `#/portfolio`, `#/reviewer`, and
@@ -62,7 +62,7 @@ Current reviewer run boundary:
 
 Public visibility check:
 
-Before sending this packet as admissions or recruiting evidence, run
+Before sending this packet as recruiting or review evidence, run
 `python3 tools/portfolio_public_evidence_preflight.py`. If it reports that
 local `HEAD` is ahead of `origin/main`, or that GitHub Pages is missing
 current markers, treat the evidence as local-only until the intended branch is

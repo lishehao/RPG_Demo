@@ -18,7 +18,7 @@ import {
   YOUTUBE_DEMO_URL,
 } from "./portfolio-data"
 
-const PORTFOLIO_REVIEWER_CUT_POSTER = "/portfolio/admissions-trailer-contact.jpg"
+const PORTFOLIO_REVIEWER_CUT_POSTER = "/portfolio/demo-trailer-contact.jpg"
 
 const PORTFOLIO_REVIEW_ORDER = [
   {
@@ -288,7 +288,7 @@ export function PortfolioPage({
 
         <section
           className="portfolio-section portfolio-evidence-boundary"
-          aria-label="Admissions evidence boundary"
+          aria-label="Evidence boundary"
           data-portfolio-evidence-boundary="true"
         >
           <div className="portfolio-section__head">

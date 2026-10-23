@@ -36,10 +36,10 @@ const keyframes = {
 }
 
 const audio = {
-  narration: "audio/admissions-narration.wav",
+  narration: "audio/trailer-narration.wav",
 }
 
-export const admissionsDemoFrames = 2250
+export const demoTrailerFrames = 2250
 const scenes = {
   coldOpen: [0, 190],
   input: [190, 450],
@@ -49,7 +49,7 @@ const scenes = {
   freeform: [1235, 1490],
   advisor: [1490, 1760],
   ending: [1760, 2025],
-  reflection: [2025, admissionsDemoFrames],
+  reflection: [2025, demoTrailerFrames],
 } as const
 
 function clampInterpolate(frame: number, range: [number, number], output: [number, number]) {
@@ -642,7 +642,7 @@ const ColdOpen: React.FC = () => {
       <ArtBackground src={keyframes.system} start={start} end={end} tint="blue" dim={.64} />
       <CopyBlock
         start={22}
-        label="Admissions Demo"
+        label="Product Demo"
         title={<>One seed becomes a playable AI drama system.</>}
         body="A real UI drives a backend runtime: structured state, constrained LLM turns, advisor context, and a compiled ending artifact."
         size={68}
@@ -904,11 +904,11 @@ const ReflectionScene: React.FC = () => {
 const NarrationTrack: React.FC = () => {
   const frame = useCurrentFrame()
   const fadeIn = clampInterpolate(frame, [0, 42], [0, .82])
-  const fadeOut = clampInterpolate(frame, [admissionsDemoFrames - 120, admissionsDemoFrames - 18], [.82, 0])
+  const fadeOut = clampInterpolate(frame, [demoTrailerFrames - 120, demoTrailerFrames - 18], [.82, 0])
   return <Audio src={staticFile(audio.narration)} volume={Math.min(fadeIn, fadeOut)} />
 }
 
-export const AdmissionsDemoTrailer: React.FC = () => (
+export const DemoTrailer: React.FC = () => (
   <AbsoluteFill
     style={{
       background: "#030406",
@@ -940,7 +940,7 @@ export const AdmissionsDemoTrailer: React.FC = () => (
       <div
         style={{
           height: "100%",
-          width: `${clampInterpolate(useCurrentFrame(), [0, admissionsDemoFrames], [0, 100])}%`,
+          width: `${clampInterpolate(useCurrentFrame(), [0, demoTrailerFrames], [0, 100])}%`,
           background: "linear-gradient(90deg, #8ee8ff, #d7ad50, #ff5d72)",
         }}
       />

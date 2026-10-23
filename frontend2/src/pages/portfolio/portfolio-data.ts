@@ -3,7 +3,7 @@ export const REVIEWER_DEMO_TITLE = "The Missing Singer Broadcast"
 export const YOUTUBE_DEMO_URL = "https://youtu.be/RRJ7uyjW_nA"
 
 export const LOCAL_DEMO_MP4_URL =
-  "https://lishehao.github.io/RPG_Demo/demo-video/tiny-stories-admissions-demo-readme.mp4"
+  "https://lishehao.github.io/RPG_Demo/demo-video/tiny-stories-demo-readme.mp4"
 
 export const PUBLIC_REVIEWER_DEMO_URL =
   "https://lishehao.github.io/RPG_Demo/app/#/demo/reviewer"

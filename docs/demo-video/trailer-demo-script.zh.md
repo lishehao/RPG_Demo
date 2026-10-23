@@ -1,8 +1,8 @@
-# Tiny Stories 招生评审版 Demo 脚本
+# Tiny Stories 评审版 Demo 脚本
 
 ## 判断前提
 
-如果这个 demo 是给美国 CS / Software Engineering / AI 相关硕士项目的招生评审看，他们最想确认的不是“这个游戏好不好玩”，而是：
+如果这个 demo 是给技术评审或招聘方看，他们最想确认的不是“这个游戏好不好玩”，而是：
 
 1. 这是不是一个真实跑起来的系统，而不是概念视频。
 2. 你本人做了哪些技术和产品决策。
@@ -22,7 +22,7 @@
 
 > I built a playable AI story loop: a user writes one seed, the system shapes a Story Brief, generates a first scene with roles and choices, preserves player state, supports fixed and free-form moves, keeps advisor help bounded, and produces a shareable ending.
 
-给招生看的核心信息：
+给评审看的核心信息：
 
 > 这不是一个 prompt demo。它是一个 full-stack, stateful, inspectable AI product prototype.
 
@@ -81,7 +81,7 @@
 
 设计意图：
 
-招生评审需要看到“用户真的能操作”，所以这里必须是真实录屏，不要用静态 mock。
+评审需要看到“用户真的能操作”，所以这里必须是真实录屏，不要用静态 mock。
 
 ## Shot 3: 生成过程展示系统结构
 
@@ -161,7 +161,7 @@
 
 设计意图：
 
-招生评审要看到你会把 LLM 放进明确的交互循环里，而不是做“聊天式故事”。
+评审要看到你会把 LLM 放进明确的交互循环里，而不是做“聊天式故事”。
 
 ## Shot 6: 自由输入证明开放性
 
@@ -221,7 +221,7 @@
 
 设计意图：
 
-这段要服务你的申请主线：reliable / inspectable AI workflow systems。它能说明你关心可检查状态、上下文边界和用户控制权。
+这段要服务项目主线：reliable / inspectable AI workflow systems。它能说明你关心可检查状态、上下文边界和用户控制权。
 
 ## Shot 8: 结果反馈和 ending compiler
 
@@ -280,7 +280,7 @@
 
 设计意图：
 
-招生评审喜欢看到成熟的反思。不要只说“我做完了”，也不要把本地 QA 当成用户验证；
+评审喜欢看到成熟的反思。不要只说“我做完了”，也不要把本地 QA 当成用户验证；
 要说清楚下一层证据是目标用户是否真的理解剧情、愿意选择、能读懂反馈并产生复玩/分享意愿。
 
 ## 最终视频结构压缩版
@@ -310,7 +310,7 @@
 - 剧情刺激。
 - 产品像游戏。
 
-招生版强调：
+评审版强调：
 
 - 系统真实可用。
 - LLM 输出被结构化。
@@ -340,14 +340,14 @@
 
 ## 最重要的剪辑原则
 
-每 10-15 秒回答招生评审的一个问题：
+每 10-15 秒回答评审的一个问题：
 
 1. 这是真产品吗？
 2. 技术复杂点在哪里？
 3. 用户怎么操作？
 4. LLM 怎么被约束和检查？
 5. 结果怎么闭环？
-6. 这个项目说明申请人是什么类型的人？
+6. 这个项目说明作者是什么类型的人？
 
 最后一个问题的答案应该是：
 

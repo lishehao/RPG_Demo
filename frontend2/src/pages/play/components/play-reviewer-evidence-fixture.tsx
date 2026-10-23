@@ -263,7 +263,7 @@ export function PlayReviewerEvidenceFixture({
             {publicMode ? "Public reviewer demo" : "Local reviewer evidence check"}
           </span>
           <strong style={INTRO_TITLE_STYLE}>
-            {publicMode ? "Static reviewer path for admissions review." : "Evidence drawer for application review."}
+            {publicMode ? "Static reviewer path for public review." : "Evidence drawer for application review."}
           </strong>
           <p style={INTRO_COPY_STYLE}>
             {publicMode

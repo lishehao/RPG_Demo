@@ -405,7 +405,7 @@ Future optional:
 - richer reviewer UI for trajectory artifacts;
 - integration with external tracing backends.
 
-## Admissions-Safe Positioning
+## Claim-Safe Positioning
 
 Tiny Stories can be described as an inspectable AI narrative runtime with a
 local player-agent evaluation chain. The project demonstrates typed contracts,
