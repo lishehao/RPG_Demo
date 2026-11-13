@@ -626,7 +626,7 @@ def test_playtest_report_collects_target_user_evidence_without_fabrication() -> 
     assert "Pending / resolved feedback" in report
     assert "Replay / fork" in report
     assert "UI / Visual Experience Notes" in report
-    assert "Application Evidence Boundary" in report
+    assert "## Evidence Boundary" in report
     assert "Strong evidence" in report
     assert "Weak evidence" in report
     assert "Not evidence" in report

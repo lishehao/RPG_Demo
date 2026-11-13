@@ -176,7 +176,7 @@ Disallowed in normal player UI:
 - raw JSON wrappers;
 - auth headers or secrets.
 
-## Grad-Application Framing
+## Summary Phrasing
 
 Safe phrasing:
 

@@ -1,7 +1,7 @@
 # Tiny Stories Engineering Evidence Packet
 
 This packet frames Tiny Stories as a productized LLM and applied AI systems
-project for applications, portfolio pages, and recommender prep. It should not
+project for portfolio pages and technical write-ups. It should not
 be used to claim HCI research, SOTA story generation, or broad consumer
 robustness. The strongest evidence is the engineered loop: typed contracts,
 live LLM calls, persisted telemetry, deterministic judges, reviewer-only
@@ -34,8 +34,8 @@ fallback, and the persisted retry count was zero for every successful call.
 
 Historical live evidence anchor:
 
-This is a dated 2026-06-08 live-gate snapshot kept for reviewer and
-recommender evidence. It is not a claim that the commit below is current HEAD;
+This is a dated 2026-06-08 live-gate snapshot kept for reviewer
+evidence. It is not a claim that the commit below is current HEAD;
 for the current reviewer run, first check public visibility. If the public-link check
 passes, start from the root README, `#/portfolio`, `#/reviewer`, and
 `docs/CURRENT_SYSTEM_MAP.md`. If it fails, those routes remain local
@@ -52,7 +52,7 @@ verification targets and demo-video context, not public proof.
 
 Current reviewer run boundary:
 
-- Public application wording should cite only source, video, and deployed pages
+- Public wording should cite only source, video, and deployed pages
   that a reviewer can actually open.
 - `#/portfolio`, `#/reviewer`, Story Desk, Create, Play, Replay, and local QA
   routes are local verification evidence until the intended branch is pushed,
@@ -327,9 +327,9 @@ Avoid:
 - "Neural embeddings" or "vector database" for the current avatar ranking.
 - "Consumer-scale adoption" unless external usage data exists.
 
-## Application-Ready Excerpts
+## Summary Excerpts
 
-Resume bullets:
+Summary bullets:
 
 - Built Tiny Stories, an applied AI story-game runtime that turns rough prompts
   into playable sessions using typed Story Brief contracts, live LLM generation,
@@ -341,7 +341,7 @@ Resume bullets:
   Play turn can be reviewed for agency, consequence alignment, entity coherence,
   option quality, and contract drift.
 
-SOP sentence:
+Short project statement:
 
 > Tiny Stories is the project where I learned to treat LLM product behavior as
 > an engineering system: typed contracts, live-gated execution, telemetry,
@@ -353,7 +353,7 @@ Project page headline:
 > Tiny Stories: a live LLM story-game runtime with typed contracts, evaluator
 > traces, and reviewer-only observability.
 
-Recommender prep angle:
+Framing notes:
 
 - Emphasize system-building: backend orchestration, frontend product surfaces,
   typed contracts, SQLite persistence, live LLM transport, telemetry, judges,

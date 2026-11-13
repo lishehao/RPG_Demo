@@ -359,7 +359,7 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert "those routes remain local" in packet
     assert "verification targets and demo-video context, not public proof" in packet
     assert "Current reviewer run boundary:" in packet
-    assert "Public application wording should cite only source, video, and deployed pages" in packet
+    assert "Public wording should cite only source, video, and deployed pages" in packet
     assert "`#/portfolio`, `#/reviewer`, Story Desk, Create, Play, Replay, and local QA" in packet
     assert "do not present them as externally reviewable proof" in packet
     assert "Latest evidence anchor:" not in packet
