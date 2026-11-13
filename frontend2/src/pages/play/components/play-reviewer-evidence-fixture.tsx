@@ -263,12 +263,12 @@ export function PlayReviewerEvidenceFixture({
             {publicMode ? "Public reviewer demo" : "Local reviewer evidence check"}
           </span>
           <strong style={INTRO_TITLE_STYLE}>
-            {publicMode ? "Static reviewer path for public review." : "Evidence drawer for application review."}
+            {publicMode ? "Static reviewer path for public review." : "Evidence drawer for project review."}
           </strong>
           <p style={INTRO_COPY_STYLE}>
             {publicMode
               ? "This public GitHub Pages demo uses a deterministic story state: no API key, no live backend, and no generated claim beyond the source/test evidence linked from the repo."
-              : "Fresh live evidence appears first; archived checks appear second. Use this for application review evidence; cite public claims only after the public-link check passes."}
+              : "Fresh live evidence appears first; archived checks appear second. Use this for project review evidence; cite public claims only after the public-link check passes."}
           </p>
           {publicMode ? (
             <p style={INTRO_COPY_STYLE} data-play-reviewer-evidence-public-title="true">

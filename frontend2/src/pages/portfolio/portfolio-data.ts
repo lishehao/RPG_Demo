@@ -79,7 +79,7 @@ export const CASE_STUDY_POINTS = [
   },
   {
     title: "Evidence Standard",
-    body: "The application signal is product-system evidence: typed state, persistent sessions, reviewer evidence hooks, recovery paths, and mobile-checked surfaces without claiming broad adoption.",
+    body: "The project signal is product-system evidence: typed state, persistent sessions, reviewer evidence hooks, recovery paths, and mobile-checked surfaces without claiming broad adoption.",
   },
 ] as const
 

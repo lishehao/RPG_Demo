@@ -222,12 +222,12 @@ def format_status(status: PublicEvidenceStatus) -> str:
     if status.behind_count:
         lines.append(
             f"Local branch is {status.behind_count} commit(s) behind {status.remote_ref}; "
-            "refresh or reconcile before using this checkout as application evidence."
+            "refresh or reconcile before using this checkout as public evidence."
         )
     if status.public_page_error:
         lines.append(
             f"Could not verify deployed page {status.public_page_url}: {status.public_page_error}. "
-            "Do not treat GitHub Pages as verified application evidence yet."
+            "Do not treat GitHub Pages as verified public evidence yet."
         )
     if status.public_page_missing_markers:
         lines.append(f"Deployed page {status.public_page_url} is missing current portfolio evidence markers:")
@@ -236,7 +236,7 @@ def format_status(status: PublicEvidenceStatus) -> str:
     if status.public_app_error:
         lines.append(
             f"Could not verify deployed app {status.public_app_url}: {status.public_app_error}. "
-            "Do not treat the public reviewer demo as verified application evidence yet."
+            "Do not treat the public reviewer demo as verified public evidence yet."
         )
     if status.public_app_missing_markers:
         lines.append(f"Deployed app {status.public_app_url} is missing current reviewer demo markers:")
@@ -260,11 +260,11 @@ def format_status(status: PublicEvidenceStatus) -> str:
         "then rerun `python3 tools/portfolio_public_evidence_preflight.py`."
     )
     lines.append(
-        "Application wording: use the demo video for orientation only; do not cite the current "
+        "Public wording: use the demo video for orientation only; do not cite the current "
         "Portfolio, public reviewer demo, Reviewer run, Story Desk, Create, Play, or Replay surfaces as public evidence "
         "until this public-link check passes."
     )
-    lines.append("Until this public-link check passes, label the listed surfaces as local-only application evidence.")
+    lines.append("Until this public-link check passes, label the listed surfaces as local-only evidence.")
     return "\n".join(lines)
 
 

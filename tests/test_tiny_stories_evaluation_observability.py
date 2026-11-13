@@ -344,7 +344,7 @@ def test_evaluation_docs_name_reviewer_only_boundary() -> None:
     assert "do not call the score a validated academic metric" in docs
 
 
-def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
+def test_engineering_evidence_packet_has_bounded_public_claims() -> None:
     packet = (ROOT / "docs/tiny-stories-engineering-evidence-packet.md").read_text()
     summary = json.loads(
         (ROOT / "artifacts/portfolio/tiny-stories-engineering-evidence-summary.json").read_text()
@@ -381,9 +381,9 @@ def test_engineering_evidence_packet_has_bounded_application_claims() -> None:
     assert "public-link check" in visibility["public_use_gate"]
     assert "portfolio_public_evidence_preflight.py" in visibility["public_use_gate"]
     assert "artifacts/portfolio as local-only" in visibility["current_public_claim_boundary"]
-    assert "Do not ask public reviewers to start from #/portfolio or #/reviewer" in visibility["application_claim_rule"]
-    assert "unless the public-link check passes" in visibility["application_claim_rule"]
-    assert "local verification targets and demo-video context" in visibility["application_claim_rule"]
+    assert "Do not ask public reviewers to start from #/portfolio or #/reviewer" in visibility["public_claim_rule"]
+    assert "unless the public-link check passes" in visibility["public_claim_rule"]
+    assert "local verification targets and demo-video context" in visibility["public_claim_rule"]
     assert "not public links" in visibility["historical_anchor_boundary"]
 
     assert "| Opening | `narrative.opening` | 1 | `live/success` | 10942/10942/10942ms | 2678 | 1408 | 693 | 3371 | 0 | none |" in packet

@@ -73,12 +73,12 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
     assert 'title: "About / Privacy"' in about
     assert 'title: "关于 / 隐私"' in about
     assert "portfolio case study" in about
-    assert "application evidence" in about
+    assert "project evidence" in about
     assert "not as a launched consumer service" in about
     assert "local-only evidence" in about
     assert "Do not put real secrets" in about
     assert "playable state, visible change after a move, and evidence limits" in about
-    assert "作品集/申请材料证据" in about
+    assert "作品集/项目证据" in about
     assert "不是已经上线的" in about
     assert "作品集案例里的互动短剧演示" in about
     assert "AI 互动短剧系统" in about
@@ -1338,7 +1338,7 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "Local replay check" in fixture
     assert "Replay memory -&gt; same-opening restart" in fixture
     assert "real replay page, role selection, and Play first-turn surface" in fixture
-    assert "local-only application evidence until the public-link check passes" in fixture
+    assert "local-only evidence until the public-link check passes" in fixture
     assert "initialViewMode={initialViewMode}" in fixture
     assert "apiClient={qaReplayApi}" in fixture
     assert "apiClient={qaTemplateApi}" in fixture
@@ -1367,7 +1367,7 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "do not cite them as public evidence merely because the fixture passes locally" in frontend_readme
     assert "`#/qa/replay` mounts the real ReplayPage" in code_map
     assert "same-opening restart path stays on real TemplateDetailPage / PlayPage components" in code_map
-    assert "local-only application evidence until the public-link check passes" in code_map
+    assert "local-only evidence until the public-link check passes" in code_map
 
 
 def test_story_language_drives_play_replay_and_evaluation_without_portfolio_side_effects() -> None:
@@ -1486,7 +1486,7 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert "Local Story Desk start check" in fixture
     assert "Story Desk card -&gt; readable first turn" in fixture
     assert "real Story Desk card and real Play first-turn surface" in fixture
-    assert "local-only application evidence until the public-link check passes" in fixture
+    assert "local-only evidence until the public-link check passes" in fixture
     assert "listPublicNarrativeTemplates: async () => ({ items: [QA_HOME_TEMPLATE] })" in fixture
     assert "startNarrativeSession: async" in fixture
     assert 'setView("play")' in fixture
@@ -1495,4 +1495,4 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert "`#/qa/home-start` populated-card-to-first-turn fixture" in frontend_readme
     assert "do not cite them as public evidence merely because the fixture passes locally" in frontend_readme
     assert "`#/qa/home-start` mounts the real HomePage" in code_map
-    assert "local-only application evidence until the public-link check passes" in code_map
+    assert "local-only evidence until the public-link check passes" in code_map

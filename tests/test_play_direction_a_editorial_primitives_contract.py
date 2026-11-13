@@ -965,9 +965,9 @@ def test_reviewer_evaluation_drawer_is_gated_and_uses_persisted_evidence() -> No
     assert "shouldSkipInitialAuthRefresh" in auth_context
     assert 'startsWith("/demo/reviewer")' in auth_context
     assert "if (skipInitialRefresh) return" in auth_context
-    assert "Evidence drawer for application review." in reviewer_fixture
+    assert "Evidence drawer for project review." in reviewer_fixture
     assert "Fresh live evidence appears first; archived checks appear second." in reviewer_fixture
-    assert "application review evidence" in reviewer_fixture
+    assert "project review evidence" in reviewer_fixture
     assert "cite public claims only after the public-link check passes" in reviewer_fixture
     assert "repo/demo preflight" not in reviewer_fixture
     assert "Playable state, visible consequence, no archive overclaim." in reviewer_fixture
