@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     story_library_db_path: str = "artifacts/story_library.sqlite3"
     runtime_state_db_path: str = "artifacts/runtime_state.sqlite3"
     default_actor_id: str = "local-dev"
+    llm_mode: Literal["live", "fake"] = "live"
     agent_trace_reviewer_user_ids: str = ""
     agent_trace_reviewer_usernames: str = "portfolio_reviewer"
     auth_session_ttl_seconds: int = Field(default=60 * 60 * 24 * 30, ge=300)

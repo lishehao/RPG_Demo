@@ -75,6 +75,7 @@ from rpg_backend.narrative.contracts import (
     TemplateListResponse,
     UpdateTemplateVisibilityRequest,
 )
+from rpg_backend.narrative.fake_gateway import ensure_fake_demo_template
 from rpg_backend.narrative.service import NarrativeServiceError, get_narrative_service
 from rpg_backend.quotas import DailyQuotaLimiter, QuotaExceededError
 from rpg_backend.research_runtime.contracts import RpgEvaluationBundleV1, RpgEvaluationReportV1
@@ -87,6 +88,8 @@ author_job_service = ProductAuthorJobService(settings=settings)
 story_library_service = get_story_library_service(settings)
 play_session_service = PlaySessionService(story_library_service=story_library_service, settings=settings)
 narrative_service = get_narrative_service(settings)
+if settings.llm_mode == "fake":
+    ensure_fake_demo_template(narrative_service)
 llm_quota_limiter = DailyQuotaLimiter()
 AUTHOR_PREVIEW_LLM_OPERATION_COST = 3
 AUTHOR_JOB_LLM_OPERATION_COST = 7
@@ -312,6 +315,8 @@ def health() -> dict[str, str]:
         and active_settings.resolved_play_responses_model()
     )
     llm_status = "configured" if text_llm_configured else "missing"
+    if active_settings.llm_mode == "fake":
+        llm_status = "fake"
     return {
         "status": "ok",
         "text_llm": llm_status,

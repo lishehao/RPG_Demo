@@ -86,6 +86,7 @@ from rpg_backend.narrative.gateway import (
     NarrativeLLMGateway,
     get_narrative_gateway,
 )
+from rpg_backend.narrative.fake_gateway import FakeNarrativeGateway
 from rpg_backend.narrative.home_story_library import DEFAULT_HOME_STORY_OWNER_ID
 from rpg_backend.narrative.judges import judge_contract, judge_step
 from rpg_backend.narrative.repository import NarrativeNotFoundError, NarrativeRepository
@@ -4226,5 +4227,7 @@ def _summarize_session(
 def get_narrative_service(settings: Settings | None = None) -> NarrativeService:
     resolved = settings or get_settings()
     repo = NarrativeRepository(resolved.runtime_state_db_path)
+    if resolved.llm_mode == "fake":
+        return NarrativeService(repository=repo, gateway=FakeNarrativeGateway())
     gateway = get_narrative_gateway(resolved)
     return NarrativeService(repository=repo, gateway=gateway)
