@@ -28,10 +28,10 @@
     "normal_player_screenshot_path": "/tmp/tiny-stories-opening-live-reliability-2026-06-08/normal-play-clean-inapp.png"
   },
   "evidence_visibility": {
-    "artifact_scope": "Local reviewer and recommender evidence summary, not a public deployment proof by itself.",
+    "artifact_scope": "Local reviewer evidence summary, not a public deployment proof by itself.",
     "public_use_gate": "Run the public-link check with python3 tools/portfolio_public_evidence_preflight.py before citing current local surfaces or artifacts as public evidence.",
     "current_public_claim_boundary": "Treat #/portfolio, #/reviewer, local QA routes, Story Desk, Create, Play, Replay, and artifacts/portfolio as local-only until the intended branch is pushed, deployed, and rechecked.",
-    "application_claim_rule": "Do not ask public reviewers to start from #/portfolio or #/reviewer unless the public-link check passes. If it fails, use those surfaces only as local verification targets and demo-video context.",
+    "public_claim_rule": "Do not ask public reviewers to start from #/portfolio or #/reviewer unless the public-link check passes. If it fails, use those surfaces only as local verification targets and demo-video context.",
     "historical_anchor_boundary": "The 2026-06-08 live-gate files were local run outputs kept for provenance, not public links."
   },
   "live_gate": {
@@ -151,9 +151,9 @@
     "multi-turn correction with superseded facts",
     "Play turn consequence"
   ],
-  "safe_application_snippets": {
-    "resume_bullet": "Built Tiny Stories, an applied AI story-game runtime that turns rough prompts into playable sessions using typed Story Brief contracts, live LLM generation, persisted sessions, and reviewer-only observability.",
-    "sop_sentence": "Tiny Stories is the project where I learned to treat LLM product behavior as an engineering system: typed contracts, live-gated execution, telemetry, failure taxonomy, reviewer evidence, and player-facing UX boundaries all had to work together before I could call a demo reliable.",
+  "summary_snippets": {
+    "summary_bullet": "Built Tiny Stories, an applied AI story-game runtime that turns rough prompts into playable sessions using typed Story Brief contracts, live LLM generation, persisted sessions, and reviewer-only observability.",
+    "project_statement": "Tiny Stories is the project where I learned to treat LLM product behavior as an engineering system: typed contracts, live-gated execution, telemetry, failure taxonomy, reviewer evidence, and player-facing UX boundaries all had to work together before I could call a demo reliable.",
     "headline": "Tiny Stories: a live LLM story-game runtime with typed contracts, evaluator traces, and reviewer-only observability."
   },
   "guardrails": [

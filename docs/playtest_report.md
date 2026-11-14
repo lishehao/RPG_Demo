@@ -82,9 +82,9 @@ mobile screens:
 - Visual polish / trust: TBD
 - Any clipped text, awkward scroll, or confusing repeated context: TBD
 
-## Application Evidence Boundary
+## Evidence Boundary
 
-Use this report conservatively in applications:
+Use this report conservatively when citing it:
 
 - Strong evidence: observed player comprehension, visible UI issues, completed
   sessions, replay/share behavior, and direct quotes from participants.
@@ -93,7 +93,7 @@ Use this report conservatively in applications:
 - Not evidence: this blank template, internal browser smoke, generated demo
   screenshots, or assumptions that players will replay/share.
 
-Before citing the current app surfaces as public application evidence, run
+Before citing the current app surfaces as public evidence, run
 `python3 tools/portfolio_public_evidence_preflight.py`. If it fails, label the
 tested surfaces as local-only evidence and cite the demo video only for
 orientation.

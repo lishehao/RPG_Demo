@@ -73,12 +73,12 @@ def test_about_page_matches_portfolio_case_study_boundaries() -> None:
     assert 'title: "About / Privacy"' in about
     assert 'title: "关于 / 隐私"' in about
     assert "portfolio case study" in about
-    assert "application evidence" in about
+    assert "project evidence" in about
     assert "not as a launched consumer service" in about
     assert "local-only evidence" in about
     assert "Do not put real secrets" in about
     assert "playable state, visible change after a move, and evidence limits" in about
-    assert "作品集/申请材料证据" in about
+    assert "作品集/项目证据" in about
     assert "不是已经上线的" in about
     assert "作品集案例里的互动短剧演示" in about
     assert "AI 互动短剧系统" in about
@@ -245,95 +245,80 @@ def test_portfolio_hero_gives_reviewer_a_clear_consumption_order() -> None:
     assert "grid-template-columns: 34px minmax(0, 1fr)" in theme
 
 
-def test_root_readme_matches_portfolio_review_path_and_bounds_claims() -> None:
-    readme = (ROOT / "README.md").read_text()
-    hero_block = readme.split("</p>", 1)[0]
+README_SECTIONS = (
+    "## Demo",
+    "## Why",
+    "## How to run",
+    "## Design and results",
+    "## Limits",
+    "## Who wrote what",
+    "## License",
+)
+README_ZH_SECTIONS = (
+    "## Demo",
+    "## 为什么做",
+    "## 怎么运行",
+    "## 设计与结果",
+    "## 局限",
+    "## 谁做了什么",
+    "## License",
+)
+README_ONE_LINER = (
+    "An interactive story system: one premise becomes a 12-turn story of choices or free "
+    "actions, with saved sessions, replay, and a reviewer view of each turn's state."
+)
 
-    assert "./docs/demo-video/demo-trailer-contact.jpg" in hero_block
-    assert "product UI and reviewer evidence" in hero_block
-    assert "./docs/images/social-preview.jpg" not in hero_block
-    readme_top = readme[:readme.index("<table>")]
-    assert "short, story-first mobile episode" in readme_top
-    assert "read a scene" in readme_top
-    assert "compare a few meaningful moves" in readme_top
-    assert "act once" in readme_top
-    assert "follow visible" in readme_top
-    assert "playable 12-turn ending path" in readme_top
-    assert "Watch 75s demo" in readme
-    assert "Open MP4 demo" in readme
-    assert "Inspect source evidence" in readme
-    assert "MP4 fallback" not in readme
-    assert "offline/fallback" not in readme
-    assert "An inspectable AI interactive story, not another story chatbot." in readme
-    assert "An inspectable AI story game, not another story chatbot." not in readme
-    assert "An inspectable AI narrative runtime" not in readme
-    assert "<strong>State-shaped</strong>" in readme
-    assert "<strong>Runtime-driven</strong>" not in readme
-    assert "## Reviewer Run" in readme
-    assert "## Reviewer Path" not in readme
-    assert "Run locally and open `#/portfolio`" in readme
-    assert "Open the live backend reviewer run from the" in readme
-    assert "portfolio page." in readme
-    assert "Launch the reviewer route from the portfolio page" not in readme
-    assert "playable state, one-move" in readme
-    assert "consequence, evidence limits, and replay artifact" in readme
-    assert "runtime evidence hooks" not in readme
-    assert "open `#/qa/replay`" in readme
-    assert "deterministic evidence" in readme
-    assert "Verify source evidence" in readme
-    assert "## Target Player And Content Model" in readme
-    assert "story-first players who want a compact mobile" in readme
-    assert "not a blank writing canvas, infinite fiction feed, or systems" in readme
-    assert "read the current scene, compare a few" in readme
-    assert "selected moves preserve the \"why now\" reason" in readme
-    assert "inner" in readme and "motive drafting stays attached to the chosen move" in readme
-    assert "reviewer evidence stays" in readme
-    assert "outside the normal player surface" in readme
-    assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
-    assert "[Case Study](./docs/CASE_STUDY.md)" in readme
-    assert "`tests/test_navigation_mental_model_contract.py`" in readme
-    assert "`tests/test_play_direction_a_editorial_primitives_contract.py`" in readme
-    assert "portfolio-grade AI product-system evidence" in readme
-    assert "It is not claimed as a launched consumer" in readme
-    assert "game or broad adoption proof" in readme
-    reviewer_path = readme[readme.index("## Reviewer Run") : readme.index("## Target Player And Content Model")]
-    assert "Evidence visibility gate" in reviewer_path
-    assert "before sending a public GitHub Pages or repository" in reviewer_path
-    assert "run the public-link check" in reviewer_path
-    assert "If it fails, use the demo video for orientation" in reviewer_path
-    assert "`#/portfolio`" in reviewer_path
-    assert "`#/reviewer`" in reviewer_path
-    assert "`#/qa/home-start`" in reviewer_path
-    assert "`#/qa/replay`" in reviewer_path
-    assert "four checks to keep consistent" in reviewer_path
-    assert "playable state, one-move" in reviewer_path
-    assert "consequence, evidence limits, and replay artifact" in reviewer_path
-    assert "local QA routes such as" in reviewer_path
-    assert "`#/qa/home-start` and `#/qa/replay`" in reviewer_path
-    assert "local-only evidence" in reviewer_path
-    assert "pushed, deployed, and" in reviewer_path
-    assert "rechecked" in reviewer_path
-    assert "Reviewer run<br/>Portfolio + Reviewer" in readme
-    assert "Reviewer path<br/>#/portfolio + #/reviewer" not in readme
-    assert "Replay surfaces as public evidence until the public-link check passes" in readme
-    assert "Replay routes as public evidence until the preflight passes" not in readme
-    assert "python3 tools/narrative_release_gate.py --mode fake" in readme
-    assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
-    assert "python3 tools/http_product_smoke.py --base-url http://127.0.0.1:8000" in readme
-    assert "python3 -m pip install -e" in readme
-    assert "python3 -m pytest -q" in readme
+
+def _section_positions(readme: str, sections: tuple[str, ...]) -> list[int]:
+    headings = [line for line in readme.splitlines() if line.startswith("## ")]
+    assert headings == list(sections)
+    return [readme.index(f"\n{heading}\n") for heading in sections]
+
+
+def test_root_readme_follows_reader_first_structure() -> None:
+    readme = (ROOT / "README.md").read_text()
+    lines = readme.splitlines()
+
+    assert lines[0] == "# Tiny Stories"
+    assert lines[2] == README_ONE_LINER
+    assert "**RPG Demo** repository" in readme
+    _section_positions(readme, README_SECTIONS)
+
+    demo = readme[readme.index("## Demo") : readme.index("## Why")]
+    assert "./docs/demo-video/demo-trailer-contact.jpg" in demo
+    assert "https://youtu.be/RRJ7uyjW_nA" in demo
+    assert "./docs/demo-video/tiny-stories-demo-readme.mp4" in demo
+    assert "https://lishehao.github.io/RPG_Demo/" in demo
+
+    run = readme[readme.index("## How to run") : readme.index("## Design and results")]
+    assert "Node `^20.19.0 || >=22.12.0`" in run
+    assert "Node 18" not in readme
+    assert "python3 -m pip install -e" in run
+    assert "npm install" in run
+    assert "APP_LLM_MODE=fake" in run
+    assert "APP_RESPONSES_PLAY_BASE_URL" in run
+    assert "APP_RESPONSES_PLAY_API_KEY" in run
+    assert "APP_RESPONSES_PLAY_MODEL" in run
+    assert "http://127.0.0.1:8001" in run
+    assert "python3 -m pytest -q" in run
+    assert "python3 tools/narrative_release_gate.py --mode fake" in run
     assert "\npip install -e" not in readme
-    assert "\npytest -q" not in readme
     assert "python tools/" not in readme
-    assert "python -m tools.rpg_eval" not in readme
-    assert "## Engineering Evidence" in readme
-    assert "## Engineering Proof" not in readme
-    assert "designed game loop" in readme
-    assert "designed game runtime" not in readme
-    assert "product system around it" in readme
-    assert "runtime around it" not in readme
-    assert "| Play UI | `frontend2/src/pages/play/`" in readme
-    assert "StoryBeat, ActionArea, Advisor, Ending, and reviewer inspector modules" in readme
+
+    design = readme[readme.index("## Design and results") : readme.index("## Limits")]
+    assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in design
+    assert "[Case Study](./docs/CASE_STUDY.md)" in design
+
+    limits = readme[readme.index("## Limits") : readme.index("## Who wrote what")]
+    assert "not a validated consumer product" in limits
+    assert "./docs/PROJECT_PAUSE_2026-05-09.md" in limits
+    assert "`frontend/` folder is historical" in limits
+
+    assert "Built with coding agents" in readme
+    assert "[LICENSE](./LICENSE)" in readme
+    assert "## Innovation" not in readme
+    assert "not another story chatbot" not in readme
+    assert "\u2014" not in readme and "\u2013" not in readme
 
 
 def test_public_pages_landing_matches_reviewer_evidence_path() -> None:
@@ -490,109 +475,28 @@ def test_source_evidence_docs_are_reviewable_and_bound_claims() -> None:
     assert "play-flow-panels.tsx" not in evidence_contracts
 
 
-def test_chinese_readme_matches_portfolio_evidence_framing() -> None:
+def test_chinese_readme_mirrors_root_readme_structure() -> None:
     readme = (ROOT / "README.zh.md").read_text()
-    hero_block = readme.split("</p>", 1)[0]
+    lines = readme.splitlines()
 
-    assert "./docs/demo-video/demo-trailer-contact.jpg" in hero_block
-    assert "product UI and reviewer evidence" in hero_block
-    assert "./docs/images/hero.jpg" not in hero_block
-    readme_top = readme[:readme.index("## 项目状态")]
-    assert "移动端短篇互动剧情" in readme_top
-    assert "先读场景" in readme_top
-    assert "比较少量选择" in readme_top
-    assert "行动一次" in readme_top
-    assert "跟随后果" in readme_top
-    assert "status-portfolio_case_study" in readme
-    assert "Status: Paused" not in readme
-    assert "status-paused" not in readme
-    assert "alpha / open-source preview" not in readme
-    assert "portfolio-grade AI product-system evidence" in readme
-    assert "类型化契约、持久化游玩记录、可检查评审路径" in readme
-    assert "typed contracts、持久化 session" not in readme[: readme.index("## 60 秒 Quickstart")]
-    assert "不是已经验证过的消费级游戏或大规模用户增长案例" in readme
-    assert "真实用户需求、复玩、留存和自然分享没有被证明" in readme
-    assert "[真实用户测试模板](./docs/playtest_report.md)" in readme
-    assert "玩家是否理解剧情" in readme
-    assert "是否有选择信心" in readme
-    assert "是否看懂后果" in readme
-    assert "移动端 UI 是否舒服" in readme
-    assert "是否产生复玩/分享意愿" in readme
-    assert "## Demo" in readme
-    assert "[观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)" in readme
-    assert "[打开 MP4 备份](./docs/demo-video/tiny-stories-demo-readme.mp4)" in readme
-    assert "[公开链接检查通过后再打开 GitHub Pages 展示页](https://lishehao.github.io/RPG_Demo/)" in readme
-    assert "视频用于快速理解玩家看到的 loop" in readme
-    assert "真正的申请材料证据仍然在 source、tests" in readme
-    assert "engineering evidence packet" in readme
-    assert "python3 tools/portfolio_public_evidence_preflight.py" in readme
-    assert "先运行公开链接检查" in readme
-    assert "本地 `HEAD`" in readme
-    assert "GitHub Pages 缺少当前 marker" in readme
-    assert "local-only" in readme
-    assert "目标分支 push、部署并重新检查通过" in readme
-    assert "## 申请 / 作品集审阅路径" in readme
-    assert "一个可检查的 AI 互动短剧" in readme
-    assert "An inspectable AI interactive story" in readme
-    assert "An inspectable AI story game" not in readme
-    assert "LLM 驱动的 12 回合互动博弈剧引擎" not in readme
-    assert "`#/portfolio`" in readme
-    assert "从 portfolio 打开 reviewer run (`#/reviewer`)" in readme
-    assert "`#/reviewer`" in readme
-    assert "`#/qa/home-start`" in readme
-    assert "`#/qa/replay`" in readme
-    assert "四个检查点要保持一致" in readme
-    assert "状态/后果证据钩子" in readme
-    assert "runtime evidence hooks" not in readme
-    assert "可游玩状态、一次行动后的后果、证据边界、回放作品" in readme
-    assert "可游玩状态、一次行动后的后果、证据边界、回放 artifact" not in readme
-    assert "已完成局的回放作品" in readme
-    assert "completed-run replay artifact" not in readme
-    assert "local QA evidence" in readme
-    assert "不要当作公开链接证据" in readme
-    assert "## 目标玩家 / 内容消费模型" in readme
-    assert "短篇互动剧情的 story-first player" in readme
-    assert "不是空白写作工具用户、无限小说流用户或系统 dashboard 用户" in readme
-    assert "先读当前场景,比较少量但有意义的选择" in readme
-    assert "普通 Play 页面要把剧情上下文和决策上下文放近" in readme
-    assert "内心动机要贴在已选行动上" in readme
-    assert "inner motive 要贴在已选 move 上" not in readme
-    assert "reviewer" in readme and "普通玩家界面之外" in readme
-    assert "Tiny Stories 会把它整理成一个可玩的短篇互动剧" in readme
-    assert "一次行动后的后果" in readme
-    assert "可检查证据边界" in readme
-    assert "ending + highlights/replay + reviewer 可检查证据边界" in readme
-    assert "申请材料价值不在于声称已经有 consumer traction" in readme
-    assert "可运行的 player loop" in readme
-    assert "类型化契约、持久化游玩记录、评审证据和回放作品能互相对上" in readme
-    assert "typed contracts、持久化 session、reviewer evidence 和 replay artifact 能互相对上" not in readme
-    assert "系统先整理故事计划" in readme
-    assert "系统先整理 Story Brief" not in readme[: readme.index("## 60 秒 Quickstart")]
-    assert "seed → 故事计划 → role + scene + choices" in readme
-    assert "replay artifact" not in readme[: readme.index("## 60 秒 Quickstart")]
-    assert "人物压力、行动后果" in readme
-    assert "NPC 压力" not in readme[: readme.index("## 60 秒 Quickstart")]
-    assert "scene → choice → consequence → replay flow" in readme
-    assert "具体机制和数量边界放在下面的架构章节里" in readme
-    assert "可复制分享的结局标签" in readme
-    assert "可发朋友圈" not in readme
-    top_sections = readme[: readme.index("## 60 秒 Quickstart")]
-    assert "9 层机制" not in top_sections
-    assert "15 ending labels" not in top_sections
-    assert "15 种 label" not in top_sections
-    assert "3-5 张玩家身份卡" not in top_sections
-    assert "2-3 张\"你没走过的路\"" not in top_sections
+    assert lines[0] == "# Tiny Stories"
+    assert "**RPG Demo**" in readme
+    assert "[English](./README.md)" in readme
+    _section_positions(readme, README_ZH_SECTIONS)
+    assert "https://youtu.be/RRJ7uyjW_nA" in readme
+    assert "./docs/demo-video/demo-trailer-contact.jpg" in readme
+    assert "./docs/demo-video/tiny-stories-demo-readme.mp4" in readme
+    assert "https://lishehao.github.io/RPG_Demo/" in readme
+    assert "Node `^20.19.0 || >=22.12.0`" in readme
+    assert "Node 18" not in readme
+    assert "APP_LLM_MODE=fake" in readme
+    assert "python3 tools/narrative_release_gate.py --mode fake" in readme
     assert "[Current System Map](./docs/CURRENT_SYSTEM_MAP.md)" in readme
     assert "[Case Study](./docs/CASE_STUDY.md)" in readme
-    assert "[Engineering Evidence Packet](./docs/tiny-stories-engineering-evidence-packet.md)" in readme
-    assert "portfolio case study / open-source preview" in readme
-    assert "机制链路完整" in readme
-    assert "机制层面成熟" not in readme
-    assert "consumer traction" in readme
-    assert "playtest report 模板" in readme
-    assert "不要把一次好评当作验证结论" in readme
-    assert "Play 容器 + StoryBeat / ActionArea / Advisor / Ending 等模块" in readme
-    assert "play-page.tsx (~2400 行,所有 turn UI 在这)" not in readme
+    assert "./docs/PROJECT_PAUSE_2026-05-09.zh.md" in readme
+    assert "coding agents" in readme
+    assert "[LICENSE](./LICENSE)" in readme
+    assert "\u2014" not in readme and "\u2013" not in readme
 
 
 def test_portfolio_page_separates_public_and_local_evidence_claims() -> None:
@@ -722,7 +626,7 @@ def test_playtest_report_collects_target_user_evidence_without_fabrication() -> 
     assert "Pending / resolved feedback" in report
     assert "Replay / fork" in report
     assert "UI / Visual Experience Notes" in report
-    assert "Application Evidence Boundary" in report
+    assert "## Evidence Boundary" in report
     assert "Strong evidence" in report
     assert "Weak evidence" in report
     assert "Not evidence" in report
@@ -1434,7 +1338,7 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "Local replay check" in fixture
     assert "Replay memory -&gt; same-opening restart" in fixture
     assert "real replay page, role selection, and Play first-turn surface" in fixture
-    assert "local-only application evidence until the public-link check passes" in fixture
+    assert "local-only evidence until the public-link check passes" in fixture
     assert "initialViewMode={initialViewMode}" in fixture
     assert "apiClient={qaReplayApi}" in fixture
     assert "apiClient={qaTemplateApi}" in fixture
@@ -1463,7 +1367,7 @@ def test_replay_fixture_uses_real_replay_page_for_local_evidence() -> None:
     assert "do not cite them as public evidence merely because the fixture passes locally" in frontend_readme
     assert "`#/qa/replay` mounts the real ReplayPage" in code_map
     assert "same-opening restart path stays on real TemplateDetailPage / PlayPage components" in code_map
-    assert "local-only application evidence until the public-link check passes" in code_map
+    assert "local-only evidence until the public-link check passes" in code_map
 
 
 def test_story_language_drives_play_replay_and_evaluation_without_portfolio_side_effects() -> None:
@@ -1582,7 +1486,7 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert "Local Story Desk start check" in fixture
     assert "Story Desk card -&gt; readable first turn" in fixture
     assert "real Story Desk card and real Play first-turn surface" in fixture
-    assert "local-only application evidence until the public-link check passes" in fixture
+    assert "local-only evidence until the public-link check passes" in fixture
     assert "listPublicNarrativeTemplates: async () => ({ items: [QA_HOME_TEMPLATE] })" in fixture
     assert "startNarrativeSession: async" in fixture
     assert 'setView("play")' in fixture
@@ -1591,4 +1495,4 @@ def test_home_story_entries_are_generated_playable_template_objects() -> None:
     assert "`#/qa/home-start` populated-card-to-first-turn fixture" in frontend_readme
     assert "do not cite them as public evidence merely because the fixture passes locally" in frontend_readme
     assert "`#/qa/home-start` mounts the real HomePage" in code_map
-    assert "local-only application evidence until the public-link check passes" in code_map
+    assert "local-only evidence until the public-link check passes" in code_map

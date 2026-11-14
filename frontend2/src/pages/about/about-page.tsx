@@ -85,7 +85,7 @@ const aboutContentZh: AboutContent = {
           </p>
           <p style={apStyles.p}>
             它的目标不是无穷小说流或聊天机器人,而是一个短篇、可结束、可回放的
-            AI 互动短剧系统。当前请把它读作作品集/申请材料证据,不是已经上线的
+            AI 互动短剧系统。当前请把它读作作品集/项目证据,不是已经上线的
             消费级服务.
           </p>
         </>
@@ -102,7 +102,7 @@ const aboutContentZh: AboutContent = {
             <li>不要在开场设定、自由输入或私下动机里写真实秘密、账号、密钥或私人身份信息。</li>
           </ul>
           <p style={apStyles.p}>
-            申请材料里可验证的是工程闭环: 类型化数据约束、持久化状态、评审证据、
+            项目里可验证的是工程闭环: 类型化数据约束、持久化状态、评审证据、
             失败恢复路径和移动端 UI。如果公开链接检查失败,请把当前 `#/portfolio`、
             `#/reviewer`、Create、Play 和 Replay 都标成本地证据.
           </p>
@@ -166,7 +166,7 @@ const aboutContentEn: AboutContent = {
             The goal is not an infinite fiction feed or a chat bot. It
             is a compact AI interactive story with a bounded episode,
             visible state, ending, and replay. Read it as portfolio and
-            application evidence, not as a launched consumer service.
+            project evidence, not as a launched consumer service.
           </p>
         </>
       ),
@@ -182,7 +182,7 @@ const aboutContentEn: AboutContent = {
             <li>Do not put real secrets, credentials, keys, or private identity details into seeds, free actions, or inner motives.</li>
           </ul>
           <p style={apStyles.p}>
-            The application evidence is the engineered loop: typed
+            The project evidence is the engineered loop: typed
             contracts, persistent state, reviewer evidence, recovery
             paths, and mobile UI. If the public-link check fails, treat
             `#/portfolio`, `#/reviewer`, Create, Play, and Replay as

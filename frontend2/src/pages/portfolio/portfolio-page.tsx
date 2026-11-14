@@ -417,7 +417,7 @@ export function PortfolioPage({
           <span className="portfolio-kicker">Portfolio framing</span>
           <h2>Not a prompt toy. A portfolio-grade AI product-system case study.</h2>
           <p>
-            The strongest application story is that you can turn story generation
+            The strongest project story is that you can turn story generation
             into a user-facing workflow: controlled entry, typed state,
             explainable progression, visual polish, and an artifact someone can
             replay or evaluate. The honest claim is product-system evidence, not

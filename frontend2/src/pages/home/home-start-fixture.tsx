@@ -287,7 +287,7 @@ export function HomeStartFixture({ onBackHome }: { onBackHome: () => void }) {
             <strong style={QA_INTRO_TITLE_STYLE}>Story Desk card -&gt; readable first turn</strong>
             <p style={QA_INTRO_COPY_STYLE}>
               Mounts the real Story Desk card and real Play first-turn surface with deterministic data.
-              Use as local-only application evidence until the public-link check passes.
+              Use as local-only evidence until the public-link check passes.
             </p>
           </section>
           <HomePage

@@ -5,7 +5,7 @@ can inspect, where that evidence lives in the codebase, and what is still
 outside the claim.
 
 Public visibility boundary: cite `#/portfolio`, `#/reviewer`, Story Desk,
-Create, Play, and Replay as public application evidence only after
+Create, Play, and Replay as public evidence only after
 `python3 tools/portfolio_public_evidence_preflight.py` passes. If the public-link check fails,
 those routes are local verification targets and demo-video context, not public
 proof.
@@ -38,7 +38,7 @@ changed, and use that consequence to choose the next beat.
 That audience assumption drives the UI standard: keep narrative context and
 decision context close together, make the "why now" reason visible when a move
 opens, keep private motive drafting attached to the selected move, and keep
-reviewer evidence separate from the normal player surface. The application claim
+reviewer evidence separate from the normal player surface. The claim
 is product judgment around a narrow player loop, not proof that the project has
 validated retention or broad demand.
 
@@ -50,7 +50,7 @@ validated retention or broad demand.
 | Does a reviewer get a guided evidence surface? | `frontend2/src/pages/portfolio/`, `#/portfolio`, `#/reviewer` |
 | Is the play contract typed and inspectable? | `rpg_backend/narrative/contracts.py`, `frontend2/src/api/contracts.ts` |
 | Do choices and consequences persist across turns? | `rpg_backend/narrative/repository.py`, `rpg_backend/narrative/service.py` |
-| Are the application claims guarded in source? | `tests/test_navigation_mental_model_contract.py`, `tests/test_play_direction_a_editorial_primitives_contract.py` |
+| Are the project claims guarded in source? | `tests/test_navigation_mental_model_contract.py`, `tests/test_play_direction_a_editorial_primitives_contract.py` |
 
 ## Why It Is More Than A Chatbot
 

@@ -20,7 +20,7 @@ stochastic LLM outputs?
 
 ## Approved Defaults
 
-1. Primary audience: applied-AI R&D, product-systems, and graduate-project reviewers.
+1. Primary audience: applied-AI R&D and product-systems engineers.
 2. Secondary audience: interactive-narrative creators and bounded test participants.
 3. Public delivery: static evidence and evaluation UI, with invite-controlled or quota-bounded live runs.
 4. Content boundary: a small set of modern social-pressure, backstage, workplace, and mystery scenarios.

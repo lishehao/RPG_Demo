@@ -481,7 +481,7 @@ export function ReplayFixture({
             <strong style={QA_REPLAY_INTRO_TITLE_STYLE}>Replay memory -&gt; same-opening restart</strong>
             <p style={QA_REPLAY_INTRO_COPY_STYLE}>
               Mounts the real replay page, role selection, and Play first-turn surface with deterministic completed-run data.
-              Use as local-only application evidence until the public-link check passes.
+              Use as local-only evidence until the public-link check passes.
             </p>
           </section>
           <ReplayPage
