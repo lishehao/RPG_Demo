@@ -1,0 +1,17 @@
+/* Character performance surface. Static portrait under, live canvas over (same person). */
+.ew-stage{position:relative;overflow:hidden;width:100%;height:100%;isolation:isolate;contain:strict}
+.ew-backdrop{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.ew-backdrop img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.86) brightness(.64)}
+.ew-backdrop::after{content:"";position:absolute;inset:0;background:radial-gradient(90% 68% at 50% 36%,#0000 0 40%,#120a08a6 100%)}
+/* Grounds the figure: models and cut-out portraits end in a hard edge; this fades it into the room. */
+.ew-stage::after{content:"";position:absolute;left:0;right:0;bottom:0;height:26%;background:linear-gradient(180deg,#120a0800,#120a08b8 58%,#120a08f2);pointer-events:none}
+.ew-stage-static{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;transition:opacity .35s ease}
+.ew-stage.is-live .ew-stage-static{opacity:0}
+.ew-stage-img{width:100%;height:100%;display:block}
+/* Static fallback fills the stage from the top; its cut-out lower edge dissolves into the room. */
+.ew-stage-img:not(.is-placeholder){background:transparent;-webkit-mask-image:linear-gradient(180deg,#000 60%,#0000 88%);mask-image:linear-gradient(180deg,#000 60%,#0000 88%)}
+.ew-stage-static .ew-portrait.is-placeholder{width:46%;height:auto;max-height:70%;aspect-ratio:1;margin-top:14%;border-radius:50%}
+.ew-stage-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ew-stage-canvas[hidden]{display:none}
+.ew-stage-chip{z-index:2;position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:3px 8px;border-radius:999px;background:#0009;color:#f5f0ed;font:500 11px/16px var(--ew-font-ui,system-ui);backdrop-filter:blur(4px)}
+.ew-stage-chip.warn{background:#5a2a1fcc;color:#ffe2cf}

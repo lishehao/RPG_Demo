@@ -1,0 +1,76 @@
+/* Discover */
+.ew-search{position:relative;display:flex;align-items:center;width:min(420px,100%)}
+.ew-search>svg{position:absolute;left:12px;width:18px;height:18px;color:var(--text-3);pointer-events:none}
+.ew-search .ew-input{padding-left:38px;padding-right:44px}
+.ew-search .ew-icon-btn{position:absolute;right:2px}
+.ew-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 20px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.ew-tab{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:999px;color:var(--text-2);font-weight:550;text-decoration:none;border:1px solid transparent}
+.ew-tab:hover{background:var(--hover);color:var(--text)}
+.ew-tab[aria-current="page"]{background:var(--primary);color:var(--on-primary)}
+.ew-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:18px}
+.ew-card{display:flex;flex-direction:column;height:100%;border-radius:var(--radius-l);overflow:hidden;background:var(--bg-2);border:1px solid var(--line);color:var(--text);text-decoration:none;transition:border-color .15s,transform .2s ease}
+.ew-card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.ew-card-media{position:relative;aspect-ratio:4/5;background:linear-gradient(170deg,#352520,#1f1513);overflow:hidden}
+.ew-card.is-game .ew-card-media{aspect-ratio:1}
+.ew-card-media>.ew-portrait,.ew-card-media>.ew-stage{position:absolute;inset:0;width:100%;height:100%}
+.ew-card.is-character .ew-card-media>.ew-portrait{object-fit:cover}
+.ew-card.is-character .ew-card-media>.ew-portrait:not(.is-placeholder){background:transparent;-webkit-mask-image:linear-gradient(180deg,#000 68%,#0000 95%);mask-image:linear-gradient(180deg,#000 68%,#0000 95%)}
+.ew-card.is-character .ew-card-media::after{content:"";position:absolute;left:0;right:0;bottom:0;height:24%;background:linear-gradient(180deg,#120a0800,#120a08b8 58%,#120a08f2);pointer-events:none}
+.ew-card.is-character .ew-card-media:has(>.ew-stage)::after{display:none}
+.ew-card-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s}
+.ew-card:hover .ew-card-video{opacity:1}
+.ew-card-kind{position:absolute;left:10px;top:10px;padding:2px 8px;border-radius:6px;background:#000a;color:#f5f0ed;font-size:12px;font-weight:550}
+.ew-card-placeholder{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-3)}
+.ew-card-placeholder svg{width:44px;height:44px}
+.ew-card-body{display:grid;gap:4px;padding:12px 14px 16px;align-content:start}
+.ew-card-tag{margin:0;color:var(--accent);font-size:12.5px;font-weight:550}
+.ew-card-desc{margin:0;color:var(--text-2);font-size:13.5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ew-card.skeleton{pointer-events:none}
+.ew-grid-foot{display:flex;justify-content:center;gap:12px;padding:24px 0}
+.ew-grid-foot .ew-notice{align-items:center}
+.ew-continue{margin:0 0 22px}
+.ew-continue-row{display:flex;gap:10px;flex-wrap:wrap}
+.ew-continue-card{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border-radius:var(--radius);background:var(--bg-2);border:1px solid var(--line);text-decoration:none;max-width:320px}
+.ew-continue-card:hover{border-color:var(--line-2);background:var(--bg-3)}
+.ew-continue-card svg{width:20px;height:20px;color:var(--accent);flex:0 0 20px}
+.ew-continue-thumb{display:block;width:38px;height:38px;flex:0 0 38px;border-radius:8px;overflow:hidden;background:var(--bg-3)}
+.ew-continue-thumb .ew-portrait{width:100%;height:100%}
+.ew-continue-card span{display:grid;min-width:0}
+.ew-continue-card small{color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Character detail */
+.ew-character-layout{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:40px;align-items:start}
+.ew-character-layout.is-zoom{grid-template-columns:minmax(0,1fr)}
+.ew-character-stage{position:relative;aspect-ratio:4/5;border-radius:var(--radius-xl);overflow:hidden;background:radial-gradient(120% 80% at 50% 10%,#4a3029,#1e1412 70%)}
+.is-zoom .ew-character-stage{aspect-ratio:auto;height:calc(100vh - 160px);max-height:900px}
+.ew-stage-zoom{position:absolute;right:10px;top:10px;background:#0007;color:#fff}
+.ew-character-info h1{margin:0 0 6px;font:600 40px/1.15 var(--font-story)}
+.ew-traits{list-style:none;margin:0;padding:0;display:flex;gap:8px;flex-wrap:wrap}
+.ew-character-actions{margin-top:22px}
+.ew-same-source{margin-top:26px}
+.is-zoom .ew-character-info{max-width:760px}
+
+/* Friends */
+.ew-friend-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ew-friend-card{display:flex;flex-direction:column;border-radius:var(--radius-l);background:var(--bg-2);border:1px solid var(--line);overflow:hidden}
+.ew-friend-main{display:flex;gap:14px;align-items:center;padding:14px;text-decoration:none;color:var(--text)}
+.ew-friend-main:hover{background:var(--bg-3)}
+.ew-friend-face{position:relative;width:72px;height:72px;border-radius:16px;overflow:hidden;flex:0 0 72px;background:var(--bg-3)}
+.ew-friend-face .ew-portrait{position:relative;width:100%;height:100%}
+.ew-friend-face .ew-portrait:not(.is-placeholder){background:transparent}
+.ew-friend-text{display:grid;gap:3px;min-width:0}
+.ew-friend-name{font-size:17px;font-weight:650;overflow-wrap:anywhere}
+.ew-friend-text small{color:var(--text-2);font-size:12.5px;overflow-wrap:anywhere}
+.ew-friend-actions{display:flex;gap:8px;padding:0 14px 14px}
+.ew-play-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.ew-list-thumb{display:block;width:44px;height:44px;flex:0 0 44px;border-radius:8px;overflow:hidden;background:var(--bg-3)}
+.ew-list-thumb .ew-portrait{width:100%;height:100%}
+.ew-auth-why{display:flex;align-items:center;gap:14px}
+.ew-auth-why p{margin:0}
+
+@media (max-width: 1100px){
+  .ew-character-layout{grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:24px}
+}
+@media (max-width: 760px){
+  .ew-character-layout{grid-template-columns:1fr}
+}

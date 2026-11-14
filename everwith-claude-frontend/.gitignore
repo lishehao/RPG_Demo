@@ -1,0 +1,9 @@
+node_modules/
+dist/
+# Copied by `npm run assets:sync` from the private handoff package (hash-verified).
+public/handoff/
+src/vendor/
+# Test output
+test-results/
+playwright-report/
+evidence/raw/

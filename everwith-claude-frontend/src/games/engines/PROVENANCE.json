@@ -1,0 +1,50 @@
+{
+  "note": "Byte-identical copies of the frozen pure-engine reference slices (product commit 677b1b4b). Typings in *.d.ts are new.",
+  "files": [
+    {
+      "file": "royale/engine.ts",
+      "handoff_source": "reference/games/royale/src/engine.ts",
+      "sha256": "6c42f3a38187b0848a297f0ee96465da9e325dc5fdc64bce983988c1a30ceed2"
+    },
+    {
+      "file": "splendor/src/data.js",
+      "handoff_source": "reference/games/splendor/src/data.js",
+      "sha256": "39a0043dc1d85447c7604efd0713738b178511b318f8aa554ff422cfb38ee056"
+    },
+    {
+      "file": "splendor/src/engine.js",
+      "handoff_source": "reference/games/splendor/src/engine.js",
+      "sha256": "f710ec9198ccdadcd9b754170ecec9629dffc1b7e1f9659f1b5c481fa4a3d4ee"
+    },
+    {
+      "file": "splendor/splendor/rules.js",
+      "handoff_source": "reference/games/splendor/splendor/rules.js",
+      "sha256": "62c785dfea2c79091cea32f5549d2b72f12ab2933502a2d3b1fa80f91ed030fa"
+    },
+    {
+      "file": "splendor/splendor/rules-v2.js",
+      "handoff_source": "reference/games/splendor/splendor/rules-v2.js",
+      "sha256": "4f4b32677f7ebcbf42082dba4e0395b3f4965e571bd16ff0a86f9281112c0699"
+    },
+    {
+      "file": "splendor/splendor/npc.js",
+      "handoff_source": "reference/games/splendor/splendor/npc.js",
+      "sha256": "981a5908b2abf871bb8be770b67abd415ca5ac22bf8710524765f25dd6d54fb2"
+    },
+    {
+      "file": "cabo/engine.js",
+      "handoff_source": "reference/games/cabo/src/engine.js",
+      "sha256": "020a77057827a5c2a6345612fdbee106645d7515d34851dac36b7e882fde1913"
+    },
+    {
+      "file": "cabo/core.js",
+      "handoff_source": "reference/games/cabo/src/core.js",
+      "sha256": "b18ef94aa13d85c6086ce2bce2e4b9a5e61e9fda7bc106c1ed4eef015e830b9a"
+    },
+    {
+      "file": "cabo/rule-evidence.js",
+      "handoff_source": "reference/games/cabo/src/rule-evidence.js",
+      "sha256": "e006d9546abe89b96543c0e5d0ce2fdf8194aca5abd42a9222dce4050f769813"
+    }
+  ]
+}
