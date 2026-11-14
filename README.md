@@ -15,6 +15,12 @@ An interactive story system: one premise becomes a 12-turn story of choices or f
 
 ## Demo
 
+![Tiny Stories: one opening line, the scene plan, one move and what it changed](./docs/images/tiny-stories-loop.gif)
+
+A 27-second silent loop from a live local run. Waits for the model are cut. This run used gpt-4.1-mini in place of DeepSeek V4 Flash.
+
+Longer walkthrough:
+
 [![Tiny Stories demo contact sheet showing product UI and reviewer evidence](./docs/demo-video/demo-trailer-contact.jpg)](https://youtu.be/RRJ7uyjW_nA)
 
 - [Watch the 75s demo on YouTube](https://youtu.be/RRJ7uyjW_nA)

@@ -15,6 +15,12 @@
 
 ## Demo
 
+![Tiny Stories：一句开场、场景计划、一步行动和它带来的变化](./docs/images/tiny-stories-loop.gif)
+
+27 秒无声循环，录自一次本地实跑，等待模型的时间已剪掉。这一局用 gpt-4.1-mini 代替 DeepSeek V4 Flash。
+
+更长的演示：
+
 [![Tiny Stories demo contact sheet showing product UI and reviewer evidence](./docs/demo-video/demo-trailer-contact.jpg)](https://youtu.be/RRJ7uyjW_nA)
 
 - [在 YouTube 观看 75 秒 demo](https://youtu.be/RRJ7uyjW_nA)
